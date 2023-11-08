@@ -104,9 +104,6 @@ public class TickRunner
 
 	private synchronized WorldState _waitForTick(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted, AtomicInteger atomicToReset)
 	{
-		// We are going to park, so we can reset our counters for the next tick.
-		elt.resetCounters(-1);
-		
 		// Store whatever work we finished from the just-completed tick.
 		_partial[elt.id] = fragmentCompleted;
 		_threadsParked += 1;
@@ -147,7 +144,6 @@ public class TickRunner
 			
 			// Reset internal counters.
 			_threadsParked = 0;
-			atomicToReset.set(0);
 			for (int i = 0; i < _partial.length; ++i)
 			{
 				_partial[i] = null;

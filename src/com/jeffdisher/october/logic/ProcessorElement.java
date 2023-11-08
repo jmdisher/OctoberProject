@@ -31,7 +31,16 @@ public class ProcessorElement
 
 	public boolean synchronizeAndReleaseLast()
 	{
-		return _sync.synchronizeAndReleaseLast();
+		boolean isLastThread = _sync.synchronizeAndReleaseLast();
+		if (isLastThread)
+		{
+			// Everyone has synchronized so we can reset the atomic here.
+			_sharedUnitCounter.set(0);
+		}
+		// Every thread breaks out of this when fully synchronized so we can reset the local counter.
+		_lastWorkUnit = -1;
+		_nextWorkUnit = _lastWorkUnit;
+		return isLastThread;
 	}
 
 	public void releaseWaitingThreads()
@@ -49,11 +58,5 @@ public class ProcessorElement
 		// Now, increment the last counter, returning true if it matches the next.
 		_lastWorkUnit += 1;
 		return (_nextWorkUnit == _lastWorkUnit);
-	}
-
-	public void resetCounters(int i)
-	{
-		_lastWorkUnit = i;
-		_nextWorkUnit = i;
 	}
 }
