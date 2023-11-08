@@ -16,7 +16,6 @@ public class TickRunner
 	private final Thread[] _threads;
 	private WorldState _completedWorld;
 	private List<IMutation> _mutations;
-	private int _threadsParked;
 	private final WorldState.ProcessedFragment[] _partial;
 	private long _lastCompletedTick;
 	private long _nextTick;
@@ -34,14 +33,14 @@ public class TickRunner
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-				WorldState world = _waitForTick(thisThread, null, atomic);
+				WorldState world = _mergeTickStateAndWaitForNext(thisThread, null);
 				while (null != world)
 				{
 					// Run the tick.
 					WorldState.ProcessedFragment fragment = world.buildNewWorldParallel(thisThread, listener);
-					world = _waitForTick(thisThread, fragment, atomic);
+					world = _mergeTickStateAndWaitForNext(thisThread, fragment);
 				}
-			});
+			}, "Tick Runner #" + i);
 		}
 	}
 
@@ -102,16 +101,13 @@ public class TickRunner
 	}
 
 
-	private synchronized WorldState _waitForTick(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted, AtomicInteger atomicToReset)
+	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)
 	{
 		// Store whatever work we finished from the just-completed tick.
 		_partial[elt.id] = fragmentCompleted;
-		_threadsParked += 1;
-		elt.lastCompletedTick = _nextTick;
-		if (_threads.length == _threadsParked)
+		if (elt.synchronizeAndReleaseLast())
 		{
-			// Last thread to park stitches the new world together and resets the atomic.
-			// First, stitch together the combined world state.
+			// All the data is stored so process it and wait for a request to run the next tick before releasing everyone.
 			if (null != fragmentCompleted)
 			{
 				Map<Long, CuboidState> worldState = new HashMap<>();
@@ -143,18 +139,32 @@ public class TickRunner
 			}
 			
 			// Reset internal counters.
-			_threadsParked = 0;
 			for (int i = 0; i < _partial.length; ++i)
 			{
 				_partial[i] = null;
 			}
 			
-			// Acknowledge that the tick is completed.
-			_lastCompletedTick = _nextTick;
-			this.notifyAll();
+			_acknowledgeTickCompleteAndWaitForNext();
+			
+			// Now, we can release everyone and they will read _nextTick to see if we are still running.
+			elt.releaseWaitingThreads();
 		}
-		// Now, wait until we are told to wake up.
-		while (elt.lastCompletedTick == _nextTick)
+		
+		// If the next tick was set negative, it means exit.
+		WorldState worldToRun = null;
+		if (_nextTick > 0)
+		{
+			worldToRun = _completedWorld;
+		}
+		return worldToRun;
+	}
+
+	private synchronized void _acknowledgeTickCompleteAndWaitForNext()
+	{
+		// Acknowledge that the tick is completed.
+		_lastCompletedTick = _nextTick;
+		this.notifyAll();
+		while (_lastCompletedTick == _nextTick)
 		{
 			try
 			{
@@ -166,14 +176,6 @@ public class TickRunner
 				throw Assert.unexpected(e);
 			}
 		}
-		
-		// If the next tick was set negative, it means exit.
-		WorldState worldToRun = null;
-		if (_nextTick > 0)
-		{
-			worldToRun = _completedWorld;
-		}
-		return worldToRun;
 	}
 
 	private void _scheduleMutationOnCuboid(Map<Long, CuboidState> worldState, IMutation mutation)
