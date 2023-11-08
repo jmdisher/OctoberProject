@@ -1,5 +1,6 @@
 package com.jeffdisher.october.data;
 
+import com.jeffdisher.october.aspects.Aspect;
 
 /**
  * A single 32x32x32 cuboid region.

@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.data.Aspect;
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeShort;

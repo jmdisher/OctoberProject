@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.Aspect;
+
 
 public class OctreeObject implements IOctree
 {

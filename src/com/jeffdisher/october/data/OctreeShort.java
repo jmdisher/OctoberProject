@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 

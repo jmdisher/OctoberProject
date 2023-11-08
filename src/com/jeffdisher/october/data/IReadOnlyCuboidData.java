@@ -1,5 +1,6 @@
 package com.jeffdisher.october.data;
 
+import com.jeffdisher.october.aspects.Aspect;
 
 public interface IReadOnlyCuboidData
 {
