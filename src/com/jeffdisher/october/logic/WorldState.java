@@ -9,7 +9,9 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.utils.Encoding;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CuboidAddress;
 
 
 public class WorldState
@@ -42,17 +44,15 @@ public class WorldState
 				{
 					// Something is changing so we need to build the mutable copy to modify.
 					CuboidData newData = CuboidData.mutableClone(oldState.data);
-					short[] cuboidAddress = newData.getCuboidAddress();
+					CuboidAddress cuboidAddress = newData.getCuboidAddress();
 					CuboidState newState = new CuboidState(newData);
 					Consumer<IMutation> sink = new Consumer<IMutation>() {
 						@Override
 						public void accept(IMutation arg0)
 						{
-							short[] address = Encoding.getCombinedCuboidAddress(arg0.getAbsoluteLocation());
-							if ((cuboidAddress[0] == address[0])
-									&& (cuboidAddress[1] == address[1])
-									&& (cuboidAddress[2] == address[2])
-							) {
+							CuboidAddress address = arg0.getAbsoluteLocation().getCuboidAddress();
+							if (cuboidAddress.equals(address))
+							{
 								newState.enqueueMutation(arg0);
 							}
 							else
@@ -84,19 +84,19 @@ public class WorldState
 	 * Copies out all aspects of the block at the given absolute location, returning null if it is in an unloaded
 	 * cuboid.
 	 * 
-	 * @param absoluteLocation The xyz location of the block.
+	 * @param location The xyz location of the block.
 	 * @return The block copy or null if the location isn't loaded.
 	 */
-	public Block getBlock(int[] absoluteLocation)
+	public Block getBlock(AbsoluteLocation location)
 	{
-		short[] address = Encoding.getCombinedCuboidAddress(absoluteLocation);
-		long hash = Encoding.encodeCuboidAddress(address);
+		CuboidAddress address = location.getCuboidAddress();
+		long hash = address.getLongHash();
 		CuboidState cuboid = _worldMap.get(hash);
 		
 		Block block = null;
 		if (null != cuboid)
 		{
-			byte[] blockAddress = Encoding.getCombinedBlockAddress(absoluteLocation);
+			BlockAddress blockAddress = location.getBlockAddress();
 			block = cuboid.data.getBlock(blockAddress);
 		}
 		return block;
@@ -110,7 +110,7 @@ public class WorldState
 
 	public interface IBlockChangeListener
 	{
-		void blockChanged(int[] absoluteLocation);
+		void blockChanged(AbsoluteLocation location);
 		void mutationDropped(IMutation mutation);
 	}
 }

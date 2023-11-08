@@ -10,6 +10,8 @@ import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CuboidAddress;
 
 
 public class TestTickRunner
@@ -23,7 +25,7 @@ public class TestTickRunner
 		int[] changeData = new int[2];
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
-			public void blockChanged(int[] absoluteLocation)
+			public void blockChanged(AbsoluteLocation location)
 			{
 				changeData[0] += 1;
 			}
@@ -32,11 +34,11 @@ public class TestTickRunner
 			{
 				changeData[1] += 1;
 			}});
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(0, 0, 0, ASPECT_SHORT, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), ASPECT_SHORT, (short)1));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
@@ -52,7 +54,7 @@ public class TestTickRunner
 		int[] changeData = new int[2];
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
-			public void blockChanged(int[] absoluteLocation)
+			public void blockChanged(AbsoluteLocation location)
 			{
 				changeData[0] += 1;
 			}
@@ -61,12 +63,12 @@ public class TestTickRunner
 			{
 				changeData[1] += 1;
 			}});
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(16, 16, 16, 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
 		runner.runTick();
 		runner.runTick();
 		runner.runTick();
@@ -86,7 +88,7 @@ public class TestTickRunner
 		AtomicInteger[] changeData = new AtomicInteger[] { new AtomicInteger(0), new AtomicInteger(0) };
 		TickRunner runner = new TickRunner(8, new WorldState.IBlockChangeListener() {
 			@Override
-			public void blockChanged(int[] absoluteLocation)
+			public void blockChanged(AbsoluteLocation location)
 			{
 				changeData[0].incrementAndGet();
 			}
@@ -95,19 +97,19 @@ public class TestTickRunner
 			{
 				changeData[1].incrementAndGet();
 			}});
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)-1}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)0}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)-1}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)0}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)-1}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)0}, new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)-1}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)-1), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)-1), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data })));
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(0, 0, 0, 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
 		runner.runTick();
 		runner.runTick();
 		runner.runTick();
@@ -126,34 +128,34 @@ public class TestTickRunner
 		OctreeShort data = OctreeShort.create((short)0);
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
-			public void blockChanged(int[] absoluteLocation)
+			public void blockChanged(AbsoluteLocation location)
 			{
 			}
 			@Override
 			public void mutationDropped(IMutation mutation)
 			{
 			}});
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
-		Assert.assertNull(runner.getBlock(new int[] {0, 0, 0}));
+		Assert.assertNull(runner.getBlock(new AbsoluteLocation(0, 0, 0)));
 		
 		// We need to run the tick twice to make sure that we wait for the first to finish before the query.
 		runner.runTick();
 		runner.runTick();
 		// Now, we should see a block with default properties.
-		Block block = runner.getBlock(new int[] {0, 0, 0});
+		Block block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals((short)0, block.getData15(ASPECT_SHORT));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(0, 0, 0, ASPECT_SHORT, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), ASPECT_SHORT, (short)1));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
 		
 		// We should now see the new data.
-		block = runner.getBlock(new int[] {0, 0, 0});
+		block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals((short)1, block.getData15(ASPECT_SHORT));
 	}
 }

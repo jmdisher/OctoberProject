@@ -3,30 +3,24 @@ package com.jeffdisher.october.logic;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.types.AbsoluteLocation;
 
 
 public class ShockwaveMutation implements IMutation
 {
-	private final int _absoluteX;
-	private final int _absoluteY;
-	private final int _absoluteZ;
+	private final AbsoluteLocation _location;
 	private final int _count;
 
-	public ShockwaveMutation(int absoluteX, int absoluteY, int absoluteZ, int count)
+	public ShockwaveMutation(AbsoluteLocation location, int count)
 	{
-		_absoluteX = absoluteX;
-		_absoluteY = absoluteY;
-		_absoluteZ = absoluteZ;
+		_location = location;
 		_count = count;
 	}
 
 	@Override
-	public int[] getAbsoluteLocation()
+	public AbsoluteLocation getAbsoluteLocation()
 	{
-		return new int[] {_absoluteX
-				, _absoluteY
-				, _absoluteZ
-		};
+		return _location;
 	}
 
 	@Override
@@ -35,12 +29,12 @@ public class ShockwaveMutation implements IMutation
 		if (_count > 0)
 		{
 			int thisCount = _count - 1;
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX, _absoluteY, _absoluteZ - 1, thisCount));
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX, _absoluteY, _absoluteZ + 1, thisCount));
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX, _absoluteY - 1, _absoluteZ, thisCount));
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX, _absoluteY + 1, _absoluteZ, thisCount));
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX - 1, _absoluteY, _absoluteZ, thisCount));
-			newMutationSink.accept(new ShockwaveMutation(_absoluteX + 1, _absoluteY, _absoluteZ, thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x(), _location.y(), _location.z() - 1), thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x(), _location.y(), _location.z() + 1), thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x(), _location.y() - 1, _location.z()), thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x(), _location.y() + 1, _location.z()), thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x() - 1, _location.y(), _location.z()), thisCount));
+			newMutationSink.accept(new ShockwaveMutation(new AbsoluteLocation(_location.x() + 1, _location.y(), _location.z()), thisCount));
 		}
 		return true;
 	}

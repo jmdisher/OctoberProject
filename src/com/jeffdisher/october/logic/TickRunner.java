@@ -9,8 +9,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.data.Block;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.utils.Encoding;
 
 
 public class TickRunner
@@ -141,12 +142,12 @@ public class TickRunner
 	 * This call is mostly just added for convenience in tests, etc, as most other uses will make direct low-level calls
 	 * or will read from some kind of cached projection.
 	 * 
-	 * @param absoluteLocation The xyz location of the block.
+	 * @param location The xyz location of the block.
 	 * @return The block copy or null if the location isn't loaded.
 	 */
-	public Block getBlock(int[] absoluteLocation)
+	public Block getBlock(AbsoluteLocation location)
 	{
-		return _completedWorld.getBlock(absoluteLocation);
+		return _completedWorld.getBlock(location);
 	}
 
 	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)
@@ -185,7 +186,7 @@ public class TickRunner
 				{
 					for (CuboidState cuboid : newCuboids)
 					{
-						long hash = Encoding.encodeCuboidAddress(cuboid.data.getCuboidAddress());
+						long hash = cuboid.data.getCuboidAddress().getLongHash();
 						CuboidState replaced = worldState.put(hash, cuboid);
 						// This should NOT already be here.
 						Assert.assertTrue(null == replaced);
@@ -256,8 +257,8 @@ public class TickRunner
 
 	private void _scheduleMutationOnCuboid(Map<Long, CuboidState> worldState, IMutation mutation)
 	{
-		short[] address = Encoding.getCombinedCuboidAddress(mutation.getAbsoluteLocation());
-		long hash = Encoding.encodeCuboidAddress(address);
+		CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
+		long hash = address.getLongHash();
 		CuboidState cuboid = worldState.get(hash);
 		if (null != cuboid)
 		{

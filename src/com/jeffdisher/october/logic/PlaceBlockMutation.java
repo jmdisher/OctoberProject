@@ -4,46 +4,38 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.utils.Encoding;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 
 
 public class PlaceBlockMutation implements IMutation
 {
-	private final int _absoluteX;
-	private final int _absoluteY;
-	private final int _absoluteZ;
+	private final AbsoluteLocation _location;
 	private final Aspect<Short> _aspect;
 	private final short _blockType;
 
-	public PlaceBlockMutation(int absoluteX, int absoluteY, int absoluteZ, Aspect<Short> aspect, short blockType)
+	public PlaceBlockMutation(AbsoluteLocation location, Aspect<Short> aspect, short blockType)
 	{
-		_absoluteX = absoluteX;
-		_absoluteY = absoluteY;
-		_absoluteZ = absoluteZ;
+		_location = location;
 		_aspect = aspect;
 		_blockType = blockType;
 	}
 
 	@Override
-	public int[] getAbsoluteLocation()
+	public AbsoluteLocation getAbsoluteLocation()
 	{
-		return new int[] {_absoluteX
-				, _absoluteY
-				, _absoluteZ
-		};
+		return _location;
 	}
 
 	@Override
 	public boolean applyMutation(WorldState oldWorld, CuboidData newCuboid, Consumer<IMutation> newMutationSink)
 	{
-		byte x = Encoding.getBlockAddress(_absoluteX);
-		byte y = Encoding.getBlockAddress(_absoluteY);
-		byte z = Encoding.getBlockAddress(_absoluteZ);
-		short oldValue = newCuboid.getData15(_aspect, x, y, z);
+		BlockAddress address = _location.getBlockAddress();
+		short oldValue = newCuboid.getData15(_aspect, address);
 		boolean didApply = false;
 		if (0 == oldValue)
 		{
-			newCuboid.setData15(_aspect, x, y, z, _blockType);
+			newCuboid.setData15(_aspect, address, _blockType);
 			didApply = true;
 		}
 		return didApply;

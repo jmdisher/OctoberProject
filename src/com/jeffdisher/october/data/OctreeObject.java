@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.types.BlockAddress;
 
 
 public class OctreeObject implements IOctree
@@ -33,16 +34,16 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public <T> T getData(Aspect<T> type, byte x, byte y, byte z)
+	public <T> T getData(Aspect<T> type, BlockAddress address)
 	{
-		short hash = _buildHash(x, y, z);
+		short hash = _buildHash(address);
 		return type.type().cast(_data.get(hash));
 	}
 
 	@Override
-	public <T> void setData(byte x, byte y, byte z, T value)
+	public <T> void setData(BlockAddress address, T value)
 	{
-		short hash = _buildHash(x, y, z);
+		short hash = _buildHash(address);
 		_data.put(hash, value);
 	}
 
@@ -67,12 +68,12 @@ public class OctreeObject implements IOctree
 	}
 
 
-	private short _buildHash(byte x, byte y, byte z)
+	private short _buildHash(BlockAddress address)
 	{
 		// We know that none of the coordinates are more than 5 bytes so munge these into the short.
-		short hash = (short) ((Byte.toUnsignedInt(x) << 10)
-				| (Byte.toUnsignedInt(y)  << 5)
-				| Byte.toUnsignedInt(z)
+		short hash = (short) ((Byte.toUnsignedInt(address.x()) << 10)
+				| (Byte.toUnsignedInt(address.y())  << 5)
+				| Byte.toUnsignedInt(address.z())
 		);
 		return hash;
 	}

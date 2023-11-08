@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.types.BlockAddress;
 
 
 public class TestOctreeBlock
@@ -12,8 +13,8 @@ public class TestOctreeBlock
 	public void filled()
 	{
 		OctreeShort test = OctreeShort.create(BlockAspect.AIR);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)0, (byte)0, (byte)0));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)31, (byte)31, (byte)31));
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 	}
 
 	@Test
@@ -21,15 +22,15 @@ public class TestOctreeBlock
 	{
 		OctreeShort test = OctreeShort.create(BlockAspect.AIR);
 		// Change one value to cause the tree to split.
-		test.setData((byte)5, (byte)6, (byte)7, BlockAspect.STONE);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)0, (byte)0, (byte)0));
-		Assert.assertEquals(BlockAspect.STONE, (short)test.getData(BlockAspect.BLOCK, (byte)5, (byte)6, (byte)7));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)31, (byte)31, (byte)31));
+		test.setData(new BlockAddress((byte)5, (byte)6, (byte)7), BlockAspect.STONE);
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(BlockAspect.STONE, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 		
 		// Change it back, causing it to coalesce.
-		test.setData((byte)5, (byte)6, (byte)7, BlockAspect.AIR);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)0, (byte)0, (byte)0));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)5, (byte)6, (byte)7));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, (byte)31, (byte)31, (byte)31));
+		test.setData(new BlockAddress((byte)5, (byte)6, (byte)7), BlockAspect.AIR);
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
+		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(BlockAspect.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 	}
 }

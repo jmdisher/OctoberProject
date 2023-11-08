@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -196,20 +197,20 @@ public class OctreeShort implements IOctree
 	}
 
 	@Override
-	public <T> T getData(Aspect<T> type, byte x, byte y, byte z)
+	public <T> T getData(Aspect<T> type, BlockAddress address)
 	{
 		// Hash of 32 (the base size) is 16 so we use that as the initial half size.
-		short value = _findValue(ShortBuffer.wrap(_data), x, y, z, (byte)16);
+		short value = _findValue(ShortBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16);
 		Assert.assertTrue(value >= 0);
 		return type.type().cast(Short.valueOf(value));
 	}
 
 	@Override
-	public <T> void setData(byte x, byte y, byte z, T value)
+	public <T> void setData(BlockAddress address, T value)
 	{
 		short correct = ((Short)value).shortValue();
 		ShortWriter writer = new ShortWriter();
-		_updateValue(writer, ShortBuffer.wrap(_data), x, y, z, (byte)16, correct);
+		_updateValue(writer, ShortBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
 		_data = writer.getData();
 	}
 
