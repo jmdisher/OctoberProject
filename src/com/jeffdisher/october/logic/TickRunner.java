@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -132,6 +133,21 @@ public class TickRunner
 		}
 	}
 
+	/**
+	 * Copies out all aspects of the block at the given absolute location, returning null if it is in an unloaded
+	 * cuboid.
+	 * Note that this isn't synchronized with a tick so the Block will be internally consistent but will be read from
+	 * whatever world is "current" at the time of the call.
+	 * This call is mostly just added for convenience in tests, etc, as most other uses will make direct low-level calls
+	 * or will read from some kind of cached projection.
+	 * 
+	 * @param absoluteLocation The xyz location of the block.
+	 * @return The block copy or null if the location isn't loaded.
+	 */
+	public Block getBlock(int[] absoluteLocation)
+	{
+		return _completedWorld.getBlock(absoluteLocation);
+	}
 
 	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)
 	{

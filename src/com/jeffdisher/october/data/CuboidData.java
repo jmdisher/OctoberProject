@@ -73,4 +73,16 @@ public class CuboidData implements IReadOnlyCuboidData
 	{
 		_data[type.index()].setData(x, y, z, value);
 	}
+
+	@Override
+	public Block getBlock(byte[] blockAddress)
+	{
+		Object[] aspects = new Object[_data.length];
+		for (int i = 0; i < aspects.length; ++i)
+		{
+			// TODO:  Plumb down a common aspect registry.
+			aspects[i] = _data[i].getData(new Aspect<>("unknown", i, Object.class), blockAddress[0], blockAddress[1], blockAddress[2]);
+		}
+		return new Block(aspects);
+	}
 }

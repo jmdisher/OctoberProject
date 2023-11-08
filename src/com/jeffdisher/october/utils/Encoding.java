@@ -30,13 +30,17 @@ public class Encoding
 
 	public static byte getBlockAddress(int absolute)
 	{
-		int blockAddress = absolute & BLOCK_ADDRESS_MASK;
-		return (byte) blockAddress;
+		return _getBlockAddress(absolute);
 	}
 
 	public static short[] getCombinedCuboidAddress(int[] absoluteLocation)
 	{
 		return new short[] { _getCuboidAddress(absoluteLocation[0]), _getCuboidAddress(absoluteLocation[1]), _getCuboidAddress(absoluteLocation[2]) };
+	}
+
+	public static byte[] getCombinedBlockAddress(int[] absoluteLocation)
+	{
+		return new byte[] { _getBlockAddress(absoluteLocation[0]), _getBlockAddress(absoluteLocation[1]), _getBlockAddress(absoluteLocation[2]) };
 	}
 
 	public static long encodeCuboidAddress(short[] cuboidAddress)
@@ -55,5 +59,11 @@ public class Encoding
 		// Make sure that this is within bounds.
 		Assert.assertTrue(cuboidAddress <= Short.MAX_VALUE);
 		return (short)cuboidAddress;
+	}
+
+	private static byte _getBlockAddress(int absolute)
+	{
+		int blockAddress = absolute & BLOCK_ADDRESS_MASK;
+		return (byte) blockAddress;
 	}
 }

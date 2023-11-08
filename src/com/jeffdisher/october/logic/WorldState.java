@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -77,6 +78,28 @@ public class WorldState
 			}
 		}
 		return new ProcessedFragment(fragment, exportedMutations);
+	}
+
+	/**
+	 * Copies out all aspects of the block at the given absolute location, returning null if it is in an unloaded
+	 * cuboid.
+	 * 
+	 * @param absoluteLocation The xyz location of the block.
+	 * @return The block copy or null if the location isn't loaded.
+	 */
+	public Block getBlock(int[] absoluteLocation)
+	{
+		short[] address = Encoding.getCombinedCuboidAddress(absoluteLocation);
+		long hash = Encoding.encodeCuboidAddress(address);
+		CuboidState cuboid = _worldMap.get(hash);
+		
+		Block block = null;
+		if (null != cuboid)
+		{
+			byte[] blockAddress = Encoding.getCombinedBlockAddress(absoluteLocation);
+			block = cuboid.data.getBlock(blockAddress);
+		}
+		return block;
 	}
 
 
