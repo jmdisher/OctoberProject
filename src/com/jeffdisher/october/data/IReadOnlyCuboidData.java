@@ -16,7 +16,8 @@ public interface IReadOnlyCuboidData
 	 * Copies out all aspects of the block at the given block address.
 	 * 
 	 * @param address The xyz location of the block in this cuboid.
+	 * @param aspects The aspects registered in the system.
 	 * @return The block copy with all aspects.
 	 */
-	Block getBlock(BlockAddress address);
+	Block getBlock(BlockAddress address, Aspect<?>[] aspects);
 }

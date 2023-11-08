@@ -3,6 +3,7 @@ package com.jeffdisher.october.data;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -78,14 +79,15 @@ public class CuboidData implements IReadOnlyCuboidData
 	}
 
 	@Override
-	public Block getBlock(BlockAddress address)
+	public Block getBlock(BlockAddress address, Aspect<?>[] aspects)
 	{
-		Object[] aspects = new Object[_data.length];
+		// We should have one data plane for each aspect.
+		Assert.assertTrue(_data.length == aspects.length);
+		Object[] objects = new Object[_data.length];
 		for (int i = 0; i < aspects.length; ++i)
 		{
-			// TODO:  Plumb down a common aspect registry.
-			aspects[i] = _data[i].getData(new Aspect<>("unknown", i, Object.class), address);
+			objects[i] = _data[i].getData(aspects[i], address);
 		}
-		return new Block(aspects);
+		return new Block(objects);
 	}
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -85,9 +86,10 @@ public class WorldState
 	 * cuboid.
 	 * 
 	 * @param location The xyz location of the block.
+	 * @param aspects The aspects registered in the system.
 	 * @return The block copy or null if the location isn't loaded.
 	 */
-	public Block getBlock(AbsoluteLocation location)
+	public Block getBlock(AbsoluteLocation location, Aspect<?>[] aspects)
 	{
 		CuboidAddress address = location.getCuboidAddress();
 		long hash = address.getLongHash();
@@ -97,7 +99,7 @@ public class WorldState
 		if (null != cuboid)
 		{
 			BlockAddress blockAddress = location.getBlockAddress();
-			block = cuboid.data.getBlock(blockAddress);
+			block = cuboid.data.getBlock(blockAddress, aspects);
 		}
 		return block;
 	}

@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -16,6 +18,7 @@ import com.jeffdisher.october.utils.Assert;
 
 public class TickRunner
 {
+	private final Aspect<?>[] _aspects;
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	private WorldState _completedWorld;
@@ -27,8 +30,9 @@ public class TickRunner
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
 	private ReentrantLock _sharedDataLock;
 
-	public TickRunner(int threadCount, WorldState.IBlockChangeListener listener)
+	public TickRunner(AspectRegistry registry, int threadCount, WorldState.IBlockChangeListener listener)
 	{
+		_aspects = registry.finalList();
 		AtomicInteger atomic = new AtomicInteger(0);
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
@@ -147,7 +151,7 @@ public class TickRunner
 	 */
 	public Block getBlock(AbsoluteLocation location)
 	{
-		return _completedWorld.getBlock(location);
+		return _completedWorld.getBlock(location, _aspects);
 	}
 
 	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)

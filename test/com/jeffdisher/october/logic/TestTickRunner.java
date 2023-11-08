@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.Block;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
@@ -16,14 +17,14 @@ import com.jeffdisher.october.types.CuboidAddress;
 
 public class TestTickRunner
 {
-	public static final Aspect<Short> ASPECT_SHORT = new Aspect<>("Short", 0, Short.class);
-
 	@Test
 	public void basicOneCuboid()
 	{
+		AspectRegistry registry = new AspectRegistry();
+		Aspect<Short>  aspectShort = registry.registerAspect("Short", Short.class);
 		OctreeShort data = OctreeShort.create((short)0);
 		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -38,7 +39,7 @@ public class TestTickRunner
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), ASPECT_SHORT, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, (short)1));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
@@ -50,9 +51,11 @@ public class TestTickRunner
 	@Test
 	public void shockwaveOneCuboid()
 	{
+		AspectRegistry registry = new AspectRegistry();
+		registry.registerAspect("Short", Short.class);
 		OctreeShort data = OctreeShort.create((short)0);
 		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -84,9 +87,11 @@ public class TestTickRunner
 	@Test
 	public void shockwaveMultiCuboids()
 	{
+		AspectRegistry registry = new AspectRegistry();
+		registry.registerAspect("Short", Short.class);
 		OctreeShort data = OctreeShort.create((short)0);
 		AtomicInteger[] changeData = new AtomicInteger[] { new AtomicInteger(0), new AtomicInteger(0) };
-		TickRunner runner = new TickRunner(8, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(registry, 8, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -125,8 +130,10 @@ public class TestTickRunner
 	@Test
 	public void basicBlockRead()
 	{
+		AspectRegistry registry = new AspectRegistry();
+		Aspect<Short>  aspectShort = registry.registerAspect("Short", Short.class);
 		OctreeShort data = OctreeShort.create((short)0);
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -146,16 +153,16 @@ public class TestTickRunner
 		runner.runTick();
 		// Now, we should see a block with default properties.
 		Block block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals((short)0, block.getData15(ASPECT_SHORT));
+		Assert.assertEquals((short)0, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), ASPECT_SHORT, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, (short)1));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
 		
 		// We should now see the new data.
 		block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals((short)1, block.getData15(ASPECT_SHORT));
+		Assert.assertEquals((short)1, block.getData15(aspectShort));
 	}
 }
