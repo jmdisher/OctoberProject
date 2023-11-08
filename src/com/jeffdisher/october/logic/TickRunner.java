@@ -1,10 +1,12 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
@@ -16,9 +18,12 @@ public class TickRunner
 	private final Thread[] _threads;
 	private WorldState _completedWorld;
 	private List<IMutation> _mutations;
+	private List<CuboidState> _newCuboids;
 	private final WorldState.ProcessedFragment[] _partial;
 	private long _lastCompletedTick;
 	private long _nextTick;
+	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
+	private ReentrantLock _sharedDataLock;
 
 	public TickRunner(int threadCount, WorldState.IBlockChangeListener listener)
 	{
@@ -28,6 +33,7 @@ public class TickRunner
 		_partial = new WorldState.ProcessedFragment[threadCount];
 		_lastCompletedTick = -1;
 		_nextTick = 0;
+		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
 		{
 			int id = i;
@@ -44,10 +50,11 @@ public class TickRunner
 		}
 	}
 
-	public void start(WorldState startWorld)
+	public void start()
 	{
 		Assert.assertTrue(null == _completedWorld);
-		_completedWorld = startWorld;
+		// Create an empty world - the cuboids will be asynchronously loaded.
+		_completedWorld = new WorldState(Collections.emptyMap());
 		for (Thread thread : _threads)
 		{
 			thread.start();
@@ -66,11 +73,36 @@ public class TickRunner
 
 	public void enqueueMutation(IMutation mutation)
 	{
-		if (null == _mutations)
+		_sharedDataLock.lock();
+		try
 		{
-			_mutations = new ArrayList<>();
+			if (null == _mutations)
+			{
+				_mutations = new ArrayList<>();
+			}
+			_mutations.add(mutation);
 		}
-		_mutations.add(mutation);
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
+	public void cuboidWasLoaded(CuboidState cuboid)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _newCuboids)
+			{
+				_newCuboids = new ArrayList<>();
+			}
+			_newCuboids.add(cuboid);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
 	}
 
 	public void shutdown()
@@ -115,7 +147,36 @@ public class TickRunner
 				{
 					worldState.putAll(fragment.stateFragment());
 				}
-				// Now, apply any mutations generated in the now-completed tick (which weren't local mutations).
+				
+				// Load other cuboids and apply other mutations enqueued since the last tick.
+				List<CuboidState> newCuboids;
+				List<IMutation> newMutations;
+				_sharedDataLock.lock();
+				try
+				{
+					newCuboids = _newCuboids;
+					_newCuboids = null;
+					newMutations = _mutations;
+					_mutations = null;
+				}
+				finally
+				{
+					_sharedDataLock.unlock();
+				}
+				
+				// First, add the new cuboids.
+				if (null != newCuboids)
+				{
+					for (CuboidState cuboid : newCuboids)
+					{
+						long hash = Encoding.encodeCuboidAddress(cuboid.data.getCuboidAddress());
+						CuboidState replaced = worldState.put(hash, cuboid);
+						// This should NOT already be here.
+						Assert.assertTrue(null == replaced);
+					}
+				}
+				
+				// Apply the mutations from internal operations.
 				for (WorldState.ProcessedFragment fragment : _partial)
 				{
 					for (IMutation mutation : fragment.exportedMutations())
@@ -125,13 +186,12 @@ public class TickRunner
 				}
 				
 				// Apply the other mutations which were enqueued since last tick completed and we parked.
-				if (null != _mutations)
+				if (null != newMutations)
 				{
-					for (IMutation mutation : _mutations)
+					for (IMutation mutation : newMutations)
 					{
 						_scheduleMutationOnCuboid(worldState, mutation);
 					}
-					_mutations = null;
 				}
 				
 				// Replace the world with the new state.

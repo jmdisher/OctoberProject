@@ -17,8 +17,6 @@ public class WorldState
 
 	public WorldState(Map<Long, CuboidState> worldMap)
 	{
-		// Note that we want to concurrently iterate the map and Collections.unmodifiableMap seems to have some lazy
-		// initialization so we use a HashMap, which is apparently safe for concurrent reads.
 		_worldMap = Collections.unmodifiableMap(worldMap);
 	}
 

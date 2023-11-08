@@ -1,7 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -11,7 +9,6 @@ import com.jeffdisher.october.data.Aspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeShort;
-import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestTickRunner
@@ -22,11 +19,6 @@ public class TestTickRunner
 	public void basicOneCuboid()
 	{
 		OctreeShort data = OctreeShort.create((short)0);
-		CuboidState one = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data }));
-		long hash = Encoding.encodeCuboidAddress(one.data.getCuboidAddress());
-		Map<Long, CuboidState> map = new HashMap<>();
-		map.put(hash, one);
-		WorldState start = new WorldState(map);
 		int[] changeData = new int[2];
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
@@ -39,7 +31,8 @@ public class TestTickRunner
 			{
 				changeData[1] += 1;
 			}});
-		runner.start(start);
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new PlaceBlockMutation(0, 0, 0, ASPECT_SHORT, (short)1));
@@ -55,11 +48,6 @@ public class TestTickRunner
 	public void shockwaveOneCuboid()
 	{
 		OctreeShort data = OctreeShort.create((short)0);
-		CuboidState one = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data }));
-		long hash = Encoding.encodeCuboidAddress(one.data.getCuboidAddress());
-		Map<Long, CuboidState> map = new HashMap<>();
-		map.put(hash, one);
-		WorldState start = new WorldState(map);
 		int[] changeData = new int[2];
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
@@ -72,7 +60,8 @@ public class TestTickRunner
 			{
 				changeData[1] += 1;
 			}});
-		runner.start(start);
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
@@ -93,24 +82,6 @@ public class TestTickRunner
 	public void shockwaveMultiCuboids()
 	{
 		OctreeShort data = OctreeShort.create((short)0);
-		Map<Long, CuboidState> map = new HashMap<>();
-		CuboidState c000 = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c000.data.getCuboidAddress()), c000);
-		CuboidState c001 = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)-1}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c001.data.getCuboidAddress()), c001);
-		CuboidState c010 = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)0}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c010.data.getCuboidAddress()), c010);
-		CuboidState c011 = new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)-1}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c011.data.getCuboidAddress()), c011);
-		CuboidState c100 = new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)0}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c100.data.getCuboidAddress()), c100);
-		CuboidState c101 = new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)-1}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c101.data.getCuboidAddress()), c101);
-		CuboidState c110 = new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)0}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c110.data.getCuboidAddress()), c110);
-		CuboidState c111 = new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)-1}, new IOctree[] { data }));
-		map.put(Encoding.encodeCuboidAddress(c111.data.getCuboidAddress()), c111);
-		WorldState start = new WorldState(map);
 		AtomicInteger[] changeData = new AtomicInteger[] { new AtomicInteger(0), new AtomicInteger(0) };
 		TickRunner runner = new TickRunner(8, new WorldState.IBlockChangeListener() {
 			@Override
@@ -123,7 +94,15 @@ public class TestTickRunner
 			{
 				changeData[1].incrementAndGet();
 			}});
-		runner.start(start);
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)0, (short)-1}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)0, (short)-1, (short)-1}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)0, (short)-1}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)0}, new IOctree[] { data })));
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new short[] {(short)-1, (short)-1, (short)-1}, new IOctree[] { data })));
+		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
