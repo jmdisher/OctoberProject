@@ -3,7 +3,7 @@ package com.jeffdisher.october.types;
 import com.jeffdisher.october.utils.Encoding;
 
 
-public record AbsoluteLocation(int x, int y, int z)
+public final record AbsoluteLocation(int x, int y, int z)
 {
 	public final CuboidAddress getCuboidAddress()
 	{
@@ -13,5 +13,10 @@ public record AbsoluteLocation(int x, int y, int z)
 	public final BlockAddress getBlockAddress()
 	{
 		return new BlockAddress(Encoding.getBlockAddress(x), Encoding.getBlockAddress(y), Encoding.getBlockAddress(z));
+	}
+
+	public final AbsoluteLocation getRelative(int rx, int ry, int rz)
+	{
+		return new AbsoluteLocation(x + rx, y + ry, z + rz);
 	}
 }
