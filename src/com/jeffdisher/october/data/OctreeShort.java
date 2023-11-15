@@ -2,6 +2,7 @@ package com.jeffdisher.october.data;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -30,6 +31,7 @@ public class OctreeShort implements IOctree
 
 	public static OctreeShort create(short fillValue)
 	{
+		Assert.assertTrue(fillValue >= 0);
 		short[] data = new short[] { Encoding.setShortTag(fillValue) };
 		return new OctreeShort(data);
 	}
@@ -140,7 +142,11 @@ public class OctreeShort implements IOctree
 		{
 			// Otherwise, the value MUST be 0 and means that we need to dig into the 8 sub-trees.
 			Assert.assertTrue(0 == header);
-			// In this case, we need to run this for all sub-trees, but then see if the trees should coalesce, meaning we need temporary output buffers.
+			// In this case, we need to walk all the sub-trees, but then coalesce them if they now have all the same values.
+			int targetX = (x < half) ? 0 : 1;
+			int targetY = (y < half) ? 0 : 1;
+			int targetZ = (z < half) ? 0 : 1;
+			
 			int index = 0;
 			short[] values = new short[8];
 			ShortWriter[] captured = new ShortWriter[8];
@@ -151,7 +157,14 @@ public class OctreeShort implements IOctree
 					for (int k = 0; k < 2; ++k)
 					{
 						captured[index] = new ShortWriter();
-						values[index] = _updateValue(captured[index], buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
+						if ((i == targetX) && (j == targetY) && (k == targetZ))
+						{
+							values[index] = _updateValue(captured[index], buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
+						}
+						else
+						{
+							values[index] = _advanceAndReportSingleLevel(captured[index], buffer);
+						}
 						index += 1;
 					}
 				}
@@ -188,6 +201,39 @@ public class OctreeShort implements IOctree
 		return value;
 	}
 
+	// Walks the current sub-tree, advancing through the given buffer, and returns the value if the tree is only a
+	// single level.  Otherwise, returns -1.
+	private static short _advanceAndReportSingleLevel(ShortWriter writer, ShortBuffer buffer)
+	{
+		final short value;
+		short header = buffer.get();
+		// Just copy this over.
+		writer.putShort(header);
+		if (Encoding.checkShortTag(header))
+		{
+			// If the value is negative, the value represents the entire level so return that.
+			value = Encoding.clearShortTag(header);
+		}
+		else
+		{
+			// Otherwise, the value MUST be 0 and means that we need to walk the 8 sub-trees.
+			Assert.assertTrue(0 == header);
+			for (int i = 0; i < 2; ++i)
+			{
+				for (int j = 0; j < 2; ++j)
+				{
+					for (int k = 0; k < 2; ++k)
+					{
+						_advanceAndReportSingleLevel(writer, buffer);
+					}
+				}
+			}
+			// This wasn't a single level, so return -1
+			value = -1;
+		}
+		return value;
+	}
+
 
 	private short[] _data;
 
@@ -209,6 +255,8 @@ public class OctreeShort implements IOctree
 	public <T> void setData(BlockAddress address, T value)
 	{
 		short correct = ((Short)value).shortValue();
+		// The value cannot be negative.
+		Assert.assertTrue(correct >= 0);
 		ShortWriter writer = new ShortWriter();
 		_updateValue(writer, ShortBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
 		_data = writer.getData();
@@ -224,6 +272,55 @@ public class OctreeShort implements IOctree
 	public IOctree cloneData()
 	{
 		return new OctreeShort(_data.clone());
+	}
+
+	public void walkTree(PrintStream out)
+	{
+		_walkTree(out, "", ShortBuffer.wrap(_data));
+		
+	}
+
+	public byte[] copyRawData()
+	{
+		byte[] data = new byte[_data.length * Short.BYTES];
+		ByteBuffer writer = ByteBuffer.wrap(data);
+		for (int i = 0; i < _data.length; ++i)
+		{
+			// Just copy the data as BE.
+			byte high = (byte)(_data[i] >> 8);
+			byte low = (byte)(_data[i] & 0xFF);
+			writer.put(high);
+			writer.put(low);
+		}
+		return data;
+	}
+
+
+	private void _walkTree(PrintStream out, String indent, ShortBuffer buffer)
+	{
+		short header = buffer.get();
+		if (Encoding.checkShortTag(header))
+		{
+			// This is the tree value.
+			short value = Encoding.clearShortTag(header);
+			out.println(indent + value);
+		}
+		else
+		{
+			// Walk subtrees.
+			for (int i = 0; i < 2; ++i)
+			{
+				for (int j = 0; j < 2; ++j)
+				{
+					for (int k = 0; k < 2; ++k)
+					{
+						out.println(indent + "( subtree " + i + ", " + j + ", " + k);
+						_walkTree(out, indent + "\t", buffer);
+						out.println(indent + ") subtree " + i + ", " + j + ", " + k);
+					}
+				}
+			}
+		}
 	}
 
 
