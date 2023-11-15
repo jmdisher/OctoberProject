@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
@@ -17,39 +16,37 @@ public class OctreeShort implements IOctree
 	public static OctreeShort load(ByteBuffer raw)
 	{
 		// We want to parse forward until we find the end of the cuboid, then reverse and copy the bytes out.
-		ShortBuffer buffer = raw.asShortBuffer();
-		int start = buffer.position();
+		int start = raw.position();
 		// We just want to read to the end of the octree, to see how big it is, so just say we are looking for the last element
-		short verify = _findValue(buffer, (byte)31, (byte)31, (byte)31, (byte)16);
+		short verify = _findValue(raw, (byte)31, (byte)31, (byte)31, (byte)16);
 		Assert.assertTrue(verify >= 0);
-		int end = buffer.position();
-		short[] data = new short[end - start];
-		buffer.position(start);
-		buffer.get(data);
+		int end = raw.position();
+		byte[] data = new byte[end - start];
+		raw.position(start);
+		raw.get(data);
 		return new OctreeShort(data);
 	}
 
 	public static OctreeShort create(short fillValue)
 	{
 		Assert.assertTrue(fillValue >= 0);
-		short[] data = new short[] { Encoding.setShortTag(fillValue) };
+		byte[] data = ByteBuffer.allocate(Short.BYTES).putShort(Encoding.setShortTag(fillValue)).array();
 		return new OctreeShort(data);
 	}
 
 
-	private static short _findValue(ShortBuffer buffer, byte x, byte y, byte z, byte half)
+	private static short _findValue(ByteBuffer buffer, byte x, byte y, byte z, byte half)
 	{
 		final short value;
-		short header = buffer.get();
-		if (Encoding.checkShortTag(header))
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
 		{
-			// If the value is negative, the value represents the entire level.
-			value = Encoding.clearShortTag(header);
+			// This is the entire sub-tree so just return it.
+			value = oldValue;
 		}
 		else if (half > 0)
 		{
-			// Otherwise, the value MUST be 0 and means that we need to dig into the 8 sub-trees.
-			Assert.assertTrue(0 == header);
+			// Otherwise, we need to dig into the 8 sub-trees.
 			// Due to the way the octree is represented, we must walk all subtrees "before" the one where we are finding the element.
 			// The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.
 			int targetX = (x < half) ? 0 : 1;
@@ -84,24 +81,23 @@ public class OctreeShort implements IOctree
 		return value;
 	}
 
-	private static short _updateValue(ShortWriter writer, ShortBuffer buffer, byte x, byte y, byte z, byte half, short newValue)
+	private static short _updateValue(ShortWriter writer, ByteBuffer buffer, byte x, byte y, byte z, byte half, short newValue)
 	{
 		// We will return -1 if the this sub-tree has multiple values or the actual value, if it is just one.
 		final short value;
-		short header = buffer.get();
-		if (Encoding.checkShortTag(header))
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
 		{
-			// If the value is negative, the value represents the entire level.
+			// This is a single value for the subtree.
 			// In this case, there are 3 possibilities:
 			// 1 - the values match, so we don't change anything
 			// 2 - this is a leaf, so we just return it
 			// 3 - we need to split out new sub-trees
-			short oldValue = Encoding.clearShortTag(header);
 			if (newValue == oldValue)
 			{
 				// Just encode this into the output.
-				writer.putShort(header);
-				value = oldValue;
+				writer.putShort(Encoding.setShortTag(newValue));
+				value = newValue;
 			}
 			else if (0 == half)
 			{
@@ -112,7 +108,7 @@ public class OctreeShort implements IOctree
 			else
 			{
 				// Create the sub-trees and return -1.
-				writer.putShort((short)0);
+				writer.putSubtreeStart();
 				int targetX = (x < half) ? 0 : 1;
 				int targetY = (y < half) ? 0 : 1;
 				int targetZ = (z < half) ? 0 : 1;
@@ -125,12 +121,12 @@ public class OctreeShort implements IOctree
 							// Unless this is the relevant sub-tree, just treat it as the header.
 							if ((i == targetX) && (j == targetY) && (k == targetZ))
 							{
-								short[] fake = new short[] { header };
-								_updateValue(writer, ShortBuffer.wrap(fake), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
+								byte[] fake = ByteBuffer.allocate(Short.BYTES).putShort(Encoding.setShortTag(oldValue)).array();
+								_updateValue(writer, ByteBuffer.wrap(fake), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
 							}
 							else
 							{
-								writer.putShort(header);
+								writer.putShort(Encoding.setShortTag(oldValue));
 							}
 						}
 					}
@@ -140,8 +136,7 @@ public class OctreeShort implements IOctree
 		}
 		else if (half > 0)
 		{
-			// Otherwise, the value MUST be 0 and means that we need to dig into the 8 sub-trees.
-			Assert.assertTrue(0 == header);
+			// Otherwise, we need to dig into the 8 sub-trees.
 			// In this case, we need to walk all the sub-trees, but then coalesce them if they now have all the same values.
 			int targetX = (x < half) ? 0 : 1;
 			int targetY = (y < half) ? 0 : 1;
@@ -185,7 +180,7 @@ public class OctreeShort implements IOctree
 			else
 			{
 				// We need to write-back the sub-trees.
-				writer.putShort((short)0);
+				writer.putSubtreeStart();
 				for (ShortWriter oneSub : captured)
 				{
 					writer.consume(oneSub);
@@ -203,21 +198,20 @@ public class OctreeShort implements IOctree
 
 	// Walks the current sub-tree, advancing through the given buffer, and returns the value if the tree is only a
 	// single level.  Otherwise, returns -1.
-	private static short _advanceAndReportSingleLevel(ShortWriter writer, ShortBuffer buffer)
+	private static short _advanceAndReportSingleLevel(ShortWriter writer, ByteBuffer buffer)
 	{
 		final short value;
-		short header = buffer.get();
-		// Just copy this over.
-		writer.putShort(header);
-		if (Encoding.checkShortTag(header))
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
 		{
-			// If the value is negative, the value represents the entire level so return that.
-			value = Encoding.clearShortTag(header);
+			// This is the entire subtree so copy it over and return it.
+			writer.putShort(Encoding.setShortTag(oldValue));
+			value = oldValue;
 		}
 		else
 		{
-			// Otherwise, the value MUST be 0 and means that we need to walk the 8 sub-trees.
-			Assert.assertTrue(0 == header);
+			// Otherwise, we need to walk the 8 sub-trees.
+			writer.putSubtreeStart();
 			for (int i = 0; i < 2; ++i)
 			{
 				for (int j = 0; j < 2; ++j)
@@ -234,10 +228,26 @@ public class OctreeShort implements IOctree
 		return value;
 	}
 
+	// Returns -1 if this is a sub-tree marker or the value if it is an inline value.
+	private static short _loadHeader(ByteBuffer buffer)
+	{
+		final short value;
+		short header = buffer.getShort();
+		if (Encoding.checkShortTag(header))
+		{
+			value = Encoding.clearShortTag(header);
+		}
+		else
+		{
+			value = (short)-1;
+		}
+		return value;
+	}
 
-	private short[] _data;
 
-	private OctreeShort(short[] data)
+	private byte[] _data;
+
+	private OctreeShort(byte[] data)
 	{
 		_data = data;
 	}
@@ -246,7 +256,7 @@ public class OctreeShort implements IOctree
 	public <T> T getData(Aspect<T> type, BlockAddress address)
 	{
 		// Hash of 32 (the base size) is 16 so we use that as the initial half size.
-		short value = _findValue(ShortBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16);
+		short value = _findValue(ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16);
 		Assert.assertTrue(value >= 0);
 		return type.type().cast(Short.valueOf(value));
 	}
@@ -258,14 +268,14 @@ public class OctreeShort implements IOctree
 		// The value cannot be negative.
 		Assert.assertTrue(correct >= 0);
 		ShortWriter writer = new ShortWriter();
-		_updateValue(writer, ShortBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
+		_updateValue(writer, ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
 		_data = writer.getData();
 	}
 
 	@Override
 	public void serialize(ByteBuffer buffer, IAspectCodec<?> codec)
 	{
-		buffer.asShortBuffer().put(_data);
+		buffer.put(_data);
 	}
 
 	@Override
@@ -276,33 +286,23 @@ public class OctreeShort implements IOctree
 
 	public void walkTree(PrintStream out)
 	{
-		_walkTree(out, "", ShortBuffer.wrap(_data));
+		_walkTree(out, "", ByteBuffer.wrap(_data));
 		
 	}
 
 	public byte[] copyRawData()
 	{
-		byte[] data = new byte[_data.length * Short.BYTES];
-		ByteBuffer writer = ByteBuffer.wrap(data);
-		for (int i = 0; i < _data.length; ++i)
-		{
-			// Just copy the data as BE.
-			byte high = (byte)(_data[i] >> 8);
-			byte low = (byte)(_data[i] & 0xFF);
-			writer.put(high);
-			writer.put(low);
-		}
-		return data;
+		return _data.clone();
 	}
 
 
-	private void _walkTree(PrintStream out, String indent, ShortBuffer buffer)
+	private void _walkTree(PrintStream out, String indent, ByteBuffer buffer)
 	{
-		short header = buffer.get();
-		if (Encoding.checkShortTag(header))
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
 		{
 			// This is the tree value.
-			short value = Encoding.clearShortTag(header);
+			short value = oldValue;
 			out.println(indent + value);
 		}
 		else
@@ -328,11 +328,23 @@ public class OctreeShort implements IOctree
 	{
 		private final ByteArrayOutputStream _builder = new ByteArrayOutputStream();
 		
+		public void putSubtreeStart()
+		{
+			// The subtree start token is just a 0.
+			byte[] one = ByteBuffer.allocate(Short.BYTES).putShort((short)0).array();
+			try
+			{
+				_builder.write(one);
+			}
+			catch (IOException e)
+			{
+				throw Assert.unexpected(e);
+			}
+		}
+		
 		public void putShort(short value)
 		{
-			byte[] one = new byte[Short.BYTES];
-			ShortBuffer buffer = ByteBuffer.wrap(one).asShortBuffer();
-			buffer.put(value);
+			byte[] one = ByteBuffer.allocate(Short.BYTES).putShort(value).array();
 			try
 			{
 				_builder.write(one);
@@ -356,13 +368,9 @@ public class OctreeShort implements IOctree
 			}
 		}
 		
-		public short[] getData()
+		public byte[] getData()
 		{
-			byte[] raw = _builder.toByteArray();
-			ShortBuffer buffer = ByteBuffer.wrap(raw).asShortBuffer();
-			short[] output = new short[raw.length / Short.BYTES];
-			buffer.get(output);
-			return output;
+			return _builder.toByteArray();
 		}
 	}
 }
