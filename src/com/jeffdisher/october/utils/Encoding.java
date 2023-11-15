@@ -6,6 +6,7 @@ public class Encoding
 	// 32x32x32 cuboid region since means shift by 5 (/32).
 	public static int CUBOID_SHIFT = 5;
 	// The low 5 bits of the absolute address is the block address within a cuboid.
+	// NOTE:  While absolute and cuboid addresses are SIGNED, the block addresses are UNSIGNED.
 	public static int BLOCK_ADDRESS_MASK = (1 << CUBOID_SHIFT) - 1;
 
 	public static short setShortTag(short value)
@@ -43,11 +44,22 @@ public class Encoding
 		return new byte[] { _getBlockAddress(absoluteLocation[0]), _getBlockAddress(absoluteLocation[1]), _getBlockAddress(absoluteLocation[2]) };
 	}
 
-	public static long encodeCuboidAddress(short[] cuboidAddress)
+	/**
+	 * Encodes the given cuboid address coordinates into a single unique primitive.  This can only really be used as a
+	 * sort of hash.
+	 * 
+	 * @param x The x cuboid address.
+	 * @param y The y cuboid address.
+	 * @param z The z cuboid address.
+	 * @return The unique encoding of this address
+	 */
+	public static long encodeCuboidAddress(short x, short y, short z)
 	{
-		return (Short.toUnsignedLong(cuboidAddress[0]) << 30)
-				| (Short.toUnsignedLong(cuboidAddress[1]) << 15)
-				| Short.toUnsignedLong(cuboidAddress[2])
+		// Note that the cuboid addresses are signed so we want to encode them by converting them to unsigned values and
+		// shifting them over by all 16 bits.  The resulant 48-bit address will fit into a long without sign issues.
+		return (Short.toUnsignedLong(x) << 32)
+				| (Short.toUnsignedLong(y) << 16)
+				| Short.toUnsignedLong(z)
 		;
 	}
 

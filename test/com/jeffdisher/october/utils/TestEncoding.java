@@ -37,14 +37,14 @@ public class TestEncoding
 	public void hashes()
 	{
 		HashSet<Long> set = new HashSet<>();
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) 0, (short) 0, (short) 0 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) 0, (short) 0, (short) -1 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) 0, (short) -1, (short) 0 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) 0, (short) -1, (short) -1 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) -1, (short) 0, (short) 0 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) -1, (short) 0, (short) -1 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) -1, (short) -1, (short) 0 }));
-		set.add(Encoding.encodeCuboidAddress(new short[] { (short) -1, (short) -1, (short) -1 }));
+		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) 0, (short) 0 ));
+		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) 0, (short) -1 ));
+		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) -1, (short) 0 ));
+		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) -1, (short) -1 ));
+		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) 0, (short) 0 ));
+		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) 0, (short) -1 ));
+		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) 0 ));
+		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) -1 ));
 		Assert.assertEquals(8, set.size());
 	}
 }
