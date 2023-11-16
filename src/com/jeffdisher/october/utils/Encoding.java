@@ -19,9 +19,9 @@ public class Encoding
 		return (short)(value & ~0x8000);
 	}
 
-	public static boolean checkShortTag(short value)
+	public static boolean checkTag(byte value)
 	{
-		return (value & 0x8000) != 0;
+		return (value & 0x80) != 0;
 	}
 
 	public static short getCuboidAddress(int absolute)

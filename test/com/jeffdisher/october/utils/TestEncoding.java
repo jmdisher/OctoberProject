@@ -1,5 +1,6 @@
 package com.jeffdisher.october.utils;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 
 import org.junit.Assert;
@@ -22,12 +23,12 @@ public class TestEncoding
 		Assert.assertEquals((short)-32767, tagOne);
 		Assert.assertEquals((short)-1, tagBig);
 		
-		Assert.assertFalse(Encoding.checkShortTag(zero));
-		Assert.assertFalse(Encoding.checkShortTag(one));
-		Assert.assertFalse(Encoding.checkShortTag(big));
-		Assert.assertTrue(Encoding.checkShortTag(tagZero));
-		Assert.assertTrue(Encoding.checkShortTag(tagOne));
-		Assert.assertTrue(Encoding.checkShortTag(tagBig));
+		Assert.assertFalse(Encoding.checkTag(_getHighByte(zero)));
+		Assert.assertFalse(Encoding.checkTag(_getHighByte(one)));
+		Assert.assertFalse(Encoding.checkTag(_getHighByte(big)));
+		Assert.assertTrue(Encoding.checkTag(_getHighByte(tagZero)));
+		Assert.assertTrue(Encoding.checkTag(_getHighByte(tagOne)));
+		Assert.assertTrue(Encoding.checkTag(_getHighByte(tagBig)));
 		Assert.assertEquals(zero, Encoding.clearShortTag(tagZero));
 		Assert.assertEquals(one, Encoding.clearShortTag(tagOne));
 		Assert.assertEquals(big, Encoding.clearShortTag(tagBig));
@@ -46,5 +47,11 @@ public class TestEncoding
 		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) 0 ));
 		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) -1 ));
 		Assert.assertEquals(8, set.size());
+	}
+
+
+	private static byte _getHighByte(short value)
+	{
+		return ByteBuffer.allocate(Short.BYTES).putShort(value).flip().get();
 	}
 }

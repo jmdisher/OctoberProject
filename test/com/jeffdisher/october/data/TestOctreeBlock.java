@@ -60,7 +60,7 @@ public class TestOctreeBlock
 		
 		test.getData(BlockAspect.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31));
 		byte[] rawData = test.copyRawData();
-		Assert.assertEquals(74898, rawData.length);
+		Assert.assertEquals(70217, rawData.length);
 		OctreeShort verify = OctreeShort.load(ByteBuffer.wrap(rawData));
 		
 		// Verify that we can read all of these.

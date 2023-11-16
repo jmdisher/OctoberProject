@@ -232,10 +232,11 @@ public class OctreeShort implements IOctree
 	private static short _loadHeader(ByteBuffer buffer)
 	{
 		final short value;
-		short header = buffer.getShort();
-		if (Encoding.checkShortTag(header))
+		byte header = buffer.get();
+		if (Encoding.checkTag(header))
 		{
-			value = Encoding.clearShortTag(header);
+			buffer.position(buffer.position() - 1);
+			value = Encoding.clearShortTag(buffer.getShort());
 		}
 		else
 		{
@@ -330,11 +331,9 @@ public class OctreeShort implements IOctree
 		
 		public void putSubtreeStart()
 		{
-			// The subtree start token is just a 0.
-			byte[] one = ByteBuffer.allocate(Short.BYTES).putShort((short)0).array();
 			try
 			{
-				_builder.write(one);
+				_builder.write(new byte[] {0});
 			}
 			catch (IOException e)
 			{
