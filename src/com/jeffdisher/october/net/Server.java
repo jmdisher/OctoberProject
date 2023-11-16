@@ -21,7 +21,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class Server
 {
-	public static final int BUFFER_SIZE_BYTES = 64 * 1024;
+	// The buffer must be large enough to hold precisely 1 packet.
+	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
 
 	public static Server startListening(IServerListener listener, int port) throws IOException
 	{

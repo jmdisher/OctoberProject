@@ -12,10 +12,10 @@ public class PacketCodec
 	private static Function<ByteBuffer, Packet>[] _CODEC_TABLE = new Function[PacketType.END_OF_LIST.ordinal()];
 
 	// Our header is 3 bytes (size (2BE), opcode (1)).
-	private static final int HEADER_BYTES = Short.BYTES + Byte.BYTES;
+	public static final int HEADER_BYTES = Short.BYTES + Byte.BYTES;
 
-	// The size is limited to 40 KiB (for now).
-	public static final int MAX_PACKET_BYTES = 40 * 1024;
+	// The maximum size of a single packet is 64 KiB, including the header.
+	public static final int MAX_PACKET_BYTES = 64 * 1024;
 
 	// We request that each opcode register itself into the table for decoding, here.
 	// We tried doing this as a "push" in static{} for each opcode but they aren't eagerly initialized (not surprising).
@@ -24,6 +24,7 @@ public class PacketCodec
 		Packet_AssignClientId.register(_CODEC_TABLE);
 		Packet_SetClientName.register(_CODEC_TABLE);
 		Packet_Chat.register(_CODEC_TABLE);
+		Packet_CuboidSetAspectShortPart.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -41,7 +42,13 @@ public class PacketCodec
 			// We will try to process the data, reseting the position on failure.
 			int start = buffer.position();
 			int size = Short.toUnsignedInt(buffer.getShort());
+			// Note that the buffer size CANNOT be less than the header size so, if it is 0, this must be full and overflowed.
+			if (0 == size)
+			{
+				size = 0x10000;
+			}
 			Assert.assertTrue(size <= MAX_PACKET_BYTES);
+			Assert.assertTrue(size >= HEADER_BYTES);
 			if (size <= buffer.limit())
 			{
 				// Parse the opcode and shift the buffer over.
@@ -66,9 +73,9 @@ public class PacketCodec
 		buffer.position(initialPosition + HEADER_BYTES);
 		packet.serializeToBuffer(buffer);
 		
-		// Write the header.
+		// Write the header - NOTE that the header is included in the size.
 		int laterPosition = buffer.position();
-		int size = laterPosition - initialPosition - HEADER_BYTES;
+		int size = laterPosition - initialPosition;
 		buffer.position(initialPosition);
 		buffer.putShort((short)size);
 		buffer.put((byte) packet.type.ordinal());

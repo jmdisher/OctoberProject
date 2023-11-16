@@ -17,6 +17,11 @@ public enum PacketType
 	 * Sent both to/from server, but the ID is ignored when sent TO the server.
 	 */
 	CHAT,
+	/**
+	 * Sent from server to client when first loading a cuboid.  Contains part of a short aspect plane (usually all of
+	 * it).
+	 */
+	CUBOID_SET_ASPECT_SHORT_PART,
 	
 	END_OF_LIST,
 }
