@@ -29,6 +29,22 @@ public class PathFinder
 				+ Math.abs(start.z() - target.z())
 		;
 		int limit = 2 * manhattan;
+		return _findPathWithLimit(blockTypeReader, target, start, height, limit);
+	}
+
+	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, AbsoluteLocation target, int limitSteps)
+	{
+		// This algorithm currently only works for 1-block-wide entities..
+		Assert.assertTrue(volume.width() < 1.0f);
+		
+		AbsoluteLocation start = source.getLocation();
+		int height = Math.round(volume.height() + 0.49f);
+		return _findPathWithLimit(blockTypeReader, target, start, height, limitSteps);
+	}
+
+
+	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, AbsoluteLocation target, AbsoluteLocation start, int height, int limit)
+	{
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> Integer.signum(one.distance - two.distance));
@@ -132,7 +148,7 @@ public class PathFinder
 					: 1
 			;
 			int newDistance = start.distance + score;
-			if (newDistance < limit)
+			if (newDistance <= limit)
 			{
 				Spot newStep = new Spot(match, newDistance);
 				AbsoluteLocation old = walkBackward.put(match, start.location);
