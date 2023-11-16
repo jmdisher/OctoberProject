@@ -1,7 +1,5 @@
 package com.jeffdisher.october.data;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
@@ -144,21 +142,20 @@ public class OctreeShort implements IOctree
 			
 			int index = 0;
 			short[] values = new short[8];
-			ShortWriter[] captured = new ShortWriter[8];
+			ShortWriter captured = new ShortWriter(buffer.capacity());
 			for (int i = 0; i < 2; ++i)
 			{
 				for (int j = 0; j < 2; ++j)
 				{
 					for (int k = 0; k < 2; ++k)
 					{
-						captured[index] = new ShortWriter();
 						if ((i == targetX) && (j == targetY) && (k == targetZ))
 						{
-							values[index] = _updateValue(captured[index], buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
+							values[index] = _updateValue(captured, buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
 						}
 						else
 						{
-							values[index] = _advanceAndReportSingleLevel(captured[index], buffer);
+							values[index] = _advanceAndReportSingleLevel(captured, buffer);
 						}
 						index += 1;
 					}
@@ -181,10 +178,7 @@ public class OctreeShort implements IOctree
 			{
 				// We need to write-back the sub-trees.
 				writer.putSubtreeStart();
-				for (ShortWriter oneSub : captured)
-				{
-					writer.consume(oneSub);
-				}
+				writer.consume(captured);
 				value = -1;
 			}
 		}
@@ -268,7 +262,7 @@ public class OctreeShort implements IOctree
 		short correct = ((Short)value).shortValue();
 		// The value cannot be negative.
 		Assert.assertTrue(correct >= 0);
-		ShortWriter writer = new ShortWriter();
+		ShortWriter writer = new ShortWriter(_data.length);
 		_updateValue(writer, ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
 		_data = writer.getData();
 	}
@@ -327,49 +321,37 @@ public class OctreeShort implements IOctree
 
 	private static class ShortWriter
 	{
-		private final ByteArrayOutputStream _builder = new ByteArrayOutputStream();
+		private final ByteBuffer _builder;
+		
+		public ShortWriter(int previousLength)
+		{
+			// For temp space, we allocate the previous length plus the worst-case growth:  An empty tree adding 1 element.
+			// An empty tree is 2 bytes and a tree with 1 element is 77 so we add 75.
+			_builder = ByteBuffer.allocate(previousLength + 75);
+		}
 		
 		public void putSubtreeStart()
 		{
-			try
-			{
-				_builder.write(new byte[] {0});
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
-			}
+			_builder.put((byte)0);
 		}
 		
 		public void putShort(short value)
 		{
-			byte[] one = ByteBuffer.allocate(Short.BYTES).putShort(value).array();
-			try
-			{
-				_builder.write(one);
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
-			}
+			_builder.putShort(value);
 		}
 		
 		public void consume(ShortWriter oneSub)
 		{
-			byte[] data = oneSub._builder.toByteArray();
-			try
-			{
-				_builder.write(data);
-			}
-			catch (IOException e)
-			{
-				throw Assert.unexpected(e);
-			}
+			ByteBuffer other = oneSub._builder;
+			_builder.put(other.array(), 0, other.position());
 		}
 		
 		public byte[] getData()
 		{
-			return _builder.toByteArray();
+			_builder.flip();
+			byte[] data = new byte[_builder.remaining()];
+			_builder.get(data);
+			return data;
 		}
 	}
 }
