@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.utils.Assert;
 
@@ -16,13 +17,13 @@ import com.jeffdisher.october.utils.Assert;
 // Note that this implementation assumes that z is "up/down".
 public class PathFinder
 {
-	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume source, AbsoluteLocation target)
+	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, AbsoluteLocation target)
 	{
 		// This algorithm currently only works for 1-block-wide entities..
-		Assert.assertTrue(source.width() < 1.0f);
+		Assert.assertTrue(volume.width() < 1.0f);
 		
 		AbsoluteLocation start = source.getLocation();
-		int height = Math.round(source.height() + 0.49f);
+		int height = Math.round(volume.height() + 0.49f);
 		int manhattan = Math.abs(start.x() - target.x())
 				+ Math.abs(start.y() - target.y())
 				+ Math.abs(start.z() - target.z())

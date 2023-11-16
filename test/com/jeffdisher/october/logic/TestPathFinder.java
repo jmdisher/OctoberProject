@@ -8,20 +8,23 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 
 
 public class TestPathFinder
 {
+	private static final EntityVolume VOLUME = new EntityVolume(1.8f, 0.5f);
+
 	@Test
 	public void flatPlane()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityVolume source = new EntityVolume(-10.5f, -6.5f, 5.0f, 1.8f, 0.5f);
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
 		// We expect to see 27 steps, since the source counts as a step.
 		int xSteps = 4 + 10;
@@ -33,10 +36,10 @@ public class TestPathFinder
 	public void incline()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityVolume source = new EntityVolume(-10.5f, -6.5f, -5.0f, 1.8f, 0.5f);
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		AbsoluteLocation target = new AbsoluteLocation(4, 6, 7);
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
 		// We expect to see 27 steps, since the source counts as a step.
 		int xSteps = 4 + 10;
@@ -48,7 +51,7 @@ public class TestPathFinder
 	public void barrier()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityVolume source = new EntityVolume(-10.5f, -6.5f, 5.0f, 1.8f, 0.5f);
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
@@ -57,7 +60,7 @@ public class TestPathFinder
 					: BlockAspect.AIR
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -65,7 +68,7 @@ public class TestPathFinder
 	public void gap()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityVolume source = new EntityVolume(-10.5f, -6.5f, 5.0f, 1.8f, 0.5f);
+		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
@@ -74,7 +77,7 @@ public class TestPathFinder
 					: BlockAspect.AIR
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -82,7 +85,7 @@ public class TestPathFinder
 	public void maze()
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
-		EntityVolume source = new EntityVolume(0.0f, 1.0f, 5.0f, 1.8f, 0.5f);
+		EntityLocation source = new EntityLocation(0.0f, 1.0f, 5.0f);
 		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver(floor, new String[] {
@@ -96,7 +99,7 @@ public class TestPathFinder
 				"AAAASAAAAA",
 				"AAAAAAAAAA",
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		_printMap2D(9, 9, path);
 	}
 
