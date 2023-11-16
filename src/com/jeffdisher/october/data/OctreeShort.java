@@ -51,11 +51,11 @@ public class OctreeShort implements IOctree
 			int targetY = (y < half) ? 0 : 1;
 			int targetZ = (z < half) ? 0 : 1;
 			short found = -1;
-			for (int i = 0; i < 2; ++i)
+			for (int i = 0; (-1 == found) && (i < 2); ++i)
 			{
-				for (int j = 0; j < 2; ++j)
+				for (int j = 0; (-1 == found) && (j < 2); ++j)
 				{
-					for (int k = 0; k < 2; ++k)
+					for (int k = 0; (-1 == found) && (k < 2); ++k)
 					{
 						// Unless this is the one we want to look at, we just want to look for the last sub-element of each sub-tree.
 						if ((i == targetX) && (j == targetY) && (k == targetZ))
@@ -229,8 +229,11 @@ public class OctreeShort implements IOctree
 		byte header = buffer.get();
 		if (Encoding.checkTag(header))
 		{
-			buffer.position(buffer.position() - 1);
-			value = Encoding.clearShortTag(buffer.getShort());
+			byte low = buffer.get();
+			short combined = (short)((Byte.toUnsignedInt(header) << 8)
+					| Byte.toUnsignedInt(low)
+			);
+			value = Encoding.clearShortTag(combined);
 		}
 		else
 		{
