@@ -6,10 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.Aspect;
-import com.jeffdisher.october.data.Block;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -26,6 +27,15 @@ public class WorldState
 
 	public ProcessedFragment buildNewWorldParallel(ProcessorElement processor, IBlockChangeListener listener)
 	{
+		Function<AbsoluteLocation, BlockProxy> oldWorldLoader = (AbsoluteLocation location) -> {
+			CuboidAddress address = location.getCuboidAddress();
+			long hash = address.getLongHash();
+			CuboidState cuboid = _worldMap.get(hash);
+			return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid.data)
+					: null
+			;
+		};
 		Map<Long, CuboidState> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
 		for (Map.Entry<Long, CuboidState> elt : _worldMap.entrySet())
@@ -64,10 +74,12 @@ public class WorldState
 					for (IMutation mutation : mutations)
 					{
 						processor.mutationCount += 1;
-						boolean didApply = mutation.applyMutation(this, newData, sink);
+						AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
+						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), newData);
+						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink);
 						if (didApply)
 						{
-							listener.blockChanged(mutation.getAbsoluteLocation());
+							listener.blockChanged(absolteLocation);
 						}
 						else
 						{
@@ -82,24 +94,22 @@ public class WorldState
 	}
 
 	/**
-	 * Copies out all aspects of the block at the given absolute location, returning null if it is in an unloaded
-	 * cuboid.
+	 * Creates a read-only proxy for accessing one of the blocks in the loaded world state.
 	 * 
 	 * @param location The xyz location of the block.
-	 * @param aspects The aspects registered in the system.
 	 * @return The block copy or null if the location isn't loaded.
 	 */
-	public Block getBlock(AbsoluteLocation location, Aspect<?>[] aspects)
+	public BlockProxy getBlockProxy(AbsoluteLocation location)
 	{
 		CuboidAddress address = location.getCuboidAddress();
 		long hash = address.getLongHash();
 		CuboidState cuboid = _worldMap.get(hash);
 		
-		Block block = null;
+		BlockProxy block = null;
 		if (null != cuboid)
 		{
 			BlockAddress blockAddress = location.getBlockAddress();
-			block = cuboid.data.getBlock(blockAddress, aspects);
+			block = new BlockProxy(blockAddress, cuboid.data);
 		}
 		return block;
 	}

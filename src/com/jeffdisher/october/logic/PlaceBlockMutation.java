@@ -1,11 +1,12 @@
 package com.jeffdisher.october.logic;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Aspect;
-import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.BlockAddress;
 
 
 public class PlaceBlockMutation implements IMutation
@@ -28,14 +29,13 @@ public class PlaceBlockMutation implements IMutation
 	}
 
 	@Override
-	public boolean applyMutation(WorldState oldWorld, CuboidData newCuboid, Consumer<IMutation> newMutationSink)
+	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
 	{
-		BlockAddress address = _location.getBlockAddress();
-		short oldValue = newCuboid.getData15(_aspect, address);
+		short oldValue = newBlock.getData15(_aspect);
 		boolean didApply = false;
 		if (0 == oldValue)
 		{
-			newCuboid.setData15(_aspect, address, _blockType);
+			newBlock.setData15(_aspect, _blockType);
 			didApply = true;
 		}
 		return didApply;

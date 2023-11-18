@@ -3,7 +3,6 @@ package com.jeffdisher.october.data;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -76,18 +75,5 @@ public class CuboidData implements IReadOnlyCuboidData
 	public <T> void setDataSpecial(Aspect<T> type, BlockAddress address, T value)
 	{
 		_data[type.index()].setData(address, value);
-	}
-
-	@Override
-	public Block getBlock(BlockAddress address, Aspect<?>[] aspects)
-	{
-		// We should have one data plane for each aspect.
-		Assert.assertTrue(_data.length == aspects.length);
-		Object[] objects = new Object[_data.length];
-		for (int i = 0; i < aspects.length; ++i)
-		{
-			objects[i] = _data[i].getData(aspects[i], address);
-		}
-		return new Block(objects);
 	}
 }

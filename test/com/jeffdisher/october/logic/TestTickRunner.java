@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.data.Block;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeShort;
@@ -146,13 +146,13 @@ public class TestTickRunner
 		runner.start();
 		
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
-		Assert.assertNull(runner.getBlock(new AbsoluteLocation(0, 0, 0)));
+		Assert.assertNull(runner.getBlockProxy(new AbsoluteLocation(0, 0, 0)));
 		
 		// We need to run the tick twice to make sure that we wait for the first to finish before the query.
 		runner.runTick();
 		runner.runTick();
 		// Now, we should see a block with default properties.
-		Block block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
+		BlockProxy block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals((short)0, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
@@ -162,7 +162,7 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// We should now see the new data.
-		block = runner.getBlock(new AbsoluteLocation(0, 0, 0));
+		block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals((short)1, block.getData15(aspectShort));
 	}
 }

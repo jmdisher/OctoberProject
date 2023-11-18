@@ -11,13 +11,4 @@ public interface IReadOnlyCuboidData
 	byte getData7(Aspect<Byte> type, BlockAddress address);
 	short getData15(Aspect<Short> type, BlockAddress address);
 	<T> T getDataSpecial(Aspect<T> type, BlockAddress address);
-
-	/**
-	 * Copies out all aspects of the block at the given block address.
-	 * 
-	 * @param address The xyz location of the block in this cuboid.
-	 * @param aspects The aspects registered in the system.
-	 * @return The block copy with all aspects.
-	 */
-	Block getBlock(BlockAddress address, Aspect<?>[] aspects);
 }
