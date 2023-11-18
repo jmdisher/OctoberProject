@@ -22,7 +22,7 @@ public class PathFinder
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
 		
-		AbsoluteLocation start = source.getLocation();
+		AbsoluteLocation start = source.getBlockLocation();
 		int height = Math.round(volume.height() + 0.49f);
 		int manhattan = Math.abs(start.x() - target.x())
 				+ Math.abs(start.y() - target.y())
@@ -37,7 +37,7 @@ public class PathFinder
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
 		
-		AbsoluteLocation start = source.getLocation();
+		AbsoluteLocation start = source.getBlockLocation();
 		int height = Math.round(volume.height() + 0.49f);
 		return _findPathWithLimit(blockTypeReader, target, start, height, limitSteps);
 	}

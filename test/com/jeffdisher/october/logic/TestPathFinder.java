@@ -26,9 +26,9 @@ public class TestPathFinder
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
-		// We expect to see 27 steps, since the source counts as a step.
-		int xSteps = 4 + 10;
-		int ySteps = 6 + 6;
+		// We expect to see 29 steps, since the source counts as a step.
+		int xSteps = 4 + 11;
+		int ySteps = 6 + 7;
 		Assert.assertEquals(1 + xSteps + ySteps, path.size());
 	}
 
@@ -41,9 +41,9 @@ public class TestPathFinder
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
-		// We expect to see 27 steps, since the source counts as a step.
-		int xSteps = 4 + 10;
-		int ySteps = 6 + 6;
+		// We expect to see 29 steps, since the source counts as a step.
+		int xSteps = 4 + 11;
+		int ySteps = 6 + 7;
 		Assert.assertEquals(1 + xSteps + ySteps, path.size());
 	}
 

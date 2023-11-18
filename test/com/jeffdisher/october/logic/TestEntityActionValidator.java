@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.function.Function;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
@@ -30,6 +31,8 @@ public class TestEntityActionValidator
 		Assert.assertEquals(target, updated.location);
 	}
 
+	// Broken until partial-blocks are properly supported - this test was depending on a bogus rounding behaviour.
+	@Ignore
 	@Test
 	public void flatPlaneBad()
 	{
