@@ -21,7 +21,7 @@ public class TestPathFinder
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
-		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
+		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
@@ -37,7 +37,7 @@ public class TestPathFinder
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
-		AbsoluteLocation target = new AbsoluteLocation(4, 6, 7);
+		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
@@ -52,7 +52,7 @@ public class TestPathFinder
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
-		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
+		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
 			return ((floor == l.z()) || (0 == l.y()))
@@ -69,7 +69,7 @@ public class TestPathFinder
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
-		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
+		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
 			return ((floor == l.z()) && (0 == l.y()))
@@ -86,7 +86,7 @@ public class TestPathFinder
 	{
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(0.0f, 1.0f, 5.0f);
-		AbsoluteLocation target = new AbsoluteLocation(4, 6, 5);
+		EntityLocation target = new EntityLocation(4.0f, 6.0f, 5.0f);
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver(floor, new String[] {
 				"AAAAAAAAAA",

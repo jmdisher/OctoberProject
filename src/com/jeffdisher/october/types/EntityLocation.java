@@ -15,6 +15,17 @@ public final record EntityLocation(float x, float y, float z)
 		return new AbsoluteLocation(_blockBase(x), _blockBase(y), _blockBase(z));
 	}
 
+	/**
+	 * @return The offset from the base of the block where the entity is (all values in the range: [0.0-1.0)).
+	 */
+	public final EntityLocation getOffsetIntoBlock()
+	{
+		float x = this.x - _blockBase(this.x);
+		float y = this.y - _blockBase(this.y);
+		float z = this.z - _blockBase(this.z);
+		return new EntityLocation(x, y, z);
+	}
+
 
 	private static int _blockBase(float inBlock)
 	{

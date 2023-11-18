@@ -14,41 +14,84 @@ import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.utils.Assert;
 
 
-// Note that this implementation assumes that z is "up/down".
+/**
+ * A utility class to find the distance between 2 EntityLocations in 3D space.  The distance is computed as the 3D
+ * Manhattan distance (that is, only along the cardinal directions, at right angles - no diagonals).
+ * The implementation considers the following interpretations of the XYZ spaces:
+ * -x is West-East, such that -x is West, +x is East
+ * -y is South-North, such that -y is South, +y is North
+ * -z is down-up, such that -z is down, +z is up
+ * This means that the .0 location of any single block is considered to be the bottom, South-West corner.
+ */
 public class PathFinder
 {
-	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, AbsoluteLocation target)
+	public static final float COST_STEP_FLAT = 1.0f;
+	public static final float COST_STEP_UP = 2.0f;
+
+	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, EntityLocation target)
 	{
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
-		
-		AbsoluteLocation start = source.getBlockLocation();
 		int height = Math.round(volume.height() + 0.49f);
-		int manhattan = Math.abs(start.x() - target.x())
-				+ Math.abs(start.y() - target.y())
-				+ Math.abs(start.z() - target.z())
+		
+		// We will limit algorithm by a limit of 2x the manhattan distance, so we don't walk too far around obstacles.
+		float manhattan = Math.abs(source.x() - target.x())
+				+ Math.abs(source.y() - target.y())
+				+ Math.abs(source.z() - target.z())
 		;
-		int limit = 2 * manhattan;
-		return _findPathWithLimit(blockTypeReader, target, start, height, limit);
+		float limit = 2 * manhattan;
+		
+		// The core algorithm just looks at the block locations, so get those.
+		AbsoluteLocation start = source.getBlockLocation();
+		AbsoluteLocation end = target.getBlockLocation();
+		
+		float initialDistance = _getStartingDistance(source, target);
+		return _findPathWithLimit(blockTypeReader, start, end, height, limit, initialDistance);
 	}
 
-	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, AbsoluteLocation target, int limitSteps)
+	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, EntityLocation target, float limitSteps)
 	{
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
+		int height = Math.round(volume.height() + 0.49f);
 		
 		AbsoluteLocation start = source.getBlockLocation();
-		int height = Math.round(volume.height() + 0.49f);
-		return _findPathWithLimit(blockTypeReader, target, start, height, limitSteps);
+		AbsoluteLocation end = target.getBlockLocation();
+		
+		float initialDistance = _getStartingDistance(source, target);
+		return _findPathWithLimit(blockTypeReader, start, end, height, limitSteps, initialDistance);
 	}
 
 
-	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, AbsoluteLocation target, AbsoluteLocation start, int height, int limit)
+	private static float _getStartingDistance(EntityLocation source, EntityLocation target)
+	{
+		// We need to translate the source into the relative location of the destination.
+		EntityLocation sourceOffset = source.getOffsetIntoBlock();
+		EntityLocation targetOffset = target.getOffsetIntoBlock();
+		return (targetOffset.x() - sourceOffset.x())
+				+ (targetOffset.y() - sourceOffset.y())
+				+ (targetOffset.z() - sourceOffset.z())
+		;
+	}
+
+	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, AbsoluteLocation start, AbsoluteLocation target, int height, float limit, float initialDistance)
 	{
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
-		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> Integer.signum(one.distance - two.distance));
-		workQueue.add(new Spot(start, 0));
+		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> {
+			float difference = one.distance - two.distance;
+			int signum = 0;
+			if (difference < 0.0f)
+			{
+				signum = -1;
+			}
+			else if (difference > 0.0f)
+			{
+				signum = 1;
+			}
+			return signum;
+		});
+		workQueue.add(new Spot(start, initialDistance));
 		Spot targetSpot = null;
 		while ((null == targetSpot) && !workQueue.isEmpty())
 		{
@@ -101,7 +144,7 @@ public class PathFinder
 	}
 
 
-	private static void _checkColumn(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, Short> blockTypeReader, int limit, int height, Spot start, AbsoluteLocation base)
+	private static void _checkColumn(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, Short> blockTypeReader, float limit, int height, Spot start, AbsoluteLocation base)
 	{
 		AbsoluteLocation floor = null;
 		int contiguousAir = 0;
@@ -143,11 +186,11 @@ public class PathFinder
 			int startZ = start.location.z();
 			int matchZ = match.z();
 			// We will say that jumping is twice the distance but falling and walking isn't.
-			int score = (matchZ > startZ)
-					? 2
-					: 1
+			float score = (matchZ > startZ)
+					? COST_STEP_UP
+					: COST_STEP_FLAT
 			;
-			int newDistance = start.distance + score;
+			float newDistance = start.distance + score;
 			if (newDistance <= limit)
 			{
 				Spot newStep = new Spot(match, newDistance);
@@ -160,7 +203,7 @@ public class PathFinder
 	}
 
 
-	private record Spot(AbsoluteLocation location, int distance)
+	private record Spot(AbsoluteLocation location, float distance)
 	{
 	}
 }

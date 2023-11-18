@@ -52,9 +52,9 @@ public class EntityActionValidator
 	public Entity moveEntity(Entity entity, EntityLocation newLocation, int ticksToMove)
 	{
 		// First, see how many blocks they could possibly move in this time.
-		int maxDistance = Math.round(ticksToMove * entity.blocksPerTickSpeed);
+		float maxDistance = ticksToMove * entity.blocksPerTickSpeed;
 		// Check the path-finder to see if a path exists.
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(_blockTypeReader, entity.volume, entity.location, newLocation.getBlockLocation(), maxDistance);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(_blockTypeReader, entity.volume, entity.location, newLocation, maxDistance);
 		// NOTE:  We currently ignore collision with other entities, but that may change in the future.
 		// TODO:  We may need to do additional checking or synthesize mutations for things like pressure-plates in the future.
 		return (null != path)
