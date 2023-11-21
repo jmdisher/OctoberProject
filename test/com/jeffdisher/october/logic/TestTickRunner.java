@@ -71,7 +71,7 @@ public class TestTickRunner
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), true, 2));
 		runner.runTick();
 		runner.runTick();
 		runner.runTick();
@@ -114,7 +114,7 @@ public class TestTickRunner
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), true, 2));
 		runner.runTick();
 		runner.runTick();
 		runner.runTick();

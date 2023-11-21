@@ -9,13 +9,17 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 
-public class PlaceBlockMutation implements IMutation
+/**
+ * The reverse counterpart to a PlaceBlockMutation.  It specifically replaces the block at this location and type with
+ * air, failing if the block type was not what is expected.
+ */
+public class RemoveBlockMutation implements IMutation
 {
 	private final AbsoluteLocation _location;
 	private final Aspect<Short> _aspect;
 	private final short _blockType;
 
-	public PlaceBlockMutation(AbsoluteLocation location, Aspect<Short> aspect, short blockType)
+	public RemoveBlockMutation(AbsoluteLocation location, Aspect<Short> aspect, short blockType)
 	{
 		_location = location;
 		_aspect = aspect;
@@ -33,9 +37,9 @@ public class PlaceBlockMutation implements IMutation
 	{
 		short oldValue = newBlock.getData15(_aspect);
 		boolean didApply = false;
-		if (0 == oldValue)
+		if (_blockType == oldValue)
 		{
-			newBlock.setData15(_aspect, _blockType);
+			newBlock.setData15(_aspect, (short)0);
 			didApply = true;
 		}
 		return didApply;
@@ -46,11 +50,11 @@ public class PlaceBlockMutation implements IMutation
 	{
 		short oldValue = newBlock.getData15(_aspect);
 		IMutation reverseMutation = null;
-		if (0 == oldValue)
+		if (_blockType == oldValue)
 		{
-			newBlock.setData15(_aspect, _blockType);
-			// Reverse is to remove this block type.
-			reverseMutation = new RemoveBlockMutation(_location, _aspect, _blockType);
+			newBlock.setData15(_aspect, (short)0);
+			// Reverse is to place this block type.
+			reverseMutation = new PlaceBlockMutation(_location, _aspect, _blockType);
 		}
 		return reverseMutation;
 	}
