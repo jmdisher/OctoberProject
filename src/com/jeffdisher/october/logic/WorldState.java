@@ -18,9 +18,9 @@ import com.jeffdisher.october.types.CuboidAddress;
 
 public class WorldState
 {
-	private final Map<Long, CuboidState> _worldMap;
+	private final Map<CuboidAddress, CuboidState> _worldMap;
 
-	public WorldState(Map<Long, CuboidState> worldMap)
+	public WorldState(Map<CuboidAddress, CuboidState> worldMap)
 	{
 		_worldMap = Collections.unmodifiableMap(worldMap);
 	}
@@ -29,21 +29,20 @@ public class WorldState
 	{
 		Function<AbsoluteLocation, BlockProxy> oldWorldLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
-			long hash = address.getLongHash();
-			CuboidState cuboid = _worldMap.get(hash);
+			CuboidState cuboid = _worldMap.get(address);
 			return (null != cuboid)
 					? new BlockProxy(location.getBlockAddress(), cuboid.data)
 					: null
 			;
 		};
-		Map<Long, CuboidState> fragment = new HashMap<>();
+		Map<CuboidAddress, CuboidState> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
-		for (Map.Entry<Long, CuboidState> elt : _worldMap.entrySet())
+		for (Map.Entry<CuboidAddress, CuboidState> elt : _worldMap.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
-				Long key = elt.getKey();
+				CuboidAddress key = elt.getKey();
 				CuboidState oldState = elt.getValue();
 				List<IMutation> mutations = oldState.drainPendingMutations();
 				if (null == mutations)
@@ -102,8 +101,7 @@ public class WorldState
 	public BlockProxy getBlockProxy(AbsoluteLocation location)
 	{
 		CuboidAddress address = location.getCuboidAddress();
-		long hash = address.getLongHash();
-		CuboidState cuboid = _worldMap.get(hash);
+		CuboidState cuboid = _worldMap.get(address);
 		
 		BlockProxy block = null;
 		if (null != cuboid)
@@ -115,7 +113,7 @@ public class WorldState
 	}
 
 
-	public static record ProcessedFragment(Map<Long, CuboidState> stateFragment, List<IMutation> exportedMutations)
+	public static record ProcessedFragment(Map<CuboidAddress, CuboidState> stateFragment, List<IMutation> exportedMutations)
 	{
 	}
 

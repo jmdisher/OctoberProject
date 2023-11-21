@@ -1,7 +1,6 @@
 package com.jeffdisher.october.utils;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,21 +31,6 @@ public class TestEncoding
 		Assert.assertEquals(zero, Encoding.clearShortTag(tagZero));
 		Assert.assertEquals(one, Encoding.clearShortTag(tagOne));
 		Assert.assertEquals(big, Encoding.clearShortTag(tagBig));
-	}
-
-	@Test
-	public void hashes()
-	{
-		HashSet<Long> set = new HashSet<>();
-		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) 0, (short) 0 ));
-		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) 0, (short) -1 ));
-		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) -1, (short) 0 ));
-		set.add(Encoding.encodeCuboidAddress( (short) 0, (short) -1, (short) -1 ));
-		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) 0, (short) 0 ));
-		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) 0, (short) -1 ));
-		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) 0 ));
-		set.add(Encoding.encodeCuboidAddress( (short) -1, (short) -1, (short) -1 ));
-		Assert.assertEquals(8, set.size());
 	}
 
 

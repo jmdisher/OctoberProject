@@ -44,25 +44,6 @@ public class Encoding
 		return new byte[] { _getBlockAddress(absoluteLocation[0]), _getBlockAddress(absoluteLocation[1]), _getBlockAddress(absoluteLocation[2]) };
 	}
 
-	/**
-	 * Encodes the given cuboid address coordinates into a single unique primitive.  This can only really be used as a
-	 * sort of hash.
-	 * 
-	 * @param x The x cuboid address.
-	 * @param y The y cuboid address.
-	 * @param z The z cuboid address.
-	 * @return The unique encoding of this address
-	 */
-	public static long encodeCuboidAddress(short x, short y, short z)
-	{
-		// Note that the cuboid addresses are signed so we want to encode them by converting them to unsigned values and
-		// shifting them over by all 16 bits.  The resulant 48-bit address will fit into a long without sign issues.
-		return (Short.toUnsignedLong(x) << 32)
-				| (Short.toUnsignedLong(y) << 16)
-				| Short.toUnsignedLong(z)
-		;
-	}
-
 
 	private static short _getCuboidAddress(int absolute)
 	{

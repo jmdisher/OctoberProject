@@ -158,7 +158,7 @@ public class TickRunner
 			// All the data is stored so process it and wait for a request to run the next tick before releasing everyone.
 			if (null != fragmentCompleted)
 			{
-				Map<Long, CuboidState> worldState = new HashMap<>();
+				Map<CuboidAddress, CuboidState> worldState = new HashMap<>();
 				for (WorldState.ProcessedFragment fragment : _partial)
 				{
 					worldState.putAll(fragment.stateFragment());
@@ -185,7 +185,7 @@ public class TickRunner
 				{
 					for (CuboidState cuboid : newCuboids)
 					{
-						long hash = cuboid.data.getCuboidAddress().getLongHash();
+						CuboidAddress hash = cuboid.data.getCuboidAddress();
 						CuboidState replaced = worldState.put(hash, cuboid);
 						// This should NOT already be here.
 						Assert.assertTrue(null == replaced);
@@ -254,11 +254,10 @@ public class TickRunner
 		}
 	}
 
-	private void _scheduleMutationOnCuboid(Map<Long, CuboidState> worldState, IMutation mutation)
+	private void _scheduleMutationOnCuboid(Map<CuboidAddress, CuboidState> worldState, IMutation mutation)
 	{
 		CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-		long hash = address.getLongHash();
-		CuboidState cuboid = worldState.get(hash);
+		CuboidState cuboid = worldState.get(address);
 		if (null != cuboid)
 		{
 			cuboid.enqueueMutation(mutation);
