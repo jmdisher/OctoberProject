@@ -43,7 +43,7 @@ public class TestTickRunner
 		runner.start();
 		runner.startNextTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
+		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.shutdown();
@@ -158,7 +158,7 @@ public class TestTickRunner
 		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
+		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
