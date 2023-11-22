@@ -17,35 +17,35 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class AspectRegistry
 {
-	public static final Aspect<Short> BLOCK = registerAspect(Short.class, (IOctree original) -> {
-		return ((OctreeShort)original).cloneData();
+	public static final Aspect<Short, OctreeShort> BLOCK = registerAspect(Short.class, OctreeShort.class, (OctreeShort original) -> {
+		return original.cloneData();
 	});
-	public static final Aspect<Inventory> INVENTORY = registerAspect(Inventory.class, (IOctree original) -> {
-		return ((OctreeObject)original).cloneData(Inventory.class, (Inventory originalValue) -> {
+	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class, OctreeObject.class, (OctreeObject original) -> {
+		return original.cloneData(Inventory.class, (Inventory originalValue) -> {
 			return originalValue.copy();
 		});
 	});
 
 	private static int _nextIndex = 0;
-	public static final Aspect<?>[] ALL_ASPECTS;
+	public static final Aspect<?,?>[] ALL_ASPECTS;
 	static {
 		// Just verify indices are assigned as expected.
 		Assert.assertTrue(0 == BLOCK.index());
 		Assert.assertTrue(1 == INVENTORY.index());
 		
 		// Create the finished array, in-order.
-		ALL_ASPECTS = new Aspect<?>[] {
+		ALL_ASPECTS = new Aspect<?,?>[] {
 			BLOCK,
 			INVENTORY,
 		};
 	}
 
 
-	public static <T> Aspect<T> registerAspect(Class<T> type, Function<IOctree, IOctree> deepMutableClone)
+	public static <T, O extends IOctree> Aspect<T, O> registerAspect(Class<T> type, Class<O> octreeType, Function<O, O> deepMutableClone)
 	{
 		int index = _nextIndex;
 		_nextIndex += 1;
-		return new Aspect<>(index, type, deepMutableClone);
+		return new Aspect<>(index, type, octreeType, deepMutableClone);
 	}
 
 

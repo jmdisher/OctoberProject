@@ -19,7 +19,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		IOctree[] newer = new IOctree[original._data.length];
 		for (int i = 0; i < newer.length; ++i)
 		{
-			newer[i] = AspectRegistry.ALL_ASPECTS[i].deepMutableClone().apply(original._data[i]);
+			newer[i] = _cloneOneOctree(AspectRegistry.ALL_ASPECTS[i], original._data[i]);
 		}
 		return new CuboidData(original._cuboidAddress, newer);
 	}
@@ -27,6 +27,12 @@ public class CuboidData implements IReadOnlyCuboidData
 	public static CuboidData createNew(CuboidAddress cuboidAddress, IOctree[] data)
 	{
 		return new CuboidData(cuboidAddress, data);
+	}
+
+	private static <O extends IOctree> IOctree _cloneOneOctree(Aspect<?,O> aspect, IOctree rawOriginal)
+	{
+		O original = aspect.octreeType().cast(rawOriginal);
+		return aspect.deepMutableClone().apply(original);
 	}
 
 
@@ -46,34 +52,34 @@ public class CuboidData implements IReadOnlyCuboidData
 	}
 
 	@Override
-	public byte getData7(Aspect<Byte> type, BlockAddress address)
+	public byte getData7(Aspect<Byte, ?> type, BlockAddress address)
 	{
 		return _data[type.index()].getData(type, address);
 	}
 
-	public void setData7(Aspect<Byte> type, BlockAddress address, byte value)
+	public void setData7(Aspect<Byte, ?> type, BlockAddress address, byte value)
 	{
 		_data[type.index()].setData(address, value);
 	}
 
 	@Override
-	public short getData15(Aspect<Short> type, BlockAddress address)
+	public short getData15(Aspect<Short, ?> type, BlockAddress address)
 	{
 		return _data[type.index()].getData(type, address);
 	}
 
-	public void setData15(Aspect<Short> type, BlockAddress address, short value)
+	public void setData15(Aspect<Short, ?> type, BlockAddress address, short value)
 	{
 		_data[type.index()].setData(address, value);
 	}
 
 	@Override
-	public <T> T getDataSpecial(Aspect<T> type, BlockAddress address)
+	public <T> T getDataSpecial(Aspect<T, ?> type, BlockAddress address)
 	{
 		return _data[type.index()].getData(type, address);
 	}
 
-	public <T> void setDataSpecial(Aspect<T> type, BlockAddress address, T value)
+	public <T> void setDataSpecial(Aspect<T, ?> type, BlockAddress address, T value)
 	{
 		_data[type.index()].setData(address, value);
 	}

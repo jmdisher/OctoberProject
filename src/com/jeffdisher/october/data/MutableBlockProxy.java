@@ -18,32 +18,32 @@ public class MutableBlockProxy
 		_data = data;
 	}
 
-	public byte getData7(Aspect<Byte> type)
+	public byte getData7(Aspect<Byte, ?> type)
 	{
 		return _data.getData7(type, _address);
 	}
 
-	public void setData7(Aspect<Byte> type, byte value)
+	public void setData7(Aspect<Byte, ?> type, byte value)
 	{
 		_data.setData7(type, _address, value);
 	}
 
-	public short getData15(Aspect<Short> type)
+	public short getData15(Aspect<Short, ?> type)
 	{
 		return _data.getData15(type, _address);
 	}
 
-	public void setData15(Aspect<Short> type, short value)
+	public void setData15(Aspect<Short, ?> type, short value)
 	{
 		_data.setData15(type, _address, value);
 	}
 
-	public <T> T getDataSpecial(Aspect<T> type)
+	public <T> T getDataSpecial(Aspect<T, ?> type)
 	{
 		return _data.getDataSpecial(type, _address);
 	}
 
-	public <T> void setDataSpecial(Aspect<T> type, T value)
+	public <T> void setDataSpecial(Aspect<T, ?> type, T value)
 	{
 		_data.setDataSpecial(type, _address, value);
 	}

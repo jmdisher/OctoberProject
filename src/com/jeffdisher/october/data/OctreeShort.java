@@ -251,7 +251,7 @@ public class OctreeShort implements IOctree
 	}
 
 	@Override
-	public <T> T getData(Aspect<T> type, BlockAddress address)
+	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
 	{
 		// Hash of 32 (the base size) is 16 so we use that as the initial half size.
 		short value = _findValue(ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16);

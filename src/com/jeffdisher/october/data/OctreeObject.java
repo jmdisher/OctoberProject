@@ -41,7 +41,7 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public <T> T getData(Aspect<T> type, BlockAddress address)
+	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
 	{
 		short hash = _buildHash(address);
 		return type.type().cast(_data.get(hash));

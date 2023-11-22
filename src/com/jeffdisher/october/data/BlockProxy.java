@@ -18,17 +18,17 @@ public class BlockProxy
 		_data = data;
 	}
 
-	public byte getData7(Aspect<Byte> type)
+	public byte getData7(Aspect<Byte, ?> type)
 	{
 		return _data.getData7(type, _address);
 	}
 
-	public short getData15(Aspect<Short> type)
+	public short getData15(Aspect<Short, ?> type)
 	{
 		return _data.getData15(type, _address);
 	}
 
-	public <T> T getDataSpecial(Aspect<T> type)
+	public <T> T getDataSpecial(Aspect<T, ?> type)
 	{
 		return _data.getDataSpecial(type, _address);
 	}

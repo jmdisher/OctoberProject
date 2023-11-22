@@ -8,7 +8,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 public interface IReadOnlyCuboidData
 {
 	CuboidAddress getCuboidAddress();
-	byte getData7(Aspect<Byte> type, BlockAddress address);
-	short getData15(Aspect<Short> type, BlockAddress address);
-	<T> T getDataSpecial(Aspect<T> type, BlockAddress address);
+	byte getData7(Aspect<Byte, ?> type, BlockAddress address);
+	short getData15(Aspect<Short, ?> type, BlockAddress address);
+	<T> T getDataSpecial(Aspect<T, ?> type, BlockAddress address);
 }

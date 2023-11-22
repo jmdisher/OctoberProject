@@ -133,7 +133,7 @@ public class TestTickRunner
 	@Test
 	public void basicBlockRead()
 	{
-		Aspect<Short> aspectShort = AspectRegistry.BLOCK;
+		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
@@ -173,7 +173,7 @@ public class TestTickRunner
 	public void basicInventoryOperations()
 	{
 		// Just add, add, and remove some inventory items.
-		Aspect<Inventory> aspectInventory = AspectRegistry.INVENTORY;
+		Aspect<Inventory, ?> aspectInventory = AspectRegistry.INVENTORY;
 		OctreeShort blockData = OctreeShort.create((short)0);
 		OctreeObject inventoryData = OctreeObject.create();
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
