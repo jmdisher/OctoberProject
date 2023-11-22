@@ -14,6 +14,11 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;
 
 
+/**
+ * The core of the multi-threaded logic.  This will advance the world state by one logical tick a time, when told to, by
+ * using multiple threads to apply pending mutations to the previous versions of the world.
+ * Once a tick is completed, that version of the world is considered committed as read-only.
+ */
 public class TickRunner
 {
 	private final SyncPoint _syncPoint;
@@ -27,6 +32,13 @@ public class TickRunner
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
 	private ReentrantLock _sharedDataLock;
 
+	/**
+	 * Creates the tick runner in a non-started state.
+	 * 
+	 * @param threadCount The number of threads to use to run the ticks.
+	 * @param listener A listener for change events (note that these calls come on internal threads so must be trivial
+	 * or hand-off to another thread).
+	 */
 	public TickRunner(int threadCount, WorldState.IBlockChangeListener listener)
 	{
 		// TODO:  Decide where to put the registry or how it should be used.
@@ -42,17 +54,22 @@ public class TickRunner
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-				WorldState world = _mergeTickStateAndWaitForNext(thisThread, null);
+				WorldState world = _initialStartupPriming(thisThread);
 				while (null != world)
 				{
 					// Run the tick.
 					WorldState.ProcessedFragment fragment = world.buildNewWorldParallel(thisThread, listener);
+					// There is always a returned fragment (even if it has no content).
+					Assert.assertTrue(null != fragment);
 					world = _mergeTickStateAndWaitForNext(thisThread, fragment);
 				}
 			}, "Tick Runner #" + i);
 		}
 	}
 
+	/**
+	 * Starts the tick runner on an empty world but does 
+	 */
 	public void start()
 	{
 		Assert.assertTrue(null == _completedWorld);
@@ -64,8 +81,21 @@ public class TickRunner
 		}
 	}
 
-	// This will wait for the previous tick to complete before it kicks off the next one but it will return before that tick completes.
-	public synchronized void runTick()
+	/**
+	 * This will block until the previously requested tick has completed and all its threads have parked before
+	 * returning.
+	 */
+	public synchronized void waitForPreviousTick()
+	{
+		// We just wait for the previous tick and don't start the next.
+		_locked_waitForTickComplete();
+	}
+
+	/**
+	 * Requests that another tick be run, waiting for the previous one to complete if it is still running.
+	 * Note that this function returns before the next tick completes.
+	 */
+	public synchronized void startNextTick()
 	{
 		// Wait for the previous tick to complete.
 		_locked_waitForTickComplete();
@@ -74,6 +104,12 @@ public class TickRunner
 		this.notifyAll();
 	}
 
+	/**
+	 * Enqueues a mutation to be run in a future tick (it will be picked up in the current or next tick and run in the
+	 * following tick).
+	 * 
+	 * @param mutation The mutation to enqueue.
+	 */
 	public void enqueueMutation(IMutation mutation)
 	{
 		_sharedDataLock.lock();
@@ -91,6 +127,12 @@ public class TickRunner
 		}
 	}
 
+	/**
+	 * Provides newly-loaded cuboid data to be loaded into the runner in a future tick (it will be picked up in the
+	 * current or next tick).
+	 * 
+	 * @param cuboid The cuboid data to inject.
+	 */
 	public void cuboidWasLoaded(CuboidState cuboid)
 	{
 		_sharedDataLock.lock();
@@ -108,6 +150,9 @@ public class TickRunner
 		}
 	}
 
+	/**
+	 * Shuts down the tick runner.  Note that this will block until all runner threads have joined.
+	 */
 	public void shutdown()
 	{
 		// Notify them to shut down.
@@ -148,6 +193,19 @@ public class TickRunner
 		return _completedWorld.getBlockProxy(location);
 	}
 
+
+	private WorldState _initialStartupPriming(ProcessorElement elt)
+	{
+		// This is only called once during start-up in order to synchronize threads and allow an external caller to wait for start-up without a tick running.
+		_partial[elt.id] = null;
+		if (elt.synchronizeAndReleaseLast())
+		{
+			_acknowledgeTickCompleteAndWaitForNext();
+			elt.releaseWaitingThreads();
+		}
+		return _completedWorld;
+	}
+
 	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -155,63 +213,60 @@ public class TickRunner
 		if (elt.synchronizeAndReleaseLast())
 		{
 			// All the data is stored so process it and wait for a request to run the next tick before releasing everyone.
-			if (null != fragmentCompleted)
+			Map<CuboidAddress, CuboidState> worldState = new HashMap<>();
+			for (WorldState.ProcessedFragment fragment : _partial)
 			{
-				Map<CuboidAddress, CuboidState> worldState = new HashMap<>();
-				for (WorldState.ProcessedFragment fragment : _partial)
-				{
-					worldState.putAll(fragment.stateFragment());
-				}
-				
-				// Load other cuboids and apply other mutations enqueued since the last tick.
-				List<CuboidState> newCuboids;
-				List<IMutation> newMutations;
-				_sharedDataLock.lock();
-				try
-				{
-					newCuboids = _newCuboids;
-					_newCuboids = null;
-					newMutations = _mutations;
-					_mutations = null;
-				}
-				finally
-				{
-					_sharedDataLock.unlock();
-				}
-				
-				// First, add the new cuboids.
-				if (null != newCuboids)
-				{
-					for (CuboidState cuboid : newCuboids)
-					{
-						CuboidAddress hash = cuboid.data.getCuboidAddress();
-						CuboidState replaced = worldState.put(hash, cuboid);
-						// This should NOT already be here.
-						Assert.assertTrue(null == replaced);
-					}
-				}
-				
-				// Apply the mutations from internal operations.
-				for (WorldState.ProcessedFragment fragment : _partial)
-				{
-					for (IMutation mutation : fragment.exportedMutations())
-					{
-						_scheduleMutationOnCuboid(worldState, mutation);
-					}
-				}
-				
-				// Apply the other mutations which were enqueued since last tick completed and we parked.
-				if (null != newMutations)
-				{
-					for (IMutation mutation : newMutations)
-					{
-						_scheduleMutationOnCuboid(worldState, mutation);
-					}
-				}
-				
-				// Replace the world with the new state.
-				_completedWorld = new WorldState(worldState);
+				worldState.putAll(fragment.stateFragment());
 			}
+			
+			// Load other cuboids and apply other mutations enqueued since the last tick.
+			List<CuboidState> newCuboids;
+			List<IMutation> newMutations;
+			_sharedDataLock.lock();
+			try
+			{
+				newCuboids = _newCuboids;
+				_newCuboids = null;
+				newMutations = _mutations;
+				_mutations = null;
+			}
+			finally
+			{
+				_sharedDataLock.unlock();
+			}
+			
+			// First, add the new cuboids.
+			if (null != newCuboids)
+			{
+				for (CuboidState cuboid : newCuboids)
+				{
+					CuboidAddress hash = cuboid.data.getCuboidAddress();
+					CuboidState replaced = worldState.put(hash, cuboid);
+					// This should NOT already be here.
+					Assert.assertTrue(null == replaced);
+				}
+			}
+			
+			// Apply the mutations from internal operations.
+			for (WorldState.ProcessedFragment fragment : _partial)
+			{
+				for (IMutation mutation : fragment.exportedMutations())
+				{
+					_scheduleMutationOnCuboid(worldState, mutation);
+				}
+			}
+			
+			// Apply the other mutations which were enqueued since last tick completed and we parked.
+			if (null != newMutations)
+			{
+				for (IMutation mutation : newMutations)
+				{
+					_scheduleMutationOnCuboid(worldState, mutation);
+				}
+			}
+			
+			// Replace the world with the new state.
+			_completedWorld = new WorldState(worldState);
 			
 			// Reset internal counters.
 			for (int i = 0; i < _partial.length; ++i)

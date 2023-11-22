@@ -41,11 +41,11 @@ public class TestTickRunner
 			}});
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
-		runner.runTick();
+		runner.startNextTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
-		runner.runTick();
-		runner.runTick();
+		runner.startNextTick();
+		runner.startNextTick();
 		runner.shutdown();
 		
 		Assert.assertEquals(1, changeData[0]);
@@ -70,15 +70,17 @@ public class TestTickRunner
 			}});
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
-		runner.runTick();
+		runner.startNextTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), true, 2));
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
@@ -111,15 +113,16 @@ public class TestTickRunner
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data })));
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data })));
 		runner.start();
-		runner.runTick();
+		runner.startNextTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), true, 2));
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
-		runner.runTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.startNextTick();
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
@@ -148,16 +151,17 @@ public class TestTickRunner
 		Assert.assertNull(runner.getBlockProxy(new AbsoluteLocation(0, 0, 0)));
 		
 		// We need to run the tick twice to make sure that we wait for the first to finish before the query.
-		runner.runTick();
-		runner.runTick();
+		runner.startNextTick();
+		runner.startNextTick();
 		// Now, we should see a block with default properties.
 		BlockProxy block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
-		runner.runTick();
-		runner.runTick();
+		runner.startNextTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
 		runner.shutdown();
 		
 		// We should now see the new data.
@@ -187,8 +191,8 @@ public class TestTickRunner
 			}});
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData })));
 		runner.start();
-		runner.runTick();
-		runner.runTick();
+		runner.startNextTick();
+		runner.startNextTick();
 		
 		// Make sure that we see the null inventory.
 		BlockProxy block = runner.getBlockProxy(testBlock);
@@ -222,14 +226,15 @@ public class TestTickRunner
 	private void _runTickLockStep(TickRunner runner, IMutation mutation)
 	{
 		// This helper is useful when a test wants to be certain that a mutation has completed before checking state.
-		// Enqueue the mutation to be picked up by the next tick.
+		// 1) Wait for any in-flight tick to complete.
+		runner.waitForPreviousTick();
+		// 2) Enqueue the mutation to be picked up by the next tick.
 		runner.enqueueMutation(mutation);
-		// 1) Tick verifies that the previous one has completed (which _might_ have picked up the mutation).
-		runner.runTick();
-		// 2) Tick verifies that another tick has run (this or the above will pick up the mutation).
-		runner.runTick();
-		// 3) Tick which will run the mutation (may have been run in (2) if picked up in (1)).
-		runner.runTick();
-		// This means that the third tick may be redundant depending on whether tick 1 picked up the mutation.
+		// 3) Run a tick to pick up the new mutation and schedule it.
+		runner.startNextTick();
+		// 4) Run the tick which will execute the mutation.
+		runner.startNextTick();
+		// 5) Wait for this tick to complete in order to rely on the result being observable.
+		runner.waitForPreviousTick();
 	}
 }
