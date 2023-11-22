@@ -25,6 +25,12 @@ public class OctreeObject implements IOctree
 		return new OctreeObject(data);
 	}
 
+	public static OctreeObject create()
+	{
+		// Just start with an empty map.
+		return new OctreeObject(new HashMap<>());
+	}
+
 
 	private final Map<Short, Object> _data;
 

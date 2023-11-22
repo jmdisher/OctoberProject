@@ -7,12 +7,16 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 
 
 public class TestTickRunner
@@ -164,5 +168,75 @@ public class TestTickRunner
 		// We should now see the new data.
 		block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals((short)1, block.getData15(aspectShort));
+	}
+
+	@Test
+	public void basicInventoryOperations()
+	{
+		// Just add, add, and remove some inventory items.
+		AspectRegistry registry = new AspectRegistry();
+		registry.registerAspect("Short", Short.class);
+		Aspect<Inventory>  aspectInventory = registry.registerAspect("Inventory", Inventory.class);
+		OctreeShort blockData = OctreeShort.create((short)0);
+		OctreeObject inventoryData = OctreeObject.create();
+		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
+		Item stoneItem = new Item((short)1, 2);
+		
+		// Create a tick runner with a single cuboid and get it running.
+		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
+			@Override
+			public void blockChanged(AbsoluteLocation location)
+			{
+			}
+			@Override
+			public void mutationDropped(IMutation mutation)
+			{
+			}});
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData })));
+		runner.start();
+		runner.runTick();
+		runner.runTick();
+		
+		// Make sure that we see the null inventory.
+		BlockProxy block = runner.getBlockProxy(testBlock);
+		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
+		
+		// Apply the first mutation to add data.
+		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
+		block = runner.getBlockProxy(testBlock);
+		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
+		
+		// Try to drop too much to fit and verify that nothing changes.
+		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.AIR_BLOCK_ENCUMBRANCE / 2));
+		block = runner.getBlockProxy(testBlock);
+		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
+		
+		// Add a little more data and make sure that it updates.
+		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
+		block = runner.getBlockProxy(testBlock);
+		Assert.assertEquals(3, block.getDataSpecial(aspectInventory).items.get(0).count());
+		
+		// Remove everything and make sure that we end up with a null inventory.
+		_runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
+		block = runner.getBlockProxy(testBlock);
+		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
+		
+		// Test is done.
+		runner.shutdown();
+	}
+
+
+	private void _runTickLockStep(TickRunner runner, IMutation mutation)
+	{
+		// This helper is useful when a test wants to be certain that a mutation has completed before checking state.
+		// Enqueue the mutation to be picked up by the next tick.
+		runner.enqueueMutation(mutation);
+		// 1) Tick verifies that the previous one has completed (which _might_ have picked up the mutation).
+		runner.runTick();
+		// 2) Tick verifies that another tick has run (this or the above will pick up the mutation).
+		runner.runTick();
+		// 3) Tick which will run the mutation (may have been run in (2) if picked up in (1)).
+		runner.runTick();
+		// This means that the third tick may be redundant depending on whether tick 1 picked up the mutation.
 	}
 }

@@ -8,12 +8,16 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 
 
 public class TestSpeculativeProjection
@@ -203,6 +207,56 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.unloadCount);
 	}
 
+	@Test
+	public void itemInventory()
+	{
+		// Test that we can apply inventory changes to speculative mutation.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		// Create and add an empty cuboid.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BLOCK_AIR);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		projector.loadedCuboid(address, cuboid);
+		Assert.assertEquals(1, listener.loadCount);
+		
+		// Try to drop a few items.
+		int encumbrance = 2;
+		Item stoneItem = new Item(BLOCK_STONE, encumbrance);
+		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
+		IMutation lone1 = new DropItemMutation(block1, stoneItem, 1);
+		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
+		IMutation lone2 = new DropItemMutation(block2, stoneItem, 3);
+		long commit1 = projector.applyLocalMutation(lone1);
+		long commit2 = projector.applyLocalMutation(lone2);
+		Assert.assertEquals(2, listener.changeCount);
+		
+		// Check the values.
+		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
+		
+		// Commit the first, then the second, making sure that things make sense at every point.
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone1 }, commit1);
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(3, listener.changeCount);
+		
+		// Check the values.
+		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
+		
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone2 }, commit2);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(4, listener.changeCount);
+		
+		// Check the values.
+		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
+		
+		// Now, unload.
+		speculativeCount = projector.applyCommittedMutations(Set.of(address), new IMutation[0], commit2);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(1, listener.unloadCount);
+	}
+
 
 	private int _countBlocks(CuboidData cuboid, short blockType)
 	{
@@ -222,6 +276,20 @@ public class TestSpeculativeProjection
 			}
 		}
 		return count;
+	}
+
+	private void _checkInventories(CountingListener listener, int encumbrance, Item stoneItem, AbsoluteLocation block1, AbsoluteLocation block2)
+	{
+		Inventory inventory1 = listener.lastData.getDataSpecial(InventoryAspect.INVENTORY, block1.getBlockAddress());
+		Assert.assertEquals(1 * encumbrance, inventory1.currentEncumbrance);
+		Assert.assertEquals(1, inventory1.items.size());
+		Assert.assertEquals(stoneItem, inventory1.items.get(0).type());
+		Assert.assertEquals(1, inventory1.items.get(0).count());
+		Inventory inventory2 = listener.lastData.getDataSpecial(InventoryAspect.INVENTORY, block2.getBlockAddress());
+		Assert.assertEquals(3 * encumbrance, inventory2.currentEncumbrance);
+		Assert.assertEquals(1, inventory1.items.size());
+		Assert.assertEquals(stoneItem, inventory2.items.get(0).type());
+		Assert.assertEquals(3, inventory2.items.get(0).count());
 	}
 
 	private static class CountingListener implements SpeculativeProjection.IProjectionListener
