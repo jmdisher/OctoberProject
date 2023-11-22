@@ -19,4 +19,13 @@ public class Inventory
 		this.items = new ArrayList<>();
 		this.currentEncumbrance = 0;
 	}
+
+	public Inventory copy()
+	{
+		Inventory copy = new Inventory(this.maxEncumbrance);
+		// The "Items" elements are immutable records so we can reference them.
+		copy.items.addAll(this.items);
+		copy.currentEncumbrance = this.currentEncumbrance;
+		return copy;
+	}
 }

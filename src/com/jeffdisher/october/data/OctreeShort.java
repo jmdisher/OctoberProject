@@ -276,8 +276,7 @@ public class OctreeShort implements IOctree
 		buffer.put(_data);
 	}
 
-	@Override
-	public IOctree cloneData()
+	public OctreeShort cloneData()
 	{
 		return new OctreeShort(_data.clone());
 	}

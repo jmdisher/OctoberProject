@@ -1,6 +1,7 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
@@ -18,7 +19,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		IOctree[] newer = new IOctree[original._data.length];
 		for (int i = 0; i < newer.length; ++i)
 		{
-			newer[i] = original._data[i].cloneData();
+			newer[i] = AspectRegistry.ALL_ASPECTS[i].deepMutableClone().apply(original._data[i]);
 		}
 		return new CuboidData(original._cuboidAddress, newer);
 	}

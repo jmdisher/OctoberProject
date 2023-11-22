@@ -3,6 +3,7 @@ package com.jeffdisher.october.data;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
@@ -50,7 +51,14 @@ public class OctreeObject implements IOctree
 	public <T> void setData(BlockAddress address, T value)
 	{
 		short hash = _buildHash(address);
-		_data.put(hash, value);
+		if (null != value)
+		{
+			_data.put(hash, value);
+		}
+		else
+		{
+			_data.remove(hash);
+		}
 	}
 
 	@Override
@@ -67,10 +75,16 @@ public class OctreeObject implements IOctree
 		}
 	}
 
-	@Override
-	public IOctree cloneData()
+	public <T> OctreeObject cloneData(Class<T> type, Function<T, T> valueCopier)
 	{
-		return new OctreeObject(new HashMap<>(_data));
+		Map<Short, Object> newMap = new HashMap<>();
+		for (Map.Entry<Short, Object> elt : _data.entrySet())
+		{
+			T original = type.cast(elt.getValue());
+			T copy = valueCopier.apply(original);
+			newMap.put(elt.getKey(), copy);
+		}
+		return new OctreeObject(newMap);
 	}
 
 
