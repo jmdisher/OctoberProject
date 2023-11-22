@@ -3,9 +3,10 @@ package com.jeffdisher.october.logic;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 
@@ -16,13 +17,11 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 public class RemoveBlockMutation implements IMutation
 {
 	private final AbsoluteLocation _location;
-	private final Aspect<Short> _aspect;
 	private final short _blockType;
 
-	public RemoveBlockMutation(AbsoluteLocation location, Aspect<Short> aspect, short blockType)
+	public RemoveBlockMutation(AbsoluteLocation location, short blockType)
 	{
 		_location = location;
-		_aspect = aspect;
 		_blockType = blockType;
 	}
 
@@ -35,11 +34,11 @@ public class RemoveBlockMutation implements IMutation
 	@Override
 	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
 	{
-		short oldValue = newBlock.getData15(_aspect);
+		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		boolean didApply = false;
 		if (_blockType == oldValue)
 		{
-			newBlock.setData15(_aspect, (short)0);
+			newBlock.setData15(AspectRegistry.BLOCK, BlockAspect.AIR);
 			didApply = true;
 		}
 		return didApply;
@@ -48,13 +47,13 @@ public class RemoveBlockMutation implements IMutation
 	@Override
 	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
 	{
-		short oldValue = newBlock.getData15(_aspect);
+		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		IMutation reverseMutation = null;
 		if (_blockType == oldValue)
 		{
-			newBlock.setData15(_aspect, (short)0);
+			newBlock.setData15(AspectRegistry.BLOCK, BlockAspect.AIR);
 			// Reverse is to place this block type.
-			reverseMutation = new PlaceBlockMutation(_location, _aspect, _blockType);
+			reverseMutation = new PlaceBlockMutation(_location, _blockType);
 		}
 		return reverseMutation;
 	}

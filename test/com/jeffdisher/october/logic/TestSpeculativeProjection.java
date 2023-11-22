@@ -38,8 +38,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Apply a few local mutations.
-		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 0), AspectRegistry.BLOCK, BlockAspect.STONE);
-		IMutation lone2 = new PlaceBlockMutation(new AbsoluteLocation(0, 0, 1), AspectRegistry.BLOCK, BlockAspect.STONE);
+		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 0), BlockAspect.STONE);
+		IMutation lone2 = new PlaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.STONE);
 		long commit1 = projector.applyLocalMutation(lone1);
 		long commit2 = projector.applyLocalMutation(lone2);
 		IMutation[] mutations = new IMutation[5];
@@ -47,7 +47,7 @@ public class TestSpeculativeProjection
 		for (int i = 0; i < mutations.length; ++i)
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
-			mutations[i] = new PlaceBlockMutation(location, AspectRegistry.BLOCK, BlockAspect.STONE);
+			mutations[i] = new PlaceBlockMutation(location, BlockAspect.STONE);
 			commitNumbers[i] = projector.applyLocalMutation(mutations[i]);
 		}
 		Assert.assertEquals(7, listener.changeCount);
@@ -91,8 +91,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.loadCount);
 		
 		// Apply a few local mutations.
-		IMutation lone0 = new PlaceBlockMutation(new AbsoluteLocation(1, 0, 0), AspectRegistry.BLOCK, BlockAspect.STONE);
-		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 32), AspectRegistry.BLOCK, BlockAspect.STONE);
+		IMutation lone0 = new PlaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.STONE);
+		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.STONE);
 		projector.applyLocalMutation(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalMutation(lone1);
@@ -131,8 +131,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.loadCount);
 		
 		// Apply a few local mutations.
-		IMutation lone0 = new PlaceBlockMutation(new AbsoluteLocation(1, 0, 0), AspectRegistry.BLOCK, BlockAspect.STONE);
-		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 32), AspectRegistry.BLOCK, BlockAspect.STONE);
+		IMutation lone0 = new PlaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.STONE);
+		IMutation lone1 = new PlaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.STONE);
 		projector.applyLocalMutation(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalMutation(lone1);

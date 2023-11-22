@@ -26,7 +26,6 @@ public class TestTickRunner
 	@Test
 	public void basicOneCuboid()
 	{
-		Aspect<Short> aspectShort = AspectRegistry.BLOCK;
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		int[] changeData = new int[2];
 		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
@@ -44,7 +43,7 @@ public class TestTickRunner
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, BlockAspect.STONE));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
@@ -153,10 +152,10 @@ public class TestTickRunner
 		runner.runTick();
 		// Now, we should see a block with default properties.
 		BlockProxy block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals((short)0, block.getData15(aspectShort));
+		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, BlockAspect.STONE));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
