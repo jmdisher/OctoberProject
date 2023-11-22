@@ -1,14 +1,13 @@
 package com.jeffdisher.october.aspects;
 
-import com.jeffdisher.october.types.Inventory;
 
-
+/**
+ * Contains constants associated with the inventory aspect.
+ */
 public class InventoryAspect
 {
-	public static final Aspect<Inventory> INVENTORY = new Aspect<>("Full Inventory", 1, Inventory.class);
-
 	/**
-	 * The encumbrance of an air block is small since it is just "on the ground" and we want containers to be used.
+	 * The capacity of an air block is small since it is just "on the ground" and we want containers to be used.
 	 */
-	public static final int AIR_BLOCK_ENCUMBRANCE = 10;
+	public static final int CAPACITY_AIR = 10;
 }

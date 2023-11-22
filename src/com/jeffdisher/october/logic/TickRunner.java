@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -28,7 +27,7 @@ public class TickRunner
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
 	private ReentrantLock _sharedDataLock;
 
-	public TickRunner(AspectRegistry registry, int threadCount, WorldState.IBlockChangeListener listener)
+	public TickRunner(int threadCount, WorldState.IBlockChangeListener listener)
 	{
 		// TODO:  Decide where to put the registry or how it should be used.
 		AtomicInteger atomic = new AtomicInteger(0);

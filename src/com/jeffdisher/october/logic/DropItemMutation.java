@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -31,7 +32,7 @@ public class DropItemMutation implements IMutation
 	public DropItemMutation(AbsoluteLocation location, Item type, int count)
 	{
 		// We don't allow creation of this mutation if the items can't possibly fit.
-		Assert.assertTrue((type.encumbrance() * count) <= InventoryAspect.AIR_BLOCK_ENCUMBRANCE);
+		Assert.assertTrue((type.encumbrance() * count) <= InventoryAspect.CAPACITY_AIR);
 		_location = location;
 		_type = type;
 		_count = count;
@@ -66,16 +67,16 @@ public class DropItemMutation implements IMutation
 	{
 		// We can only drop an item into air.
 		boolean didApply = false;
-		short oldValue = newBlock.getData15(BlockAspect.BLOCK);
+		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		if (BlockAspect.AIR == oldValue)
 		{
 			// Get the inventory.
-			Inventory inventory = newBlock.getDataSpecial(InventoryAspect.INVENTORY);
+			Inventory inventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
 			// We lazily construct the inventory.
 			if (null == inventory)
 			{
-				inventory = new Inventory(InventoryAspect.AIR_BLOCK_ENCUMBRANCE);
-				newBlock.setDataSpecial(InventoryAspect.INVENTORY, inventory);
+				inventory = new Inventory(InventoryAspect.CAPACITY_AIR);
+				newBlock.setDataSpecial(AspectRegistry.INVENTORY, inventory);
 			}
 			// Check if this will fit (note that a fresh inventory will _always_ fit (see assertion in constructor).
 			int encumbranceToAdd = _type.encumbrance() * _count;

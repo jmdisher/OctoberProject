@@ -6,13 +6,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
-import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
@@ -24,11 +26,10 @@ public class TestTickRunner
 	@Test
 	public void basicOneCuboid()
 	{
-		AspectRegistry registry = new AspectRegistry();
-		Aspect<Short>  aspectShort = registry.registerAspect("Short", Short.class);
-		OctreeShort data = OctreeShort.create((short)0);
+		Aspect<Short> aspectShort = AspectRegistry.BLOCK;
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -43,7 +44,7 @@ public class TestTickRunner
 		runner.start();
 		runner.runTick();
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, BlockAspect.STONE));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
@@ -55,11 +56,9 @@ public class TestTickRunner
 	@Test
 	public void shockwaveOneCuboid()
 	{
-		AspectRegistry registry = new AspectRegistry();
-		registry.registerAspect("Short", Short.class);
-		OctreeShort data = OctreeShort.create((short)0);
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -91,11 +90,9 @@ public class TestTickRunner
 	@Test
 	public void shockwaveMultiCuboids()
 	{
-		AspectRegistry registry = new AspectRegistry();
-		registry.registerAspect("Short", Short.class);
-		OctreeShort data = OctreeShort.create((short)0);
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		AtomicInteger[] changeData = new AtomicInteger[] { new AtomicInteger(0), new AtomicInteger(0) };
-		TickRunner runner = new TickRunner(registry, 8, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(8, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -134,10 +131,9 @@ public class TestTickRunner
 	@Test
 	public void basicBlockRead()
 	{
-		AspectRegistry registry = new AspectRegistry();
-		Aspect<Short>  aspectShort = registry.registerAspect("Short", Short.class);
-		OctreeShort data = OctreeShort.create((short)0);
-		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
+		Aspect<Short> aspectShort = AspectRegistry.BLOCK;
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -160,30 +156,28 @@ public class TestTickRunner
 		Assert.assertEquals((short)0, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, (short)1));
+		runner.enqueueMutation(new PlaceBlockMutation(new AbsoluteLocation(0, 0, 0), aspectShort, BlockAspect.STONE));
 		runner.runTick();
 		runner.runTick();
 		runner.shutdown();
 		
 		// We should now see the new data.
 		block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals((short)1, block.getData15(aspectShort));
+		Assert.assertEquals(BlockAspect.STONE, block.getData15(aspectShort));
 	}
 
 	@Test
 	public void basicInventoryOperations()
 	{
 		// Just add, add, and remove some inventory items.
-		AspectRegistry registry = new AspectRegistry();
-		registry.registerAspect("Short", Short.class);
-		Aspect<Inventory>  aspectInventory = registry.registerAspect("Inventory", Inventory.class);
+		Aspect<Inventory> aspectInventory = AspectRegistry.INVENTORY;
 		OctreeShort blockData = OctreeShort.create((short)0);
 		OctreeObject inventoryData = OctreeObject.create();
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
-		Item stoneItem = new Item((short)1, 2);
+		Item stoneItem = ItemRegistry.STONE;
 		
 		// Create a tick runner with a single cuboid and get it running.
-		TickRunner runner = new TickRunner(registry, 1, new WorldState.IBlockChangeListener() {
+		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
 			@Override
 			public void blockChanged(AbsoluteLocation location)
 			{
@@ -207,7 +201,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
 		
 		// Try to drop too much to fit and verify that nothing changes.
-		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.AIR_BLOCK_ENCUMBRANCE / 2));
+		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
 		block = runner.getBlockProxy(testBlock);
 		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
 		
