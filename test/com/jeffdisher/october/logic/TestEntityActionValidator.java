@@ -19,13 +19,12 @@ public class TestEntityActionValidator
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
-		EntityActionValidator validator = new EntityActionValidator(blockTypeReader);
-		Entity start = validator.buildNewlyJoinedEntity(1);
+		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), so test that.
 		EntityLocation loc = start.location();
 		EntityLocation target = new EntityLocation(loc.x() + 5.0f, loc.y(), loc.z());
-		Entity updated = validator.moveEntity(start, target, 10);
+		Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, target, 10);
 		Assert.assertNotNull(updated);
 		Assert.assertEquals(target, updated.location());
 	}
@@ -36,12 +35,11 @@ public class TestEntityActionValidator
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
-		EntityActionValidator validator = new EntityActionValidator(blockTypeReader);
-		Entity start = validator.buildNewlyJoinedEntity(1);
+		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), so test that - walking half a block will fail.
 		EntityLocation loc = start.location();
-		Entity updated = validator.moveEntity(start, new EntityLocation(loc.x() + 5.5f, loc.y(), loc.z()), 10);
+		Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, new EntityLocation(loc.x() + 5.5f, loc.y(), loc.z()), 10);
 		Assert.assertNull(updated);
 	}
 
@@ -51,15 +49,14 @@ public class TestEntityActionValidator
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
-		EntityActionValidator validator = new EntityActionValidator(blockTypeReader);
-		Entity start = validator.buildNewlyJoinedEntity(1);
+		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), show that we can tip-toe around.
 		for (int i = 0; i < 10; ++i)
 		{
 			EntityLocation loc = start.location();
 			EntityLocation target = new EntityLocation(loc.x() + 0.5f, loc.y(), loc.z());
-			Entity updated = validator.moveEntity(start, target, 1);
+			Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, target, 1);
 			Assert.assertNotNull(updated);
 			Assert.assertEquals(target, updated.location());
 			start = updated;
