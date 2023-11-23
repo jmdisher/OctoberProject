@@ -17,6 +17,7 @@ import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 
@@ -220,6 +221,52 @@ public class TestTickRunner
 		
 		// Test is done.
 		runner.shutdown();
+	}
+
+	@Test
+	public void deliverWithEntity()
+	{
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		int[] changeData = new int[2];
+		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
+			@Override
+			public void blockChanged(AbsoluteLocation location)
+			{
+				changeData[0] += 1;
+			}
+			@Override
+			public void mutationDropped(IMutation mutation)
+			{
+				changeData[1] += 1;
+			}});
+		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.start();
+		
+		// Have a new entity join and wait for them to be added.
+		int entityId = 1;
+		Entity entity = EntityActionValidator.buildDefaultEntity(entityId);
+		runner.entityDidJoin(entity);
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		
+		// Now, add a mutation from this entity to deliver the block replacement mutation.
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		runner.enqueueEntityChange(new EntityChangeMutation(entityId, new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)));
+		
+		// This will take a few ticks to be observable:
+		// -after tick 1, the change will be queued
+		runner.startNextTick();
+		// -after tick 2, the change will have been run and the mutation enqueued
+		runner.startNextTick();
+		// -after tick 3, the mutation will have been committed
+		runner.startNextTick();
+		
+		// Shutdown and observe expected results.
+		runner.shutdown();
+		
+		Assert.assertEquals(1, changeData[0]);
+		Assert.assertEquals(0, changeData[1]);
+		Assert.assertEquals(BlockAspect.STONE, runner.getBlockProxy(changeLocation).getData15(AspectRegistry.BLOCK));
 	}
 
 

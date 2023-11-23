@@ -7,6 +7,7 @@ public class ProcessorElement
 {
 	public final int id;
 	public int mutationCount;
+	public int changeCount;
 	private final SyncPoint _sync;
 	private final AtomicInteger _sharedUnitCounter;
 	private int _lastWorkUnit;

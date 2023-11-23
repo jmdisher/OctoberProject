@@ -3,14 +3,17 @@ package com.jeffdisher.october.logic;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.CrowdState.EntityWrapper;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -24,9 +27,16 @@ public class TickRunner
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	private WorldState _completedWorld;
+	private CrowdState _completedCrowd;
+	
+	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidState> _newCuboids;
+	private List<IEntityChange> _newEntityChanges;
+	private List<Entity> _newEntities;
+	
 	private final WorldState.ProcessedFragment[] _partial;
+	private final CrowdState.ProcessedGroup[] _partialGroup;
 	private long _lastCompletedTick;
 	private long _nextTick;
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
@@ -46,6 +56,7 @@ public class TickRunner
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
 		_partial = new WorldState.ProcessedFragment[threadCount];
+		_partialGroup = new CrowdState.ProcessedGroup[threadCount];
 		_lastCompletedTick = -1;
 		_nextTick = 0;
 		_sharedDataLock = new ReentrantLock();
@@ -54,14 +65,19 @@ public class TickRunner
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-				WorldState world = _initialStartupPriming(thisThread);
-				while (null != world)
+				boolean keepRunning = _initialStartupPriming(thisThread);
+				while (keepRunning)
 				{
 					// Run the tick.
-					WorldState.ProcessedFragment fragment = world.buildNewWorldParallel(thisThread, listener);
+					// Process all entity changes first and synchronize to lock-step.
+					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread);
+					// There is always a returned group (even if it has no content).
+					Assert.assertTrue(null != group);
+					// Now, process the world changes.
+					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, listener);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
-					world = _mergeTickStateAndWaitForNext(thisThread, fragment);
+					keepRunning = _mergeTickStateAndWaitForNext(thisThread, fragment, group);
 				}
 			}, "Tick Runner #" + i);
 		}
@@ -73,8 +89,11 @@ public class TickRunner
 	public void start()
 	{
 		Assert.assertTrue(null == _completedWorld);
+		Assert.assertTrue(null == _completedCrowd);
 		// Create an empty world - the cuboids will be asynchronously loaded.
 		_completedWorld = new WorldState(Collections.emptyMap());
+		// Create it with no users.
+		_completedCrowd = new CrowdState(Collections.emptyMap());
 		for (Thread thread : _threads)
 		{
 			thread.start();
@@ -150,6 +169,40 @@ public class TickRunner
 		}
 	}
 
+	public void entityDidJoin(Entity entity)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _newEntities)
+			{
+				_newEntities = new ArrayList<>();
+			}
+			_newEntities.add(entity);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
+	public void enqueueEntityChange(IEntityChange change)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _newEntityChanges)
+			{
+				_newEntityChanges = new ArrayList<>();
+			}
+			_newEntityChanges.add(change);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
 	/**
 	 * Shuts down the tick runner.  Note that this will block until all runner threads have joined.
 	 */
@@ -194,7 +247,7 @@ public class TickRunner
 	}
 
 
-	private WorldState _initialStartupPriming(ProcessorElement elt)
+	private boolean _initialStartupPriming(ProcessorElement elt)
 	{
 		// This is only called once during start-up in order to synchronize threads and allow an external caller to wait for start-up without a tick running.
 		_partial[elt.id] = null;
@@ -203,13 +256,14 @@ public class TickRunner
 			_acknowledgeTickCompleteAndWaitForNext();
 			elt.releaseWaitingThreads();
 		}
-		return _completedWorld;
+		return true;
 	}
 
-	private WorldState _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted)
+	private boolean _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted, CrowdState.ProcessedGroup processedGroup)
 	{
 		// Store whatever work we finished from the just-completed tick.
 		_partial[elt.id] = fragmentCompleted;
+		_partialGroup[elt.id] = processedGroup;
 		if (elt.synchronizeAndReleaseLast())
 		{
 			// All the data is stored so process it and wait for a request to run the next tick before releasing everyone.
@@ -219,9 +273,19 @@ public class TickRunner
 				worldState.putAll(fragment.stateFragment());
 			}
 			
+			// Process the new entities, as well.
+			Map<Integer, EntityWrapper> crowdState = new HashMap<>();
+			for (CrowdState.ProcessedGroup fragment : _partialGroup)
+			{
+				crowdState.putAll(fragment.groupFragment());
+			}
+			
 			// Load other cuboids and apply other mutations enqueued since the last tick.
 			List<CuboidState> newCuboids;
 			List<IMutation> newMutations;
+			List<Entity> newEntities;
+			List<IEntityChange> newEntityChanges;
+			
 			_sharedDataLock.lock();
 			try
 			{
@@ -229,10 +293,36 @@ public class TickRunner
 				_newCuboids = null;
 				newMutations = _mutations;
 				_mutations = null;
+				newEntities = _newEntities;
+				_newEntities = null;
+				newEntityChanges = _newEntityChanges;
+				_newEntityChanges = null;
 			}
 			finally
 			{
 				_sharedDataLock.unlock();
+			}
+			
+			// Add the new entities.
+			if (null != newEntities)
+			{
+				for (Entity entity : newEntities)
+				{
+					Object old = crowdState.put(entity.id(), new EntityWrapper(entity, new LinkedList<>()));
+					Assert.assertTrue(null == old);
+				}
+			}
+			
+			// Add the new entity changes.
+			if (null != newEntityChanges)
+			{
+				for (IEntityChange change : newEntityChanges)
+				{
+					EntityWrapper target = crowdState.get(change.getTargetId());
+					// This would be a change coming in from a user which doesn't exist, which isn't possible (might change when leaving is implemented).
+					Assert.assertTrue(null != target);
+					target.changes().add(change);
+				}
 			}
 			
 			// First, add the new cuboids.
@@ -248,6 +338,16 @@ public class TickRunner
 			}
 			
 			// Apply the mutations from internal operations.
+			// -first from the entity changes
+			for (CrowdState.ProcessedGroup fragment : _partialGroup)
+			{
+				for (IMutation mutation : fragment.exportedMutations())
+				{
+					_scheduleMutationOnCuboid(worldState, mutation);
+				}
+			}
+			
+			// -then from the block mutations
 			for (WorldState.ProcessedFragment fragment : _partial)
 			{
 				for (IMutation mutation : fragment.exportedMutations())
@@ -265,6 +365,8 @@ public class TickRunner
 				}
 			}
 			
+			// Replace the crowd with the new state.
+			_completedCrowd = new CrowdState(crowdState);
 			// Replace the world with the new state.
 			_completedWorld = new WorldState(worldState);
 			
@@ -281,12 +383,7 @@ public class TickRunner
 		}
 		
 		// If the next tick was set negative, it means exit.
-		WorldState worldToRun = null;
-		if (_nextTick > 0)
-		{
-			worldToRun = _completedWorld;
-		}
-		return worldToRun;
+		return (_nextTick > 0);
 	}
 
 	private synchronized void _acknowledgeTickCompleteAndWaitForNext()

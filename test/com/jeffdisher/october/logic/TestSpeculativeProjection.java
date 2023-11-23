@@ -42,9 +42,9 @@ public class TestSpeculativeProjection
 		
 		// Apply a few local mutations.
 		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		IMutation mutation2 = new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone2 = new EntityChangeMutation(mutation2);
+		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
 		long commit1 = projector.applyLocalChange(lone1);
 		long commit2 = projector.applyLocalChange(lone2);
 		List<Either<IMutation, IEntityChange>> actionsToCommit = new ArrayList<>();
@@ -53,7 +53,7 @@ public class TestSpeculativeProjection
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
 			IMutation mutation = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
-			IEntityChange entityChange = new EntityChangeMutation(mutation);
+			IEntityChange entityChange = new EntityChangeMutation(0, mutation);
 			actionsToCommit.add(Either.second(entityChange));
 			actionsToCommit.add(Either.first(mutation));
 			commitNumbers[i] = projector.applyLocalChange(entityChange);
@@ -103,9 +103,9 @@ public class TestSpeculativeProjection
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1);
@@ -145,9 +145,9 @@ public class TestSpeculativeProjection
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
-		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1);
@@ -194,9 +194,9 @@ public class TestSpeculativeProjection
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), true, 2);
-		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), true, 2);
-		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		projector.applyLocalChange(lone0);
 		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
@@ -241,10 +241,10 @@ public class TestSpeculativeProjection
 		Item stoneItem = ItemRegistry.STONE;
 		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
 		IMutation mutation1 = new DropItemMutation(block1, stoneItem, 1);
-		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
 		IMutation mutation2 = new DropItemMutation(block2, stoneItem, 3);
-		IEntityChange lone2 = new EntityChangeMutation(mutation2);
+		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
 		long commit1 = projector.applyLocalChange(lone1);
 		long commit2 = projector.applyLocalChange(lone2);
 		Assert.assertEquals(2, listener.changeCount);

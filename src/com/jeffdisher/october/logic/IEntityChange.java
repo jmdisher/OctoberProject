@@ -16,6 +16,8 @@ import java.util.function.Consumer;
  */
 public interface IEntityChange
 {
+	int getTargetId();
+
 	boolean applyChange(Consumer<IMutation> newMutationSink);
 
 	IEntityChange applyChangeReversible(Consumer<IMutation> newMutationSink);
