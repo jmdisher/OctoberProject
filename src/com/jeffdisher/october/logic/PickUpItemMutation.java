@@ -1,6 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -69,12 +71,17 @@ public class PickUpItemMutation implements IMutation
 		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		if (BlockAspect.AIR == oldValue)
 		{
-			Inventory inventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-			if (null != inventory)
+			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+			if (null != oldInventory)
 			{
+				// Disect the old inventory since it is immutable.
+				List<Items> mutableItemList = new ArrayList<>(oldInventory.items);
+				int maxEncumbrance = oldInventory.maxEncumbrance;
+				int currentEncumbrance = oldInventory.currentEncumbrance;
+				
 				// Walk the items in the inventory and remove the number of the type of elements.
 				Items updated = null;
-				Iterator<Items> iter = inventory.items.iterator();
+				Iterator<Items> iter = mutableItemList.iterator();
 				while (iter.hasNext())
 				{
 					Items items = iter.next();
@@ -93,11 +100,14 @@ public class PickUpItemMutation implements IMutation
 						}
 					}
 				}
+				
+				// Save-back the updated inventory.
 				if (null != updated)
 				{
-					inventory.items.add(updated);
+					mutableItemList.add(updated);
+					newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemList, currentEncumbrance));
 				}
-				else if (inventory.items.isEmpty())
+				else if (mutableItemList.isEmpty())
 				{
 					// If the list is now empty, remove the special.
 					newBlock.setDataSpecial(AspectRegistry.INVENTORY, null);

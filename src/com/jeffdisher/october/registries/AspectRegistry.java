@@ -21,9 +21,8 @@ public class AspectRegistry
 		return original.cloneData();
 	});
 	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class, OctreeObject.class, (OctreeObject original) -> {
-		return original.cloneData(Inventory.class, (Inventory originalValue) -> {
-			return originalValue.copy();
-		});
+		// Inventories are now immutable so just make a clone of the map.
+		return original.cloneMapShallow();
 	});
 
 	private static int _nextIndex = 0;

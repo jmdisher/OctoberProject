@@ -1,11 +1,12 @@
 package com.jeffdisher.october.types;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
 /**
- * Mutable - external callers can add/remove with the items list but must update currentEncumbrance.
+ * An immutable container where items are or could be.  This may be associated with a block, a player, or something
+ * else.
  */
 public class Inventory
 {
@@ -13,19 +14,10 @@ public class Inventory
 	public final List<Items> items;
 	public int currentEncumbrance;
 
-	public Inventory(int maxEncumbrance)
+	public Inventory(int maxEncumbrance, List<Items> items, int currentEncumbrance)
 	{
 		this.maxEncumbrance = maxEncumbrance;
-		this.items = new ArrayList<>();
-		this.currentEncumbrance = 0;
-	}
-
-	public Inventory copy()
-	{
-		Inventory copy = new Inventory(this.maxEncumbrance);
-		// The "Items" elements are immutable records so we can reference them.
-		copy.items.addAll(this.items);
-		copy.currentEncumbrance = this.currentEncumbrance;
-		return copy;
+		this.items = Collections.unmodifiableList(items);
+		this.currentEncumbrance = currentEncumbrance;
 	}
 }

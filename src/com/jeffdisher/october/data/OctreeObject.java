@@ -87,6 +87,18 @@ public class OctreeObject implements IOctree
 		return new OctreeObject(newMap);
 	}
 
+	/**
+	 * While it is possible for aspects to have special uses which want to avoid referencing things which might be
+	 * immutable in this data structure, the common-case is that the values in the map are already immutable so this
+	 * helper merely clones the map with the same instances inside (shallow).
+	 * 
+	 * @return A new instance with a new data map, yet containing the same key and value instances as the original.
+	 */
+	public OctreeObject cloneMapShallow()
+	{
+		return new OctreeObject(new HashMap<>(_data));
+	}
+
 
 	private short _buildHash(BlockAddress address)
 	{

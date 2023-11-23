@@ -1,6 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -70,21 +72,25 @@ public class DropItemMutation implements IMutation
 		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		if (BlockAspect.AIR == oldValue)
 		{
-			// Get the inventory.
-			Inventory inventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-			// We lazily construct the inventory.
-			if (null == inventory)
+			// Disect existing inventory into mutable copies or create defaults.
+			List<Items> mutableItemList = new ArrayList<>();
+			int maxEncumbrance = InventoryAspect.CAPACITY_AIR;
+			int currentEncumbrance = 0;
+			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+			if (null != oldInventory)
 			{
-				inventory = new Inventory(InventoryAspect.CAPACITY_AIR);
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, inventory);
+				mutableItemList.addAll(oldInventory.items);
+				// We checked that this was air so it should match.
+				Assert.assertTrue(maxEncumbrance == oldInventory.maxEncumbrance);
+				currentEncumbrance = oldInventory.currentEncumbrance;
 			}
 			// Check if this will fit (note that a fresh inventory will _always_ fit (see assertion in constructor).
 			int encumbranceToAdd = _type.encumbrance() * _count;
-			if (encumbranceToAdd <= (inventory.maxEncumbrance - inventory.currentEncumbrance))
+			if (encumbranceToAdd <= (maxEncumbrance - currentEncumbrance))
 			{
 				// This will fit so see if there is an existing Items to which we can add this or if we need to just insert this.
 				Items toInsert = null;
-				Iterator<Items> iter = inventory.items.iterator();
+				Iterator<Items> iter = mutableItemList.iterator();
 				while (iter.hasNext())
 				{
 					Items items = iter.next();
@@ -101,8 +107,11 @@ public class DropItemMutation implements IMutation
 					toInsert = new Items(_type, _count);
 				}
 				// However we got here, insert this at the end.
-				inventory.items.add(toInsert);
-				inventory.currentEncumbrance += encumbranceToAdd;
+				mutableItemList.add(toInsert);
+				currentEncumbrance += encumbranceToAdd;
+				
+				// Now, update the block with the new inventory.
+				newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemList, currentEncumbrance));
 				didApply = true;
 			}
 			else
