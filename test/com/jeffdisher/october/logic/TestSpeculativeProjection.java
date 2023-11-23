@@ -1,6 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -16,6 +18,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Either;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 
@@ -38,36 +41,44 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Apply a few local mutations.
-		IMutation lone1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IMutation lone2 = new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.AIR, BlockAspect.STONE);
-		long commit1 = projector.applyLocalMutation(lone1);
-		long commit2 = projector.applyLocalMutation(lone2);
-		IMutation[] mutations = new IMutation[5];
-		long[] commitNumbers = new long[mutations.length];
-		for (int i = 0; i < mutations.length; ++i)
+		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 0), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		IMutation mutation2 = new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone2 = new EntityChangeMutation(mutation2);
+		long commit1 = projector.applyLocalChange(lone1);
+		long commit2 = projector.applyLocalChange(lone2);
+		List<Either<IMutation, IEntityChange>> actionsToCommit = new ArrayList<>();
+		long[] commitNumbers = new long[5];
+		for (int i = 0; i < commitNumbers.length; ++i)
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
-			mutations[i] = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
-			commitNumbers[i] = projector.applyLocalMutation(mutations[i]);
+			IMutation mutation = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
+			IEntityChange entityChange = new EntityChangeMutation(mutation);
+			actionsToCommit.add(Either.second(entityChange));
+			actionsToCommit.add(Either.first(mutation));
+			commitNumbers[i] = projector.applyLocalChange(entityChange);
 		}
 		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the first 2, one at a time, and then the last ones at the same time.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone1 }, commit1);
-		Assert.assertEquals(6, speculativeCount);
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
+		// 12 speculative elements since there are 6 changes, each with a mutation.
+		Assert.assertEquals(12, speculativeCount);
 		Assert.assertEquals(8, listener.changeCount);
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone2 }, commit2);
-		Assert.assertEquals(5, speculativeCount);
+		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone2), Either.first(mutation2)), commit2);
+		// 10 speculative elements since there are 5 changes, each with a mutation.
+		Assert.assertEquals(10, speculativeCount);
 		Assert.assertEquals(9, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), mutations, commitNumbers[commitNumbers.length - 1]);
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), actionsToCommit, commitNumbers[commitNumbers.length - 1]);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(10, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Now, unload.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address), new IMutation[0], commitNumbers[commitNumbers.length - 1]);
+		speculativeCount = projector.applyCommittedMutations(Set.of(address), Collections.emptyList(), commitNumbers[commitNumbers.length - 1]);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 	}
@@ -91,23 +102,25 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.loadCount);
 		
 		// Apply a few local mutations.
-		IMutation lone0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IMutation lone1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
-		projector.applyLocalMutation(lone0);
+		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalMutation(lone1);
+		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one.
-		int speculativeCount = projector.applyCommittedMutations(Set.of(address1), new IMutation[] { lone0 }, commit1);
+		int speculativeCount = projector.applyCommittedMutations(Set.of(address1), List.of(Either.second(lone0), Either.first(mutation0)), commit1);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Unload the other.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0), new IMutation[0], commit1);
+		speculativeCount = projector.applyCommittedMutations(Set.of(address0), Collections.emptyList(), commit1);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -131,29 +144,32 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.loadCount);
 		
 		// Apply a few local mutations.
-		IMutation lone0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
-		IMutation lone1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
-		projector.applyLocalMutation(lone0);
+		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
+		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalMutation(lone1);
+		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone0 }, 0L);
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone0), Either.first(mutation0)), 0L);
 		// We should still see the other one.
-		Assert.assertEquals(1, speculativeCount);
+		// Note that this is +2 since both entity changes stay in the list, despite both failing - we will still send them to the server unless they do pre-checking.
+		Assert.assertEquals(1 +2, speculativeCount);
 		// We see another 2 changes due to the reverses.
 		Assert.assertEquals(4, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone1 }, commit1);
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(5, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), new IMutation[0], commit1);
+		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), Collections.emptyList(), commit1);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -177,27 +193,30 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.loadCount);
 		
 		// Apply a few local mutations.
-		IMutation lone0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), true, 2);
-		IMutation lone1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), true, 2);
-		projector.applyLocalMutation(lone0);
-		long commit1 = projector.applyLocalMutation(lone1);
+		IMutation mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), true, 2);
+		IEntityChange lone0 = new EntityChangeMutation(mutation0);
+		IMutation mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), true, 2);
+		IEntityChange lone1 = new EntityChangeMutation(mutation1);
+		projector.applyLocalChange(lone0);
+		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone0 }, 0L);
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone0), Either.first(mutation0)), 0L);
 		// We should still see both initial mutations and all of their secondaries, since shockwaves don't actually conflict.
-		int mutationsPerShockwave = 1 + 6 + 36;
+		// (+1 for the entity change)
+		int mutationsPerShockwave = 1+ 1 + 6 + 36;
 		Assert.assertEquals(2 * mutationsPerShockwave, speculativeCount);
 		// We see another 2 changes due to the reverses.
 		Assert.assertEquals(4, listener.changeCount);
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone1 }, commit1);
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(6, listener.changeCount);
 		
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), new IMutation[0], commit1);
+		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), Collections.emptyList(), commit1);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -221,25 +240,27 @@ public class TestSpeculativeProjection
 		int encumbrance = 2;
 		Item stoneItem = ItemRegistry.STONE;
 		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
-		IMutation lone1 = new DropItemMutation(block1, stoneItem, 1);
+		IMutation mutation1 = new DropItemMutation(block1, stoneItem, 1);
+		IEntityChange lone1 = new EntityChangeMutation(mutation1);
 		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
-		IMutation lone2 = new DropItemMutation(block2, stoneItem, 3);
-		long commit1 = projector.applyLocalMutation(lone1);
-		long commit2 = projector.applyLocalMutation(lone2);
+		IMutation mutation2 = new DropItemMutation(block2, stoneItem, 3);
+		IEntityChange lone2 = new EntityChangeMutation(mutation2);
+		long commit1 = projector.applyLocalChange(lone1);
+		long commit2 = projector.applyLocalChange(lone2);
 		Assert.assertEquals(2, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Commit the first, then the second, making sure that things make sense at every point.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone1 }, commit1);
-		Assert.assertEquals(1, speculativeCount);
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
+		Assert.assertEquals(2, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), new IMutation[] { lone2 }, commit2);
+		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone2), Either.first(mutation2)), commit2);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(4, listener.changeCount);
 		
@@ -247,7 +268,7 @@ public class TestSpeculativeProjection
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Now, unload.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address), new IMutation[0], commit2);
+		speculativeCount = projector.applyCommittedMutations(Set.of(address), Collections.emptyList(), commit2);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 	}
