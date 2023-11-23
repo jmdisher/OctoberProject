@@ -1,14 +1,17 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -39,26 +42,33 @@ public class EntityActionValidator
 		// starts with the same default location, when they join.
 		Assert.assertTrue(!_presentEntityIds.contains(id));
 		_presentEntityIds.add(id);
-		return new Entity(id, DEFAULT_LOCATION, DEFAULT_VOLUME, DEFAULT_BLOCKS_PER_TICK_SPEED);
+		// We start by giving the user an empty inventory.
+		Inventory inventory = new Inventory(InventoryAspect.CAPACITY_PLAYER, Collections.emptyList(), 0);
+		return new Entity(id
+				, DEFAULT_LOCATION
+				, DEFAULT_VOLUME
+				, DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+		);
 	}
 
 	public void entityLeft(Entity entity)
 	{
 		// For now, we don't do anything with this beyond validating who is present.
-		Assert.assertTrue(_presentEntityIds.contains(entity.id));
-		_presentEntityIds.remove(entity.id);
+		Assert.assertTrue(_presentEntityIds.contains(entity.id()));
+		_presentEntityIds.remove(entity.id());
 	}
 
 	public Entity moveEntity(Entity entity, EntityLocation newLocation, int ticksToMove)
 	{
 		// First, see how many blocks they could possibly move in this time.
-		float maxDistance = ticksToMove * entity.blocksPerTickSpeed;
+		float maxDistance = ticksToMove * entity.blocksPerTickSpeed();
 		// Check the path-finder to see if a path exists.
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(_blockTypeReader, entity.volume, entity.location, newLocation, maxDistance);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(_blockTypeReader, entity.volume(), entity.location(), newLocation, maxDistance);
 		// NOTE:  We currently ignore collision with other entities, but that may change in the future.
 		// TODO:  We may need to do additional checking or synthesize mutations for things like pressure-plates in the future.
 		return (null != path)
-				? new Entity(entity.id, newLocation, entity.volume, entity.blocksPerTickSpeed)
+				? new Entity(entity.id(), newLocation, entity.volume(), entity.blocksPerTickSpeed(), entity.inventory())
 				: null
 		;
 	}
