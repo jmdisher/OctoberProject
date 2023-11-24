@@ -27,7 +27,7 @@ public class CrowdState
 		_entitiesById = Collections.unmodifiableMap(entitiesById);
 	}
 
-	public ProcessedGroup buildNewCrowdParallel(ProcessorElement processor)
+	public ProcessedGroup buildNewCrowdParallel(ProcessorElement processor, IEntityChangeListener listener)
 	{
 		Map<Integer, EntityWrapper> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
@@ -66,7 +66,14 @@ public class CrowdState
 					{
 						processor.changeCount += 1;
 						boolean didApply = change.applyChange(mutable, newMutationSink, newChangeSink);
-						// TODO:  Determine if we need a listener for didApply.
+						if (didApply)
+						{
+							listener.entityChanged(change.getTargetId());
+						}
+						else
+						{
+							listener.changeDropped(change);
+						}
 					}
 					newWrapper = new EntityWrapper(mutable.freeze(), new LinkedList<>());
 				}
@@ -82,4 +89,10 @@ public class CrowdState
 	) {}
 
 	public static record EntityWrapper(Entity entity, Queue<IEntityChange> changes) {}
+
+	public interface IEntityChangeListener
+	{
+		void entityChanged(int id);
+		void changeDropped(IEntityChange change);
+	}
 }

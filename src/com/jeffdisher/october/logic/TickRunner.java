@@ -46,10 +46,12 @@ public class TickRunner
 	 * Creates the tick runner in a non-started state.
 	 * 
 	 * @param threadCount The number of threads to use to run the ticks.
-	 * @param listener A listener for change events (note that these calls come on internal threads so must be trivial
+	 * @param worldListener A listener for change events (note that these calls come on internal threads so must be trivial
+	 * or hand-off to another thread).
+	 * @param entityListener A listener for change events (note that these calls come on internal threads so must be trivial
 	 * or hand-off to another thread).
 	 */
-	public TickRunner(int threadCount, WorldState.IBlockChangeListener listener)
+	public TickRunner(int threadCount, WorldState.IBlockChangeListener worldListener, CrowdState.IEntityChangeListener entityListener)
 	{
 		// TODO:  Decide where to put the registry or how it should be used.
 		AtomicInteger atomic = new AtomicInteger(0);
@@ -70,11 +72,11 @@ public class TickRunner
 				{
 					// Run the tick.
 					// Process all entity changes first and synchronize to lock-step.
-					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread);
+					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread, entityListener);
 					// There is always a returned group (even if it has no content).
 					Assert.assertTrue(null != group);
 					// Now, process the world changes.
-					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, listener);
+					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, worldListener);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
 					keepRunning = _mergeTickStateAndWaitForNext(thisThread, fragment, group);

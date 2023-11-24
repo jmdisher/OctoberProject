@@ -2,7 +2,9 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -19,6 +21,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Either;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 
@@ -32,6 +35,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -91,6 +95,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -134,6 +139,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -184,6 +190,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -232,6 +239,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -319,6 +327,7 @@ public class TestSpeculativeProjection
 		public int changeCount = 0;
 		public int unloadCount = 0;
 		public CuboidData lastData = null;
+		public Map<Integer, Entity> lastEntityStates = new HashMap<>();
 		
 		@Override
 		public void cuboidDidLoad(CuboidAddress address, CuboidData cuboid)
@@ -336,6 +345,18 @@ public class TestSpeculativeProjection
 		public void cuboidDidUnload(CuboidAddress address, CuboidData cuboid)
 		{
 			this.unloadCount += 1;
+		}
+		@Override
+		public void entityDidLoad(Entity entity)
+		{
+			Entity old = this.lastEntityStates.put(entity.id(), entity);
+			Assert.assertNull(old);
+		}
+		@Override
+		public void entityDidChange(Entity entity)
+		{
+			Entity old = this.lastEntityStates.put(entity.id(), entity);
+			Assert.assertNotNull(old);
 		}
 	}
 }

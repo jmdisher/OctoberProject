@@ -28,18 +28,8 @@ public class TestTickRunner
 	public void basicOneCuboid()
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-				changeData[0] += 1;
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-				changeData[1] += 1;
-			}});
+		CountingWorldListener blockListener = new CountingWorldListener();
+		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		runner.startNextTick();
@@ -49,26 +39,16 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.shutdown();
 		
-		Assert.assertEquals(1, changeData[0]);
-		Assert.assertEquals(0, changeData[1]);
+		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
 	@Test
 	public void shockwaveOneCuboid()
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-				changeData[0] += 1;
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-				changeData[1] += 1;
-			}});
+		CountingWorldListener blockListener = new CountingWorldListener();
+		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		runner.startNextTick();
@@ -85,26 +65,16 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, changeData[0]);
-		Assert.assertEquals(0, changeData[1]);
+		Assert.assertEquals(43, blockListener.blockChanged.get());
+		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
 	@Test
 	public void shockwaveMultiCuboids()
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		AtomicInteger[] changeData = new AtomicInteger[] { new AtomicInteger(0), new AtomicInteger(0) };
-		TickRunner runner = new TickRunner(8, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-				changeData[0].incrementAndGet();
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-				changeData[1].incrementAndGet();
-			}});
+		CountingWorldListener blockListener = new CountingWorldListener();
+		TickRunner runner = new TickRunner(8, blockListener, new CountingEntityListener());
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data })));
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data })));
@@ -127,8 +97,8 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, changeData[0].get());
-		Assert.assertEquals(0, changeData[1].get());
+		Assert.assertEquals(43, blockListener.blockChanged.get());
+		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
 	@Test
@@ -136,15 +106,7 @@ public class TestTickRunner
 	{
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-			}});
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		
@@ -181,15 +143,7 @@ public class TestTickRunner
 		Item stoneItem = ItemRegistry.STONE;
 		
 		// Create a tick runner with a single cuboid and get it running.
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-			}});
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData })));
 		runner.start();
 		runner.startNextTick();
@@ -227,18 +181,9 @@ public class TestTickRunner
 	public void deliverWithEntity()
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		int[] changeData = new int[2];
-		TickRunner runner = new TickRunner(1, new WorldState.IBlockChangeListener() {
-			@Override
-			public void blockChanged(AbsoluteLocation location)
-			{
-				changeData[0] += 1;
-			}
-			@Override
-			public void mutationDropped(IMutation mutation)
-			{
-				changeData[1] += 1;
-			}});
+		CountingWorldListener blockListener = new CountingWorldListener();
+		CountingEntityListener entityListener = new CountingEntityListener();
+		TickRunner runner = new TickRunner(1, blockListener, entityListener);
 		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
 		runner.start();
 		
@@ -264,8 +209,10 @@ public class TestTickRunner
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		Assert.assertEquals(1, changeData[0]);
-		Assert.assertEquals(0, changeData[1]);
+		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(0, blockListener.mutationDropped.get());
+		Assert.assertEquals(1, entityListener.entityChanged.get());
+		Assert.assertEquals(0, entityListener.changeDropped.get());
 		Assert.assertEquals(BlockAspect.STONE, runner.getBlockProxy(changeLocation).getData15(AspectRegistry.BLOCK));
 	}
 
@@ -283,5 +230,40 @@ public class TestTickRunner
 		runner.startNextTick();
 		// 5) Wait for this tick to complete in order to rely on the result being observable.
 		runner.waitForPreviousTick();
+	}
+
+
+	private static class CountingWorldListener implements WorldState.IBlockChangeListener
+	{
+		public AtomicInteger blockChanged = new AtomicInteger(0);
+		public AtomicInteger mutationDropped = new AtomicInteger(0);
+		
+		@Override
+		public void blockChanged(AbsoluteLocation location)
+		{
+			blockChanged.incrementAndGet();
+		}
+		@Override
+		public void mutationDropped(IMutation mutation)
+		{
+			mutationDropped.incrementAndGet();
+		}
+	}
+
+	private static class CountingEntityListener implements CrowdState.IEntityChangeListener
+	{
+		public AtomicInteger entityChanged = new AtomicInteger(0);
+		public AtomicInteger changeDropped = new AtomicInteger(0);
+		
+		@Override
+		public void entityChanged(int id)
+		{
+			entityChanged.incrementAndGet();
+		}
+		@Override
+		public void changeDropped(IEntityChange change)
+		{
+			changeDropped.incrementAndGet();
+		}
 	}
 }

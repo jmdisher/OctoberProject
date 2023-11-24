@@ -84,6 +84,7 @@ public class SpeculativeProjection
 		MutableEntity old = _entitiesById.put(entity.id(), new MutableEntity(entity));
 		// We should never replace in this path.
 		Assert.assertTrue(null == old);
+		_listener.entityDidLoad(entity);
 	}
 
 	/**
@@ -214,6 +215,7 @@ public class SpeculativeProjection
 		_writeBackBlockCache(changedCuboidAddresses, blockCache);
 		
 		// 4)  Walk the remaining (not yet committed) local mutations, applying them and dropping them if they reject on the new state.
+		Set<Integer> modifiedEntityIds = new HashSet<>();
 		while (!forwardSpeculative.isEmpty())
 		{
 			MutationWrapper forwardWrapper = forwardSpeculative.pop();
@@ -222,12 +224,12 @@ public class SpeculativeProjection
 			// These should only ever be changes.
 			IEntityChange change = forwardWrapper.update.second;
 			Assert.assertTrue(null != change);
-			_forwardApplySpeculative(oldWorldLoader, blockCache, change, commitLevel);
+			_forwardApplySpeculative(oldWorldLoader, blockCache, modifiedEntityIds, change, commitLevel);
 		}
 		_writeBackBlockCache(changedCuboidAddresses, blockCache);
 		
 		// We need to notify the listener of anything which changed in this call - we do this at the end to avoid redundant updates.
-		_notifyChanges(changedCuboidAddresses);
+		_notifyChanges(changedCuboidAddresses, modifiedEntityIds);
 		
 		// We return the number of reverse mutations associated with the speculation (this is only useful for testing).
 		return _reverseMutations.size();
@@ -247,13 +249,14 @@ public class SpeculativeProjection
 		long commitNumber = _nextLocalCommitNumber;
 		_nextLocalCommitNumber += 1;
 		Map<CuboidAddress, CuboidData> blockCache = new HashMap<>();
-		boolean didApply = _forwardApplySpeculative(_buildOldWorldLoader(), blockCache, change, commitNumber);
+		Set<Integer> modifiedEntityIds = new HashSet<>();
+		boolean didApply = _forwardApplySpeculative(_buildOldWorldLoader(), blockCache, modifiedEntityIds, change, commitNumber);
 		if (didApply)
 		{
 			// Write-back the changes and notify that we updated.
 			Set<CuboidAddress> changedCuboidAddresses = new HashSet<>();
 			_writeBackBlockCache(changedCuboidAddresses, blockCache);
-			_notifyChanges(changedCuboidAddresses);
+			_notifyChanges(changedCuboidAddresses, modifiedEntityIds);
 		}
 		else
 		{
@@ -265,11 +268,15 @@ public class SpeculativeProjection
 	}
 
 
-	private void _notifyChanges(Set<CuboidAddress> changedCuboidAddresses)
+	private void _notifyChanges(Set<CuboidAddress> changedCuboidAddresses, Set<Integer> entityIds)
 	{
 		for (CuboidAddress address : changedCuboidAddresses)
 		{
 			_listener.cuboidDidChange(address, _loadedCuboids.get(address));
+		}
+		for (Integer id : entityIds)
+		{
+			_listener.entityDidChange(_entitiesById.get(id).freeze());
 		}
 	}
 
@@ -285,7 +292,7 @@ public class SpeculativeProjection
 		return oldWorldLoader;
 	}
 
-	private boolean _forwardApplySpeculative(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, Map<CuboidAddress, CuboidData> blockCache, IEntityChange change, long commitLevel)
+	private boolean _forwardApplySpeculative(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, Map<CuboidAddress, CuboidData> blockCache, Set<Integer> modifiedEntityIds, IEntityChange change, long commitLevel)
 	{
 		List<IMutation> extraLocalMutations = new ArrayList<>();
 		Consumer<IMutation> localImmediateNewMutationsSink = (IMutation newMutation) -> {
@@ -304,6 +311,7 @@ public class SpeculativeProjection
 		IEntityChange reverseChange = change.applyChangeReversible(entity, localImmediateNewMutationsSink, localImmediateNewChangeSink);
 		if (null != reverseChange)
 		{
+			modifiedEntityIds.add(entity.original.id());
 			_reverseMutations.push(new MutationWrapper(commitLevel, Either.second(reverseChange)));
 			// Run everything else here, too.  WARNING:  We build this queue while processing it so it could process a LOT.
 			while (!extraLocalMutations.isEmpty())
@@ -370,6 +378,9 @@ public class SpeculativeProjection
 		void cuboidDidLoad(CuboidAddress address, CuboidData cuboid);
 		void cuboidDidChange(CuboidAddress address, CuboidData cuboid);
 		void cuboidDidUnload(CuboidAddress address, CuboidData cuboid);
+		
+		void entityDidLoad(Entity entity);
+		void entityDidChange(Entity entity);
 	}
 
 	// Only one of mutation or change will be set.
