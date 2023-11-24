@@ -55,6 +55,13 @@ public class EntityChangeReceiveItem implements IEntityChange
 		return reverse;
 	}
 
+	@Override
+	public boolean canReplacePrevious(IEntityChange previousChange)
+	{
+		// We don't merge these.
+		return false;
+	}
+
 
 	private boolean _common(MutableEntity newEntity)
 	{

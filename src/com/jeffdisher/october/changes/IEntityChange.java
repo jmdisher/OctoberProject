@@ -49,4 +49,14 @@ public interface IEntityChange
 	 * rejected.
 	 */
 	IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink);
+
+	/**
+	 * Called when applying a change to a speculative projection in order to see if it renders the previous change
+	 * applied to the same target entity as redundant.  This is to avoid sending a long stream of tiny mutations (like
+	 * movements) to the server when it only cared about the final state.
+	 * 
+	 * @param previousChange The previous change successfully applied to this entity.
+	 * @return True if this change can replace the previousChange in the system.
+	 */
+	boolean canReplacePrevious(IEntityChange previousChange);
 }

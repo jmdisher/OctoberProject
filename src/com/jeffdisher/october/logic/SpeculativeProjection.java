@@ -49,6 +49,7 @@ public class SpeculativeProjection
 	private final Map<Integer, MutableEntity> _entitiesById;
 	private final Stack<MutationWrapper> _reverseMutations;
 	private long _nextLocalCommitNumber;
+	private boolean _shouldTryMerge;
 
 	public SpeculativeProjection(IProjectionListener listener)
 	{
@@ -58,6 +59,7 @@ public class SpeculativeProjection
 		_entitiesById = new HashMap<>();
 		_reverseMutations = new Stack<>();
 		_nextLocalCommitNumber = 1L;
+		_shouldTryMerge = false;
 	}
 
 	/**
@@ -255,6 +257,43 @@ public class SpeculativeProjection
 		boolean didApply = _forwardApplySpeculative(_buildOldWorldLoader(), blockCache, modifiedEntityIds, change, commitNumber);
 		if (didApply)
 		{
+			// Since this applied, see if it can be merged with the previous (we will reverse the commit number, if possible).
+			if (_shouldTryMerge)
+			{
+				if (_reverseMutations.size() >= 2)
+				{
+					// We will pull top off to see if it can be fully replaced by the one under it.
+					// Due to the logic in reversibility, this means that the change we were given here is all that is
+					// needed as it will be equivalent to the reverse of under.
+					MutationWrapper topWrap = _reverseMutations.pop();
+					MutationWrapper underWrap = _reverseMutations.peek();
+					IEntityChange top = topWrap.update.second;
+					IEntityChange under = underWrap.update.second;
+					boolean canReplace = false;
+					if ((null != top) && (null != under) && (top.getTargetId() == under.getTargetId()))
+					{
+						long previousCommit = underWrap.commitLevel;
+						Assert.assertTrue((previousCommit + 1) == commitNumber);
+						// This is a little odd, since the mutations are reversed, but this will still do the right
+						// thing if we merge in reverse order:  top would be applied BEFORE under so ask under.
+						canReplace = under.canReplacePrevious(top);
+						if (canReplace)
+						{
+							// The under can replace top don't re-push it.
+							_nextLocalCommitNumber -= 1;
+							commitNumber = previousCommit;
+						}
+					}
+					if (!canReplace)
+					{
+						// We couldn't merge so restore the stack.
+						_reverseMutations.push(topWrap);
+					}
+				}
+			}
+			// Whether we merged or not, we now have something to try merging with, on the next call.
+			_shouldTryMerge = true;
+			
 			// Write-back the changes and notify that we updated.
 			Set<CuboidAddress> changedCuboidAddresses = new HashSet<>();
 			_writeBackBlockCache(changedCuboidAddresses, blockCache);
@@ -267,6 +306,18 @@ public class SpeculativeProjection
 			commitNumber = 0L;
 		}
 		return commitNumber;
+	}
+
+	/**
+	 * We normally collect local entity movement updates so that we don't report all the between-frames, but we need to
+	 * stop doing that if we see a non-movement change or if the last collected move change has been sent to server.
+	 * This function is called to notify the internal logic when that change has been sent.
+	 */
+	public void sealLastLocalChange()
+	{
+		// We just disable the test to merge on the next call (it will be re-enabled when something new is added but
+		// this will be sufficient to keep what was previously added from ever being merged).
+		_shouldTryMerge = false;
 	}
 
 
