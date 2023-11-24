@@ -11,7 +11,6 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -31,6 +30,7 @@ public class CrowdState
 	{
 		Map<Integer, EntityWrapper> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
+		List<IEntityChange> exportedChanges = new ArrayList<>();
 		for (EntityWrapper wrapper : _entitiesById.values())
 		{
 			if (processor.handleNextWorkUnit())
@@ -57,8 +57,7 @@ public class CrowdState
 						@Override
 						public void accept(IEntityChange arg0)
 						{
-							// TODO: Pass these back - this change is just a stop-gap until we start using this.
-							Assert.unreachable();
+							exportedChanges.add(arg0);
 						}
 					};
 					
@@ -80,12 +79,18 @@ public class CrowdState
 				fragment.put(wrapper.entity.id(), newWrapper);
 			}
 		}
-		return new ProcessedGroup(fragment, exportedMutations);
+		return new ProcessedGroup(fragment, exportedMutations, exportedChanges);
+	}
+
+	public Entity getEntity(int id)
+	{
+		return _entitiesById.get(id).entity;
 	}
 
 
 	public static record ProcessedGroup(Map<Integer, EntityWrapper> groupFragment
 			, List<IMutation> exportedMutations
+			, List<IEntityChange> exportedChanges
 	) {}
 
 	public static record EntityWrapper(Entity entity, Queue<IEntityChange> changes) {}

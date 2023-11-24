@@ -294,14 +294,14 @@ public class SpeculativeProjection
 
 	private boolean _forwardApplySpeculative(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, Map<CuboidAddress, CuboidData> blockCache, Set<Integer> modifiedEntityIds, IEntityChange change, long commitLevel)
 	{
-		List<IMutation> extraLocalMutations = new ArrayList<>();
+		List<Either<IMutation, IEntityChange>> extraLocalUpdates = new ArrayList<>();
 		Consumer<IMutation> localImmediateNewMutationsSink = (IMutation newMutation) -> {
 			// When applying speculative mutations, we want to enqueue any mutations for immediate execution, just as a queue, since the speculative handler has no tick scheduler.
-			extraLocalMutations.add(newMutation);
+			extraLocalUpdates.add(Either.first(newMutation));
 		};
 		Consumer<IEntityChange> localImmediateNewChangeSink = (IEntityChange newChange) -> {
-			// TODO: Pass these back - this change is just a stop-gap until we start using this.
-			Assert.unreachable();
+			// Same logic as for mutations.
+			extraLocalUpdates.add(Either.second(newChange));
 		};
 		
 		// In the reverse case, we can only ever be using IEntityChange.
@@ -314,16 +314,36 @@ public class SpeculativeProjection
 			modifiedEntityIds.add(entity.original.id());
 			_reverseMutations.push(new MutationWrapper(commitLevel, Either.second(reverseChange)));
 			// Run everything else here, too.  WARNING:  We build this queue while processing it so it could process a LOT.
-			while (!extraLocalMutations.isEmpty())
+			while (!extraLocalUpdates.isEmpty())
 			{
-				IMutation extra = extraLocalMutations.remove(0);
-				MutableBlockProxy extraBlock = _loadMutableBlock(blockCache, extra);
-				IMutation reverse2 = extra.applyMutationReversible(oldWorldLoader, extraBlock, localImmediateNewMutationsSink, null);
-				// We can fail to apply one of these later mutations and that is an acceptable type of failure.
-				if (null != reverse2)
+				Either<IMutation, IEntityChange> extra = extraLocalUpdates.remove(0);
+				IMutation extraMutation = extra.first;
+				if (null != extraMutation)
 				{
-					// We commit these at the same level.
-					_reverseMutations.push(new MutationWrapper(commitLevel, Either.first(reverse2)));
+					MutableBlockProxy extraBlock = _loadMutableBlock(blockCache, extraMutation);
+					IMutation reverse2 = extraMutation.applyMutationReversible(oldWorldLoader, extraBlock, localImmediateNewMutationsSink, localImmediateNewChangeSink);
+					// We can fail to apply one of these later mutations and that is an acceptable type of failure.
+					if (null != reverse2)
+					{
+						// We commit these at the same level.
+						_reverseMutations.push(new MutationWrapper(commitLevel, Either.first(reverse2)));
+					}
+				}
+				else
+				{
+					IEntityChange extraChange = extra.second;
+					// In the reverse case, we can only ever be using IEntityChange.
+					MutableEntity extraEntity = _entitiesById.get(extraChange.getTargetId());
+					// This must be present.
+					Assert.assertTrue(null != extraEntity);
+					IEntityChange reverse2 = extraChange.applyChangeReversible(extraEntity, localImmediateNewMutationsSink, localImmediateNewChangeSink);
+					// We can fail to apply one of these later changes and that is an acceptable type of failure.
+					if (null != reverse2)
+					{
+						modifiedEntityIds.add(extraEntity.original.id());
+						// We commit these at the same level.
+						_reverseMutations.push(new MutationWrapper(commitLevel, Either.second(reverse2)));
+					}
 				}
 			}
 		}

@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -20,6 +21,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 
 
 public class TestTickRunner
@@ -214,6 +216,43 @@ public class TestTickRunner
 		Assert.assertEquals(1, entityListener.entityChanged.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
 		Assert.assertEquals(BlockAspect.STONE, runner.getBlockProxy(changeLocation).getData15(AspectRegistry.BLOCK));
+	}
+
+	@Test
+	public void dependentEntityChanges()
+	{
+		CountingEntityListener entityListener = new CountingEntityListener();
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), entityListener);
+		runner.start();
+		
+		// We need 2 entities for this but we will give one some items.
+		Inventory startInventory = new Inventory(10, List.of(new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory));
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
+		// (run a tick to pick up the users)
+		runner.startNextTick();
+		
+		// Try to pass the items to the other entity.
+		IEntityChange send = new EntityChangeSendItem(0, 1, ItemRegistry.STONE);
+		runner.enqueueEntityChange(send);
+		// (run a tick to pick up the change)
+		runner.startNextTick();
+		// (run a tick to run the change and enqueue the next)
+		runner.startNextTick();
+		// (run a tick to run the final change)
+		runner.startNextTick();
+		runner.shutdown();
+		
+		// Now, check for results.
+		Assert.assertEquals(2, entityListener.entityChanged.get());
+		Assert.assertEquals(0, entityListener.changeDropped.get());
+		Entity sender = runner.getEntity(0);
+		Entity receiver = runner.getEntity(1);
+		Assert.assertTrue(sender.inventory().items.isEmpty());
+		Assert.assertEquals(1, receiver.inventory().items.size());
+		Items update = receiver.inventory().items.get(0);
+		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		Assert.assertEquals(2, update.count());
 	}
 
 

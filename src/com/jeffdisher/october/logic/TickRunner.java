@@ -248,6 +248,11 @@ public class TickRunner
 		return _completedWorld.getBlockProxy(location);
 	}
 
+	public Entity getEntity(int id)
+	{
+		return _completedCrowd.getEntity(id);
+	}
+
 
 	private boolean _initialStartupPriming(ProcessorElement elt)
 	{
@@ -305,6 +310,24 @@ public class TickRunner
 				_sharedDataLock.unlock();
 			}
 			
+			// Enqueue any new changes which came from existing changes.
+			for (CrowdState.ProcessedGroup fragment : _partialGroup)
+			{
+				for (IEntityChange change : fragment.exportedChanges())
+				{
+					_scheduleChangeOnEntity(crowdState, change);
+				}
+			}
+			
+			// Enqueue any new changes which came from existing mutations.
+			for (WorldState.ProcessedFragment fragment : _partial)
+			{
+				for (IEntityChange change : fragment.exportedEntityChanges())
+				{
+					_scheduleChangeOnEntity(crowdState, change);
+				}
+			}
+			
 			// Add the new entities.
 			if (null != newEntities)
 			{
@@ -320,10 +343,7 @@ public class TickRunner
 			{
 				for (IEntityChange change : newEntityChanges)
 				{
-					EntityWrapper target = crowdState.get(change.getTargetId());
-					// This would be a change coming in from a user which doesn't exist, which isn't possible (might change when leaving is implemented).
-					Assert.assertTrue(null != target);
-					target.changes().add(change);
+					_scheduleChangeOnEntity(crowdState, change);
 				}
 			}
 			
@@ -419,6 +439,14 @@ public class TickRunner
 		{
 			System.err.println("WARNING:  Mutation dropped due to missing cuboid");
 		}
+	}
+
+	private void _scheduleChangeOnEntity(Map<Integer, EntityWrapper> crowdState, IEntityChange change)
+	{
+		EntityWrapper target = crowdState.get(change.getTargetId());
+		// This would be a change coming in from a user which doesn't exist, which isn't possible (might change when leaving is implemented).
+		Assert.assertTrue(null != target);
+		target.changes().add(change);
 	}
 
 	private void _locked_waitForTickComplete()

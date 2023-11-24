@@ -37,6 +37,7 @@ public class WorldState
 		};
 		Map<CuboidAddress, CuboidState> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
+		List<IEntityChange> exportedEntityChanges = new ArrayList<>();
 		for (Map.Entry<CuboidAddress, CuboidState> elt : _worldMap.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -70,12 +71,20 @@ public class WorldState
 								exportedMutations.add(arg0);
 							}
 						}};
+						
+					Consumer<IEntityChange> newChangeSink = new Consumer<>() {
+						@Override
+						public void accept(IEntityChange arg0)
+						{
+							exportedEntityChanges.add(arg0);
+						}
+					};
 					for (IMutation mutation : mutations)
 					{
 						processor.mutationCount += 1;
 						AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
 						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), newData);
-						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink, null);
+						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink, newChangeSink);
 						if (didApply)
 						{
 							listener.blockChanged(absolteLocation);
@@ -89,7 +98,7 @@ public class WorldState
 				}
 			}
 		}
-		return new ProcessedFragment(fragment, exportedMutations);
+		return new ProcessedFragment(fragment, exportedMutations, exportedEntityChanges);
 	}
 
 	/**
@@ -113,9 +122,10 @@ public class WorldState
 	}
 
 
-	public static record ProcessedFragment(Map<CuboidAddress, CuboidState> stateFragment, List<IMutation> exportedMutations)
-	{
-	}
+	public static record ProcessedFragment(Map<CuboidAddress, CuboidState> stateFragment
+			, List<IMutation> exportedMutations
+			, List<IEntityChange> exportedEntityChanges
+	) {}
 
 
 	public interface IBlockChangeListener

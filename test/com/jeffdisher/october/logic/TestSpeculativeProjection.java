@@ -24,6 +24,7 @@ import com.jeffdisher.october.types.Either;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 
 
 public class TestSpeculativeProjection
@@ -284,6 +285,41 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyCommittedMutations(Set.of(address), Collections.emptyList(), commit2);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
+	}
+
+	@Test
+	public void dependentEntityChanges()
+	{
+		// Test that we can enqueue new entity changes from within an entity change.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		// We need 2 entities for this but we will give one some items.
+		Inventory startInventory = new Inventory(10, List.of(new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		projector.loadedEntity(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory));
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(1));
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		Assert.assertNotNull(listener.lastEntityStates.get(1));
+		
+		// Try to pass the items to the other entity.
+		IEntityChange send = new EntityChangeSendItem(0, 1, ItemRegistry.STONE);
+		long commit1 = projector.applyLocalChange(send);
+		
+		// Check the values.
+		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
+		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
+		Items update = listener.lastEntityStates.get(1).inventory().items.get(0);
+		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		Assert.assertEquals(2, update.count());
+		
+		// Commit this and make sure the values are still correct.
+		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(send)), commit1);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
+		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
+		update = listener.lastEntityStates.get(1).inventory().items.get(0);
+		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		Assert.assertEquals(2, update.count());
 	}
 
 
