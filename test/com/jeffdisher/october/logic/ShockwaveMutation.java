@@ -28,14 +28,14 @@ public class ShockwaveMutation implements IMutation
 	}
 
 	@Override
-	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
+	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		_commonMutation(newMutationSink);
 		return true;
 	}
 
 	@Override
-	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
+	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		_commonMutation(newMutationSink);
 		// This mutation has no state change so just build a mutation which does the same thing, or nothing, depending on if this is where we started.

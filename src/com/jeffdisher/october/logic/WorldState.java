@@ -75,7 +75,7 @@ public class WorldState
 						processor.mutationCount += 1;
 						AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
 						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), newData);
-						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink);
+						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink, null);
 						if (didApply)
 						{
 							listener.blockChanged(absolteLocation);

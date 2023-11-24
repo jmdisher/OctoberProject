@@ -35,7 +35,7 @@ public class ReplaceBlockMutation implements IMutation
 	}
 
 	@Override
-	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
+	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		boolean didApply = false;
@@ -48,7 +48,7 @@ public class ReplaceBlockMutation implements IMutation
 	}
 
 	@Override
-	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink)
+	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		IMutation reverseMutation = null;

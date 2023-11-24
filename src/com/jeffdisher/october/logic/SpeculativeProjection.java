@@ -138,7 +138,7 @@ public class SpeculativeProjection
 				{
 					IMutation mutation = reverseWrapper.update.first;
 					MutableBlockProxy thisBlock = _loadMutableBlock(blockCache, mutation);
-					didApply = mutation.applyMutation(oldWorldLoader, thisBlock, nullNewMutationsSink);
+					didApply = mutation.applyMutation(oldWorldLoader, thisBlock, nullNewMutationsSink, null);
 				}
 				// We can't fail to reverse this.
 				Assert.assertTrue(didApply);
@@ -176,7 +176,7 @@ public class SpeculativeProjection
 			{
 				IMutation mutation = update.first;
 				MutableBlockProxy thisBlock = _loadMutableBlock(blockCache, mutation);
-				didApply = mutation.applyMutation(oldWorldLoader, thisBlock, nullNewMutationsSink);
+				didApply = mutation.applyMutation(oldWorldLoader, thisBlock, nullNewMutationsSink, null);
 			}
 			// If this fails to apply, we are somehow out of sync with the server, which is fatal and shouldn't be possible.
 			Assert.assertTrue(didApply);
@@ -271,7 +271,7 @@ public class SpeculativeProjection
 			{
 				IMutation extra = extraLocalMutations.remove(0);
 				MutableBlockProxy extraBlock = _loadMutableBlock(blockCache, extra);
-				IMutation reverse2 = extra.applyMutationReversible(oldWorldLoader, extraBlock, localImmediateNewMutationsSink);
+				IMutation reverse2 = extra.applyMutationReversible(oldWorldLoader, extraBlock, localImmediateNewMutationsSink, null);
 				// We can fail to apply one of these later mutations and that is an acceptable type of failure.
 				if (null != reverse2)
 				{
