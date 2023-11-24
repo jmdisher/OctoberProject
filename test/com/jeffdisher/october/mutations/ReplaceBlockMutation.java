@@ -1,8 +1,9 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.mutations;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.registries.AspectRegistry;

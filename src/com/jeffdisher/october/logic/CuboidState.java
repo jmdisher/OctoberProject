@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.IMutation;
 
 
 /**

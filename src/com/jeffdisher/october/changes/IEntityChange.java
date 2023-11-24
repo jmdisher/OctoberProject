@@ -1,7 +1,8 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.changes;
 
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.MutableEntity;
 
 

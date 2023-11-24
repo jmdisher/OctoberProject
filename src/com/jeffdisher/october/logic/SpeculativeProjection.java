@@ -10,9 +10,11 @@ import java.util.Stack;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Either;

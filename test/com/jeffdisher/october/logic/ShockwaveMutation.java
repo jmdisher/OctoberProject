@@ -3,8 +3,11 @@ package com.jeffdisher.october.logic;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.NullMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 

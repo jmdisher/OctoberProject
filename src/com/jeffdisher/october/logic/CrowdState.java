@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 

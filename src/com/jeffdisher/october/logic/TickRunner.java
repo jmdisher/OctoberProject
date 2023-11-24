@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CrowdState.EntityWrapper;
+import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;

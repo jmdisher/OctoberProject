@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;

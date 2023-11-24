@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.mutations;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.registries.AspectRegistry;
