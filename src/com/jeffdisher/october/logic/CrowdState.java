@@ -10,6 +10,8 @@ import java.util.Queue;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -43,6 +45,7 @@ public class CrowdState
 				else
 				{
 					// Something is changing so we need to build the mutable copy to modify.
+					MutableEntity mutable = new MutableEntity(wrapper.entity);
 					Consumer<IMutation> newMutationSink = new Consumer<>() {
 						@Override
 						public void accept(IMutation arg0)
@@ -50,15 +53,22 @@ public class CrowdState
 							exportedMutations.add(arg0);
 						}
 					};
+					Consumer<IEntityChange> newChangeSink = new Consumer<>() {
+						@Override
+						public void accept(IEntityChange arg0)
+						{
+							// TODO: Pass these back - this change is just a stop-gap until we start using this.
+							Assert.unreachable();
+						}
+					};
 					
 					for (IEntityChange change : wrapper.changes())
 					{
 						processor.changeCount += 1;
-						boolean didApply = change.applyChange(newMutationSink);
+						boolean didApply = change.applyChange(mutable, newMutationSink, newChangeSink);
 						// TODO:  Determine if we need a listener for didApply.
 					}
-					// TODO:  Handle the cases where the entity change actually changes the entity instead of just delivering a mutation.
-					newWrapper = new EntityWrapper(wrapper.entity, new LinkedList<>());
+					newWrapper = new EntityWrapper(mutable.freeze(), new LinkedList<>());
 				}
 				fragment.put(wrapper.entity.id(), newWrapper);
 			}

@@ -2,6 +2,8 @@ package com.jeffdisher.october.logic;
 
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.types.MutableEntity;
+
 
 /**
  * The current version of IEntityChange is just a stop-gap to allow updates to existing logic elsewhere and this class
@@ -26,7 +28,7 @@ public class EntityChangeMutation implements IEntityChange
 	}
 
 	@Override
-	public boolean applyChange(Consumer<IMutation> newMutationSink)
+	public boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		if (null != _contents)
 		{
@@ -36,7 +38,7 @@ public class EntityChangeMutation implements IEntityChange
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(Consumer<IMutation> newMutationSink)
+	public IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
 	{
 		if (null != _contents)
 		{

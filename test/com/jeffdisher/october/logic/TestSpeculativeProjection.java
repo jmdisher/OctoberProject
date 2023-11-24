@@ -31,6 +31,7 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, but then adding them as "committed" causes no problem.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -89,6 +90,7 @@ public class TestSpeculativeProjection
 		// Test that unloading a cuboid with local mutations correctly purges them but can go on to commit other things.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -131,6 +133,7 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, and then committing a few conflicts to make sure that we drop the speculative mutaions which fail.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -180,6 +183,7 @@ public class TestSpeculativeProjection
 		// We want to apply a few mutations which themselves cause secondary mutations, and observe what happens when some commit versus conflict.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -227,6 +231,7 @@ public class TestSpeculativeProjection
 		// Test that we can apply inventory changes to speculative mutation.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
