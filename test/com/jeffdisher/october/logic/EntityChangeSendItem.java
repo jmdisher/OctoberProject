@@ -1,7 +1,7 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.changes.IEntityChange;
@@ -67,24 +67,18 @@ public class EntityChangeSendItem implements IEntityChange
 	private int _common(MutableEntity newEntity, Consumer<IEntityChange> newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
-		List<Items> newItems = new ArrayList<>();
-		int foundCount = 0;
 		Inventory oldInventory = newEntity.newInventory;
-		for (Items items : oldInventory.items)
-		{
-			if (_itemType == items.type())
-			{
-				foundCount = items.count();
-			}
-			else
-			{
-				newItems.add(items);
-			}
-		}
+		Items match = oldInventory.items.get(_itemType);
+		int foundCount = (null != match)
+				? match.count()
+				: 0
+		;
 		
 		if (foundCount > 0)
 		{
 			// Update the inventory.
+			Map<Item, Items> newItems = new HashMap<>(oldInventory.items);
+			newItems.remove(_itemType);
 			int reducedEncumbrance = _itemType.encumbrance() * foundCount;
 			newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance - reducedEncumbrance);
 			// Send this to the other entity.

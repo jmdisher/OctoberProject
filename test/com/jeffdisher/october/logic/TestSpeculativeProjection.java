@@ -302,7 +302,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
 		
 		// We need 2 entities for this but we will give one some items.
-		Inventory startInventory = new Inventory(10, List.of(new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
 		projector.loadedEntity(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory));
 		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(1));
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -315,8 +315,7 @@ public class TestSpeculativeProjection
 		// Check the values.
 		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
 		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
-		Items update = listener.lastEntityStates.get(1).inventory().items.get(0);
-		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		Items update = listener.lastEntityStates.get(1).inventory().items.get(ItemRegistry.STONE);
 		Assert.assertEquals(2, update.count());
 		
 		// Commit this and make sure the values are still correct.
@@ -324,8 +323,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
 		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
-		update = listener.lastEntityStates.get(1).inventory().items.get(0);
-		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		update = listener.lastEntityStates.get(1).inventory().items.get(ItemRegistry.STONE);
 		Assert.assertEquals(2, update.count());
 	}
 
@@ -389,13 +387,11 @@ public class TestSpeculativeProjection
 		Inventory inventory1 = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, block1.getBlockAddress());
 		Assert.assertEquals(1 * encumbrance, inventory1.currentEncumbrance);
 		Assert.assertEquals(1, inventory1.items.size());
-		Assert.assertEquals(stoneItem, inventory1.items.get(0).type());
-		Assert.assertEquals(1, inventory1.items.get(0).count());
+		Assert.assertEquals(1, inventory1.items.get(stoneItem).count());
 		Inventory inventory2 = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, block2.getBlockAddress());
 		Assert.assertEquals(3 * encumbrance, inventory2.currentEncumbrance);
 		Assert.assertEquals(1, inventory1.items.size());
-		Assert.assertEquals(stoneItem, inventory2.items.get(0).type());
-		Assert.assertEquals(3, inventory2.items.get(0).count());
+		Assert.assertEquals(3, inventory2.items.get(stoneItem).count());
 	}
 
 	private static class CountingListener implements SpeculativeProjection.IProjectionListener

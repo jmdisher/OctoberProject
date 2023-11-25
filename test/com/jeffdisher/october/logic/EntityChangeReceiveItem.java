@@ -1,7 +1,7 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.changes.IEntityChange;
@@ -73,26 +73,11 @@ public class EntityChangeReceiveItem implements IEntityChange
 		if (remaining >= required)
 		{
 			// This will fit so see if there is an empty slot (we don't add to an existing to simplify the test).
-			List<Items> newItems = new ArrayList<>();
-			Items toAdd = new Items(_itemType, _itemCount);
-			for (Items items : newEntity.newInventory.items)
+			if (!newEntity.newInventory.items.containsKey(_itemType))
 			{
-				if (_itemType == items.type())
-				{
-					// There is already a slot with this value, so we can't accept
-					toAdd = null;
-					break;
-				}
-				else
-				{
-					newItems.add(items);
-				}
-			}
-			if (null != toAdd)
-			{
-				// There are no duplicates so add this.
-				newItems.add(toAdd);
-				// Write-back the change.
+				Map<Item, Items> newItems = new HashMap<>(newEntity.newInventory.items);
+				Items toAdd = new Items(_itemType, _itemCount);
+				newItems.put(_itemType, toAdd);
 				newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance + required);
 				didApply = true;
 			}

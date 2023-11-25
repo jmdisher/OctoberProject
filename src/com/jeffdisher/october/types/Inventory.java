@@ -1,7 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -11,13 +11,13 @@ import java.util.List;
 public class Inventory
 {
 	public final int maxEncumbrance;
-	public final List<Items> items;
+	public final Map<Item, Items> items;
 	public int currentEncumbrance;
 
-	public Inventory(int maxEncumbrance, List<Items> items, int currentEncumbrance)
+	public Inventory(int maxEncumbrance, Map<Item, Items> items, int currentEncumbrance)
 	{
 		this.maxEncumbrance = maxEncumbrance;
-		this.items = Collections.unmodifiableList(items);
+		this.items = Collections.unmodifiableMap(items);
 		this.currentEncumbrance = currentEncumbrance;
 	}
 }

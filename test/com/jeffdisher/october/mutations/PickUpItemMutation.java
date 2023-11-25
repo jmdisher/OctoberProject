@@ -1,8 +1,7 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -73,46 +72,39 @@ public class PickUpItemMutation implements IMutation
 		if (BlockAspect.AIR == oldValue)
 		{
 			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-			if (null != oldInventory)
+			Items existing = (null != oldInventory)
+					? oldInventory.items.get(_type)
+					: null
+			;
+			
+			if ((null != existing) && (existing.count() >= _count))
 			{
-				// Disect the old inventory since it is immutable.
-				List<Items> mutableItemList = new ArrayList<>(oldInventory.items);
-				int maxEncumbrance = oldInventory.maxEncumbrance;
-				int currentEncumbrance = oldInventory.currentEncumbrance;
-				
-				// Walk the items in the inventory and remove the number of the type of elements.
-				Items updated = null;
-				Iterator<Items> iter = mutableItemList.iterator();
-				while (iter.hasNext())
+				// By this point, we know that we can perform the action so create the new inventory map.
+				Map<Item, Items> mutableItemMap = new HashMap<>(oldInventory.items);
+				int remaining = existing.count() - _count;
+				if (remaining > 0)
 				{
-					Items items = iter.next();
-					if (items.type() == _type)
-					{
-						if (items.count() >= _count)
-						{
-							iter.remove();
-							int remaining = items.count() - _count;
-							if (remaining > 0)
-							{
-								updated = new Items(_type, remaining);
-							}
-							didApply = true;
-							break;
-						}
-					}
+					Items updated = new Items(_type, remaining);
+					mutableItemMap.put(_type, updated);
 				}
-				
-				// Save-back the updated inventory.
-				if (null != updated)
+				else
 				{
-					mutableItemList.add(updated);
-					newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemList, currentEncumbrance));
+					// Remove this and see if the map is empty.
+					mutableItemMap.remove(_type);
 				}
-				else if (mutableItemList.isEmpty())
+				// Now, re-save the updated inventory.
+				if (mutableItemMap.isEmpty())
 				{
-					// If the list is now empty, remove the special.
+					// The map is empty so we should remove the inventory.
 					newBlock.setDataSpecial(AspectRegistry.INVENTORY, null);
 				}
+				else
+				{
+					// Just save the updated inventory.
+					int encumbranceToRemove = _type.encumbrance() * _count;
+					newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(oldInventory.maxEncumbrance, mutableItemMap, oldInventory.currentEncumbrance - encumbranceToRemove));
+				}
+				didApply = true;
 			}
 		}
 		return didApply;

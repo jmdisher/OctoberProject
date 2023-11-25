@@ -1,8 +1,7 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -74,13 +73,11 @@ public class DropItemMutation implements IMutation
 		if (BlockAspect.AIR == oldValue)
 		{
 			// Disect existing inventory into mutable copies or create defaults.
-			List<Items> mutableItemList = new ArrayList<>();
 			int maxEncumbrance = InventoryAspect.CAPACITY_AIR;
 			int currentEncumbrance = 0;
 			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
 			if (null != oldInventory)
 			{
-				mutableItemList.addAll(oldInventory.items);
 				// We checked that this was air so it should match.
 				Assert.assertTrue(maxEncumbrance == oldInventory.maxEncumbrance);
 				currentEncumbrance = oldInventory.currentEncumbrance;
@@ -90,29 +87,24 @@ public class DropItemMutation implements IMutation
 			if (encumbranceToAdd <= (maxEncumbrance - currentEncumbrance))
 			{
 				// This will fit so see if there is an existing Items to which we can add this or if we need to just insert this.
-				Items toInsert = null;
-				Iterator<Items> iter = mutableItemList.iterator();
-				while (iter.hasNext())
+				Items existing = (null != oldInventory)
+						? oldInventory.items.get(_type)
+						: null
+				;
+				Items toInsert = (null != existing)
+						? new Items(_type, existing.count() + _count)
+						: new Items(_type, _count)
+				;
+				Map<Item, Items> mutableItemMap = new HashMap<>();
+				if (null != oldInventory)
 				{
-					Items items = iter.next();
-					if (items.type() == _type)
-					{
-						iter.remove();
-						toInsert = new Items(_type, items.count() + _count);
-						break;
-					}
+					mutableItemMap.putAll(oldInventory.items);
 				}
-				if (null == toInsert)
-				{
-					// Create the new element.
-					toInsert = new Items(_type, _count);
-				}
-				// However we got here, insert this at the end.
-				mutableItemList.add(toInsert);
+				mutableItemMap.put(_type, toInsert);
 				currentEncumbrance += encumbranceToAdd;
 				
 				// Now, update the block with the new inventory.
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemList, currentEncumbrance));
+				newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemMap, currentEncumbrance));
 				didApply = true;
 			}
 			else

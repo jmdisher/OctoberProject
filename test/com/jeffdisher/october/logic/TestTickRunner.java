@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -164,17 +164,17 @@ public class TestTickRunner
 		// Apply the first mutation to add data.
 		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
 		block = runner.getBlockProxy(testBlock);
-		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
+		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Try to drop too much to fit and verify that nothing changes.
 		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
 		block = runner.getBlockProxy(testBlock);
-		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(0).count());
+		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Add a little more data and make sure that it updates.
 		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
 		block = runner.getBlockProxy(testBlock);
-		Assert.assertEquals(3, block.getDataSpecial(aspectInventory).items.get(0).count());
+		Assert.assertEquals(3, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Remove everything and make sure that we end up with a null inventory.
 		_runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
@@ -232,7 +232,7 @@ public class TestTickRunner
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
-		Inventory startInventory = new Inventory(10, List.of(new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
 		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory));
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
 		// (run a tick to pick up the users)
@@ -256,8 +256,7 @@ public class TestTickRunner
 		Entity receiver = runner.getEntity(1);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
 		Assert.assertEquals(1, receiver.inventory().items.size());
-		Items update = receiver.inventory().items.get(0);
-		Assert.assertEquals(ItemRegistry.STONE, update.type());
+		Items update = receiver.inventory().items.get(ItemRegistry.STONE);
 		Assert.assertEquals(2, update.count());
 	}
 
