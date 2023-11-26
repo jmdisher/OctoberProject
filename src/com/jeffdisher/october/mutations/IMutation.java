@@ -1,12 +1,8 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -31,13 +27,11 @@ public interface IMutation
 	 * For context:  This call is made when a mutation is being applied authoritatively.  That is, it will NOT be
 	 * reverted as is common via the other apply path).
 	 * 
-	 * @param oldWorldLoader The view of the entire world, as of the beginning of this tick.
+	 * @param context Used for reading world state or scheduling follow-up operations.
 	 * @param newBlock The block currently being modified by this mutation in the current tick.
-	 * @param newMutationSink The consumer of any new mutations produces as a side-effect of this one.
-	 * @param newChangeSink The consumer of any new entity changes produced as a side-effect of this mutation
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink);
+	boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock);
 
 	/**
 	 * Applies the mutation to the given world, return a reverse mutation if applied successfully, null if it failed and
@@ -46,12 +40,10 @@ public interface IMutation
 	 * mutation is required in order to reverse-update-apply when new mutations are committed "before" it.  The reverse
 	 * mutation CANNOT fail when applied to the state produced by THIS mutation.
 	 * 
-	 * @param oldWorldLoader The view of the entire world, as of the beginning of this tick.
+	 * @param context Used for reading world state or scheduling follow-up operations.
 	 * @param newBlock The block currently being modified by this mutation in the current tick.
-	 * @param newMutationSink The consumer of any new mutations produces as a side-effect of this one.
-	 * @param newChangeSink The consumer of any new entity changes produced as a side-effect of this mutation
 	 * @return A non-null reverse mutation if the mutation was applied successfully, null if it conflicted and should be
 	 * rejected.
 	 */
-	IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink);
+	IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock);
 }

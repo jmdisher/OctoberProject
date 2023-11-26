@@ -1,14 +1,12 @@
 package com.jeffdisher.october.logic;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.mutations.NullMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 public class ShockwaveMutation implements IMutation
@@ -31,16 +29,16 @@ public class ShockwaveMutation implements IMutation
 	}
 
 	@Override
-	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
-		_commonMutation(newMutationSink);
+		_commonMutation(context.newMutationSink);
 		return true;
 	}
 
 	@Override
-	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
-		_commonMutation(newMutationSink);
+		_commonMutation(context.newMutationSink);
 		// This mutation has no state change so just build a mutation which does the same thing, or nothing, depending on if this is where we started.
 		return _isStart
 				? new ShockwaveMutation(_location, _isStart, _count)

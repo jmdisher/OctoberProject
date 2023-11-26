@@ -2,14 +2,13 @@ package com.jeffdisher.october.logic;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -36,13 +35,13 @@ public class EntityChangeReceiveItem implements IEntityChange
 	}
 
 	@Override
-	public boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		return _common(newEntity);
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
 	{
 		IEntityChange reverse = null;
 		if (_common(newEntity))

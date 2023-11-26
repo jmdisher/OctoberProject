@@ -1,10 +1,8 @@
 package com.jeffdisher.october.changes;
 
-import java.util.function.Consumer;
-
-import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -28,7 +26,7 @@ public class EntityChangeMove implements IEntityChange
 	}
 
 	@Override
-	public boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		newEntity.newLocation = _newLocation;
 		// Movement always succeeds.
@@ -36,7 +34,7 @@ public class EntityChangeMove implements IEntityChange
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
 	{
 		// Just move us back to where we were.
 		EntityChangeMove reverse = new EntityChangeMove(_id, newEntity.newLocation);

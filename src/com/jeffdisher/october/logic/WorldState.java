@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 public class WorldState
@@ -27,16 +28,8 @@ public class WorldState
 		_worldMap = Collections.unmodifiableMap(worldMap);
 	}
 
-	public ProcessedFragment buildNewWorldParallel(ProcessorElement processor, IBlockChangeListener listener)
+	public ProcessedFragment buildNewWorldParallel(ProcessorElement processor, IBlockChangeListener listener, Function<AbsoluteLocation, BlockProxy> loader, long gameTick)
 	{
-		Function<AbsoluteLocation, BlockProxy> oldWorldLoader = (AbsoluteLocation location) -> {
-			CuboidAddress address = location.getCuboidAddress();
-			CuboidState cuboid = _worldMap.get(address);
-			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid.data)
-					: null
-			;
-		};
 		Map<CuboidAddress, CuboidState> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
 		List<IEntityChange> exportedEntityChanges = new ArrayList<>();
@@ -81,12 +74,14 @@ public class WorldState
 							exportedEntityChanges.add(arg0);
 						}
 					};
+					// (we create a context per cuboid since we eagerly do local mutation scheduling)
+					TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 					for (IMutation mutation : mutations)
 					{
 						processor.mutationCount += 1;
 						AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
 						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), newData);
-						boolean didApply = mutation.applyMutation(oldWorldLoader, thisBlockProxy, sink, newChangeSink);
+						boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 						if (didApply)
 						{
 							listener.blockChanged(absolteLocation);
@@ -123,6 +118,23 @@ public class WorldState
 		return block;
 	}
 
+	/**
+	 * Creates and returns a function which will load read-only BlockProxy objects for locations in this world.  If the
+	 * requested block is in a cuboid which isn't loaded, returns null.
+	 * 
+	 * @return The block loader function.
+	 */
+	public Function<AbsoluteLocation, BlockProxy> buildReadOnlyLoader()
+	{
+		return (AbsoluteLocation location) -> {
+			CuboidAddress address = location.getCuboidAddress();
+			CuboidState cuboid = _worldMap.get(address);
+			return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid.data)
+					: null
+			;
+		};
+	}
 
 	public static record ProcessedFragment(Map<CuboidAddress, CuboidState> stateFragment
 			, List<IMutation> exportedMutations

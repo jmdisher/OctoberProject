@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
@@ -73,12 +74,14 @@ public class TickRunner
 				while (keepRunning)
 				{
 					// Run the tick.
+					// Create the loader for the read-only state.
+					Function<AbsoluteLocation, BlockProxy> loader = _completedWorld.buildReadOnlyLoader();
 					// Process all entity changes first and synchronize to lock-step.
-					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread, entityListener);
+					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread, entityListener, loader, _nextTick);
 					// There is always a returned group (even if it has no content).
 					Assert.assertTrue(null != group);
 					// Now, process the world changes.
-					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, worldListener);
+					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, worldListener, loader, _nextTick);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
 					keepRunning = _mergeTickStateAndWaitForNext(thisThread, fragment, group);

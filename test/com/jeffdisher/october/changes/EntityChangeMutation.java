@@ -1,9 +1,8 @@
 package com.jeffdisher.october.changes;
 
-import java.util.function.Consumer;
-
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -29,21 +28,21 @@ public class EntityChangeMutation implements IEntityChange
 	}
 
 	@Override
-	public boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		if (null != _contents)
 		{
-			newMutationSink.accept(_contents);
+			context.newMutationSink.accept(_contents);
 		}
 		return true;
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
 	{
 		if (null != _contents)
 		{
-			newMutationSink.accept(_contents);
+			context.newMutationSink.accept(_contents);
 		}
 		// The mutation we actually delivered is the one which changes things so we just create a null change which we can re-reverse, later.
 		EntityChangeMutation reverse = new EntityChangeMutation(_entityId, _reverseHolder);

@@ -1,12 +1,8 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -29,13 +25,13 @@ public class NullMutation implements IMutation
 	}
 
 	@Override
-	public boolean applyMutation(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
 		return true;
 	}
 
 	@Override
-	public IMutation applyMutationReversible(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, MutableBlockProxy newBlock, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
 		return this;
 	}

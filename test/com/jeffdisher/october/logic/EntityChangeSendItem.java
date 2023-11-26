@@ -5,11 +5,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -37,17 +37,17 @@ public class EntityChangeSendItem implements IEntityChange
 	}
 
 	@Override
-	public boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		int foundCount = _common(newEntity, newChangeSink);
+		int foundCount = _common(newEntity, context.newChangeSink);
 		return foundCount > 0;
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink)
+	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
 	{
 		IEntityChange reverse = null;
-		int foundCount = _common(newEntity, newChangeSink);
+		int foundCount = _common(newEntity, context.newChangeSink);
 		if (foundCount > 0)
 		{
 			// This worked so we will need a reverse - just receive the items, ourselves.

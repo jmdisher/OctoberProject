@@ -1,9 +1,7 @@
 package com.jeffdisher.october.changes;
 
-import java.util.function.Consumer;
-
-import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -28,12 +26,11 @@ public interface IEntityChange
 	 * For context:  This call is made when a mutation is being applied authoritatively.  That is, it will NOT be
 	 * reverted as is common via the other apply path).
 	 * 
+	 * @param context Used for reading world state or scheduling follow-up operations.
 	 * @param newEntity The entity currently being modified by this change in the current tick.
-	 * @param newMutationSink The consumer of any new mutations produces as a side-effect of this one.
-	 * @param newChangeSink The consumer of any new entity changes produced as a side-effect of this mutation
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyChange(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink);
+	boolean applyChange(TickProcessingContext context, MutableEntity newEntity);
 
 	/**
 	 * Applies the change to the given entity, return a reverse change if applied successfully, null if it failed and
@@ -42,13 +39,12 @@ public interface IEntityChange
 	 * is required in order to reverse-update-apply when new changes/mutations are committed "before" it.  The reverse
 	 * change CANNOT fail when applied to the state produced by THIS change.
 	 * 
+	 * @param context Used for reading world state or scheduling follow-up operations.
 	 * @param newEntity The entity currently being modified by this change in the current tick.
-	 * @param newMutationSink The consumer of any new mutations produces as a side-effect of this one.
-	 * @param newChangeSink The consumer of any new entity changes produced as a side-effect of this mutation
 	 * @return A non-null reverse change if the change was applied successfully, null if it conflicted and should be
 	 * rejected.
 	 */
-	IEntityChange applyChangeReversible(MutableEntity newEntity, Consumer<IMutation> newMutationSink, Consumer<IEntityChange> newChangeSink);
+	IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity);
 
 	/**
 	 * Called when applying a change to a speculative projection in order to see if it renders the previous change
