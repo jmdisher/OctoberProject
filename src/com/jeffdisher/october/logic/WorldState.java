@@ -5,12 +5,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -21,66 +23,63 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 public class WorldState
 {
-	private final Map<CuboidAddress, CuboidState> _worldMap;
+	private final Map<CuboidAddress, IReadOnlyCuboidData> _worldMap;
 
-	public WorldState(Map<CuboidAddress, CuboidState> worldMap)
+	public WorldState(Map<CuboidAddress, IReadOnlyCuboidData> worldMap)
 	{
 		_worldMap = Collections.unmodifiableMap(worldMap);
 	}
 
-	public ProcessedFragment buildNewWorldParallel(ProcessorElement processor, IBlockChangeListener listener, Function<AbsoluteLocation, BlockProxy> loader, long gameTick)
+	public ProcessedFragment buildNewWorldParallel(ProcessorElement processor
+			, IBlockChangeListener listener
+			, Function<AbsoluteLocation, BlockProxy> loader
+			, long gameTick
+			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
+	)
 	{
-		Map<CuboidAddress, CuboidState> fragment = new HashMap<>();
+		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
 		List<IEntityChange> exportedEntityChanges = new ArrayList<>();
-		for (Map.Entry<CuboidAddress, CuboidState> elt : _worldMap.entrySet())
+		Consumer<IMutation> sink = new Consumer<IMutation>() {
+			@Override
+			public void accept(IMutation arg0)
+			{
+				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
+				exportedMutations.add(arg0);
+			}};
+			
+		Consumer<IEntityChange> newChangeSink = new Consumer<>() {
+			@Override
+			public void accept(IEntityChange arg0)
+			{
+				exportedEntityChanges.add(arg0);
+			}
+		};
+		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
+		
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : _worldMap.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				CuboidAddress key = elt.getKey();
-				CuboidState oldState = elt.getValue();
-				List<IMutation> mutations = oldState.drainPendingMutations();
+				IReadOnlyCuboidData oldState = elt.getValue();
+				Queue<IMutation> mutations = mutationsToRun.get(key);
+				IReadOnlyCuboidData newData;
 				if (null == mutations)
 				{
 					// Nothing is changing so we can just return the existing data.
-					fragment.put(key, oldState);
+					newData = oldState;
 				}
 				else
 				{
 					// Something is changing so we need to build the mutable copy to modify.
-					CuboidData newData = CuboidData.mutableClone(oldState.data);
-					CuboidAddress cuboidAddress = newData.getCuboidAddress();
-					CuboidState newState = new CuboidState(newData);
-					Consumer<IMutation> sink = new Consumer<IMutation>() {
-						@Override
-						public void accept(IMutation arg0)
-						{
-							CuboidAddress address = arg0.getAbsoluteLocation().getCuboidAddress();
-							if (cuboidAddress.equals(address))
-							{
-								newState.enqueueMutation(arg0);
-							}
-							else
-							{
-								exportedMutations.add(arg0);
-							}
-						}};
-						
-					Consumer<IEntityChange> newChangeSink = new Consumer<>() {
-						@Override
-						public void accept(IEntityChange arg0)
-						{
-							exportedEntityChanges.add(arg0);
-						}
-					};
-					// (we create a context per cuboid since we eagerly do local mutation scheduling)
-					TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
+					CuboidData mutable = CuboidData.mutableClone(oldState);
 					for (IMutation mutation : mutations)
 					{
 						processor.mutationCount += 1;
 						AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
-						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), newData);
+						MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), mutable);
 						boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 						if (didApply)
 						{
@@ -91,8 +90,9 @@ public class WorldState
 							listener.mutationDropped(mutation);
 						}
 					}
-					fragment.put(key, newState);
+					newData = mutable;
 				}
+				fragment.put(key, newData);
 			}
 		}
 		return new ProcessedFragment(fragment, exportedMutations, exportedEntityChanges);
@@ -107,13 +107,13 @@ public class WorldState
 	public BlockProxy getBlockProxy(AbsoluteLocation location)
 	{
 		CuboidAddress address = location.getCuboidAddress();
-		CuboidState cuboid = _worldMap.get(address);
+		IReadOnlyCuboidData cuboid = _worldMap.get(address);
 		
 		BlockProxy block = null;
 		if (null != cuboid)
 		{
 			BlockAddress blockAddress = location.getBlockAddress();
-			block = new BlockProxy(blockAddress, cuboid.data);
+			block = new BlockProxy(blockAddress, cuboid);
 		}
 		return block;
 	}
@@ -128,15 +128,15 @@ public class WorldState
 	{
 		return (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
-			CuboidState cuboid = _worldMap.get(address);
+			IReadOnlyCuboidData cuboid = _worldMap.get(address);
 			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid.data)
+					? new BlockProxy(location.getBlockAddress(), cuboid)
 					: null
 			;
 		};
 	}
 
-	public static record ProcessedFragment(Map<CuboidAddress, CuboidState> stateFragment
+	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutation> exportedMutations
 			, List<IEntityChange> exportedEntityChanges
 	) {}

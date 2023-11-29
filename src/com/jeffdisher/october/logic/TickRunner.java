@@ -6,13 +6,15 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.CrowdState.EntityWrapper;
+import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -34,14 +36,17 @@ public class TickRunner
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
-	private List<CuboidState> _newCuboids;
+	private List<CuboidData> _newCuboids;
 	private List<IEntityChange> _newEntityChanges;
 	private List<Entity> _newEntities;
 	
+	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
+	private TickMaterials _thisTickMaterials;
 	private final WorldState.ProcessedFragment[] _partial;
 	private final CrowdState.ProcessedGroup[] _partialGroup;
 	private long _lastCompletedTick;
 	private long _nextTick;
+	
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
 	private ReentrantLock _sharedDataLock;
 
@@ -70,21 +75,31 @@ public class TickRunner
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-				boolean keepRunning = _initialStartupPriming(thisThread);
-				while (keepRunning)
+				TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
+						, new WorldState.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+						, new CrowdState.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+						, Collections.emptyList()
+						, Collections.emptyList()
+				);
+				while (null != materials)
 				{
 					// Run the tick.
 					// Create the loader for the read-only state.
-					Function<AbsoluteLocation, BlockProxy> loader = _completedWorld.buildReadOnlyLoader();
+					Function<AbsoluteLocation, BlockProxy> loader = materials.completedWorld.buildReadOnlyLoader();
 					// Process all entity changes first and synchronize to lock-step.
-					CrowdState.ProcessedGroup group = _completedCrowd.buildNewCrowdParallel(thisThread, entityListener, loader, _nextTick);
+					CrowdState.ProcessedGroup group = materials.completedCrowd.buildNewCrowdParallel(thisThread, entityListener, loader, materials.thisGameTick, materials.changesToRun);
 					// There is always a returned group (even if it has no content).
 					Assert.assertTrue(null != group);
 					// Now, process the world changes.
-					WorldState.ProcessedFragment fragment = _completedWorld.buildNewWorldParallel(thisThread, worldListener, loader, _nextTick);
+					WorldState.ProcessedFragment fragment = materials.completedWorld.buildNewWorldParallel(thisThread, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
-					keepRunning = _mergeTickStateAndWaitForNext(thisThread, fragment, group);
+					materials = _mergeTickStateAndWaitForNext(thisThread
+							, fragment
+							, group
+							, materials.newCuboidsToAdd
+							, materials.newEntitiesToAdd
+					);
 				}
 			}, "Tick Runner #" + i);
 		}
@@ -159,7 +174,7 @@ public class TickRunner
 	 * 
 	 * @param cuboid The cuboid data to inject.
 	 */
-	public void cuboidWasLoaded(CuboidState cuboid)
+	public void cuboidWasLoaded(CuboidData cuboid)
 	{
 		_sharedDataLock.lock();
 		try
@@ -259,158 +274,154 @@ public class TickRunner
 	}
 
 
-	private boolean _initialStartupPriming(ProcessorElement elt)
-	{
-		// This is only called once during start-up in order to synchronize threads and allow an external caller to wait for start-up without a tick running.
-		_partial[elt.id] = null;
-		if (elt.synchronizeAndReleaseLast())
-		{
-			_acknowledgeTickCompleteAndWaitForNext();
-			elt.releaseWaitingThreads();
-		}
-		return true;
-	}
-
-	private boolean _mergeTickStateAndWaitForNext(ProcessorElement elt, WorldState.ProcessedFragment fragmentCompleted, CrowdState.ProcessedGroup processedGroup)
+	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
+			, WorldState.ProcessedFragment fragmentCompleted
+			, CrowdState.ProcessedGroup processedGroup
+			, List<CuboidData> cuboidsToInject
+			, List<Entity> entitiesToInject
+	)
 	{
 		// Store whatever work we finished from the just-completed tick.
 		_partial[elt.id] = fragmentCompleted;
 		_partialGroup[elt.id] = processedGroup;
+		
+		// We synchronize threads here for a few reasons:
+		// 1) We need to collect all the data from the just-finished frame and produce the updated immutable snapshot (this is a stitching operation so we do it on one thread).
+		// 2) We need to wait for the next frame to be requested (we do this on one thread to simplify everything).
+		// 3) We need to collect all the actions required for the next frame (this requires pulling data from the interlock).
 		if (elt.synchronizeAndReleaseLast())
 		{
 			// All the data is stored so process it and wait for a request to run the next tick before releasing everyone.
-			Map<CuboidAddress, CuboidState> worldState = new HashMap<>();
+			Map<CuboidAddress, IReadOnlyCuboidData> worldState = new HashMap<>();
+			Map<Integer, Entity> crowdState = new HashMap<>();
+			Map<CuboidAddress, Queue<IMutation>> nextTickMutations = new HashMap<>();
+			Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
+			
+			// Collect the end results into the combined world and crowd for the snapshot.
 			for (WorldState.ProcessedFragment fragment : _partial)
 			{
 				worldState.putAll(fragment.stateFragment());
 			}
-			
-			// Process the new entities, as well.
-			Map<Integer, EntityWrapper> crowdState = new HashMap<>();
+			for (CuboidData cuboid : cuboidsToInject)
+			{
+				IReadOnlyCuboidData old = worldState.put(cuboid.getCuboidAddress(), cuboid);
+				// This must not already be present.
+				Assert.assertTrue(null == old);
+			}
 			for (CrowdState.ProcessedGroup fragment : _partialGroup)
 			{
 				crowdState.putAll(fragment.groupFragment());
 			}
-			
-			// Load other cuboids and apply other mutations enqueued since the last tick.
-			List<CuboidState> newCuboids;
-			List<IMutation> newMutations;
-			List<Entity> newEntities;
-			List<IEntityChange> newEntityChanges;
-			
-			_sharedDataLock.lock();
-			try
+			for (Entity entity : entitiesToInject)
 			{
-				newCuboids = _newCuboids;
-				_newCuboids = null;
-				newMutations = _mutations;
-				_mutations = null;
-				newEntities = _newEntities;
-				_newEntities = null;
-				newEntityChanges = _newEntityChanges;
-				_newEntityChanges = null;
-			}
-			finally
-			{
-				_sharedDataLock.unlock();
+				Entity old = crowdState.put(entity.id(), entity);
+				// This must not already be present.
+				Assert.assertTrue(null == old);
 			}
 			
-			// Enqueue any new changes which came from existing changes.
-			for (CrowdState.ProcessedGroup fragment : _partialGroup)
-			{
-				for (IEntityChange change : fragment.exportedChanges())
-				{
-					_scheduleChangeOnEntity(crowdState, change);
-				}
-			}
-			
-			// Enqueue any new changes which came from existing mutations.
+			// We also need to collect all the mutations and changes requested during this tick which will be applied in the next.
 			for (WorldState.ProcessedFragment fragment : _partial)
 			{
+				for (IMutation mutation : fragment.exportedMutations())
+				{
+					_scheduleMutationForCuboid(nextTickMutations, mutation);
+				}
 				for (IEntityChange change : fragment.exportedEntityChanges())
 				{
-					_scheduleChangeOnEntity(crowdState, change);
+					_scheduleChangeForEntity(nextTickChanges, change);
 				}
 			}
-			
-			// Add the new entities.
-			if (null != newEntities)
-			{
-				for (Entity entity : newEntities)
-				{
-					Object old = crowdState.put(entity.id(), new EntityWrapper(entity, new LinkedList<>()));
-					Assert.assertTrue(null == old);
-				}
-			}
-			
-			// Add the new entity changes.
-			if (null != newEntityChanges)
-			{
-				for (IEntityChange change : newEntityChanges)
-				{
-					_scheduleChangeOnEntity(crowdState, change);
-				}
-			}
-			
-			// First, add the new cuboids.
-			if (null != newCuboids)
-			{
-				for (CuboidState cuboid : newCuboids)
-				{
-					CuboidAddress hash = cuboid.data.getCuboidAddress();
-					CuboidState replaced = worldState.put(hash, cuboid);
-					// This should NOT already be here.
-					Assert.assertTrue(null == replaced);
-				}
-			}
-			
-			// Apply the mutations from internal operations.
-			// -first from the entity changes
 			for (CrowdState.ProcessedGroup fragment : _partialGroup)
 			{
 				for (IMutation mutation : fragment.exportedMutations())
 				{
-					_scheduleMutationOnCuboid(worldState, mutation);
+					_scheduleMutationForCuboid(nextTickMutations, mutation);
 				}
-			}
-			
-			// -then from the block mutations
-			for (WorldState.ProcessedFragment fragment : _partial)
-			{
-				for (IMutation mutation : fragment.exportedMutations())
+				for (IEntityChange change : fragment.exportedChanges())
 				{
-					_scheduleMutationOnCuboid(worldState, mutation);
+					_scheduleChangeForEntity(nextTickChanges, change);
 				}
 			}
 			
-			// Apply the other mutations which were enqueued since last tick completed and we parked.
-			if (null != newMutations)
-			{
-				for (IMutation mutation : newMutations)
-				{
-					_scheduleMutationOnCuboid(worldState, mutation);
-				}
-			}
-			
-			// Replace the crowd with the new state.
+			// We are now done with the data we were given and can wait for the next tick.
 			_completedCrowd = new CrowdState(crowdState);
-			// Replace the world with the new state.
 			_completedWorld = new WorldState(worldState);
-			
-			// Reset internal counters.
 			for (int i = 0; i < _partial.length; ++i)
 			{
 				_partial[i] = null;
 			}
-			
 			_acknowledgeTickCompleteAndWaitForNext();
 			
-			// Now, we can release everyone and they will read _nextTick to see if we are still running.
+			// We woke up so either run the next tick or exit (if the next tick was set negative, it means exit).
+			if (_nextTick > 0)
+			{
+				// Load other cuboids and apply other mutations enqueued since the last tick.
+				List<CuboidData> newCuboids;
+				List<IMutation> newMutations;
+				List<Entity> newEntities;
+				List<IEntityChange> newEntityChanges;
+				
+				_sharedDataLock.lock();
+				try
+				{
+					newCuboids = _newCuboids;
+					_newCuboids = null;
+					newMutations = _mutations;
+					_mutations = null;
+					newEntities = _newEntities;
+					_newEntities = null;
+					newEntityChanges = _newEntityChanges;
+					_newEntityChanges = null;
+				}
+				finally
+				{
+					_sharedDataLock.unlock();
+				}
+				
+				// Schedule the new mutations and changes (the new entities an cuboids are just passed through to when the final snapshot is assembled).
+				if (null != newMutations)
+				{
+					for (IMutation mutation : newMutations)
+					{
+						_scheduleMutationForCuboid(nextTickMutations, mutation);
+					}
+				}
+				if (null != newEntityChanges)
+				{
+					for (IEntityChange change : newEntityChanges)
+					{
+						_scheduleChangeForEntity(nextTickChanges, change);
+					}
+				}
+				
+				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
+				for (CuboidAddress key : nextTickMutations.keySet())
+				{
+					if (!worldState.containsKey(key))
+					{
+						System.out.println("WARNING: missing " + key);
+					}
+				}
+				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
+				_thisTickMaterials = new TickMaterials(_nextTick
+						, _completedWorld
+						, _completedCrowd
+						, nextTickMutations
+						, nextTickChanges
+						, (null != newCuboids) ? newCuboids : Collections.emptyList()
+						, (null != newEntities) ? newEntities : Collections.emptyList()
+				);
+			}
+			else
+			{
+				// Shut down.
+				_thisTickMaterials = null;
+			}
+			// Now, we can release everyone and they will read _thisTickMaterials to see if we are still running.
 			elt.releaseWaitingThreads();
 		}
 		
-		// If the next tick was set negative, it means exit.
-		return (_nextTick > 0);
+		return _thisTickMaterials;
 	}
 
 	private synchronized void _acknowledgeTickCompleteAndWaitForNext()
@@ -432,26 +443,28 @@ public class TickRunner
 		}
 	}
 
-	private void _scheduleMutationOnCuboid(Map<CuboidAddress, CuboidState> worldState, IMutation mutation)
+	private void _scheduleMutationForCuboid(Map<CuboidAddress, Queue<IMutation>> nextTickMutations, IMutation mutation)
 	{
 		CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-		CuboidState cuboid = worldState.get(address);
-		if (null != cuboid)
+		Queue<IMutation> queue = nextTickMutations.get(address);
+		if (null == queue)
 		{
-			cuboid.enqueueMutation(mutation);
+			queue = new LinkedList<>();
+			nextTickMutations.put(address, queue);
 		}
-		else
-		{
-			System.err.println("WARNING:  Mutation dropped due to missing cuboid");
-		}
+		queue.add(mutation);
 	}
 
-	private void _scheduleChangeOnEntity(Map<Integer, EntityWrapper> crowdState, IEntityChange change)
+	private void _scheduleChangeForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, IEntityChange change)
 	{
-		EntityWrapper target = crowdState.get(change.getTargetId());
-		// This would be a change coming in from a user which doesn't exist, which isn't possible (might change when leaving is implemented).
-		Assert.assertTrue(null != target);
-		target.changes().add(change);
+		int entityId = change.getTargetId();
+		Queue<IEntityChange> queue = nextTickChanges.get(entityId);
+		if (null == queue)
+		{
+			queue = new LinkedList<>();
+			nextTickChanges.put(entityId, queue);
+		}
+		queue.add(change);
 	}
 
 	private void _locked_waitForTickComplete()
@@ -469,4 +482,14 @@ public class TickRunner
 			}
 		}
 	}
+
+
+	private static record TickMaterials(long thisGameTick
+			, WorldState completedWorld
+			, CrowdState completedCrowd
+			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
+			, Map<Integer, Queue<IEntityChange>> changesToRun
+			, List<CuboidData> newCuboidsToAdd
+			, List<Entity> newEntitiesToAdd
+	) {}
 }

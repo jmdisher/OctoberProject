@@ -3,7 +3,6 @@ package com.jeffdisher.october.logic;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -25,16 +24,21 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class CrowdState
 {
-	private final Map<Integer, EntityWrapper> _entitiesById;
+	private final Map<Integer, Entity> _entitiesById;
 
-	public CrowdState(Map<Integer, EntityWrapper> entitiesById)
+	public CrowdState(Map<Integer, Entity> entitiesById)
 	{
 		_entitiesById = Collections.unmodifiableMap(entitiesById);
 	}
 
-	public ProcessedGroup buildNewCrowdParallel(ProcessorElement processor, IEntityChangeListener listener, Function<AbsoluteLocation, BlockProxy> loader, long gameTick)
+	public ProcessedGroup buildNewCrowdParallel(ProcessorElement processor
+			, IEntityChangeListener listener
+			, Function<AbsoluteLocation, BlockProxy> loader
+			, long gameTick
+			, Map<Integer, Queue<IEntityChange>> changesToRun
+	)
 	{
-		Map<Integer, EntityWrapper> fragment = new HashMap<>();
+		Map<Integer, Entity> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
 		List<IEntityChange> exportedChanges = new ArrayList<>();
 		Consumer<IMutation> newMutationSink = new Consumer<>() {
@@ -53,22 +57,25 @@ public class CrowdState
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
-		for (EntityWrapper wrapper : _entitiesById.values())
+		for (Map.Entry<Integer, Entity> elt : _entitiesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
-				EntityWrapper newWrapper;
-				if (wrapper.changes.isEmpty())
+				Integer id = elt.getKey();
+				Entity entity = elt.getValue();
+				Entity newEntity;
+				Queue<IEntityChange> changes = changesToRun.get(id);
+				if (null == changes)
 				{
 					// Nothing is changing so just copy this forward.
-					newWrapper = wrapper;
+					newEntity = entity;
 				}
 				else
 				{
 					// Something is changing so we need to build the mutable copy to modify.
-					MutableEntity mutable = new MutableEntity(wrapper.entity);
-					for (IEntityChange change : wrapper.changes())
+					MutableEntity mutable = new MutableEntity(entity);
+					for (IEntityChange change : changes)
 					{
 						processor.changeCount += 1;
 						boolean didApply = change.applyChange(context, mutable);
@@ -81,9 +88,9 @@ public class CrowdState
 							listener.changeDropped(change);
 						}
 					}
-					newWrapper = new EntityWrapper(mutable.freeze(), new LinkedList<>());
+					newEntity = mutable.freeze();
 				}
-				fragment.put(wrapper.entity.id(), newWrapper);
+				fragment.put(id, newEntity);
 			}
 		}
 		return new ProcessedGroup(fragment, exportedMutations, exportedChanges);
@@ -91,16 +98,14 @@ public class CrowdState
 
 	public Entity getEntity(int id)
 	{
-		return _entitiesById.get(id).entity;
+		return _entitiesById.get(id);
 	}
 
 
-	public static record ProcessedGroup(Map<Integer, EntityWrapper> groupFragment
+	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutation> exportedMutations
 			, List<IEntityChange> exportedChanges
 	) {}
-
-	public static record EntityWrapper(Entity entity, Queue<IEntityChange> changes) {}
 
 	public interface IEntityChangeListener
 	{

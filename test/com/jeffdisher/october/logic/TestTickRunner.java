@@ -38,12 +38,13 @@ public class TestTickRunner
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
+		// Start the tick, which will pick up the new cuboid, but wait until it completes and adds the cuboid to the universe before applying a mutation.
 		runner.startNextTick();
-		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
+		runner.waitForPreviousTick();
+		// The mutation will be run in the next tick since there isn't one running.
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
-		runner.startNextTick();
 		runner.startNextTick();
 		runner.shutdown();
 		
@@ -57,15 +58,12 @@ public class TestTickRunner
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		runner.startNextTick();
-		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
+		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), true, 2));
-		runner.waitForPreviousTick();
-		runner.startNextTick();
-		runner.startNextTick();
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -83,22 +81,20 @@ public class TestTickRunner
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(8, blockListener, new CountingEntityListener());
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)-1), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)0), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)-1), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data })));
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)-1), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)-1), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data }));
 		runner.start();
 		runner.startNextTick();
-		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
+		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), true, 2));
 		runner.startNextTick();
-		runner.startNextTick();
-		runner.waitForPreviousTick();
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.startNextTick();
@@ -115,7 +111,7 @@ public class TestTickRunner
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
@@ -152,7 +148,7 @@ public class TestTickRunner
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData }));
 		runner.start();
 		runner.startNextTick();
 		runner.startNextTick();
@@ -192,7 +188,7 @@ public class TestTickRunner
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
 		TickRunner runner = new TickRunner(1, blockListener, entityListener);
-		runner.cuboidWasLoaded(new CuboidState(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data })));
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		
 		// Have a new entity join and wait for them to be added.
@@ -207,11 +203,9 @@ public class TestTickRunner
 		runner.enqueueEntityChange(new EntityChangeMutation(entityId, new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)));
 		
 		// This will take a few ticks to be observable:
-		// -after tick 1, the change will be queued
+		// -after tick 1, the change will have been run and the mutation enqueued
 		runner.startNextTick();
-		// -after tick 2, the change will have been run and the mutation enqueued
-		runner.startNextTick();
-		// -after tick 3, the mutation will have been committed
+		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
 		
 		// Shutdown and observe expected results.
@@ -237,12 +231,11 @@ public class TestTickRunner
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
 		// (run a tick to pick up the users)
 		runner.startNextTick();
+		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
 		IEntityChange send = new EntityChangeSendItem(0, 1, ItemRegistry.STONE);
 		runner.enqueueEntityChange(send);
-		// (run a tick to pick up the change)
-		runner.startNextTick();
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
 		// (run a tick to run the final change)
@@ -268,11 +261,9 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		// 2) Enqueue the mutation to be picked up by the next tick.
 		runner.enqueueMutation(mutation);
-		// 3) Run a tick to pick up the new mutation and schedule it.
+		// 3) Run the tick which will execute the mutation.
 		runner.startNextTick();
-		// 4) Run the tick which will execute the mutation.
-		runner.startNextTick();
-		// 5) Wait for this tick to complete in order to rely on the result being observable.
+		// 4) Wait for this tick to complete in order to rely on the result being observable.
 		runner.waitForPreviousTick();
 	}
 
