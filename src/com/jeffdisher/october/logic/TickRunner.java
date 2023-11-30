@@ -17,6 +17,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.utils.Assert;
@@ -31,8 +32,10 @@ public class TickRunner
 {
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
-	private WorldState _completedWorld;
-	private CrowdState _completedCrowd;
+	// Read-only cuboids from the previous tick, resolved by address.
+	private Map<CuboidAddress, IReadOnlyCuboidData> _completedCuboids;
+	// Read-only entities from the previous tick, resolved by ID.
+	private Map<Integer, Entity> _completedEntities;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
@@ -42,8 +45,8 @@ public class TickRunner
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
-	private final WorldState.ProcessedFragment[] _partial;
-	private final CrowdState.ProcessedGroup[] _partialGroup;
+	private final WorldProcessor.ProcessedFragment[] _partial;
+	private final CrowdProcessor.ProcessedGroup[] _partialGroup;
 	private long _lastCompletedTick;
 	private long _nextTick;
 	
@@ -59,39 +62,46 @@ public class TickRunner
 	 * @param entityListener A listener for change events (note that these calls come on internal threads so must be trivial
 	 * or hand-off to another thread).
 	 */
-	public TickRunner(int threadCount, WorldState.IBlockChangeListener worldListener, CrowdState.IEntityChangeListener entityListener)
+	public TickRunner(int threadCount, WorldProcessor.IBlockChangeListener worldListener, CrowdProcessor.IEntityChangeListener entityListener)
 	{
 		// TODO:  Decide where to put the registry or how it should be used.
 		AtomicInteger atomic = new AtomicInteger(0);
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
-		_partial = new WorldState.ProcessedFragment[threadCount];
-		_partialGroup = new CrowdState.ProcessedGroup[threadCount];
+		_partial = new WorldProcessor.ProcessedFragment[threadCount];
+		_partialGroup = new CrowdProcessor.ProcessedGroup[threadCount];
 		_lastCompletedTick = -1;
 		_nextTick = 0;
 		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
 		{
+			// Create the loader for the read-only state (note that this is bound to us so it will see the most recent _completedCuboids).
+			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
+				CuboidAddress address = location.getCuboidAddress();
+				IReadOnlyCuboidData cuboid = _completedCuboids.get(address);
+				return (null != cuboid)
+						? new BlockProxy(location.getBlockAddress(), cuboid)
+						: null
+				;
+			};
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
 				TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
-						, new WorldState.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
-						, new CrowdState.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+						, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+						, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
 						, Collections.emptyList()
 						, Collections.emptyList()
 				);
 				while (null != materials)
 				{
 					// Run the tick.
-					// Create the loader for the read-only state.
-					Function<AbsoluteLocation, BlockProxy> loader = materials.completedWorld.buildReadOnlyLoader();
 					// Process all entity changes first and synchronize to lock-step.
-					CrowdState.ProcessedGroup group = materials.completedCrowd.buildNewCrowdParallel(thisThread, entityListener, loader, materials.thisGameTick, materials.changesToRun);
+					CrowdProcessor.ProcessedGroup group = CrowdProcessor.buildNewCrowdParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, materials.changesToRun);
 					// There is always a returned group (even if it has no content).
 					Assert.assertTrue(null != group);
 					// Now, process the world changes.
-					WorldState.ProcessedFragment fragment = materials.completedWorld.buildNewWorldParallel(thisThread, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
+					WorldProcessor.ProcessedFragment fragment = WorldProcessor.buildNewWorldParallel(thisThread, materials.completedCuboids, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
 					materials = _mergeTickStateAndWaitForNext(thisThread
@@ -110,12 +120,12 @@ public class TickRunner
 	 */
 	public void start()
 	{
-		Assert.assertTrue(null == _completedWorld);
-		Assert.assertTrue(null == _completedCrowd);
+		Assert.assertTrue(null == _completedCuboids);
+		Assert.assertTrue(null == _completedEntities);
 		// Create an empty world - the cuboids will be asynchronously loaded.
-		_completedWorld = new WorldState(Collections.emptyMap());
+		_completedCuboids = Collections.emptyMap();
 		// Create it with no users.
-		_completedCrowd = new CrowdState(Collections.emptyMap());
+		_completedEntities = Collections.emptyMap();
 		for (Thread thread : _threads)
 		{
 			thread.start();
@@ -265,18 +275,31 @@ public class TickRunner
 	 */
 	public BlockProxy getBlockProxy(AbsoluteLocation location)
 	{
-		return _completedWorld.getBlockProxy(location);
+		CuboidAddress address = location.getCuboidAddress();
+		IReadOnlyCuboidData cuboid = _completedCuboids.get(address);
+		
+		BlockProxy block = null;
+		if (null != cuboid)
+		{
+			BlockAddress blockAddress = location.getBlockAddress();
+			block = new BlockProxy(blockAddress, cuboid);
+		}
+		return block;
 	}
 
+	/**
+	 * @param id The entity ID to look up.
+	 * @return The read-only entity completed by the previous tick.
+	 */
 	public Entity getEntity(int id)
 	{
-		return _completedCrowd.getEntity(id);
+		return _completedEntities.get(id);
 	}
 
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
-			, WorldState.ProcessedFragment fragmentCompleted
-			, CrowdState.ProcessedGroup processedGroup
+			, WorldProcessor.ProcessedFragment fragmentCompleted
+			, CrowdProcessor.ProcessedGroup processedGroup
 			, List<CuboidData> cuboidsToInject
 			, List<Entity> entitiesToInject
 	)
@@ -298,7 +321,7 @@ public class TickRunner
 			Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
 			
 			// Collect the end results into the combined world and crowd for the snapshot.
-			for (WorldState.ProcessedFragment fragment : _partial)
+			for (WorldProcessor.ProcessedFragment fragment : _partial)
 			{
 				worldState.putAll(fragment.stateFragment());
 			}
@@ -308,7 +331,7 @@ public class TickRunner
 				// This must not already be present.
 				Assert.assertTrue(null == old);
 			}
-			for (CrowdState.ProcessedGroup fragment : _partialGroup)
+			for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
 			{
 				crowdState.putAll(fragment.groupFragment());
 			}
@@ -320,7 +343,7 @@ public class TickRunner
 			}
 			
 			// We also need to collect all the mutations and changes requested during this tick which will be applied in the next.
-			for (WorldState.ProcessedFragment fragment : _partial)
+			for (WorldProcessor.ProcessedFragment fragment : _partial)
 			{
 				for (IMutation mutation : fragment.exportedMutations())
 				{
@@ -331,7 +354,7 @@ public class TickRunner
 					_scheduleChangeForEntity(nextTickChanges, change);
 				}
 			}
-			for (CrowdState.ProcessedGroup fragment : _partialGroup)
+			for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
 			{
 				for (IMutation mutation : fragment.exportedMutations())
 				{
@@ -344,8 +367,8 @@ public class TickRunner
 			}
 			
 			// We are now done with the data we were given and can wait for the next tick.
-			_completedCrowd = new CrowdState(crowdState);
-			_completedWorld = new WorldState(worldState);
+			_completedCuboids = Collections.unmodifiableMap(worldState);
+			_completedEntities = Collections.unmodifiableMap(crowdState);
 			for (int i = 0; i < _partial.length; ++i)
 			{
 				_partial[i] = null;
@@ -404,8 +427,8 @@ public class TickRunner
 				}
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
 				_thisTickMaterials = new TickMaterials(_nextTick
-						, _completedWorld
-						, _completedCrowd
+						, _completedCuboids
+						, _completedEntities
 						, nextTickMutations
 						, nextTickChanges
 						, (null != newCuboids) ? newCuboids : Collections.emptyList()
@@ -485,8 +508,8 @@ public class TickRunner
 
 
 	private static record TickMaterials(long thisGameTick
-			, WorldState completedWorld
-			, CrowdState completedCrowd
+			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
 			, Map<Integer, Queue<IEntityChange>> changesToRun
 			, List<CuboidData> newCuboidsToAdd

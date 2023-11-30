@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,19 +18,18 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Similar to WorldState, for the cuboids within the world, this is a snapshot of the state of all entities in the
- * system and the parallel processing logic for them.
+ * Static logic which implements the parallel game tick logic when operating on entities within the world.
+ * The counterpart to this, for cuboids, is WorldProcessor.
  */
-public class CrowdState
+public class CrowdProcessor
 {
-	private final Map<Integer, Entity> _entitiesById;
-
-	public CrowdState(Map<Integer, Entity> entitiesById)
+	private CrowdProcessor()
 	{
-		_entitiesById = Collections.unmodifiableMap(entitiesById);
+		// This is just static logic.
 	}
 
-	public ProcessedGroup buildNewCrowdParallel(ProcessorElement processor
+	public static ProcessedGroup buildNewCrowdParallel(ProcessorElement processor
+			, Map<Integer, Entity> entitiesById
 			, IEntityChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
@@ -57,7 +55,7 @@ public class CrowdState
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
-		for (Map.Entry<Integer, Entity> elt : _entitiesById.entrySet())
+		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
@@ -96,16 +94,12 @@ public class CrowdState
 		return new ProcessedGroup(fragment, exportedMutations, exportedChanges);
 	}
 
-	public Entity getEntity(int id)
-	{
-		return _entitiesById.get(id);
-	}
-
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutation> exportedMutations
 			, List<IEntityChange> exportedChanges
 	) {}
+
 
 	public interface IEntityChangeListener
 	{

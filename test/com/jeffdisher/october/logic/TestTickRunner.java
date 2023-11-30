@@ -268,7 +268,7 @@ public class TestTickRunner
 	}
 
 
-	private static class CountingWorldListener implements WorldState.IBlockChangeListener
+	private static class CountingWorldListener implements WorldProcessor.IBlockChangeListener
 	{
 		public AtomicInteger blockChanged = new AtomicInteger(0);
 		public AtomicInteger mutationDropped = new AtomicInteger(0);
@@ -285,7 +285,7 @@ public class TestTickRunner
 		}
 	}
 
-	private static class CountingEntityListener implements CrowdState.IEntityChangeListener
+	private static class CountingEntityListener implements CrowdProcessor.IEntityChangeListener
 	{
 		public AtomicInteger entityChanged = new AtomicInteger(0);
 		public AtomicInteger changeDropped = new AtomicInteger(0);
