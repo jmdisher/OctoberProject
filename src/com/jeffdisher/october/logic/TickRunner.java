@@ -97,11 +97,11 @@ public class TickRunner
 				{
 					// Run the tick.
 					// Process all entity changes first and synchronize to lock-step.
-					CrowdProcessor.ProcessedGroup group = CrowdProcessor.buildNewCrowdParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, materials.changesToRun);
+					CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, materials.changesToRun);
 					// There is always a returned group (even if it has no content).
 					Assert.assertTrue(null != group);
 					// Now, process the world changes.
-					WorldProcessor.ProcessedFragment fragment = WorldProcessor.buildNewWorldParallel(thisThread, materials.completedCuboids, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
+					WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
 					// There is always a returned fragment (even if it has no content).
 					Assert.assertTrue(null != fragment);
 					materials = _mergeTickStateAndWaitForNext(thisThread
@@ -321,6 +321,8 @@ public class TickRunner
 			Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
 			
 			// Collect the end results into the combined world and crowd for the snapshot.
+			// We start by adding the previous world state and writing the updates on top of it (note that this distinction could be used for unload logic, in the future).
+			worldState.putAll(_completedCuboids);
 			for (WorldProcessor.ProcessedFragment fragment : _partial)
 			{
 				worldState.putAll(fragment.stateFragment());
@@ -331,6 +333,8 @@ public class TickRunner
 				// This must not already be present.
 				Assert.assertTrue(null == old);
 			}
+			// Similarly, start with the entities from last tick.
+			crowdState.putAll(_completedEntities);
 			for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
 			{
 				crowdState.putAll(fragment.groupFragment());

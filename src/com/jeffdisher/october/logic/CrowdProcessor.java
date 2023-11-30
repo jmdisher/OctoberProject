@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -28,7 +29,23 @@ public class CrowdProcessor
 		// This is just static logic.
 	}
 
-	public static ProcessedGroup buildNewCrowdParallel(ProcessorElement processor
+	/**
+	 * Applies the given changesToRun to the data in entitiesById, returning updated entities for some subset of the
+	 * changes.
+	 * Note that this is expected to be run in parallel, across many threads, and will rely on a bakery algorithm to
+	 * select each thread's subset of the work, dynamically.  The groups returned by all threads will have no overlap
+	 * and the union of all of them will entirely cover the key space defined by changesToRun.
+	 * 
+	 * @param processor The current thread.
+	 * @param entitiesById The map of all read-only entities from the previous tick.
+	 * @param listener Receives callbacks (on the calling thread) related to entity changes.
+	 * @param loader Used to resolve read-only block data from the previous tick.
+	 * @param gameTick The game tick being processed.
+	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
+	 * scheduled.
+	 * @return The subset of the changesToRun work which was completed by this thread.
+	 */
+	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
 			, IEntityChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
@@ -55,39 +72,32 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
-		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
+		for (Map.Entry<Integer, Queue<IEntityChange>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				Entity entity = elt.getValue();
-				Entity newEntity;
-				Queue<IEntityChange> changes = changesToRun.get(id);
-				if (null == changes)
+				Queue<IEntityChange> changes = elt.getValue();
+				Entity entity = entitiesById.get(id);
+				
+				// We can't be told to operate on something which isn't in the state.
+				Assert.assertTrue(null != entity);
+				MutableEntity mutable = new MutableEntity(entity);
+				for (IEntityChange change : changes)
 				{
-					// Nothing is changing so just copy this forward.
-					newEntity = entity;
-				}
-				else
-				{
-					// Something is changing so we need to build the mutable copy to modify.
-					MutableEntity mutable = new MutableEntity(entity);
-					for (IEntityChange change : changes)
+					processor.changeCount += 1;
+					boolean didApply = change.applyChange(context, mutable);
+					if (didApply)
 					{
-						processor.changeCount += 1;
-						boolean didApply = change.applyChange(context, mutable);
-						if (didApply)
-						{
-							listener.entityChanged(change.getTargetId());
-						}
-						else
-						{
-							listener.changeDropped(change);
-						}
+						listener.entityChanged(change.getTargetId());
 					}
-					newEntity = mutable.freeze();
+					else
+					{
+						listener.changeDropped(change);
+					}
 				}
+				Entity newEntity = mutable.freeze();
 				fragment.put(id, newEntity);
 			}
 		}
