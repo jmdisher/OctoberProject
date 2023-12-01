@@ -33,20 +33,6 @@ public interface IEntityChange
 	boolean applyChange(TickProcessingContext context, MutableEntity newEntity);
 
 	/**
-	 * Applies the change to the given entity, return a reverse change if applied successfully, null if it failed and
-	 * should be rejected.
-	 * For context:  This call is only used on the clients, when speculatively applying the change.  The reverse change
-	 * is required in order to reverse-update-apply when new changes/mutations are committed "before" it.  The reverse
-	 * change CANNOT fail when applied to the state produced by THIS change.
-	 * 
-	 * @param context Used for reading world state or scheduling follow-up operations.
-	 * @param newEntity The entity currently being modified by this change in the current tick.
-	 * @return A non-null reverse change if the change was applied successfully, null if it conflicted and should be
-	 * rejected.
-	 */
-	IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity);
-
-	/**
 	 * Called when applying a change to a speculative projection in order to see if it renders the previous change
 	 * applied to the same target entity as redundant.  This is to avoid sending a long stream of tiny mutations (like
 	 * movements) to the server when it only cared about the final state.

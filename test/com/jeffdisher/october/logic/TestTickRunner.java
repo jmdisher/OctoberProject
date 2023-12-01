@@ -63,7 +63,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), true, 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -93,7 +93,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), true, 2));
+		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
 		runner.startNextTick();
 		runner.startNextTick();
 		runner.startNextTick();

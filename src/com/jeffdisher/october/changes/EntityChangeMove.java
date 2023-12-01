@@ -34,15 +34,6 @@ public class EntityChangeMove implements IEntityChange
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
-	{
-		// Just move us back to where we were.
-		EntityChangeMove reverse = new EntityChangeMove(_id, newEntity.newLocation);
-		newEntity.newLocation = _newLocation;
-		return reverse;
-	}
-
-	@Override
 	public boolean canReplacePrevious(IEntityChange previousChange)
 	{
 		// We can replace the previous if it was also a move.

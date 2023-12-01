@@ -43,18 +43,4 @@ public class ReplaceBlockMutation implements IMutation
 		}
 		return didApply;
 	}
-
-	@Override
-	public IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock)
-	{
-		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
-		IMutation reverseMutation = null;
-		if (_oldType == oldValue)
-		{
-			newBlock.setData15(AspectRegistry.BLOCK, _newType);
-			// We reverse by swapping the arguments.
-			reverseMutation = new ReplaceBlockMutation(_location, _newType, _oldType);
-		}
-		return reverseMutation;
-	}
 }

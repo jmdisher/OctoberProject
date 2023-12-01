@@ -32,18 +32,4 @@ public interface IMutation
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
 	boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock);
-
-	/**
-	 * Applies the mutation to the given world, return a reverse mutation if applied successfully, null if it failed and
-	 * should be rejected.
-	 * For context:  This call is only used on the clients, when speculatively applying the mutation.  The reverse
-	 * mutation is required in order to reverse-update-apply when new mutations are committed "before" it.  The reverse
-	 * mutation CANNOT fail when applied to the state produced by THIS mutation.
-	 * 
-	 * @param context Used for reading world state or scheduling follow-up operations.
-	 * @param newBlock The block currently being modified by this mutation in the current tick.
-	 * @return A non-null reverse mutation if the mutation was applied successfully, null if it conflicted and should be
-	 * rejected.
-	 */
-	IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock);
 }

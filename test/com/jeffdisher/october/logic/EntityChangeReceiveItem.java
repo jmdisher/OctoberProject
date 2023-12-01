@@ -41,20 +41,6 @@ public class EntityChangeReceiveItem implements IEntityChange
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
-	{
-		IEntityChange reverse = null;
-		if (_common(newEntity))
-		{
-			// We can apply a bit of a hack here since the reverse change doesn't apply to other entities, just us.
-			// This means we can "send" to ourselves, since that will update our state correctly, which is all the reverse does.
-			// (this is why the receive has all-or-nothing semantics)
-			reverse = new EntityChangeSendItem(_entityId, _entityId, _itemType);
-		}
-		return reverse;
-	}
-
-	@Override
 	public boolean canReplacePrevious(IEntityChange previousChange)
 	{
 		// We don't merge these.

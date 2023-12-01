@@ -44,19 +44,6 @@ public class EntityChangeSendItem implements IEntityChange
 	}
 
 	@Override
-	public IEntityChange applyChangeReversible(TickProcessingContext context, MutableEntity newEntity)
-	{
-		IEntityChange reverse = null;
-		int foundCount = _common(newEntity, context.newChangeSink);
-		if (foundCount > 0)
-		{
-			// This worked so we will need a reverse - just receive the items, ourselves.
-			reverse = new EntityChangeReceiveItem(_sourceId, _itemType, foundCount);
-		}
-		return reverse;
-	}
-
-	@Override
 	public boolean canReplacePrevious(IEntityChange previousChange)
 	{
 		// We don't merge these.

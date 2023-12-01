@@ -49,18 +49,6 @@ public class DropItemMutation implements IMutation
 		return _common(newBlock);
 	}
 
-	@Override
-	public IMutation applyMutationReversible(TickProcessingContext context, MutableBlockProxy newBlock)
-	{
-		IMutation reverseMutation = null;
-		if (_common(newBlock))
-		{
-			// We applied this so create the reverse.
-			reverseMutation = new PickUpItemMutation(_location, _type, _count);
-		}
-		return reverseMutation;
-	}
-
 
 	private boolean _common(MutableBlockProxy newBlock)
 	{

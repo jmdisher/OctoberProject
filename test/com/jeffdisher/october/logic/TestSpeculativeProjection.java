@@ -351,9 +351,9 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.changeCount);
 		
 		// Apply a few local mutations.
-		IMutation mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), true, 2);
+		IMutation mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), 2);
 		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
-		IMutation mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), true, 2);
+		IMutation mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), 2);
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		projector.applyLocalChange(lone0);
 		long commit1 = projector.applyLocalChange(lone1);
