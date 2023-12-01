@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,6 +15,7 @@ import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.mutations.DropItemMutation;
@@ -26,7 +26,6 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Either;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -42,15 +41,32 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, but then adding them as "committed" causes no problem.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { data });
-		projector.loadedCuboid(address, cuboid);
+		projector.applyChangesForServerTick(0L
+				, Collections.emptyList()
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(0, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Apply a few local mutations.
@@ -60,38 +76,71 @@ public class TestSpeculativeProjection
 		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
 		long commit1 = projector.applyLocalChange(lone1);
 		long commit2 = projector.applyLocalChange(lone2);
-		List<Either<IMutation, IEntityChange>> actionsToCommit = new ArrayList<>();
+		List<IMutation> mutationsToCommit = new ArrayList<>();
+		List<IEntityChange> changesToCommit = new ArrayList<>();
 		long[] commitNumbers = new long[5];
 		for (int i = 0; i < commitNumbers.length; ++i)
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
 			IMutation mutation = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
 			IEntityChange entityChange = new EntityChangeMutation(0, mutation);
-			actionsToCommit.add(Either.second(entityChange));
-			actionsToCommit.add(Either.first(mutation));
+			changesToCommit.add(entityChange);
+			mutationsToCommit.add(mutation);
 			commitNumbers[i] = projector.applyLocalChange(entityChange);
 		}
-		Assert.assertEquals(7, listener.changeCount);
+		Assert.assertEquals(1 + 7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the first 2, one at a time, and then the last ones at the same time.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
-		// 12 speculative elements since there are 6 changes, each with a mutation.
-		Assert.assertEquals(12, speculativeCount);
-		Assert.assertEquals(8, listener.changeCount);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone1)
+				, List.of(mutation1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
+		// Only the changes are in the speculative list:  We passed in 7 and committed 1.
+		Assert.assertEquals(6, speculativeCount);
+		Assert.assertEquals(1 + 7 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone2), Either.first(mutation2)), commit2);
-		// 10 speculative elements since there are 5 changes, each with a mutation.
-		Assert.assertEquals(10, speculativeCount);
-		Assert.assertEquals(9, listener.changeCount);
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone2)
+				, List.of(mutation2)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+		);
+		// 5 changes left.
+		Assert.assertEquals(5, speculativeCount);
+		Assert.assertEquals(1 + 7 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), actionsToCommit, commitNumbers[commitNumbers.length - 1]);
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, changesToCommit
+				, mutationsToCommit
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumbers[commitNumbers.length - 1]
+		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(10, listener.changeCount);
+		Assert.assertEquals(1 + 7 + 1 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Now, unload.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address), Collections.emptyList(), commitNumbers[commitNumbers.length - 1]);
+		speculativeCount = projector.applyChangesForServerTick(4L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(address)
+				, commitNumbers[commitNumbers.length - 1]
+		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 	}
@@ -102,8 +151,17 @@ public class TestSpeculativeProjection
 		// Test that unloading a cuboid with local mutations correctly purges them but can go on to commit other things.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -112,9 +170,17 @@ public class TestSpeculativeProjection
 		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
 		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
 		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
-		projector.loadedCuboid(address0, cuboid0);
-		projector.loadedCuboid(address1, cuboid1);
+		projector.applyChangesForServerTick(0L
+				, Collections.emptyList()
+				, List.of(cuboid0, cuboid1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertEquals(2, listener.loadCount);
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
@@ -124,18 +190,34 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one.
-		int speculativeCount = projector.applyCommittedMutations(Set.of(address1), List.of(Either.second(lone0), Either.first(mutation0)), commit1);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone0)
+				, List.of(mutation0)
+				, Collections.emptyList()
+				, List.of(address1)
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Unload the other.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0), Collections.emptyList(), commit1);
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(address0)
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -146,7 +228,15 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, and then committing a few conflicts to make sure that we drop the speculative mutaions which fail.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
@@ -156,9 +246,17 @@ public class TestSpeculativeProjection
 		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
 		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
 		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
-		projector.loadedCuboid(address0, cuboid0);
-		projector.loadedCuboid(address1, cuboid1);
+		projector.applyChangesForServerTick(0L
+				, Collections.emptyList()
+				, List.of(cuboid0, cuboid1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertEquals(2, listener.loadCount);
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
@@ -168,25 +266,50 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone0), Either.first(mutation0)), 0L);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone0)
+				, List.of(mutation0)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		// We should still see the other one.
 		// Note that this is +2 since both entity changes stay in the list, despite both failing - we will still send them to the server unless they do pre-checking.
-		Assert.assertEquals(1 +2, speculativeCount);
+		Assert.assertEquals(2, speculativeCount);
 		// We see another 2 changes due to the reverses.
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(2 + 2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone1)
+				, List.of(mutation1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(5, listener.changeCount);
+		// This final +2 is because we applied both local changes, last time (even though 1 of the mutations failed to apply, we still create a new CuboidData instance - might be worth optimizing in the future).
+		Assert.assertEquals(2 + 2 + 2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), Collections.emptyList(), commit1);
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(address0, address1)
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -197,7 +320,15 @@ public class TestSpeculativeProjection
 		// We want to apply a few mutations which themselves cause secondary mutations, and observe what happens when some commit versus conflict.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
@@ -207,9 +338,17 @@ public class TestSpeculativeProjection
 		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
 		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
 		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
-		projector.loadedCuboid(address0, cuboid0);
-		projector.loadedCuboid(address1, cuboid1);
+		projector.applyChangesForServerTick(0L
+				, Collections.emptyList()
+				, List.of(cuboid0, cuboid1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertEquals(2, listener.loadCount);
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutation mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), true, 2);
@@ -218,24 +357,46 @@ public class TestSpeculativeProjection
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		projector.applyLocalChange(lone0);
 		long commit1 = projector.applyLocalChange(lone1);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(2 + 2, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone0), Either.first(mutation0)), 0L);
-		// We should still see both initial mutations and all of their secondaries, since shockwaves don't actually conflict.
-		// (+1 for the entity change)
-		int mutationsPerShockwave = 1+ 1 + 6 + 36;
-		Assert.assertEquals(2 * mutationsPerShockwave, speculativeCount);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone0)
+				, List.of(mutation0)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
+		// We should still just see the initial changes in the speculative list.
+		Assert.assertEquals(2, speculativeCount);
 		// We see another 2 changes due to the reverses.
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(2 + 2 + 2, listener.changeCount);
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
+		speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone1)
+				, List.of(mutation1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(6, listener.changeCount);
+		Assert.assertEquals(2 + 2 + 2 + 2, listener.changeCount);
 		
-		speculativeCount = projector.applyCommittedMutations(Set.of(address0, address1), Collections.emptyList(), commit1);
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(address0, address1)
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
 	}
@@ -246,7 +407,15 @@ public class TestSpeculativeProjection
 		// Test that we can apply inventory changes to speculative mutation.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Create and add an empty cuboid.
@@ -254,8 +423,17 @@ public class TestSpeculativeProjection
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.AIR);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		projector.loadedCuboid(address, cuboid);
+		projector.applyChangesForServerTick(0L
+				, Collections.emptyList()
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(1, listener.changeCount);
 		
 		// Try to drop a few items.
 		int encumbrance = 2;
@@ -268,28 +446,52 @@ public class TestSpeculativeProjection
 		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
 		long commit1 = projector.applyLocalChange(lone1);
 		long commit2 = projector.applyLocalChange(lone2);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1 + 2, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Commit the first, then the second, making sure that things make sense at every point.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone1), Either.first(mutation1)), commit1);
-		Assert.assertEquals(2, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone1)
+				, List.of(mutation1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(1 + 2 + 1, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
-		speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(lone2), Either.first(mutation2)), commit2);
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(lone2)
+				, List.of(mutation2)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(1 + 2 + 1 + 1, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Now, unload.
-		speculativeCount = projector.applyCommittedMutations(Set.of(address), Collections.emptyList(), commit2);
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(address)
+				, commit2
+		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 	}
@@ -303,8 +505,16 @@ public class TestSpeculativeProjection
 		
 		// We need 2 entities for this but we will give one some items.
 		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
-		projector.loadedEntity(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory));
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(1));
+		projector.applyChangesForServerTick(0L
+				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory)
+						, EntityActionValidator.buildDefaultEntity(1))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		Assert.assertNotNull(listener.lastEntityStates.get(1));
 		
@@ -319,8 +529,28 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, update.count());
 		
 		// Commit this and make sure the values are still correct.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(send)), commit1);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(send)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
 		Assert.assertEquals(0, speculativeCount);
+		// NOTE:  Inventory transfers are 2 changes and we expect to get them both from the server so send what we would expect it to create.
+		speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EntityChangeReceiveItem(1, ItemRegistry.STONE, 2))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
+		Assert.assertEquals(0, speculativeCount);
+		
 		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
 		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
 		update = listener.lastEntityStates.get(1).inventory().items.get(ItemRegistry.STONE);
@@ -333,7 +563,15 @@ public class TestSpeculativeProjection
 		// Test that successful move requests will be replaced by the last.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(listener);
-		projector.loadedEntity(EntityActionValidator.buildDefaultEntity(0));
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Enqueue 2 moves and verify that they are merged.
@@ -356,13 +594,21 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(commit1 + 1, commit2);
 		
 		// Commit this and make sure the values are still correct - if replaced, we wouldn't bother sending move0.
-		int speculativeCount = projector.applyCommittedMutations(Collections.emptySet(), List.of(Either.second(move1)), commit1);
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(move1)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());
 	}
 
 
-	private int _countBlocks(CuboidData cuboid, short blockType)
+	private int _countBlocks(IReadOnlyCuboidData cuboid, short blockType)
 	{
 		int count = 0;
 		for (int x = 0; x < 32; ++x)
@@ -399,23 +645,23 @@ public class TestSpeculativeProjection
 		public int loadCount = 0;
 		public int changeCount = 0;
 		public int unloadCount = 0;
-		public CuboidData lastData = null;
+		public IReadOnlyCuboidData lastData = null;
 		public Map<Integer, Entity> lastEntityStates = new HashMap<>();
 		
 		@Override
-		public void cuboidDidLoad(CuboidAddress address, CuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
 		{
 			this.loadCount += 1;
 			this.lastData = cuboid;
 		}
 		@Override
-		public void cuboidDidChange(CuboidAddress address, CuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
 		{
 			this.changeCount += 1;
 			this.lastData = cuboid;
 		}
 		@Override
-		public void cuboidDidUnload(CuboidAddress address, CuboidData cuboid)
+		public void cuboidDidUnload(CuboidAddress address)
 		{
 			this.unloadCount += 1;
 		}
@@ -430,6 +676,12 @@ public class TestSpeculativeProjection
 		{
 			Entity old = this.lastEntityStates.put(entity.id(), entity);
 			Assert.assertNotNull(old);
+		}
+		@Override
+		public void entityDidUnload(int id)
+		{
+			Entity old = this.lastEntityStates.remove(id);
+			Assert.assertNull(old);
 		}
 	}
 }

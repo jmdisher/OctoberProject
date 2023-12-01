@@ -1,236 +1,224 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Either;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
 /**
  * Instances of this class are used by clients to manage their local interpretation of the world.  It has their loaded
- * cuboids and whatever mutations they have made, which haven't yet been committed by the server.
- * When the server commits the mutations from a given game tick, it sends any which it accepted and applied to the
- * clients, along with the last mutation number it applied, from that user.  The user can then reverse any of its local
- * mutations, apply the mutations from the server, remove any of its local mutations which the mutation number implies
- * have been applied (or dropped), then re-apply its remaining mutations.
- * This means that any mutations it had which failed to be applied will have been "undone" in its local projection and
- * any new mutations which are inconsistent with this new baseline state (due to dependencies on these rejected
- * mutations or collisions with changes made concurrently by other clients) can be rejected locally.
- * A consequence of this design is that, despite the server-side cuboids being generally immutable and evolved into new
- * instances concurrently, the client-side cuboids are highly mutable and applied on a single thread.
- * An interesting consequence of this local invalidation is that even if a client sends a mutation, then locally rejects
- * it as a conflict, the server may still apply it as a result of races from other clients, so this one will end up
- * applying it, either way, even though it previously "disowned" it.  This doesn't cause a problem.
- * A simple way to think of how this works is much like an "undo stack" where applying an "undo" mutation generates a
- * "redo" mutation.  The only difference is that the "redo" stack is then pruned and re-applied to recreate the state
- * and "undo" stack, after applying changes from the server.
+ * cuboids, known entities, and whatever updates they have made, which haven't yet been committed by the server.
+ * 
+ * When the server commits the updates from a given game tick, it sends any which it accepted and applied to the
+ * clients, along with the last update number it applied from that specific client.  The client then applies this list
+ * of updates to its local shadow state of the server, prunes its list of local updates to remove any which were
+ * accounted for by the last applied number, and applies the remaining to a copy of the shadow state to produce its
+ * speculative projection.
+ * 
+ * When the client makes a local update, it adds it to its list of pending updates and applies it to its speculative
+ * projection.  Note that the client can sometimes coalesce these updates (in the case of a move, for example).
  */
 public class SpeculativeProjection
 {
+	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
-	private final Map<CuboidAddress, CuboidData> _loadedCuboids;
-	private final Map<Integer, MutableEntity> _entitiesById;
-	private final Stack<MutationWrapper> _reverseMutations;
+	
+	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
+	private final Map<Integer, Entity> _shadowCrowd;
+	private final Function<AbsoluteLocation, BlockProxy> _shadowBlockLoader;
+	
+	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
+	private Map<Integer, Entity> _projectedCrowd;
+	
+	private final List<ChangeWrapper> _speculativeChanges;
 	private long _nextLocalCommitNumber;
 	private boolean _shouldTryMerge;
 
 	public SpeculativeProjection(IProjectionListener listener)
 	{
 		Assert.assertTrue(null != listener);
+		_singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_listener = listener;
-		_loadedCuboids = new HashMap<>();
-		_entitiesById = new HashMap<>();
-		_reverseMutations = new Stack<>();
+		
+		// The initial states start as empty and are populated by the server.
+		_shadowWorld = new HashMap<>();
+		_shadowCrowd = new HashMap<>();
+		_shadowBlockLoader = (AbsoluteLocation location) -> {
+			CuboidAddress address = location.getCuboidAddress();
+			IReadOnlyCuboidData cuboid = _shadowWorld.get(address);
+			return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+			;
+		};
+		
+		_projectedWorld = new HashMap<>();
+		_projectedCrowd = new HashMap<>();
+		_speculativeChanges = new ArrayList<>();
 		_nextLocalCommitNumber = 1L;
 		_shouldTryMerge = false;
 	}
 
 	/**
-	 * Called when a new cuboid has been fully-loaded (that is, all of its aspects are loaded and it is internally
-	 * consistent).
+	 * This method is called when an update from a game tick comes in from the server.  It is responsible for using
+	 * these updates to change the local shadow copy of the server state, then rebuilding the local projected state
+	 * based on this shadow state plus any remaining speculative changes which weren't pruned as a result of being
+	 * accounted for in this update from the server.
 	 * 
-	 * @param address The cuboid address.
-	 * @param cuboid The initial state of the cuboid.
+	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
+	 * @param addedEntities The list of entities which were added in this tick.
+	 * @param addedCuboids The list of cuboids which were loaded in this tick.
+	 * @param entityChanges The list of entity changes which committed in this tick.
+	 * @param cuboidMutations The list of cuboid mutations which committed in this tick.
+	 * @param removedEntities The list of entities which were removed in this tick.
+	 * @param removedCuboids The list of cuboids which were removed in this tick.
+	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
+	 * @return The number of speculative changes remaining in the local projection (only useful for testing).
 	 */
-	public void loadedCuboid(CuboidAddress address, CuboidData cuboid)
-	{
-		CuboidData old = _loadedCuboids.put(address, cuboid);
-		// We should never replace in this path.
-		Assert.assertTrue(null == old);
-		_listener.cuboidDidLoad(address, cuboid);
-	}
-
-	/**
-	 * Called when a new entity has been created in the world.
-	 * 
-	 * @param entity The entity.
-	 */
-	public void loadedEntity(Entity entity)
-	{
-		// We only ever operate on mutable data so get a mutatle version of the entity.
-		MutableEntity old = _entitiesById.put(entity.id(), new MutableEntity(entity));
-		// We should never replace in this path.
-		Assert.assertTrue(null == old);
-		_listener.entityDidLoad(entity);
-	}
-
-	/**
-	 * Called with all the mutations the server committed within a given tick and has described what it committed from
-	 * this client.
-	 * This path applies the "reverse-apply-forward" logic from the description.
-	 * The set of unloaded cuboids is included here so that any local mutations referencing them can be cleanly purged
-	 * after reverse.
-	 * 
-	 * @param cuboidsToUnload The set of cuboid addresses to unload before applying these mutations.
-	 * @param updates The list of either changes or mutations to apply, authoritative, in-order.
-	 * @param lastLocalCommitIncluded The last commit number from this client which is represented in this list
-	 * (although some of the local mutations in that interval may have been dropped).
-	 * @return The number of reverse mutations remaining in the speculative projection after applying.
-	 */
-	public int applyCommittedMutations(Set<CuboidAddress> cuboidsToUnload, List<Either<IMutation, IEntityChange>> updates, long lastLocalCommitIncluded)
-	{
-		Function<AbsoluteLocation, BlockProxy> oldWorldLoader = _buildOldWorldLoader();
-		TickProcessingContext nullProcessingContext = _createNullProcessingContext(oldWorldLoader);
-		
-		Map<CuboidAddress, CuboidData> blockCache = new HashMap<>();
-		Stack<MutationWrapper> forwardSpeculative = new Stack<>();
-		
-		// 1)  Revert any of our local mutations (backward), recreating the forward mutations for any which aren't yet committed.
-		// Note that we apply all reverse mutations but we need to be careful of the mutations created when reversing
-		// those for replay, since we don't want to re-run those secondary mutations since they would be created again
-		// when we change direction to apply forward.
-		// In order to do this, we will only apply the first (or last, since this is reversed) mutation of a given
-		// commit number.  This is why we have an additional look-ahead in this iteration:  To see if they are the same
-		// commit.
-		MutationWrapper reverseWrapper = _popReverseMutation();
-		while (null != reverseWrapper)
-		{
-			// Note that all client-side changes start with IEntityChange so we can assume that any IMutation instances should not be regenerated.
-			// Note that we will still consider the look-ahead since that will matter for IEntityChange, in the future (when we add support for IEntityChange instances to be created by either of these).
-			MutationWrapper nextReverseWrapper = _popReverseMutation();
-			long commitNumber = reverseWrapper.commitLevel;
-			IEntityChange change = reverseWrapper.update.second;
+	public int applyChangesForServerTick(long gameTick
 			
-			// If these are the same commit number, only run without generating reverse.
-			boolean regenerateReverse = (null != change) && ((null == nextReverseWrapper) || (nextReverseWrapper.commitLevel != commitNumber));
-			if (regenerateReverse)
-			{
-				// In the reverse case, we can only ever be using IEntityChange.
-				MutableEntity entity = _entitiesById.get(change.getTargetId());
-				// This must be present.
-				Assert.assertTrue(null != entity);
-				IEntityChange forward = change.applyChangeReversible(nullProcessingContext, entity);
-				// We cannot fail to apply the mutation in reverse (a non-apply should be a NullMutation).
-				Assert.assertTrue(null != forward);
-				// If this is more recent than what we were told was committed, we need to re-apply it later.
-				if (commitNumber > lastLocalCommitIncluded)
-				{
-					MutationWrapper forwardWrapper = new MutationWrapper(commitNumber, Either.second(forward));
-					forwardSpeculative.push(forwardWrapper);
-				}
-			}
-			else
-			{
-				// When reversing something we don't want to push back onto the stack, this can be either IMutation or IEntityChange.
-				// In either case, we don't want to capture the new mutations since this is reverse.
-				boolean didApply;
-				if (null != change)
-				{
-					MutableEntity entity = _entitiesById.get(change.getTargetId());
-					// This must be present.
-					Assert.assertTrue(null != entity);
-					didApply = change.applyChange(nullProcessingContext, entity);
-				}
-				else
-				{
-					IMutation mutation = reverseWrapper.update.first;
-					MutableBlockProxy thisBlock = _loadMutableBlock(blockCache, mutation);
-					didApply = mutation.applyMutation(nullProcessingContext, thisBlock);
-				}
-				// We can't fail to reverse this.
-				Assert.assertTrue(didApply);
-			}
-			reverseWrapper = nextReverseWrapper;
-		}
-		// At this point, we have reverted the state to one which does NOT include our speculative data.
+			, List<Entity> addedEntities
+			, List<CuboidData> addedCuboids
+			
+			, List<IEntityChange> entityChanges
+			, List<IMutation> cuboidMutations
+			
+			, List<Integer> removedEntities
+			, List<CuboidAddress> removedCuboids
+			
+			, long latestLocalCommitIncluded
+	)
+	{
+		// Before applying the updates, add the new data.
+		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((Entity entity) -> entity.id(), (Entity entity) -> entity)));
+		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((CuboidData cuboid) -> cuboid.getCuboidAddress(), (CuboidData cuboid) -> cuboid)));
 		
-		// 2)  Unload any given cuboids.
-		for (CuboidAddress address : cuboidsToUnload)
-		{
-			Assert.assertTrue(_loadedCuboids.containsKey(address));
-			// Since we removed any mutations to this cuboid, above, we can just it them from our map.
-			_listener.cuboidDidUnload(address, _loadedCuboids.remove(address));
-			// Since we notified about unload, we DON'T want to notify about changes.
-			blockCache.remove(address);
-		}
-		// Now that we have no speculative data, and nothing the server doesn't want us to have, write-back the block cache to the "old world" state for the next stage.
-		Set<CuboidAddress> changedCuboidAddresses = new HashSet<>();
-		_writeBackBlockCache(changedCuboidAddresses, blockCache);
-		
-		// 3)  Apply the incoming updates.
-		for (Either<IMutation, IEntityChange> update : updates)
-		{
-			// Note that we will also ignore secondary mutations generated by applying these authoritative mutations as
-			// the server will need to tell us how to apply them (since they schedule them later/differently, they will
-			// conflict with other mutations in non-deterministic ways).
-			IEntityChange change = update.second;
-			boolean didApply;
-			if (null != change)
+		// Create empty listeners.
+		CrowdProcessor.IEntityChangeListener entityListener = new CrowdProcessor.IEntityChangeListener() {
+			@Override
+			public void entityChanged(int id)
 			{
-				// In the reverse case, we can only ever be using IEntityChange.
-				MutableEntity entity = _entitiesById.get(change.getTargetId());
-				// This must be present.
-				Assert.assertTrue(null != entity);
-				didApply = change.applyChange(nullProcessingContext, entity);
 			}
-			else
+			@Override
+			public void changeDropped(IEntityChange change)
 			{
-				IMutation mutation = update.first;
-				MutableBlockProxy thisBlock = _loadMutableBlock(blockCache, mutation);
-				didApply = mutation.applyMutation(nullProcessingContext, thisBlock);
 			}
-			// If this fails to apply, we are somehow out of sync with the server, which is fatal and shouldn't be possible.
-			Assert.assertTrue(didApply);
-		}
-		_writeBackBlockCache(changedCuboidAddresses, blockCache);
+		};
+		WorldProcessor.IBlockChangeListener worldListener = new WorldProcessor.IBlockChangeListener() {
+			@Override
+			public void blockChanged(AbsoluteLocation location)
+			{
+			}
+			@Override
+			public void mutationDropped(IMutation mutation)
+			{
+			}
+		};
 		
-		// 4)  Walk the remaining (not yet committed) local mutations, applying them and dropping them if they reject on the new state.
+		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
+		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
+		// Split the incoming changes into the expected map shape.
+		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(entityChanges);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, _shadowBlockLoader, gameTick, changesToRun);
+		
+		// Split the incoming mutations into the expected map shape.
+		Map<CuboidAddress, Queue<IMutation>> mutationsToRun = _createMutationMap(cuboidMutations);
+		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, worldListener, _shadowBlockLoader, gameTick, mutationsToRun);
+		
+		// Apply these to the shadow collections.
+		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
+		_shadowCrowd.putAll(group.groupFragment());
+		_shadowWorld.putAll(fragment.stateFragment());
+		
+		// Remove before moving on to our projection.
+		_shadowCrowd.keySet().removeAll(removedEntities);
+		_shadowWorld.keySet().removeAll(removedCuboids);
+		
+		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (and we will add to this as we apply our local updates.
+		// Note that these are all immutable so instance comparison is sufficient.
 		Set<Integer> modifiedEntityIds = new HashSet<>();
-		while (!forwardSpeculative.isEmpty())
+		for (Map.Entry<Integer, Entity> elt : _shadowCrowd.entrySet())
 		{
-			MutationWrapper forwardWrapper = forwardSpeculative.pop();
-			long commitLevel = forwardWrapper.commitLevel;
-			
-			// These should only ever be changes.
-			IEntityChange change = forwardWrapper.update.second;
-			Assert.assertTrue(null != change);
-			_forwardApplySpeculative(oldWorldLoader, blockCache, modifiedEntityIds, change, commitLevel);
+			Integer key = elt.getKey();
+			if (_projectedCrowd.get(key) != elt.getValue())
+			{
+				modifiedEntityIds.add(key);
+			}
 		}
-		_writeBackBlockCache(changedCuboidAddresses, blockCache);
+		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : _shadowWorld.entrySet())
+		{
+			CuboidAddress key = elt.getKey();
+			if (_projectedWorld.get(key) != elt.getValue())
+			{
+				modifiedCuboidAddresses.add(key);
+			}
+		}
 		
-		// We need to notify the listener of anything which changed in this call - we do this at the end to avoid redundant updates.
-		_notifyChanges(changedCuboidAddresses, modifiedEntityIds);
+		// Rebuild our projection from these collections.
+		_projectedCrowd = new HashMap<>(_shadowCrowd);
+		_projectedWorld = new HashMap<>(_shadowWorld);
 		
-		// We return the number of reverse mutations associated with the speculation (this is only useful for testing).
-		return _reverseMutations.size();
+		// (we use an iterator to remove commits which reject).
+		Iterator<ChangeWrapper> iter = _speculativeChanges.iterator();
+		while (iter.hasNext())
+		{
+			ChangeWrapper wrapper = iter.next();
+			// Only consider this if it is more recent than the level we are applying.
+			if (wrapper.commitLevel > latestLocalCommitIncluded)
+			{
+				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change, wrapper.commitLevel);
+				if (!didApply)
+				{
+					iter.remove();
+				}
+			}
+			else
+			{
+				iter.remove();
+			}
+		}
+		
+		// Notify the listener of what changed.
+		for (Entity entity : addedEntities)
+		{
+			_listener.entityDidLoad(entity);
+		}
+		for (CuboidData cuboid : addedCuboids)
+		{
+			_listener.cuboidDidLoad(cuboid);
+		}
+		_notifyChanges(modifiedCuboidAddresses, modifiedEntityIds);
+		for (Integer id : removedEntities)
+		{
+			_listener.entityDidUnload(id);
+		}
+		for (CuboidAddress address : removedCuboids)
+		{
+			_listener.cuboidDidUnload(address);
+		}
+		
+		return _speculativeChanges.size();
 	}
 
 	/**
@@ -244,54 +232,50 @@ public class SpeculativeProjection
 	 */
 	public long applyLocalChange(IEntityChange change)
 	{
+		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
 		_nextLocalCommitNumber += 1;
-		Map<CuboidAddress, CuboidData> blockCache = new HashMap<>();
+		
+		// Create the tracking for modifications.
 		Set<Integer> modifiedEntityIds = new HashSet<>();
-		boolean didApply = _forwardApplySpeculative(_buildOldWorldLoader(), blockCache, modifiedEntityIds, change, commitNumber);
+		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		
+		// Apply the initial change.
+		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change, commitNumber);
 		if (didApply)
 		{
-			// Since this applied, see if it can be merged with the previous (we will reverse the commit number, if possible).
-			if (_shouldTryMerge)
+			// We will keep this for replay, later.
+			_speculativeChanges.add(new ChangeWrapper(commitNumber, change));
+			
+			// Since this applied, see if it can be merged with the previous.
+			int sizeBeforeMerge = _speculativeChanges.size();
+			if (_shouldTryMerge && (sizeBeforeMerge >= 2))
 			{
-				if (_reverseMutations.size() >= 2)
+				ChangeWrapper thisChange = _speculativeChanges.get(sizeBeforeMerge - 1);
+				ChangeWrapper previousChange = _speculativeChanges.get(sizeBeforeMerge - 2);
+				if (thisChange.change.getTargetId() == previousChange.change.getTargetId())
 				{
-					// We will pull top off to see if it can be fully replaced by the one under it.
-					// Due to the logic in reversibility, this means that the change we were given here is all that is
-					// needed as it will be equivalent to the reverse of under.
-					MutationWrapper topWrap = _reverseMutations.pop();
-					MutationWrapper underWrap = _reverseMutations.peek();
-					IEntityChange top = topWrap.update.second;
-					IEntityChange under = underWrap.update.second;
-					boolean canReplace = false;
-					if ((null != top) && (null != under) && (top.getTargetId() == under.getTargetId()))
+					long previousCommit = previousChange.commitLevel;
+					// If we already merged the previous 2, we would have rolled-back the commit number.
+					Assert.assertTrue((previousCommit + 1) == commitNumber);
+					if (thisChange.change.canReplacePrevious(previousChange.change))
 					{
-						long previousCommit = underWrap.commitLevel;
-						Assert.assertTrue((previousCommit + 1) == commitNumber);
-						// This is a little odd, since the mutations are reversed, but this will still do the right
-						// thing if we merge in reverse order:  top would be applied BEFORE under so ask under.
-						canReplace = under.canReplacePrevious(top);
-						if (canReplace)
-						{
-							// The under can replace top don't re-push it.
-							_nextLocalCommitNumber -= 1;
-							commitNumber = previousCommit;
-						}
-					}
-					if (!canReplace)
-					{
-						// We couldn't merge so restore the stack.
-						_reverseMutations.push(topWrap);
+						// Remove the previous 2 and re-add the latest to avoid nulls in the list.
+						_speculativeChanges.remove(sizeBeforeMerge - 1);
+						_speculativeChanges.remove(sizeBeforeMerge - 2);
+						// Roll-back the commit number.
+						_nextLocalCommitNumber -= 1;
+						commitNumber = previousCommit;
+						// Re-add this latest commit, with the previous commit number.
+						_speculativeChanges.add(new ChangeWrapper(commitNumber, change));
 					}
 				}
 			}
 			// Whether we merged or not, we now have something to try merging with, on the next call.
 			_shouldTryMerge = true;
 			
-			// Write-back the changes and notify that we updated.
-			Set<CuboidAddress> changedCuboidAddresses = new HashSet<>();
-			_writeBackBlockCache(changedCuboidAddresses, blockCache);
-			_notifyChanges(changedCuboidAddresses, modifiedEntityIds);
+			// Notify the listener of what changed.
+			_notifyChanges(modifiedCuboidAddresses, modifiedEntityIds);
 		}
 		else
 		{
@@ -319,155 +303,123 @@ public class SpeculativeProjection
 	{
 		for (CuboidAddress address : changedCuboidAddresses)
 		{
-			_listener.cuboidDidChange(address, _loadedCuboids.get(address));
+			_listener.cuboidDidChange(_projectedWorld.get(address));
 		}
 		for (Integer id : entityIds)
 		{
-			_listener.entityDidChange(_entitiesById.get(id).freeze());
+			_listener.entityDidChange(_projectedCrowd.get(id));
 		}
 	}
 
-	private Function<AbsoluteLocation, BlockProxy> _buildOldWorldLoader()
+	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change, long commitLevel)
 	{
-		Function<AbsoluteLocation, BlockProxy> oldWorldLoader = (AbsoluteLocation blockLocation) -> {
-			CuboidData cuboid = _loadedCuboids.get(blockLocation.getCuboidAddress());
-			return (null != cuboid)
-					? new BlockProxy(blockLocation.getBlockAddress(), cuboid)
-					: null
-			;
-		};
-		return oldWorldLoader;
-	}
-
-	private boolean _forwardApplySpeculative(Function<AbsoluteLocation, BlockProxy> oldWorldLoader, Map<CuboidAddress, CuboidData> blockCache, Set<Integer> modifiedEntityIds, IEntityChange change, long commitLevel)
-	{
-		List<Either<IMutation, IEntityChange>> extraLocalUpdates = new ArrayList<>();
-		Consumer<IMutation> localImmediateNewMutationsSink = (IMutation newMutation) -> {
-			// When applying speculative mutations, we want to enqueue any mutations for immediate execution, just as a queue, since the speculative handler has no tick scheduler.
-			extraLocalUpdates.add(Either.first(newMutation));
-		};
-		Consumer<IEntityChange> localImmediateNewChangeSink = (IEntityChange newChange) -> {
-			// Same logic as for mutations.
-			extraLocalUpdates.add(Either.second(newChange));
-		};
-		TickProcessingContext immediateProcessingContext = new TickProcessingContext(0, oldWorldLoader, localImmediateNewMutationsSink, localImmediateNewChangeSink);
+		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
-		// In the reverse case, we can only ever be using IEntityChange.
-		MutableEntity entity = _entitiesById.get(change.getTargetId());
-		// This must be present.
-		Assert.assertTrue(null != entity);
-		IEntityChange reverseChange = change.applyChangeReversible(immediateProcessingContext, entity);
-		if (null != reverseChange)
-		{
-			modifiedEntityIds.add(entity.original.id());
-			_reverseMutations.push(new MutationWrapper(commitLevel, Either.second(reverseChange)));
-			// Run everything else here, too.  WARNING:  We build this queue while processing it so it could process a LOT.
-			while (!extraLocalUpdates.isEmpty())
+		// Only the server can apply ticks so just provide 0.
+		long gameTick = 0L;
+		
+		// We want to collect the sets of cuboids and entities we changed so we use special listeners.
+		Set<Integer> locallyModifiedIds = new HashSet<>();
+		CrowdProcessor.IEntityChangeListener specialChangeListener = new CrowdProcessor.IEntityChangeListener() {
+			@Override
+			public void entityChanged(int id)
 			{
-				Either<IMutation, IEntityChange> extra = extraLocalUpdates.remove(0);
-				IMutation extraMutation = extra.first;
-				if (null != extraMutation)
-				{
-					MutableBlockProxy extraBlock = _loadMutableBlock(blockCache, extraMutation);
-					IMutation reverse2 = extraMutation.applyMutationReversible(immediateProcessingContext, extraBlock);
-					// We can fail to apply one of these later mutations and that is an acceptable type of failure.
-					if (null != reverse2)
-					{
-						// We commit these at the same level.
-						_reverseMutations.push(new MutationWrapper(commitLevel, Either.first(reverse2)));
-					}
-				}
-				else
-				{
-					IEntityChange extraChange = extra.second;
-					// In the reverse case, we can only ever be using IEntityChange.
-					MutableEntity extraEntity = _entitiesById.get(extraChange.getTargetId());
-					// This must be present.
-					Assert.assertTrue(null != extraEntity);
-					IEntityChange reverse2 = extraChange.applyChangeReversible(immediateProcessingContext, extraEntity);
-					// We can fail to apply one of these later changes and that is an acceptable type of failure.
-					if (null != reverse2)
-					{
-						modifiedEntityIds.add(extraEntity.original.id());
-						// We commit these at the same level.
-						_reverseMutations.push(new MutationWrapper(commitLevel, Either.second(reverse2)));
-					}
-				}
+				locallyModifiedIds.add(id);
 			}
-		}
-		// Return true if we applied the initial change.
-		return (null != reverseChange);
-	}
-
-	private MutableBlockProxy _loadMutableBlock(Map<CuboidAddress, CuboidData> blockCache, IMutation mutation)
-	{
-		AbsoluteLocation blockLocation = mutation.getAbsoluteLocation();
-		CuboidAddress cuboidLocation = blockLocation.getCuboidAddress();
-		CuboidData thisCuboid = null;
-		if (blockCache.containsKey(cuboidLocation))
-		{
-			// Just get the cached value.
-			thisCuboid = blockCache.get(cuboidLocation);
-		}
-		else
-		{
-			// Look-up the value and cache it.
-			// Note that we create a clone to do this since other mutations should still see the old data when reading other cuboids.
-			thisCuboid = CuboidData.mutableClone(_loadedCuboids.get(cuboidLocation));
-			blockCache.put(cuboidLocation, thisCuboid);
-		}
-		// We should never be applying a mutation to a block we don't have loaded.
-		Assert.assertTrue(null != thisCuboid);
-		return new MutableBlockProxy(blockLocation.getBlockAddress(), thisCuboid);
-	}
-
-	private void _writeBackBlockCache(Set<CuboidAddress> changedCuboidAddresses, Map<CuboidAddress, CuboidData> blockCache)
-	{
-		for (Map.Entry<CuboidAddress, CuboidData> elt : blockCache.entrySet())
-		{
-			CuboidAddress address = elt.getKey();
-			changedCuboidAddresses.add(address);
-			_loadedCuboids.put(address, elt.getValue());
-		}
-		blockCache.clear();
-	}
-
-	private MutationWrapper _popReverseMutation()
-	{
-		return !_reverseMutations.isEmpty()
-				? _reverseMutations.pop()
-				: null
-		;
-	}
-
-	private TickProcessingContext _createNullProcessingContext(Function<AbsoluteLocation, BlockProxy> oldWorldLoader)
-	{
-		Consumer<IMutation> nullNewMutationsSink = (IMutation mutation) -> {
-			// While reversing a mutation, we just drop any new ones it enqueues since it can't be requesting things
-			// which aren't already in the stack.
-			// Additionally, we never apply secondary mutations generated by the authoritative commits as the server
-			// needs to schedule and resolve them so it will send them to us in a future call.
+			@Override
+			public void changeDropped(IEntityChange change)
+			{
+			}
 		};
-		Consumer<IEntityChange> nullNewChangeSink = (IEntityChange change) -> {
-			// Like above, do nothing.
+		WorldProcessor.IBlockChangeListener specialMutationListener = new WorldProcessor.IBlockChangeListener() {
+			@Override
+			public void blockChanged(AbsoluteLocation location)
+			{
+				modifiedCuboids.add(location.getCuboidAddress());
+			}
+			@Override
+			public void mutationDropped(IMutation mutation)
+			{
+			}
 		};
-		// Local projection context uses tick 0.
-		return new TickProcessingContext(0, oldWorldLoader, nullNewMutationsSink, nullNewChangeSink);
+		
+		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(Collections.singletonList(change));
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, changesToRun);
+		_projectedCrowd.putAll(group.groupFragment());
+		List<IEntityChange> exportedChanges = group.exportedChanges();
+		List<IMutation> exportedMutations = group.exportedMutations();
+		
+		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
+		while (!exportedChanges.isEmpty() || !exportedMutations.isEmpty())
+		{
+			// Run these changes and mutations, collecting the resultant output from them.
+			Map<CuboidAddress, Queue<IMutation>> innerMutations = _createMutationMap(exportedMutations);
+			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, specialMutationListener, _shadowBlockLoader, gameTick, innerMutations);
+			_projectedWorld.putAll(innerFragment.stateFragment());
+			
+			Map<Integer, Queue<IEntityChange>> innerChanges = _createChangeMap(exportedChanges);
+			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, innerChanges);
+			_projectedCrowd.putAll(innerGroup.groupFragment());
+			
+			// Coalesce the results of these.
+			exportedChanges = new ArrayList<>();
+			exportedChanges.addAll(innerFragment.exportedEntityChanges());
+			exportedChanges.addAll(innerGroup.exportedChanges());
+			exportedMutations = new ArrayList<>();
+			exportedMutations.addAll(innerFragment.exportedMutations());
+			exportedMutations.addAll(innerGroup.exportedMutations());
+		}
+		
+		// We will assume that the initial change was applied if we see them in the modified set.
+		modifiedEntityIds.addAll(locallyModifiedIds);
+		return locallyModifiedIds.contains(change.getTargetId());
+	}
+
+	private Map<Integer, Queue<IEntityChange>> _createChangeMap(List<IEntityChange> newEntityChanges)
+	{
+		Map<Integer, Queue<IEntityChange>> changesToRun = new HashMap<>();
+		for (IEntityChange change : newEntityChanges)
+		{
+			int id = change.getTargetId();
+			Queue<IEntityChange> queue = changesToRun.get(id);
+			if (null == queue)
+			{
+				queue = new LinkedList<>();
+				changesToRun.put(id, queue);
+			}
+			queue.add(change);
+		}
+		return changesToRun;
+	}
+
+	private Map<CuboidAddress, Queue<IMutation>> _createMutationMap(List<IMutation> mutations)
+	{
+		Map<CuboidAddress, Queue<IMutation>> mutationsToRun = new HashMap<>();
+		for (IMutation mutation : mutations)
+		{
+			CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
+			Queue<IMutation> queue = mutationsToRun.get(address);
+			if (null == queue)
+			{
+				queue = new LinkedList<>();
+				mutationsToRun.put(address, queue);
+			}
+			queue.add(mutation);
+		}
+		return mutationsToRun;
 	}
 
 
 	public static interface IProjectionListener
 	{
-		void cuboidDidLoad(CuboidAddress address, CuboidData cuboid);
-		void cuboidDidChange(CuboidAddress address, CuboidData cuboid);
-		void cuboidDidUnload(CuboidAddress address, CuboidData cuboid);
+		void cuboidDidLoad(IReadOnlyCuboidData cuboid);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid);
+		void cuboidDidUnload(CuboidAddress address);
 		
 		void entityDidLoad(Entity entity);
 		void entityDidChange(Entity entity);
+		void entityDidUnload(int id);
 	}
 
-	// Only one of mutation or change will be set.
-	// Note that only IEntityChange will have an associated commitLevel since they are the only things which can happen in response to local user actions.
-	// Client-side:  All IMutation, and some IEntityChange, are created in response to a user action (IEntityChange).
-	private static record MutationWrapper(long commitLevel, Either<IMutation, IEntityChange> update) {}
+	private static record ChangeWrapper(long commitLevel, IEntityChange change) {}
 }
