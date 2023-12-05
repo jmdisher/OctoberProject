@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -40,7 +41,7 @@ public class TickRunner
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidData> _newCuboids;
-	private List<IEntityChange> _newEntityChanges;
+	private List<Function<TwoPhaseActivityManager, IEntityChange>> _newEntityChanges;
 	private List<Entity> _newEntities;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -214,7 +215,7 @@ public class TickRunner
 			{
 				_newEntityChanges = new ArrayList<>();
 			}
-			_newEntityChanges.add(change);
+			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new MetaChangeStandard(manager, change));
 		}
 		finally
 		{
@@ -296,6 +297,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
 				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+				, new TwoPhaseActivityManager(Collections.emptySet())
 		);
 		while (null != materials)
 		{
@@ -313,6 +315,7 @@ public class TickRunner
 					, materials.completedEntities
 					, fragment
 					, group
+					, materials.twoPhaseActivities
 			);
 		}
 	}
@@ -322,6 +325,7 @@ public class TickRunner
 			, Map<Integer, Entity> mutableCrowdState
 			, WorldProcessor.ProcessedFragment fragmentCompleted
 			, CrowdProcessor.ProcessedGroup processedGroup
+			, TwoPhaseActivityManager previousActivityManager
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -362,7 +366,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutation> newMutations;
 				List<Entity> newEntities;
-				List<IEntityChange> newEntityChanges;
+				List<Function<TwoPhaseActivityManager, IEntityChange>> newEntityChanges;
 				
 				_sharedDataLock.lock();
 				try
@@ -411,6 +415,10 @@ public class TickRunner
 					}
 				}
 				
+				// With the complete set of loaded entities, we can now rebuild the activity manager.
+				TwoPhaseActivityManager twoPhaseActivities = new TwoPhaseActivityManager(nextCrowdState.keySet());
+				// TODO:  Process twoPhaseActivities.
+				
 				// Next step is to schedule anything from the previous tick.
 				for (WorldProcessor.ProcessedFragment fragment : _partial)
 				{
@@ -420,7 +428,7 @@ public class TickRunner
 					}
 					for (IEntityChange change : fragment.exportedEntityChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, change);
+						_scheduleChangeForEntity(nextTickChanges, new MetaChangeStandard(twoPhaseActivities, change));
 					}
 				}
 				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
@@ -431,7 +439,7 @@ public class TickRunner
 					}
 					for (IEntityChange change : fragment.exportedChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, change);
+						_scheduleChangeForEntity(nextTickChanges, new MetaChangeStandard(twoPhaseActivities, change));
 					}
 				}
 				
@@ -445,8 +453,9 @@ public class TickRunner
 				}
 				if (null != newEntityChanges)
 				{
-					for (IEntityChange change : newEntityChanges)
+					for (Function<TwoPhaseActivityManager, IEntityChange> changeCurry : newEntityChanges)
 					{
+						IEntityChange change = changeCurry.apply(twoPhaseActivities);
 						_scheduleChangeForEntity(nextTickChanges, change);
 					}
 				}
@@ -483,6 +492,7 @@ public class TickRunner
 						, nextCrowdState
 						, nextTickMutations
 						, nextTickChanges
+						, twoPhaseActivities
 				);
 			}
 			else
@@ -562,5 +572,6 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
 			, Map<Integer, Queue<IEntityChange>> changesToRun
+			, TwoPhaseActivityManager twoPhaseActivities
 	) {}
 }
