@@ -15,6 +15,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.changes.MetaChangeClientIgnore;
+import com.jeffdisher.october.changes.MetaChangeClientPrepare;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -49,6 +51,13 @@ public class SpeculativeProjection
 	
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
 	private Map<Integer, Entity> _projectedCrowd;
+	
+	// Information about the local Entity's projected state (as it is somewhat richer in detail and simpler in management).
+	private IEntityChange _pendingPhase2Activity;
+	private long _pendingPhase2ActivityNumber;
+	private long _phase2ActivityDueMillis;
+	// Note that the orphaned change is ONLY present when it has already run (otherwise, we leave it in pending, even if the phase1 part has committed).
+	private ChangeWrapper _orphanedPhase2Change;
 	
 	private final List<ChangeWrapper> _speculativeChanges;
 	private long _nextLocalCommitNumber;
@@ -93,6 +102,7 @@ public class SpeculativeProjection
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
+	 * @param latestLocalActivityIncluded The latest client-side phase2 activity which is included in this tick.
 	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The number of speculative changes remaining in the local projection (only useful for testing).
 	 */
@@ -108,6 +118,7 @@ public class SpeculativeProjection
 			, List<CuboidAddress> removedCuboids
 			
 			, long latestLocalCommitIncluded
+			, long latestLocalActivityIncluded
 			, long currentTimeMillis
 	)
 	{
@@ -137,10 +148,13 @@ public class SpeculativeProjection
 			}
 		};
 		
+		// When applying server-originating changes, we never schedule phase2 operations (they will tell us the results, later).
+		List<IEntityChange> ignoredPhase2Changes = entityChanges.stream().map((IEntityChange change) -> new MetaChangeClientIgnore(change)).collect(Collectors.toList());
+		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
 		// Split the incoming changes into the expected map shape.
-		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(entityChanges);
+		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(ignoredPhase2Changes);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, _shadowBlockLoader, gameTick, changesToRun);
 		
 		// Split the incoming mutations into the expected map shape.
@@ -155,6 +169,17 @@ public class SpeculativeProjection
 		// Remove before moving on to our projection.
 		_shadowCrowd.keySet().removeAll(removedEntities);
 		_shadowWorld.keySet().removeAll(removedCuboids);
+		
+		// 2-phase changes can often put us into a strange state, when out of sync with the server:
+		// -we have multiple phase1 changes in our speculative list, and they have all completed (but not committed on the server)
+		// -this isn't normally a problem since we just handle their phase2 changes like any other internal change
+		// -however, the server has committed the phase1 change, but not the phase2, so we need to hold onto it
+		// -for this we use _orphanedPhase2Change (stored with activity number, for verification) and hold it until this activity has committed
+		if ((null != _orphanedPhase2Change) && (_orphanedPhase2Change.commitLevel <=  latestLocalActivityIncluded))
+		{
+			// We can retire this special case.
+			_orphanedPhase2Change = null;
+		}
 		
 		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (and we will add to this as we apply our local updates.
 		// Note that these are all immutable so instance comparison is sufficient.
@@ -177,6 +202,9 @@ public class SpeculativeProjection
 			}
 		}
 		
+		// Before we change the list, see if we can apply the previous 2-phase change (if present).
+		_checkApplyPhase2(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
+		
 		// Rebuild our projection from these collections.
 		_projectedCrowd = new HashMap<>(_shadowCrowd);
 		_projectedWorld = new HashMap<>(_shadowWorld);
@@ -189,14 +217,33 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change);
-				if (!didApply)
+				// Whenever we re-apply local changes, we ignore phase2 call-outs since we already captured it.
+				// This could be changed by the server updates but this is only speculative and the final result could be difference, once the server tells us.
+				MetaChangeClientIgnore ignoreCallouts = new MetaChangeClientIgnore(wrapper.change);
+				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, ignoreCallouts);
+				if (didApply)
+				{
+					// If there is a phase2 associated with this, apply it now (since it would have happened after internal changes but before the next change).
+					if (null != wrapper.successfulPhase2)
+					{
+						// In this case, we don't use a special wrapper since they can't call another phase2, anyway.  We also don't care about the result.
+						_forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.successfulPhase2);
+					}
+				}
+				else
 				{
 					iter.remove();
 				}
 			}
 			else
 			{
+				// We need some special handling for 2-phase changes:  If phase1 has been committed (which should be common), then keep phase2 as an orphan, unless already also committed.
+				if ((null != wrapper.successfulPhase2) && (wrapper.commitLevel > latestLocalActivityIncluded))
+				{
+					// NOTE:  There is at most 1 orphaned change since we couldn't have sent them the start for the second unless we finished the first, locally.
+					Assert.assertTrue(null == _orphanedPhase2Change);
+					_orphanedPhase2Change = new ChangeWrapper(wrapper.commitLevel, wrapper.successfulPhase2, null);
+				}
 				iter.remove();
 			}
 		}
@@ -243,12 +290,14 @@ public class SpeculativeProjection
 		Set<Integer> modifiedEntityIds = new HashSet<>();
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
+		// Before we change the list, see if we can apply the previous 2-phase change (if present).
+		_checkApplyPhase2(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
+		
 		// Apply the initial change.
-		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
+		boolean didApply = _applyForwardWithPhase2Check(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis, change, commitNumber);
 		if (didApply)
 		{
-			// We will keep this for replay, later.
-			_speculativeChanges.add(new ChangeWrapper(commitNumber, change));
+			_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
 			
 			// Since this applied, see if it can be merged with the previous.
 			int sizeBeforeMerge = _speculativeChanges.size();
@@ -270,7 +319,7 @@ public class SpeculativeProjection
 						_nextLocalCommitNumber -= 1;
 						commitNumber = previousCommit;
 						// Re-add this latest commit, with the previous commit number.
-						_speculativeChanges.add(new ChangeWrapper(commitNumber, change));
+						_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
 					}
 				}
 			}
@@ -308,7 +357,16 @@ public class SpeculativeProjection
 	 */
 	public void checkCurrentActivity(long currentTimeMillis)
 	{
-		// TODO:  Implement.
+		// Create the tracking for modifications.
+		Set<Integer> modifiedEntityIds = new HashSet<>();
+		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		
+		boolean didCompletePhase2 = _checkApplyPhase2(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
+		if (didCompletePhase2)
+		{
+			// Notify the listener of what changed.
+			_notifyChanges(modifiedCuboidAddresses, modifiedEntityIds);
+		}
 	}
 
 
@@ -422,6 +480,59 @@ public class SpeculativeProjection
 		return mutationsToRun;
 	}
 
+	private boolean _applyForwardWithPhase2Check(Set<CuboidAddress> modifiedCuboidAddresses, Set<Integer> modifiedEntityIds, long currentTimeMillis, IEntityChange change, long commitNumber)
+	{
+		// We need to wrap the change to capture any phase2 operations it tries to request so we can schedule it for later.
+		MetaChangeClientPrepare prepareWrapper = new MetaChangeClientPrepare(change);
+		
+		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, prepareWrapper);
+		
+		// We can extract any requested follow-up phase2 operation since running a change here will clear it, either way.
+		_pendingPhase2Activity = prepareWrapper.phase2;
+		if (didApply && (null != prepareWrapper.phase2))
+		{
+			_pendingPhase2ActivityNumber = commitNumber;
+			_phase2ActivityDueMillis = currentTimeMillis + prepareWrapper.phase2DelayMillis;
+		}
+		return didApply;
+	}
+
+	/**
+	 * Called at the beginning of an operation to make sure that any pending phase2 operation is run, if due.
+	 */
+	private boolean _checkApplyPhase2(Set<CuboidAddress> modifiedCuboidAddresses, Set<Integer> modifiedEntityIds, long currentTimeMillis)
+	{
+		boolean didApply = false;
+		// If there is a phase2 commit which is due, apply it.
+		if ((null != _pendingPhase2Activity) && (_phase2ActivityDueMillis <= currentTimeMillis))
+		{
+			// Note that phase2 activities are NOT allowed to request further "phase n" changes so we don't add anything into the tick processing context.
+			didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, _pendingPhase2Activity);
+			if (didApply)
+			{
+				// If the phase2 completed successfully, we modify the original ChangeWrapper to record it.
+				// Note that the original wrapper may have already been committed so check that case.
+				if (_speculativeChanges.isEmpty())
+				{
+					// We are the last thing running and aren't here so we must have sheered before commit - this means orphan.
+					Assert.assertTrue(null == _orphanedPhase2Change);
+					Assert.assertTrue(_pendingPhase2ActivityNumber > 0L);
+					_orphanedPhase2Change = new ChangeWrapper(_pendingPhase2ActivityNumber, _pendingPhase2Activity, null);
+				}
+				else
+				{
+					// We know that this applies to the change last added since it is the one currently happening (if they did anything else, they would cancel it).
+					ChangeWrapper original = _speculativeChanges.remove(_speculativeChanges.size() - 1);
+					Assert.assertTrue(null == original.successfulPhase2);
+					_speculativeChanges.add(new ChangeWrapper(original.commitLevel, original.change, _pendingPhase2Activity));
+				}
+			}
+			_pendingPhase2Activity = null;
+			_pendingPhase2ActivityNumber = 0L;
+		}
+		return didApply;
+	}
+
 
 	public static interface IProjectionListener
 	{
@@ -434,5 +545,6 @@ public class SpeculativeProjection
 		void entityDidUnload(int id);
 	}
 
-	private static record ChangeWrapper(long commitLevel, IEntityChange change) {}
+	// Note that "completedPhase2" is kind of a special-case:  It is only set if change is a 2-phase change AND if the second change was actually successful (not abandoned).
+	private static record ChangeWrapper(long commitLevel, IEntityChange change, IEntityChange successfulPhase2) {}
 }

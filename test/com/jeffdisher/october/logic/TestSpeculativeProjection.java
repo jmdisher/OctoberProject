@@ -10,6 +10,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
@@ -18,6 +20,7 @@ import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
@@ -49,6 +52,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -64,6 +68,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -102,6 +107,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		// Only the changes are in the speculative list:  We passed in 7 and committed 1.
@@ -116,6 +122,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
+				, 0L
 				, 1L
 		);
 		// 5 changes left.
@@ -130,6 +137,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumbers[commitNumbers.length - 1]
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -145,6 +153,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address)
 				, commitNumbers[commitNumbers.length - 1]
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -165,6 +174,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -184,6 +194,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -210,6 +221,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -226,6 +238,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0)
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -246,6 +259,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -264,6 +278,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -290,6 +305,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		// We should still see the other one.
@@ -308,6 +324,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -323,6 +340,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0, address1)
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -343,6 +361,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -361,6 +380,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -385,6 +405,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		// We should still just see the initial changes in the speculative list.
@@ -401,6 +422,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		// This commit level change should cause them all to be retired.
@@ -415,6 +437,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0, address1)
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -435,6 +458,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 0L
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
@@ -451,6 +475,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -482,6 +507,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(1, speculativeCount);
@@ -498,6 +524,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -515,6 +542,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -538,6 +566,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -563,6 +592,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -575,6 +605,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -598,6 +629,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, 0L
 				, 0L
 				, 1L
 		);
@@ -631,10 +663,372 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 0L
 				, 1L
 		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());
+	}
+
+	@Test
+	public void multiPhaseFullCommit()
+	{
+		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes in the simple case.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		int entityId = 0;
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Enqueue a local change to break a block but observe that nothing has changed in the data.
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		currentTimeMillis += 100L;
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(entityId, changeLocation);
+		long commitNumber = projector.applyLocalChange(phase1, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Allow time to pass in the local environment and observe that the change has happened.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
+		currentTimeMillis += 100L;
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(phase1
+						, new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE)
+				)
+				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void multiPhaseInterruption()
+	{
+		// Test that we can apply a multi-phase change, but then interrupt it part way with another, observe that one complete, and observe it be correctly merged with server changes.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		int entityId = 0;
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Enqueue a local change to break a block but observe that nothing has changed in the data.
+		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
+		currentTimeMillis += 100L;
+		BeginBreakBlockChange interrupted = new BeginBreakBlockChange(entityId, changeLocation1);
+		long commitNumber = projector.applyLocalChange(interrupted, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Allow a small amount of time to pass and put in the updated change.
+		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 1);
+		currentTimeMillis += 50L;
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(entityId, changeLocation2);
+		commitNumber = projector.applyLocalChange(phase1, currentTimeMillis);
+		Assert.assertEquals(2, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
+		currentTimeMillis += 100L;
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(interrupted
+						, phase1
+						, new EndBreakBlockChange(entityId, changeLocation2, BlockAspect.STONE)
+				)
+				, List.of(new BreakBlockMutation(changeLocation2, BlockAspect.STONE))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(2, listener.changeCount);
+		// They should only see the later change modify the state.
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation1.getBlockAddress()));
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation2.getBlockAddress()));
+	}
+
+	@Test
+	public void multiPhaseServerInvalidation()
+	{
+		// Test that we can apply a multi-phase change, observe it complete, and observe its side-effects being reverted by a conflicting server change.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		int entityId = 0;
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Enqueue a local change to break a block but observe that nothing has changed in the data.
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		currentTimeMillis += 100L;
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(entityId, changeLocation);
+		long commitNumber = projector.applyLocalChange(phase1, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Allow time to pass in the local environment and observe that the change has happened.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Check what happens when the server sends us a change which already broke that block.
+		currentTimeMillis += 100L;
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, commitNumber
+				, currentTimeMillis
+		);
+		// We should see this invalidated but the change from the server be applied.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Make sure nothing goes wrong when time advances.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void multiPhaseServerSheerDone()
+	{
+		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes when sheered such that the phase1 and phase2 arrive in 2 batches.
+		// (in this case, we assume we locally applied phase2 before we see the partial commit)
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		int entityId = 0;
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Enqueue a local change to break a block but observe that nothing has changed in the data.
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		currentTimeMillis += 100L;
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(entityId, changeLocation);
+		long commitNumber = projector.applyLocalChange(phase1, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Allow time to pass in the local environment and observe that the change has happened.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
+		currentTimeMillis += 50L;
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(phase1)
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, 0L
+				, currentTimeMillis
+		);
+		// We have an orphan but nothing else in the speculative list.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Check what happens if we commit the rest of the faked-up updates from the server
+		currentTimeMillis += 100L;
+		speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Make sure nothing goes wrong when time advances.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void multiPhaseServerSheerNotDone()
+	{
+		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes when sheered such that the phase1 and phase2 arrive in 2 batches.
+		// (in this case, we assume that the local phase2 hasn't yet been applied before we see the partial commit)
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventories = OctreeObject.create();
+		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		int entityId = 0;
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(cuboid)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// Enqueue a local change to break a block but observe that nothing has changed in the data.
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		currentTimeMillis += 100L;
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(entityId, changeLocation);
+		long commitNumber = projector.applyLocalChange(phase1, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// See what happens when the server responds with phase1 before we apply phase2.
+		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
+		currentTimeMillis += 50L;
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(phase1)
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, 0L
+				, currentTimeMillis
+		);
+		// We have an orphan but nothing else in the speculative list.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Allow time to pass in the local environment and observe that the change has happened.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Check what happens if we commit the rest of the faked-up updates from the server
+		currentTimeMillis += 100L;
+		speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commitNumber
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		
+		// Make sure nothing goes wrong when time advances.
+		currentTimeMillis += 100L;
+		projector.checkCurrentActivity(currentTimeMillis);
+		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 	}
 
 
