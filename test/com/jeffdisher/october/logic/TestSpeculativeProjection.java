@@ -49,6 +49,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
@@ -64,6 +65,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(1, listener.changeCount);
@@ -74,8 +76,8 @@ public class TestSpeculativeProjection
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
 		IMutation mutation2 = new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.AIR, BlockAspect.STONE);
 		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
-		long commit1 = projector.applyLocalChange(lone1);
-		long commit2 = projector.applyLocalChange(lone2);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
+		long commit2 = projector.applyLocalChange(lone2, 1L);
 		List<IMutation> mutationsToCommit = new ArrayList<>();
 		List<IEntityChange> changesToCommit = new ArrayList<>();
 		long[] commitNumbers = new long[5];
@@ -86,7 +88,7 @@ public class TestSpeculativeProjection
 			IEntityChange entityChange = new EntityChangeMutation(0, mutation);
 			changesToCommit.add(entityChange);
 			mutationsToCommit.add(mutation);
-			commitNumbers[i] = projector.applyLocalChange(entityChange);
+			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L);
 		}
 		Assert.assertEquals(1 + 7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
@@ -100,6 +102,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		// Only the changes are in the speculative list:  We passed in 7 and committed 1.
 		Assert.assertEquals(6, speculativeCount);
@@ -113,6 +116,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
+				, 1L
 		);
 		// 5 changes left.
 		Assert.assertEquals(5, speculativeCount);
@@ -126,6 +130,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumbers[commitNumbers.length - 1]
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1 + 7 + 1 + 1 + 1, listener.changeCount);
@@ -140,6 +145,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address)
 				, commitNumbers[commitNumbers.length - 1]
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
@@ -159,6 +165,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		Assert.assertEquals(0, listener.changeCount);
@@ -178,6 +185,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
 		Assert.assertEquals(2, listener.changeCount);
@@ -187,9 +195,9 @@ public class TestSpeculativeProjection
 		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
-		projector.applyLocalChange(lone0);
+		projector.applyLocalChange(lone0, 1L);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalChange(lone1);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		Assert.assertEquals(2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -202,6 +210,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
@@ -217,6 +226,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0)
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
@@ -236,6 +246,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
@@ -254,6 +265,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
 		Assert.assertEquals(2, listener.changeCount);
@@ -263,9 +275,9 @@ public class TestSpeculativeProjection
 		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
-		projector.applyLocalChange(lone0);
+		projector.applyLocalChange(lone0, 1L);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalChange(lone1);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		Assert.assertEquals(2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -278,6 +290,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		// We should still see the other one.
 		// Note that this is +2 since both entity changes stay in the list, despite both failing - we will still send them to the server unless they do pre-checking.
@@ -295,6 +308,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		// This final +2 is because we applied both local changes, last time (even though 1 of the mutations failed to apply, we still create a new CuboidData instance - might be worth optimizing in the future).
@@ -309,6 +323,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0, address1)
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
@@ -328,6 +343,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
@@ -346,6 +362,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
 		Assert.assertEquals(2, listener.changeCount);
@@ -355,8 +372,8 @@ public class TestSpeculativeProjection
 		IEntityChange lone0 = new EntityChangeMutation(0, mutation0);
 		IMutation mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), 2);
 		IEntityChange lone1 = new EntityChangeMutation(0, mutation1);
-		projector.applyLocalChange(lone0);
-		long commit1 = projector.applyLocalChange(lone1);
+		projector.applyLocalChange(lone0, 1L);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		Assert.assertEquals(2 + 2, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
@@ -368,6 +385,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		// We should still just see the initial changes in the speculative list.
 		Assert.assertEquals(2, speculativeCount);
@@ -383,6 +401,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
@@ -396,6 +415,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address0, address1)
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
@@ -415,6 +435,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
@@ -431,6 +452,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(1, listener.changeCount);
@@ -444,8 +466,8 @@ public class TestSpeculativeProjection
 		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
 		IMutation mutation2 = new DropItemMutation(block2, stoneItem, 3);
 		IEntityChange lone2 = new EntityChangeMutation(0, mutation2);
-		long commit1 = projector.applyLocalChange(lone1);
-		long commit2 = projector.applyLocalChange(lone2);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
+		long commit2 = projector.applyLocalChange(lone2, 1L);
 		Assert.assertEquals(1 + 2, listener.changeCount);
 		
 		// Check the values.
@@ -460,6 +482,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(1 + 2 + 1, listener.changeCount);
@@ -475,6 +498,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1 + 2 + 1 + 1, listener.changeCount);
@@ -491,6 +515,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
@@ -514,13 +539,14 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		Assert.assertNotNull(listener.lastEntityStates.get(1));
 		
 		// Try to pass the items to the other entity.
 		IEntityChange send = new EntityChangeSendItem(0, 1, ItemRegistry.STONE);
-		long commit1 = projector.applyLocalChange(send);
+		long commit1 = projector.applyLocalChange(send, 1L);
 		
 		// Check the values.
 		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
@@ -537,6 +563,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		// NOTE:  Inventory transfers are 2 changes and we expect to get them both from the server so send what we would expect it to create.
@@ -548,6 +575,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
 		
@@ -571,6 +599,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
+				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
@@ -581,15 +610,15 @@ public class TestSpeculativeProjection
 		EntityChangeMove move0 = new EntityChangeMove(0, loc0);
 		EntityChangeMove move1 = new EntityChangeMove(0, loc1);
 		EntityChangeMove move2 = new EntityChangeMove(0, loc2);
-		long commit0 = projector.applyLocalChange(move0);
+		long commit0 = projector.applyLocalChange(move0, 1L);
 		Assert.assertEquals(loc0, listener.lastEntityStates.get(0).location());
-		long commit1 = projector.applyLocalChange(move1);
+		long commit1 = projector.applyLocalChange(move1, 1L);
 		Assert.assertEquals(loc1, listener.lastEntityStates.get(0).location());
 		Assert.assertEquals(commit0, commit1);
 		
 		// Verify that replacement fails if we seal this change (as though we "sent" move1 to server and can't update it).
 		projector.sealLastLocalChange();
-		long commit2 = projector.applyLocalChange(move2);
+		long commit2 = projector.applyLocalChange(move2, 1L);
 		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());
 		Assert.assertEquals(commit1 + 1, commit2);
 		
@@ -602,6 +631,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
+				, 1L
 		);
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());

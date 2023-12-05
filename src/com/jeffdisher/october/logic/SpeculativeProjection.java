@@ -93,6 +93,7 @@ public class SpeculativeProjection
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
+	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The number of speculative changes remaining in the local projection (only useful for testing).
 	 */
 	public int applyChangesForServerTick(long gameTick
@@ -107,6 +108,7 @@ public class SpeculativeProjection
 			, List<CuboidAddress> removedCuboids
 			
 			, long latestLocalCommitIncluded
+			, long currentTimeMillis
 	)
 	{
 		// Before applying the updates, add the new data.
@@ -187,7 +189,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change, wrapper.commitLevel);
+				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change);
 				if (!didApply)
 				{
 					iter.remove();
@@ -228,9 +230,10 @@ public class SpeculativeProjection
 	 * server with this one.
 	 * 
 	 * @param change The entity change to apply.
+	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IEntityChange change)
+	public long applyLocalChange(IEntityChange change, long currentTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -241,7 +244,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
 		// Apply the initial change.
-		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change, commitNumber);
+		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
 		if (didApply)
 		{
 			// We will keep this for replay, later.
@@ -298,6 +301,16 @@ public class SpeculativeProjection
 		_shouldTryMerge = false;
 	}
 
+	/**
+	 * Called to notify the projection of the current time so that it can complete any active activities, if due.
+	 * 
+	 * @param currentTimeMillis Current system time, in milliseconds.
+	 */
+	public void checkCurrentActivity(long currentTimeMillis)
+	{
+		// TODO:  Implement.
+	}
+
 
 	private void _notifyChanges(Set<CuboidAddress> changedCuboidAddresses, Set<Integer> entityIds)
 	{
@@ -311,7 +324,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change, long commitLevel)
+	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
