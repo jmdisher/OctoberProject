@@ -40,8 +40,6 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
-		// Start the tick, which will pick up the new cuboid, but wait until it completes and adds the cuboid to the universe before applying a mutation.
-		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
@@ -60,7 +58,6 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
-		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
@@ -90,7 +87,6 @@ public class TestTickRunner
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data }));
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data }));
 		runner.start();
-		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
@@ -117,16 +113,15 @@ public class TestTickRunner
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
 		Assert.assertNull(runner.getBlockProxy(new AbsoluteLocation(0, 0, 0)));
 		
-		// We need to run the tick twice to make sure that we wait for the first to finish before the query.
+		// Run the tick so that it applies the new load.
 		runner.startNextTick();
-		runner.startNextTick();
+		runner.waitForPreviousTick();
 		// Now, we should see a block with default properties.
 		BlockProxy block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
-		runner.startNextTick();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		runner.shutdown();
@@ -151,7 +146,7 @@ public class TestTickRunner
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData }));
 		runner.start();
 		runner.startNextTick();
-		runner.startNextTick();
+		runner.waitForPreviousTick();
 		
 		// Make sure that we see the null inventory.
 		BlockProxy block = runner.getBlockProxy(testBlock);

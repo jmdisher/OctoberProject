@@ -93,7 +93,7 @@ public class TickRunner
 	}
 
 	/**
-	 * Starts the tick runner on an empty world but does 
+	 * Starts the tick runner.
 	 */
 	public void start()
 	{
@@ -280,11 +280,12 @@ public class TickRunner
 			, CrowdProcessor.IEntityChangeListener entityListener
 	)
 	{
+		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
+				, Collections.emptyMap()
+				, Collections.emptyMap()
 				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
 				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
-				, Collections.emptyList()
-				, Collections.emptyList()
 		);
 		while (null != materials)
 		{
@@ -298,19 +299,19 @@ public class TickRunner
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
 			materials = _mergeTickStateAndWaitForNext(thisThread
+					, materials.completedCuboids
+					, materials.completedEntities
 					, fragment
 					, group
-					, materials.newCuboidsToAdd
-					, materials.newEntitiesToAdd
 			);
 		}
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
+			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
+			, Map<Integer, Entity> mutableCrowdState
 			, WorldProcessor.ProcessedFragment fragmentCompleted
 			, CrowdProcessor.ProcessedGroup processedGroup
-			, List<CuboidData> cuboidsToInject
-			, List<Entity> entitiesToInject
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -324,36 +325,22 @@ public class TickRunner
 		if (elt.synchronizeAndReleaseLast())
 		{
 			// Rebuild the immutable snapshot of the state.
-			Map<CuboidAddress, IReadOnlyCuboidData> worldState = new HashMap<>();
-			Map<Integer, Entity> crowdState = new HashMap<>();
-			
-			// Collect the end results into the combined world and crowd for the snapshot.
-			// We start by adding the previous world state and writing the updates on top of it (note that this distinction could be used for unload logic, in the future).
-			worldState.putAll(_completedCuboids);
+			// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
 			for (WorldProcessor.ProcessedFragment fragment : _partial)
 			{
-				worldState.putAll(fragment.stateFragment());
+				mutableWorldState.putAll(fragment.stateFragment());
 			}
-			for (CuboidData cuboid : cuboidsToInject)
-			{
-				IReadOnlyCuboidData old = worldState.put(cuboid.getCuboidAddress(), cuboid);
-				// This must not already be present.
-				Assert.assertTrue(null == old);
-			}
-			// Similarly, start with the entities from last tick.
-			crowdState.putAll(_completedEntities);
+			// Similarly, collect the results of the changed entities for the snapshot.
 			for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
 			{
-				crowdState.putAll(fragment.groupFragment());
+				mutableCrowdState.putAll(fragment.groupFragment());
 			}
-			for (Entity entity : entitiesToInject)
-			{
-				Entity old = crowdState.put(entity.id(), entity);
-				// This must not already be present.
-				Assert.assertTrue(null == old);
-			}
-			_completedCuboids = Collections.unmodifiableMap(worldState);
-			_completedEntities = Collections.unmodifiableMap(crowdState);
+			
+			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results before the wait.
+			_completedCuboids = Collections.unmodifiableMap(mutableWorldState);
+			mutableWorldState = null;
+			_completedEntities = Collections.unmodifiableMap(mutableCrowdState);
+			mutableCrowdState = null;
 			
 			// Now, wait for the next tick before we put together the materials.
 			_acknowledgeTickCompleteAndWaitForNext();
@@ -384,9 +371,35 @@ public class TickRunner
 					_sharedDataLock.unlock();
 				}
 				
-				// Put together the materials for this tick
+				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
+				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
+				Map<Integer, Entity> nextCrowdState = new HashMap<>();
 				Map<CuboidAddress, Queue<IMutation>> nextTickMutations = new HashMap<>();
 				Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
+				
+				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
+				nextWorldState.putAll(_completedCuboids);
+				nextCrowdState.putAll(_completedEntities);
+				
+				// Add in anything new.
+				if (null != newCuboids)
+				{
+					for (CuboidData cuboid : newCuboids)
+					{
+						IReadOnlyCuboidData old = nextWorldState.put(cuboid.getCuboidAddress(), cuboid);
+						// This must not already be present.
+						Assert.assertTrue(null == old);
+					}
+				}
+				if (null != newEntities)
+				{
+					for (Entity entity : newEntities)
+					{
+						Entity old = nextCrowdState.put(entity.id(), entity);
+						// This must not already be present.
+						Assert.assertTrue(null == old);
+					}
+				}
 				
 				// Next step is to schedule anything from the previous tick.
 				for (WorldProcessor.ProcessedFragment fragment : _partial)
@@ -412,7 +425,7 @@ public class TickRunner
 					}
 				}
 				
-				// Schedule the new mutations and changes (the new entities an cuboids are just passed through to when the final snapshot is assembled).
+				// Schedule the new mutations and changes coming from outside (they are applied AFTER updates from the previous tick).
 				if (null != newMutations)
 				{
 					for (IMutation mutation : newMutations)
@@ -431,9 +444,16 @@ public class TickRunner
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 				for (CuboidAddress key : nextTickMutations.keySet())
 				{
-					if (!worldState.containsKey(key))
+					if (!nextWorldState.containsKey(key))
 					{
-						System.out.println("WARNING: missing " + key);
+						System.out.println("WARNING: missing cuboid " + key);
+					}
+				}
+				for (Integer id : nextTickChanges.keySet())
+				{
+					if (!nextCrowdState.containsKey(id))
+					{
+						System.out.println("WARNING: missing entity " + id);
 					}
 				}
 				
@@ -449,12 +469,10 @@ public class TickRunner
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
 				_thisTickMaterials = new TickMaterials(_nextTick
-						, _completedCuboids
-						, _completedEntities
+						, nextWorldState
+						, nextCrowdState
 						, nextTickMutations
 						, nextTickChanges
-						, (null != newCuboids) ? newCuboids : Collections.emptyList()
-						, (null != newEntities) ? newEntities : Collections.emptyList()
 				);
 			}
 			else
@@ -534,7 +552,5 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
 			, Map<Integer, Queue<IEntityChange>> changesToRun
-			, List<CuboidData> newCuboidsToAdd
-			, List<Entity> newEntitiesToAdd
 	) {}
 }
