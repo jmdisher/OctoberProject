@@ -12,6 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.changes.MetaChangePhase1;
+import com.jeffdisher.october.changes.MetaChangePhase2;
 import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -31,6 +33,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class TickRunner
 {
+	/**
+	 * We currently run 10 ticks per second.
+	 */
+	public static final long MILLIS_PER_TICK = 100L;
+
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	// Read-only cuboids from the previous tick, resolved by address.
@@ -216,6 +223,23 @@ public class TickRunner
 				_newEntityChanges = new ArrayList<>();
 			}
 			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new MetaChangeStandard(manager, change));
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
+	public void enqueuePhasedChange(IEntityChange change, long activityId)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _newEntityChanges)
+			{
+				_newEntityChanges = new ArrayList<>();
+			}
+			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new MetaChangePhase1(manager, change, activityId));
 		}
 		finally
 		{
@@ -417,7 +441,38 @@ public class TickRunner
 				
 				// With the complete set of loaded entities, we can now rebuild the activity manager.
 				TwoPhaseActivityManager twoPhaseActivities = new TwoPhaseActivityManager(nextCrowdState.keySet());
-				// TODO:  Process twoPhaseActivities.
+				
+				// We want to schedule anything pending from the activity manager first, for simplicity.  Note that we use the previous tick's entities.
+				for (Integer id : _completedEntities.keySet())
+				{
+					TwoPhaseActivityManager.ActivityPlan plan = previousActivityManager.getActivityForEntity(id);
+					if (null != plan)
+					{
+						if (0 == plan.delayMillis())
+						{
+							// This is ready, so schedule it.
+							IEntityChange wrappedChange = new MetaChangePhase2(twoPhaseActivities, plan.phase2(), plan.activityId());
+							// This is the first thing added.
+							Queue<IEntityChange> queue = new LinkedList<IEntityChange>();
+							queue.add(wrappedChange);
+							Object old = nextTickChanges.put(id, queue);
+							// (this check will be useful if this moves in the order of operations)
+							Assert.assertTrue(null == old);
+						}
+						else
+						{
+							// Just update the pending time of everything else.
+							long newDelayMillis = plan.delayMillis() - MILLIS_PER_TICK;
+							if (newDelayMillis < 0L)
+							{
+								newDelayMillis = 0L;
+							}
+							twoPhaseActivities.scheduleNewActivity(id, plan.activityId(), plan.phase2(), newDelayMillis);
+						}
+					}
+					// TODO:  Pass back the results, when we connect this to something.
+					// NOTE:  Without processing the results, we also don't know that something was interrupted and dropped.
+				}
 				
 				// Next step is to schedule anything from the previous tick.
 				for (WorldProcessor.ProcessedFragment fragment : _partial)

@@ -9,6 +9,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
@@ -246,6 +247,106 @@ public class TestTickRunner
 		Assert.assertEquals(1, receiver.inventory().items.size());
 		Items update = receiver.inventory().items.get(ItemRegistry.STONE);
 		Assert.assertEquals(2, update.count());
+	}
+
+	@Test
+	public void phasedChangeBlockBreak()
+	{
+		// Since this test is complicated and involves multiple ticks, we will test 2 things here:  (1) What happens when the activity is interrupted and (2) what happens when it completes.
+		CountingWorldListener blockListener = new CountingWorldListener();
+		CountingEntityListener entityListener = new CountingEntityListener();
+		TickRunner runner = new TickRunner(1, blockListener, entityListener);
+		
+		// Create a cuboid of stone.
+		OctreeShort block = OctreeShort.create(BlockAspect.STONE);
+		OctreeObject inventory = OctreeObject.create();
+		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { block, inventory }));
+		
+		// We can use the default entity since we don't yet check that they are standing in solid rock.
+		int entityId = 1;
+		Entity entity = EntityActionValidator.buildDefaultEntity(entityId);
+		runner.entityDidJoin(entity);
+		
+		// Start up and run the first tick so that these get loaded.
+		runner.start();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		
+		// Now, add the mutation where this entity tries to break a block and watch it make its way through the system.
+		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
+		long activityId1 = 1;
+		runner.enqueuePhasedChange(new BeginBreakBlockChange(entityId, changeLocation1), activityId1);
+		
+		// Tick 1 complete:  Nothing should have changed yet.
+		BlockProxy proxy1 = runner.getBlockProxy(changeLocation1);
+		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// Tick 2 complete:  The first entity change has been applied.
+		Assert.assertEquals(1, entityListener.entityChanged.get());
+		proxy1 = runner.getBlockProxy(changeLocation1);
+		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		// Here, we will try injecting a second activity and prove that only the second actually completes.
+		AbsoluteLocation changeLocation2 = new AbsoluteLocation(1, 1, 1);
+		long activityId2 = 2;
+		runner.enqueuePhasedChange(new BeginBreakBlockChange(entityId, changeLocation2), activityId2);
+		BlockProxy proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// Tick 3 complete:  Change1 will have been "completed as failed" here and Change2 first phase has been applied.
+		Assert.assertEquals(2, entityListener.entityChanged.get());
+		proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// Tick 4 complete:  We should be waiting for the next phase to run.
+		Assert.assertEquals(2, entityListener.entityChanged.get());
+		proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// Tick 5 complete:  The second part of the change should have been applied and we are waiting for the block.
+		Assert.assertEquals(3, entityListener.entityChanged.get());
+		Assert.assertEquals(0, blockListener.blockChanged.get());
+		proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// Tick 6 complete:  The block should now be updated.
+		Assert.assertEquals(3, entityListener.entityChanged.get());
+		Assert.assertEquals(1, blockListener.blockChanged.get());
+		proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
+		Inventory inv = proxy2.getDataSpecial(AspectRegistry.INVENTORY);
+		Assert.assertEquals(1, inv.items.size());
+		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
+		
+		// Shutdown and observe expected results.
+		runner.shutdown();
+		
+		// Make sure that the first change never caused an update.
+		proxy1 = runner.getBlockProxy(changeLocation1);
+		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
+		
+		// Verify remaining counts.
+		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(0, blockListener.mutationDropped.get());
+		Assert.assertEquals(3, entityListener.entityChanged.get());
+		Assert.assertEquals(0, entityListener.changeDropped.get());
 	}
 
 
