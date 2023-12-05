@@ -86,8 +86,18 @@ public class TickRunner
 			};
 			int id = i;
 			_threads[i] = new Thread(() -> {
-				ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-				_backgroundThreadMain(thisThread, loader, worldListener, entityListener);
+				try
+				{
+					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
+					_backgroundThreadMain(thisThread, loader, worldListener, entityListener);
+				}
+				catch (Throwable t)
+				{
+					// This is a fatal error so just stop.
+					// We will manage this differently in the future but this makes test/debug turn-around simpler in the near-term.
+					t.printStackTrace();
+					System.exit(100);
+				}
 			}, "Tick Runner #" + i);
 		}
 	}
