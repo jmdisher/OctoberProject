@@ -70,7 +70,8 @@ public class CrowdProcessor
 				exportedChanges.add(arg0);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
+		// We will use null for twoPhaseChangeSink since the mutations we were given will intercept this where relevant.
+		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink, null);
 		
 		for (Map.Entry<Integer, Queue<IEntityChange>> elt : changesToRun.entrySet())
 		{
