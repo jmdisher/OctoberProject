@@ -43,7 +43,7 @@ public class TestSpeculativeProjection
 	{
 		// We want to test that adding a few mutations as speculative, but then adding them as "committed" causes no problem.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -165,7 +165,7 @@ public class TestSpeculativeProjection
 	{
 		// Test that unloading a cuboid with local mutations correctly purges them but can go on to commit other things.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -250,7 +250,7 @@ public class TestSpeculativeProjection
 	{
 		// We want to test that adding a few mutations as speculative, and then committing a few conflicts to make sure that we drop the speculative mutaions which fail.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -352,7 +352,7 @@ public class TestSpeculativeProjection
 	{
 		// We want to apply a few mutations which themselves cause secondary mutations, and observe what happens when some commit versus conflict.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -449,7 +449,7 @@ public class TestSpeculativeProjection
 	{
 		// Test that we can apply inventory changes to speculative mutation.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -554,7 +554,7 @@ public class TestSpeculativeProjection
 	{
 		// Test that we can enqueue new entity changes from within an entity change.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		
 		// We need 2 entities for this but we will give one some items.
 		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
@@ -621,7 +621,7 @@ public class TestSpeculativeProjection
 	{
 		// Test that successful move requests will be replaced by the last.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
 				, Collections.emptyList()
@@ -675,13 +675,13 @@ public class TestSpeculativeProjection
 	{
 		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes in the simple case.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		int entityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		int entityId = 0;
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -736,13 +736,13 @@ public class TestSpeculativeProjection
 	{
 		// Test that we can apply a multi-phase change, but then interrupt it part way with another, observe that one complete, and observe it be correctly merged with server changes.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		int entityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		int entityId = 0;
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -801,13 +801,13 @@ public class TestSpeculativeProjection
 	{
 		// Test that we can apply a multi-phase change, observe it complete, and observe its side-effects being reverted by a conflicting server change.
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		int entityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		int entityId = 0;
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -868,13 +868,13 @@ public class TestSpeculativeProjection
 		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes when sheered such that the phase1 and phase2 arrive in 2 batches.
 		// (in this case, we assume we locally applied phase2 before we see the partial commit)
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		int entityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		int entityId = 0;
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -952,13 +952,13 @@ public class TestSpeculativeProjection
 		// Test that we can apply a multi-phase change, observe it complete, and observe it be correctly merged with server changes when sheered such that the phase1 and phase2 arrive in 2 batches.
 		// (in this case, we assume that the local phase2 hasn't yet been applied before we see the partial commit)
 		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(listener);
+		int entityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
 		OctreeObject inventories = OctreeObject.create();
 		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
-		int entityId = 0;
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))

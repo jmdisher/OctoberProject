@@ -42,6 +42,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class SpeculativeProjection
 {
+	private final int _localEntityId;
 	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
 	
@@ -63,9 +64,16 @@ public class SpeculativeProjection
 	private long _nextLocalCommitNumber;
 	private boolean _shouldTryMerge;
 
-	public SpeculativeProjection(IProjectionListener listener)
+	/**
+	 * Creates a speculative projection for a single client.
+	 * 
+	 * @param localEntityId The ID of the local entity where all local changes will be applied.
+	 * @param listener The listener for updates to the local projection.
+	 */
+	public SpeculativeProjection(int localEntityId, IProjectionListener listener)
 	{
 		Assert.assertTrue(null != listener);
+		_localEntityId = localEntityId;
 		_singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_listener = listener;
 		
@@ -305,22 +313,23 @@ public class SpeculativeProjection
 			{
 				ChangeWrapper thisChange = _speculativeChanges.get(sizeBeforeMerge - 1);
 				ChangeWrapper previousChange = _speculativeChanges.get(sizeBeforeMerge - 2);
-				if (thisChange.change.getTargetId() == previousChange.change.getTargetId())
+				// We expect that both of these are for this local entity (otherwise, how did they get in this
+				// collection).
+				Assert.assertTrue(_localEntityId == thisChange.change.getTargetId());
+				Assert.assertTrue(_localEntityId == previousChange.change.getTargetId());
+				long previousCommit = previousChange.commitLevel;
+				// If we already merged the previous 2, we would have rolled-back the commit number.
+				Assert.assertTrue((previousCommit + 1) == commitNumber);
+				if (thisChange.change.canReplacePrevious(previousChange.change))
 				{
-					long previousCommit = previousChange.commitLevel;
-					// If we already merged the previous 2, we would have rolled-back the commit number.
-					Assert.assertTrue((previousCommit + 1) == commitNumber);
-					if (thisChange.change.canReplacePrevious(previousChange.change))
-					{
-						// Remove the previous 2 and re-add the latest to avoid nulls in the list.
-						_speculativeChanges.remove(sizeBeforeMerge - 1);
-						_speculativeChanges.remove(sizeBeforeMerge - 2);
-						// Roll-back the commit number.
-						_nextLocalCommitNumber -= 1;
-						commitNumber = previousCommit;
-						// Re-add this latest commit, with the previous commit number.
-						_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
-					}
+					// Remove the previous 2 and re-add the latest to avoid nulls in the list.
+					_speculativeChanges.remove(sizeBeforeMerge - 1);
+					_speculativeChanges.remove(sizeBeforeMerge - 2);
+					// Roll-back the commit number.
+					_nextLocalCommitNumber -= 1;
+					commitNumber = previousCommit;
+					// Re-add this latest commit, with the previous commit number.
+					_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
 				}
 			}
 			// Whether we merged or not, we now have something to try merging with, on the next call.
@@ -384,6 +393,9 @@ public class SpeculativeProjection
 
 	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change)
 	{
+		// Everything we are applying as forward projection should be applied to this local entity.
+		Assert.assertTrue(_localEntityId == change.getTargetId());
+		
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
 		// Only the server can apply ticks so just provide 0.
@@ -443,7 +455,7 @@ public class SpeculativeProjection
 		
 		// We will assume that the initial change was applied if we see them in the modified set.
 		modifiedEntityIds.addAll(locallyModifiedIds);
-		return locallyModifiedIds.contains(change.getTargetId());
+		return locallyModifiedIds.contains(_localEntityId);
 	}
 
 	private Map<Integer, Queue<IEntityChange>> _createChangeMap(List<IEntityChange> newEntityChanges)
