@@ -1,7 +1,5 @@
 package com.jeffdisher.october.changes;
 
-import java.util.function.BiConsumer;
-
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -49,10 +47,10 @@ public class MetaChangeClientPrepare implements IEntityChange
 	}
 
 
-	private class LocalSink implements BiConsumer<IEntityChange, Long>
+	private class LocalSink implements TickProcessingContext.ITwoPhaseChangeSink
 	{
 		@Override
-		public void accept(IEntityChange change, Long delayMillis)
+		public void accept(int targetEntityId, IEntityChange change, long delayMillis)
 		{
 			Assert.assertTrue(null == MetaChangeClientPrepare.this.phase2);
 			MetaChangeClientPrepare.this.phase2 = change;

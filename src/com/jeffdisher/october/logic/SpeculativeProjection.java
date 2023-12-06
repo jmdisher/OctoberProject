@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.changes.MetaChangeClientIgnore;
 import com.jeffdisher.october.changes.MetaChangeClientPrepare;
@@ -119,7 +119,7 @@ public class SpeculativeProjection
 			, List<Entity> addedEntities
 			, List<CuboidData> addedCuboids
 			
-			, List<IEntityChange> entityChanges
+			, List<ChangeContainer> entityChanges
 			, List<IMutation> cuboidMutations
 			
 			, List<Integer> removedEntities
@@ -157,7 +157,9 @@ public class SpeculativeProjection
 		};
 		
 		// When applying server-originating changes, we never schedule phase2 operations (they will tell us the results, later).
-		List<IEntityChange> ignoredPhase2Changes = entityChanges.stream().map((IEntityChange change) -> new MetaChangeClientIgnore(change)).collect(Collectors.toList());
+		List<ChangeContainer> ignoredPhase2Changes = entityChanges.stream().map(
+				(ChangeContainer container) -> new ChangeContainer(container.entityId(), new MetaChangeClientIgnore(container.change()))
+		).collect(Collectors.toList());
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
@@ -426,10 +428,12 @@ public class SpeculativeProjection
 			}
 		};
 		
-		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(Collections.singletonList(change));
+		Queue<IEntityChange> queue = new LinkedList<IEntityChange>();
+		queue.add(change);
+		Map<Integer, Queue<IEntityChange>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
-		List<IEntityChange> exportedChanges = group.exportedChanges();
+		List<ChangeContainer> exportedChanges = group.exportedChanges();
 		List<IMutation> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -458,19 +462,19 @@ public class SpeculativeProjection
 		return locallyModifiedIds.contains(_localEntityId);
 	}
 
-	private Map<Integer, Queue<IEntityChange>> _createChangeMap(List<IEntityChange> newEntityChanges)
+	private Map<Integer, Queue<IEntityChange>> _createChangeMap(List<ChangeContainer> newEntityChanges)
 	{
 		Map<Integer, Queue<IEntityChange>> changesToRun = new HashMap<>();
-		for (IEntityChange change : newEntityChanges)
+		for (ChangeContainer container : newEntityChanges)
 		{
-			int id = change.getTargetId();
+			int id = container.entityId();
 			Queue<IEntityChange> queue = changesToRun.get(id);
 			if (null == queue)
 			{
 				queue = new LinkedList<>();
 				changesToRun.put(id, queue);
 			}
-			queue.add(change);
+			queue.add(container.change());
 		}
 		return changesToRun;
 	}

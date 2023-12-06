@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.IMutation;
@@ -55,7 +56,7 @@ public class CrowdProcessor
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
-		List<IEntityChange> exportedChanges = new ArrayList<>();
+		List<ChangeContainer> exportedChanges = new ArrayList<>();
 		Consumer<IMutation> newMutationSink = new Consumer<>() {
 			@Override
 			public void accept(IMutation arg0)
@@ -63,11 +64,11 @@ public class CrowdProcessor
 				exportedMutations.add(arg0);
 			}
 		};
-		Consumer<IEntityChange> newChangeSink = new Consumer<>() {
+		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void accept(IEntityChange arg0)
+			public void accept(int targetEntityId, IEntityChange change)
 			{
-				exportedChanges.add(arg0);
+				exportedChanges.add(new ChangeContainer(targetEntityId, change));
 			}
 		};
 		// We will use null for twoPhaseChangeSink since the mutations we were given will intercept this where relevant.
@@ -91,7 +92,7 @@ public class CrowdProcessor
 					boolean didApply = change.applyChange(context, mutable);
 					if (didApply)
 					{
-						listener.entityChanged(change.getTargetId());
+						listener.entityChanged(id);
 					}
 					else
 					{
@@ -108,7 +109,7 @@ public class CrowdProcessor
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutation> exportedMutations
-			, List<IEntityChange> exportedChanges
+			, List<ChangeContainer> exportedChanges
 	) {}
 
 

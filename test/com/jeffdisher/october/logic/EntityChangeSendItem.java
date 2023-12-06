@@ -2,7 +2,6 @@ package com.jeffdisher.october.logic;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.types.Inventory;
@@ -51,7 +50,7 @@ public class EntityChangeSendItem implements IEntityChange
 	}
 
 
-	private int _common(MutableEntity newEntity, Consumer<IEntityChange> newChangeSink)
+	private int _common(MutableEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
 		Inventory oldInventory = newEntity.newInventory;
@@ -69,7 +68,7 @@ public class EntityChangeSendItem implements IEntityChange
 			int reducedEncumbrance = _itemType.encumbrance() * foundCount;
 			newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance - reducedEncumbrance);
 			// Send this to the other entity.
-			newChangeSink.accept(new EntityChangeReceiveItem(_targetId, _itemType, foundCount));
+			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_targetId, _itemType, foundCount));
 		}
 		return foundCount;
 	}

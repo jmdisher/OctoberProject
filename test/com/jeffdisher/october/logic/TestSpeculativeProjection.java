@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
@@ -84,14 +85,14 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(lone1, 1L);
 		long commit2 = projector.applyLocalChange(lone2, 1L);
 		List<IMutation> mutationsToCommit = new ArrayList<>();
-		List<IEntityChange> changesToCommit = new ArrayList<>();
+		List<ChangeContainer> changesToCommit = new ArrayList<>();
 		long[] commitNumbers = new long[5];
 		for (int i = 0; i < commitNumbers.length; ++i)
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
 			IMutation mutation = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
 			IEntityChange entityChange = new EntityChangeMutation(0, mutation);
-			changesToCommit.add(entityChange);
+			changesToCommit.add(new ChangeContainer(0, entityChange));
 			mutationsToCommit.add(mutation);
 			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L);
 		}
@@ -102,7 +103,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone1)
+				, List.of(new ChangeContainer(0, lone1))
 				, List.of(mutation1)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -117,7 +118,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone2)
+				, List.of(new ChangeContainer(0, lone2))
 				, List.of(mutation2)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -216,7 +217,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone0)
+				, List.of(new ChangeContainer(0, lone0))
 				, List.of(mutation0)
 				, Collections.emptyList()
 				, List.of(address1)
@@ -300,7 +301,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone0)
+				, List.of(new ChangeContainer(0, lone0))
 				, List.of(mutation0)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -319,7 +320,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone1)
+				, List.of(new ChangeContainer(0, lone1))
 				, List.of(mutation1)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -400,7 +401,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone0)
+				, List.of(new ChangeContainer(0, lone0))
 				, List.of(mutation0)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -417,7 +418,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone1)
+				, List.of(new ChangeContainer(0, lone1))
 				, List.of(mutation1)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -502,7 +503,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone1)
+				, List.of(new ChangeContainer(0, lone1))
 				, List.of(mutation1)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -519,7 +520,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(lone2)
+				, List.of(new ChangeContainer(0, lone2))
 				, List.of(mutation2)
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -587,7 +588,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(send)
+				, List.of(new ChangeContainer(0, send))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -600,7 +601,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityChangeReceiveItem(1, ItemRegistry.STONE, 2))
+				, List.of(new ChangeContainer(1, new EntityChangeReceiveItem(1, ItemRegistry.STONE, 2)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -658,7 +659,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(move1)
+				, List.of(new ChangeContainer(0, move1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -716,8 +717,8 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(phase1
-						, new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE)
+				, List.of(new ChangeContainer(entityId, phase1)
+						, new ChangeContainer(entityId, new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE))
 				)
 				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
 				, Collections.emptyList()
@@ -778,9 +779,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(interrupted
-						, phase1
-						, new EndBreakBlockChange(entityId, changeLocation2, BlockAspect.STONE)
+				, List.of(new ChangeContainer(entityId, interrupted)
+						, new ChangeContainer(entityId, phase1)
+						, new ChangeContainer(entityId, new EndBreakBlockChange(entityId, changeLocation2, BlockAspect.STONE))
 				)
 				, List.of(new BreakBlockMutation(changeLocation2, BlockAspect.STONE))
 				, Collections.emptyList()
@@ -909,7 +910,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(phase1)
+				, List.of(new ChangeContainer(entityId, phase1))
 				, List.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -927,7 +928,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE))
+				, List.of(new ChangeContainer(entityId, new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE)))
 				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -988,7 +989,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(phase1)
+				, List.of(new ChangeContainer(entityId, phase1))
 				, List.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1012,7 +1013,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE))
+				, List.of(new ChangeContainer(entityId, new EndBreakBlockChange(entityId, changeLocation, BlockAspect.STONE)))
 				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()

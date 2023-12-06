@@ -40,7 +40,7 @@ public class BeginBreakBlockChange implements IEntityChange
 			// Now, schedule the second phase.
 			EndBreakBlockChange phase2 = new EndBreakBlockChange(_id, _targetBlock, blockType);
 			// For now, we will say that this takes 100 ms.
-			context.twoPhaseChangeSink.accept(phase2, 100L);
+			context.twoPhaseChangeSink.accept(_id, phase2, 100L);
 			didApply = true;
 		}
 		return didApply;

@@ -1,7 +1,5 @@
 package com.jeffdisher.october.changes;
 
-import java.util.function.BiConsumer;
-
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -31,7 +29,7 @@ public class MetaChangeClientIgnore implements IEntityChange
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		BiConsumer<IEntityChange, Long> ignorePhase2Requests = (IEntityChange change, Long delayMillis) -> {};
+		TickProcessingContext.ITwoPhaseChangeSink ignorePhase2Requests = (int targetEntityId, IEntityChange change, long delayMillis) -> {};
 		TickProcessingContext wrapper = new TickProcessingContext(context.currentTick
 				, context.previousBlockLookUp
 				, context.newMutationSink

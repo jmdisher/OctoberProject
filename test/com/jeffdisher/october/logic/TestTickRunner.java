@@ -196,7 +196,7 @@ public class TestTickRunner
 		
 		// Now, add a mutation from this entity to deliver the block replacement mutation.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		runner.enqueueEntityChange(new EntityChangeMutation(entityId, new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(entityId, new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)));
 		
 		// This will take a few ticks to be observable:
 		// -after tick 1, the change will have been run and the mutation enqueued
@@ -231,7 +231,7 @@ public class TestTickRunner
 		
 		// Try to pass the items to the other entity.
 		IEntityChange send = new EntityChangeSendItem(0, 1, ItemRegistry.STONE);
-		runner.enqueueEntityChange(send);
+		runner.enqueueEntityChange(0, send);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
 		// (run a tick to run the final change)
@@ -275,7 +275,7 @@ public class TestTickRunner
 		// Now, add the mutation where this entity tries to break a block and watch it make its way through the system.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		long activityId1 = 1;
-		runner.enqueuePhasedChange(new BeginBreakBlockChange(entityId, changeLocation1), activityId1);
+		runner.enqueuePhasedChange(entityId, new BeginBreakBlockChange(entityId, changeLocation1), activityId1);
 		
 		// Tick 1 complete:  Nothing should have changed yet.
 		BlockProxy proxy1 = runner.getBlockProxy(changeLocation1);
@@ -293,7 +293,7 @@ public class TestTickRunner
 		// Here, we will try injecting a second activity and prove that only the second actually completes.
 		AbsoluteLocation changeLocation2 = new AbsoluteLocation(1, 1, 1);
 		long activityId2 = 2;
-		runner.enqueuePhasedChange(new BeginBreakBlockChange(entityId, changeLocation2), activityId2);
+		runner.enqueuePhasedChange(entityId, new BeginBreakBlockChange(entityId, changeLocation2), activityId2);
 		BlockProxy proxy2 = runner.getBlockProxy(changeLocation2);
 		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));

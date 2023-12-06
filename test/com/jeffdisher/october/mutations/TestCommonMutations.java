@@ -112,7 +112,7 @@ public class TestCommonMutations
 						ProcessingSinks.this.nextMutation = mutation;
 					}
 					, null
-					, (IEntityChange change, Long delayMillis) -> {
+					, (int targetEntityId, IEntityChange change, long delayMillis) -> {
 						ProcessingSinks.this.nextDelayedChange = change;
 						ProcessingSinks.this.nextDelayedMillis = delayMillis;
 					}

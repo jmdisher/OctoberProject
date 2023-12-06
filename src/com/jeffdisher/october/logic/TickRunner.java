@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.changes.MetaChangePhase1;
 import com.jeffdisher.october.changes.MetaChangePhase2;
@@ -48,7 +49,7 @@ public class TickRunner
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidData> _newCuboids;
-	private List<Function<TwoPhaseActivityManager, IEntityChange>> _newEntityChanges;
+	private List<Function<TwoPhaseActivityManager, ChangeContainer>> _newEntityChanges;
 	private List<Entity> _newEntities;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -213,7 +214,7 @@ public class TickRunner
 		}
 	}
 
-	public void enqueueEntityChange(IEntityChange change)
+	public void enqueueEntityChange(int entityId, IEntityChange change)
 	{
 		_sharedDataLock.lock();
 		try
@@ -222,7 +223,7 @@ public class TickRunner
 			{
 				_newEntityChanges = new ArrayList<>();
 			}
-			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new MetaChangeStandard(manager, change));
+			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new ChangeContainer(entityId,  new MetaChangeStandard(manager, change)));
 		}
 		finally
 		{
@@ -230,7 +231,7 @@ public class TickRunner
 		}
 	}
 
-	public void enqueuePhasedChange(IEntityChange change, long activityId)
+	public void enqueuePhasedChange(int entityId, IEntityChange change, long activityId)
 	{
 		_sharedDataLock.lock();
 		try
@@ -239,7 +240,7 @@ public class TickRunner
 			{
 				_newEntityChanges = new ArrayList<>();
 			}
-			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new MetaChangePhase1(manager, change, activityId));
+			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new ChangeContainer(entityId, new MetaChangePhase1(manager, change, activityId)));
 		}
 		finally
 		{
@@ -390,7 +391,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutation> newMutations;
 				List<Entity> newEntities;
-				List<Function<TwoPhaseActivityManager, IEntityChange>> newEntityChanges;
+				List<Function<TwoPhaseActivityManager, ChangeContainer>> newEntityChanges;
 				
 				_sharedDataLock.lock();
 				try
@@ -481,9 +482,9 @@ public class TickRunner
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (IEntityChange change : fragment.exportedEntityChanges())
+					for (ChangeContainer container : fragment.exportedEntityChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, new MetaChangeStandard(twoPhaseActivities, change));
+						_scheduleChangeForEntity(nextTickChanges, container.entityId(), new MetaChangeStandard(twoPhaseActivities, container.change()));
 					}
 				}
 				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
@@ -492,9 +493,9 @@ public class TickRunner
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (IEntityChange change : fragment.exportedChanges())
+					for (ChangeContainer container : fragment.exportedChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, new MetaChangeStandard(twoPhaseActivities, change));
+						_scheduleChangeForEntity(nextTickChanges, container.entityId(), new MetaChangeStandard(twoPhaseActivities, container.change()));
 					}
 				}
 				
@@ -508,10 +509,10 @@ public class TickRunner
 				}
 				if (null != newEntityChanges)
 				{
-					for (Function<TwoPhaseActivityManager, IEntityChange> changeCurry : newEntityChanges)
+					for (Function<TwoPhaseActivityManager, ChangeContainer> changeCurry : newEntityChanges)
 					{
-						IEntityChange change = changeCurry.apply(twoPhaseActivities);
-						_scheduleChangeForEntity(nextTickChanges, change);
+						ChangeContainer container = changeCurry.apply(twoPhaseActivities);
+						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
 					}
 				}
 				
@@ -593,9 +594,8 @@ public class TickRunner
 		queue.add(mutation);
 	}
 
-	private void _scheduleChangeForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, IEntityChange change)
+	private void _scheduleChangeForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, int entityId, IEntityChange change)
 	{
-		int entityId = change.getTargetId();
 		Queue<IEntityChange> queue = nextTickChanges.get(entityId);
 		if (null == queue)
 		{
