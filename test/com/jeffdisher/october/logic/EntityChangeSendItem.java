@@ -17,22 +17,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeSendItem implements IEntityChange
 {
-	private final int _sourceId;
 	private final int _targetId;
 	private final Item _itemType;
 
-	public EntityChangeSendItem(int sourceId, int targetId, Item itemType)
+	public EntityChangeSendItem(int targetId, Item itemType)
 	{
-		_sourceId = sourceId;
 		_targetId = targetId;
 		_itemType = itemType;
-	}
-
-	@Override
-	public int getTargetId()
-	{
-		// We run against the source so that we can modify their inventory to extract the item.
-		return _sourceId;
 	}
 
 	@Override
@@ -68,7 +59,7 @@ public class EntityChangeSendItem implements IEntityChange
 			int reducedEncumbrance = _itemType.encumbrance() * foundCount;
 			newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance - reducedEncumbrance);
 			// Send this to the other entity.
-			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_targetId, _itemType, foundCount));
+			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
 		}
 		return foundCount;
 	}

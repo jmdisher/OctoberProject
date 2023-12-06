@@ -10,19 +10,11 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeMove implements IEntityChange
 {
-	private final int _id;
 	private final EntityLocation _newLocation;
 
-	public EntityChangeMove(int id, EntityLocation newLocation)
+	public EntityChangeMove(EntityLocation newLocation)
 	{
-		_id = id;
 		_newLocation = newLocation;
-	}
-
-	@Override
-	public int getTargetId()
-	{
-		return _id;
 	}
 
 	@Override

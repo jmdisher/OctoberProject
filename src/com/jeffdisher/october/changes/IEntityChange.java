@@ -16,11 +16,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public interface IEntityChange
 {
 	/**
-	 * @return The ID number to identity an Entity registered in the system.
-	 */
-	int getTargetId();
-
-	/**
 	 * Applies the change to the given entity, returning true if it was a success (and should be transmitted to
 	 * clients) and false if it failed and should be rejected.
 	 * For context:  This call is made when a mutation is being applied authoritatively.  That is, it will NOT be

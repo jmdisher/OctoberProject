@@ -21,12 +21,6 @@ public class MetaChangeClientPrepare implements IEntityChange
 	}
 
 	@Override
-	public int getTargetId()
-	{
-		return _inner.getTargetId();
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		LocalSink twoPhaseChangeSink = new LocalSink();

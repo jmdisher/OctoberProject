@@ -25,12 +25,6 @@ public class MetaChangePhase1 implements IEntityChange
 	}
 
 	@Override
-	public int getTargetId()
-	{
-		return _inner.getTargetId();
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		LocalSink twoPhaseChangeSink = new LocalSink();
@@ -43,7 +37,7 @@ public class MetaChangePhase1 implements IEntityChange
 		boolean result = _inner.applyChange(wrapper, newEntity);
 		// We expect that this scheduled something.
 		Assert.assertTrue(null != twoPhaseChangeSink.change);
-		_manager.scheduleNewActivity(_inner.getTargetId(), _activityToAssign, twoPhaseChangeSink.change, twoPhaseChangeSink.delayMillis);
+		_manager.scheduleNewActivity(newEntity.original.id(), _activityToAssign, twoPhaseChangeSink.change, twoPhaseChangeSink.delayMillis);
 		return result;
 	}
 

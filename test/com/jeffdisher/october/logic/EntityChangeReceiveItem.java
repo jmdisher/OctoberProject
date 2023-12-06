@@ -17,21 +17,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeReceiveItem implements IEntityChange
 {
-	private final int _entityId;
 	private final Item _itemType;
 	private final int _itemCount;
 
-	public EntityChangeReceiveItem(int entityId, Item itemType, int itemCount)
+	public EntityChangeReceiveItem(Item itemType, int itemCount)
 	{
-		_entityId = entityId;
 		_itemType = itemType;
 		_itemCount = itemCount;
-	}
-
-	@Override
-	public int getTargetId()
-	{
-		return _entityId;
 	}
 
 	@Override

@@ -11,19 +11,11 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeMutation implements IEntityChange
 {
-	private final int _entityId;
 	private final IMutation _contents;
 
-	public EntityChangeMutation(int entityId, IMutation contents)
+	public EntityChangeMutation(IMutation contents)
 	{
-		_entityId = entityId;
 		_contents = contents;
-	}
-
-	@Override
-	public int getTargetId()
-	{
-		return _entityId;
 	}
 
 	@Override

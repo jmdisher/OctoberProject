@@ -14,21 +14,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EndBreakBlockChange implements IEntityChange
 {
-	private final int _id;
 	private final AbsoluteLocation _targetBlock;
 	private final short _expectedBlockType;
 
-	public EndBreakBlockChange(int id, AbsoluteLocation targetBlock, short expectedBlockType)
+	public EndBreakBlockChange(AbsoluteLocation targetBlock, short expectedBlockType)
 	{
-		_id = id;
 		_targetBlock = targetBlock;
 		_expectedBlockType = expectedBlockType;
-	}
-
-	@Override
-	public int getTargetId()
-	{
-		return _id;
 	}
 
 	@Override

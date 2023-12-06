@@ -315,10 +315,6 @@ public class SpeculativeProjection
 			{
 				ChangeWrapper thisChange = _speculativeChanges.get(sizeBeforeMerge - 1);
 				ChangeWrapper previousChange = _speculativeChanges.get(sizeBeforeMerge - 2);
-				// We expect that both of these are for this local entity (otherwise, how did they get in this
-				// collection).
-				Assert.assertTrue(_localEntityId == thisChange.change.getTargetId());
-				Assert.assertTrue(_localEntityId == previousChange.change.getTargetId());
 				long previousCommit = previousChange.commitLevel;
 				// If we already merged the previous 2, we would have rolled-back the commit number.
 				Assert.assertTrue((previousCommit + 1) == commitNumber);
@@ -395,9 +391,6 @@ public class SpeculativeProjection
 
 	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change)
 	{
-		// Everything we are applying as forward projection should be applied to this local entity.
-		Assert.assertTrue(_localEntityId == change.getTargetId());
-		
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
 		// Only the server can apply ticks so just provide 0.

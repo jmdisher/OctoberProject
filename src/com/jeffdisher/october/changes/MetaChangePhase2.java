@@ -25,16 +25,10 @@ public class MetaChangePhase2 implements IEntityChange
 	}
 
 	@Override
-	public int getTargetId()
-	{
-		return _inner.getTargetId();
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean result = _inner.applyChange(context, newEntity);
-		_manager.activityCompleted(_inner.getTargetId(), _activityId, result);
+		_manager.activityCompleted(newEntity.original.id(), _activityId, result);
 		return result;
 	}
 

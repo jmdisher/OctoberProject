@@ -21,16 +21,10 @@ public class MetaChangeStandard implements IEntityChange
 	}
 
 	@Override
-	public int getTargetId()
-	{
-		return _inner.getTargetId();
-	}
-
-	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean result = _inner.applyChange(context, newEntity);
-		_manager.nonActivityCompleted(_inner.getTargetId());
+		_manager.nonActivityCompleted(newEntity.original.id());
 		return result;
 	}
 

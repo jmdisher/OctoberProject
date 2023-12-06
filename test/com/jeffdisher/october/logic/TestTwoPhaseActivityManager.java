@@ -34,7 +34,7 @@ public class TestTwoPhaseActivityManager
 		int entityId = 1;
 		TwoPhaseActivityManager manager = new TwoPhaseActivityManager(Set.of(entityId));
 		int activityId = 1;
-		manager.scheduleNewActivity(entityId, activityId, new EntityChangeMove(entityId, new EntityLocation(0.0f, 0.0f, 0.0f)), 10L);
+		manager.scheduleNewActivity(entityId, activityId, new EntityChangeMove(new EntityLocation(0.0f, 0.0f, 0.0f)), 10L);
 		TwoPhaseActivityManager.ActivityPlan plan = manager.getActivityForEntity(entityId);
 		Assert.assertEquals(activityId, plan.activityId());
 		manager.nonActivityCompleted(entityId);

@@ -12,11 +12,14 @@ import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -63,10 +66,14 @@ public class TestCommonMutations
 		CuboidData cuboid = _createSolidCuboid(target.getCuboidAddress(), BlockAspect.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(0, target);
+		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(target);
+		
+		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
+		// TODO:  See if we can put in a restriction that the follow-up always only applies to the same entity.
+		Entity entity = EntityActionValidator.buildDefaultEntity(0);
 		
 		// Phase1 should request that phase2 be scheduled later.
-		boolean didApply = phase1.applyChange(context, null);
+		boolean didApply = phase1.applyChange(context, new MutableEntity(entity));
 		Assert.assertTrue(didApply);
 		
 		// Check that phase2 is what we expected and then run it.
