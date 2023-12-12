@@ -12,8 +12,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MetaChangePhase1 implements IEntityChange
 {
-	private final IEntityChange _inner;
-
+	public final IEntityChange inner;
 	public final int clientId;
 	public final long commitLevel;
 	public IEntityChange phase2;
@@ -21,7 +20,7 @@ public class MetaChangePhase1 implements IEntityChange
 
 	public MetaChangePhase1(IEntityChange inner, int clientId, long commitLevel)
 	{
-		_inner = inner;
+		this.inner = inner;
 		this.clientId = clientId;
 		this.commitLevel = commitLevel;
 	}
@@ -36,7 +35,7 @@ public class MetaChangePhase1 implements IEntityChange
 				, context.newChangeSink
 				, twoPhaseChangeSink
 		);
-		boolean result = _inner.applyChange(wrapper, newEntity);
+		boolean result = this.inner.applyChange(wrapper, newEntity);
 		if (result)
 		{
 			// We track what was scheduled so it can be scooped out, later.

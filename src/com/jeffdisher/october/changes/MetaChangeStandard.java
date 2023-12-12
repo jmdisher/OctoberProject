@@ -11,14 +11,13 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MetaChangeStandard implements IEntityChange
 {
-	private final IEntityChange _inner;
-
+	public final IEntityChange inner;
 	public final int clientId;
 	public final long commitLevel;
 
 	public MetaChangeStandard(IEntityChange inner, int clientId, long commitLevel)
 	{
-		_inner = inner;
+		this.inner = inner;
 		this.clientId = clientId;
 		this.commitLevel = commitLevel;
 	}
@@ -26,7 +25,7 @@ public class MetaChangeStandard implements IEntityChange
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		return _inner.applyChange(context, newEntity);
+		return this.inner.applyChange(context, newEntity);
 	}
 
 	@Override

@@ -12,15 +12,14 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MetaChangePhase2 implements IEntityChange
 {
-	private final IEntityChange _inner;
-
+	public final IEntityChange inner;
 	public final int clientId;
 	public final long activityId;
 	public boolean wasSuccess;
 
 	public MetaChangePhase2(IEntityChange inner, int clientId, long activityId)
 	{
-		_inner = inner;
+		this.inner = inner;
 		this.clientId = clientId;
 		this.activityId = activityId;
 	}
@@ -28,7 +27,7 @@ public class MetaChangePhase2 implements IEntityChange
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		boolean result = _inner.applyChange(context, newEntity);
+		boolean result = this.inner.applyChange(context, newEntity);
 		this.wasSuccess = result;
 		return result;
 	}
