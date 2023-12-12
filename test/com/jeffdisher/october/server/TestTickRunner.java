@@ -11,8 +11,12 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.changes.MetaChangePhase1;
+import com.jeffdisher.october.changes.MetaChangePhase2;
+import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
@@ -259,7 +263,10 @@ public class TestTickRunner
 	@Test
 	public void phasedChangeBlockBreak()
 	{
-		// Since this test is complicated and involves multiple ticks, we will test 2 things here:  (1) What happens when the activity is interrupted and (2) what happens when it completes.
+		// NOTE:  Technically, multi-phase changes are managed by the component above the TickRunner but this test has
+		// been adapted to show how they would use TickRunner to accomplish this.
+		
+		// We will show how the TickRunner's caller would schedule a normal change as well as a multi-phase change, to highlight the differences.
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
 		TickRunner runner = new TickRunner(1, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
@@ -279,78 +286,89 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		
-		// Now, add the mutation where this entity tries to break a block and watch it make its way through the system.
+		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		long activityId1 = 1;
-		runner.enqueuePhasedChange(entityId, new BeginBreakBlockChange(changeLocation1), activityId1);
+		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(changeLocation1);
 		
-		// Tick 1 complete:  Nothing should have changed yet.
+		// Note that we use the commit level _as_ the activity ID since it is a monotonic counter (if there could be 2
+		// overlapping multi-phase changes, which could finish out of order, this wouldn't work).
+		long activityId1 = 1;
+		
+		// The first thing is that the first phase change must be wrapped in a MetaChangePhase1.
+		// In actual integration, the caller will use this to scoop out the second-phase request and delay.
+		MetaChangePhase1 meta1 = new MetaChangePhase1(firstPhase, entityId, activityId1);
+		runner.enqueueEntityChange(entityId, meta1);
+		
+		// We now run the tick.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		
+		// Nothing should have changed.
 		BlockProxy proxy1 = runner.getBlockProxy(changeLocation1);
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
+		// Scoop out the phase2 and verify it is what the implementation requests.
+		// The caller tracks this information and schedules the phase2 if nothing else comes in from this entity before the delay expires.
+		IEntityChange secondPhase = meta1.phase2;
+		Assert.assertTrue(secondPhase instanceof EndBreakBlockChange);
+		Assert.assertEquals(100L, meta1.phase2DelayMillis);
+		
+		// Now, for the second phase, we wrap that and schedule, as well.
+		MetaChangePhase2 meta2 = new MetaChangePhase2(meta1.phase2, entityId, activityId1);
+		runner.enqueueEntityChange(entityId, meta2);
+		
+		// We now run the tick.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
-		// Tick 2 complete:  The first entity change has been applied.
-		Assert.assertEquals(1, entityListener.changeApplied.get());
+		
+		// This should have succeeded.  The caller would use this to determine that the latest activityId has advanced.
+		Assert.assertTrue(meta2.wasSuccess);
+		
+		// The mutation has been scheduled but not run, so the block should be the same.
 		proxy1 = runner.getBlockProxy(changeLocation1);
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
-		// Here, we will try injecting a second activity and prove that only the second actually completes.
-		AbsoluteLocation changeLocation2 = new AbsoluteLocation(1, 1, 1);
-		long activityId2 = 2;
-		runner.enqueuePhasedChange(entityId, new BeginBreakBlockChange(changeLocation2), activityId2);
-		BlockProxy proxy2 = runner.getBlockProxy(changeLocation2);
-		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
-		
+		// Run another tick for the final mutation this scheduled to take effect.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
-		// Tick 3 complete:  Change1 will have been "completed as failed" here and Change2 first phase has been applied.
-		Assert.assertEquals(2, entityListener.changeApplied.get());
-		proxy2 = runner.getBlockProxy(changeLocation2);
-		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
 		
-		runner.startNextTick();
-		runner.waitForPreviousTick();
-		// Tick 4 complete:  We should be waiting for the next phase to run.
-		Assert.assertEquals(2, entityListener.changeApplied.get());
-		proxy2 = runner.getBlockProxy(changeLocation2);
-		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
-		
-		runner.startNextTick();
-		runner.waitForPreviousTick();
-		// Tick 5 complete:  The second part of the change should have been applied and we are waiting for the block.
-		Assert.assertEquals(3, entityListener.changeApplied.get());
-		Assert.assertEquals(0, blockListener.mutationApplied.get());
-		proxy2 = runner.getBlockProxy(changeLocation2);
-		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
-		
-		runner.startNextTick();
-		runner.waitForPreviousTick();
-		// Tick 6 complete:  The block should now be updated.
-		Assert.assertEquals(3, entityListener.changeApplied.get());
-		Assert.assertEquals(1, blockListener.mutationApplied.get());
-		proxy2 = runner.getBlockProxy(changeLocation2);
-		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
-		Inventory inv = proxy2.getDataSpecial(AspectRegistry.INVENTORY);
+		// We should see the result.
+		proxy1 = runner.getBlockProxy(changeLocation1);
+		Assert.assertEquals(BlockAspect.AIR, proxy1.getData15(AspectRegistry.BLOCK));
+		Inventory inv = proxy1.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
+		
+		
+		// Now that the multi-phase has completed, here is how a caller would schedule a normal change (just to see how it completed).
+		// Create the change to deliver a basic mutation.
+		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 2);
+		EntityChangeMutation singleChange = new EntityChangeMutation(new ReplaceBlockMutation(changeLocation2, BlockAspect.STONE, BlockAspect.AIR));
+		
+		// We wrap it in a "standard" meta-change.
+		long activityId2 = activityId1 + 1;
+		MetaChangeStandard standard = new MetaChangeStandard(singleChange, entityId, activityId2);
+		runner.enqueueEntityChange(entityId, standard);
+		
+		// Run the tick.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		
+		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
+		// In our case, we will just proceed to run another tick to see the mutation change the block value.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		BlockProxy proxy2 = runner.getBlockProxy(changeLocation2);
+		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
+		
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		// Make sure that the first change never caused an update.
-		proxy1 = runner.getBlockProxy(changeLocation1);
-		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
-		
 		// Verify remaining counts.
-		Assert.assertEquals(1, blockListener.mutationApplied.get());
+		Assert.assertEquals(2, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 		Assert.assertEquals(3, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());

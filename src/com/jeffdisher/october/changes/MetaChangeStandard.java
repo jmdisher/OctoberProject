@@ -1,31 +1,32 @@
 package com.jeffdisher.october.changes;
 
-import com.jeffdisher.october.logic.TwoPhaseActivityManager;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Wrapper over a standard change.  This only invalidates any existing activities.
+ * Wrapper over a standard change used on the server.  This is used to track information related to how to update the
+ * client commit level, upon completion.
  */
 public class MetaChangeStandard implements IEntityChange
 {
-	private final TwoPhaseActivityManager _manager;
 	private final IEntityChange _inner;
 
-	public MetaChangeStandard(TwoPhaseActivityManager manager, IEntityChange inner)
+	public final int clientId;
+	public final long commitLevel;
+
+	public MetaChangeStandard(IEntityChange inner, int clientId, long commitLevel)
 	{
-		_manager = manager;
 		_inner = inner;
+		this.clientId = clientId;
+		this.commitLevel = commitLevel;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		boolean result = _inner.applyChange(context, newEntity);
-		_manager.nonActivityCompleted(newEntity.original.id());
-		return result;
+		return _inner.applyChange(context, newEntity);
 	}
 
 	@Override

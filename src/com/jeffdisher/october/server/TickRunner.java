@@ -14,16 +14,12 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.changes.MetaChangePhase1;
-import com.jeffdisher.october.changes.MetaChangePhase2;
-import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
-import com.jeffdisher.october.logic.TwoPhaseActivityManager;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -40,11 +36,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class TickRunner
 {
-	/**
-	 * We currently run 10 ticks per second.
-	 */
-	public static final long MILLIS_PER_TICK = 100L;
-
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	// Read-only snapshot of the previously-completed tick.
@@ -53,7 +44,7 @@ public class TickRunner
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidData> _newCuboids;
-	private List<Function<TwoPhaseActivityManager, ChangeContainer>> _newEntityChanges;
+	private List<ChangeContainer> _newEntityChanges;
 	private List<Entity> _newEntities;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -235,24 +226,7 @@ public class TickRunner
 			{
 				_newEntityChanges = new ArrayList<>();
 			}
-			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new ChangeContainer(entityId,  new MetaChangeStandard(manager, change)));
-		}
-		finally
-		{
-			_sharedDataLock.unlock();
-		}
-	}
-
-	public void enqueuePhasedChange(int entityId, IEntityChange change, long activityId)
-	{
-		_sharedDataLock.lock();
-		try
-		{
-			if (null == _newEntityChanges)
-			{
-				_newEntityChanges = new ArrayList<>();
-			}
-			_newEntityChanges.add((TwoPhaseActivityManager manager) -> new ChangeContainer(entityId, new MetaChangePhase1(manager, change, activityId)));
+			_newEntityChanges.add(new ChangeContainer(entityId, change));
 		}
 		finally
 		{
@@ -338,7 +312,6 @@ public class TickRunner
 				, Collections.emptyMap()
 				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
 				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
-				, new TwoPhaseActivityManager(Collections.emptySet())
 		);
 		while (null != materials)
 		{
@@ -357,7 +330,6 @@ public class TickRunner
 					, materials.completedEntities
 					, fragment
 					, group
-					, materials.twoPhaseActivities
 			);
 		}
 	}
@@ -368,7 +340,6 @@ public class TickRunner
 			, Map<Integer, Entity> mutableCrowdState
 			, WorldProcessor.ProcessedFragment fragmentCompleted
 			, CrowdProcessor.ProcessedGroup processedGroup
-			, TwoPhaseActivityManager previousActivityManager
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
@@ -412,7 +383,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutation> newMutations;
 				List<Entity> newEntities;
-				List<Function<TwoPhaseActivityManager, ChangeContainer>> newEntityChanges;
+				List<ChangeContainer> newEntityChanges;
 				
 				_sharedDataLock.lock();
 				try
@@ -461,41 +432,6 @@ public class TickRunner
 					}
 				}
 				
-				// With the complete set of loaded entities, we can now rebuild the activity manager.
-				TwoPhaseActivityManager twoPhaseActivities = new TwoPhaseActivityManager(nextCrowdState.keySet());
-				
-				// We want to schedule anything pending from the activity manager first, for simplicity.  Note that we use the previous tick's entities.
-				for (Integer id : _snapshot.completedEntities.keySet())
-				{
-					TwoPhaseActivityManager.ActivityPlan plan = previousActivityManager.getActivityForEntity(id);
-					if (null != plan)
-					{
-						if (0 == plan.delayMillis())
-						{
-							// This is ready, so schedule it.
-							IEntityChange wrappedChange = new MetaChangePhase2(twoPhaseActivities, plan.phase2(), plan.activityId());
-							// This is the first thing added.
-							Queue<IEntityChange> queue = new LinkedList<IEntityChange>();
-							queue.add(wrappedChange);
-							Object old = nextTickChanges.put(id, queue);
-							// (this check will be useful if this moves in the order of operations)
-							Assert.assertTrue(null == old);
-						}
-						else
-						{
-							// Just update the pending time of everything else.
-							long newDelayMillis = plan.delayMillis() - MILLIS_PER_TICK;
-							if (newDelayMillis < 0L)
-							{
-								newDelayMillis = 0L;
-							}
-							twoPhaseActivities.scheduleNewActivity(id, plan.activityId(), plan.phase2(), newDelayMillis);
-						}
-					}
-					// TODO:  Pass back the results, when we connect this to something.
-					// NOTE:  Without processing the results, we also don't know that something was interrupted and dropped.
-				}
-				
 				// Next step is to schedule anything from the previous tick.
 				for (WorldProcessor.ProcessedFragment fragment : _partial)
 				{
@@ -505,7 +441,7 @@ public class TickRunner
 					}
 					for (ChangeContainer container : fragment.exportedEntityChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, container.entityId(), new MetaChangeStandard(twoPhaseActivities, container.change()));
+						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
 					}
 				}
 				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
@@ -516,7 +452,7 @@ public class TickRunner
 					}
 					for (ChangeContainer container : fragment.exportedChanges())
 					{
-						_scheduleChangeForEntity(nextTickChanges, container.entityId(), new MetaChangeStandard(twoPhaseActivities, container.change()));
+						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
 					}
 				}
 				
@@ -530,9 +466,8 @@ public class TickRunner
 				}
 				if (null != newEntityChanges)
 				{
-					for (Function<TwoPhaseActivityManager, ChangeContainer> changeCurry : newEntityChanges)
+					for (ChangeContainer container : newEntityChanges)
 					{
-						ChangeContainer container = changeCurry.apply(twoPhaseActivities);
 						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
 					}
 				}
@@ -569,7 +504,6 @@ public class TickRunner
 						, nextCrowdState
 						, nextTickMutations
 						, nextTickChanges
-						, twoPhaseActivities
 				);
 			}
 			else
@@ -659,6 +593,5 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
 			, Map<Integer, Queue<IEntityChange>> changesToRun
-			, TwoPhaseActivityManager twoPhaseActivities
 	) {}
 }
