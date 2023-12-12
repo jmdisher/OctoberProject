@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.changes.ChangeContainer;
@@ -46,10 +47,8 @@ public class TickRunner
 
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
-	// Read-only cuboids from the previous tick, resolved by address.
-	private Map<CuboidAddress, IReadOnlyCuboidData> _completedCuboids;
-	// Read-only entities from the previous tick, resolved by ID.
-	private Map<Integer, Entity> _completedEntities;
+	// Read-only snapshot of the previously-completed tick.
+	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
@@ -61,7 +60,6 @@ public class TickRunner
 	private TickMaterials _thisTickMaterials;
 	private final WorldProcessor.ProcessedFragment[] _partial;
 	private final CrowdProcessor.ProcessedGroup[] _partialGroup;
-	private long _lastCompletedTick;
 	private long _nextTick;
 	
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
@@ -75,24 +73,28 @@ public class TickRunner
 	 * or hand-off to another thread).
 	 * @param entityListener A listener for change events (note that these calls come on internal threads so must be trivial
 	 * or hand-off to another thread).
+	 * @param tickCompletionListener The consumer which we will given the completed snapshot of the state immediately before
+	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
 	 */
-	public TickRunner(int threadCount, WorldProcessor.IBlockChangeListener worldListener, CrowdProcessor.IEntityChangeListener entityListener)
+	public TickRunner(int threadCount
+			, WorldProcessor.IBlockChangeListener worldListener
+			, CrowdProcessor.IEntityChangeListener entityListener
+			, Consumer<Snapshot> tickCompletionListener
+	)
 	{
-		// TODO:  Decide where to put the registry or how it should be used.
 		AtomicInteger atomic = new AtomicInteger(0);
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
 		_partial = new WorldProcessor.ProcessedFragment[threadCount];
 		_partialGroup = new CrowdProcessor.ProcessedGroup[threadCount];
-		_lastCompletedTick = -1;
-		_nextTick = 0;
+		_nextTick = 1L;
 		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
 		{
 			// Create the loader for the read-only state (note that this is bound to us so it will see the most recent _completedCuboids).
 			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
 				CuboidAddress address = location.getCuboidAddress();
-				IReadOnlyCuboidData cuboid = _completedCuboids.get(address);
+				IReadOnlyCuboidData cuboid = _snapshot.completedCuboids.get(address);
 				return (null != cuboid)
 						? new BlockProxy(location.getBlockAddress(), cuboid)
 						: null
@@ -103,7 +105,7 @@ public class TickRunner
 				try
 				{
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread, loader, worldListener, entityListener);
+					_backgroundThreadMain(thisThread, loader, worldListener, entityListener, tickCompletionListener);
 				}
 				catch (Throwable t)
 				{
@@ -121,12 +123,14 @@ public class TickRunner
 	 */
 	public void start()
 	{
-		Assert.assertTrue(null == _completedCuboids);
-		Assert.assertTrue(null == _completedEntities);
-		// Create an empty world - the cuboids will be asynchronously loaded.
-		_completedCuboids = Collections.emptyMap();
-		// Create it with no users.
-		_completedEntities = Collections.emptyMap();
+		Assert.assertTrue(null == _snapshot);
+		// Initial snapshot is tick "0".
+		_snapshot = new Snapshot(0L
+				// Create an empty world - the cuboids will be asynchronously loaded.
+				, Collections.emptyMap()
+				// Create it with no users.
+				, Collections.emptyMap()
+		);
 		for (Thread thread : _threads)
 		{
 			thread.start();
@@ -136,24 +140,27 @@ public class TickRunner
 	/**
 	 * This will block until the previously requested tick has completed and all its threads have parked before
 	 * returning.
+	 * @return Returns the snapshot of the now-completed tick.
 	 */
-	public synchronized void waitForPreviousTick()
+	public synchronized Snapshot waitForPreviousTick()
 	{
 		// We just wait for the previous tick and don't start the next.
-		_locked_waitForTickComplete();
+		return _locked_waitForTickComplete();
 	}
 
 	/**
 	 * Requests that another tick be run, waiting for the previous one to complete if it is still running.
 	 * Note that this function returns before the next tick completes.
+	 * @return Returns the snapshot of the now-completed tick.
 	 */
-	public synchronized void startNextTick()
+	public synchronized Snapshot startNextTick()
 	{
 		// Wait for the previous tick to complete.
-		_locked_waitForTickComplete();
+		Snapshot snapshot = _locked_waitForTickComplete();
 		// Advance to the next tick.
 		_nextTick += 1;
 		this.notifyAll();
+		return snapshot;
 	}
 
 	/**
@@ -293,8 +300,9 @@ public class TickRunner
 	 */
 	public BlockProxy getBlockProxy(AbsoluteLocation location)
 	{
+		// TODO:  Remove this method and depend directly on the snapshot.
 		CuboidAddress address = location.getCuboidAddress();
-		IReadOnlyCuboidData cuboid = _completedCuboids.get(address);
+		IReadOnlyCuboidData cuboid = _snapshot.completedCuboids.get(address);
 		
 		BlockProxy block = null;
 		if (null != cuboid)
@@ -311,7 +319,8 @@ public class TickRunner
 	 */
 	public Entity getEntity(int id)
 	{
-		return _completedEntities.get(id);
+		// TODO:  Remove this method and depend directly on the snapshot.
+		return _snapshot.completedEntities.get(id);
 	}
 
 
@@ -319,10 +328,12 @@ public class TickRunner
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, WorldProcessor.IBlockChangeListener worldListener
 			, CrowdProcessor.IEntityChangeListener entityListener
+			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
 		TickMaterials materials = _mergeTickStateAndWaitForNext(thisThread
+				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
@@ -341,6 +352,7 @@ public class TickRunner
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
 			materials = _mergeTickStateAndWaitForNext(thisThread
+					, tickCompletionListener
 					, materials.completedCuboids
 					, materials.completedEntities
 					, fragment
@@ -351,6 +363,7 @@ public class TickRunner
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
+			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 			, Map<Integer, Entity> mutableCrowdState
 			, WorldProcessor.ProcessedFragment fragmentCompleted
@@ -380,14 +393,17 @@ public class TickRunner
 				mutableCrowdState.putAll(fragment.groupFragment());
 			}
 			
-			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results before the wait.
-			_completedCuboids = Collections.unmodifiableMap(mutableWorldState);
+			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
+			// Acknowledge that the tick is completed by creating a snapshot of the state.
+			Snapshot completedTick = new Snapshot(_nextTick
+					, Collections.unmodifiableMap(mutableCrowdState)
+					, Collections.unmodifiableMap(mutableWorldState)
+			);
+			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
+			tickCompletionListener.accept(completedTick);
+			_acknowledgeTickCompleteAndWaitForNext(completedTick);
 			mutableWorldState = null;
-			_completedEntities = Collections.unmodifiableMap(mutableCrowdState);
 			mutableCrowdState = null;
-			
-			// Now, wait for the next tick before we put together the materials.
-			_acknowledgeTickCompleteAndWaitForNext();
 			
 			// We woke up so either run the next tick or exit (if the next tick was set negative, it means exit).
 			if (_nextTick > 0)
@@ -422,8 +438,8 @@ public class TickRunner
 				Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
-				nextWorldState.putAll(_completedCuboids);
-				nextCrowdState.putAll(_completedEntities);
+				nextWorldState.putAll(_snapshot.completedCuboids);
+				nextCrowdState.putAll(_snapshot.completedEntities);
 				
 				// Add in anything new.
 				if (null != newCuboids)
@@ -449,7 +465,7 @@ public class TickRunner
 				TwoPhaseActivityManager twoPhaseActivities = new TwoPhaseActivityManager(nextCrowdState.keySet());
 				
 				// We want to schedule anything pending from the activity manager first, for simplicity.  Note that we use the previous tick's entities.
-				for (Integer id : _completedEntities.keySet())
+				for (Integer id : _snapshot.completedEntities.keySet())
 				{
 					TwoPhaseActivityManager.ActivityPlan plan = previousActivityManager.getActivityForEntity(id);
 					if (null != plan)
@@ -568,12 +584,11 @@ public class TickRunner
 		return _thisTickMaterials;
 	}
 
-	private synchronized void _acknowledgeTickCompleteAndWaitForNext()
+	private synchronized void _acknowledgeTickCompleteAndWaitForNext(Snapshot newSnapshot)
 	{
-		// Acknowledge that the tick is completed.
-		_lastCompletedTick = _nextTick;
+		_snapshot = newSnapshot;
 		this.notifyAll();
-		while (_lastCompletedTick == _nextTick)
+		while (_snapshot.tickNumber == _nextTick)
 		{
 			try
 			{
@@ -610,9 +625,9 @@ public class TickRunner
 		queue.add(change);
 	}
 
-	private void _locked_waitForTickComplete()
+	private Snapshot _locked_waitForTickComplete()
 	{
-		while (_lastCompletedTick != _nextTick)
+		while (_snapshot.tickNumber != _nextTick)
 		{
 			try
 			{
@@ -624,8 +639,20 @@ public class TickRunner
 				throw Assert.unexpected(e);
 			}
 		}
+		return _snapshot;
 	}
 
+
+	/**
+	 * The snapshot of immutable state created whenever a tick is completed.
+	 */
+	public static record Snapshot(long tickNumber
+			// Read-only entities from the previous tick, resolved by ID.
+			, Map<Integer, Entity> completedEntities
+			// Read-only cuboids from the previous tick, resolved by address.
+			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+	)
+	{}
 
 	private static record TickMaterials(long thisGameTick
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids

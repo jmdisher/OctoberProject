@@ -2,6 +2,7 @@ package com.jeffdisher.october.server;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -43,7 +45,7 @@ public class TestTickRunner
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
+		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		runner.waitForPreviousTick();
@@ -61,7 +63,7 @@ public class TestTickRunner
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener());
+		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		runner.waitForPreviousTick();
@@ -83,7 +85,7 @@ public class TestTickRunner
 	{
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(8, blockListener, new CountingEntityListener());
+		TickRunner runner = new TickRunner(8, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data }));
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data }));
@@ -112,7 +114,7 @@ public class TestTickRunner
 	{
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		
@@ -148,7 +150,7 @@ public class TestTickRunner
 		Item stoneItem = ItemRegistry.STONE;
 		
 		// Create a tick runner with a single cuboid and get it running.
-		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener());
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData }));
 		runner.start();
 		runner.startNextTick();
@@ -188,7 +190,7 @@ public class TestTickRunner
 		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, blockListener, entityListener);
+		TickRunner runner = new TickRunner(1, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
 		runner.start();
 		
@@ -223,7 +225,7 @@ public class TestTickRunner
 	public void dependentEntityChanges()
 	{
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, new CountingWorldListener(), entityListener);
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), entityListener, (TickRunner.Snapshot completed) -> {});
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
@@ -260,7 +262,7 @@ public class TestTickRunner
 		// Since this test is complicated and involves multiple ticks, we will test 2 things here:  (1) What happens when the activity is interrupted and (2) what happens when it completes.
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, blockListener, entityListener);
+		TickRunner runner = new TickRunner(1, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
 		
 		// Create a cuboid of stone.
 		OctreeShort block = OctreeShort.create(BlockAspect.STONE);
@@ -352,6 +354,54 @@ public class TestTickRunner
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 		Assert.assertEquals(3, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
+	}
+
+	@Test
+	public void checkSnapshotDelta()
+	{
+		TickRunner.Snapshot[] snapshotRef = new TickRunner.Snapshot[1];
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
+			snapshotRef[0] = completed;
+		};
+		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
+		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		runner.cuboidWasLoaded(CuboidData.createNew(targetAddress, new IOctree[] { data }));
+		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
+		runner.cuboidWasLoaded(CuboidData.createNew(constantAddress, new IOctree[] { data }));
+		
+		// Verify that there is no snapshot until we start.
+		Assert.assertNull(snapshotRef[0]);
+		runner.start();
+		
+		// Wait for the start-up to complete and verify that we have the empty initial snapshot (since the start doesn't pick up any cuboids).
+		runner.waitForPreviousTick();
+		Assert.assertNotNull(snapshotRef[0]);
+		Assert.assertEquals(0, snapshotRef[0].completedCuboids().size());
+		
+		// Run the tick so that it applies the new load.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		Assert.assertNotNull(snapshotRef[0]);
+		// We should see 2 cuboids.
+		Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = snapshotRef[0].completedCuboids();
+		Assert.assertEquals(2, initialCuboids.size());
+		
+		// Run a mutation and notice that only the changed cuboid isn't an instance match.
+		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		Assert.assertNotNull(snapshotRef[0]);
+		// This should be the same size.
+		Map<CuboidAddress, IReadOnlyCuboidData> laterCuboids = snapshotRef[0].completedCuboids();
+		Assert.assertEquals(2, laterCuboids.size());
+		
+		runner.shutdown();
+		
+		// Verify that the target cuboid is a new instance.
+		Assert.assertTrue(initialCuboids.get(targetAddress) != laterCuboids.get(targetAddress));
+		// Verify that the unchanged cuboid is the same instance.
+		Assert.assertTrue(initialCuboids.get(constantAddress) == laterCuboids.get(constantAddress));
 	}
 
 
