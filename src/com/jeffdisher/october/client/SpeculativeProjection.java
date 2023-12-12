@@ -18,7 +18,6 @@ import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.changes.MetaChangeClientIgnore;
 import com.jeffdisher.october.changes.MetaChangeClientPrepare;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
@@ -114,14 +113,15 @@ public class SpeculativeProjection
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
-	 * @param latestLocalActivityIncluded The latest client-side phase2 activity which is included in this tick.
+	 * @param latestLocalActivityIncluded The latest client-side phase2 activity which is concluded in this tick
+	 * (includes the final change or the first or final change failed).
 	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The number of speculative changes remaining in the local projection (only useful for testing).
 	 */
 	public int applyChangesForServerTick(long gameTick
 			
 			, List<Entity> addedEntities
-			, List<CuboidData> addedCuboids
+			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, List<ChangeContainer> entityChanges
 			, List<IMutation> cuboidMutations
@@ -136,7 +136,7 @@ public class SpeculativeProjection
 	{
 		// Before applying the updates, add the new data.
 		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((Entity entity) -> entity.id(), (Entity entity) -> entity)));
-		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((CuboidData cuboid) -> cuboid.getCuboidAddress(), (CuboidData cuboid) -> cuboid)));
+		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
 		
 		// Create empty listeners.
 		CrowdProcessor.IEntityChangeListener entityListener = new CrowdProcessor.IEntityChangeListener() {
@@ -267,7 +267,7 @@ public class SpeculativeProjection
 		{
 			_listener.entityDidLoad(entity);
 		}
-		for (CuboidData cuboid : addedCuboids)
+		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
 			_listener.cuboidDidLoad(cuboid);
 		}
