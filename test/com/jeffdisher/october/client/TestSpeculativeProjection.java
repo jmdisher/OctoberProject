@@ -1,4 +1,4 @@
-package com.jeffdisher.october.logic;
+package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,6 +21,10 @@ import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.logic.EntityActionValidator;
+import com.jeffdisher.october.logic.EntityChangeReceiveItem;
+import com.jeffdisher.october.logic.EntityChangeSendItem;
+import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.IMutation;
