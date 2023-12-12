@@ -92,11 +92,11 @@ public class CrowdProcessor
 					boolean didApply = change.applyChange(context, mutable);
 					if (didApply)
 					{
-						listener.entityChanged(id);
+						listener.changeApplied(id, change);
 					}
 					else
 					{
-						listener.changeDropped(change);
+						listener.changeDropped(id, change);
 					}
 				}
 				Entity newEntity = mutable.freeze();
@@ -115,7 +115,7 @@ public class CrowdProcessor
 
 	public interface IEntityChangeListener
 	{
-		void entityChanged(int id);
-		void changeDropped(IEntityChange change);
+		void changeApplied(int targetEntityId, IEntityChange change);
+		void changeDropped(int targetEntityId, IEntityChange change);
 	}
 }

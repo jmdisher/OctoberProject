@@ -93,12 +93,11 @@ public class WorldProcessor
 				for (IMutation mutation : mutations)
 				{
 					processor.mutationCount += 1;
-					AbsoluteLocation absolteLocation = mutation.getAbsoluteLocation();
-					MutableBlockProxy thisBlockProxy = new MutableBlockProxy(absolteLocation.getBlockAddress(), mutable);
+					MutableBlockProxy thisBlockProxy = new MutableBlockProxy(mutation.getAbsoluteLocation().getBlockAddress(), mutable);
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 					if (didApply)
 					{
-						listener.blockChanged(absolteLocation);
+						listener.mutationApplied(mutation);
 					}
 					else
 					{
@@ -122,7 +121,7 @@ public class WorldProcessor
 
 	public interface IBlockChangeListener
 	{
-		void blockChanged(AbsoluteLocation location);
+		void mutationApplied(IMutation mutation);
 		void mutationDropped(IMutation mutation);
 	}
 }

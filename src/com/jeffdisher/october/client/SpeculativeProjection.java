@@ -141,17 +141,17 @@ public class SpeculativeProjection
 		// Create empty listeners.
 		CrowdProcessor.IEntityChangeListener entityListener = new CrowdProcessor.IEntityChangeListener() {
 			@Override
-			public void entityChanged(int id)
+			public void changeApplied(int targetEntityId, IEntityChange change)
 			{
 			}
 			@Override
-			public void changeDropped(IEntityChange change)
+			public void changeDropped(int targetEntityId, IEntityChange change)
 			{
 			}
 		};
 		WorldProcessor.IBlockChangeListener worldListener = new WorldProcessor.IBlockChangeListener() {
 			@Override
-			public void blockChanged(AbsoluteLocation location)
+			public void mutationApplied(IMutation mutation)
 			{
 			}
 			@Override
@@ -404,20 +404,20 @@ public class SpeculativeProjection
 		Set<Integer> locallyModifiedIds = new HashSet<>();
 		CrowdProcessor.IEntityChangeListener specialChangeListener = new CrowdProcessor.IEntityChangeListener() {
 			@Override
-			public void entityChanged(int id)
+			public void changeApplied(int targetEntityId, IEntityChange change)
 			{
-				locallyModifiedIds.add(id);
+				locallyModifiedIds.add(targetEntityId);
 			}
 			@Override
-			public void changeDropped(IEntityChange change)
+			public void changeDropped(int targetEntityId, IEntityChange change)
 			{
 			}
 		};
 		WorldProcessor.IBlockChangeListener specialMutationListener = new WorldProcessor.IBlockChangeListener() {
 			@Override
-			public void blockChanged(AbsoluteLocation location)
+			public void mutationApplied(IMutation mutation)
 			{
-				modifiedCuboids.add(location.getCuboidAddress());
+				modifiedCuboids.add(mutation.getAbsoluteLocation().getCuboidAddress());
 			}
 			@Override
 			public void mutationDropped(IMutation mutation)

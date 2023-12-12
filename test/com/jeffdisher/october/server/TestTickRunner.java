@@ -52,7 +52,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.shutdown();
 		
-		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(1, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
@@ -74,7 +74,7 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, blockListener.blockChanged.get());
+		Assert.assertEquals(43, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
@@ -103,7 +103,7 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, blockListener.blockChanged.get());
+		Assert.assertEquals(43, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 	}
 
@@ -212,9 +212,9 @@ public class TestTickRunner
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(1, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
-		Assert.assertEquals(1, entityListener.entityChanged.get());
+		Assert.assertEquals(1, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
 		Assert.assertEquals(BlockAspect.STONE, runner.getBlockProxy(changeLocation).getData15(AspectRegistry.BLOCK));
 	}
@@ -244,7 +244,7 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// Now, check for results.
-		Assert.assertEquals(2, entityListener.entityChanged.get());
+		Assert.assertEquals(2, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
 		Entity sender = runner.getEntity(0);
 		Entity receiver = runner.getEntity(1);
@@ -290,7 +290,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// Tick 2 complete:  The first entity change has been applied.
-		Assert.assertEquals(1, entityListener.entityChanged.get());
+		Assert.assertEquals(1, entityListener.changeApplied.get());
 		proxy1 = runner.getBlockProxy(changeLocation1);
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
@@ -306,7 +306,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// Tick 3 complete:  Change1 will have been "completed as failed" here and Change2 first phase has been applied.
-		Assert.assertEquals(2, entityListener.entityChanged.get());
+		Assert.assertEquals(2, entityListener.changeApplied.get());
 		proxy2 = runner.getBlockProxy(changeLocation2);
 		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
@@ -314,7 +314,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// Tick 4 complete:  We should be waiting for the next phase to run.
-		Assert.assertEquals(2, entityListener.entityChanged.get());
+		Assert.assertEquals(2, entityListener.changeApplied.get());
 		proxy2 = runner.getBlockProxy(changeLocation2);
 		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
@@ -322,8 +322,8 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// Tick 5 complete:  The second part of the change should have been applied and we are waiting for the block.
-		Assert.assertEquals(3, entityListener.entityChanged.get());
-		Assert.assertEquals(0, blockListener.blockChanged.get());
+		Assert.assertEquals(3, entityListener.changeApplied.get());
+		Assert.assertEquals(0, blockListener.mutationApplied.get());
 		proxy2 = runner.getBlockProxy(changeLocation2);
 		Assert.assertEquals(BlockAspect.STONE, proxy2.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy2.getDataSpecial(AspectRegistry.INVENTORY));
@@ -331,8 +331,8 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		// Tick 6 complete:  The block should now be updated.
-		Assert.assertEquals(3, entityListener.entityChanged.get());
-		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(3, entityListener.changeApplied.get());
+		Assert.assertEquals(1, blockListener.mutationApplied.get());
 		proxy2 = runner.getBlockProxy(changeLocation2);
 		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
 		Inventory inv = proxy2.getDataSpecial(AspectRegistry.INVENTORY);
@@ -348,9 +348,9 @@ public class TestTickRunner
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
 		// Verify remaining counts.
-		Assert.assertEquals(1, blockListener.blockChanged.get());
+		Assert.assertEquals(1, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
-		Assert.assertEquals(3, entityListener.entityChanged.get());
+		Assert.assertEquals(3, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
 	}
 
@@ -371,13 +371,13 @@ public class TestTickRunner
 
 	private static class CountingWorldListener implements WorldProcessor.IBlockChangeListener
 	{
-		public AtomicInteger blockChanged = new AtomicInteger(0);
+		public AtomicInteger mutationApplied = new AtomicInteger(0);
 		public AtomicInteger mutationDropped = new AtomicInteger(0);
 		
 		@Override
-		public void blockChanged(AbsoluteLocation location)
+		public void mutationApplied(IMutation mutation)
 		{
-			blockChanged.incrementAndGet();
+			mutationApplied.incrementAndGet();
 		}
 		@Override
 		public void mutationDropped(IMutation mutation)
@@ -388,16 +388,16 @@ public class TestTickRunner
 
 	private static class CountingEntityListener implements CrowdProcessor.IEntityChangeListener
 	{
-		public AtomicInteger entityChanged = new AtomicInteger(0);
+		public AtomicInteger changeApplied = new AtomicInteger(0);
 		public AtomicInteger changeDropped = new AtomicInteger(0);
 		
 		@Override
-		public void entityChanged(int id)
+		public void changeApplied(int targetEntityId, IEntityChange change)
 		{
-			entityChanged.incrementAndGet();
+			changeApplied.incrementAndGet();
 		}
 		@Override
-		public void changeDropped(IEntityChange change)
+		public void changeDropped(int targetEntityId, IEntityChange change)
 		{
 			changeDropped.incrementAndGet();
 		}
