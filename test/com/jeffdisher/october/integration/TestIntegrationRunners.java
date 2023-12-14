@@ -120,6 +120,69 @@ public class TestIntegrationRunners
 		server.shutdown();
 	}
 
+	@Test
+	public void walkAroundWorld555() throws Throwable
+	{
+		// We want to create a server with the 555 world, connect a client to it, walk to the 4 corners of the world.
+		ConnectionFabric fabric = new ConnectionFabric();
+		ServerRunner server = new ServerRunner(100L, fabric, () -> System.currentTimeMillis());
+		fabric.waitForServer();
+		
+		// Create and load the 555 world and wait for the server to pick it up.
+		CuboidData[] world = CuboidGenerator.generateStatic555World();
+		for (CuboidData cuboid : world)
+		{
+			server.loadCuboid(cuboid);
+		}
+		fabric.waitForTick(0, fabric.getLatestTick(0) + 1L);
+		
+		// Create and connect the client, waiting for it to load.
+		ClientListener listener = new ClientListener();
+		ClientRunner client = new ClientRunner(fabric.newClient(), listener, listener);
+		int clientId = 1;
+		fabric.waitForClient(clientId);
+		client.runPendingCalls(System.currentTimeMillis());
+		while (listener.entities.isEmpty())
+		{
+			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		
+		// Start the move commands, waiting until we see the client reach that point before continuing.
+		// (this will need to change once the movement change is imposing speed and reachability checks).
+		EntityLocation cornerMM = new EntityLocation(-32.0f, -32.0f, 0.0f);
+		client.applyLocalChange(new EntityChangeMove(cornerMM), false, System.currentTimeMillis());
+		while (!listener.entities.get(clientId).location().equals(cornerMM))
+		{
+			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		EntityLocation cornerMP = new EntityLocation(-32.0f, 47.0f, 0.0f);
+		client.applyLocalChange(new EntityChangeMove(cornerMP), false, System.currentTimeMillis());
+		while (!listener.entities.get(clientId).location().equals(cornerMP))
+		{
+			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		EntityLocation cornerPP = new EntityLocation(47.0f, 47.0f, 0.0f);
+		client.applyLocalChange(new EntityChangeMove(cornerPP), false, System.currentTimeMillis());
+		while (!listener.entities.get(clientId).location().equals(cornerPP))
+		{
+			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		EntityLocation cornerPM = new EntityLocation(47.0f, -32.0f, 0.0f);
+		client.applyLocalChange(new EntityChangeMove(cornerPM), false, System.currentTimeMillis());
+		while (!listener.entities.get(clientId).location().equals(cornerPM))
+		{
+			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		
+		// We are done.
+		server.shutdown();
+	}
+
 
 	private final static class ClientListener implements SpeculativeProjection.IProjectionListener, IListener
 	{
