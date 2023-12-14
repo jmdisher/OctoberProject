@@ -8,15 +8,12 @@ import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
@@ -34,7 +31,7 @@ public class TestCommonMutations
 	public void breakBlockSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = _createSolidCuboid(target.getCuboidAddress(), BlockAspect.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		BreakBlockMutation mutation = new BreakBlockMutation(target, BlockAspect.STONE);
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
@@ -49,7 +46,7 @@ public class TestCommonMutations
 	public void breakBlockFailure()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = _createSolidCuboid(target.getCuboidAddress(), BlockAspect.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
 		BreakBlockMutation mutation = new BreakBlockMutation(target, BlockAspect.STONE);
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
@@ -63,7 +60,7 @@ public class TestCommonMutations
 	public void beginBlockBreakSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = _createSolidCuboid(target.getCuboidAddress(), BlockAspect.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(target);
@@ -92,14 +89,6 @@ public class TestCommonMutations
 		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
-	}
-
-
-	private static CuboidData _createSolidCuboid(CuboidAddress address, short blockType)
-	{
-		OctreeShort blockTypes = OctreeShort.create(blockType);
-		OctreeObject inventories = OctreeObject.create();
-		return CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
 	}
 
 

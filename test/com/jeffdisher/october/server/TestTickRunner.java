@@ -19,10 +19,7 @@ import com.jeffdisher.october.changes.MetaChangePhase2;
 import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
@@ -47,10 +44,11 @@ public class TestTickRunner
 	@Test
 	public void basicOneCuboid()
 	{
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
@@ -65,10 +63,11 @@ public class TestTickRunner
 	@Test
 	public void shockwaveOneCuboid()
 	{
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(1, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
@@ -87,17 +86,16 @@ public class TestTickRunner
 	@Test
 	public void shockwaveMultiCuboids()
 	{
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		TickRunner runner = new TickRunner(8, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)-1), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)0), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)-1, (short)-1), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)0), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)0, (short)-1), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)0), new IOctree[] { data }));
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)-1, (short)-1, (short)-1), new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR));
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
@@ -117,9 +115,10 @@ public class TestTickRunner
 	public void basicBlockRead()
 	{
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
@@ -148,14 +147,14 @@ public class TestTickRunner
 	{
 		// Just add, add, and remove some inventory items.
 		Aspect<Inventory, ?> aspectInventory = AspectRegistry.INVENTORY;
-		OctreeShort blockData = OctreeShort.create((short)0);
-		OctreeObject inventoryData = OctreeObject.create();
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
 		Item stoneItem = ItemRegistry.STONE;
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData }));
+		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -191,11 +190,12 @@ public class TestTickRunner
 	@Test
 	public void deliverWithEntity()
 	{
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
 		TickRunner runner = new TickRunner(1, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { data }));
+		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		
 		// Have a new entity join and wait for them to be added.
@@ -272,9 +272,9 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(1, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
 		
 		// Create a cuboid of stone.
-		OctreeShort block = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventory = OctreeObject.create();
-		runner.cuboidWasLoaded(CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { block, inventory }));
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		runner.cuboidWasLoaded(cuboid);
 		
 		// We can use the default entity since we don't yet check that they are standing in solid rock.
 		int entityId = 1;
@@ -381,12 +381,11 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		runner.cuboidWasLoaded(CuboidData.createNew(targetAddress, new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
-		runner.cuboidWasLoaded(CuboidData.createNew(constantAddress, new IOctree[] { data }));
+		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR));
 		
 		// Verify that there is no snapshot until we start.
 		Assert.assertNull(snapshotRef[0]);

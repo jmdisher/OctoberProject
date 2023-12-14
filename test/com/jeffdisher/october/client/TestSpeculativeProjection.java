@@ -17,10 +17,7 @@ import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeReceiveItem;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
@@ -31,6 +28,7 @@ import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -64,8 +62,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort data = OctreeShort.create(BlockAspect.AIR);
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { data });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid)
@@ -188,10 +185,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		OctreeShort data0 = OctreeShort.create(BlockAspect.AIR);
-		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
-		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
-		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
@@ -272,10 +267,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		OctreeShort data0 = OctreeShort.create(BlockAspect.AIR);
-		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
-		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
-		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
@@ -374,10 +367,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		OctreeShort data0 = OctreeShort.create(BlockAspect.AIR);
-		OctreeShort data1 = OctreeShort.create(BlockAspect.AIR);
-		CuboidData cuboid0 = CuboidData.createNew(address0, new IOctree[] { data0 });
-		CuboidData cuboid1 = CuboidData.createNew(address1, new IOctree[] { data1 });
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
@@ -470,9 +461,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.AIR);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid)
@@ -684,9 +673,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -745,9 +732,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -810,9 +795,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -877,9 +860,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -961,9 +942,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		OctreeShort blockTypes = OctreeShort.create(BlockAspect.STONE);
-		OctreeObject inventories = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(address, new IOctree[] { blockTypes, inventories });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))

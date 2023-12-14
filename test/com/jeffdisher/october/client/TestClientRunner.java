@@ -11,14 +11,12 @@ import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -100,10 +98,8 @@ public class TestClientRunner
 		
 		// Send them an entity and a cuboid.
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.STONE.number());
-		OctreeObject inventoryData = OctreeObject.create();
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L, 0L);
 		runner.runPendingCalls(System.currentTimeMillis());

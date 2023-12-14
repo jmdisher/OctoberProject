@@ -11,11 +11,9 @@ import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.client.ClientRunner.IListener;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -33,9 +31,8 @@ public class TestIntegrationRunners
 		fabric.waitForServer();
 		
 		// Create and load the cuboid full of stone with no inventories.
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.STONE.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData });
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		server.loadCuboid(cuboid);
 		// We want to wait a tick for this cuboid to be picked up.
 		fabric.waitForTick(0, fabric.getLatestTick(0) + 1L);
@@ -67,9 +64,8 @@ public class TestIntegrationRunners
 		fabric.waitForServer();
 		
 		// Create and load the cuboid full of stone with no inventories.
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.STONE.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData });
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		server.loadCuboid(cuboid);
 		// We want to wait a tick for this cuboid to be picked up.
 		fabric.waitForTick(0, fabric.getLatestTick(0) + 1L);

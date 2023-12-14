@@ -12,10 +12,7 @@ import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.OctreeObject;
-import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -94,9 +91,8 @@ public class TestServerRunner
 	private static void _loadDefaultMap(ServerRunner runner)
 	{
 		// Create and load the cuboid full of stone with no inventories.
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.STONE.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData cuboid = CuboidData.createNew(new CuboidAddress((short)0, (short)0, (short)0), new IOctree[] { blockData, inventoryData });
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		runner.loadCuboid(cuboid);
 	}
 
