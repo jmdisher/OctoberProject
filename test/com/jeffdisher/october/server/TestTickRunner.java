@@ -32,6 +32,7 @@ import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
@@ -120,25 +121,26 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(1, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
+		TickRunner.Snapshot startState = runner.waitForPreviousTick();
 		
 		// Before we run a tick, the cuboid shouldn't yet be loaded (it is added to the new world during a tick) so we should see a null block.
-		Assert.assertNull(runner.getBlockProxy(new AbsoluteLocation(0, 0, 0)));
+		Assert.assertNull(_getBlockProxy(startState, new AbsoluteLocation(0, 0, 0)));
 		
 		// Run the tick so that it applies the new load.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		// Now, we should see a block with default properties.
-		BlockProxy block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
+		BlockProxy block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
 		// We should now see the new data.
-		block = runner.getBlockProxy(new AbsoluteLocation(0, 0, 0));
+		block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
 		Assert.assertEquals(BlockAspect.STONE, block.getData15(aspectShort));
 	}
 
@@ -157,30 +159,30 @@ public class TestTickRunner
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Make sure that we see the null inventory.
-		BlockProxy block = runner.getBlockProxy(testBlock);
+		BlockProxy block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
 		
 		// Apply the first mutation to add data.
-		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
-		block = runner.getBlockProxy(testBlock);
+		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
+		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Try to drop too much to fit and verify that nothing changes.
-		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
-		block = runner.getBlockProxy(testBlock);
+		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
+		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Add a little more data and make sure that it updates.
-		_runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
-		block = runner.getBlockProxy(testBlock);
+		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
+		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(3, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
 		
 		// Remove everything and make sure that we end up with a null inventory.
-		_runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
-		block = runner.getBlockProxy(testBlock);
+		snapshot = _runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
+		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
 		
 		// Test is done.
@@ -214,6 +216,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
@@ -222,7 +225,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 		Assert.assertEquals(1, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
-		Assert.assertEquals(BlockAspect.STONE, runner.getBlockProxy(changeLocation).getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals(BlockAspect.STONE, _getBlockProxy(snapshot, changeLocation).getData15(AspectRegistry.BLOCK));
 	}
 
 	@Test
@@ -247,13 +250,14 @@ public class TestTickRunner
 		runner.startNextTick();
 		// (run a tick to run the final change)
 		runner.startNextTick();
+		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
 		// Now, check for results.
 		Assert.assertEquals(2, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
-		Entity sender = runner.getEntity(0);
-		Entity receiver = runner.getEntity(1);
+		Entity sender = finalSnapshot.completedEntities().get(0);
+		Entity receiver = finalSnapshot.completedEntities().get(1);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
 		Assert.assertEquals(1, receiver.inventory().items.size());
 		Items update = receiver.inventory().items.get(ItemRegistry.STONE);
@@ -301,10 +305,10 @@ public class TestTickRunner
 		
 		// We now run the tick.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
 		// Nothing should have changed.
-		BlockProxy proxy1 = runner.getBlockProxy(changeLocation1);
+		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
@@ -320,22 +324,22 @@ public class TestTickRunner
 		
 		// We now run the tick.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		snapshot = runner.waitForPreviousTick();
 		
 		// This should have succeeded.  The caller would use this to determine that the latest activityId has advanced.
 		Assert.assertTrue(meta2.wasSuccess);
 		
 		// The mutation has been scheduled but not run, so the block should be the same.
-		proxy1 = runner.getBlockProxy(changeLocation1);
+		proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
 		// Run another tick for the final mutation this scheduled to take effect.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
+		snapshot = runner.waitForPreviousTick();
 		
 		// We should see the result.
-		proxy1 = runner.getBlockProxy(changeLocation1);
+		proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(BlockAspect.AIR, proxy1.getData15(AspectRegistry.BLOCK));
 		Inventory inv = proxy1.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
@@ -359,8 +363,8 @@ public class TestTickRunner
 		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
 		// In our case, we will just proceed to run another tick to see the mutation change the block value.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
-		BlockProxy proxy2 = runner.getBlockProxy(changeLocation2);
+		snapshot = runner.waitForPreviousTick();
+		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation2);
 		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
 		
 		
@@ -422,7 +426,7 @@ public class TestTickRunner
 	}
 
 
-	private void _runTickLockStep(TickRunner runner, IMutation mutation)
+	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutation mutation)
 	{
 		// This helper is useful when a test wants to be certain that a mutation has completed before checking state.
 		// 1) Wait for any in-flight tick to complete.
@@ -432,7 +436,21 @@ public class TestTickRunner
 		// 3) Run the tick which will execute the mutation.
 		runner.startNextTick();
 		// 4) Wait for this tick to complete in order to rely on the result being observable.
-		runner.waitForPreviousTick();
+		return runner.waitForPreviousTick();
+	}
+
+	private BlockProxy _getBlockProxy(TickRunner.Snapshot snapshot, AbsoluteLocation location)
+	{
+		CuboidAddress address = location.getCuboidAddress();
+		IReadOnlyCuboidData cuboid = snapshot.completedCuboids().get(address);
+		
+		BlockProxy block = null;
+		if (null != cuboid)
+		{
+			BlockAddress blockAddress = location.getBlockAddress();
+			block = new BlockProxy(blockAddress, cuboid);
+		}
+		return block;
 	}
 
 

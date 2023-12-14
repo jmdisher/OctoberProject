@@ -23,7 +23,6 @@ import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.utils.Assert;
@@ -262,39 +261,6 @@ public class TickRunner
 				throw Assert.unexpected(e);
 			}
 		}
-	}
-
-	/**
-	 * Returns a read-only proxy for accessing all the data within a given block loaded within the current world state.
-	 * Note that this proxy will only access the current version of the world state, so it shouldn't be cached outside
-	 * of a single tick since it will only return that old data.
-	 * 
-	 * @param location The xyz location of the block.
-	 * @return The block copy or null if the location isn't loaded.
-	 */
-	public BlockProxy getBlockProxy(AbsoluteLocation location)
-	{
-		// TODO:  Remove this method and depend directly on the snapshot.
-		CuboidAddress address = location.getCuboidAddress();
-		IReadOnlyCuboidData cuboid = _snapshot.completedCuboids.get(address);
-		
-		BlockProxy block = null;
-		if (null != cuboid)
-		{
-			BlockAddress blockAddress = location.getBlockAddress();
-			block = new BlockProxy(blockAddress, cuboid);
-		}
-		return block;
-	}
-
-	/**
-	 * @param id The entity ID to look up.
-	 * @return The read-only entity completed by the previous tick.
-	 */
-	public Entity getEntity(int id)
-	{
-		// TODO:  Remove this method and depend directly on the snapshot.
-		return _snapshot.completedEntities.get(id);
 	}
 
 
