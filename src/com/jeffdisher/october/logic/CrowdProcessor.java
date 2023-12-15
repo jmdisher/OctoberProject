@@ -2,13 +2,13 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.IMutation;
@@ -56,7 +56,7 @@ public class CrowdProcessor
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
-		List<ChangeContainer> exportedChanges = new ArrayList<>();
+		Map<Integer, Queue<IEntityChange>> exportedChanges = new HashMap<>();
 		Consumer<IMutation> newMutationSink = new Consumer<>() {
 			@Override
 			public void accept(IMutation arg0)
@@ -68,7 +68,13 @@ public class CrowdProcessor
 			@Override
 			public void accept(int targetEntityId, IEntityChange change)
 			{
-				exportedChanges.add(new ChangeContainer(targetEntityId, change));
+				Queue<IEntityChange> entityChanges = exportedChanges.get(targetEntityId);
+				if (null == entityChanges)
+				{
+					entityChanges = new LinkedList<>();
+					exportedChanges.put(targetEntityId, entityChanges);
+				}
+				entityChanges.add(change);
 			}
 		};
 		// We will use null for twoPhaseChangeSink since the mutations we were given will intercept this where relevant.
@@ -109,7 +115,7 @@ public class CrowdProcessor
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutation> exportedMutations
-			, List<ChangeContainer> exportedChanges
+			, Map<Integer, Queue<IEntityChange>> exportedChanges
 	) {}
 
 

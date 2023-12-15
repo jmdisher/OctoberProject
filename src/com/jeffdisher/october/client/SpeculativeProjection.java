@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.changes.MetaChangeClientIgnore;
 import com.jeffdisher.october.changes.MetaChangeClientPrepare;
@@ -108,7 +107,7 @@ public class SpeculativeProjection
 	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
 	 * @param addedEntities The list of entities which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
-	 * @param entityChanges The list of entity changes which committed in this tick.
+	 * @param entityChanges The map of per-entity change queues which committed in this tick.
 	 * @param cuboidMutations The list of cuboid mutations which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
@@ -123,7 +122,7 @@ public class SpeculativeProjection
 			, List<Entity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, List<ChangeContainer> entityChanges
+			, Map<Integer, Queue<IEntityChange>> entityChanges
 			, List<IMutation> cuboidMutations
 			
 			, List<Integer> removedEntities
@@ -161,14 +160,10 @@ public class SpeculativeProjection
 		};
 		
 		// When applying server-originating changes, we never schedule phase2 operations (they will tell us the results, later).
-		List<ChangeContainer> ignoredPhase2Changes = entityChanges.stream().map(
-				(ChangeContainer container) -> new ChangeContainer(container.entityId(), new MetaChangeClientIgnore(container.change()))
-		).collect(Collectors.toList());
+		Map<Integer, Queue<IEntityChange>> changesToRun = _wrapChangesWithIgnores(entityChanges);
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
-		// Split the incoming changes into the expected map shape.
-		Map<Integer, Queue<IEntityChange>> changesToRun = _createChangeMap(ignoredPhase2Changes);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, _shadowBlockLoader, gameTick, changesToRun);
 		
 		// Split the incoming mutations into the expected map shape.
@@ -430,7 +425,7 @@ public class SpeculativeProjection
 		Map<Integer, Queue<IEntityChange>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
-		List<ChangeContainer> exportedChanges = group.exportedChanges();
+		Map<Integer, Queue<IEntityChange>> exportedChanges = group.exportedChanges();
 		List<IMutation> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -441,14 +436,23 @@ public class SpeculativeProjection
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, specialMutationListener, _shadowBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
 			
-			Map<Integer, Queue<IEntityChange>> innerChanges = _createChangeMap(exportedChanges);
-			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, innerChanges);
+			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, exportedChanges);
 			_projectedCrowd.putAll(innerGroup.groupFragment());
 			
 			// Coalesce the results of these.
-			exportedChanges = new ArrayList<>();
-			exportedChanges.addAll(innerFragment.exportedEntityChanges());
-			exportedChanges.addAll(innerGroup.exportedChanges());
+			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
+			for (Map.Entry<Integer, Queue<IEntityChange>> entry : innerGroup.exportedChanges().entrySet())
+			{
+				Queue<IEntityChange> oneQueue = exportedChanges.get(entry.getKey());
+				if (null == oneQueue)
+				{
+					exportedChanges.put(entry.getKey(), entry.getValue());
+				}
+				else
+				{
+					oneQueue.addAll(entry.getValue());
+				}
+			}
 			exportedMutations = new ArrayList<>();
 			exportedMutations.addAll(innerFragment.exportedMutations());
 			exportedMutations.addAll(innerGroup.exportedMutations());
@@ -457,23 +461,6 @@ public class SpeculativeProjection
 		// We will assume that the initial change was applied if we see them in the modified set.
 		modifiedEntityIds.addAll(locallyModifiedIds);
 		return locallyModifiedIds.contains(_localEntityId);
-	}
-
-	private Map<Integer, Queue<IEntityChange>> _createChangeMap(List<ChangeContainer> newEntityChanges)
-	{
-		Map<Integer, Queue<IEntityChange>> changesToRun = new HashMap<>();
-		for (ChangeContainer container : newEntityChanges)
-		{
-			int id = container.entityId();
-			Queue<IEntityChange> queue = changesToRun.get(id);
-			if (null == queue)
-			{
-				queue = new LinkedList<>();
-				changesToRun.put(id, queue);
-			}
-			queue.add(container.change());
-		}
-		return changesToRun;
 	}
 
 	private Map<CuboidAddress, Queue<IMutation>> _createMutationMap(List<IMutation> mutations)
@@ -544,6 +531,16 @@ public class SpeculativeProjection
 			_pendingPhase2ActivityNumber = 0L;
 		}
 		return didApply;
+	}
+
+	private Map<Integer, Queue<IEntityChange>> _wrapChangesWithIgnores(Map<Integer, Queue<IEntityChange>> entityChanges)
+	{
+		return entityChanges.entrySet().stream().collect(Collectors.toMap(
+				(Map.Entry<Integer, Queue<IEntityChange>> entry) -> entry.getKey()
+				, (Map.Entry<Integer, Queue<IEntityChange>> entry) -> new LinkedList<>(entry.getValue().stream().map(
+						(IEntityChange change) -> new MetaChangeClientIgnore(change)
+				).collect(Collectors.toList()))
+		));
 	}
 
 

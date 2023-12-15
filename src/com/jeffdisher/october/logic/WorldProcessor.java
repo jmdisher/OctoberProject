@@ -2,13 +2,13 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -58,7 +58,7 @@ public class WorldProcessor
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		List<IMutation> exportedMutations = new ArrayList<>();
-		List<ChangeContainer> exportedEntityChanges = new ArrayList<>();
+		Map<Integer, Queue<IEntityChange>> exportedEntityChanges = new HashMap<>();
 		Consumer<IMutation> sink = new Consumer<IMutation>() {
 			@Override
 			public void accept(IMutation arg0)
@@ -71,7 +71,13 @@ public class WorldProcessor
 			@Override
 			public void accept(int targetEntityId, IEntityChange change)
 			{
-				exportedEntityChanges.add(new ChangeContainer(targetEntityId, change));
+				Queue<IEntityChange> entityChanges = exportedEntityChanges.get(targetEntityId);
+				if (null == entityChanges)
+				{
+					entityChanges = new LinkedList<>();
+					exportedEntityChanges.put(targetEntityId, entityChanges);
+				}
+				entityChanges.add(change);
 			}
 		};
 		// Use null for twoPhaseChangeSink when processing mutations.
@@ -115,7 +121,7 @@ public class WorldProcessor
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutation> exportedMutations
-			, List<ChangeContainer> exportedEntityChanges
+			, Map<Integer, Queue<IEntityChange>> exportedEntityChanges
 	) {}
 
 

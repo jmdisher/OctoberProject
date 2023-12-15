@@ -12,7 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.ChangeContainer;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -43,7 +42,7 @@ public class TickRunner
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidData> _newCuboids;
-	private List<ChangeContainer> _newEntityChanges;
+	private Map<Integer, Queue<IEntityChange>> _newEntityChanges;
 	private List<Entity> _newEntities;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -223,9 +222,15 @@ public class TickRunner
 		{
 			if (null == _newEntityChanges)
 			{
-				_newEntityChanges = new ArrayList<>();
+				_newEntityChanges = new HashMap<>();
 			}
-			_newEntityChanges.add(new ChangeContainer(entityId, change));
+			Queue<IEntityChange> queue = _newEntityChanges.get(entityId);
+			if (null == queue)
+			{
+				queue = new LinkedList<>();
+				_newEntityChanges.put(entityId, queue);
+			}
+			queue.add(change);
 		}
 		finally
 		{
@@ -276,8 +281,8 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
-				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())
+				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
+				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
 		);
 		while (null != materials)
 		{
@@ -349,7 +354,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutation> newMutations;
 				List<Entity> newEntities;
-				List<ChangeContainer> newEntityChanges;
+				Map<Integer, Queue<IEntityChange>> newEntityChanges;
 				
 				_sharedDataLock.lock();
 				try
@@ -405,9 +410,9 @@ public class TickRunner
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (ChangeContainer container : fragment.exportedEntityChanges())
+					for (Map.Entry<Integer, Queue<IEntityChange>> container : fragment.exportedEntityChanges().entrySet())
 					{
-						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
+						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
 				}
 				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
@@ -416,9 +421,9 @@ public class TickRunner
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (ChangeContainer container : fragment.exportedChanges())
+					for (Map.Entry<Integer, Queue<IEntityChange>> container : fragment.exportedChanges().entrySet())
 					{
-						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
+						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
 				}
 				
@@ -432,9 +437,9 @@ public class TickRunner
 				}
 				if (null != newEntityChanges)
 				{
-					for (ChangeContainer container : newEntityChanges)
+					for (Map.Entry<Integer, Queue<IEntityChange>> container : newEntityChanges.entrySet())
 					{
-						_scheduleChangeForEntity(nextTickChanges, container.entityId(), container.change());
+						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
 				}
 				
@@ -514,15 +519,17 @@ public class TickRunner
 		queue.add(mutation);
 	}
 
-	private void _scheduleChangeForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, int entityId, IEntityChange change)
+	private void _scheduleChangesForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, int entityId, Queue<IEntityChange> changes)
 	{
 		Queue<IEntityChange> queue = nextTickChanges.get(entityId);
 		if (null == queue)
 		{
-			queue = new LinkedList<>();
-			nextTickChanges.put(entityId, queue);
+			nextTickChanges.put(entityId, changes);
 		}
-		queue.add(change);
+		else
+		{
+			queue.addAll(changes);
+		}
 	}
 
 	private Snapshot _locked_waitForTickComplete()
