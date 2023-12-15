@@ -21,12 +21,23 @@ import com.jeffdisher.october.utils.Assert;
  * -x is West-East, such that -x is West, +x is East
  * -y is South-North, such that -y is South, +y is North
  * -z is down-up, such that -z is down, +z is up
+ * -the XYZ location where an entity "is" is the air block where their feet exist.
  * This means that the .0 location of any single block is considered to be the bottom, South-West corner.
  */
 public class PathFinder
 {
+	/**
+	 * Falling 1 block will still be considered as cost, but a very small one.
+	 */
+	public static final float COST_FALL = 0.1f;
+	/**
+	 * Climbing up a block should be considered expensive.
+	 */
+	public static final float COST_CLIMB = 1.0f;
+	/**
+	 * Walking on flat ground will be the baseline action.
+	 */
 	public static final float COST_STEP_FLAT = 1.0f;
-	public static final float COST_STEP_UP = 2.0f;
 
 	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, EntityLocation target)
 	{
@@ -91,6 +102,7 @@ public class PathFinder
 			}
 			return signum;
 		});
+		walkBackward.put(start, null);
 		workQueue.add(new Spot(start, initialDistance));
 		Spot targetSpot = null;
 		while ((null == targetSpot) && !workQueue.isEmpty())
@@ -103,29 +115,39 @@ public class PathFinder
 			}
 			else
 			{
-				// Check 12 places:  +/- x/y and +/=/- z.
-				// Note that all the z options are checked at the same time.
-				// Make sure that we don't check who sent us here.
+				// We aren't yet at the target so check the spaces around us.
 				AbsoluteLocation spotLocation = spot.location;
-				AbsoluteLocation caller = walkBackward.get(spotLocation);
-				int deltaX = (null != caller) ? caller.x() - spotLocation.x() : 0;
-				int deltaY = (null != caller) ? caller.y() - spotLocation.y() : 0;
-				if (-1 != deltaX)
+				// We will just check all 6 directions around our current spot with a few caveats:
+				// -NEVER check anything already in our walked set, since we already reached that via a shorter path (since this is a priority queue).
+				// -don't bother checking "up" if we are standing on air since we would have nothing from which to "jump up".
+				
+				AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
+				AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
+				AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
+				AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
+				AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
+				AbsoluteLocation down = spotLocation.getRelative(0, 0, -1);
+				
+				// If we are standing on an air block AND the previous step was only XY movement, that means that we
+				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
+				// over a gap).
+				boolean isStandingOnAir = (BlockAspect.AIR == blockTypeReader.apply(down));
+				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
+				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
+				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
+				
+				if (!didStepIntoHole)
 				{
-					_checkColumn(walkBackward, workQueue, blockTypeReader, limit, height, spot, spotLocation.getRelative(-1, 0, -2));
+					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, east, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, west, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, north, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, south, COST_STEP_FLAT);
 				}
-				if (1 != deltaX)
+				if (!isStandingOnAir)
 				{
-					_checkColumn(walkBackward, workQueue, blockTypeReader, limit, height, spot, spotLocation.getRelative(1, 0, -2));
+					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, up, COST_CLIMB);
 				}
-				if (-1 != deltaY)
-				{
-					_checkColumn(walkBackward, workQueue, blockTypeReader, limit, height, spot, spotLocation.getRelative(0, -1, -2));
-				}
-				if (1 != deltaY)
-				{
-					_checkColumn(walkBackward, workQueue, blockTypeReader, limit, height, spot, spotLocation.getRelative(0, 1, -2));
-				}
+				_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, down, COST_FALL);
 			}
 		}
 		List<AbsoluteLocation> path = null;
@@ -144,62 +166,39 @@ public class PathFinder
 	}
 
 
-	private static void _checkColumn(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, Short> blockTypeReader, float limit, int height, Spot start, AbsoluteLocation base)
+	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, Short> blockTypeReader, float limit, int height, Spot start, AbsoluteLocation target, float scoreToAdd)
 	{
-		AbsoluteLocation floor = null;
-		int contiguousAir = 0;
-		AbsoluteLocation check = base;
-		// We want to check this spot below the bottom, then the 3 actual locations, and add enough space for height.
-		AbsoluteLocation match = null;
-		for (int i = 0; (null == match) && (i < (1 + 3 + height)); ++i)
+		// Make sure that we haven't already reached this desintation via an earlier path.
+		if (!walkBackward.containsKey(target))
 		{
-			short blockType = blockTypeReader.apply(check);
-			if (BlockAspect.AIR == blockType)
+			// Make sure that we can fit here.
+			if (_canFitInSpace(blockTypeReader, target, height))
 			{
-				contiguousAir += 1;
-			}
-			else
-			{
-				if ((null != floor) && (contiguousAir >= height))
+				// Add this target spot unless we have gone too far.
+				float newDistance = start.distance + scoreToAdd;
+				if (newDistance <= limit)
 				{
-					// This will work (and nothing else in this column will.
-					match = floor.getRelative(0, 0, 1);
-				}
-				else
-				{
-					floor = check;
-					contiguousAir = 0;
+					Spot newStep = new Spot(target, newDistance);
+					AbsoluteLocation old = walkBackward.put(target, start.location);
+					// This was checked above.
+					Assert.assertTrue(null == old);
+					workQueue.add(newStep);
 				}
 			}
-			// Check the next block up.
-			check = check.getRelative(0, 0, 1);
 		}
-		if ((null != floor) && (contiguousAir >= height))
+	}
+
+	private static boolean _canFitInSpace(Function<AbsoluteLocation, Short> blockTypeReader, AbsoluteLocation space, int entityHeight)
+	{
+		// We just check to see if this block, and the blocks required to accommodate our height, are air.
+		// (this will still return true, even if the spot is floating int he air).
+		boolean canFit = true;
+		for (int i = 0; canFit && (i < entityHeight); ++i)
 		{
-			// We didn't hit the top of the column but we still fit in it.
-			match = floor.getRelative(0, 0, 1);
+			AbsoluteLocation check = space.getRelative(0, 0, i);
+			canFit = (BlockAspect.AIR == blockTypeReader.apply(check));
 		}
-		// The walk order means that the first match is the best one.
-		if ((null != match) && !walkBackward.containsKey(match))
-		{
-			// Check the score.
-			int startZ = start.location.z();
-			int matchZ = match.z();
-			// We will say that jumping is twice the distance but falling and walking isn't.
-			float score = (matchZ > startZ)
-					? COST_STEP_UP
-					: COST_STEP_FLAT
-			;
-			float newDistance = start.distance + score;
-			if (newDistance <= limit)
-			{
-				Spot newStep = new Spot(match, newDistance);
-				AbsoluteLocation old = walkBackward.put(match, start.location);
-				// This was checked above.
-				Assert.assertTrue(null == old);
-				workQueue.add(newStep);
-			}
-		}
+		return canFit;
 	}
 
 

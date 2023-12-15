@@ -41,10 +41,11 @@ public class TestPathFinder
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
-		// We expect to see 29 steps, since the source counts as a step.
+		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
 		int xSteps = 4 + 11;
 		int ySteps = 6 + 7;
-		Assert.assertEquals(1 + xSteps + ySteps, path.size());
+		int zSteps = 5 + 7;
+		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
 	}
 
 	@Test
@@ -103,6 +104,65 @@ public class TestPathFinder
 		_printMap2D(9, 9, path);
 	}
 
+	@Test
+	public void fallThroughHole()
+	{
+		// We want to fall through a small hole, go down a few layers, and then catch the ledge.
+		EntityLocation source = new EntityLocation(1.5f, 2.5f, 4.0f);
+		EntityLocation target = new EntityLocation(3.5f, 2.5f, 1.0f);
+		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver3D(new String[][] {
+			new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSAAS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSAAS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSASS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAASS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAASS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAASS",
+					"SSSSS",
+					"SSSSS",
+			}
+		});
+		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		// This is a direct walk, with a fall in the middle, so it should just be the difference in locations +1 to start.
+		int xSteps = 2;
+		int ySteps = 0;
+		int zSteps = 3;
+		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
+	}
+
 
 	private static void _printMap2D(int x, int y, List<AbsoluteLocation> path)
 	{
@@ -158,6 +218,26 @@ public class TestPathFinder
 				}
 			}
 			return value;
+		}
+	}
+
+
+	private static record MapResolver3D(String[][] map) implements Function<AbsoluteLocation, Short>
+	{
+		@Override
+		public Short apply(AbsoluteLocation l)
+		{
+			String[] layer = this.map[l.z()];
+			int x = l.x();
+			int y = l.y();
+			Assert.assertTrue((x >= 0) && (x < layer[0].length())
+					&& (y >= 0) && (y < layer.length)
+			);
+			char c = layer[l.y()].charAt(l.x());
+			return ('S' == c)
+					? BlockAspect.STONE
+					: BlockAspect.AIR
+			;
 		}
 	}
 }
