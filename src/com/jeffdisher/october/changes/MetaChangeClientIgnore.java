@@ -2,7 +2,6 @@ package com.jeffdisher.october.changes;
 
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -31,12 +30,5 @@ public class MetaChangeClientIgnore implements IEntityChange
 				, ignorePhase2Requests
 		);
 		return _inner.applyChange(wrapper, newEntity);
-	}
-
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// This is only an internal wrapper so this check is never called.
-		throw Assert.unreachable();
 	}
 }

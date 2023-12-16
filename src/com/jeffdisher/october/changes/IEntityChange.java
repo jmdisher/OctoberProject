@@ -26,14 +26,4 @@ public interface IEntityChange
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
 	boolean applyChange(TickProcessingContext context, MutableEntity newEntity);
-
-	/**
-	 * Called when applying a change to a speculative projection in order to see if it renders the previous change
-	 * applied to the same target entity as redundant.  This is to avoid sending a long stream of tiny mutations (like
-	 * movements) to the server when it only cared about the final state.
-	 * 
-	 * @param previousChange The previous change successfully applied to this entity.
-	 * @return True if this change can replace the previousChange in the system.
-	 */
-	boolean canReplacePrevious(IEntityChange previousChange);
 }

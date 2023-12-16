@@ -64,7 +64,6 @@ public class SpeculativeProjection
 	
 	private final List<ChangeWrapper> _speculativeChanges;
 	private long _nextLocalCommitNumber;
-	private boolean _shouldTryMerge;
 
 	/**
 	 * Creates a speculative projection for a single client.
@@ -95,7 +94,6 @@ public class SpeculativeProjection
 		_projectedCrowd = new HashMap<>();
 		_speculativeChanges = new ArrayList<>();
 		_nextLocalCommitNumber = 1L;
-		_shouldTryMerge = false;
 	}
 
 	/**
@@ -308,30 +306,6 @@ public class SpeculativeProjection
 		{
 			_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
 			
-			// Since this applied, see if it can be merged with the previous.
-			int sizeBeforeMerge = _speculativeChanges.size();
-			if (_shouldTryMerge && (sizeBeforeMerge >= 2))
-			{
-				ChangeWrapper thisChange = _speculativeChanges.get(sizeBeforeMerge - 1);
-				ChangeWrapper previousChange = _speculativeChanges.get(sizeBeforeMerge - 2);
-				long previousCommit = previousChange.commitLevel;
-				// If we already merged the previous 2, we would have rolled-back the commit number.
-				Assert.assertTrue((previousCommit + 1) == commitNumber);
-				if (thisChange.change.canReplacePrevious(previousChange.change))
-				{
-					// Remove the previous 2 and re-add the latest to avoid nulls in the list.
-					_speculativeChanges.remove(sizeBeforeMerge - 1);
-					_speculativeChanges.remove(sizeBeforeMerge - 2);
-					// Roll-back the commit number.
-					_nextLocalCommitNumber -= 1;
-					commitNumber = previousCommit;
-					// Re-add this latest commit, with the previous commit number.
-					_speculativeChanges.add(new ChangeWrapper(commitNumber, change, null));
-				}
-			}
-			// Whether we merged or not, we now have something to try merging with, on the next call.
-			_shouldTryMerge = true;
-			
 			// Notify the listener of what changed.
 			_notifyChanges(modifiedCuboidAddresses, modifiedEntityIds);
 		}
@@ -342,18 +316,6 @@ public class SpeculativeProjection
 			commitNumber = 0L;
 		}
 		return commitNumber;
-	}
-
-	/**
-	 * We normally collect local entity movement updates so that we don't report all the between-frames, but we need to
-	 * stop doing that if we see a non-movement change or if the last collected move change has been sent to server.
-	 * This function is called to notify the internal logic when that change has been sent.
-	 */
-	public void sealLastLocalChange()
-	{
-		// We just disable the test to merge on the next call (it will be re-enabled when something new is added but
-		// this will be sufficient to keep what was previously added from ever being merged).
-		_shouldTryMerge = false;
 	}
 
 	/**

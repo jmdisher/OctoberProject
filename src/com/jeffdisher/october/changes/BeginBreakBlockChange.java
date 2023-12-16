@@ -37,11 +37,4 @@ public class BeginBreakBlockChange implements IEntityChange
 		}
 		return didApply;
 	}
-
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// These can never replace anything.
-		return false;
-	}
 }

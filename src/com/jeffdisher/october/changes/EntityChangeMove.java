@@ -24,17 +24,4 @@ public class EntityChangeMove implements IEntityChange
 		// Movement always succeeds.
 		return true;
 	}
-
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// We can replace the previous if it was also a move.
-		// This should be something we can merge if the previous was also a move.
-		boolean canReplace = false;
-		if (previousChange instanceof EntityChangeMove)
-		{
-			canReplace = true;
-		}
-		return canReplace;
-	}
 }

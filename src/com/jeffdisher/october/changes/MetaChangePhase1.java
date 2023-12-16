@@ -49,13 +49,6 @@ public class MetaChangePhase1 implements IEntityChange
 		return result;
 	}
 
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// This is only an internal wrapper so this check is never called.
-		throw Assert.unreachable();
-	}
-
 
 	private static class LocalSink implements TickProcessingContext.ITwoPhaseChangeSink
 	{

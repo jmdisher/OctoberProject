@@ -33,13 +33,6 @@ public class MetaChangeClientPrepare implements IEntityChange
 		return _inner.applyChange(wrapper, newEntity);
 	}
 
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// This is only an internal wrapper so this check is never called.
-		throw Assert.unreachable();
-	}
-
 
 	private class LocalSink implements TickProcessingContext.ITwoPhaseChangeSink
 	{

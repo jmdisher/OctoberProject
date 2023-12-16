@@ -27,11 +27,4 @@ public class EntityChangeMutation implements IEntityChange
 		}
 		return true;
 	}
-
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// We don't merge these.
-		return false;
-	}
 }

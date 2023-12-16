@@ -32,13 +32,6 @@ public class EntityChangeReceiveItem implements IEntityChange
 		return _common(newEntity);
 	}
 
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// We don't merge these.
-		return false;
-	}
-
 
 	private boolean _common(MutableEntity newEntity)
 	{

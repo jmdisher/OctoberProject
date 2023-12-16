@@ -2,7 +2,6 @@ package com.jeffdisher.october.changes;
 
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -30,12 +29,5 @@ public class MetaChangePhase2 implements IEntityChange
 		boolean result = this.inner.applyChange(context, newEntity);
 		this.wasSuccess = result;
 		return result;
-	}
-
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// This is only an internal wrapper so this check is never called.
-		throw Assert.unreachable();
 	}
 }

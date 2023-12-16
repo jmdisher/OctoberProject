@@ -33,13 +33,6 @@ public class EntityChangeSendItem implements IEntityChange
 		return foundCount > 0;
 	}
 
-	@Override
-	public boolean canReplacePrevious(IEntityChange previousChange)
-	{
-		// We don't merge these.
-		return false;
-	}
-
 
 	private int _common(MutableEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{

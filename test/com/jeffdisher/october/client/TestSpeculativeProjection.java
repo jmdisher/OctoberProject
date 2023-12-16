@@ -14,7 +14,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
@@ -34,7 +33,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -609,60 +607,6 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.lastEntityStates.get(1).inventory().items.size());
 		update = listener.lastEntityStates.get(1).inventory().items.get(ItemRegistry.STONE);
 		Assert.assertEquals(2, update.count());
-	}
-
-	@Test
-	public void replaceMovements()
-	{
-		// Test that successful move requests will be replaced by the last.
-		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
-		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
-				, Collections.emptyList()
-				, Collections.emptyMap()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, 0L
-				, 0L
-				, 1L
-		);
-		Assert.assertNotNull(listener.lastEntityStates.get(0));
-		
-		// Enqueue 2 moves and verify that they are merged.
-		EntityLocation loc0 = new EntityLocation(0.5f, 0.0f, 0.0f);
-		EntityLocation loc1 = new EntityLocation(1.0f, 0.0f, 0.0f);
-		EntityLocation loc2 = new EntityLocation(2.0f, 0.0f, 0.0f);
-		EntityChangeMove move0 = new EntityChangeMove(loc0);
-		EntityChangeMove move1 = new EntityChangeMove(loc1);
-		EntityChangeMove move2 = new EntityChangeMove(loc2);
-		long commit0 = projector.applyLocalChange(move0, 1L);
-		Assert.assertEquals(loc0, listener.lastEntityStates.get(0).location());
-		long commit1 = projector.applyLocalChange(move1, 1L);
-		Assert.assertEquals(loc1, listener.lastEntityStates.get(0).location());
-		Assert.assertEquals(commit0, commit1);
-		
-		// Verify that replacement fails if we seal this change (as though we "sent" move1 to server and can't update it).
-		projector.sealLastLocalChange();
-		long commit2 = projector.applyLocalChange(move2, 1L);
-		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());
-		Assert.assertEquals(commit1 + 1, commit2);
-		
-		// Commit this and make sure the values are still correct - if replaced, we wouldn't bother sending move0.
-		int speculativeCount = projector.applyChangesForServerTick(1L
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Map.of(0, new LinkedList<>(List.of(move1)))
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, commit1
-				, 0L
-				, 1L
-		);
-		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(loc2, listener.lastEntityStates.get(0).location());
 	}
 
 	@Test

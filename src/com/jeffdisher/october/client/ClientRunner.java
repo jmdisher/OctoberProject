@@ -31,7 +31,6 @@ public class ClientRunner
 	private final IListener _clientListener;
 	private SpeculativeProjection _projection;
 	private final List<Runnable> _pendingNetworkCallsToFlush;
-	private long _lastCommitToFlush;
 
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
@@ -63,16 +62,10 @@ public class ClientRunner
 		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
 		if (localCommit > 0L)
 		{
-			// This was applied locally so package it up to send to the server.  We will buffer changes between server ticks to coalesce small move operations.
-			// If this replaced the previous call, remove it.
-			if (_lastCommitToFlush == localCommit)
-			{
-				_pendingNetworkCallsToFlush.remove(_pendingNetworkCallsToFlush.size() - 1);
-			}
+			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
 			_pendingNetworkCallsToFlush.add(() -> {
 				_network.sendChange(change, localCommit, isMultiPhase);
 			});
-			_lastCommitToFlush = localCommit;
 		}
 		_runAllPendingCalls(currentTimeMillis);
 	}
@@ -179,8 +172,6 @@ public class ClientRunner
 				{
 					_pendingNetworkCallsToFlush.remove(0).run();
 				}
-				// Since we just sent everything, seal the last change.
-				_projection.sealLastLocalChange();
 				
 				// Apply the changes from the server.
 				_projection.applyChangesForServerTick(tickNumber
