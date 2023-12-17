@@ -14,6 +14,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
+import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
@@ -33,6 +34,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -956,6 +958,57 @@ public class TestSpeculativeProjection
 		projector.checkCurrentActivity(currentTimeMillis);
 		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+	}
+
+	@Test
+	public void movePartialRejection()
+	{
+		// We want to test that 2 move changes, where the first is rejected by the server, the second is rejected locally.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		
+		// Apply the 2 steps of the move, locally.
+		EntityLocation startLocation = listener.lastEntityStates.get(0).location();
+		EntityLocation midStep = new EntityLocation(1.0f, 1.0f, 0.0f);
+		EntityLocation lastStep = new EntityLocation(2.0f, 2.0f, 0.0f);
+		IEntityChange move1 = new EntityChangeMove(startLocation, midStep);
+		IEntityChange move2 = new EntityChangeMove(midStep, lastStep);
+		long commit1 = projector.applyLocalChange(move1, 1L);
+		long commit2 = projector.applyLocalChange(move2, 1L);
+		Assert.assertEquals(1L, commit1);
+		Assert.assertEquals(2L, commit2);
+		
+		// We should see the entity moved to its speculative location.
+		Assert.assertEquals(lastStep, listener.lastEntityStates.get(0).location());
+		
+		// Now, absorb a change from the server where neither change is present but the first has been considered.
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+				, 0L
+				, 1L
+		);
+		
+		// We should now see 0 speculative commits and the entity should still be where it started.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
 	}
 
 

@@ -10,18 +10,23 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeMove implements IEntityChange
 {
+	private final EntityLocation _oldLocation;
 	private final EntityLocation _newLocation;
 
-	public EntityChangeMove(EntityLocation newLocation)
+	public EntityChangeMove(EntityLocation oldLocation, EntityLocation newLocation)
 	{
+		_oldLocation = oldLocation;
 		_newLocation = newLocation;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		newEntity.newLocation = _newLocation;
-		// Movement always succeeds.
-		return true;
+		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);
+		if (oldDoesMatch)
+		{
+			newEntity.newLocation = _newLocation;
+		}
+		return oldDoesMatch;
 	}
 }
