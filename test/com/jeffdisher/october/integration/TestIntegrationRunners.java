@@ -6,7 +6,6 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.client.ClientRunner.IListener;
@@ -100,8 +99,8 @@ public class TestIntegrationRunners
 		// Both of these clients need to move and then we can verify that both sides can see the correct outcome.
 		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 1.0f);
 		EntityLocation location2 = new EntityLocation(-1.0f, -1.0f, -1.0f);
-		client1.applyLocalChange(new EntityChangeMove(listener1.entities.get(clientId1).location(), location1), false, System.currentTimeMillis());
-		client2.applyLocalChange(new EntityChangeMove(listener2.entities.get(clientId2).location(), location2), false, System.currentTimeMillis());
+		client1.moveTo(location1, System.currentTimeMillis());
+		client2.moveTo(location2, System.currentTimeMillis());
 		// Note that we only send out pending updates from a client once we receive a commit (current implementation, at least).
 		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 1L);
 		client1.runPendingCalls(System.currentTimeMillis());
@@ -151,28 +150,28 @@ public class TestIntegrationRunners
 		// Start the move commands, waiting until we see the client reach that point before continuing.
 		// (this will need to change once the movement change is imposing speed and reachability checks).
 		EntityLocation cornerMM = new EntityLocation(-32.0f, -32.0f, 0.0f);
-		client.applyLocalChange(new EntityChangeMove(listener.entities.get(clientId).location(), cornerMM), false, System.currentTimeMillis());
+		client.moveTo(cornerMM, System.currentTimeMillis());
 		while (!listener.entities.get(clientId).location().equals(cornerMM))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
 			client.runPendingCalls(System.currentTimeMillis());
 		}
 		EntityLocation cornerMP = new EntityLocation(-32.0f, 47.0f, 0.0f);
-		client.applyLocalChange(new EntityChangeMove(listener.entities.get(clientId).location(), cornerMP), false, System.currentTimeMillis());
+		client.moveTo(cornerMP, System.currentTimeMillis());
 		while (!listener.entities.get(clientId).location().equals(cornerMP))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
 			client.runPendingCalls(System.currentTimeMillis());
 		}
 		EntityLocation cornerPP = new EntityLocation(47.0f, 47.0f, 0.0f);
-		client.applyLocalChange(new EntityChangeMove(listener.entities.get(clientId).location(), cornerPP), false, System.currentTimeMillis());
+		client.moveTo(cornerPP, System.currentTimeMillis());
 		while (!listener.entities.get(clientId).location().equals(cornerPP))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
 			client.runPendingCalls(System.currentTimeMillis());
 		}
 		EntityLocation cornerPM = new EntityLocation(47.0f, -32.0f, 0.0f);
-		client.applyLocalChange(new EntityChangeMove(listener.entities.get(clientId).location(), cornerPM), false, System.currentTimeMillis());
+		client.moveTo(cornerPM, System.currentTimeMillis());
 		while (!listener.entities.get(clientId).location().equals(cornerPM))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);

@@ -107,14 +107,15 @@ public class TestClientRunner
 		
 		// Start a multi-phase locally.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		// (we create the change we expect the ClientRunner to create).
 		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(changeLocation);
-		runner.applyLocalChange(firstPhase, true, System.currentTimeMillis());
+		runner.beginBreakBlock(changeLocation, System.currentTimeMillis());
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 1L, 0L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		
 		// Observe that this came out in the network and then send back the 3 ticks associated with it, applying each.
-		Assert.assertTrue(firstPhase == network.toSend);
+		Assert.assertTrue(network.toSend instanceof BeginBreakBlockChange);
 		Assert.assertTrue(1L == network.commitLevel);
 		Assert.assertTrue(network.isMultiPhase);
 		network.client.receivedChange(clientId, firstPhase);

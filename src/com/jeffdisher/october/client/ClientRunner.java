@@ -8,11 +8,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.function.LongConsumer;
 
+import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 
 
 /**
@@ -32,6 +36,10 @@ public class ClientRunner
 	private SpeculativeProjection _projection;
 	private final List<Runnable> _pendingNetworkCallsToFlush;
 
+	// Variables related to our local cache of this entity's state.
+	private int _assignedEntityId;
+	private EntityLocation _projectedEntityLocation;
+
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
 
@@ -50,33 +58,40 @@ public class ClientRunner
 	}
 
 	/**
-	 * Applies the given change to the speculative local projection and prepares it to be sent to the server after the
-	 * next end of tick is observed.  Runs any pending call-outs before returning.
-	 * 
-	 * @param change The change to apply.
-	 * @param isMultiPhase True if this change should be handled as a multi-phase change.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void applyLocalChange(IEntityChange change, boolean isMultiPhase, long currentTimeMillis)
-	{
-		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
-		if (localCommit > 0L)
-		{
-			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
-			_pendingNetworkCallsToFlush.add(() -> {
-				_network.sendChange(change, localCommit, isMultiPhase);
-			});
-		}
-		_runAllPendingCalls(currentTimeMillis);
-	}
-
-	/**
 	 * Runs any pending call-outs.
 	 * 
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
 	public void runPendingCalls(long currentTimeMillis)
 	{
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Creates the change to begin breaking a block.  Note that changes which come in before it completes will
+	 * invalidate it.
+	 * 
+	 * @param blockLocation The location of the block to break.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void beginBreakBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	{
+		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(blockLocation);
+		_applyLocalChange(firstPhase, true, currentTimeMillis);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Creates the change to move the entity from the current location in the speculative projection to the given
+	 * endPoint.
+	 * 
+	 * @param endPoint The destination of the move.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
+	{
+		EntityChangeMove moveChange = new EntityChangeMove(_projectedEntityLocation, endPoint);
+		_applyLocalChange(moveChange, false, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 
@@ -87,6 +102,18 @@ public class ClientRunner
 		while (!calls.isEmpty())
 		{
 			calls.remove(0).accept(currentTimeMillis);
+		}
+	}
+
+	private void _applyLocalChange(IEntityChange change, boolean isMultiPhase, long currentTimeMillis)
+	{
+		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
+		if (localCommit > 0L)
+		{
+			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
+			_pendingNetworkCallsToFlush.add(() -> {
+				_network.sendChange(change, localCommit, isMultiPhase);
+			});
 		}
 	}
 
@@ -109,8 +136,9 @@ public class ClientRunner
 		{
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// We create the projection here.
-				// Note that we use a local shim for the listener to pass the calls out in the callouts.
-				_projection = new SpeculativeProjection(assignedId, _projectionListener);
+				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
+				_assignedEntityId = assignedId;
+				_projection = new SpeculativeProjection(assignedId, new LocalProjection());
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);
 			});
@@ -203,6 +231,52 @@ public class ClientRunner
 			List<LongConsumer> copy = new LinkedList<>(_calls);
 			_calls.clear();
 			return copy;
+		}
+	}
+
+	private class LocalProjection implements SpeculativeProjection.IProjectionListener
+	{
+		@Override
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		{
+			// Ignored.
+			_projectionListener.cuboidDidLoad(cuboid);
+		}
+		@Override
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		{
+			// Ignored.
+			_projectionListener.cuboidDidChange(cuboid);
+		}
+		@Override
+		public void cuboidDidUnload(CuboidAddress address)
+		{
+			// Ignored.
+			_projectionListener.cuboidDidUnload(address);
+		}
+		@Override
+		public void entityDidLoad(Entity entity)
+		{
+			if (_assignedEntityId == entity.id())
+			{
+				_projectedEntityLocation = entity.location();
+			}
+			_projectionListener.entityDidLoad(entity);
+		}
+		@Override
+		public void entityDidChange(Entity entity)
+		{
+			if (_assignedEntityId == entity.id())
+			{
+				_projectedEntityLocation = entity.location();
+			}
+			_projectionListener.entityDidChange(entity);
+		}
+		@Override
+		public void entityDidUnload(int id)
+		{
+			// Ignored.
+			_projectionListener.entityDidUnload(id);
 		}
 	}
 
