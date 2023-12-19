@@ -20,6 +20,13 @@ public class MetaChangeClientIgnore implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		TickProcessingContext.ITwoPhaseChangeSink ignorePhase2Requests = (int targetEntityId, IEntityChange change, long delayMillis) -> {};

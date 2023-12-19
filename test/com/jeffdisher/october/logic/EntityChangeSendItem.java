@@ -27,6 +27,13 @@ public class EntityChangeSendItem implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		int foundCount = _common(newEntity, context.newChangeSink);

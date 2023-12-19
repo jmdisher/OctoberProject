@@ -20,6 +20,14 @@ public class EntityChangeMove implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// For now, we assume that this is instant.
+		// TODO:  Add movement speed limit.
+		return 0L;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);

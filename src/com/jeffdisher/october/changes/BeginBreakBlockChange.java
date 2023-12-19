@@ -22,6 +22,13 @@ public class BeginBreakBlockChange implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		// Make sure that the block isn't air.

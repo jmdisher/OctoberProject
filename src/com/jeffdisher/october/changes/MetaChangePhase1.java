@@ -26,6 +26,13 @@ public class MetaChangePhase1 implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		LocalSink twoPhaseChangeSink = new LocalSink();

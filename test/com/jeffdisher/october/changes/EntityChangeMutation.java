@@ -19,6 +19,13 @@ public class EntityChangeMutation implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		if (null != _contents)

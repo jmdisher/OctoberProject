@@ -8,9 +8,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * The first phase of breaking a block - determines if the block can be broken and how long it should take.
- * The second phase of the breaking operation will check that the block is still the same type and will then emit a
- * mutation to replace it with air containing the block as an item.
+ * Breaks the block, emitting a "BreakBlockMutation", if the block is of the expected type when the change runs.
  */
 public class EndBreakBlockChange implements IEntityChange
 {
@@ -21,6 +19,14 @@ public class EndBreakBlockChange implements IEntityChange
 	{
 		_targetBlock = targetBlock;
 		_expectedBlockType = expectedBlockType;
+	}
+
+	@Override
+	public long getTimeCostMillis()
+	{
+		// In the future, this will depend no the type of block and the tool being used, etc.
+		// For now, we use 200 ms since 100 will use an entire tick, but still finish inside that tick, so 200 will force it to finish in the second tick.
+		return 200L;
 	}
 
 	@Override

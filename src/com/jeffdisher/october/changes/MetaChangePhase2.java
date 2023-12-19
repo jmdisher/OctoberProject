@@ -24,6 +24,13 @@ public class MetaChangePhase2 implements IEntityChange
 	}
 
 	@Override
+	public long getTimeCostMillis()
+	{
+		// Just treat this as free.
+		return 0;
+	}
+
+	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean result = this.inner.applyChange(context, newEntity);
