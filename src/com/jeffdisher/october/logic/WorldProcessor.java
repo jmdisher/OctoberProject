@@ -80,8 +80,7 @@ public class WorldProcessor
 				entityChanges.add(change);
 			}
 		};
-		// Use null for twoPhaseChangeSink when processing mutations.
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink, null);
+		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
 		for (Map.Entry<CuboidAddress, Queue<IMutation>> elt : mutationsToRun.entrySet())

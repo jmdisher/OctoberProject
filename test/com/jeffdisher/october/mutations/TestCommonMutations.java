@@ -5,7 +5,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -99,8 +98,6 @@ public class TestCommonMutations
 						ProcessingSinks.this.nextMutation = mutation;
 					}
 					, null
-					, (int targetEntityId, IEntityChange change, long delayMillis) -> {
-					}
 			);
 		}
 	}
