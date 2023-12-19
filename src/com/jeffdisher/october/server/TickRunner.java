@@ -58,6 +58,7 @@ public class TickRunner
 	 * Creates the tick runner in a non-started state.
 	 * 
 	 * @param threadCount The number of threads to use to run the ticks.
+	 * @param millisPerTick The number of milliseconds to target for scheduling load within a tick.
 	 * @param worldListener A listener for change events (note that these calls come on internal threads so must be trivial
 	 * or hand-off to another thread).
 	 * @param entityListener A listener for change events (note that these calls come on internal threads so must be trivial
@@ -66,6 +67,7 @@ public class TickRunner
 	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
 	 */
 	public TickRunner(int threadCount
+			, long millisPerTick
 			, WorldProcessor.IBlockChangeListener worldListener
 			, CrowdProcessor.IEntityChangeListener entityListener
 			, Consumer<Snapshot> tickCompletionListener

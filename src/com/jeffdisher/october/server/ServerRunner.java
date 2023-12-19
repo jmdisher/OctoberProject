@@ -68,7 +68,7 @@ public class ServerRunner
 		network.readyAndStartListening(networkListener);
 		_network = network;
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, tickListener, tickListener, tickListener);
+		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, tickListener, tickListener, tickListener);
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {
