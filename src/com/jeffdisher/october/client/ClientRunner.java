@@ -38,7 +38,7 @@ public class ClientRunner
 
 	// Variables related to our local cache of this entity's state.
 	private int _assignedEntityId;
-	private EntityLocation _projectedEntityLocation;
+	private Entity _localEntityProjection;
 
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
@@ -90,7 +90,7 @@ public class ClientRunner
 	 */
 	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
 	{
-		EntityChangeMove moveChange = new EntityChangeMove(_projectedEntityLocation, endPoint);
+		EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), endPoint);
 		_applyLocalChange(moveChange, false, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}
@@ -259,7 +259,7 @@ public class ClientRunner
 		{
 			if (_assignedEntityId == entity.id())
 			{
-				_projectedEntityLocation = entity.location();
+				_localEntityProjection = entity;
 			}
 			_projectionListener.entityDidLoad(entity);
 		}
@@ -268,7 +268,7 @@ public class ClientRunner
 		{
 			if (_assignedEntityId == entity.id())
 			{
-				_projectedEntityLocation = entity.location();
+				_localEntityProjection = entity;
 			}
 			_projectionListener.entityDidChange(entity);
 		}
