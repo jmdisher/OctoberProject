@@ -61,11 +61,11 @@ public class ConnectionFabric implements IServerAdapter
 	}
 
 	@Override
-	public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded, long latestLocalActivityIncluded)
+	public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 	{
 		if (ServerRunner.FAKE_CLIENT_ID != clientId)
 		{
-			_clients.get(clientId).receivedEndOfTick(tickNumber, latestLocalCommitIncluded, latestLocalActivityIncluded);
+			_clients.get(clientId).receivedEndOfTick(tickNumber, latestLocalCommitIncluded);
 		}
 		_tickObservedByClient.put(clientId, tickNumber);
 		this.notifyAll();
@@ -94,9 +94,9 @@ public class ConnectionFabric implements IServerAdapter
 	{
 	}
 
-	public synchronized void sendChange(int clientId, IEntityChange change, long commitLevel, boolean isMultiPhase)
+	public synchronized void sendChange(int clientId, IEntityChange change, long commitLevel)
 	{
-		_server.changeReceived(clientId, change, commitLevel, isMultiPhase);
+		_server.changeReceived(clientId, change, commitLevel);
 	}
 
 	public synchronized void waitForServer() throws InterruptedException
@@ -157,9 +157,9 @@ public class ConnectionFabric implements IServerAdapter
 			ConnectionFabric.this.disconnect(this.clientId);
 		}
 		@Override
-		public void sendChange(IEntityChange change, long commitLevel, boolean isMultiPhase)
+		public void sendChange(IEntityChange change, long commitLevel)
 		{
-			ConnectionFabric.this.sendChange(this.clientId, change, commitLevel, isMultiPhase);
+			ConnectionFabric.this.sendChange(this.clientId, change, commitLevel);
 		}
 	}
 }

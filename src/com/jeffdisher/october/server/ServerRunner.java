@@ -10,9 +10,6 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.changes.MetaChangePhase1;
-import com.jeffdisher.october.changes.MetaChangePhase2;
-import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -56,7 +53,6 @@ public class ServerRunner
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Queue<Integer> _newClients;
 	private final Queue<CuboidData> _newCuboids;
-	private final Map<Integer, PendingPhase2> _pendingPhase2ByClient;
 	private final Runnable _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
 	private Runnable _scheduledAdvancer;
@@ -90,7 +86,6 @@ public class ServerRunner
 		_connectedClients = new HashMap<>();
 		_newClients = new LinkedList<>();
 		_newCuboids = new LinkedList<>();
-		_pendingPhase2ByClient = new HashMap<>();
 		_tickAdvancer = () -> {
 			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
 			// Note:  We could just wait here to force all new entities to load in the next tick, but that isn't essential so just unblock it.
@@ -128,11 +123,11 @@ public class ServerRunner
 				}
 				
 				// Finally, send them the end of tick.
-				_network.sendEndOfTick(clientId, snapshot.tickNumber(), state.lastCompletedCommitLevel, state.lastCompletedActivityId);
+				_network.sendEndOfTick(clientId, snapshot.tickNumber(), state.lastCompletedCommitLevel);
 			}
 			
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
-			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L, 0L);
+			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
 			// Add any new cuboids.
 			while (!_newCuboids.isEmpty())
@@ -151,27 +146,6 @@ public class ServerRunner
 				
 				// This client is now connected and can receive events.
 				_connectedClients.put(clientId, new ClientState(initial.location()));
-			}
-			
-			// Walk through any pending phase2 operations, decrementing their ticks remaining and scheduling any ready.
-			Set<Integer> clientPending = new HashSet<>(_pendingPhase2ByClient.keySet());
-			for (Integer clientId : clientPending)
-			{
-				PendingPhase2 pending = _pendingPhase2ByClient.get(clientId);
-				if (pending.ticksBeforeScheduling > 0L)
-				{
-					// Just decrement.
-					_pendingPhase2ByClient.put(clientId, new PendingPhase2(pending.change, pending.activityId, pending.ticksBeforeScheduling - 1));
-				}
-				else
-				{
-					// Remove and schedule.
-					_pendingPhase2ByClient.remove(clientId);
-					// This is the second phase of a 2-phase change so we need a phase2 wrapper to retrieve final results.
-					MetaChangePhase2 meta = new MetaChangePhase2(pending.change, clientId, pending.activityId);
-					// (we will type-check this when it comes out)
-					_tickRunner.enqueueEntityChange(clientId, meta);
-				}
 			}
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
@@ -238,64 +212,13 @@ public class ServerRunner
 		}
 	}
 
-	private IEntityChange _updateClientMetaState(IEntityChange change, boolean wasSuccess)
+	private IEntityChange _updateClientMetaState(IEntityChange change)
 	{
-		// We want to unwrap this if it is one of our shims.
-		IEntityChange underlyingChange;
-		
-		// We need to see if this is a change from a client, or just an internal one, to see if we need to update client and/or activity state.
-		// (we use a down-cast but keeping these in a set for matching may be less "hacky" although more long-winded)
-		if (change instanceof MetaChangeStandard)
-		{
-			// Normal wrapper from the client so we can update commit level.
-			MetaChangeStandard meta = (MetaChangeStandard) change;
-			ClientState state = _connectedClients.get(meta.clientId);
-			state.lastCompletedCommitLevel = meta.commitLevel;
-			underlyingChange = meta.inner;
-		}
-		else if (change instanceof MetaChangePhase1)
-		{
-			// This is the first phase of an activity so we must track the phase2 and update commit level.
-			MetaChangePhase1 meta = (MetaChangePhase1) change;
-			ClientState state = _connectedClients.get(meta.clientId);
-			
-			// NOTE:  "activity ID" is actually just the commit level of this phase1 change, carried by the phase2 change so that
-			// the server can describe that second change.  Since each entity can only be in the middle of at most 1 multi-phase
-			// change, the commit ID is sufficient.
-			long activityId = meta.commitLevel;
-			// Note that we will consider this activity "completed" on failure, otherwise we schedule phase2.
-			long lastActivityLevel = wasSuccess
-					? state.lastCompletedActivityId
-					: activityId
-			;
-			
-			state.lastCompletedCommitLevel = meta.commitLevel;
-			state.lastCompletedActivityId = lastActivityLevel;
-			
-			if (wasSuccess)
-			{
-				IEntityChange phase2 = meta.phase2;
-				// They must have scheduled something if they used this change type.
-				Assert.assertTrue(null != phase2);
-				long ticksBeforeScheduling = (meta.phase2DelayMillis / _millisPerTick) + 1;
-				_pendingPhase2ByClient.put(meta.clientId, new PendingPhase2(phase2, activityId, ticksBeforeScheduling));
-			}
-			underlyingChange = meta.inner;
-		}
-		else if (change instanceof MetaChangePhase2)
-		{
-			// This is the second phase of an activity so can update the latest activity completed.
-			MetaChangePhase2 meta = (MetaChangePhase2) change;
-			ClientState state = _connectedClients.get(meta.clientId);
-			state.lastCompletedActivityId = meta.activityId;
-			underlyingChange = meta.inner;
-		}
-		else
-		{
-			// This isn't anything we wrapped (internally scheduled by a standard change).
-			underlyingChange = change;
-		}
-		return underlyingChange;
+		// We use our own internal wrapper so downcast (this might be plumbed through, in the future).
+		ServerEntityChangeWrapper wrapper = (ServerEntityChangeWrapper) change;
+		ClientState state = _connectedClients.get(wrapper.clientId);
+		state.lastCompletedCommitLevel = wrapper.commitLevel;
+		return wrapper.realChange;
 	}
 
 
@@ -319,33 +242,16 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void changeReceived(int clientId, IEntityChange change, long commitLevel, boolean isMultiPhase)
+		public void changeReceived(int clientId, IEntityChange change, long commitLevel)
 		{
 			_messages.enqueue(() -> {
 				// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
-				// Invalidate any pending phase2 changes (since this appearing before they are scheduled means that they are abandoned).
-				PendingPhase2 phase2 = _pendingPhase2ByClient.remove(clientId);
-				if (null != phase2)
-				{
-					// Update client state.
-					ClientState state = _connectedClients.get(clientId);
-					state.lastCompletedActivityId = phase2.activityId;
-				}
-				// We check the activityId to see what kind of meta-wrapper we need for this.
-				if (isMultiPhase)
-				{
-					// This is the first phase of a 2-phase change so we need a phase1 wrapper to track what is scheduled.
-					MetaChangePhase1 meta = new MetaChangePhase1(change, clientId, commitLevel);
-					// (we will type-check this when it comes out)
-					_tickRunner.enqueueEntityChange(clientId, meta);
-				}
-				else
-				{
-					// This is a normal change so we just need to track commit and client details.
-					MetaChangeStandard meta = new MetaChangeStandard(change, clientId, commitLevel);
-					// (we will type-check this when it comes out)
-					_tickRunner.enqueueEntityChange(clientId, meta);
-				}
+				// We will just wrap the changes in a wrapper which allows us to attach extra data instead of building some sort of instance map.
+				ServerEntityChangeWrapper wrapper = new ServerEntityChangeWrapper(change
+						, clientId
+						, commitLevel
+				);
+				_tickRunner.enqueueEntityChange(clientId, wrapper);
 			});
 		}
 	}
@@ -357,7 +263,7 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				// Update the meta-state and see if change needs unwrapping.
-				IEntityChange underlyingChange = _updateClientMetaState(change, true);
+				IEntityChange underlyingChange = _updateClientMetaState(change);
 				
 				// Now, send the change.
 				for (Map.Entry<Integer, ClientState> elt: _connectedClients.entrySet())
@@ -375,7 +281,7 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				// We don't send dropped changes to the client but we will update the tracking.
-				_updateClientMetaState(change, false);
+				_updateClientMetaState(change);
 			});
 		}
 		@Override
@@ -413,14 +319,10 @@ public class ServerRunner
 	}
 
 
-	private static final record PendingPhase2(IEntityChange change, long activityId, long ticksBeforeScheduling)
-	{}
-
 	private static final class ClientState
 	{
 		public EntityLocation location;
 		public long lastCompletedCommitLevel;
-		public long lastCompletedActivityId;
 		
 		// The data we think that this client already has.  These are used for determining what they should be told to load/drop as well as filtering updates to what they can apply.
 		public final Set<Integer> knownEntities;
@@ -432,7 +334,6 @@ public class ServerRunner
 			
 			// All the "progress-related" counters start at 0 since all data starts at 1.
 			this.lastCompletedCommitLevel = 0L;
-			this.lastCompletedActivityId = 0L;
 			
 			// Create empty containers for what this client has observed.
 			this.knownEntities = new HashSet<>();

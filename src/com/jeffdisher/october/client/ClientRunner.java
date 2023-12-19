@@ -8,11 +8,12 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.function.LongConsumer;
 
-import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -73,12 +74,16 @@ public class ClientRunner
 	 * 
 	 * @param blockLocation The location of the block to break.
 	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return The number of milliseconds this operation will take (meaning an explicit cancel should be sent if it
+	 * shouldn't wait to complete).
 	 */
-	public void beginBreakBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	public long beginBreakBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(blockLocation);
-		_applyLocalChange(firstPhase, true, currentTimeMillis);
+		// Send the end change since it has the appropriate delay (meaning we will need to 
+		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, ItemRegistry.STONE.number());
+		_applyLocalChange(breakBlock, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
+		return breakBlock.getTimeCostMillis();
 	}
 
 	/**
@@ -91,7 +96,7 @@ public class ClientRunner
 	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
 	{
 		EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), endPoint);
-		_applyLocalChange(moveChange, false, currentTimeMillis);
+		_applyLocalChange(moveChange, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 
@@ -105,14 +110,14 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IEntityChange change, boolean isMultiPhase, long currentTimeMillis)
+	private void _applyLocalChange(IEntityChange change, long currentTimeMillis)
 	{
 		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
 		if (localCommit > 0L)
 		{
 			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
 			_pendingNetworkCallsToFlush.add(() -> {
-				_network.sendChange(change, localCommit, isMultiPhase);
+				_network.sendChange(change, localCommit);
 			});
 		}
 	}
@@ -178,7 +183,7 @@ public class ClientRunner
 			_cuboidMutations.add(mutation);
 		}
 		@Override
-		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded, long latestLocalActivityIncluded)
+		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded)
 		{
 			// Package up copies of everything we put together here and reset out network-side buffers.
 			List<Entity> addedEntities = new ArrayList<>(_addedEntities);
@@ -210,7 +215,6 @@ public class ClientRunner
 						, removedEntities
 						, removedCuboids
 						, latestLocalCommitIncluded
-						, latestLocalActivityIncluded
 						, currentTimeMillis
 				);
 			});

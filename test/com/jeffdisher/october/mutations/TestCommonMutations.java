@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.changes.BeginBreakBlockChange;
+import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -57,26 +57,19 @@ public class TestCommonMutations
 	}
 
 	@Test
-	public void beginBlockBreakSuccess()
+	public void endBlockBreakSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		BeginBreakBlockChange phase1 = new BeginBreakBlockChange(target);
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(target, ItemRegistry.STONE.number());
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
-		// TODO:  See if we can put in a restriction that the follow-up always only applies to the same entity.
 		Entity entity = EntityActionValidator.buildDefaultEntity(0);
 		
-		// Phase1 should request that phase2 be scheduled later.
-		boolean didApply = phase1.applyChange(context, new MutableEntity(entity));
-		Assert.assertTrue(didApply);
-		
-		// Check that phase2 is what we expected and then run it.
-		Assert.assertNotNull(sinks.nextDelayedChange);
-		Assert.assertEquals(100L, sinks.nextDelayedMillis);
-		didApply = sinks.nextDelayedChange.applyChange(context, null);
+		// Check that once we run this change, it requests the appropriate mutation.
+		boolean didApply = longRunningChange.applyChange(context, new MutableEntity(entity));
 		Assert.assertTrue(didApply);
 		
 		// Check that the final mutation to actually break the block is as expected and then run it.
@@ -95,8 +88,6 @@ public class TestCommonMutations
 	private static class ProcessingSinks
 	{
 		public IMutation nextMutation;
-		public IEntityChange nextDelayedChange;
-		public long nextDelayedMillis;
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
@@ -109,8 +100,6 @@ public class TestCommonMutations
 					}
 					, null
 					, (int targetEntityId, IEntityChange change, long delayMillis) -> {
-						ProcessingSinks.this.nextDelayedChange = change;
-						ProcessingSinks.this.nextDelayedMillis = delayMillis;
 					}
 			);
 		}

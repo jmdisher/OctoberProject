@@ -57,10 +57,8 @@ public interface IServerAdapter
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
 	 * @param tickNumber The number of the tick completed (always > 1L).
 	 * @param latestLocalCommitIncluded The latest local commit from the client which is included in this tick.
-	 * @param latestLocalActivityIncluded The latest local activity which is included in this tick (meaning both phase 1
-	 * and phase 2, although phase 2 could be omitted due to a failure to apply or being preempted by something else).
 	 */
-	void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded, long latestLocalActivityIncluded);
+	void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
 	/**
 	 * Disconnects the given client.  Note that the implementation may still send messages from them, after this call,
 	 * but will seek to disconnect them.
@@ -94,8 +92,7 @@ public interface IServerAdapter
 		 * @param clientId The ID of the client (as assigned by the adapter implementation).
 		 * @param change The change.
 		 * @param commitLevel The client's local commit level represented by this change.
-		 * @param isMultiPhase True if this change should be interpreted as a 2-phase change.
 		 */
-		void changeReceived(int clientId, IEntityChange change, long commitLevel, boolean isMultiPhase);
+		void changeReceived(int clientId, IEntityChange change, long commitLevel);
 	}
 }

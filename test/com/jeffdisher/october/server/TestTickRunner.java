@@ -10,13 +10,9 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.changes.MetaChangePhase1;
-import com.jeffdisher.october.changes.MetaChangePhase2;
-import com.jeffdisher.october.changes.MetaChangeStandard;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -292,16 +288,12 @@ public class TestTickRunner
 		
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(changeLocation1);
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE.number());
 		
-		// Note that we use the commit level _as_ the activity ID since it is a monotonic counter (if there could be 2
-		// overlapping multi-phase changes, which could finish out of order, this wouldn't work).
-		long activityId1 = 1;
-		
-		// The first thing is that the first phase change must be wrapped in a MetaChangePhase1.
-		// In actual integration, the caller will use this to scoop out the second-phase request and delay.
-		MetaChangePhase1 meta1 = new MetaChangePhase1(firstPhase, entityId, activityId1);
-		runner.enqueueEntityChange(entityId, meta1);
+		// The ServerRunner would wrap this in ServerEntityChangeWrapper so do that here.
+		long commitLevel = 1L;
+		ServerEntityChangeWrapper wrapper = new ServerEntityChangeWrapper(longRunningChange, entityId, commitLevel);
+		runner.enqueueEntityChange(entityId, wrapper);
 		
 		// We now run the tick.
 		runner.startNextTick();
@@ -312,22 +304,9 @@ public class TestTickRunner
 		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
 		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
-		// Scoop out the phase2 and verify it is what the implementation requests.
-		// The caller tracks this information and schedules the phase2 if nothing else comes in from this entity before the delay expires.
-		IEntityChange secondPhase = meta1.phase2;
-		Assert.assertTrue(secondPhase instanceof EndBreakBlockChange);
-		Assert.assertEquals(100L, meta1.phase2DelayMillis);
-		
-		// Now, for the second phase, we wrap that and schedule, as well.
-		MetaChangePhase2 meta2 = new MetaChangePhase2(meta1.phase2, entityId, activityId1);
-		runner.enqueueEntityChange(entityId, meta2);
-		
-		// We now run the tick.
+		// So long as we don't enqueue a cancel, we should see this run in the next tick.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		
-		// This should have succeeded.  The caller would use this to determine that the latest activityId has advanced.
-		Assert.assertTrue(meta2.wasSuccess);
 		
 		// The mutation has been scheduled but not run, so the block should be the same.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -352,8 +331,8 @@ public class TestTickRunner
 		EntityChangeMutation singleChange = new EntityChangeMutation(new ReplaceBlockMutation(changeLocation2, BlockAspect.STONE, BlockAspect.AIR));
 		
 		// We wrap it in a "standard" meta-change.
-		long activityId2 = activityId1 + 1;
-		MetaChangeStandard standard = new MetaChangeStandard(singleChange, entityId, activityId2);
+		commitLevel = 2L;
+		ServerEntityChangeWrapper standard = new ServerEntityChangeWrapper(singleChange, entityId, commitLevel);
 		runner.enqueueEntityChange(entityId, standard);
 		
 		// Run the tick.
@@ -374,7 +353,7 @@ public class TestTickRunner
 		// Verify remaining counts.
 		Assert.assertEquals(2, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
-		Assert.assertEquals(3, entityListener.changeApplied.get());
+		Assert.assertEquals(2, entityListener.changeApplied.get());
 		Assert.assertEquals(0, entityListener.changeDropped.get());
 	}
 

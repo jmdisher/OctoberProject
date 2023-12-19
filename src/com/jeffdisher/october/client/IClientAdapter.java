@@ -31,9 +31,8 @@ public interface IClientAdapter
 	 * 
 	 * @param change The change to send.
 	 * @param commitLevel The client's local commit level represented by this change.
-	 * @param isMultiPhase True if this is the first in a multi-phase change.
 	 */
-	void sendChange(IEntityChange change, long commitLevel, boolean isMultiPhase);
+	void sendChange(IEntityChange change, long commitLevel);
 
 
 	/**
@@ -86,8 +85,7 @@ public interface IClientAdapter
 		 * 
 		 * @param tickNumber The tick number (always > 0L).
 		 * @param latestLocalCommitIncluded The most recent change commit from this client included in the tick.
-		 * @param latestLocalActivityIncluded The most recent activity from this client concluded in this tick.
 		 */
-		void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded, long latestLocalActivityIncluded);
+		void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded);
 	}
 }

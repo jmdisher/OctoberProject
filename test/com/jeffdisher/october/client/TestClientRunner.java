@@ -7,7 +7,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
@@ -42,7 +41,7 @@ public class TestClientRunner
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
 		runner.runPendingCalls(System.currentTimeMillis());
 		// (this requires and end of tick for the projection to be rebuilt)
-		network.client.receivedEndOfTick(1L, 0L, 0L);
+		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
 		
@@ -71,7 +70,7 @@ public class TestClientRunner
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(2));
 		runner.runPendingCalls(System.currentTimeMillis());
 		// (this requires and end of tick for the projection to be rebuilt)
-		network.client.receivedEndOfTick(1L, 0L, 0L);
+		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
 		Assert.assertEquals(2, projection.loadedEnties.get(2).id());
@@ -101,35 +100,36 @@ public class TestClientRunner
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
 		network.client.receivedCuboid(cuboid);
-		network.client.receivedEndOfTick(1L, 0L, 0L);
+		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		
 		// Start a multi-phase locally.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		// (we create the change we expect the ClientRunner to create).
-		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(changeLocation);
+		EndBreakBlockChange longRunningAction = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
 		runner.beginBreakBlock(changeLocation, System.currentTimeMillis());
 		// (they only send this after the next tick).
-		network.client.receivedEndOfTick(2L, 1L, 0L);
+		network.client.receivedEndOfTick(2L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		
 		// Observe that this came out in the network and then send back the 3 ticks associated with it, applying each.
-		Assert.assertTrue(network.toSend instanceof BeginBreakBlockChange);
+		Assert.assertTrue(network.toSend instanceof EndBreakBlockChange);
 		Assert.assertTrue(1L == network.commitLevel);
-		Assert.assertTrue(network.isMultiPhase);
-		network.client.receivedChange(clientId, firstPhase);
-		network.client.receivedEndOfTick(3L, 1L, 0L);
+		
+		// The server won't send anything back until this runs.
+		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		
-		EndBreakBlockChange phase2 = new EndBreakBlockChange(changeLocation, BlockAspect.STONE);
-		network.client.receivedChange(clientId, phase2);
-		network.client.receivedEndOfTick(4L, 1L, 1L);
+		// It will send it once complete.
+		network.client.receivedChange(clientId, longRunningAction);
+		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		
+		// Finally, we will see the actual mutation to break the block.
 		BreakBlockMutation mutation = new BreakBlockMutation(changeLocation, BlockAspect.STONE);
 		network.client.receivedMutation(mutation);
-		network.client.receivedEndOfTick(5L, 1L, 1L);
+		network.client.receivedEndOfTick(5L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
 		
 		// Verify the final state of the projection.
@@ -147,7 +147,6 @@ public class TestClientRunner
 		public IClientAdapter.IListener client;
 		public IEntityChange toSend;
 		public long commitLevel;
-		public boolean isMultiPhase;
 		@Override
 		public void connectAndStartListening(IListener listener)
 		{
@@ -159,11 +158,10 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(IEntityChange change, long commitLevel, boolean isMultiPhase)
+		public void sendChange(IEntityChange change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;
-			this.isMultiPhase = isMultiPhase;
 		}
 	}
 

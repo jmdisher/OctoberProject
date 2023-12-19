@@ -36,13 +36,14 @@ public class TickRunner
 {
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
+	private final long _millisPerTick;
 	// Read-only snapshot of the previously-completed tick.
 	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<IMutation> _mutations;
 	private List<CuboidData> _newCuboids;
-	private Map<Integer, Queue<IEntityChange>> _newEntityChanges;
+	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -76,6 +77,8 @@ public class TickRunner
 		AtomicInteger atomic = new AtomicInteger(0);
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
+		_millisPerTick = millisPerTick;
+		_entitySharedAccess = new HashMap<>();
 		_partial = new WorldProcessor.ProcessedFragment[threadCount];
 		_partialGroup = new CrowdProcessor.ProcessedGroup[threadCount];
 		_nextTick = 1L;
@@ -205,6 +208,9 @@ public class TickRunner
 		_sharedDataLock.lock();
 		try
 		{
+			// We shouldn't already have this.
+			Assert.assertTrue(!_entitySharedAccess.containsKey(entity.id()));
+			_entitySharedAccess.put(entity.id(), new PerEntitySharedAccess());
 			if (null == _newEntities)
 			{
 				_newEntities = new ArrayList<>();
@@ -222,17 +228,7 @@ public class TickRunner
 		_sharedDataLock.lock();
 		try
 		{
-			if (null == _newEntityChanges)
-			{
-				_newEntityChanges = new HashMap<>();
-			}
-			Queue<IEntityChange> queue = _newEntityChanges.get(entityId);
-			if (null == queue)
-			{
-				queue = new LinkedList<>();
-				_newEntityChanges.put(entityId, queue);
-			}
-			queue.add(change);
+			_entitySharedAccess.get(entityId).newChanges.add(change);
 		}
 		finally
 		{
@@ -356,7 +352,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutation> newMutations;
 				List<Entity> newEntities;
-				Map<Integer, Queue<IEntityChange>> newEntityChanges;
+				Map<Integer, Queue<IEntityChange>> newEntityChanges = new HashMap<>();
 				
 				_sharedDataLock.lock();
 				try
@@ -367,8 +363,22 @@ public class TickRunner
 					_mutations = null;
 					newEntities = _newEntities;
 					_newEntities = null;
-					newEntityChanges = _newEntityChanges;
-					_newEntityChanges = null;
+					
+					// We need to do some scheduling work under this lock.
+					for (Map.Entry<Integer, PerEntitySharedAccess> entry : _entitySharedAccess.entrySet())
+					{
+						int id = entry.getKey();
+						PerEntitySharedAccess access = entry.getValue();
+						
+						long schedulingBudget = _millisPerTick;
+						Queue<IEntityChange> queue = new LinkedList<>();
+						
+						_sharedLock_ScheduleForEntity(access, queue, schedulingBudget);
+						if (!queue.isEmpty())
+						{
+							newEntityChanges.put(id, queue);
+						}
+					}
 				}
 				finally
 				{
@@ -437,12 +447,9 @@ public class TickRunner
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
 				}
-				if (null != newEntityChanges)
+				for (Map.Entry<Integer, Queue<IEntityChange>> container : newEntityChanges.entrySet())
 				{
-					for (Map.Entry<Integer, Queue<IEntityChange>> container : newEntityChanges.entrySet())
-					{
-						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
-					}
+					_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 				}
 				
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
@@ -551,6 +558,69 @@ public class TickRunner
 		return _snapshot;
 	}
 
+	private void _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, Queue<IEntityChange> scheduledQueue, long schedulingBudget)
+	{
+		// First, check if this next change is a cancellation (-1 cost).
+		IEntityChange next = access.newChanges.peek();
+		if (null != next)
+		{
+			long delayMillis = next.getTimeCostMillis();
+			if (-1L == delayMillis)
+			{
+				// We are consuming this so remove it.
+				access.newChanges.remove();
+				// If there was something in-progress, drop it and run the cancellation instead (just so that we will update the commit level through the common path in the caller).
+				if (null != access.inProgress)
+				{
+					scheduledQueue.add(next);
+					access.inProgress = null;
+				}
+				// Advance to the next for scheduling decisions.
+				next = access.newChanges.peek();
+			}
+		}
+		
+		// Next, check the in-progress to see if we can schedule it.
+		if (null != access.inProgress)
+		{
+			if (access.millisUntilInProgressExecution <= schedulingBudget)
+			{
+				// Schedule the waiting change.
+				schedulingBudget -= access.millisUntilInProgressExecution;
+				scheduledQueue.add(access.inProgress);
+				access.inProgress = null;
+			}
+			else
+			{
+				// Decrement the time remaining and consume the budget.
+				access.millisUntilInProgressExecution -= schedulingBudget;
+				schedulingBudget = 0L;
+			}
+		}
+		
+		// Schedule anything else which fits in the budget.
+		while ((null != next) && (schedulingBudget > 0L))
+		{
+			long cost = next.getTimeCostMillis();
+			if (cost <= schedulingBudget)
+			{
+				// Just schedule this.
+				scheduledQueue.add(next);
+				schedulingBudget -= cost;
+			}
+			else
+			{
+				// Make this in-progress.
+				access.inProgress = next;
+				access.millisUntilInProgressExecution = cost - schedulingBudget;
+				schedulingBudget = 0L;
+			}
+			// We have consumed this.
+			access.newChanges.remove();
+			next = access.newChanges.peek();
+		}
+	}
+
 
 	/**
 	 * The snapshot of immutable state created whenever a tick is completed.
@@ -569,4 +639,20 @@ public class TickRunner
 			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
 			, Map<Integer, Queue<IEntityChange>> changesToRun
 	) {}
+
+	/**
+	 * The per-entity data shared between foreground and background threads for scheduling changes.
+	 * 
+	 * In-progress changes are those which are blocking progress through the queue of changes from a given client.
+	 * If the next change for the client is one with -1 cost (a cancellation), then this change is aborted as failed.
+	 * Otherwise, the millis remaining are counted down, with each tick, until 0, at which point the change is scheduled
+	 * to run.
+	 */
+	private static class PerEntitySharedAccess
+	{
+		private final Queue<IEntityChange> newChanges = new LinkedList<>();
+		private IEntityChange inProgress;
+		private long millisUntilInProgressExecution;
+		
+	}
 }

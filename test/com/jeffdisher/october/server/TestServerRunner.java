@@ -8,7 +8,6 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.changes.BeginBreakBlockChange;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
@@ -71,17 +70,15 @@ public class TestServerRunner
 		Entity entity = network.waitForEntity(clientId, clientId);
 		Assert.assertNotNull(entity);
 		
-		// Submit the first phase and wait to observe the output 2 changes and 1 mutation.
+		// Submit the requests to break the block and observe that the change and mutation come back after they have delayed.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		BeginBreakBlockChange firstPhase = new BeginBreakBlockChange(changeLocation);
-		server.changeReceived(clientId, firstPhase, 1, true);
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		server.changeReceived(clientId, longRunningChange, 1L);
 		
 		// Wait for the output and verify it is what is expected.
-		Object phase1 = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(firstPhase == phase1);
-		Object phase2 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(phase2 instanceof EndBreakBlockChange);
-		Object mutation = network.waitForUpdate(clientId, 2);
+		Object change = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(longRunningChange == change);
+		Object mutation = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(mutation instanceof BreakBlockMutation);
 		
 		runner.shutdown();
@@ -139,7 +136,7 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded, long latestLocalActivityIncluded)
+		public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 		{
 			// We want to track the progress of the server, no matter who is connected.
 			if (ServerRunner.FAKE_CLIENT_ID == clientId)
