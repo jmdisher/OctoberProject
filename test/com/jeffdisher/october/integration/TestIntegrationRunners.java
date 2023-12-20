@@ -101,19 +101,27 @@ public class TestIntegrationRunners
 		EntityLocation location2 = new EntityLocation(-1.0f, -1.0f, -1.0f);
 		client1.moveTo(location1, System.currentTimeMillis());
 		client2.moveTo(location2, System.currentTimeMillis());
-		// Note that we only send out pending updates from a client once we receive a commit (current implementation, at least).
+		
+		// The client flushes network operations after receiving end of tick, so let at least one tick pass for both so they flush.
 		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 1L);
+		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 1L);
 		client1.runPendingCalls(System.currentTimeMillis());
 		client2.runPendingCalls(System.currentTimeMillis());
 		
-		// Wait until we see ourself and the cuboid where we are standing (we expect this within 4 ticks).
-		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 4L);
+		// We expect that client1 will take 1.0 seconds and client2 will take 0.45 to reach their destinations so wait for 10 or 5 ticks to make sure these passed.
+		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 5L);
+		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 5L);
+		client1.runPendingCalls(System.currentTimeMillis());
+		client2.runPendingCalls(System.currentTimeMillis());
+		Assert.assertEquals(location2, listener1.entities.get(clientId2).location());
+		Assert.assertEquals(location2, listener2.entities.get(clientId2).location());
+		
+		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 5L);
+		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 5L);
 		client1.runPendingCalls(System.currentTimeMillis());
 		client2.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(location1, listener1.entities.get(clientId1).location());
-		Assert.assertEquals(location2, listener1.entities.get(clientId2).location());
 		Assert.assertEquals(location1, listener2.entities.get(clientId1).location());
-		Assert.assertEquals(location2, listener2.entities.get(clientId2).location());
 		
 		// We are done.
 		server.shutdown();
@@ -122,9 +130,15 @@ public class TestIntegrationRunners
 	@Test
 	public void walkAroundWorld555() throws Throwable
 	{
+		System.out.println("WARNING:  This test uses real-time so will drop many ticks and take nearly 40 seconds to complete");
 		// We want to create a server with the 555 world, connect a client to it, walk to the 4 corners of the world.
 		ConnectionFabric fabric = new ConnectionFabric();
-		ServerRunner server = new ServerRunner(100L, fabric, () -> System.currentTimeMillis());
+		long[] currentTimeMillis = new long[] { 0L };
+		ServerRunner server = new ServerRunner(100L, fabric, () -> {
+			// We will increment time each time we are asked, to simulate time passing.
+			currentTimeMillis[0] += 100L;
+			return currentTimeMillis[0];
+		});
 		fabric.waitForServer();
 		
 		// Create and load the 555 world and wait for the server to pick it up.
@@ -140,42 +154,47 @@ public class TestIntegrationRunners
 		ClientRunner client = new ClientRunner(fabric.newClient(), listener, listener);
 		int clientId = 1;
 		fabric.waitForClient(clientId);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.runPendingCalls(currentTimeMillis[0]);
 		while (listener.entities.isEmpty())
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			client.runPendingCalls(System.currentTimeMillis());
+			currentTimeMillis[0] += 100L;
+			client.runPendingCalls(currentTimeMillis[0]);
 		}
 		
 		// Start the move commands, waiting until we see the client reach that point before continuing.
 		// (this will need to change once the movement change is imposing speed and reachability checks).
 		EntityLocation cornerMM = new EntityLocation(-32.0f, -32.0f, 0.0f);
-		client.moveTo(cornerMM, System.currentTimeMillis());
+		client.moveTo(cornerMM, currentTimeMillis[0]);
 		while (!listener.entities.get(clientId).location().equals(cornerMM))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			client.runPendingCalls(System.currentTimeMillis());
+			currentTimeMillis[0] += 100L;
+			client.runPendingCalls(currentTimeMillis[0]);
 		}
 		EntityLocation cornerMP = new EntityLocation(-32.0f, 47.0f, 0.0f);
-		client.moveTo(cornerMP, System.currentTimeMillis());
+		client.moveTo(cornerMP, currentTimeMillis[0]);
 		while (!listener.entities.get(clientId).location().equals(cornerMP))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			client.runPendingCalls(System.currentTimeMillis());
+			currentTimeMillis[0] += 100L;
+			client.runPendingCalls(currentTimeMillis[0]);
 		}
 		EntityLocation cornerPP = new EntityLocation(47.0f, 47.0f, 0.0f);
-		client.moveTo(cornerPP, System.currentTimeMillis());
+		client.moveTo(cornerPP, currentTimeMillis[0]);
 		while (!listener.entities.get(clientId).location().equals(cornerPP))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			client.runPendingCalls(System.currentTimeMillis());
+			currentTimeMillis[0] += 100L;
+			client.runPendingCalls(currentTimeMillis[0]);
 		}
 		EntityLocation cornerPM = new EntityLocation(47.0f, -32.0f, 0.0f);
-		client.moveTo(cornerPM, System.currentTimeMillis());
+		client.moveTo(cornerPM, currentTimeMillis[0]);
 		while (!listener.entities.get(clientId).location().equals(cornerPM))
 		{
 			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			client.runPendingCalls(System.currentTimeMillis());
+			currentTimeMillis[0] += 100L;
+			client.runPendingCalls(currentTimeMillis[0]);
 		}
 		
 		// We are done.

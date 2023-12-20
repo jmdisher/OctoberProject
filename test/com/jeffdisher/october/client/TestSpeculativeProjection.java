@@ -947,7 +947,9 @@ public class TestSpeculativeProjection
 		IEntityChange move1 = new EntityChangeMove(startLocation, midStep);
 		IEntityChange move2 = new EntityChangeMove(midStep, lastStep);
 		long commit1 = projector.applyLocalChange(move1, 1L);
-		long commit2 = projector.applyLocalChange(move2, 1L);
+		projector.checkCurrentActivity(1000L);
+		long commit2 = projector.applyLocalChange(move2, 1001L);
+		projector.checkCurrentActivity(2000L);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(2L, commit2);
 		

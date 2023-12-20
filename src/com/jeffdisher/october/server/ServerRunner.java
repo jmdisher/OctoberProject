@@ -188,9 +188,14 @@ public class ServerRunner
 
 	private void _backgroundMain()
 	{
-		long millisToWait = _nextTickMillis - _currentTimeMillisProvider.getAsLong();
-		// Make sure that this is positive just because we expect startup to happen quickly.
-		Assert.assertTrue(millisToWait > 0);
+		long currentTime = _currentTimeMillisProvider.getAsLong();
+		long millisToWait = _nextTickMillis - currentTime;
+		while (millisToWait <= 0L)
+		{
+			System.out.println("WARNING:  Dropping tick on startup!");
+			_nextTickMillis += _millisPerTick;
+			millisToWait = _nextTickMillis - currentTime;
+		}
 		Runnable next = _messages.pollForNext(millisToWait, _scheduledAdvancer);
 		while (null != next)
 		{
@@ -198,9 +203,9 @@ public class ServerRunner
 			// If we are ready to schedule the tick advancer, find out when.
 			if (null != _scheduledAdvancer)
 			{
-				long currentTime = _currentTimeMillisProvider.getAsLong();
+				currentTime = _currentTimeMillisProvider.getAsLong();
 				millisToWait = _nextTickMillis - currentTime;
-				while (millisToWait < 0L)
+				while (millisToWait <= 0L)
 				{
 					// This was already due so skip to the next.
 					System.out.println("WARNING:  Dropping tick!");
