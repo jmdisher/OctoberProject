@@ -17,6 +17,8 @@ public class ItemRegistry
 	// negative number are for items which cannot be placed.
 	public static final Item AIR = new Item(BlockAspect.AIR, NON_INVENTORY);
 	public static final Item STONE = new Item(BlockAspect.STONE, 2);
+	public static final Item LOG = new Item(BlockAspect.LOG, 2);
+	public static final Item PLANK = new Item(BlockAspect.PLANK, 1);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -24,6 +26,8 @@ public class ItemRegistry
 	public static final Item[] BLOCKS_BY_TYPE = {
 			AIR,
 			STONE,
+			LOG,
+			PLANK,
 	};
 
 	static {

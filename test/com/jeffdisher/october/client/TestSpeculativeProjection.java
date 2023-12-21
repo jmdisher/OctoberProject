@@ -13,7 +13,9 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.changes.EndBreakBlockChange;
+import com.jeffdisher.october.changes.EntityChangeAcceptItems;
 import com.jeffdisher.october.changes.EntityChangeCancel;
+import com.jeffdisher.october.changes.EntityChangeCraft;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeMutation;
 import com.jeffdisher.october.changes.IEntityChange;
@@ -28,6 +30,7 @@ import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -972,6 +975,54 @@ public class TestSpeculativeProjection
 		// We should now see 0 speculative commits and the entity should still be where it started.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
+	}
+
+	@Test
+	public void craftPlanks()
+	{
+		// Test the in-inventory crafting operation.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		
+		// Load some items into the inventory.
+		EntityChangeAcceptItems load = new EntityChangeAcceptItems(new Items(ItemRegistry.LOG, 2));
+		long commit1 = projector.applyLocalChange(load, 0L);
+		projector.checkCurrentActivity(1000L);
+		Assert.assertEquals(1L, commit1);
+		
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS);
+		long commit2 = projector.applyLocalChange(craft, 1000L);
+		projector.checkCurrentActivity(2000L);
+		Assert.assertEquals(2L, commit2);
+		
+		// Check the inventory to see the craft completed.
+		Inventory inv = listener.lastEntityStates.get(0).inventory();
+		Assert.assertEquals(1, inv.items.get(ItemRegistry.LOG).count());
+		Assert.assertEquals(2, inv.items.get(ItemRegistry.PLANK).count());
+		
+		
+		int speculativeCount = projector.applyChangesForServerTick(1L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Map.of(0, new LinkedList<>(List.of(load, craft)))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, 3000L
+		);
+		Assert.assertEquals(0, speculativeCount);
 	}
 
 
