@@ -941,9 +941,10 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Apply the 2 steps of the move, locally.
+		// (we size these to 0.2 in each direction since 0.4 is the limit for one tick)
 		EntityLocation startLocation = listener.lastEntityStates.get(0).location();
-		EntityLocation midStep = new EntityLocation(1.0f, 1.0f, 0.0f);
-		EntityLocation lastStep = new EntityLocation(2.0f, 2.0f, 0.0f);
+		EntityLocation midStep = new EntityLocation(0.2f, 0.2f, 0.0f);
+		EntityLocation lastStep = new EntityLocation(0.4f, 0.4f, 0.0f);
 		IEntityChange move1 = new EntityChangeMove(startLocation, midStep);
 		IEntityChange move2 = new EntityChangeMove(midStep, lastStep);
 		long commit1 = projector.applyLocalChange(move1, 1L);

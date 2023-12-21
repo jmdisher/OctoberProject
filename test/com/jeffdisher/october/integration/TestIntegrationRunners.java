@@ -59,6 +59,8 @@ public class TestIntegrationRunners
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		ConnectionFabric fabric = new ConnectionFabric();
+		// On the server, we will use real time, but the clients are directly controllable with a local time variable.
+		long currentTimeMillis = 0L;
 		ServerRunner server = new ServerRunner(100L, fabric, () -> System.currentTimeMillis());
 		fabric.waitForServer();
 		
@@ -75,127 +77,83 @@ public class TestIntegrationRunners
 		// We know that this first client will get ID 1.
 		int clientId1 = 1;
 		fabric.waitForClient(clientId1);
-		client1.runPendingCalls(System.currentTimeMillis());
+		client1.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Create the second client.
 		ClientListener listener2 = new ClientListener();
 		ClientRunner client2 = new ClientRunner(fabric.newClient(), listener2, listener2);
 		int clientId2 = 2;
 		fabric.waitForClient(clientId2);
-		client2.runPendingCalls(System.currentTimeMillis());
+		client2.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Wait until both of the clients have observed both entities for the first time.
 		while (2 != listener1.entities.size())
 		{
 			fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 1L);
-			client1.runPendingCalls(System.currentTimeMillis());
+			client1.runPendingCalls(currentTimeMillis);
+			currentTimeMillis += 100L;
 		}
 		while (2 != listener2.entities.size())
 		{
 			fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 1L);
-			client2.runPendingCalls(System.currentTimeMillis());
+			client2.runPendingCalls(currentTimeMillis);
+			currentTimeMillis += 100L;
 		}
 		
 		// Both of these clients need to move and then we can verify that both sides can see the correct outcome.
-		EntityLocation location1 = new EntityLocation(1.0f, 1.0f, 1.0f);
-		EntityLocation location2 = new EntityLocation(-1.0f, -1.0f, -1.0f);
-		client1.moveTo(location1, System.currentTimeMillis());
-		client2.moveTo(location2, System.currentTimeMillis());
+		// (we want this to be multiple steps, so we queue those up now)
+		EntityLocation startLocation = listener1.entities.get(clientId1).location();
+		EntityLocation location1 = startLocation;
+		EntityLocation location2 = startLocation;
+		for (int i = 0; i < 5; ++i)
+		{
+			// We can walk 0.4 horizontally in a single tick.
+			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
+			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			client1.moveTo(location1, currentTimeMillis);
+			client2.moveTo(location2, currentTimeMillis);
+			currentTimeMillis += 100L;
+		}
+		// We want client2 to walk further.
+		for (int i = 0; i < 5; ++i)
+		{
+			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			client2.moveTo(location2, currentTimeMillis);
+			currentTimeMillis += 100L;
+		}
 		
 		// The client flushes network operations after receiving end of tick, so let at least one tick pass for both so they flush.
 		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 1L);
 		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 1L);
-		client1.runPendingCalls(System.currentTimeMillis());
-		client2.runPendingCalls(System.currentTimeMillis());
+		client1.runPendingCalls(currentTimeMillis);
+		client2.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
-		// We expect that client1 will take 1.0 seconds and client2 will take 0.45 to reach their destinations so wait for 10 or 5 ticks to make sure these passed.
+		// Because this will always leave one tick of slack on the line, consume it before counting the ticks to see our changes.
+		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 1L);
+		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 1L);
+		client1.runPendingCalls(currentTimeMillis);
+		client2.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// We expect the first client to take an extra 5 ticks to be processed while the second takes a further 5.
 		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 5L);
 		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 5L);
-		client1.runPendingCalls(System.currentTimeMillis());
-		client2.runPendingCalls(System.currentTimeMillis());
+		client1.runPendingCalls(currentTimeMillis);
+		client2.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(location2, listener1.entities.get(clientId2).location());
 		Assert.assertEquals(location2, listener2.entities.get(clientId2).location());
 		
 		fabric.waitForTick(clientId2, fabric.getLatestTick(clientId2) + 5L);
 		fabric.waitForTick(clientId1, fabric.getLatestTick(clientId1) + 5L);
-		client1.runPendingCalls(System.currentTimeMillis());
-		client2.runPendingCalls(System.currentTimeMillis());
+		client1.runPendingCalls(currentTimeMillis);
+		client2.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(location1, listener1.entities.get(clientId1).location());
 		Assert.assertEquals(location1, listener2.entities.get(clientId1).location());
-		
-		// We are done.
-		server.shutdown();
-	}
-
-	@Test
-	public void walkAroundWorld555() throws Throwable
-	{
-		System.out.println("WARNING:  This test uses real-time so will drop many ticks and take nearly 40 seconds to complete");
-		// We want to create a server with the 555 world, connect a client to it, walk to the 4 corners of the world.
-		ConnectionFabric fabric = new ConnectionFabric();
-		long[] currentTimeMillis = new long[] { 0L };
-		ServerRunner server = new ServerRunner(100L, fabric, () -> {
-			// We will increment time each time we are asked, to simulate time passing.
-			currentTimeMillis[0] += 100L;
-			return currentTimeMillis[0];
-		});
-		fabric.waitForServer();
-		
-		// Create and load the 555 world and wait for the server to pick it up.
-		CuboidData[] world = CuboidGenerator.generateStatic555World();
-		for (CuboidData cuboid : world)
-		{
-			server.loadCuboid(cuboid);
-		}
-		fabric.waitForTick(0, fabric.getLatestTick(0) + 1L);
-		
-		// Create and connect the client, waiting for it to load.
-		ClientListener listener = new ClientListener();
-		ClientRunner client = new ClientRunner(fabric.newClient(), listener, listener);
-		int clientId = 1;
-		fabric.waitForClient(clientId);
-		client.runPendingCalls(currentTimeMillis[0]);
-		while (listener.entities.isEmpty())
-		{
-			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			currentTimeMillis[0] += 100L;
-			client.runPendingCalls(currentTimeMillis[0]);
-		}
-		
-		// Start the move commands, waiting until we see the client reach that point before continuing.
-		// (this will need to change once the movement change is imposing speed and reachability checks).
-		EntityLocation cornerMM = new EntityLocation(-32.0f, -32.0f, 0.0f);
-		client.moveTo(cornerMM, currentTimeMillis[0]);
-		while (!listener.entities.get(clientId).location().equals(cornerMM))
-		{
-			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			currentTimeMillis[0] += 100L;
-			client.runPendingCalls(currentTimeMillis[0]);
-		}
-		EntityLocation cornerMP = new EntityLocation(-32.0f, 47.0f, 0.0f);
-		client.moveTo(cornerMP, currentTimeMillis[0]);
-		while (!listener.entities.get(clientId).location().equals(cornerMP))
-		{
-			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			currentTimeMillis[0] += 100L;
-			client.runPendingCalls(currentTimeMillis[0]);
-		}
-		EntityLocation cornerPP = new EntityLocation(47.0f, 47.0f, 0.0f);
-		client.moveTo(cornerPP, currentTimeMillis[0]);
-		while (!listener.entities.get(clientId).location().equals(cornerPP))
-		{
-			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			currentTimeMillis[0] += 100L;
-			client.runPendingCalls(currentTimeMillis[0]);
-		}
-		EntityLocation cornerPM = new EntityLocation(47.0f, -32.0f, 0.0f);
-		client.moveTo(cornerPM, currentTimeMillis[0]);
-		while (!listener.entities.get(clientId).location().equals(cornerPM))
-		{
-			fabric.waitForTick(clientId, fabric.getLatestTick(clientId) + 1L);
-			currentTimeMillis[0] += 100L;
-			client.runPendingCalls(currentTimeMillis[0]);
-		}
 		
 		// We are done.
 		server.shutdown();

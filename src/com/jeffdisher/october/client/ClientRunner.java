@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -95,7 +96,15 @@ public class ClientRunner
 	 */
 	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
 	{
-		EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), endPoint);
+		// We are going to base a decision on our current projection so make sure that anything in-progress completes, first.
+		_projection.checkCurrentActivity(currentTimeMillis);
+		
+		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
+		EntityLocation currentLocation = _localEntityProjection.location();
+		// This would be a static usage or timing error on the client.
+		Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
+		
+		EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
 		_applyLocalChange(moveChange, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}

@@ -3,6 +3,7 @@ package com.jeffdisher.october.changes;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -17,12 +18,27 @@ public class EntityChangeMove implements IEntityChange
 	public static final float ENTITY_MOVE_FLAT_LIMIT_PER_SECOND = 4.0f;
 	public static final float ENTITY_MOVE_CLIMB_LIMIT_PER_SECOND = 2.0f;
 	public static final float ENTITY_MOVE_FALL_LIMIT_PER_SECOND = 20.0f;
+	/**
+	 * We limit the time cost of a single movement to 100 ms.  This is typically the setting for a single server-side
+	 * tick but will work properly if not.
+	 */
+	public static final long LIMIT_COST_MILLIS = 100L;
+
+	public static boolean isValidMove(EntityLocation oldLocation, EntityLocation newLocation)
+	{
+		return _isValidMove(oldLocation, newLocation);
+	}
+
 
 	private final EntityLocation _oldLocation;
 	private final EntityLocation _newLocation;
 
 	public EntityChangeMove(EntityLocation oldLocation, EntityLocation newLocation)
 	{
+		// Make sure that this is valid within our limits.
+		// TODO:  Define a better failure mode when the server deserializes these from the network.
+		Assert.assertTrue(_isValidMove(oldLocation, newLocation));
+		
 		_oldLocation = oldLocation;
 		_newLocation = newLocation;
 	}
@@ -30,8 +46,31 @@ public class EntityChangeMove implements IEntityChange
 	@Override
 	public long getTimeCostMillis()
 	{
-		float xy = Math.abs(_newLocation.x() - _oldLocation.x()) + Math.abs(_newLocation.y() - _oldLocation.y());
-		float zChange = _newLocation.z() - _oldLocation.z();
+		return _getTimeMostMillis(_oldLocation, _newLocation);
+	}
+
+	@Override
+	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	{
+		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);
+		if (oldDoesMatch)
+		{
+			newEntity.newLocation = _newLocation;
+		}
+		return oldDoesMatch;
+	}
+
+
+	private static boolean _isValidMove(EntityLocation oldLocation, EntityLocation newLocation)
+	{
+		long costMillis = _getTimeMostMillis(oldLocation, newLocation);
+		return (costMillis <= LIMIT_COST_MILLIS);
+	}
+
+	private static long _getTimeMostMillis(EntityLocation oldLocation, EntityLocation newLocation)
+	{
+		float xy = Math.abs(newLocation.x() - oldLocation.x()) + Math.abs(newLocation.y() - oldLocation.y());
+		float zChange = newLocation.z() - oldLocation.z();
 		float climb;
 		float fall;
 		if (zChange > 0.0f)
@@ -49,16 +88,5 @@ public class EntityChangeMove implements IEntityChange
 		float secondsFall = (fall / ENTITY_MOVE_FALL_LIMIT_PER_SECOND);
 		float totalSeconds = secondsFlat + secondsClimb + secondsFall;
 		return (long) (totalSeconds * 1000.0f);
-	}
-
-	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
-	{
-		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);
-		if (oldDoesMatch)
-		{
-			newEntity.newLocation = _newLocation;
-		}
-		return oldDoesMatch;
 	}
 }
