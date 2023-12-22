@@ -1,13 +1,9 @@
 package com.jeffdisher.october.logic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -43,21 +39,13 @@ public class EntityChangeReceiveItem implements IEntityChange
 	private boolean _common(MutableEntity newEntity)
 	{
 		boolean didApply = false;
-		// First, check if this will fit.
-		Inventory oldInventory = newEntity.newInventory;
-		int remaining = oldInventory.maxEncumbrance - oldInventory.currentEncumbrance;
-		int required = _itemType.encumbrance() * _itemCount;
-		if (remaining >= required)
+		MutableInventory inventory = newEntity.newInventory;
+		
+		// Make sure that we don't already have some.
+		if (0 == inventory.getCount(_itemType))
 		{
-			// This will fit so see if there is an empty slot (we don't add to an existing to simplify the test).
-			if (!newEntity.newInventory.items.containsKey(_itemType))
-			{
-				Map<Item, Items> newItems = new HashMap<>(newEntity.newInventory.items);
-				Items toAdd = new Items(_itemType, _itemCount);
-				newItems.put(_itemType, toAdd);
-				newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance + required);
-				didApply = true;
-			}
+			// Try to add them.
+			didApply = inventory.addItems(_itemType, _itemCount);
 		}
 		return didApply;
 	}

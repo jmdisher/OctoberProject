@@ -27,12 +27,6 @@ public class EntityChangeCraft implements IEntityChange
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		boolean didApply = false;
-		if (_operation.checkValid.apply(newEntity.newInventory))
-		{
-			newEntity.newInventory = _operation.applyCraft.apply(newEntity.newInventory);
-			didApply = true;
-		}
-		return didApply;
+		return _operation.craft.apply(newEntity.newInventory);
 	}
 }

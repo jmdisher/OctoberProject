@@ -8,16 +8,16 @@ public class MutableEntity
 {
 	// Some data elements are actually immutable (id, for example) so they are just left in the original, along with the original data.
 	public final Entity original;
+	public final MutableInventory newInventory;
 
-	// These are the realistically mutable elements.  Since these types are immutable, they can only be replaced (these may be exploded if there are often changes here).
+	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
-	public Inventory newInventory;
 
 	public MutableEntity(Entity original)
 	{
 		this.original = original;
+		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
-		this.newInventory = original.inventory();
 	}
 
 	/**
@@ -31,7 +31,7 @@ public class MutableEntity
 				, this.newLocation
 				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
-				, this.newInventory
+				, this.newInventory.freeze()
 		);
 	}
 }

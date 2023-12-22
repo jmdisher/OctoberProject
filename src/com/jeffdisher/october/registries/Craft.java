@@ -1,12 +1,8 @@
 package com.jeffdisher.october.registries;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -17,48 +13,33 @@ import com.jeffdisher.october.utils.Assert;
 public enum Craft
 {
 	LOG_TO_PLANKS("Convert log to planks"
-			, (Inventory inv) -> inv.items.containsKey(ItemRegistry.LOG)
-			, (Inventory inv) -> {
+			, (MutableInventory inv) -> {
 				// In this case, we should leave encumbrance unchanged.
 				Assert.assertTrue(ItemRegistry.LOG.encumbrance() == (ItemRegistry.PLANK.encumbrance() * 2));
 				
-				Items logs = inv.items.get(ItemRegistry.LOG);
-				int newLogs = logs.count() - 1;
-				Items planks = inv.items.get(ItemRegistry.PLANK);
-				int newPlanks = (null != planks)
-						? planks.count() + 2
-						: 2
-				;
-				// Create the new map.
-				Map<Item, Items> newMap = new HashMap<>(inv.items);
-				if (newLogs > 0)
+				boolean didApply = false;
+				if (inv.getCount(ItemRegistry.LOG) > 0)
 				{
-					newMap.put(ItemRegistry.LOG, new Items(ItemRegistry.LOG, newLogs));
+					inv.removeItems(ItemRegistry.LOG, 1);
+					inv.addItems(ItemRegistry.PLANK, 2);
+					didApply = true;
 				}
-				else
-				{
-					newMap.remove(ItemRegistry.LOG);
-				}
-				newMap.put(ItemRegistry.PLANK, new Items(ItemRegistry.PLANK, newPlanks));
-				return new Inventory(inv.maxEncumbrance, newMap, inv.currentEncumbrance);
+				return didApply;
 			}
 			, 1000L),
 	;
 
 	public final String name;
-	public final Function<Inventory, Boolean> checkValid;
-	public final Function<Inventory, Inventory> applyCraft;
+	public final Function<MutableInventory, Boolean> craft;
 	public final long millisPerCraft;
 
 	private Craft(String name
-			, Function<Inventory, Boolean> checkValid
-			, Function<Inventory, Inventory> applyCraft
+			, Function<MutableInventory, Boolean> craft
 			, long millisPerCraft
 	)
 	{
 		this.name = name;
-		this.checkValid = checkValid;
-		this.applyCraft = applyCraft;
+		this.craft = craft;
 		this.millisPerCraft = millisPerCraft;
 	}
 }

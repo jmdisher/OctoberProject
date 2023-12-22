@@ -1,13 +1,9 @@
 package com.jeffdisher.october.logic;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.jeffdisher.october.changes.IEntityChange;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -44,20 +40,13 @@ public class EntityChangeSendItem implements IEntityChange
 	private int _common(MutableEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
-		Inventory oldInventory = newEntity.newInventory;
-		Items match = oldInventory.items.get(_itemType);
-		int foundCount = (null != match)
-				? match.count()
-				: 0
-		;
+		MutableInventory inventory = newEntity.newInventory;
+		int foundCount = inventory.getCount(_itemType);
 		
 		if (foundCount > 0)
 		{
 			// Update the inventory.
-			Map<Item, Items> newItems = new HashMap<>(oldInventory.items);
-			newItems.remove(_itemType);
-			int reducedEncumbrance = _itemType.encumbrance() * foundCount;
-			newEntity.newInventory = new Inventory(oldInventory.maxEncumbrance, newItems, oldInventory.currentEncumbrance - reducedEncumbrance);
+			inventory.removeItems(_itemType, foundCount);
 			// Send this to the other entity.
 			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
 		}
