@@ -1,4 +1,4 @@
-package com.jeffdisher.october.server;
+package com.jeffdisher.october.worldgen;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;

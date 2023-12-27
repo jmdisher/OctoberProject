@@ -11,12 +11,12 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
-import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 /**

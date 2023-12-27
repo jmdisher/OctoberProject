@@ -34,6 +34,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestTickRunner

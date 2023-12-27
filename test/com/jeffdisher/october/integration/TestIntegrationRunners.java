@@ -12,11 +12,11 @@ import com.jeffdisher.october.client.ClientRunner.IListener;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.registries.ItemRegistry;
-import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestIntegrationRunners

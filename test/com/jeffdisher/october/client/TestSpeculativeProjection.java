@@ -32,7 +32,6 @@ import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
-import com.jeffdisher.october.server.CuboidGenerator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -41,6 +40,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestSpeculativeProjection

@@ -18,6 +18,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestServerRunner
