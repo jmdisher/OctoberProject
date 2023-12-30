@@ -297,12 +297,14 @@ public class SpeculativeProjection
 	 * Called to notify the projection of the current time so that it can complete any active activities, if due.
 	 * 
 	 * @param currentTimeMillis Current system time, in milliseconds.
+	 * @return True if there is still a current activity pending.
 	 */
-	public void checkCurrentActivity(long currentTimeMillis)
+	public boolean checkCurrentActivity(long currentTimeMillis)
 	{
 		Set<Integer> modifiedEntityIds = new HashSet<>();
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		_checkInProgress(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
+		return (null != _inProgress);
 	}
 
 	/**

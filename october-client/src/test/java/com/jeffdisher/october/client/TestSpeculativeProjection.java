@@ -1025,6 +1025,37 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 	}
 
+	@Test
+	public void inProgressOperation()
+	{
+		// Test that we can check that an in-progress operation is still running.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		
+		// Move the entity and verify that the move is in-progress until we advance the clock.
+		EntityLocation startLocation = listener.lastEntityStates.get(0).location();
+		EntityLocation target = new EntityLocation(0.2f, 0.2f, 0.0f);
+		IEntityChange move = new EntityChangeMove(startLocation, target);
+		long commit1 = projector.applyLocalChange(move, 1L);
+		Assert.assertEquals(1L, commit1);
+		
+		Assert.assertTrue(projector.checkCurrentActivity(51L));
+		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
+		Assert.assertFalse(projector.checkCurrentActivity(101L));
+		Assert.assertEquals(target, listener.lastEntityStates.get(0).location());
+	}
+
 
 	private int _countBlocks(IReadOnlyCuboidData cuboid, short blockType)
 	{
