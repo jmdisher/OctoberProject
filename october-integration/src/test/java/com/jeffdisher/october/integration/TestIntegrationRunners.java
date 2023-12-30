@@ -112,7 +112,9 @@ public class TestIntegrationRunners
 			// We can walk 0.4 horizontally in a single tick.
 			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			Assert.assertFalse(client1.isActivityInProgress(currentTimeMillis));
 			client1.moveTo(location1, currentTimeMillis);
+			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis));
 			client2.moveTo(location2, currentTimeMillis);
 			currentTimeMillis += 100L;
 		}
@@ -120,6 +122,7 @@ public class TestIntegrationRunners
 		for (int i = 0; i < 5; ++i)
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis));
 			client2.moveTo(location2, currentTimeMillis);
 			currentTimeMillis += 100L;
 		}

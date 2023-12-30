@@ -18,6 +18,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -139,6 +140,64 @@ public class TestClientRunner
 		network.client.adapterDisconnected();
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+	}
+
+	@Test
+	public void accidentalInterruption() throws Throwable
+	{
+		// Verify that we see assertion failures if there is still an in-progress activity when we ask the ClientRunner to do something new.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 1L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		network.client.receivedCuboid(cuboid);
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
+		
+		// Ask them to start moving, locally, since this will put them in a pending activity.
+		EntityLocation startPoint = projection.loadedEnties.get(clientId).location();
+		EntityLocation endPoint = new EntityLocation(startPoint.x() + 0.2f, startPoint.y(), startPoint.z());
+		runner.moveTo(endPoint, currentTimeMillis);
+		
+		// Make sure that any change made now will assert fail.
+		Assert.assertTrue(runner.isActivityInProgress(currentTimeMillis));
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		boolean didFail = false;
+		try
+		{
+			runner.beginBreakBlock(changeLocation, currentTimeMillis);
+		}
+		catch (AssertionError e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		didFail = false;
+		try
+		{
+			runner.moveTo(endPoint, currentTimeMillis);
+		}
+		catch (AssertionError e)
+		{
+			didFail = true;
+		}
+		Assert.assertTrue(didFail);
+		
+		// Now, advance time and verify that we can call one of these.
+		currentTimeMillis += 100L;
+		Assert.assertFalse(runner.isActivityInProgress(currentTimeMillis));
+		runner.beginBreakBlock(changeLocation, currentTimeMillis);
 	}
 
 

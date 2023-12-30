@@ -72,6 +72,8 @@ public class ClientRunner
 	/**
 	 * Creates the change to begin breaking a block.  Note that changes which come in before it completes will
 	 * invalidate it.
+	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
+	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
 	 * @param blockLocation The location of the block to break.
 	 * @param currentTimeMillis The current time, in milliseconds.
@@ -90,26 +92,34 @@ public class ClientRunner
 	/**
 	 * Creates the change to move the entity from the current location in the speculative projection to the given
 	 * endPoint.
+	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
+	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
 	 * @param endPoint The destination of the move.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
 	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
 	{
-		// We are going to base a decision on our current projection so make sure that anything in-progress completes, first.
-		boolean isActivityInProgress = _projection.checkCurrentActivity(currentTimeMillis);
+		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
+		EntityLocation currentLocation = _localEntityProjection.location();
+		// This would be a static usage or timing error on the client.
+		Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
 		
-		if (!isActivityInProgress)
-		{
-			// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
-			EntityLocation currentLocation = _localEntityProjection.location();
-			// This would be a static usage or timing error on the client.
-			Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
-			
-			EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
-			_applyLocalChange(moveChange, currentTimeMillis);
-			_runAllPendingCalls(currentTimeMillis);
-		}
+		EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
+		_applyLocalChange(moveChange, currentTimeMillis);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Tries to complete any in-progress activity, returning true if it is still pending and false if it completed or
+	 * there was nothing pending.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 * @return True if there is still an in-progress activity pending.
+	 */
+	public boolean isActivityInProgress(long currentTimeMillis)
+	{
+		return _projection.checkCurrentActivity(currentTimeMillis);
 	}
 
 
