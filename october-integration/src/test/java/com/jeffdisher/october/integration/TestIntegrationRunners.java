@@ -64,10 +64,9 @@ public class TestIntegrationRunners
 		ServerRunner server = new ServerRunner(100L, fabric, () -> System.currentTimeMillis());
 		fabric.waitForServer();
 		
-		// Create and load the cuboid full of stone with no inventories.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
-		server.loadCuboid(cuboid);
+		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
+		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ItemRegistry.AIR));
+		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
 		// We want to wait a tick for this cuboid to be picked up.
 		fabric.waitForTick(0, fabric.getLatestTick(0) + 1L);
 		

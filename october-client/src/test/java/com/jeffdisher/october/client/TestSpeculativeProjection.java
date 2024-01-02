@@ -933,7 +933,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
-				, Collections.emptyList()
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1033,7 +1033,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
-				, Collections.emptyList()
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()

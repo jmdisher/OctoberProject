@@ -111,15 +111,29 @@ public class ServerRunner
 					}
 				}
 				
-				// See if this entity has seen the cuboid where they are standing.
+				// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
+				// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
+				
 				CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
-				if (!state.knownCuboids.contains(currentCuboid))
+				for (int i = -1; i <= 1; ++i)
 				{
-					IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(currentCuboid);
-					// For now, we assume this was already loaded since that is what the tests do.
-					Assert.assertTrue(null != cuboidData);
-					_network.sendCuboid(clientId, cuboidData);
-					state.knownCuboids.add(currentCuboid);
+					for (int j = -1; j <= 1; ++j)
+					{
+						for (int k = -1; k <= 1; ++k)
+						{
+							CuboidAddress oneCuboid = new CuboidAddress((short) (currentCuboid.x() + i), (short) (currentCuboid.y() + j), (short) (currentCuboid.z() + k));
+							if (!state.knownCuboids.contains(oneCuboid))
+							{
+								IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(oneCuboid);
+								// This may not yet be loaded.
+								if (null != cuboidData)
+								{
+									_network.sendCuboid(clientId, cuboidData);
+									state.knownCuboids.add(oneCuboid);
+								}
+							}
+						}
+					}
 				}
 				
 				// Finally, send them the end of tick.

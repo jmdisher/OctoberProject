@@ -1,6 +1,13 @@
 package com.jeffdisher.october.changes;
 
+import java.util.function.Function;
+
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -52,12 +59,19 @@ public class EntityChangeMove implements IEntityChange
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
+		boolean didApply = false;
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);
 		if (oldDoesMatch)
 		{
-			newEntity.newLocation = _newLocation;
+			// Check that they can stand in the target location.
+			EntityVolume volume = newEntity.original.volume();
+			if (_canStandInLocation(context.previousBlockLookUp, _newLocation, volume))
+			{
+				newEntity.newLocation = _newLocation;
+				didApply = true;
+			}
 		}
-		return oldDoesMatch;
+		return didApply;
 	}
 
 
@@ -88,5 +102,51 @@ public class EntityChangeMove implements IEntityChange
 		float secondsFall = (fall / ENTITY_MOVE_FALL_LIMIT_PER_SECOND);
 		float totalSeconds = secondsFlat + secondsClimb + secondsFall;
 		return (long) (totalSeconds * 1000.0f);
+	}
+
+	private static boolean _canStandInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
+	{
+		// We will just check that the blocks in the target location occupied by the volume are all air (this will need to be generalized to non-colliding, later).
+		float x = targetLocation.x();
+		int minX = _floor(x);
+		int maxX = _ceiling(x + volume.width() - 1.0f);
+		float y = targetLocation.y();
+		int minY = _floor(y);
+		int maxY = _ceiling(y + volume.width() - 1.0f);
+		float z = targetLocation.z();
+		int minZ = _floor(z);
+		int maxZ = _ceiling(z + volume.height() - 1.0f);
+		
+		boolean canStand = true;
+		for (int i = minX; canStand && (i <= maxX); ++i)
+		{
+			for (int j = minY; canStand && (j <= maxY); ++j)
+			{
+				for (int k = minZ; canStand && (k <= maxZ); ++k)
+				{
+					BlockProxy block = blockLookup.apply(new AbsoluteLocation(i, j, k));
+					// This can be null if the world isn't totally loaded on the client.
+					if (null != block)
+					{
+						canStand = (ItemRegistry.AIR.number() == block.getData15(AspectRegistry.BLOCK));
+					}
+					else
+					{
+						canStand = false;
+					}
+				}
+			}
+		}
+		return canStand;
+	}
+
+	private static int _floor(float f)
+	{
+		return (int) Math.floor(f);
+	}
+
+	private static int _ceiling(float f)
+	{
+		return (int) Math.ceil(f);
 	}
 }
