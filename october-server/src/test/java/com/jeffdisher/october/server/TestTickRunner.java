@@ -45,7 +45,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, 100L, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
@@ -64,7 +64,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, 100L, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
@@ -85,7 +85,7 @@ public class TestTickRunner
 	public void shockwaveMultiCuboids()
 	{
 		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(8, 100L, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
@@ -115,7 +115,7 @@ public class TestTickRunner
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		TickRunner runner = new TickRunner(1, 100L, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		TickRunner.Snapshot startState = runner.waitForPreviousTick();
@@ -152,7 +152,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		
 		// Create a tick runner with a single cuboid and get it running.
-		TickRunner runner = new TickRunner(1, 100L, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.startNextTick();
@@ -193,7 +193,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, 100L, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		
@@ -229,7 +229,7 @@ public class TestTickRunner
 	public void dependentEntityChanges()
 	{
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, 100L, new CountingWorldListener(), entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), entityListener, (TickRunner.Snapshot completed) -> {});
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
@@ -270,7 +270,7 @@ public class TestTickRunner
 		// We will show how the TickRunner's caller would schedule a normal change as well as a multi-phase change, to highlight the differences.
 		CountingWorldListener blockListener = new CountingWorldListener();
 		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, 100L, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
 		
 		// Create a cuboid of stone.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -365,7 +365,7 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(1, 100L, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);

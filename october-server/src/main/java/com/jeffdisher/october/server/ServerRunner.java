@@ -37,6 +37,10 @@ public class ServerRunner
 	 * The "fake" client receives the end-of-tick message so that tests can see progress before client connections.
 	 */
 	public static final int FAKE_CLIENT_ID = 0;
+	/**
+	 * The number of milliseconds in a tick in the standard configuration.
+	 */
+	public static final long DEFAULT_MILLIS_PER_TICK = 100L;
 
 	// General and configuration variables.
 	private final long _millisPerTick;

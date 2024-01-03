@@ -27,7 +27,7 @@ public class TestServerRunner
 	public void startStop() throws Throwable
 	{
 		TestAdapter network = new TestAdapter();
-		ServerRunner runner = new ServerRunner(100L, network, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
 		runner.shutdown();
 	}
 
@@ -36,7 +36,7 @@ public class TestServerRunner
 	{
 		// Just connect two clients and verify that they see themselves and each other.
 		TestAdapter network = new TestAdapter();
-		ServerRunner runner = new ServerRunner(100L, network, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
 		_loadDefaultMap(runner);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -62,7 +62,7 @@ public class TestServerRunner
 	public void multiPhase() throws Throwable
 	{
 		TestAdapter network = new TestAdapter();
-		ServerRunner runner = new ServerRunner(100L, network, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
 		_loadDefaultMap(runner);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
