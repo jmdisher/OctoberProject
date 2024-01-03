@@ -122,6 +122,14 @@ public class ClientRunner
 		return _projection.checkCurrentActivity(currentTimeMillis);
 	}
 
+	/**
+	 * Requests that this client disconnect from the server.
+	 */
+	public void disconnect()
+	{
+		_network.disconnect();
+	}
+
 
 	private void _runAllPendingCalls(long currentTimeMillis)
 	{
