@@ -26,9 +26,16 @@ public class TestServerRunner
 	@Test
 	public void startStop() throws Throwable
 	{
+		// Get the starting number of threads in our group.
+		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
+		// We expect to see an extra 2 threads:  One for ServerRunner and one for TickRunner.
+		Assert.assertEquals(startingActiveCount + 2, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
+		
+		// Verify that the threads have stopped.
+		Assert.assertEquals(startingActiveCount, Thread.currentThread().getThreadGroup().activeCount());
 	}
 
 	@Test

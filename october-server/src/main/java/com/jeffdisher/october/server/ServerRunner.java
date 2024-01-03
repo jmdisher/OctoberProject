@@ -183,7 +183,11 @@ public class ServerRunner
 	 */
 	public void shutdown()
 	{
+		// Stop accepting messages.
 		_messages.shutdown();
+		// Shut down the tick runner.
+		_tickRunner.shutdown();
+		// We can now join on the background thread since it has nothing else to block on.
 		try
 		{
 			_background.join();
