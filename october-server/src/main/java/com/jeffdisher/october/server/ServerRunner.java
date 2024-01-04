@@ -241,11 +241,21 @@ public class ServerRunner
 
 	private IEntityChange _updateClientMetaState(IEntityChange change)
 	{
-		// We use our own internal wrapper so downcast (this might be plumbed through, in the future).
-		ServerEntityChangeWrapper wrapper = (ServerEntityChangeWrapper) change;
-		ClientState state = _connectedClients.get(wrapper.clientId);
-		state.lastCompletedCommitLevel = wrapper.commitLevel;
-		return wrapper.realChange;
+		// When changes are passed in, we wrap them in ServerEntityChangeWrapper.
+		// When they originate internally (using the change sink), we just see the bare change.
+		IEntityChange underlying;
+		if (change instanceof ServerEntityChangeWrapper)
+		{
+			ServerEntityChangeWrapper wrapper = (ServerEntityChangeWrapper) change;
+			ClientState state = _connectedClients.get(wrapper.clientId);
+			state.lastCompletedCommitLevel = wrapper.commitLevel;
+			underlying = wrapper.realChange;
+		}
+		else
+		{
+			underlying = change;
+		}
+		return underlying;
 	}
 
 
