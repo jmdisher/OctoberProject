@@ -75,6 +75,40 @@ public class TestLocalServerShim
 		shim.waitForServerShutdown();
 	}
 
+	@Test
+	public void falling() throws Throwable
+	{
+		// Demonstrate that a client will fall through air and this will make sense in the projection.
+		LocalServerShim shim = LocalServerShim.startedServerShim(ServerRunner.DEFAULT_MILLIS_PER_TICK, () -> System.currentTimeMillis());
+		
+		// Load a cuboids.
+		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
+		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		shim.waitForTickAdvance(1L);
+		
+		// Connect the client.
+		ClientListener listener = new ClientListener();
+		ClientRunner client = new ClientRunner(shim.getClientAdapter(), listener, listener);
+		shim.waitForClient();
+		
+		// Let some time pass and verify the data is loaded.
+		shim.waitForTickAdvance(3L);
+		client.runPendingCalls(System.currentTimeMillis());
+		Assert.assertNotNull(listener.entity);
+		Assert.assertEquals(2, listener.cuboids.size());
+		
+		// Wait a few ticks and verify that they are below the starting location.
+		shim.waitForTickAdvance(2L);
+		client.runPendingCalls(System.currentTimeMillis());
+		Assert.assertEquals(0.0f, listener.entity.location().x(), 0.01f);
+		Assert.assertEquals(0.0f, listener.entity.location().y(), 0.01f);
+		Assert.assertTrue(listener.entity.location().z() < -2.0f);
+		
+		// Disconnect the client.
+		client.disconnect();
+		shim.waitForServerShutdown();
+	}
+
 
 	private final static class ClientListener implements SpeculativeProjection.IProjectionListener, ClientRunner.IListener
 	{

@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.changes.EndBreakBlockChange;
+import com.jeffdisher.october.changes.EntityChangeImplicit;
 import com.jeffdisher.october.changes.EntityChangeTrickleInventory;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
@@ -117,6 +118,32 @@ public class TestServerRunner
 		Assert.assertTrue(change1 instanceof EntityChangeTrickleInventory);
 		Object change2 = network.waitForUpdate(clientId, 2);
 		Assert.assertTrue(change2 instanceof EntityChangeTrickleInventory);
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void entityFalling() throws Throwable
+	{
+		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
+		TestAdapter network = new TestAdapter();
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
+		runner.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
+		runner.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId = 1;
+		network.prepareForClient(clientId);
+		server.clientConnected(clientId);
+		Entity entity = network.waitForEntity(clientId, clientId);
+		Assert.assertNotNull(entity);
+		
+		// Watch the entity fall as a result of implicit changes.
+		Object change0 = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(change0 instanceof EntityChangeImplicit);
+		Object change1 = network.waitForUpdate(clientId, 1);
+		Assert.assertTrue(change1 instanceof EntityChangeImplicit);
+		Object change2 = network.waitForUpdate(clientId, 2);
+		Assert.assertTrue(change2 instanceof EntityChangeImplicit);
 		
 		runner.shutdown();
 	}

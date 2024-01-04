@@ -218,10 +218,11 @@ public class TestTickRunner
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
+		int unchangedInternalChanges = 3;
 		Assert.assertEquals(1, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 		Assert.assertEquals(1, entityListener.changeApplied.get());
-		Assert.assertEquals(0, entityListener.changeDropped.get());
+		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
 		Assert.assertEquals(BlockAspect.STONE, _getBlockProxy(snapshot, changeLocation).getData15(AspectRegistry.BLOCK));
 	}
 
@@ -251,8 +252,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// Now, check for results.
+		int unchangedInternalChanges = 6;
 		Assert.assertEquals(2, entityListener.changeApplied.get());
-		Assert.assertEquals(0, entityListener.changeDropped.get());
+		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
 		Entity sender = finalSnapshot.completedEntities().get(0);
 		Entity receiver = finalSnapshot.completedEntities().get(1);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
@@ -352,10 +354,11 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// Verify remaining counts.
+		int unchangedInternalChanges = 6;
 		Assert.assertEquals(2, blockListener.mutationApplied.get());
 		Assert.assertEquals(0, blockListener.mutationDropped.get());
 		Assert.assertEquals(2, entityListener.changeApplied.get());
-		Assert.assertEquals(0, entityListener.changeDropped.get());
+		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
 	}
 
 	@Test

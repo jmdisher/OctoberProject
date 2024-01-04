@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.changes.EntityChangeImplicit;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -286,7 +287,8 @@ public class TickRunner
 		{
 			// Run the tick.
 			// Process all entity changes first and synchronize to lock-step.
-			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, materials.changesToRun);
+			Map<Integer, Queue<IEntityChange>> changesToRun = _injectImplicitChange(materials.completedEntities, materials.changesToRun);
+			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, changesToRun);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
@@ -301,6 +303,24 @@ public class TickRunner
 					, group
 			);
 		}
+	}
+
+	private Map<Integer, Queue<IEntityChange>> _injectImplicitChange(Map<Integer, Entity> completedEntities, Map<Integer, Queue<IEntityChange>> changesToRun)
+	{
+		EntityChangeImplicit implicitChange = new EntityChangeImplicit();
+		// Note that changesToRun typically doesn't include all entities so we usually need to add queues for this implicit change.
+		Map<Integer, Queue<IEntityChange>> fullMap = new HashMap<>();
+		for (Integer id : completedEntities.keySet())
+		{
+			Queue<IEntityChange> thisQueue = changesToRun.get(id);
+			if (null == thisQueue)
+			{
+				thisQueue = new LinkedList<>();
+			}
+			thisQueue.add(implicitChange);
+			fullMap.put(id, thisQueue);
+		}
+		return fullMap;
 	}
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt

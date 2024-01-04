@@ -36,6 +36,19 @@ public class EntityChangeMove implements IEntityChange
 		return _isValidMove(oldLocation, newLocation);
 	}
 
+	/**
+	 * A common helper exposed to other changes since some changes need a "move" aspect, and this allows common logic.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param targetLocation The target location of the entity.
+	 * @param volume The volume of the entity.
+	 * @return True if the entity can fit in the block space rooted in targetLocation.
+	 */
+	public static boolean canStandInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
+	{
+		return _canStandInLocation(blockLookup, targetLocation, volume);
+	}
+
 
 	private final EntityLocation _oldLocation;
 	private final EntityLocation _newLocation;
