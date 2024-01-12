@@ -12,12 +12,14 @@ public class MutableEntity
 
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
+	public float newZVelocityPerSecond;
 
 	public MutableEntity(Entity original)
 	{
 		this.original = original;
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
+		this.newZVelocityPerSecond = original.zVelocityPerSecond();
 	}
 
 	/**
@@ -29,6 +31,7 @@ public class MutableEntity
 	{
 		return new Entity(this.original.id()
 				, this.newLocation
+				, this.newZVelocityPerSecond
 				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()

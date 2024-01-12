@@ -34,7 +34,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -53,7 +53,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
@@ -71,7 +71,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);

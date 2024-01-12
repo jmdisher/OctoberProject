@@ -8,6 +8,8 @@ package com.jeffdisher.october.types;
 public record Entity(int id
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
+		// We track the current z-velocity in blocks per second, up.
+		, float zVelocityPerSecond
 		, EntityVolume volume
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
