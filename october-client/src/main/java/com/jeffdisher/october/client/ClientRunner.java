@@ -19,7 +19,6 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -46,6 +45,9 @@ public class ClientRunner
 
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
+
+	// We are responsible for managing concerns like jumping and falling, when packaging up the movement changes, here.
+	private long _lastMoveMillis;
 
 	public ClientRunner(IClientAdapter network, SpeculativeProjection.IProjectionListener projectionListener, IListener clientListener)
 	{
@@ -105,14 +107,8 @@ public class ClientRunner
 	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
 	{
 		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
-		EntityLocation currentLocation = _localEntityProjection.location();
-		EntityLocation endPoint = new EntityLocation(currentLocation.x() + xDistance, currentLocation.y() + yDistance, currentLocation.z());
 		// This would be a static usage or timing error on the client.
-		Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
-		
-		EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
-		_applyLocalChange(moveChange, currentTimeMillis, true);
-		_runAllPendingCalls(currentTimeMillis);
+		_commonMove(xDistance, yDistance, currentTimeMillis);
 	}
 
 	/**
@@ -126,6 +122,16 @@ public class ClientRunner
 		EntityChangeCraft craftOperation = new EntityChangeCraft(operation);
 		_applyLocalChange(craftOperation, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Allows time to pass to account for things like falling, etc.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void doNothing(long currentTimeMillis)
+	{
+		_commonMove(0.0f, 0.0f, currentTimeMillis);
 	}
 
 	/**
@@ -170,6 +176,29 @@ public class ClientRunner
 		}
 	}
 
+	private void _commonMove(float xDistance, float yDistance, long currentTimeMillis)
+	{
+		long millisBeforeCall = (currentTimeMillis - _lastMoveMillis);
+		// Make sure we have at least something to do.
+		if ((millisBeforeCall > 0L) || (0.0f != xDistance) || (0.0f != yDistance))
+		{
+			// We assume that we spent time before this movement at least partially performing the move so update it.
+			long millisToMove = EntityChangeMove.getTimeMostMillis(xDistance, yDistance);
+			// We will skip any millis which don't fit (accounting for them all is ideal but the real-time nature of the client means we can miss some - especially during startup).
+			Assert.assertTrue(millisToMove <= millisBeforeCall);
+			Assert.assertTrue(millisToMove <= EntityChangeMove.LIMIT_COST_MILLIS);
+			long millisAbstractSlack = EntityChangeMove.LIMIT_COST_MILLIS - millisToMove;
+			long millisRealSlack = millisBeforeCall - millisToMove;
+			long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
+			Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
+			
+			EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), millisBeforeMovement, xDistance, yDistance);
+			_applyLocalChange(moveChange, currentTimeMillis, false);
+			_runAllPendingCalls(currentTimeMillis);
+			_lastMoveMillis = currentTimeMillis;
+		}
+	}
+
 
 	private class NetworkListener implements IClientAdapter.IListener
 	{
@@ -192,6 +221,7 @@ public class ClientRunner
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_assignedEntityId = assignedId;
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection());
+				_lastMoveMillis = currentTimeMillis;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);
 			});

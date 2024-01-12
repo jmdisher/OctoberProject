@@ -6,6 +6,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidData;
@@ -64,7 +65,9 @@ public class TestLocalServerShim
 		Assert.assertEquals(1, listener.cuboids.size());
 		
 		// Move the client, slightly, and verify that we see the update.
+		// (since we are using the real clock, wait for this move to be valid)
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
+		Thread.sleep(EntityChangeMove.getTimeMostMillis(0.4f, 0.0f));
 		client.moveHorizontal(0.4f, 0.0f, System.currentTimeMillis());
 		shim.waitForTickAdvance(2L);
 		client.runPendingCalls(System.currentTimeMillis());
@@ -98,6 +101,13 @@ public class TestLocalServerShim
 		Assert.assertEquals(2, listener.cuboids.size());
 		
 		// Wait a few ticks and verify that they are below the starting location.
+		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
+		Thread.sleep(100L);
+		client.doNothing(System.currentTimeMillis());
+		// (we need to do 2 since the first move starts falling and the second will actually do the fall)
+		Thread.sleep(100L);
+		client.doNothing(System.currentTimeMillis());
+		
 		shim.waitForTickAdvance(2L);
 		client.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(0.0f, listener.entity.location().x(), 0.01f);

@@ -27,10 +27,11 @@ public class TestCommonChanges
 		// Check that the move works if the blocks are air.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, newLocation);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
 				, null
 		);
@@ -38,6 +39,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
+		Assert.assertEquals(newLocation, newEntity.newLocation);
 	}
 
 	@Test
@@ -45,8 +47,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, newLocation);
+		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -57,6 +58,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
+		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 
 	@Test
@@ -64,8 +66,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the target cuboid is missing.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, newLocation);
+		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> null
 				, null
@@ -75,5 +76,6 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
+		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 }
