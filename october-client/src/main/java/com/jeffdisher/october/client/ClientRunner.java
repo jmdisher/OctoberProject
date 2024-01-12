@@ -10,6 +10,7 @@ import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.changes.EntityChangeCraft;
+import com.jeffdisher.october.changes.EntityChangeJump;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -109,6 +110,22 @@ public class ClientRunner
 		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
 		// This would be a static usage or timing error on the client.
 		_commonMove(xDistance, yDistance, currentTimeMillis);
+	}
+
+	/**
+	 * Makes the entity "jump", giving it a positive z-vector.
+	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
+	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void jump(long currentTimeMillis)
+	{
+		// We don't generate a move for passing time before jumping since we don't want to create something in-progress (and it would only matter if falling - in which the jump fails).
+		EntityChangeJump jumpChange = new EntityChangeJump();
+		_applyLocalChange(jumpChange, currentTimeMillis, true);
+		_runAllPendingCalls(currentTimeMillis);
+		// We don't set the last "move" time since a jump and a move are distinct.
 	}
 
 	/**
