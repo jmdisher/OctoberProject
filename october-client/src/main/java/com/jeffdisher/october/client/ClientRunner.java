@@ -84,7 +84,7 @@ public class ClientRunner
 	{
 		// Send the end change since it has the appropriate delay (meaning we will need to 
 		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, ItemRegistry.STONE.number());
-		_applyLocalChange(breakBlock, currentTimeMillis);
+		_applyLocalChange(breakBlock, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
 		return breakBlock.getTimeCostMillis();
 	}
@@ -109,7 +109,7 @@ public class ClientRunner
 		Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
 		
 		EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
-		_applyLocalChange(moveChange, currentTimeMillis);
+		_applyLocalChange(moveChange, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 
@@ -143,9 +143,9 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IEntityChange change, long currentTimeMillis)
+	private void _applyLocalChange(IEntityChange change, long currentTimeMillis, boolean canBeInProgress)
 	{
-		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
+		long localCommit = _projection.applyLocalChange(change, currentTimeMillis, canBeInProgress);
 		if (localCommit > 0L)
 		{
 			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).

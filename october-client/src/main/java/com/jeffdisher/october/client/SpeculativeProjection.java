@@ -243,9 +243,11 @@ public class SpeculativeProjection
 	 * 
 	 * @param change The entity change to apply.
 	 * @param currentTimeMillis Current system time, in milliseconds.
+	 * @param canBeInProgress True if this is something which should occupy us for some time (false means it occupied us
+	 * in the past).
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IEntityChange change, long currentTimeMillis)
+	public long applyLocalChange(IEntityChange change, long currentTimeMillis, boolean canBeInProgress)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -263,7 +265,7 @@ public class SpeculativeProjection
 		
 		// See if this should run yet.
 		long timeCostMillis = change.getTimeCostMillis();
-		if (timeCostMillis > 0L)
+		if (canBeInProgress && (timeCostMillis > 0L))
 		{
 			// This is a change which consumes time to complete so we just hold on to it before putting it in our local queue.
 			_inProgress = new SpeculativeWrapper(commitNumber, change);
@@ -273,7 +275,6 @@ public class SpeculativeProjection
 		{
 			// This can happen right away.
 			// (if this is a cancellation, it should have come in another path.
-			Assert.assertTrue(0L == timeCostMillis);
 			
 			boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
 			if (didApply)
