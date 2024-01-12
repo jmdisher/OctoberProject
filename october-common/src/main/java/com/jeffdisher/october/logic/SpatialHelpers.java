@@ -29,6 +29,69 @@ public class SpatialHelpers
 		return _canExistInLocation(blockLookup, targetLocation, volume);
 	}
 
+	/**
+	 * Returns true if the given location is standing directly on a non-air tile in at least one of the blocks within its volume.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param location The location where the entity is.
+	 * @param volume The volume of the entity.
+	 * @return True if the entity is standing directly on at least one non-air tile.
+	 */
+	public static boolean isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	{
+		return _isStandingOnGround(blockLookup, location, volume);
+	}
+
+	/**
+	 * Returns true if the given location is pressed directly up against and overhead non-air block in at least one of the blocks with its volume
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param location The location where the entity is.
+	 * @param volume The volume of the entity.
+	 * @return True if the entity's head is pressed directly against at least one non-air tile.
+	 */
+	public static boolean isTouchingCeiling(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	{
+		// First, we need to figure out where our head is.
+		boolean isTouchingCeiling;
+		float headTop = location.z() + volume.height();
+		if (_isBlockAligned(headTop))
+		{
+			// Our head is right against the block layer above us so we will conclude we are touching the ceiling if any of them are non-air.
+			// In this case, we want to check that ALL of the blocks in the next layer are air and then revert the returned value to see if ANY were non-air (solid ceiling).
+			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
+				boolean isAir;
+				BlockProxy block = blockLookup.apply(target);
+				// This can be null if the world isn't totally loaded on the client.
+				if (null != block)
+				{
+					isAir = (ItemRegistry.AIR.number() == block.getData15(AspectRegistry.BLOCK));
+				}
+				else
+				{
+					isAir = false;
+				}
+				return isAir;
+			};
+			// We just want to check the single block so provide a tiny height (cannot be zero due to ceiling rounding).
+			EntityLocation headLocation = new EntityLocation(location.x(), location.y(), headTop);
+			boolean allAir = _blocksInVolumeCheck(checkPredicate, headLocation, volume.width(), 0.1f);
+			isTouchingCeiling = !allAir;
+		}
+		else
+		{
+			// We are mid-block.
+			isTouchingCeiling = false;
+		}
+		return isTouchingCeiling;
+	}
+
+
+	private static boolean _isBlockAligned(float coord)
+	{
+		// TODO:  This technique could have problems with numbers "close" to whole, so we probably want a minimum delta if rounding errors could appear here.
+		return (coord == (float)Math.round(coord));
+	}
 
 	private static boolean _canExistInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
 	{
@@ -48,6 +111,41 @@ public class SpatialHelpers
 			return canExist;
 		};
 		return _blocksInVolumeCheck(checkPredicate, targetLocation, volume.width(), volume.height());
+	}
+
+	private static boolean _isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	{
+		// First, if we are floating mid-block, we assume that we are not on the ground (will need to change for stairs, later).
+		boolean isOnGround;
+		if (_isBlockAligned(location.z()))
+		{
+			// This is on a block so check it.
+			// In this case, we want to check that ALL of the blocks in the ground are air and then revert the returned value to see if ANY were non-air (ground).
+			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
+				boolean isAir;
+				BlockProxy block = blockLookup.apply(target);
+				// This can be null if the world isn't totally loaded on the client.
+				if (null != block)
+				{
+					isAir = (ItemRegistry.AIR.number() == block.getData15(AspectRegistry.BLOCK));
+				}
+				else
+				{
+					isAir = false;
+				}
+				return isAir;
+			};
+			// We just want to check the single block so provide a tiny height (cannot be zero due to ceiling rounding).
+			EntityLocation groundLocation = new EntityLocation(location.x(), location.y(), location.z() - 1.0f);
+			boolean allAir = _blocksInVolumeCheck(checkPredicate, groundLocation, volume.width(), 0.1f);
+			isOnGround = !allAir;
+		}
+		else
+		{
+			// This is floating in a block, so not on the ground.
+			isOnGround = false;
+		}
+		return isOnGround;
 	}
 
 	private static boolean _blocksInVolumeCheck(Predicate<AbsoluteLocation> checkPredicate, EntityLocation targetLocation, float width, float height)
