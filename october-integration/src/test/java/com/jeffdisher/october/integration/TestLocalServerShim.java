@@ -112,7 +112,7 @@ public class TestLocalServerShim
 		client.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(0.0f, listener.entity.location().x(), 0.01f);
 		Assert.assertEquals(0.0f, listener.entity.location().y(), 0.01f);
-		Assert.assertTrue(listener.entity.location().z() < -2.0f);
+		Assert.assertTrue(listener.entity.location().z() <= -0.098);
 		
 		// Disconnect the client.
 		client.disconnect();

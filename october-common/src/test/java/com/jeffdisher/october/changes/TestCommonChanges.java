@@ -78,4 +78,29 @@ public class TestCommonChanges
 		Assert.assertFalse(didApply);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
+
+	@Test
+	public void fallingThroughAir()
+	{
+		// Position us in an air block and make sure that we fall.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, null
+		);
+		// We start with a zero z-vector since we should start falling.
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		MutableEntity newEntity = new MutableEntity(original);
+		boolean didApply = move.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
+		float expectedZVector = -0.98f;
+		// This movement would then be applied for 1/10 second.
+		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (expectedZVector / 10.0f));
+		Assert.assertEquals(expectedZVector, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(expectedLocation, newEntity.newLocation);
+	}
 }

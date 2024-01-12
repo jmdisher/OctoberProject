@@ -9,9 +9,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.EntityChangeImplicit;
+import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.EntityChangeTrickleInventory;
 import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
@@ -21,6 +22,8 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -125,7 +128,7 @@ public class TestServerRunner
 	@Test
 	public void entityFalling() throws Throwable
 	{
-		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
+		// Send some empty move changes to see that the entity is falling over time.
 		TestAdapter network = new TestAdapter();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
 		runner.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
@@ -137,13 +140,25 @@ public class TestServerRunner
 		Entity entity = network.waitForEntity(clientId, clientId);
 		Assert.assertNotNull(entity);
 		
+		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
+		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
+		EntityChangeMove move1 = new EntityChangeMove(entity.location(), 100L, 0.0f, 0.0f);
+		MutableEntity fake = new MutableEntity(entity);
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR);
+		move1.applyChange(new TickProcessingContext(1L
+				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)
+				, null
+				, null
+		), fake);
+		EntityChangeMove move2 = new EntityChangeMove(fake.newLocation, 100L, 0.0f, 0.0f);
+		server.changeReceived(clientId, move1, 1L);
+		server.changeReceived(clientId, move2, 2L);
+		
 		// Watch the entity fall as a result of implicit changes.
 		Object change0 = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(change0 instanceof EntityChangeImplicit);
+		Assert.assertTrue(change0 instanceof EntityChangeMove);
 		Object change1 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(change1 instanceof EntityChangeImplicit);
-		Object change2 = network.waitForUpdate(clientId, 2);
-		Assert.assertTrue(change2 instanceof EntityChangeImplicit);
+		Assert.assertTrue(change1 instanceof EntityChangeMove);
 		
 		runner.shutdown();
 	}
