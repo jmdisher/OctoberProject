@@ -18,7 +18,6 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -166,9 +165,7 @@ public class TestClientRunner
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		
 		// Ask them to start moving, locally, since this will put them in a pending activity.
-		EntityLocation startPoint = projection.loadedEnties.get(clientId).location();
-		EntityLocation endPoint = new EntityLocation(startPoint.x() + 0.2f, startPoint.y(), startPoint.z());
-		runner.moveTo(endPoint, currentTimeMillis);
+		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
 		
 		// Make sure that any change made now will assert fail.
 		Assert.assertTrue(runner.isActivityInProgress(currentTimeMillis));
@@ -186,7 +183,7 @@ public class TestClientRunner
 		didFail = false;
 		try
 		{
-			runner.moveTo(endPoint, currentTimeMillis);
+			runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
 		}
 		catch (AssertionError e)
 		{

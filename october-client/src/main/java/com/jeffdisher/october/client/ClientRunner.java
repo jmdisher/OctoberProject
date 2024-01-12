@@ -90,18 +90,21 @@ public class ClientRunner
 	}
 
 	/**
-	 * Creates the change to move the entity from the current location in the speculative projection to the given
-	 * endPoint.
+	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
+	 * distances.  The change will internally account for things like an existing z-vector, when falling or jumping,
+	 * when building the final target location.
 	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
 	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
-	 * @param endPoint The destination of the move.
+	 * @param xDistance How far to move in the x direction.
+	 * @param yDistance How far to move in the y direction.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveTo(EntityLocation endPoint, long currentTimeMillis)
+	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
 	{
 		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
 		EntityLocation currentLocation = _localEntityProjection.location();
+		EntityLocation endPoint = new EntityLocation(currentLocation.x() + xDistance, currentLocation.y() + yDistance, currentLocation.z());
 		// This would be a static usage or timing error on the client.
 		Assert.assertTrue(EntityChangeMove.isValidMove(currentLocation, endPoint));
 		

@@ -65,7 +65,7 @@ public class TestLocalServerShim
 		
 		// Move the client, slightly, and verify that we see the update.
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		client.moveTo(newLocation, System.currentTimeMillis());
+		client.moveHorizontal(0.4f, 0.0f, System.currentTimeMillis());
 		shim.waitForTickAdvance(2L);
 		client.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(newLocation, listener.entity.location());

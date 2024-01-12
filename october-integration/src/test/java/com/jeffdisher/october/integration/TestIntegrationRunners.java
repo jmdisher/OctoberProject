@@ -112,9 +112,9 @@ public class TestIntegrationRunners
 			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
 			Assert.assertFalse(client1.isActivityInProgress(currentTimeMillis));
-			client1.moveTo(location1, currentTimeMillis);
+			client1.moveHorizontal(0.4f, 0.0f, currentTimeMillis);
 			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis));
-			client2.moveTo(location2, currentTimeMillis);
+			client2.moveHorizontal(0.0f, -0.4f, currentTimeMillis);
 			currentTimeMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
@@ -122,7 +122,7 @@ public class TestIntegrationRunners
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
 			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis));
-			client2.moveTo(location2, currentTimeMillis);
+			client2.moveHorizontal(0.0f, -0.4f, currentTimeMillis);
 			currentTimeMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
 		
