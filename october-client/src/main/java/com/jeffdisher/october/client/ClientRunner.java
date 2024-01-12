@@ -9,10 +9,12 @@ import java.util.Queue;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.changes.EndBreakBlockChange;
+import com.jeffdisher.october.changes.EntityChangeCraft;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -110,6 +112,19 @@ public class ClientRunner
 		
 		EntityChangeMove moveChange = new EntityChangeMove(currentLocation, endPoint);
 		_applyLocalChange(moveChange, currentTimeMillis, true);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Requests a crafting operation start.
+	 * 
+	 * @param operation The crafting operation to run.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void craft(Craft operation, long currentTimeMillis)
+	{
+		EntityChangeCraft craftOperation = new EntityChangeCraft(operation);
+		_applyLocalChange(craftOperation, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 

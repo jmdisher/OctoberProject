@@ -14,6 +14,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -164,8 +165,8 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		
-		// Ask them to start moving, locally, since this will put them in a pending activity.
-		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
+		// Ask them to start crafting something, since that will put them in a pending activity.
+		runner.craft(Craft.LOG_TO_PLANKS, currentTimeMillis);
 		
 		// Make sure that any change made now will assert fail.
 		Assert.assertTrue(runner.isActivityInProgress(currentTimeMillis));
@@ -192,7 +193,7 @@ public class TestClientRunner
 		Assert.assertTrue(didFail);
 		
 		// Now, advance time and verify that we can call one of these.
-		currentTimeMillis += 100L;
+		currentTimeMillis += 1000L;
 		Assert.assertFalse(runner.isActivityInProgress(currentTimeMillis));
 		runner.beginBreakBlock(changeLocation, currentTimeMillis);
 	}
