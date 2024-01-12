@@ -1,5 +1,6 @@
 package com.jeffdisher.october.changes;
 
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -32,7 +33,7 @@ public class EntityChangeImplicit implements IEntityChange
 		// (in the future, we probably want to give them a movement vector so they can have realistic acceleration instead of this constant fall rate)
 		EntityLocation oldLocation = newEntity.newLocation;
 		EntityLocation newLocation = new EntityLocation(oldLocation.x(), oldLocation.y(), oldLocation.z() - 1.0f);
-		boolean canStand = EntityChangeMove.canStandInLocation(context.previousBlockLookUp, newLocation, newEntity.original.volume());
+		boolean canStand = SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, newEntity.original.volume());
 		if (canStand)
 		{
 			newEntity.newLocation = newLocation;
