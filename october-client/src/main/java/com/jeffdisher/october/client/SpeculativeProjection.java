@@ -48,7 +48,7 @@ public class SpeculativeProjection
 	
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
 	private final Map<Integer, Entity> _shadowCrowd;
-	private final Function<AbsoluteLocation, BlockProxy> _shadowBlockLoader;
+	public final Function<AbsoluteLocation, BlockProxy> shadowBlockLoader;
 	
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
 	private Map<Integer, Entity> _projectedCrowd;
@@ -74,7 +74,7 @@ public class SpeculativeProjection
 		// The initial states start as empty and are populated by the server.
 		_shadowWorld = new HashMap<>();
 		_shadowCrowd = new HashMap<>();
-		_shadowBlockLoader = (AbsoluteLocation location) -> {
+		this.shadowBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			IReadOnlyCuboidData cuboid = _shadowWorld.get(address);
 			return (null != cuboid)
@@ -149,11 +149,11 @@ public class SpeculativeProjection
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, _shadowBlockLoader, gameTick, entityChanges);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, this.shadowBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
 		Map<CuboidAddress, Queue<IMutation>> mutationsToRun = _createMutationMap(cuboidMutations);
-		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, worldListener, _shadowBlockLoader, gameTick, mutationsToRun);
+		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, worldListener, this.shadowBlockLoader, gameTick, mutationsToRun);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -373,7 +373,7 @@ public class SpeculativeProjection
 		Queue<IEntityChange> queue = new LinkedList<IEntityChange>();
 		queue.add(change);
 		Map<Integer, Queue<IEntityChange>> changesToRun = Map.of(_localEntityId, queue);
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, changesToRun);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, this.shadowBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
 		Map<Integer, Queue<IEntityChange>> exportedChanges = group.exportedChanges();
 		List<IMutation> exportedMutations = group.exportedMutations();
@@ -383,10 +383,10 @@ public class SpeculativeProjection
 		{
 			// Run these changes and mutations, collecting the resultant output from them.
 			Map<CuboidAddress, Queue<IMutation>> innerMutations = _createMutationMap(exportedMutations);
-			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, specialMutationListener, _shadowBlockLoader, gameTick, innerMutations);
+			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, specialMutationListener, this.shadowBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
 			
-			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, _shadowBlockLoader, gameTick, exportedChanges);
+			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, this.shadowBlockLoader, gameTick, exportedChanges);
 			_projectedCrowd.putAll(innerGroup.groupFragment());
 			
 			// Coalesce the results of these.

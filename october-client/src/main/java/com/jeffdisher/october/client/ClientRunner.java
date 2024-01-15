@@ -14,12 +14,15 @@ import com.jeffdisher.october.changes.EntityChangeJump;
 import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -98,6 +101,8 @@ public class ClientRunner
 	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
 	 * distances.  The change will internally account for things like an existing z-vector, when falling or jumping,
 	 * when building the final target location.
+	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
+	 * existing z movement to be handled.
 	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
 	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
@@ -107,9 +112,44 @@ public class ClientRunner
 	 */
 	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
 	{
-		// The caller shouldn't be asking us to move in ways which aren't possible (would imply the client's time behaviour is invalid).
-		// This would be a static usage or timing error on the client.
-		_commonMove(xDistance, yDistance, currentTimeMillis);
+		// See if the horizontal movement is even feasible.
+		EntityLocation previous = _localEntityProjection.location();
+		EntityVolume volume = _localEntityProjection.volume();
+		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
+		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.shadowBlockLoader, validated, volume))
+		{
+			// Adjust the coordinates.
+			if (xDistance > 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingEastWall(_projection.shadowBlockLoader, validated, volume, previous.x());
+			}
+			else if (xDistance < 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingWestWall(_projection.shadowBlockLoader, validated, volume, previous.x());
+			}
+			else if (yDistance > 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingNorthWall(_projection.shadowBlockLoader, validated, volume, previous.y());
+			}
+			else if (yDistance < 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingSouthWall(_projection.shadowBlockLoader, validated, volume, previous.y());
+			}
+			else
+			{
+				validated = null;
+			}
+		}
+		
+		// Now, apply the move with validated the location.
+		float thisX = 0.0f;
+		float thisY = 0.0f;
+		if (null != validated)
+		{
+			thisX = validated.x() - previous.x();
+			thisY = validated.y() - previous.y();
+		}
+		_commonMove(thisX, thisY, currentTimeMillis);
 	}
 
 	/**

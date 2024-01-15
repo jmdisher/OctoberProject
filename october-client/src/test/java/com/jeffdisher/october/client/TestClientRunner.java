@@ -19,6 +19,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -158,19 +159,17 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
-		network.client.receivedCuboid(cuboid);
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
-		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
 		
 		// Ask them to start crafting something, since that will put them in a pending activity.
 		runner.craft(Craft.LOG_TO_PLANKS, currentTimeMillis);
 		
 		// Make sure that any change made now will assert fail.
 		Assert.assertTrue(runner.isActivityInProgress(currentTimeMillis));
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, -1);
 		boolean didFail = false;
 		try
 		{
@@ -196,6 +195,40 @@ public class TestClientRunner
 		currentTimeMillis += 1000L;
 		Assert.assertFalse(runner.isActivityInProgress(currentTimeMillis));
 		runner.beginBreakBlock(changeLocation, currentTimeMillis);
+	}
+
+	@Test
+	public void jumpAgainstWall() throws Throwable
+	{
+		// Verify that we see assertion failures if there is still an in-progress activity when we ask the ClientRunner to do something new.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 1L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		// We will stand on the ground, in air, but there will be a wall directly to the West.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.STONE));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Jump and then try to move to the West and observe the updated location.
+		runner.jump(currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.moveHorizontal(-0.2f, 0.0f, currentTimeMillis);
+		
+		// See where they are - we expect them to have jumped slightly, despite hitting the wall.
+		EntityLocation location = projection.loadedEnties.get(clientId).location();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.49f), location);
 	}
 
 
@@ -254,6 +287,9 @@ public class TestClientRunner
 		@Override
 		public void entityDidChange(Entity entity)
 		{
+			int id = entity.id();
+			Assert.assertTrue(this.loadedEnties.containsKey(id));
+			this.loadedEnties.put(id, entity);
 		}
 		@Override
 		public void entityDidUnload(int id)
