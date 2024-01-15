@@ -84,4 +84,35 @@ public class TestSpatialHelpers
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(blockTypeReader, location, VOLUME);
 		Assert.assertTrue(isTouching);
 	}
+
+	@Test
+	public void locationTouchingCeiling()
+	{
+		// Try to place the entity a little too high into the ceiling and observe the corrected location.
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, -1.5f);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
+				? new BlockProxy(l.getBlockAddress(), stone)
+				: new BlockProxy(l.getBlockAddress(), air)
+		;
+		EntityLocation touching = SpatialHelpers.locationTouchingCeiling(blockTypeReader, location, VOLUME, -2.0f);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.8f), touching);
+	}
+
+	@Test
+	public void locationTouchingGround()
+	{
+		// Try to place the entity a little too low into the ground and observe the corrected location.
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, -0.5f);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
+				? new BlockProxy(l.getBlockAddress(), air)
+				: new BlockProxy(l.getBlockAddress(), stone)
+		;
+		EntityLocation touching = SpatialHelpers.locationTouchingGround(blockTypeReader, location, VOLUME, 1.0f);
+		// Note that we will need to treat -0.0 and 0.0 as the same in various places in the system.
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.0f), touching);
+	}
 }

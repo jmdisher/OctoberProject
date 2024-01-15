@@ -86,6 +86,73 @@ public class SpatialHelpers
 		return isTouchingCeiling;
 	}
 
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the ceiling and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousZ The previous z location where the entity was standing before it tried to rise.
+	 * @return The safe location against the ceiling or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingCeiling(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousZ)
+	{
+		// We were jumping to see if we can clamp our location under the block.
+		float headTop = start.z() + volume.height();
+		// Round this down and see if we can fit until this block.
+		float zTop = (float) Math.floor(headTop);
+		float zToCheck = zTop - volume.height();
+		EntityLocation match = null;
+		while ((null == match) && (zToCheck >= previousZ))
+		{
+			EntityLocation checkLocation = new EntityLocation(start.x(), start.y(), zToCheck);
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block down (unlikely that there is more than one iteration here).
+				zToCheck -= 1.0f;
+			}
+		}
+		return match;
+	}
+
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the ground and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousZ The previous z location where the entity was standing before it tried to fall.
+	 * @return The safe location on the ground or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousZ)
+	{
+		// We were falling so see if we can stop on the block(s) above where we fell.
+		float zToCheck = (float) Math.ceil(start.z());
+		// WARNING:  This approach for "finding the ground" can be exploited by nefarious clients to avoid
+		// falling at all so we only check strictly less than oldZ.
+		EntityLocation match = null;
+		while ((null == match) && (zToCheck < previousZ))
+		{
+			EntityLocation checkLocation = new EntityLocation(start.x(), start.y(), zToCheck);
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block up.
+				zToCheck += 1.0f;
+			}
+		}
+		return match;
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{

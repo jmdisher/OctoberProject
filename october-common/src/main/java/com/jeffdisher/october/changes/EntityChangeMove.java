@@ -151,46 +151,23 @@ public class EntityChangeMove implements IEntityChange
 				if (zDistance > 0.0f)
 				{
 					// We were jumping to see if we can clamp our location under the block.
-					float headTop = newLocation.z() + volume.height();
-					// Round this down and see if we can fit until this block.
-					float zTop = (float) Math.floor(headTop);
-					float zToCheck = zTop - volume.height();
-					while (!didApply && (zToCheck >= oldZ))
+					EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
+					if (null != highestLocation)
 					{
-						EntityLocation checkLocation = new EntityLocation(xLocation, yLocation, zToCheck);
-						if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, checkLocation, volume))
-						{
-							newEntity.newLocation = checkLocation;
-							newEntity.newZVelocityPerSecond = newZVector;
-							didApply = true;
-						}
-						else
-						{
-							// Try the next block down (unlikely that there is more than one iteration here).
-							zToCheck -= 1.0f;
-						}
+						newEntity.newLocation = highestLocation;
+						newEntity.newZVelocityPerSecond = newZVector;
+						didApply = true;
 					}
 				}
 				else if (zDistance < 0.0f)
 				{
 					// We were falling so see if we can stop on the block(s) above where we fell.
-					float zToCheck = (float) Math.ceil(zLocation);
-					// WARNING:  This approach for "finding the ground" can be exploited by nefarious clients to avoid
-					// falling at all so we only check strictly less than oldZ.
-					while (!didApply && (zToCheck < oldZ))
+					EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
+					if (null != lowestLocation)
 					{
-						EntityLocation checkLocation = new EntityLocation(xLocation, yLocation, zToCheck);
-						if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, checkLocation, volume))
-						{
-							newEntity.newLocation = checkLocation;
-							newEntity.newZVelocityPerSecond = newZVector;
-							didApply = true;
-						}
-						else
-						{
-							// Try the next block up.
-							zToCheck += 1.0f;
-						}
+						newEntity.newLocation = lowestLocation;
+						newEntity.newZVelocityPerSecond = newZVector;
+						didApply = true;
 					}
 				}
 			}
