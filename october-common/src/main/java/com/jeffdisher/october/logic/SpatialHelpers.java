@@ -13,6 +13,13 @@ import com.jeffdisher.october.types.EntityVolume;
 
 /**
  * A collection of static helper methods to help us make sense of the environment in higher-level ways.
+ * To be clear regarding our interpretation of the XYZ coordinates:
+ * -x is West-East, such that -x is West, +x is East
+ * -y is South-North, such that -y is South, +y is North
+ * -z is down-up, such that -z is down, +z is up
+ * -the XYZ location where an entity "is" is the air block where their feet exist.
+ * This means that the .0 location of any single block is considered to be the bottom, South-West corner.  The entity
+ * volume then extends in the East-North-Up direction from that corner.
  */
 public class SpatialHelpers
 {
@@ -148,6 +155,134 @@ public class SpatialHelpers
 			{
 				// Try the next block up.
 				zToCheck += 1.0f;
+			}
+		}
+		return match;
+	}
+
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the East wall and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousX The previous x location where the entity was standing before it tried to move.
+	 * @return The safe location against the East wall or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingEastWall(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousX)
+	{
+		float width = volume.width();
+		float eastEdge = start.x() + width;
+		// Round this down and see if we can fit until this block.
+		float xTop = (float) Math.floor(eastEdge);
+		float xToCheck = xTop - width;
+		EntityLocation match = null;
+		while ((null == match) && (xToCheck >= previousX))
+		{
+			EntityLocation checkLocation = new EntityLocation(xToCheck, start.y(), start.z());
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block over (unlikely that there is more than one iteration here).
+				xToCheck -= 1.0f;
+			}
+		}
+		return match;
+	}
+
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the West wall and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousX The previous x location where the entity was standing before it tried to move.
+	 * @return The safe location against the West wall or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingWestWall(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousX)
+	{
+		float xToCheck = (float) Math.ceil(start.x());
+		EntityLocation match = null;
+		while ((null == match) && (xToCheck < previousX))
+		{
+			EntityLocation checkLocation = new EntityLocation(xToCheck, start.y(), start.z());
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block up.
+				xToCheck += 1.0f;
+			}
+		}
+		return match;
+	}
+
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the North wall and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousY The previous y location where the entity was standing before it tried to move.
+	 * @return The safe location against the North wall or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingNorthWall(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousY)
+	{
+		float width = volume.width();
+		float northEdge = start.y() + width;
+		// Round this down and see if we can fit until this block.
+		float yTop = (float) Math.floor(northEdge);
+		float yToCheck = yTop - width;
+		EntityLocation match = null;
+		while ((null == match) && (yToCheck >= previousY))
+		{
+			EntityLocation checkLocation = new EntityLocation(start.x(), yToCheck, start.z());
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block over (unlikely that there is more than one iteration here).
+				yToCheck -= 1.0f;
+			}
+		}
+		return match;
+	}
+
+	/**
+	 * Finds the location closest to start where an entity with the given volume will be touching the South wall and can
+	 * exist without colliding with other blocks.
+	 * 
+	 * @param blockLookup Looks up blocks in the world.
+	 * @param start The location where the entity placement was attempted.
+	 * @param volume The volume of the entity.
+	 * @param previousY The previous y location where the entity was standing before it tried to move.
+	 * @return The safe location against the South wall or null if one couldn't be found.
+	 */
+	public static EntityLocation locationTouchingSouthWall(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation start, EntityVolume volume, float previousY)
+	{
+		float yToCheck = (float) Math.ceil(start.y());
+		EntityLocation match = null;
+		while ((null == match) && (yToCheck < previousY))
+		{
+			EntityLocation checkLocation = new EntityLocation(start.x(), yToCheck, start.z());
+			if (_canExistInLocation(blockLookup, checkLocation, volume))
+			{
+				match = checkLocation;
+			}
+			else
+			{
+				// Try the next block up.
+				yToCheck += 1.0f;
 			}
 		}
 		return match;
