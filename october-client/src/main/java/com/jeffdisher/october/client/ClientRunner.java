@@ -242,17 +242,19 @@ public class ClientRunner
 			// We assume that we spent time before this movement at least partially performing the move so update it.
 			long millisToMove = EntityChangeMove.getTimeMostMillis(xDistance, yDistance);
 			// We will skip any millis which don't fit (accounting for them all is ideal but the real-time nature of the client means we can miss some - especially during startup).
-			Assert.assertTrue(millisToMove <= millisBeforeCall);
-			Assert.assertTrue(millisToMove <= EntityChangeMove.LIMIT_COST_MILLIS);
-			long millisAbstractSlack = EntityChangeMove.LIMIT_COST_MILLIS - millisToMove;
-			long millisRealSlack = millisBeforeCall - millisToMove;
-			long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
-			Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
-			
-			EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), millisBeforeMovement, xDistance, yDistance);
-			_applyLocalChange(moveChange, currentTimeMillis, false);
-			_runAllPendingCalls(currentTimeMillis);
-			_lastMoveMillis = currentTimeMillis;
+			if (millisToMove <= millisBeforeCall)
+			{
+				Assert.assertTrue(millisToMove <= EntityChangeMove.LIMIT_COST_MILLIS);
+				long millisAbstractSlack = EntityChangeMove.LIMIT_COST_MILLIS - millisToMove;
+				long millisRealSlack = millisBeforeCall - millisToMove;
+				long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
+				Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
+				
+				EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), millisBeforeMovement, xDistance, yDistance);
+				_applyLocalChange(moveChange, currentTimeMillis, false);
+				_runAllPendingCalls(currentTimeMillis);
+				_lastMoveMillis = currentTimeMillis;
+			}
 		}
 	}
 

@@ -180,6 +180,8 @@ public class TestClientRunner
 			didFail = true;
 		}
 		Assert.assertTrue(didFail);
+		
+		currentTimeMillis += 100L;
 		didFail = false;
 		try
 		{
