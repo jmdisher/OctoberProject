@@ -1,6 +1,6 @@
 package com.jeffdisher.october.server;
 
-import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -8,13 +8,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * This is a synthetic change which is used by the server to associate other tracking meta-data with a change.
  */
-public class ServerEntityChangeWrapper implements IEntityChange
+public class ServerEntityChangeWrapper implements IMutationEntity
 {
-	public final IEntityChange realChange;
+	public final IMutationEntity realChange;
 	public final int clientId;
 	public final long commitLevel;
 
-	public ServerEntityChangeWrapper(IEntityChange realChange
+	public ServerEntityChangeWrapper(IMutationEntity realChange
 			, int clientId
 			, long commitLevel
 	)

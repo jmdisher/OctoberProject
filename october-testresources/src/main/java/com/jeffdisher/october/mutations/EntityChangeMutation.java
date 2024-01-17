@@ -1,6 +1,5 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
-import com.jeffdisher.october.mutations.IMutation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -9,11 +8,11 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * The current version of IEntityChange is just a stop-gap to allow updates to existing logic elsewhere and this class
  * is part of that stop-gap:  It just contains a mutation which it delivers to SpeculativeProjection.
  */
-public class EntityChangeMutation implements IEntityChange
+public class EntityChangeMutation implements IMutationEntity
 {
-	private final IMutation _contents;
+	private final IMutationBlock _contents;
 
-	public EntityChangeMutation(IMutation contents)
+	public EntityChangeMutation(IMutationBlock contents)
 	{
 		_contents = contents;
 	}

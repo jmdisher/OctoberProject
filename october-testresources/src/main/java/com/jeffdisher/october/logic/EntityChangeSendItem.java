@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
@@ -11,7 +11,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * A test of IEntityChange:  This change extracts all items of a given type from the entity's inventory and, if it is
  * more than 0, creates a new change to pass it to another entity.
  */
-public class EntityChangeSendItem implements IEntityChange
+public class EntityChangeSendItem implements IMutationEntity
 {
 	private final int _targetId;
 	private final Item _itemType;

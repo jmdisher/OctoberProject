@@ -9,9 +9,9 @@ import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -51,24 +51,24 @@ public class CrowdProcessor
 			, IEntityChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
-			, Map<Integer, Queue<IEntityChange>> changesToRun
+			, Map<Integer, Queue<IMutationEntity>> changesToRun
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
-		List<IMutation> exportedMutations = new ArrayList<>();
-		Map<Integer, Queue<IEntityChange>> exportedChanges = new HashMap<>();
-		Consumer<IMutation> newMutationSink = new Consumer<>() {
+		List<IMutationBlock> exportedMutations = new ArrayList<>();
+		Map<Integer, Queue<IMutationEntity>> exportedChanges = new HashMap<>();
+		Consumer<IMutationBlock> newMutationSink = new Consumer<>() {
 			@Override
-			public void accept(IMutation arg0)
+			public void accept(IMutationBlock arg0)
 			{
 				exportedMutations.add(arg0);
 			}
 		};
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void accept(int targetEntityId, IEntityChange change)
+			public void accept(int targetEntityId, IMutationEntity change)
 			{
-				Queue<IEntityChange> entityChanges = exportedChanges.get(targetEntityId);
+				Queue<IMutationEntity> entityChanges = exportedChanges.get(targetEntityId);
 				if (null == entityChanges)
 				{
 					entityChanges = new LinkedList<>();
@@ -79,19 +79,19 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
-		for (Map.Entry<Integer, Queue<IEntityChange>> elt : changesToRun.entrySet())
+		for (Map.Entry<Integer, Queue<IMutationEntity>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				Queue<IEntityChange> changes = elt.getValue();
+				Queue<IMutationEntity> changes = elt.getValue();
 				Entity entity = entitiesById.get(id);
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
 				MutableEntity mutable = new MutableEntity(entity);
-				for (IEntityChange change : changes)
+				for (IMutationEntity change : changes)
 				{
 					processor.changeCount += 1;
 					boolean didApply = change.applyChange(context, mutable);
@@ -113,14 +113,14 @@ public class CrowdProcessor
 
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
-			, List<IMutation> exportedMutations
-			, Map<Integer, Queue<IEntityChange>> exportedChanges
+			, List<IMutationBlock> exportedMutations
+			, Map<Integer, Queue<IMutationEntity>> exportedChanges
 	) {}
 
 
 	public interface IEntityChangeListener
 	{
-		void changeApplied(int targetEntityId, IEntityChange change);
-		void changeDropped(int targetEntityId, IEntityChange change);
+		void changeApplied(int targetEntityId, IMutationEntity change);
+		void changeDropped(int targetEntityId, IMutationEntity change);
 	}
 }

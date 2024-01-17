@@ -21,7 +21,7 @@ import com.jeffdisher.october.utils.Assert;
  * Additionally, this mutation cannot be used for groups of items which are larger than what a single air block can
  * hold.
  */
-public class PickUpItemMutation implements IMutation
+public class PickUpItemMutation implements IMutationBlock
 {
 	private final AbsoluteLocation _location;
 	private final Item _type;

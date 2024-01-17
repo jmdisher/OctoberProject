@@ -2,11 +2,11 @@ package com.jeffdisher.october.integration;
 
 import java.util.function.LongSupplier;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -171,7 +171,7 @@ public class LocalServerShim
 			_shutdownServer();
 		}
 		@Override
-		public void sendChange(IEntityChange change, long commitLevel)
+		public void sendChange(IMutationEntity change, long commitLevel)
 		{
 			_serverListener.changeReceived(CLIENT_ID, change, commitLevel);
 		}
@@ -197,13 +197,13 @@ public class LocalServerShim
 			_clientListener.receivedCuboid(cuboid);
 		}
 		@Override
-		public void sendChange(int clientId, int entityId, IEntityChange change)
+		public void sendChange(int clientId, int entityId, IMutationEntity change)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_clientListener.receivedChange(entityId, change);
 		}
 		@Override
-		public void sendMutation(int clientId, IMutation mutation)
+		public void sendMutation(int clientId, IMutationBlock mutation)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_clientListener.receivedMutation(mutation);

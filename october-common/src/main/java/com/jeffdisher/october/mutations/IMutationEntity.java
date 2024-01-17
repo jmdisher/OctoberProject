@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,7 +13,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * 3) New entity joins
  * 4) Changes enqueued by the external calls
  */
-public interface IEntityChange
+public interface IMutationEntity
 {
 	/**
 	 * Determines how many milliseconds it takes to run this change.  Note that this "time" is considered more abstract

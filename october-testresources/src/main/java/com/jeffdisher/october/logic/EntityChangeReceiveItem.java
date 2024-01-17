@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.changes.IEntityChange;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
@@ -11,7 +11,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * A test of IEntityChange:  This change attempts to add the given items to our inventory, but only passes if we don't
  * currently have any, failing if they won't fit or we already had some.
  */
-public class EntityChangeReceiveItem implements IEntityChange
+public class EntityChangeReceiveItem implements IMutationEntity
 {
 	private final Item _itemType;
 	private final int _itemCount;

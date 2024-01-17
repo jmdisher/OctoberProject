@@ -3,12 +3,12 @@ package com.jeffdisher.october.logic;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
-public class ShockwaveMutation implements IMutation
+public class ShockwaveMutation implements IMutationBlock
 {
 	private final AbsoluteLocation _location;
 	private final int _count;
@@ -32,7 +32,7 @@ public class ShockwaveMutation implements IMutation
 		return true;
 	}
 
-	private void _commonMutation(Consumer<IMutation> newMutationSink)
+	private void _commonMutation(Consumer<IMutationBlock> newMutationSink)
 	{
 		if (_count > 0)
 		{

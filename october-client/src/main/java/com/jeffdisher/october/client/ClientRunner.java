@@ -8,14 +8,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.function.LongConsumer;
 
-import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.EntityChangeCraft;
-import com.jeffdisher.october.changes.EntityChangeJump;
-import com.jeffdisher.october.changes.EntityChangeMove;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeJump;
+import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -221,7 +221,7 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IEntityChange change, long currentTimeMillis, boolean canBeInProgress)
+	private void _applyLocalChange(IMutationEntity change, long currentTimeMillis, boolean canBeInProgress)
 	{
 		long localCommit = _projection.applyLocalChange(change, currentTimeMillis, canBeInProgress);
 		if (localCommit > 0L)
@@ -266,8 +266,8 @@ public class ClientRunner
 		private List<Entity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private Map<Integer, Queue<IEntityChange>> _entityChanges = new HashMap<>();
-		private List<IMutation> _cuboidMutations = new ArrayList<>();
+		private Map<Integer, Queue<IMutationEntity>> _entityChanges = new HashMap<>();
+		private List<IMutationBlock> _cuboidMutations = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
@@ -304,9 +304,9 @@ public class ClientRunner
 			_addedCuboids.add(cuboid);
 		}
 		@Override
-		public void receivedChange(int entityId, IEntityChange change)
+		public void receivedChange(int entityId, IMutationEntity change)
 		{
-			Queue<IEntityChange> oneQueue = _entityChanges.get(entityId);
+			Queue<IMutationEntity> oneQueue = _entityChanges.get(entityId);
 			if (null == oneQueue)
 			{
 				oneQueue = new LinkedList<>();
@@ -315,7 +315,7 @@ public class ClientRunner
 			oneQueue.add(change);
 		}
 		@Override
-		public void receivedMutation(IMutation mutation)
+		public void receivedMutation(IMutationBlock mutation)
 		{
 			_cuboidMutations.add(mutation);
 		}
@@ -327,9 +327,9 @@ public class ClientRunner
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			Map<Integer, Queue<IEntityChange>> entityChanges = new HashMap<>(_entityChanges);
+			Map<Integer, Queue<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
 			_entityChanges.clear();
-			List<IMutation> cuboidMutations = new ArrayList<>(_cuboidMutations);
+			List<IMutationBlock> cuboidMutations = new ArrayList<>(_cuboidMutations);
 			_cuboidMutations.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);
 			_removedEntities.clear();

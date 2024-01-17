@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -9,7 +9,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * A testing change to verify sequences of internal changes.
  * Given Items, will pass one to the entity in each tick until there are none left.
  */
-public class EntityChangeTrickleInventory implements IEntityChange
+public class EntityChangeTrickleInventory implements IMutationEntity
 {
 	private final Items _contents;
 

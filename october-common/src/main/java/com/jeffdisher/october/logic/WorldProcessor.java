@@ -9,12 +9,12 @@ import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -53,15 +53,15 @@ public class WorldProcessor
 			, IBlockChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
-			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
+			, Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		List<IMutation> exportedMutations = new ArrayList<>();
-		Map<Integer, Queue<IEntityChange>> exportedEntityChanges = new HashMap<>();
-		Consumer<IMutation> sink = new Consumer<IMutation>() {
+		List<IMutationBlock> exportedMutations = new ArrayList<>();
+		Map<Integer, Queue<IMutationEntity>> exportedEntityChanges = new HashMap<>();
+		Consumer<IMutationBlock> sink = new Consumer<IMutationBlock>() {
 			@Override
-			public void accept(IMutation arg0)
+			public void accept(IMutationBlock arg0)
 			{
 				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
 				exportedMutations.add(arg0);
@@ -69,9 +69,9 @@ public class WorldProcessor
 			
 			TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void accept(int targetEntityId, IEntityChange change)
+			public void accept(int targetEntityId, IMutationEntity change)
 			{
-				Queue<IEntityChange> entityChanges = exportedEntityChanges.get(targetEntityId);
+				Queue<IMutationEntity> entityChanges = exportedEntityChanges.get(targetEntityId);
 				if (null == entityChanges)
 				{
 					entityChanges = new LinkedList<>();
@@ -83,19 +83,19 @@ public class WorldProcessor
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
-		for (Map.Entry<CuboidAddress, Queue<IMutation>> elt : mutationsToRun.entrySet())
+		for (Map.Entry<CuboidAddress, Queue<IMutationBlock>> elt : mutationsToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				CuboidAddress key = elt.getKey();
-				Queue<IMutation> mutations = elt.getValue();
+				Queue<IMutationBlock> mutations = elt.getValue();
 				IReadOnlyCuboidData oldState = worldMap.get(key);
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
 				CuboidData mutable = CuboidData.mutableClone(oldState);
-				for (IMutation mutation : mutations)
+				for (IMutationBlock mutation : mutations)
 				{
 					processor.mutationCount += 1;
 					MutableBlockProxy thisBlockProxy = new MutableBlockProxy(mutation.getAbsoluteLocation().getBlockAddress(), mutable);
@@ -119,14 +119,14 @@ public class WorldProcessor
 
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, List<IMutation> exportedMutations
-			, Map<Integer, Queue<IEntityChange>> exportedEntityChanges
+			, List<IMutationBlock> exportedMutations
+			, Map<Integer, Queue<IMutationEntity>> exportedEntityChanges
 	) {}
 
 
 	public interface IBlockChangeListener
 	{
-		void mutationApplied(IMutation mutation);
-		void mutationDropped(IMutation mutation);
+		void mutationApplied(IMutationBlock mutation);
+		void mutationDropped(IMutationBlock mutation);
 	}
 }

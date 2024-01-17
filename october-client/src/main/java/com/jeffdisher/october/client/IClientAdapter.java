@@ -1,8 +1,8 @@
 package com.jeffdisher.october.client;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -32,7 +32,7 @@ public interface IClientAdapter
 	 * @param change The change to send.
 	 * @param commitLevel The client's local commit level represented by this change.
 	 */
-	void sendChange(IEntityChange change, long commitLevel);
+	void sendChange(IMutationEntity change, long commitLevel);
 
 
 	/**
@@ -71,14 +71,14 @@ public interface IClientAdapter
 		 * @param entityId The entity to which the change should be applied.
 		 * @param change The change.
 		 */
-		void receivedChange(int entityId, IEntityChange change);
+		void receivedChange(int entityId, IMutationEntity change);
 		/**
 		 * Called when an incremental mutation is received from the server.  Note that the server only sends us
 		 * mutations which it applied successfully so this can't fail to apply.
 		 * 
 		 * @param mutation The mutation
 		 */
-		void receivedMutation(IMutation mutation);
+		void receivedMutation(IMutationBlock mutation);
 		/**
 		 * Called when the server sends us the end of tick message.  Any messages received since the previous end of
 		 * tick are considered part of this tick.

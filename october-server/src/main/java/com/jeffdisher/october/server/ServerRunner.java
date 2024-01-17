@@ -9,13 +9,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -239,11 +239,11 @@ public class ServerRunner
 		}
 	}
 
-	private IEntityChange _updateClientMetaState(IEntityChange change)
+	private IMutationEntity _updateClientMetaState(IMutationEntity change)
 	{
 		// When changes are passed in, we wrap them in ServerEntityChangeWrapper.
 		// When they originate internally (using the change sink), we just see the bare change.
-		IEntityChange underlying;
+		IMutationEntity underlying;
 		if (change instanceof ServerEntityChangeWrapper)
 		{
 			ServerEntityChangeWrapper wrapper = (ServerEntityChangeWrapper) change;
@@ -279,7 +279,7 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void changeReceived(int clientId, IEntityChange change, long commitLevel)
+		public void changeReceived(int clientId, IMutationEntity change, long commitLevel)
 		{
 			_messages.enqueue(() -> {
 				// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
@@ -296,11 +296,11 @@ public class ServerRunner
 	private class TickListener implements CrowdProcessor.IEntityChangeListener, WorldProcessor.IBlockChangeListener, Consumer<TickRunner.Snapshot>
 	{
 		@Override
-		public void changeApplied(int targetEntityId, IEntityChange change)
+		public void changeApplied(int targetEntityId, IMutationEntity change)
 		{
 			_messages.enqueue(() -> {
 				// Update the meta-state and see if change needs unwrapping.
-				IEntityChange underlyingChange = _updateClientMetaState(change);
+				IMutationEntity underlyingChange = _updateClientMetaState(change);
 				
 				// Now, send the change.
 				for (Map.Entry<Integer, ClientState> elt: _connectedClients.entrySet())
@@ -314,7 +314,7 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void changeDropped(int targetEntityId, IEntityChange change)
+		public void changeDropped(int targetEntityId, IMutationEntity change)
 		{
 			_messages.enqueue(() -> {
 				// We don't send dropped changes to the client but we will update the tracking.
@@ -322,7 +322,7 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void mutationApplied(IMutation mutation)
+		public void mutationApplied(IMutationBlock mutation)
 		{
 			_messages.enqueue(() -> {
 				// Mutations don't change the client meta-state so just send this to the clients.
@@ -338,7 +338,7 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void mutationDropped(IMutation mutation)
+		public void mutationDropped(IMutationBlock mutation)
 		{
 			// Do nothing - the server doesn't act on this information.
 		}

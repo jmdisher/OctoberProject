@@ -12,8 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.EntityChangeImplicit;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -21,7 +19,9 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.EntityChangeImplicit;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -42,7 +42,7 @@ public class TickRunner
 	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
-	private List<IMutation> _mutations;
+	private List<IMutationBlock> _mutations;
 	private List<CuboidData> _newCuboids;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
@@ -164,7 +164,7 @@ public class TickRunner
 	 * 
 	 * @param mutation The mutation to enqueue.
 	 */
-	public void enqueueMutation(IMutation mutation)
+	public void enqueueMutation(IMutationBlock mutation)
 	{
 		_sharedDataLock.lock();
 		try
@@ -224,7 +224,7 @@ public class TickRunner
 		}
 	}
 
-	public void enqueueEntityChange(int entityId, IEntityChange change)
+	public void enqueueEntityChange(int entityId, IMutationEntity change)
 	{
 		_sharedDataLock.lock();
 		try
@@ -287,7 +287,7 @@ public class TickRunner
 		{
 			// Run the tick.
 			// Process all entity changes first and synchronize to lock-step.
-			Map<Integer, Queue<IEntityChange>> changesToRun = _injectImplicitChange(materials.completedEntities, materials.changesToRun);
+			Map<Integer, Queue<IMutationEntity>> changesToRun = _injectImplicitChange(materials.completedEntities, materials.changesToRun);
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, changesToRun);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
@@ -305,14 +305,14 @@ public class TickRunner
 		}
 	}
 
-	private Map<Integer, Queue<IEntityChange>> _injectImplicitChange(Map<Integer, Entity> completedEntities, Map<Integer, Queue<IEntityChange>> changesToRun)
+	private Map<Integer, Queue<IMutationEntity>> _injectImplicitChange(Map<Integer, Entity> completedEntities, Map<Integer, Queue<IMutationEntity>> changesToRun)
 	{
 		EntityChangeImplicit implicitChange = new EntityChangeImplicit();
 		// Note that changesToRun typically doesn't include all entities so we usually need to add queues for this implicit change.
-		Map<Integer, Queue<IEntityChange>> fullMap = new HashMap<>();
+		Map<Integer, Queue<IMutationEntity>> fullMap = new HashMap<>();
 		for (Integer id : completedEntities.keySet())
 		{
-			Queue<IEntityChange> thisQueue = changesToRun.get(id);
+			Queue<IMutationEntity> thisQueue = changesToRun.get(id);
 			if (null == thisQueue)
 			{
 				thisQueue = new LinkedList<>();
@@ -370,9 +370,9 @@ public class TickRunner
 			{
 				// Load other cuboids and apply other mutations enqueued since the last tick.
 				List<CuboidData> newCuboids;
-				List<IMutation> newMutations;
+				List<IMutationBlock> newMutations;
 				List<Entity> newEntities;
-				Map<Integer, Queue<IEntityChange>> newEntityChanges = new HashMap<>();
+				Map<Integer, Queue<IMutationEntity>> newEntityChanges = new HashMap<>();
 				
 				_sharedDataLock.lock();
 				try
@@ -391,7 +391,7 @@ public class TickRunner
 						PerEntitySharedAccess access = entry.getValue();
 						
 						long schedulingBudget = _millisPerTick;
-						Queue<IEntityChange> queue = new LinkedList<>();
+						Queue<IMutationEntity> queue = new LinkedList<>();
 						
 						_sharedLock_ScheduleForEntity(access, queue, schedulingBudget);
 						if (!queue.isEmpty())
@@ -408,8 +408,8 @@ public class TickRunner
 				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
 				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
 				Map<Integer, Entity> nextCrowdState = new HashMap<>();
-				Map<CuboidAddress, Queue<IMutation>> nextTickMutations = new HashMap<>();
-				Map<Integer, Queue<IEntityChange>> nextTickChanges = new HashMap<>();
+				Map<CuboidAddress, Queue<IMutationBlock>> nextTickMutations = new HashMap<>();
+				Map<Integer, Queue<IMutationEntity>> nextTickChanges = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
 				nextWorldState.putAll(_snapshot.completedCuboids);
@@ -438,22 +438,22 @@ public class TickRunner
 				// Next step is to schedule anything from the previous tick.
 				for (WorldProcessor.ProcessedFragment fragment : _partial)
 				{
-					for (IMutation mutation : fragment.exportedMutations())
+					for (IMutationBlock mutation : fragment.exportedMutations())
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (Map.Entry<Integer, Queue<IEntityChange>> container : fragment.exportedEntityChanges().entrySet())
+					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.exportedEntityChanges().entrySet())
 					{
 						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
 				}
 				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
 				{
-					for (IMutation mutation : fragment.exportedMutations())
+					for (IMutationBlock mutation : fragment.exportedMutations())
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (Map.Entry<Integer, Queue<IEntityChange>> container : fragment.exportedChanges().entrySet())
+					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.exportedChanges().entrySet())
 					{
 						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
@@ -462,12 +462,12 @@ public class TickRunner
 				// Schedule the new mutations and changes coming from outside (they are applied AFTER updates from the previous tick).
 				if (null != newMutations)
 				{
-					for (IMutation mutation : newMutations)
+					for (IMutationBlock mutation : newMutations)
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
 				}
-				for (Map.Entry<Integer, Queue<IEntityChange>> container : newEntityChanges.entrySet())
+				for (Map.Entry<Integer, Queue<IMutationEntity>> container : newEntityChanges.entrySet())
 				{
 					_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 				}
@@ -536,10 +536,10 @@ public class TickRunner
 		}
 	}
 
-	private void _scheduleMutationForCuboid(Map<CuboidAddress, Queue<IMutation>> nextTickMutations, IMutation mutation)
+	private void _scheduleMutationForCuboid(Map<CuboidAddress, Queue<IMutationBlock>> nextTickMutations, IMutationBlock mutation)
 	{
 		CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-		Queue<IMutation> queue = nextTickMutations.get(address);
+		Queue<IMutationBlock> queue = nextTickMutations.get(address);
 		if (null == queue)
 		{
 			queue = new LinkedList<>();
@@ -548,9 +548,9 @@ public class TickRunner
 		queue.add(mutation);
 	}
 
-	private void _scheduleChangesForEntity(Map<Integer, Queue<IEntityChange>> nextTickChanges, int entityId, Queue<IEntityChange> changes)
+	private void _scheduleChangesForEntity(Map<Integer, Queue<IMutationEntity>> nextTickChanges, int entityId, Queue<IMutationEntity> changes)
 	{
-		Queue<IEntityChange> queue = nextTickChanges.get(entityId);
+		Queue<IMutationEntity> queue = nextTickChanges.get(entityId);
 		if (null == queue)
 		{
 			nextTickChanges.put(entityId, changes);
@@ -578,10 +578,10 @@ public class TickRunner
 		return _snapshot;
 	}
 
-	private void _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, Queue<IEntityChange> scheduledQueue, long schedulingBudget)
+	private void _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, Queue<IMutationEntity> scheduledQueue, long schedulingBudget)
 	{
 		// First, check if this next change is a cancellation (-1 cost).
-		IEntityChange next = access.newChanges.peek();
+		IMutationEntity next = access.newChanges.peek();
 		if (null != next)
 		{
 			long delayMillis = next.getTimeCostMillis();
@@ -656,8 +656,8 @@ public class TickRunner
 	private static record TickMaterials(long thisGameTick
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<Integer, Entity> completedEntities
-			, Map<CuboidAddress, Queue<IMutation>> mutationsToRun
-			, Map<Integer, Queue<IEntityChange>> changesToRun
+			, Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun
+			, Map<Integer, Queue<IMutationEntity>> changesToRun
 	) {}
 
 	/**
@@ -670,8 +670,8 @@ public class TickRunner
 	 */
 	private static class PerEntitySharedAccess
 	{
-		private final Queue<IEntityChange> newChanges = new LinkedList<>();
-		private IEntityChange inProgress;
+		private final Queue<IMutationEntity> newChanges = new LinkedList<>();
+		private IMutationEntity inProgress;
 		private long millisUntilInProgressExecution;
 		
 	}

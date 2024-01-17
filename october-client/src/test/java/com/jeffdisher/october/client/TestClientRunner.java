@@ -7,12 +7,12 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
+import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -237,7 +237,7 @@ public class TestClientRunner
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
-		public IEntityChange toSend;
+		public IMutationEntity toSend;
 		public long commitLevel;
 		@Override
 		public void connectAndStartListening(IListener listener)
@@ -250,7 +250,7 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(IEntityChange change, long commitLevel)
+		public void sendChange(IMutationEntity change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;

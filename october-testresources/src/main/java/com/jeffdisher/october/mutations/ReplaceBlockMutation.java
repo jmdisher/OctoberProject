@@ -12,7 +12,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * NOTE:  This ignores all other aspects of the block, which could cause confusion if it were to be used in a real
  * system (it won't delete inventories, for example).
  */
-public class ReplaceBlockMutation implements IMutation
+public class ReplaceBlockMutation implements IMutationBlock
 {
 	private final AbsoluteLocation _location;
 	private final short _oldType;

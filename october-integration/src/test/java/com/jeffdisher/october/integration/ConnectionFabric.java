@@ -5,10 +5,10 @@ import java.util.Map;
 
 import org.junit.Assert;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -49,13 +49,13 @@ public class ConnectionFabric implements IServerAdapter
 	}
 
 	@Override
-	public synchronized void sendChange(int clientId, int entityId, IEntityChange change)
+	public synchronized void sendChange(int clientId, int entityId, IMutationEntity change)
 	{
 		_clients.get(clientId).receivedChange(entityId, change);
 	}
 
 	@Override
-	public synchronized void sendMutation(int clientId, IMutation mutation)
+	public synchronized void sendMutation(int clientId, IMutationBlock mutation)
 	{
 		_clients.get(clientId).receivedMutation(mutation);
 	}
@@ -94,7 +94,7 @@ public class ConnectionFabric implements IServerAdapter
 	{
 	}
 
-	public synchronized void sendChange(int clientId, IEntityChange change, long commitLevel)
+	public synchronized void sendChange(int clientId, IMutationEntity change, long commitLevel)
 	{
 		_server.changeReceived(clientId, change, commitLevel);
 	}
@@ -157,7 +157,7 @@ public class ConnectionFabric implements IServerAdapter
 			ConnectionFabric.this.disconnect(this.clientId);
 		}
 		@Override
-		public void sendChange(IEntityChange change, long commitLevel)
+		public void sendChange(IMutationEntity change, long commitLevel)
 		{
 			ConnectionFabric.this.sendChange(this.clientId, change, commitLevel);
 		}

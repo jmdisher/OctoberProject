@@ -1,6 +1,5 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
-import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.MutableEntity;
@@ -10,7 +9,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * Breaks the block, emitting a "BreakBlockMutation", if the block is of the expected type when the change runs.
  */
-public class EndBreakBlockChange implements IEntityChange
+public class EndBreakBlockChange implements IMutationEntity
 {
 	private final AbsoluteLocation _targetBlock;
 	private final short _expectedBlockType;

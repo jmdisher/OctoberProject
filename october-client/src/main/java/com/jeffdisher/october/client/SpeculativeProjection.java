@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -111,8 +111,8 @@ public class SpeculativeProjection
 			, List<Entity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, Map<Integer, Queue<IEntityChange>> entityChanges
-			, List<IMutation> cuboidMutations
+			, Map<Integer, Queue<IMutationEntity>> entityChanges
+			, List<IMutationBlock> cuboidMutations
 			
 			, List<Integer> removedEntities
 			, List<CuboidAddress> removedCuboids
@@ -128,21 +128,21 @@ public class SpeculativeProjection
 		// Create empty listeners.
 		CrowdProcessor.IEntityChangeListener entityListener = new CrowdProcessor.IEntityChangeListener() {
 			@Override
-			public void changeApplied(int targetEntityId, IEntityChange change)
+			public void changeApplied(int targetEntityId, IMutationEntity change)
 			{
 			}
 			@Override
-			public void changeDropped(int targetEntityId, IEntityChange change)
+			public void changeDropped(int targetEntityId, IMutationEntity change)
 			{
 			}
 		};
 		WorldProcessor.IBlockChangeListener worldListener = new WorldProcessor.IBlockChangeListener() {
 			@Override
-			public void mutationApplied(IMutation mutation)
+			public void mutationApplied(IMutationBlock mutation)
 			{
 			}
 			@Override
-			public void mutationDropped(IMutation mutation)
+			public void mutationDropped(IMutationBlock mutation)
 			{
 			}
 		};
@@ -152,7 +152,7 @@ public class SpeculativeProjection
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, entityListener, this.shadowBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
-		Map<CuboidAddress, Queue<IMutation>> mutationsToRun = _createMutationMap(cuboidMutations);
+		Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, worldListener, this.shadowBlockLoader, gameTick, mutationsToRun);
 		
 		// Apply these to the shadow collections.
@@ -247,7 +247,7 @@ public class SpeculativeProjection
 	 * in the past).
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IEntityChange change, long currentTimeMillis, boolean canBeInProgress)
+	public long applyLocalChange(IMutationEntity change, long currentTimeMillis, boolean canBeInProgress)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -338,7 +338,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IEntityChange change)
+	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity change)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -349,40 +349,40 @@ public class SpeculativeProjection
 		Set<Integer> locallyModifiedIds = new HashSet<>();
 		CrowdProcessor.IEntityChangeListener specialChangeListener = new CrowdProcessor.IEntityChangeListener() {
 			@Override
-			public void changeApplied(int targetEntityId, IEntityChange change)
+			public void changeApplied(int targetEntityId, IMutationEntity change)
 			{
 				locallyModifiedIds.add(targetEntityId);
 			}
 			@Override
-			public void changeDropped(int targetEntityId, IEntityChange change)
+			public void changeDropped(int targetEntityId, IMutationEntity change)
 			{
 			}
 		};
 		WorldProcessor.IBlockChangeListener specialMutationListener = new WorldProcessor.IBlockChangeListener() {
 			@Override
-			public void mutationApplied(IMutation mutation)
+			public void mutationApplied(IMutationBlock mutation)
 			{
 				modifiedCuboids.add(mutation.getAbsoluteLocation().getCuboidAddress());
 			}
 			@Override
-			public void mutationDropped(IMutation mutation)
+			public void mutationDropped(IMutationBlock mutation)
 			{
 			}
 		};
 		
-		Queue<IEntityChange> queue = new LinkedList<IEntityChange>();
+		Queue<IMutationEntity> queue = new LinkedList<IMutationEntity>();
 		queue.add(change);
-		Map<Integer, Queue<IEntityChange>> changesToRun = Map.of(_localEntityId, queue);
+		Map<Integer, Queue<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, specialChangeListener, this.shadowBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
-		Map<Integer, Queue<IEntityChange>> exportedChanges = group.exportedChanges();
-		List<IMutation> exportedMutations = group.exportedMutations();
+		Map<Integer, Queue<IMutationEntity>> exportedChanges = group.exportedChanges();
+		List<IMutationBlock> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		while (!exportedChanges.isEmpty() || !exportedMutations.isEmpty())
 		{
 			// Run these changes and mutations, collecting the resultant output from them.
-			Map<CuboidAddress, Queue<IMutation>> innerMutations = _createMutationMap(exportedMutations);
+			Map<CuboidAddress, Queue<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, specialMutationListener, this.shadowBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
 			
@@ -391,9 +391,9 @@ public class SpeculativeProjection
 			
 			// Coalesce the results of these.
 			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
-			for (Map.Entry<Integer, Queue<IEntityChange>> entry : innerGroup.exportedChanges().entrySet())
+			for (Map.Entry<Integer, Queue<IMutationEntity>> entry : innerGroup.exportedChanges().entrySet())
 			{
-				Queue<IEntityChange> oneQueue = exportedChanges.get(entry.getKey());
+				Queue<IMutationEntity> oneQueue = exportedChanges.get(entry.getKey());
 				if (null == oneQueue)
 				{
 					exportedChanges.put(entry.getKey(), entry.getValue());
@@ -413,13 +413,13 @@ public class SpeculativeProjection
 		return locallyModifiedIds.contains(_localEntityId);
 	}
 
-	private Map<CuboidAddress, Queue<IMutation>> _createMutationMap(List<IMutation> mutations)
+	private Map<CuboidAddress, Queue<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations)
 	{
-		Map<CuboidAddress, Queue<IMutation>> mutationsToRun = new HashMap<>();
-		for (IMutation mutation : mutations)
+		Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun = new HashMap<>();
+		for (IMutationBlock mutation : mutations)
 		{
 			CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-			Queue<IMutation> queue = mutationsToRun.get(address);
+			Queue<IMutationBlock> queue = mutationsToRun.get(address);
 			if (null == queue)
 			{
 				queue = new LinkedList<>();
@@ -465,6 +465,6 @@ public class SpeculativeProjection
 	}
 
 	private static record SpeculativeWrapper(long commitLevel
-			, IEntityChange change
+			, IMutationEntity change
 	) {}
 }

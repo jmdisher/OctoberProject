@@ -10,9 +10,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.EntityChangeMutation;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -22,7 +19,10 @@ import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.DropItemMutation;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
@@ -242,7 +242,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
-		IEntityChange send = new EntityChangeSendItem(1, ItemRegistry.STONE);
+		IMutationEntity send = new EntityChangeSendItem(1, ItemRegistry.STONE);
 		runner.enqueueEntityChange(0, send);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
@@ -409,7 +409,7 @@ public class TestTickRunner
 	}
 
 
-	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutation mutation)
+	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
 		// This helper is useful when a test wants to be certain that a mutation has completed before checking state.
 		// 1) Wait for any in-flight tick to complete.
@@ -443,12 +443,12 @@ public class TestTickRunner
 		public AtomicInteger mutationDropped = new AtomicInteger(0);
 		
 		@Override
-		public void mutationApplied(IMutation mutation)
+		public void mutationApplied(IMutationBlock mutation)
 		{
 			mutationApplied.incrementAndGet();
 		}
 		@Override
-		public void mutationDropped(IMutation mutation)
+		public void mutationDropped(IMutationBlock mutation)
 		{
 			mutationDropped.incrementAndGet();
 		}
@@ -460,12 +460,12 @@ public class TestTickRunner
 		public AtomicInteger changeDropped = new AtomicInteger(0);
 		
 		@Override
-		public void changeApplied(int targetEntityId, IEntityChange change)
+		public void changeApplied(int targetEntityId, IMutationEntity change)
 		{
 			changeApplied.incrementAndGet();
 		}
 		@Override
-		public void changeDropped(int targetEntityId, IEntityChange change)
+		public void changeDropped(int targetEntityId, IMutationEntity change)
 		{
 			changeDropped.incrementAndGet();
 		}

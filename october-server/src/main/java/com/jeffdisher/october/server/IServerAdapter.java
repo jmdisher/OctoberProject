@@ -1,8 +1,8 @@
 package com.jeffdisher.october.server;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -42,14 +42,14 @@ public interface IServerAdapter
 	 * @param entityId The ID of the entity impacted by the change.
 	 * @param change The change to send.
 	 */
-	void sendChange(int clientId, int entityId, IEntityChange change);
+	void sendChange(int clientId, int entityId, IMutationEntity change);
 	/**
 	 * Sends an incremental cuboid mutation to the given client.
 	 * 
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
 	 * @param mutation The mutation to send.
 	 */
-	void sendMutation(int clientId, IMutation mutation);
+	void sendMutation(int clientId, IMutationBlock mutation);
 	/**
 	 * Sends the end of tick message to the given client.  All the messages which the client received since the previous
 	 * end of tick are considered part of this tick.
@@ -93,6 +93,6 @@ public interface IServerAdapter
 		 * @param change The change.
 		 * @param commitLevel The client's local commit level represented by this change.
 		 */
-		void changeReceived(int clientId, IEntityChange change, long commitLevel);
+		void changeReceived(int clientId, IMutationEntity change, long commitLevel);
 	}
 }

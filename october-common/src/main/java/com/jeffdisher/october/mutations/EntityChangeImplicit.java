@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -12,7 +12,7 @@ import com.jeffdisher.october.utils.Assert;
  * Since this is added by the server, internally, it should reject any attempt made by the client to explicitly send it.
  * Additionally, the same instance is reused so it must be stateless.
  */
-public class EntityChangeImplicit implements IEntityChange
+public class EntityChangeImplicit implements IMutationEntity
 {
 	@Override
 	public long getTimeCostMillis()

@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import java.util.Map;
 

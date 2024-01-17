@@ -3,9 +3,9 @@ package com.jeffdisher.october.types;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 
 
 /**
@@ -29,7 +29,7 @@ public class TickProcessingContext
 	 * The consumer of any new mutations produces as a side-effect of this operation (will be scheduled for the next
 	 * tick).
 	 */
-	public final Consumer<IMutation> newMutationSink;
+	public final Consumer<IMutationBlock> newMutationSink;
 
 	/**
 	 * The consumer of any new entity changes produced as a side-effect of this operation (will be scheduled for the
@@ -39,7 +39,7 @@ public class TickProcessingContext
 
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, Consumer<IMutation> newMutationSink
+			, Consumer<IMutationBlock> newMutationSink
 			, IChangeSink newChangeSink
 	)
 	{
@@ -56,6 +56,6 @@ public class TickProcessingContext
 	 */
 	public static interface IChangeSink
 	{
-		void accept(int targetEntityId, IEntityChange change);
+		void accept(int targetEntityId, IMutationEntity change);
 	}
 }

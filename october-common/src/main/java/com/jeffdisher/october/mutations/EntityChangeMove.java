@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
@@ -26,7 +26,7 @@ import com.jeffdisher.october.utils.Assert;
  * Together, these problems are solved by making the zVelocity a property of the Entity and manipulating it in this
  * change.
  */
-public class EntityChangeMove implements IEntityChange
+public class EntityChangeMove implements IMutationEntity
 {
 	/**
 	 * The flat distance that an entity can move in a single second.

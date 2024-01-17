@@ -4,7 +4,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.changes.EndBreakBlockChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -86,7 +85,7 @@ public class TestCommonMutations
 
 	private static class ProcessingSinks
 	{
-		public IMutation nextMutation;
+		public IMutationBlock nextMutation;
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
@@ -94,7 +93,7 @@ public class TestCommonMutations
 					, (AbsoluteLocation blockLocation) -> {
 						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
 					}
-					, (IMutation mutation) -> {
+					, (IMutationBlock mutation) -> {
 						ProcessingSinks.this.nextMutation = mutation;
 					}
 					, null

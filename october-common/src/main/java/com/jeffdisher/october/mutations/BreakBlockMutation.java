@@ -19,7 +19,7 @@ import com.jeffdisher.october.utils.Assert;
  * The common mutation for breaking a block.  If the block is the expected type, it will be replaced by air and dropped
  * as an item in the inventory of the air block.
  */
-public class BreakBlockMutation implements IMutation
+public class BreakBlockMutation implements IMutationBlock
 {
 	private final AbsoluteLocation _location;
 	private final short _expectedBlockType;

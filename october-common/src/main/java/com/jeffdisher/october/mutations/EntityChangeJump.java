@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
@@ -10,7 +10,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This is how the user jumps - if they are standing on the ground, this gives them an upward movement vector.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeJump implements IEntityChange
+public class EntityChangeJump implements IMutationEntity
 {
 	/**
 	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block (1.47)).

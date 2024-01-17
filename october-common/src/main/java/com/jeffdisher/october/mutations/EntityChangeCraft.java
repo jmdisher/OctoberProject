@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.MutableEntity;
@@ -9,7 +9,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * A crafting activity performed by this user.  Crafting converts items in the entity's inventory into different items
  * after expending some amount of time.
  */
-public class EntityChangeCraft implements IEntityChange
+public class EntityChangeCraft implements IMutationEntity
 {
 	private final Craft _operation;
 

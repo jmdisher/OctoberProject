@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -8,7 +8,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * Stores the given items into the entity's inventory.
  */
-public class EntityChangeAcceptItems implements IEntityChange
+public class EntityChangeAcceptItems implements IMutationEntity
 {
 	private final Items _items;
 

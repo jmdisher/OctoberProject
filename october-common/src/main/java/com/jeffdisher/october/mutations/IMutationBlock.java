@@ -14,7 +14,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * which are typically useful when rejecting are those to emit clean-up transactions which WILL succeed (as they
  * will be sent to the clients).
  */
-public interface IMutation
+public interface IMutationBlock
 {
 	/**
 	 * @return The absolute coordinates of the block to which the mutation applies.

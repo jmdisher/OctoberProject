@@ -6,11 +6,11 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.changes.EntityChangeMove;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;

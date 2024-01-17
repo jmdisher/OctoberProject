@@ -1,4 +1,4 @@
-package com.jeffdisher.october.changes;
+package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -11,7 +11,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Note that the scheduler will still run this change if it did successfully cancel the preceding message (this means
  * that precisely 1 of the 2 will be run while the other will be dropped).
  */
-public class EntityChangeCancel implements IEntityChange
+public class EntityChangeCancel implements IMutationEntity
 {
 	@Override
 	public long getTimeCostMillis()

@@ -8,15 +8,15 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.changes.EndBreakBlockChange;
-import com.jeffdisher.october.changes.EntityChangeMove;
-import com.jeffdisher.october.changes.EntityChangeTrickleInventory;
-import com.jeffdisher.october.changes.IEntityChange;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.BreakBlockMutation;
-import com.jeffdisher.october.mutations.IMutation;
+import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -201,14 +201,14 @@ public class TestServerRunner
 		{
 		}
 		@Override
-		public synchronized void sendChange(int clientId, int entityId, IEntityChange change)
+		public synchronized void sendChange(int clientId, int entityId, IMutationEntity change)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(change);
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendMutation(int clientId, IMutation mutation)
+		public synchronized void sendMutation(int clientId, IMutationBlock mutation)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(mutation);
