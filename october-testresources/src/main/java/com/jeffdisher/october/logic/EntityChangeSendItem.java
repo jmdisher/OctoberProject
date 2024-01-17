@@ -47,6 +47,11 @@ public class EntityChangeSendItem implements IMutationEntity
 		{
 			// Update the inventory.
 			inventory.removeItems(_itemType, foundCount);
+			// If we had this selected, clear it.
+			if (_itemType == newEntity.newSelectedItem)
+			{
+				newEntity.newSelectedItem = null;
+			}
 			// Send this to the other entity.
 			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
 		}

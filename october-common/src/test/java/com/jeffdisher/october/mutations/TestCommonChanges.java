@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -14,6 +15,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -35,7 +37,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -54,7 +56,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
@@ -72,7 +74,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
@@ -92,7 +94,7 @@ public class TestCommonChanges
 				, null
 		);
 		// We start with a zero z-vector since we should start falling.
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -116,7 +118,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0));
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		EntityChangeJump jump = new EntityChangeJump();
@@ -149,5 +151,33 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		Assert.assertEquals(0.0f, newEntity.newZVelocityPerSecond, 0.01f);
+	}
+
+	@Test
+	public void selection() throws Throwable
+	{
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		MutableEntity newEntity = new MutableEntity(original);
+		
+		// Give the entity some items and verify that they default to selected.
+		EntityChangeAcceptItems accept = new EntityChangeAcceptItems(new Items(ItemRegistry.LOG, 1));
+		Assert.assertTrue(accept.applyChange(null, newEntity));
+		Assert.assertEquals(ItemRegistry.LOG, newEntity.freeze().selectedItem());
+		
+		// Craft some items to use these up and verify that the selection is cleared.
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS);
+		Assert.assertTrue(craft.applyChange(null, newEntity));
+		Assert.assertNull(newEntity.freeze().selectedItem());
+		
+		// Actively select the type and verify it is selected.
+		MutationEntitySelectItem select = new MutationEntitySelectItem(ItemRegistry.PLANK);
+		Assert.assertTrue(select.applyChange(null, newEntity));
+		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
+		
+		// Demonstrate that we can't select something we don't have.
+		MutationEntitySelectItem select2 = new MutationEntitySelectItem(ItemRegistry.LOG);
+		Assert.assertFalse(select2.applyChange(null, newEntity));
+		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
 	}
 }

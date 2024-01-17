@@ -14,5 +14,7 @@ public record Entity(int id
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
 		, Inventory inventory
+		// The selected item is either null of something which MUST have some items in the inventory.
+		, Item selectedItem
 ) {
 }

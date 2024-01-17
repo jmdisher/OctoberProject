@@ -27,6 +27,15 @@ public class EntityChangeAcceptItems implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		return newEntity.newInventory.addItems(_items.type(), _items.count());
+		boolean didAdd = newEntity.newInventory.addItems(_items.type(), _items.count());
+		if (didAdd)
+		{
+			// If there isn't already selected item, we want to select this one.
+			if (null == newEntity.newSelectedItem)
+			{
+				newEntity.newSelectedItem = _items.type();
+			}
+		}
+		return didAdd;
 	}
 }

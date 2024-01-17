@@ -27,6 +27,15 @@ public class EntityChangeCraft implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		return _operation.craft.apply(newEntity.newInventory);
+		boolean didCraft = _operation.craft.apply(newEntity.newInventory);
+		if (didCraft)
+		{
+			// Make sure that this cleared the selection, if we used the last of them.
+			if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
+			{
+				newEntity.newSelectedItem = null;
+			}
+		}
+		return didCraft;
 	}
 }

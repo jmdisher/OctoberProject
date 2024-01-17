@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.utils.Assert;
 
 /**
  * A short-lived mutable version of an entity to allow for parallel tick processing.
@@ -13,6 +14,7 @@ public class MutableEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
+	public Item newSelectedItem;
 
 	public MutableEntity(Entity original)
 	{
@@ -20,6 +22,7 @@ public class MutableEntity
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
+		this.newSelectedItem = original.selectedItem();
 	}
 
 	/**
@@ -29,12 +32,18 @@ public class MutableEntity
 	 */
 	public Entity freeze()
 	{
+		// We want to verify that the selected item is actually in the inventory (otherwise, there was a static error).
+		if (null != this.newSelectedItem)
+		{
+			Assert.assertTrue(this.newInventory.getCount(this.newSelectedItem) > 0);
+		}
 		return new Entity(this.original.id()
 				, this.newLocation
 				, this.newZVelocityPerSecond
 				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
+				, this.newSelectedItem
 		);
 	}
 }

@@ -41,6 +41,7 @@ public class EntityActionValidator
 				, DEFAULT_VOLUME
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
+				, null
 		);
 	}
 
@@ -53,7 +54,7 @@ public class EntityActionValidator
 		// NOTE:  We currently ignore collision with other entities, but that may change in the future.
 		// TODO:  We may need to do additional checking or synthesize mutations for things like pressure-plates in the future.
 		return (null != path)
-				? new Entity(entity.id(), newLocation, entity.zVelocityPerSecond(), entity.volume(), entity.blocksPerTickSpeed(), entity.inventory())
+				? new Entity(entity.id(), newLocation, entity.zVelocityPerSecond(), entity.volume(), entity.blocksPerTickSpeed(), entity.inventory(), entity.selectedItem())
 				: null
 		;
 	}
