@@ -7,6 +7,8 @@ import org.junit.Test;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -179,5 +181,33 @@ public class TestCommonChanges
 		MutationEntitySelectItem select2 = new MutationEntitySelectItem(ItemRegistry.LOG);
 		Assert.assertFalse(select2.applyChange(null, newEntity));
 		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
+	}
+
+	@Test
+	public void placeBlock() throws Throwable
+	{
+		// Create the entity in an air block so we can place this (give us a starter inventory).
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(ItemRegistry.LOG, new Items(ItemRegistry.LOG, 1)), ItemRegistry.LOG.encumbrance()), ItemRegistry.LOG);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		IMutationBlock[] holder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> holder[0] = newMutation
+				, null
+		);
+		MutableEntity newEntity = new MutableEntity(original);
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
+		Assert.assertTrue(place.applyChange(context, newEntity));
+		
+		// We also need to apply the actual mutation.
+		Assert.assertTrue(holder[0] instanceof MutationBlockOverwrite);
+		Assert.assertTrue(holder[0].applyMutation(context, new MutableBlockProxy(holder[0].getAbsoluteLocation().getBlockAddress(), cuboid)));
+		
+		// We expect that the block will be placed and our selection and inventory will be cleared.
+		Assert.assertEquals(ItemRegistry.LOG.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(0, newEntity.freeze().inventory().items.size());
+		Assert.assertNull(newEntity.freeze().selectedItem());
 	}
 }
