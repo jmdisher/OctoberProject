@@ -5,6 +5,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -208,6 +209,52 @@ public class TestCommonChanges
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(ItemRegistry.LOG.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, newEntity.freeze().inventory().items.size());
+		Assert.assertNull(newEntity.freeze().selectedItem());
+	}
+
+	@Test
+	public void pickUpItems() throws Throwable
+	{
+		// Create an air cuboid with items in an inventory slot and then pick it up.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		int entityId = 1;
+		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), new Inventory(InventoryAspect.CAPACITY_AIR, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance()));
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		IMutationEntity[] entityHolder = new IMutationEntity[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, (int targetEntityId, IMutationEntity change) -> {
+					Assert.assertEquals(entityId, targetEntityId);
+					Assert.assertNull(entityHolder[0]);
+					entityHolder[0] = change;
+				}
+		);
+		
+		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
+		MutableEntity newEntity = new MutableEntity(original);
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1));
+		Assert.assertTrue(request.applyChange(context, newEntity));
+		
+		// We should see the mutation requested and then we can process step 2.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockExtractItems);
+		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		
+		// We should see the request to store data, now.
+		Assert.assertTrue(entityHolder[0] instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
+		
+		// We can now verify the final result of this - we should see the one item moved but nothing selected.
+		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(1, newEntity.freeze().inventory().items.get(ItemRegistry.STONE).count());
 		Assert.assertNull(newEntity.freeze().selectedItem());
 	}
 }
