@@ -21,7 +21,7 @@ public enum Craft
 				if (inv.getCount(ItemRegistry.LOG) > 0)
 				{
 					inv.removeItems(ItemRegistry.LOG, 1);
-					inv.addItems(ItemRegistry.PLANK, 2);
+					inv.addAllItems(ItemRegistry.PLANK, 2);
 					didApply = true;
 				}
 				return didApply;

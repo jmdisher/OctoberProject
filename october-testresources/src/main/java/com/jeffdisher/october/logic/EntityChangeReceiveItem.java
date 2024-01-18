@@ -45,7 +45,7 @@ public class EntityChangeReceiveItem implements IMutationEntity
 		if (0 == inventory.getCount(_itemType))
 		{
 			// Try to add them.
-			didApply = inventory.addItems(_itemType, _itemCount);
+			didApply = inventory.addAllItems(_itemType, _itemCount);
 		}
 		return didApply;
 	}

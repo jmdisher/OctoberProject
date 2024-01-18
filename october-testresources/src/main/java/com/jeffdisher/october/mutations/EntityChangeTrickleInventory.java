@@ -28,7 +28,7 @@ public class EntityChangeTrickleInventory implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		newEntity.newInventory.addItems(_contents.type(), 1);
+		newEntity.newInventory.addAllItems(_contents.type(), 1);
 		if (_contents.count() > 1)
 		{
 			context.newChangeSink.accept(newEntity.original.id(), new EntityChangeTrickleInventory(new Items(_contents.type(), _contents.count() - 1)));
