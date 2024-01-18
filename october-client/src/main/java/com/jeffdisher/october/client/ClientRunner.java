@@ -16,6 +16,9 @@ import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
+import com.jeffdisher.october.mutations.MutationEntitySelectItem;
+import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -23,6 +26,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -95,6 +100,51 @@ public class ClientRunner
 		_applyLocalChange(breakBlock, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
 		return breakBlock.getTimeCostMillis();
+	}
+
+	/**
+	 * Creates the mutation to the entity to begin the sequence of operations to pick up items from an inventory block.
+	 * Note that this CANNOT be called if there is still an in-progress activity running.  Call "isActivityInProgress()"
+	 * first.
+	 * 
+	 * @param blockLocation The location of the block containing items.
+	 * @param itemsToPull The items to transfer (actual item transfer could be smaller).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void pullItemsFromInventory(AbsoluteLocation blockLocation, Items itemsToPull, long currentTimeMillis)
+	{
+		// Start the multi-step process.
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
+		_applyLocalChange(request, currentTimeMillis, false);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Changes the item selected by the current entity.
+	 * 
+	 * @param itemType The item type to select (will fail if not in their inventory).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void selectItemInInventory(Item itemType, long currentTimeMillis)
+	{
+		// This is just a simple one.
+		MutationEntitySelectItem select = new MutationEntitySelectItem(itemType);
+		_applyLocalChange(select, currentTimeMillis, false);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Places an instance of the item currently selected in the inventory in the world.
+	 * 
+	 * @param blockLocation The location where the block will be placed.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void placeSelectedBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	{
+		// This is also relatively simple and is considered instant.
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(blockLocation);
+		_applyLocalChange(place, currentTimeMillis, false);
+		_runAllPendingCalls(currentTimeMillis);
 	}
 
 	/**
