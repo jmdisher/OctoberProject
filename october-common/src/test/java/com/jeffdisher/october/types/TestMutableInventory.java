@@ -1,7 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,7 +11,7 @@ public class TestMutableInventory
 	@Test
 	public void createFromEmpty() throws Throwable
 	{
-		Inventory original = new Inventory(10, Map.of(), 0);
+		Inventory original = Inventory.start(10).finish();
 		MutableInventory inv = new MutableInventory(original);
 		
 		Inventory frozen = inv.freeze();
@@ -25,7 +23,7 @@ public class TestMutableInventory
 	@Test
 	public void basicAddition() throws Throwable
 	{
-		Inventory original = new Inventory(10, Map.of(), 0);
+		Inventory original = Inventory.start(10).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(0, inv.getCount(ItemRegistry.LOG));
 		Assert.assertEquals(5, inv.maxVacancyForItem(ItemRegistry.LOG));
@@ -45,7 +43,7 @@ public class TestMutableInventory
 	@Test
 	public void basicRemoval() throws Throwable
 	{
-		Inventory original = new Inventory(10, Map.of(ItemRegistry.LOG, new Items(ItemRegistry.LOG, 2)), 4);
+		Inventory original = Inventory.start(10).add(ItemRegistry.LOG, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(2, inv.getCount(ItemRegistry.LOG));
 		Assert.assertEquals(3, inv.maxVacancyForItem(ItemRegistry.LOG));

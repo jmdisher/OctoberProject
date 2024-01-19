@@ -530,7 +530,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		
 		// We need 2 entities for this but we will give one some items.
-		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
 		projector.applyChangesForServerTick(0L
 				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null)
 						, EntityActionValidator.buildDefaultEntity(1))

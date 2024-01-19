@@ -1,7 +1,5 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,7 +38,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -59,7 +57,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
@@ -77,7 +75,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
@@ -97,7 +95,7 @@ public class TestCommonChanges
 				, null
 		);
 		// We start with a zero z-vector since we should start falling.
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -121,7 +119,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		EntityChangeJump jump = new EntityChangeJump();
@@ -160,7 +158,7 @@ public class TestCommonChanges
 	public void selection() throws Throwable
 	{
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		// Give the entity some items and verify that they default to selected.
@@ -189,7 +187,7 @@ public class TestCommonChanges
 	{
 		// Create the entity in an air block so we can place this (give us a starter inventory).
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(ItemRegistry.LOG, new Items(ItemRegistry.LOG, 1)), ItemRegistry.LOG.encumbrance()), ItemRegistry.LOG);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.LOG, 1).finish(), ItemRegistry.LOG);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -218,10 +216,10 @@ public class TestCommonChanges
 		// Create an air cuboid with items in an inventory slot and then pick it up.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
-		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, new Inventory(10, Map.of(), 0), null);
+		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), new Inventory(InventoryAspect.CAPACITY_AIR, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance()));
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L

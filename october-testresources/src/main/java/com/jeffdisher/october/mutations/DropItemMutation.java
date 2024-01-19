@@ -89,7 +89,7 @@ public class DropItemMutation implements IMutationBlock
 				currentEncumbrance += encumbranceToAdd;
 				
 				// Now, update the block with the new inventory.
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(maxEncumbrance, mutableItemMap, currentEncumbrance));
+				newBlock.setDataSpecial(AspectRegistry.INVENTORY, Inventory.build(maxEncumbrance, mutableItemMap, currentEncumbrance));
 				didApply = true;
 			}
 			else

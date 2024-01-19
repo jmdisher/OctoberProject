@@ -87,7 +87,7 @@ public class PickUpItemMutation implements IMutationBlock
 				{
 					// Just save the updated inventory.
 					int encumbranceToRemove = _type.encumbrance() * _count;
-					newBlock.setDataSpecial(AspectRegistry.INVENTORY, new Inventory(oldInventory.maxEncumbrance, mutableItemMap, oldInventory.currentEncumbrance - encumbranceToRemove));
+					newBlock.setDataSpecial(AspectRegistry.INVENTORY, Inventory.build(oldInventory.maxEncumbrance, mutableItemMap, oldInventory.currentEncumbrance - encumbranceToRemove));
 				}
 				didApply = true;
 			}

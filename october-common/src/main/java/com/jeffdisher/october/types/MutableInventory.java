@@ -127,7 +127,7 @@ public class MutableInventory
 	 */
 	public Inventory freeze()
 	{
-		return new Inventory(_maxEncumbrance, _items, _currentEncumbrance);
+		return Inventory.build(_maxEncumbrance, _items, _currentEncumbrance);
 	}
 
 

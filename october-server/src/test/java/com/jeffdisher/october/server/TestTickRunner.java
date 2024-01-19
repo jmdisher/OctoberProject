@@ -234,7 +234,7 @@ public class TestTickRunner
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
-		Inventory startInventory = new Inventory(10, Map.of(ItemRegistry.STONE, new Items(ItemRegistry.STONE, 2)), 2 * ItemRegistry.STONE.encumbrance());
+		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
 		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null));
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
 		// (run a tick to pick up the users)

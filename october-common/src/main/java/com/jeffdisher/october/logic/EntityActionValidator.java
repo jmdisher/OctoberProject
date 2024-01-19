@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,7 +33,7 @@ public class EntityActionValidator
 		// Eventually, the EntityManager will need to call out to load data about this entity but, for now, every entity
 		// starts with the same default location, when they join.
 		// We start by giving the user an empty inventory.
-		Inventory inventory = new Inventory(InventoryAspect.CAPACITY_PLAYER, Collections.emptyMap(), 0);
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
 		return new Entity(id
 				, DEFAULT_LOCATION
 				, 0.0f
