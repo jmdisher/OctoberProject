@@ -180,6 +180,11 @@ public class TestCommonChanges
 		MutationEntitySelectItem select2 = new MutationEntitySelectItem(ItemRegistry.LOG);
 		Assert.assertFalse(select2.applyChange(null, newEntity));
 		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
+		
+		// Show that we can unselect.
+		MutationEntitySelectItem select3 = new MutationEntitySelectItem(null);
+		Assert.assertTrue(select3.applyChange(null, newEntity));
+		Assert.assertNull(newEntity.freeze().selectedItem());
 	}
 
 	@Test
