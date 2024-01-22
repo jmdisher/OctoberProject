@@ -297,10 +297,9 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		// We should still see the other one.
-		// Note that this is +2 since both entity changes stay in the list, despite both failing - we will still send them to the server unless they do pre-checking.
+		// We will still see 2 elements in the speculative list since EntityChangeMutation always claims to have applied.  Hence, we will only remove them when the commit level passes them.
 		Assert.assertEquals(2, speculativeCount);
-		// We see another 2 changes due to the reverses.
+		// We see another 2 changes due to the reverses (that is, when applying changes from the server, they will be different instances compared to what WAS in the speculative projection).
 		Assert.assertEquals(2 + 2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -316,8 +315,9 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		// This final +2 is because we applied both local changes, last time (even though 1 of the mutations failed to apply, we still create a new CuboidData instance - might be worth optimizing in the future).
-		Assert.assertEquals(2 + 2 + 2 + 2, listener.changeCount);
+		// This time, we will only add a +1 since the previous commit of mutation0 meant that our speculative change would have failed to apply on top so it ISN'T reverted here.
+		// That is, the only change from the previous commit action is the application of mutation1.
+		Assert.assertEquals(2 + 2 + 2 + 1, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		speculativeCount = projector.applyChangesForServerTick(3L

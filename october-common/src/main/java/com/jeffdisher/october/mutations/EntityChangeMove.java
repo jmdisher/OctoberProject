@@ -137,10 +137,13 @@ public class EntityChangeMove implements IMutationEntity
 			float zLocation = oldZ + zDistance;
 			EntityLocation newLocation = new EntityLocation(xLocation, yLocation, zLocation);
 			
-			// Check that they can exist in the target location.
-			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+			if ((newEntity.newZVelocityPerSecond == newZVector) && oldLocation.equals(newLocation))
 			{
-				// Update the location.
+				// We don't want to apply this change if the entity isn't actually moving, since that will cause redundant update events.
+			}
+			else if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+			{
+				// They can exist in the target location so update the entity.
 				newEntity.newLocation = newLocation;
 				newEntity.newZVelocityPerSecond = newZVector;
 				didApply = true;

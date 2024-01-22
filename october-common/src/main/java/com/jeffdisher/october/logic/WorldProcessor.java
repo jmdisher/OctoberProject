@@ -94,6 +94,7 @@ public class WorldProcessor
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
+				boolean didApplyAnyChange = false;
 				CuboidData mutable = CuboidData.mutableClone(oldState);
 				for (IMutationBlock mutation : mutations)
 				{
@@ -103,13 +104,18 @@ public class WorldProcessor
 					if (didApply)
 					{
 						listener.mutationApplied(mutation);
+						didApplyAnyChange = true;
 					}
 					else
 					{
 						listener.mutationDropped(mutation);
 					}
 				}
-				IReadOnlyCuboidData newData = mutable;
+				// Return the old instance if nothing changed.
+				IReadOnlyCuboidData newData = didApplyAnyChange
+						? mutable
+						: oldState
+				;
 				fragment.put(key, newData);
 			}
 		}

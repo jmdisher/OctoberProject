@@ -32,7 +32,7 @@ public class CrowdProcessor
 
 	/**
 	 * Applies the given changesToRun to the data in entitiesById, returning updated entities for some subset of the
-	 * changes.
+	 * changes (previous entity instances will be returned if not changed).
 	 * Note that this is expected to be run in parallel, across many threads, and will rely on a bakery algorithm to
 	 * select each thread's subset of the work, dynamically.  The groups returned by all threads will have no overlap
 	 * and the union of all of them will entirely cover the key space defined by changesToRun.
@@ -90,6 +90,7 @@ public class CrowdProcessor
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
+				boolean didApplyAnyChange = false;
 				MutableEntity mutable = new MutableEntity(entity);
 				for (IMutationEntity change : changes)
 				{
@@ -98,13 +99,18 @@ public class CrowdProcessor
 					if (didApply)
 					{
 						listener.changeApplied(id, change);
+						didApplyAnyChange = true;
 					}
 					else
 					{
 						listener.changeDropped(id, change);
 					}
 				}
-				Entity newEntity = mutable.freeze();
+				// Return the old instance if nothing changed.
+				Entity newEntity = didApplyAnyChange
+						? mutable.freeze()
+						: entity
+				;
 				fragment.put(id, newEntity);
 			}
 		}
