@@ -245,14 +245,20 @@ public class TestCommonChanges
 		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		
+		// By this point, the entity shouldn't yet have changed.
+		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(0, newEntity.newInventory.getCount(ItemRegistry.STONE));
+		Assert.assertNull(newEntity.newSelectedItem);
+		
 		// We should see the request to store data, now.
 		Assert.assertTrue(entityHolder[0] instanceof MutationEntityStoreToInventory);
 		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
 		
-		// We can now verify the final result of this - we should see the one item moved but nothing selected.
-		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		// We can now verify the final result of this - we should see the one item moved and selected since nothing else was.
+		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
-		Assert.assertEquals(1, newEntity.freeze().inventory().items.get(ItemRegistry.STONE).count());
-		Assert.assertNull(newEntity.freeze().selectedItem());
+		Assert.assertEquals(1, newEntity.newInventory.getCount(ItemRegistry.STONE));
+		Assert.assertEquals(ItemRegistry.STONE, newEntity.newSelectedItem);
 	}
 }

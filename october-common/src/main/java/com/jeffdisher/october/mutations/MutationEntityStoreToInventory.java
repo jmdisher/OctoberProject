@@ -1,5 +1,6 @@
 package com.jeffdisher.october.mutations;
 
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -30,7 +31,17 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		// We will still try a best-efforts request if the inventory has changed (but drop anything else).
-		int stored = newEntity.newInventory.addItemsBestEfforts(_items.type(), _items.count());
+		Item type = _items.type();
+		int previousItemCount = newEntity.newInventory.getCount(type);
+		int stored = newEntity.newInventory.addItemsBestEfforts(type, _items.count());
+		if (stored > 0)
+		{
+			// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
+			if ((null == newEntity.newSelectedItem) && (0 == previousItemCount))
+			{
+				newEntity.newSelectedItem = type;
+			}
+		}
 		return (stored > 0);
 	}
 }
