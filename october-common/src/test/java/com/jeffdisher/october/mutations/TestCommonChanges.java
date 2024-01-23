@@ -265,5 +265,17 @@ public class TestCommonChanges
 		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ItemRegistry.STONE));
 		Assert.assertEquals(ItemRegistry.STONE, newEntity.newSelectedItem);
+		
+		// Run the process again to pick up the last item and verify that the inventory is now null.
+		blockHolder[0] = null;
+		entityHolder[0] = null;
+		request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1));
+		Assert.assertTrue(request.applyChange(context, newEntity));
+		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
+		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertNull(blockInventory);
+		Assert.assertEquals(2, newEntity.newInventory.getCount(ItemRegistry.STONE));
+		Assert.assertEquals(ItemRegistry.STONE, newEntity.newSelectedItem);
 	}
 }

@@ -121,6 +121,14 @@ public class MutableInventory
 	}
 
 	/**
+	 * @return The current encumbrance of the inventory (0 implies no items are stored).
+	 */
+	public int getCurrentEncumbrance()
+	{
+		return _currentEncumbrance;
+	}
+
+	/**
 	 * Creates an immutable copy of the receiver.
 	 * 
 	 * @return The new immutable copy of the current state.
