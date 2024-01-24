@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -116,6 +117,22 @@ public class ClientRunner
 		// Start the multi-step process.
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
 		_applyLocalChange(request, currentTimeMillis, false);
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
+	 * Creates the mutation to the entity to begin the sequence of operations to put items into a block's inventory.
+	 * Note that this CANNOT be called if there is still an in-progress activity running.  Call "isActivityInProgress()"
+	 * first.
+	 * 
+	 * @param blockLocation The location of the block where the items should be stored.
+	 * @param itemsToPush The items to transfer (actual item transfer could be smaller if they can't all fit).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void pushItemsToInventory(AbsoluteLocation blockLocation, Items itemsToPush, long currentTimeMillis)
+	{
+		MutationEntityPushItems push = new MutationEntityPushItems(blockLocation, itemsToPush);
+		_applyLocalChange(push, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 

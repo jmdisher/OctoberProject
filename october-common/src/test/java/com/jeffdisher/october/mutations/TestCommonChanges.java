@@ -278,4 +278,43 @@ public class TestCommonChanges
 		Assert.assertEquals(2, newEntity.newInventory.getCount(ItemRegistry.STONE));
 		Assert.assertEquals(ItemRegistry.STONE, newEntity.newSelectedItem);
 	}
+
+	@Test
+	public void dropItems() throws Throwable
+	{
+		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		int entityId = 1;
+		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.STONE, 2).finish(), null);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+		);
+		
+		// This is a multi-step process which starts by asking the entity to start the drop.
+		MutableEntity newEntity = new MutableEntity(original);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1));
+		Assert.assertTrue(push.applyChange(context, newEntity));
+		
+		// We can now verify that the entity has lost the item but the block is unchanged.
+		Assert.assertEquals(1, newEntity.newInventory.getCount(ItemRegistry.STONE));
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
+		
+		// We should see the mutation requested and then we can process step 2.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		
+		// By this point, we should be able to verify both the entity and the block.
+		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(1, newEntity.newInventory.getCount(ItemRegistry.STONE));
+	}
 }
