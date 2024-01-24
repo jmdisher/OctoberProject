@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
@@ -1054,6 +1055,42 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
 		Assert.assertFalse(projector.checkCurrentActivity(101L));
 		Assert.assertEquals(target, listener.lastEntityStates.get(0).location());
+	}
+
+	@Test
+	public void craftBricksSelection()
+	{
+		// Test the in-inventory crafting operation.
+		CountingListener listener = new CountingListener();
+		// Start the entity with some stone and with them selected.
+		Inventory start = Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 1).finish();
+		Entity entity = new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, start, ItemRegistry.STONE);
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
+		projector.applyChangesForServerTick(0L
+				, List.of(entity)
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		Assert.assertEquals(ItemRegistry.STONE, listener.lastEntityStates.get(0).selectedItem());
+		
+		// Do the craft and observe it takes some time.
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK);
+		long commit = projector.applyLocalChange(craft, 1000L, true);
+		Assert.assertTrue(projector.checkCurrentActivity(2000L));
+		Assert.assertEquals(1L, commit);
+		Assert.assertFalse(projector.checkCurrentActivity(4000L));
+		
+		// Check the inventory to see the craft completed.
+		Inventory inv = listener.lastEntityStates.get(0).inventory();
+		Assert.assertEquals(0, inv.getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, inv.getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertNull(listener.lastEntityStates.get(0).selectedItem());
 	}
 
 

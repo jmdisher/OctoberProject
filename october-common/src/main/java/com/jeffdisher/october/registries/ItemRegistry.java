@@ -19,6 +19,7 @@ public class ItemRegistry
 	public static final Item STONE = new Item(BlockAspect.STONE, 2);
 	public static final Item LOG = new Item(BlockAspect.LOG, 2);
 	public static final Item PLANK = new Item(BlockAspect.PLANK, 1);
+	public static final Item STONE_BRICK = new Item(BlockAspect.STONE_BRICK, 2);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -28,6 +29,7 @@ public class ItemRegistry
 			STONE,
 			LOG,
 			PLANK,
+			STONE_BRICK,
 	};
 
 	static {

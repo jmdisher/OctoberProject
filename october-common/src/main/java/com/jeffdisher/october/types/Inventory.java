@@ -49,6 +49,21 @@ public class Inventory
 		this.currentEncumbrance = currentEncumbrance;
 	}
 
+	/**
+	 * A basic helper to check how many items of a given type are in the inventory.
+	 * 
+	 * @param type The item type.
+	 * @return The number of items of this type.
+	 */
+	public int getCount(Item type)
+	{
+		Items existing = this.items.get(type);
+		return (null != existing)
+				? existing.count()
+				: 0
+		;
+	}
+
 
 	/**
 	 * The builder exists to provide some convenient idioms for building Inventory objects.
