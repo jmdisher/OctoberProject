@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -12,9 +13,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EndBreakBlockChange implements IMutationEntity
 {
 	private final AbsoluteLocation _targetBlock;
-	private final short _expectedBlockType;
+	private final Item _expectedBlockType;
 
-	public EndBreakBlockChange(AbsoluteLocation targetBlock, short expectedBlockType)
+	public EndBreakBlockChange(AbsoluteLocation targetBlock, Item expectedBlockType)
 	{
 		_targetBlock = targetBlock;
 		_expectedBlockType = expectedBlockType;
@@ -34,7 +35,7 @@ public class EndBreakBlockChange implements IMutationEntity
 		// Make sure that the block is the same type.
 		short blockType = context.previousBlockLookUp.apply(_targetBlock).getData15(AspectRegistry.BLOCK);
 		boolean didApply = false;
-		if (_expectedBlockType == blockType)
+		if (_expectedBlockType.number() == blockType)
 		{
 			// This means that this worked so create the mutation to break the block.
 			BreakBlockMutation mutation = new BreakBlockMutation(_targetBlock, _expectedBlockType);

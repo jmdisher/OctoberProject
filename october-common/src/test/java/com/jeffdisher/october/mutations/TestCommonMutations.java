@@ -30,7 +30,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
-		BreakBlockMutation mutation = new BreakBlockMutation(target, BlockAspect.STONE);
+		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
@@ -45,7 +45,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
-		BreakBlockMutation mutation = new BreakBlockMutation(target, BlockAspect.STONE);
+		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
@@ -61,7 +61,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(target, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(target, ItemRegistry.STONE);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		Entity entity = EntityActionValidator.buildDefaultEntity(0);

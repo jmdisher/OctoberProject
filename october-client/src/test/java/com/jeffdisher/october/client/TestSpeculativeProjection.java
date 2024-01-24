@@ -613,7 +613,7 @@ public class TestSpeculativeProjection
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
@@ -631,7 +631,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(longRunningChange)))
-				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, ItemRegistry.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumber
@@ -668,7 +668,7 @@ public class TestSpeculativeProjection
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EndBreakBlockChange interrupted = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE.number());
+		EndBreakBlockChange interrupted = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(interrupted, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
@@ -676,7 +676,7 @@ public class TestSpeculativeProjection
 		// Allow a small amount of time to pass, cancel the previous, and put in the updated change.
 		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 1);
 		currentTimeMillis += 50L;
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation2, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation2, ItemRegistry.STONE);
 		long cancelledCommit = projector.cancelCurrentActivity();
 		Assert.assertEquals(commitNumber, cancelledCommit);
 		commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
@@ -692,7 +692,7 @@ public class TestSpeculativeProjection
 						, new EntityChangeCancel()
 						, longRunningChange
 				)))
-				, List.of(new BreakBlockMutation(changeLocation2, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation2, ItemRegistry.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumber
@@ -731,7 +731,7 @@ public class TestSpeculativeProjection
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
@@ -749,7 +749,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyMap()
-				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, ItemRegistry.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumber
@@ -794,7 +794,7 @@ public class TestSpeculativeProjection
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
@@ -829,7 +829,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(longRunningChange)))
-				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, ItemRegistry.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumber
@@ -873,7 +873,7 @@ public class TestSpeculativeProjection
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
@@ -909,7 +909,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(longRunningChange)))
-				, List.of(new BreakBlockMutation(changeLocation, BlockAspect.STONE))
+				, List.of(new BreakBlockMutation(changeLocation, ItemRegistry.STONE))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commitNumber

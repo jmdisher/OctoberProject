@@ -291,7 +291,7 @@ public class TestTickRunner
 		
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE);
 		
 		// The ServerRunner would wrap this in ServerEntityChangeWrapper so do that here.
 		long commitLevel = 1L;

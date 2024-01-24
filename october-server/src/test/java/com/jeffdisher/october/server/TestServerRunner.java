@@ -86,7 +86,7 @@ public class TestServerRunner
 		
 		// Submit the requests to break the block and observe that the change and mutation come back after they have delayed.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		server.changeReceived(clientId, longRunningChange, 1L);
 		
 		// Wait for the output and verify it is what is expected.

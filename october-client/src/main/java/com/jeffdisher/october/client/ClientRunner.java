@@ -21,7 +21,6 @@ import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.registries.Craft;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -90,14 +89,15 @@ public class ClientRunner
 	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
 	 * @param blockLocation The location of the block to break.
+	 * @param expectedBlock The block we expect to see in this location (so we fail on race).
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 * @return The number of milliseconds this operation will take (meaning an explicit cancel should be sent if it
 	 * shouldn't wait to complete).
 	 */
-	public long beginBreakBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	public long beginBreakBlock(AbsoluteLocation blockLocation, Item expectedBlock, long currentTimeMillis)
 	{
 		// Send the end change since it has the appropriate delay (meaning we will need to 
-		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, ItemRegistry.STONE.number());
+		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, expectedBlock);
 		_applyLocalChange(breakBlock, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
 		return breakBlock.getTimeCostMillis();

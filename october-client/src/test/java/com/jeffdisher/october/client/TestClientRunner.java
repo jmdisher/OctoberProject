@@ -109,8 +109,8 @@ public class TestClientRunner
 		// Start a multi-phase locally.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		// (we create the change we expect the ClientRunner to create).
-		EndBreakBlockChange longRunningAction = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE.number());
-		runner.beginBreakBlock(changeLocation, System.currentTimeMillis());
+		EndBreakBlockChange longRunningAction = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
+		runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, System.currentTimeMillis());
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
@@ -129,7 +129,7 @@ public class TestClientRunner
 		runner.runPendingCalls(System.currentTimeMillis());
 		
 		// Finally, we will see the actual mutation to break the block.
-		BreakBlockMutation mutation = new BreakBlockMutation(changeLocation, BlockAspect.STONE);
+		BreakBlockMutation mutation = new BreakBlockMutation(changeLocation, ItemRegistry.STONE);
 		network.client.receivedMutation(mutation);
 		network.client.receivedEndOfTick(5L, 1L);
 		runner.runPendingCalls(System.currentTimeMillis());
@@ -173,7 +173,7 @@ public class TestClientRunner
 		boolean didFail = false;
 		try
 		{
-			runner.beginBreakBlock(changeLocation, currentTimeMillis);
+			runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, currentTimeMillis);
 		}
 		catch (AssertionError e)
 		{
@@ -196,7 +196,7 @@ public class TestClientRunner
 		// Now, advance time and verify that we can call one of these.
 		currentTimeMillis += 1000L;
 		Assert.assertFalse(runner.isActivityInProgress(currentTimeMillis));
-		runner.beginBreakBlock(changeLocation, currentTimeMillis);
+		runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, currentTimeMillis);
 	}
 
 	@Test
