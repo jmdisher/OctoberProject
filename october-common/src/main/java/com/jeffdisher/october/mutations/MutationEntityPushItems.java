@@ -57,6 +57,13 @@ public class MutationEntityPushItems implements IMutationEntity
 				// We will proceed to remove the items from our inventory and pass them to the block.
 				newEntity.newInventory.removeItems(_offered.type(), toDrop);
 				context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(_offered.type(), toDrop)));
+				
+				// We want to deselect this if it was selected.
+				if ((_offered.type() == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(_offered.type())))
+				{
+					newEntity.newSelectedItem = null;
+				}
+				
 				didApply = true;
 			}
 		}
