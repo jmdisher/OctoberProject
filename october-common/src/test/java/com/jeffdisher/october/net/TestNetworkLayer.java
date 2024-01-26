@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +20,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
 
-public class TestServer
+public class TestNetworkLayer
 {
 	@Test
 	public void basicHandshakeDisconnect() throws IOException
@@ -27,7 +28,7 @@ public class TestServer
 		int[] leftCount = new int[1];
 		Map<Integer, String> joinNames = new HashMap<>();
 		int port = 3000;
-		Server server = Server.startListening(new Server.IServerListener()
+		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
 			public void userLeft(int id)
@@ -70,8 +71,8 @@ public class TestServer
 	public void chat() throws IOException
 	{
 		int port = 3000;
-		Server[] holder = new Server[1];
-		Server server = Server.startListening(new Server.IServerListener()
+		NetworkLayer[] holder = new NetworkLayer[1];
+		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
 			private boolean _isReady1 = false;
@@ -176,8 +177,8 @@ public class TestServer
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
-		Server[] holder = new Server[1];
-		Server server = Server.startListening(new Server.IServerListener()
+		NetworkLayer[] holder = new NetworkLayer[1];
+		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			boolean _sent = false;
 			@Override
@@ -222,6 +223,62 @@ public class TestServer
 		client1.close();
 		
 		server.stop();
+	}
+
+	@Test
+	public void clientTest() throws IOException
+	{
+		int port = 3000;
+		String testName = "test name";
+		// We want to fake up a server.
+		InetSocketAddress address = new InetSocketAddress(port);
+		ServerSocketChannel socket = ServerSocketChannel.open();
+		socket.bind(address);
+		
+		// Now, connect the client and verify that we can accept and send a message.
+		NetworkLayer[] holder = new NetworkLayer[1];
+		NetworkLayer client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
+		{
+			@Override
+			public void userLeft(int id)
+			{
+				throw new AssertionError("Not in client mode");
+			}
+			@Override
+			public void userJoined(int id, String name)
+			{
+				throw new AssertionError("Not in client mode");
+			}
+			@Override
+			public void packetReceived(int id, Packet packet)
+			{
+				holder[0].sendMessage(id, new Packet_SetClientName(testName));
+			}
+			@Override
+			public void networkReady(int id)
+			{
+				// We get this message but it is somewhat redundant since we connect in the critical path for the client.
+			}
+		}, InetAddress.getLocalHost(), port);
+		holder[0] = client;
+		
+		// We should be able to accept and send a message from the server.
+		SocketChannel connection = socket.accept();
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		PacketCodec.serializeToBuffer(buffer, new Packet_AssignClientId(1));
+		buffer.flip();
+		connection.write(buffer);
+		
+		// Now, wait for the response.
+		buffer.clear();
+		connection.read(buffer);
+		buffer.flip();
+		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Packet_SetClientName name = (Packet_SetClientName) packet;
+		
+		client.stop();
+		socket.close();
+		Assert.assertEquals(testName, name.name);
 	}
 
 

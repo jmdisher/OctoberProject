@@ -1,6 +1,7 @@
 package com.jeffdisher.october.net;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -19,53 +20,92 @@ import com.jeffdisher.october.utils.Assert;
  * The server manages connections coming in from clients, the asynchronous IO of the data with the network, and the
  * serialization/deserialization of messages.
  */
-public class Server
+public class NetworkLayer
 {
 	// The buffer must be large enough to hold precisely 1 packet.
 	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
+	// The ID to use when running in client mode.
+	public static final int CLIENT_MODE_ID = 0;
 
-	public static Server startListening(IServerListener listener, int port) throws IOException
+	public static NetworkLayer startListening(IListener listener, int port) throws IOException
 	{
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
 		socket.bind(address);
-		
-		socket.configureBlocking(false);
-		Selector selector = Selector.open();
-		int serverSocketOps = socket.validOps();
-		Assert.assertTrue(SelectionKey.OP_ACCEPT == serverSocketOps);
-		SelectionKey acceptor = socket.register(selector, serverSocketOps, null);
-		return new Server(listener, selector, socket, acceptor);
+		return new NetworkLayer(listener, socket, null);
+	}
+
+	public static NetworkLayer connectToServer(IListener listener, InetAddress host, int port) throws IOException
+	{
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port));
+		// TODO:  Manage the handshake sequence once the network is refactored into client and server elements.
+		return new NetworkLayer(listener, null, client);
 	}
 
 
 	private final Thread _internalThread;
-	private final IServerListener _listener;
+	private final IListener _listener;
 	private final Selector _selector;
+	private final Map<SelectionKey, _PeerState> _channelsByKey;
+	private final Map<Integer, _PeerState> _channelsById;
+
+	// Data related to the hand-off between internal and background threads.
+	private boolean _keepRunning;
+	private Map<Integer, Packet> _shared_outgoingByClientId;
+	
+	// Server mode details.
 	private final ServerSocketChannel _acceptorSocket;
 	private final SelectionKey _acceptorKey;
-	private final Map<SelectionKey, ClientState> _channelsByKey;
-	private final Map<Integer, ClientState> _channelsById;
-
-	private boolean _keepRunning;
 	private int _nextClientId;
-	private Map<Integer, Packet> _shared_outgoingByClientId;
 
-	private Server(IServerListener listener, Selector selector, ServerSocketChannel acceptorSocket, SelectionKey acceptorKey)
+	private NetworkLayer(IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
 	{
+		// We can only be running in server mode OR client mode.
+		Assert.assertTrue((null != serverSocket) != (null != clientSocket));
+		
+		// Set up the selector and add input types.
+		
 		_internalThread = new Thread(() -> {
 			_backgroundThreadMain();
 		}, "Server IO thread");
 		_listener = listener;
-		_selector = selector;
-		_acceptorSocket = acceptorSocket;
-		_acceptorKey = acceptorKey;
+		_selector = Selector.open();
 		_channelsByKey = new HashMap<>();
 		_channelsById = new HashMap<>();
 		
-		// Starting a thread in a constructor is a little odd but we are called by a factory so it should seem ok.
+		// Initialize shared data.
 		_keepRunning = true;
-		_nextClientId = 1;
+		_shared_outgoingByClientId = null;
+		
+		// Do any server-specific or client-specific start-up.
+		if (null != serverSocket)
+		{
+			serverSocket.configureBlocking(false);
+			int serverSocketOps = serverSocket.validOps();
+			Assert.assertTrue(SelectionKey.OP_ACCEPT == serverSocketOps);
+			SelectionKey acceptor = serverSocket.register(_selector, serverSocketOps, null);
+			
+			_acceptorSocket = serverSocket;
+			_acceptorKey = acceptor;
+			_nextClientId = 1;
+		}
+		else
+		{
+			clientSocket.configureBlocking(false);
+			_PeerState state = new _PeerState(clientSocket, CLIENT_MODE_ID);
+			SelectionKey newKey = clientSocket.register(_selector, SelectionKey.OP_READ, state);
+			_channelsByKey.put(newKey, state);
+			_channelsById.put(state.clientId, state);
+			Assert.assertTrue(_channelsByKey.size() == _channelsById.size());
+			state.setKey(newKey);
+			state.setHandshakeCompleted();
+			
+			_acceptorSocket = null;
+			_acceptorKey = null;
+			_nextClientId = -1;
+		}
+		
+		// Start the internal thread since we are now initialized.
 		_internalThread.start();
 	}
 
@@ -82,7 +122,10 @@ public class Server
 			// We don't use interruption.
 			Assert.unexpected(e);
 		}
-		_acceptorKey.cancel();
+		if (null != _acceptorKey)
+		{
+			_acceptorKey.cancel();
+		}
 		try
 		{
 			_selector.selectNow();
@@ -92,14 +135,17 @@ public class Server
 			// We don't expect errors here.
 			Assert.unexpected(e);
 		}
-		try
+		if (null != _acceptorSocket)
 		{
-			_acceptorSocket.close();
-		}
-		catch (IOException e)
-		{
-			// We don't expect errors here.
-			Assert.unexpected(e);
+			try
+			{
+				_acceptorSocket.close();
+			}
+			catch (IOException e)
+			{
+				// We don't expect errors here.
+				Assert.unexpected(e);
+			}
 		}
 		Assert.assertTrue(_selector.keys().isEmpty());
 	}
@@ -143,7 +189,7 @@ public class Server
 			{
 				for (Map.Entry<Integer, Packet> elt : packetsToSerialize.entrySet())
 				{
-					ClientState client = _channelsById.get(elt.getKey());
+					_PeerState client = _channelsById.get(elt.getKey());
 					// This should already be empty.
 					Assert.assertTrue(0 == client.outgoing.position());
 					Packet packet = elt.getValue();
@@ -153,7 +199,7 @@ public class Server
 		}
 		
 		// We are shutting down so close all clients.
-		for (Map.Entry<SelectionKey, ClientState> elt : _channelsByKey.entrySet()) {
+		for (Map.Entry<SelectionKey, _PeerState> elt : _channelsByKey.entrySet()) {
 			try {
 				elt.getValue().channel.close();
 			} catch (IOException e) {
@@ -176,7 +222,7 @@ public class Server
 				_backgroundProcessAcceptorKey(key);
 			} else {
 				// This is normal data movement so get the state out of the attachment.
-				ClientState state = (ClientState)key.attachment();
+				_PeerState state = (_PeerState)key.attachment();
 				// We can't fail to find this since we put it in the collection.
 				Assert.assertTrue(null != state);
 				
@@ -220,7 +266,7 @@ public class Server
 			// Changing this state shouldn't involve an IOException so flag that as fatal, if it happens.
 			throw Assert.unexpected(e);
 		}
-		ClientState newClient = new ClientState(newNode, _nextClientId);
+		_PeerState newClient = new _PeerState(newNode, _nextClientId);
 		_nextClientId += 1;
 		SelectionKey newKey;
 		try
@@ -242,7 +288,7 @@ public class Server
 		_backgroundSerializePacket(newClient, new Packet_AssignClientId(newClient.clientId));
 	}
 
-	private boolean _backgroundProcessReadableKey(SelectionKey key, ClientState state)
+	private boolean _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
 	{
 		// Read the available bytes into our local buffer.
 		boolean didRead = false;
@@ -301,7 +347,7 @@ public class Server
 		return didRead;
 	}
 
-	private boolean _backgroundProcessWritableKey(SelectionKey key, ClientState state)
+	private boolean _backgroundProcessWritableKey(SelectionKey key, _PeerState state)
 	{
 		boolean didWrite = false;
 		// The buffer must have something in it if we got here.
@@ -342,7 +388,7 @@ public class Server
 		return didWrite;
 	}
 
-	private void _backgroundSerializePacket(ClientState client, Packet packet)
+	private void _backgroundSerializePacket(_PeerState client, Packet packet)
 	{
 		PacketCodec.serializeToBuffer(client.outgoing, packet);
 		client.getKey().interestOps(client.getKey().interestOps() | SelectionKey.OP_WRITE);
@@ -350,7 +396,7 @@ public class Server
 		client.outgoing.flip();
 	}
 
-	private void _backgroundDisconnectClient(SelectionKey key, ClientState state)
+	private void _backgroundDisconnectClient(SelectionKey key, _PeerState state)
 	{
 		// Remove this from our list and send the callback.
 		_channelsByKey.remove(key);
@@ -368,7 +414,7 @@ public class Server
 	}
 
 
-	public static interface IServerListener
+	public static interface IListener
 	{
 		void userJoined(int id, String name);
 		void userLeft(int id);
@@ -377,7 +423,7 @@ public class Server
 	}
 
 
-	private static class ClientState
+	private static class _PeerState
 	{
 		public final SocketChannel channel;
 		public final int clientId;
@@ -386,7 +432,7 @@ public class Server
 		private SelectionKey _key;
 		private boolean _didHandshake;
 		
-		public ClientState(SocketChannel channel, int clientId)
+		public _PeerState(SocketChannel channel, int clientId)
 		{
 			this.channel = channel;
 			this.clientId = clientId;
