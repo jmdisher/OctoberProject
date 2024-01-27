@@ -11,13 +11,14 @@ import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.MessageQueue;
 
 
 /**
  * Intended to be used by clients which support purely single-player modes to connect client-side logic to an embedded
  * server process.
- * All calls from one are issued directly through to the other (since their listener interfaces assume the calling
- * thread is borrowed and should return without doing heavy work).
+ * A thread running within the shim ferries this data between the client and server to add the expected sort of
+ * asynchronous timing.
  */
 public class LocalServerShim
 {
@@ -32,6 +33,7 @@ public class LocalServerShim
 	public static LocalServerShim startedServerShim(long millisPerTick, LongSupplier currentTimeMillisProvider) throws InterruptedException
 	{
 		LocalServerShim shim = new LocalServerShim();
+		shim._thread.start();
 		ServerRunner server = new ServerRunner(millisPerTick, shim._serverAdapter, currentTimeMillisProvider);
 		shim._waitForServer(server);
 		return shim;
@@ -40,6 +42,10 @@ public class LocalServerShim
 
 	private static int CLIENT_ID = 1;
 
+	private MessageQueue _queue = new MessageQueue();
+	private Thread _thread = new Thread(() -> {
+		_backgroundThreadMain();
+	}, "LocalServerShim");
 	private ClientAdapter _clientAdapter = new ClientAdapter();
 	private ServerAdapter _serverAdapter = new ServerAdapter();
 	private ServerRunner _server;
@@ -48,6 +54,10 @@ public class LocalServerShim
 	private IServerAdapter.IListener _serverListener;
 	private IClientAdapter.IListener _clientListener;
 
+	private LocalServerShim()
+	{
+		// Private since we want to use the factory.
+	}
 
 	/**
 	 * Provides access to the client adapter for the fake network to use in creating a ClientRunner.
@@ -94,12 +104,18 @@ public class LocalServerShim
 	 * 
 	 * @throws InterruptedException Interrupted while waiting for the server to shutdown.
 	 */
-	public synchronized void waitForServerShutdown() throws InterruptedException
+	public void waitForServerShutdown() throws InterruptedException
 	{
-		while(null != _server)
+		synchronized (this)
 		{
-			this.wait();
+			while(null != _server)
+			{
+				this.wait();
+			}
 		}
+		// We will also stop the shim here.
+		_queue.shutdown();
+		_thread.join();
 	}
 
 	/**
@@ -113,6 +129,16 @@ public class LocalServerShim
 		_server.loadCuboid(cuboid);
 	}
 
+
+	private void _backgroundThreadMain()
+	{
+		Runnable toRun = _queue.pollForNext(0, null);
+		while (null != toRun)
+		{
+			toRun.run();
+			toRun = _queue.pollForNext(0, null);
+		}
+	}
 
 	private synchronized void _setConnectedClient(IClientAdapter.IListener clientListener)
 	{
@@ -159,21 +185,27 @@ public class LocalServerShim
 		@Override
 		public void connectAndStartListening(IClientAdapter.IListener listener)
 		{
-			_setConnectedClient(listener);
-			_serverListener.clientConnected(CLIENT_ID);
-			listener.adapterConnected(CLIENT_ID);
+			_queue.enqueue(() -> {
+				_setConnectedClient(listener);
+				_serverListener.clientConnected(CLIENT_ID);
+				listener.adapterConnected(CLIENT_ID);
+			});
 		}
 		@Override
 		public void disconnect()
 		{
-			_serverListener.clientDisconnected(CLIENT_ID);
-			// There is only the one client so shut down the server.
-			_shutdownServer();
+			_queue.enqueue(() -> {
+				_serverListener.clientDisconnected(CLIENT_ID);
+				// There is only the one client so shut down the server.
+				_shutdownServer();
+			});
 		}
 		@Override
 		public void sendChange(IMutationEntity change, long commitLevel)
 		{
-			_serverListener.changeReceived(CLIENT_ID, change, commitLevel);
+			_queue.enqueue(() -> {
+				_serverListener.changeReceived(CLIENT_ID, change, commitLevel);
+			});
 		}
 	}
 
@@ -182,50 +214,64 @@ public class LocalServerShim
 		@Override
 		public void readyAndStartListening(IServerAdapter.IListener listener)
 		{
-			_setServer(listener);
+			_queue.enqueue(() -> {
+				_setServer(listener);
+			});
 		}
 		@Override
 		public void sendEntity(int clientId, Entity entity)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
-			_clientListener.receivedEntity(entity);
+			_queue.enqueue(() -> {
+				_clientListener.receivedEntity(entity);
+			});
 		}
 		@Override
 		public void sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
-			_clientListener.receivedCuboid(cuboid);
+			_queue.enqueue(() -> {
+				_clientListener.receivedCuboid(cuboid);
+			});
 		}
 		@Override
 		public void sendChange(int clientId, int entityId, IMutationEntity change)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
-			_clientListener.receivedChange(entityId, change);
+			_queue.enqueue(() -> {
+				_clientListener.receivedChange(entityId, change);
+			});
 		}
 		@Override
 		public void sendMutation(int clientId, IMutationBlock mutation)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
-			_clientListener.receivedMutation(mutation);
+			_queue.enqueue(() -> {
+				_clientListener.receivedMutation(mutation);
+			});
 		}
 		@Override
 		public void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 		{
-			if (ServerRunner.FAKE_CLIENT_ID == clientId)
-			{
-				_setLastServerTick(tickNumber);
-			}
-			else
-			{
-				Assert.assertTrue(CLIENT_ID == clientId);
-				_clientListener.receivedEndOfTick(tickNumber, latestLocalCommitIncluded);
-			}
+			_queue.enqueue(() -> {
+				if (ServerRunner.FAKE_CLIENT_ID == clientId)
+				{
+					_setLastServerTick(tickNumber);
+				}
+				else
+				{
+					Assert.assertTrue(CLIENT_ID == clientId);
+					_clientListener.receivedEndOfTick(tickNumber, latestLocalCommitIncluded);
+				}
+			});
 		}
 		@Override
 		public void disconnectClient(int clientId)
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
-			_clientListener.adapterDisconnected();
+			_queue.enqueue(() -> {
+				_clientListener.adapterDisconnected();
+			});
 		}
 	}
 }
