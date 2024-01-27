@@ -3,14 +3,10 @@ package com.jeffdisher.october.net;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,131 +19,71 @@ import com.jeffdisher.october.types.CuboidAddress;
 public class TestNetworkLayer
 {
 	@Test
-	public void basicHandshakeDisconnect() throws IOException
+	public void serverTest() throws Throwable
 	{
-		int[] leftCount = new int[1];
-		Map<Integer, String> joinNames = new HashMap<>();
+		// Start the server.
 		int port = 3000;
-		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
+		CountDownLatch connectLatch = new CountDownLatch(1);
+		CountDownLatch disconnectLatch = new CountDownLatch(1);
+		Packet[] holder = new Packet[1];
+		CountDownLatch receiveLatch = new CountDownLatch(1);
+		
+		NetworkLayer<Integer> server = NetworkLayer.startListening(new NetworkLayer.IListener<Integer>()
 		{
 			@Override
-			public void userLeft(int id)
+			public Integer buildToken()
 			{
-				// We don't always see that the user has left if we shut down first.
-				leftCount[0] += 1;
+				return 1;
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public void peerConnected(Integer token)
 			{
-				Assert.assertFalse(joinNames.containsKey(id));
-				joinNames.put(id, name);
+				connectLatch.countDown();
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void peerDisconnected(Integer token)
 			{
-				// Should not happen in this test.
-				Assert.fail();
+				disconnectLatch.countDown();
 			}
 			@Override
-			public void networkReady(int id)
+			public void peerReadyForWrite(Integer token)
 			{
-				// We aren't acting on this in our test.
+				// We ignore this in this test.
+			}
+			@Override
+			public void packetReceived(Integer token, Packet packet)
+			{
+				Assert.assertNull(holder[0]);
+				holder[0] = packet;
+				receiveLatch.countDown();
 			}
 		}, port);
 		
-		int client1 = _runClient(port, "Client 1");
-		int client2 = _runClient(port, "Client 2");
-		Assert.assertEquals(1, client1);
-		Assert.assertEquals(2, client2);
-		// We should see at least one disconnect, since we do these in series.
-		Assert.assertTrue(leftCount[0] > 0);
-		// Similarly, we will see the first client appear, since the disconnect-accept is lock-step on the server, but maybe not the second.
-		Assert.assertEquals(joinNames.get(client1), "Client 1");
+		// Connect a client and observe that we see a connected peer.
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		connectLatch.await();
 		
-		server.stop();
-	}
-
-	@Test
-	public void chat() throws IOException
-	{
-		int port = 3000;
-		NetworkLayer[] holder = new NetworkLayer[1];
-		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
-		{
-			private List<String> _messagesFor1 = new ArrayList<>();
-			private boolean _isReady1 = false;
-			@Override
-			public void userLeft(int id)
-			{
-			}
-			@Override
-			public void userJoined(int id, String name)
-			{
-				// Starts ready.
-				_isReady1 = true;
-			}
-			@Override
-			public void packetReceived(int id, Packet packet)
-			{
-				// We only expect chat messages.
-				Packet_Chat chat = (Packet_Chat) packet;
-				Assert.assertEquals(2, id);
-				_messagesFor1.add(chat.message);
-				_handle();
-			}
-			@Override
-			public void networkReady(int id)
-			{
-				_isReady1 = true;
-				_handle();
-			}
-			private void _handle()
-			{
-				if (_isReady1 && !_messagesFor1.isEmpty())
-				{
-					String message = _messagesFor1.remove(0);
-					_isReady1 = false;
-					holder[0].sendMessage(1, new Packet_Chat(2, message));
-				}
-			}
-		}, port);
-		holder[0] = server;
+		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		PacketCodec.serializeToBuffer(buffer, new Packet_AssignClientId(1));
+		buffer.flip();
+		client.write(buffer);
 		
-		// Connect both client.
-		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
-		SocketChannel client2 = _connectAndHandshakeClient(port, "Client 2");
+		server.sendMessage(1, new Packet_AssignClientId(2));
 		
-		// Send messages from client 2 to 1.
-		for (int i = 0; i < 10; ++i)
-		{
-			String message = "Chat " + i;
-			ByteBuffer buffer = ByteBuffer.allocate(16);
-			PacketCodec.serializeToBuffer(buffer, new Packet_Chat(0, message));
-			buffer.flip();
-			int written = client2.write(buffer);
-			Assert.assertEquals(written, buffer.limit());
-		}
-		client2.close();
+		// Verify that we received both.
+		receiveLatch.await();
+		Assert.assertEquals(1, ((Packet_AssignClientId) holder[0]).clientId);
 		
-		// Read the messages from client 1.
-		int next = 0;
-		ByteBuffer buffer = ByteBuffer.allocate(16);
-		while (next < 10)
-		{
-			client1.read(buffer);
-			buffer.flip();
-			Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-			buffer.compact();
-			if (null != packet)
-			{
-				Packet_Chat chat = (Packet_Chat) packet;
-				String expectedMessage = "Chat " + next;
-				Assert.assertEquals(expectedMessage, chat.message);
-				next += 1;
-			}
-		}
-		client1.close();
+		buffer.clear();
+		client.read(buffer);
+		buffer.flip();
+		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertEquals(2, ((Packet_AssignClientId) clientRead).clientId);
 		
+		// Close the client and verify that the server sees the disconnect.
+		client.close();
+		disconnectLatch.await();
 		server.stop();
 	}
 
@@ -177,40 +113,46 @@ public class TestNetworkLayer
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
-		NetworkLayer[] holder = new NetworkLayer[1];
-		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkLayer<Integer>[] holder = new NetworkLayer[1];
+		NetworkLayer<Integer> server = NetworkLayer.startListening(new NetworkLayer.IListener<Integer>()
 		{
 			boolean _sent = false;
 			@Override
-			public void userLeft(int id)
+			public Integer buildToken()
 			{
+				return 1;
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public void peerConnected(Integer token)
 			{
 				// Starts ready - we can send the message now.
-				holder[0].sendMessage(id, fragments[0]);
+				holder[0].sendMessage(token, fragments[0]);
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void peerDisconnected(Integer token)
 			{
-				// We don't expect this in these tests.
-				Assert.fail();
 			}
 			@Override
-			public void networkReady(int id)
+			public void peerReadyForWrite(Integer token)
 			{
 				if (!_sent)
 				{
-					holder[0].sendMessage(id, fragments[1]);
+					holder[0].sendMessage(token, fragments[1]);
 					_sent = true;
 				}
+			}
+			@Override
+			public void packetReceived(Integer token, Packet packet)
+			{
+				// We don't expect this in these tests.
+				Assert.fail();
 			}
 		}, port);
 		holder[0] = server;
 		
 		// Connect the client.
-		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
+		SocketChannel client1 = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
 		
 		Packet_CuboidSetAspectShortPart read1 = (Packet_CuboidSetAspectShortPart)_readOnePacket(client1);
 		Packet_CuboidSetAspectShortPart read2 = (Packet_CuboidSetAspectShortPart)_readOnePacket(client1);
@@ -226,95 +168,73 @@ public class TestNetworkLayer
 	}
 
 	@Test
-	public void clientTest() throws IOException
+	public void clientTest() throws Throwable
 	{
 		int port = 3000;
-		String testName = "test name";
 		// We want to fake up a server.
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
 		socket.bind(address);
 		
-		// Now, connect the client and verify that we can accept and send a message.
-		NetworkLayer[] holder = new NetworkLayer[1];
-		NetworkLayer client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
+		Packet[] holder = new Packet[1];
+		CountDownLatch receiveLatch = new CountDownLatch(1);
+		
+		NetworkLayer<Void> client = NetworkLayer.connectToServer(new NetworkLayer.IListener<Void>()
 		{
 			@Override
-			public void userLeft(int id)
+			public Void buildToken()
+			{
+				return null;
+			}
+			@Override
+			public void peerConnected(Void token)
 			{
 				throw new AssertionError("Not in client mode");
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public void peerDisconnected(Void token)
 			{
 				throw new AssertionError("Not in client mode");
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void peerReadyForWrite(Void token)
 			{
-				holder[0].sendMessage(id, new Packet_SetClientName(testName));
+				// We ignore this in this test.
 			}
 			@Override
-			public void networkReady(int id)
+			public void packetReceived(Void token, Packet packet)
 			{
-				// We get this message but it is somewhat redundant since we connect in the critical path for the client.
+				Assert.assertNull(holder[0]);
+				holder[0] = packet;
+				receiveLatch.countDown();
 			}
 		}, InetAddress.getLocalHost(), port);
-		holder[0] = client;
+		SocketChannel server = socket.accept();
 		
-		// We should be able to accept and send a message from the server.
-		SocketChannel connection = socket.accept();
+		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		PacketCodec.serializeToBuffer(buffer, new Packet_AssignClientId(1));
 		buffer.flip();
-		connection.write(buffer);
+		server.write(buffer);
 		
-		// Now, wait for the response.
+		client.sendMessage(null, new Packet_AssignClientId(2));
+		
+		// Verify that we received both.
+		receiveLatch.await();
+		Assert.assertEquals(1, ((Packet_AssignClientId) holder[0]).clientId);
+		
 		buffer.clear();
-		connection.read(buffer);
+		server.read(buffer);
 		buffer.flip();
-		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_SetClientName name = (Packet_SetClientName) packet;
+		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertEquals(2, ((Packet_AssignClientId) clientRead).clientId);
 		
+		// Shut down everything.
 		client.stop();
+		server.close();
 		socket.close();
-		Assert.assertEquals(testName, name.name);
 	}
 
-
-	private int _runClient(int port, String name) throws IOException, UnknownHostException
-	{
-		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		client.read(buffer);
-		buffer.flip();
-		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_AssignClientId assign = (Packet_AssignClientId) packet;
-		buffer.clear();
-		PacketCodec.serializeToBuffer(buffer, new Packet_SetClientName(name));
-		buffer.flip();
-		client.write(buffer);
-		Assert.assertFalse(buffer.hasRemaining());
-		client.close();
-		return assign.clientId;
-	}
-
-	private SocketChannel _connectAndHandshakeClient(int port, String name) throws IOException, UnknownHostException
-	{
-		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		client.read(buffer);
-		buffer.flip();
-		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_AssignClientId assign = (Packet_AssignClientId) packet;
-		Assert.assertNotNull(assign);
-		buffer.clear();
-		PacketCodec.serializeToBuffer(buffer, new Packet_SetClientName(name));
-		buffer.flip();
-		client.write(buffer);
-		Assert.assertFalse(buffer.hasRemaining());
-		return client;
-	}
 
 	private Packet _readOnePacket(SocketChannel client1) throws IOException
 	{
