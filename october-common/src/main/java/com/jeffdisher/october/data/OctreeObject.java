@@ -1,5 +1,7 @@
 package com.jeffdisher.october.data;
 
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,6 +9,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.utils.Assert;
 
 
 public class OctreeObject implements IOctree
@@ -62,17 +65,113 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
-	public void serialize(ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
-		short count = (short) _data.size();
-		buffer.putShort(count);
-		for (Map.Entry<Short, Object> elt : _data.entrySet())
+		int keysToSkip = (null != lastCallState)
+				? (Integer) lastCallState
+				: -1
+		;
+		// We want to verify that we aren't stuck in a loop.
+		boolean canFail = (null == lastCallState);
+		int spaceInBuffer = buffer.remaining();
+		Integer resumeToken = null;
+		if (-1 == keysToSkip)
 		{
-			short key = elt.getKey();
-			buffer.putShort(key);
-			Object value = elt.getValue();
-			codec.storeData(buffer, value);
+			// We still need to write our size so see if that fits.
+			if (spaceInBuffer >= Integer.BYTES)
+			{
+				// We can write this.
+				int count = _data.size();
+				buffer.putInt(count);
+				canFail = true;
+				keysToSkip = 0;
+			}
+			else
+			{
+				// We can't fit this so resume later.
+				Assert.assertTrue(canFail);
+				resumeToken = -1;
+			}
 		}
+		
+		// See if we can proceed to copy.
+		if (null == resumeToken)
+		{
+			int keysCopied = keysToSkip;
+			// Note that we store every tuple together so make sure that they both fit or wind the buffer back.
+			for (Map.Entry<Short, Object> elt : _data.entrySet())
+			{
+				if (keysToSkip > 0)
+				{
+					keysToSkip -= 1;
+				}
+				else
+				{
+					int position = buffer.position();
+					try
+					{
+						short key = elt.getKey();
+						buffer.putShort(key);
+						Object value = elt.getValue();
+						codec.storeData(buffer, value);
+						canFail = true;
+						keysCopied += 1;
+					}
+					catch (BufferOverflowException e)
+					{
+						// This didn't fit so fail out - the number of keys copied will be skipped on the next call.
+						buffer.position(position);
+						Assert.assertTrue(canFail);
+						resumeToken = keysCopied;
+						break;
+					}
+				}
+			}
+		}
+		return resumeToken;
+	}
+
+	@Override
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	{
+		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of pairs we still need.
+		
+		int pairsRemaining;
+		if (null == lastCallState)
+		{
+			// This means that we should be able to read at least the size.
+			Assert.assertTrue(buffer.remaining() >= Integer.BYTES);
+			pairsRemaining = buffer.getInt();
+		}
+		else
+		{
+			pairsRemaining = (Integer) lastCallState;
+		}
+		// We want to verify that we aren't stuck in a loop.
+		boolean canFail = (null == lastCallState);
+		
+		// We read each pair at a time so we will fail out if we fail to read with underflow.
+		Integer resumeToken = null;
+		for (int i = 0; i < pairsRemaining; ++i)
+		{
+			int position = buffer.position();
+			try
+			{
+				short key = buffer.getShort();
+				Object value = codec.loadData(buffer);
+				_data.put(key, value);
+				canFail = true;
+			}
+			catch (BufferUnderflowException e)
+			{
+				// We ran out of data so update our state to include how many we did read.
+				buffer.position(position);
+				Assert.assertTrue(canFail);
+				resumeToken = pairsRemaining - i;
+				break;
+			}
+		}
+		return resumeToken;
 	}
 
 	public <T> OctreeObject cloneData(Class<T> type, Function<T, T> valueCopier)

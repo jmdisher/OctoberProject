@@ -1,9 +1,12 @@
 package com.jeffdisher.october.registries;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.InventoryAspectCodec;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.Inventory;
@@ -17,13 +20,24 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class AspectRegistry
 {
-	public static final Aspect<Short, OctreeShort> BLOCK = registerAspect(Short.class, OctreeShort.class, (OctreeShort original) -> {
-		return original.cloneData();
-	});
-	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class, OctreeObject.class, (OctreeObject original) -> {
-		// Inventories are now immutable so just make a clone of the map.
-		return original.cloneMapShallow();
-	});
+	public static final Aspect<Short, OctreeShort> BLOCK = registerAspect(Short.class
+			, OctreeShort.class
+			, () -> OctreeShort.empty()
+			, (OctreeShort original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
+	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class
+			, OctreeObject.class
+			, () -> OctreeObject.create()
+			, (OctreeObject original) -> {
+				// Inventories are now immutable so just make a clone of the map.
+				return original.cloneMapShallow();
+			}
+			, new InventoryAspectCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -40,11 +54,22 @@ public class AspectRegistry
 	}
 
 
-	public static <T, O extends IOctree> Aspect<T, O> registerAspect(Class<T> type, Class<O> octreeType, Function<O, O> deepMutableClone)
+	public static <T, O extends IOctree> Aspect<T, O> registerAspect(Class<T> type
+			, Class<O> octreeType
+			, Supplier<O> emptyTreeSupplier
+			, Function<O, O> deepMutableClone
+			, IAspectCodec<T> codec
+	)
 	{
 		int index = _nextIndex;
 		_nextIndex += 1;
-		return new Aspect<>(index, type, octreeType, deepMutableClone);
+		return new Aspect<>(index
+				, type
+				, octreeType
+				, emptyTreeSupplier
+				, deepMutableClone
+				, codec
+		);
 	}
 
 

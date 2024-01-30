@@ -1,9 +1,12 @@
 package com.jeffdisher.october.data;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -26,6 +29,18 @@ public class CuboidData implements IReadOnlyCuboidData
 
 	public static CuboidData createNew(CuboidAddress cuboidAddress, IOctree[] data)
 	{
+		// We expect that there is a data plane for every aspect.
+		Assert.assertTrue(AspectRegistry.ALL_ASPECTS.length == data.length);
+		return new CuboidData(cuboidAddress, data);
+	}
+
+	public static CuboidData createEmpty(CuboidAddress cuboidAddress)
+	{
+		IOctree[] data = new IOctree[AspectRegistry.ALL_ASPECTS.length];
+		for (int i = 0; i < data.length; ++i)
+		{
+			data[i] = AspectRegistry.ALL_ASPECTS[i].emptyTreeSupplier().get();
+		}
 		return new CuboidData(cuboidAddress, data);
 	}
 
@@ -82,5 +97,81 @@ public class CuboidData implements IReadOnlyCuboidData
 	public <T> void setDataSpecial(Aspect<T, ?> type, BlockAddress address, T value)
 	{
 		_data[type.index()].setData(address, value);
+	}
+
+	@Override
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer)
+	{
+		_ResumableState previousCall = (_ResumableState) lastCallState;
+		int startIndex = (null != previousCall)
+				? previousCall.currentAspectIndex
+				: 0
+		;
+		Object octreeState = (null != previousCall)
+				? previousCall.octreeState
+				: null
+		;
+		
+		_ResumableState resume = null;
+		for (int i = startIndex; (null == resume) && (i < AspectRegistry.ALL_ASPECTS.length); ++i)
+		{
+			if (buffer.hasRemaining())
+			{
+				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
+				Object octreeResume = _data[i].serializeResumable(octreeState, buffer, type.codec());
+				if (null != octreeResume)
+				{
+					resume = new _ResumableState(i, octreeResume);
+				}
+				// Clear this resumed state if we are moving to the next aspect.
+				octreeState = null;
+			}
+			else
+			{
+				// If we are out of data, we want to resume here.
+				resume = new _ResumableState(i, null);
+			}
+		}
+		return resume;
+	}
+
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer)
+	{
+		_ResumableState previousCall = (_ResumableState) lastCallState;
+		int startIndex = (null != previousCall)
+				? previousCall.currentAspectIndex
+				: 0
+		;
+		Object octreeState = (null != previousCall)
+				? previousCall.octreeState
+				: null
+		;
+		
+		_ResumableState resume = null;
+		for (int i = startIndex; (null == resume) && (i < AspectRegistry.ALL_ASPECTS.length); ++i)
+		{
+			if (buffer.hasRemaining())
+			{
+				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
+				Object octreeResume = _data[i].deserializeResumable(octreeState, buffer, type.codec());
+				if (null != octreeResume)
+				{
+					resume = new _ResumableState(i, octreeResume);
+				}
+				// Clear this resumed state if we are moving to the next aspect.
+				octreeState = null;
+			}
+			else
+			{
+				// If we are out of data, we want to resume here.
+				resume = new _ResumableState(i, null);
+			}
+		}
+		return resume;
+	}
+
+
+	private static record _ResumableState(int currentAspectIndex, Object octreeState)
+	{
 	}
 }

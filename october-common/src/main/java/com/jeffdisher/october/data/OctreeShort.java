@@ -32,6 +32,11 @@ public class OctreeShort implements IOctree
 		return new OctreeShort(data);
 	}
 
+	public static OctreeShort empty()
+	{
+		// This is the case used when loading the octree - the data will be allocated and populated later (and cannot be used until then).
+		return new OctreeShort(null);
+	}
 
 	private static short _findValue(ByteBuffer buffer, byte x, byte y, byte z, byte half)
 	{
@@ -271,9 +276,90 @@ public class OctreeShort implements IOctree
 	}
 
 	@Override
-	public void serialize(ByteBuffer buffer, IAspectCodec<?> codec)
+	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
-		buffer.put(_data);
+		// NOTE:  For serializing, we just pass an Integer back:  Either the offset to continue the copy or -1 if we still need to write the size.
+		
+		// The only statefulness we have here is that we first send the 4-byte quantity describing the number of bytes we will be sending.
+		int startOffset = (null != lastCallState)
+				? (Integer) lastCallState
+				: -1
+		;
+		// We want to verify that we aren't stuck in a loop.
+		boolean canFail = (null == lastCallState);
+		Integer resumeToken = null;
+		if (-1 == startOffset)
+		{
+			// We still need to write our size so see if that fits.
+			if (buffer.remaining() >= Integer.BYTES)
+			{
+				// We can write this.
+				buffer.putInt(_data.length);
+				canFail = true;
+				startOffset = 0;
+			}
+			else
+			{
+				// We can't fit this so resume later.
+				Assert.assertTrue(canFail);
+				resumeToken = -1;
+			}
+		}
+		
+		// See if we can proceed to copy.
+		if (null == resumeToken)
+		{
+			// See what can fit in the buffer.
+			int spaceInBuffer = buffer.remaining();
+			int bytesRemaining = _data.length - startOffset;
+			int toCopy = Math.min(spaceInBuffer, bytesRemaining);
+			Assert.assertTrue((toCopy > 0) || canFail);
+			buffer.put(_data, startOffset, toCopy);
+			
+			resumeToken = (toCopy < bytesRemaining)
+					? (startOffset + toCopy)
+					: null
+			;
+		}
+		return resumeToken;
+	}
+
+	@Override
+	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
+	{
+		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of byte we still need.
+		
+		int bytesToCopy;
+		if (null == lastCallState)
+		{
+			// This means that we should be able to read at least the size.
+			Assert.assertTrue(buffer.remaining() >= Integer.BYTES);
+			Assert.assertTrue(null == _data);
+			bytesToCopy = buffer.getInt();
+			_data = new byte[bytesToCopy];
+		}
+		else
+		{
+			bytesToCopy = (Integer) lastCallState;
+		}
+		// We want to verify that we aren't stuck in a loop.
+		boolean canFail = (null == lastCallState);
+		
+		// See how many of the remaining bytes are here.
+		int bytesInBuffer = buffer.remaining();
+		int toCopy = Math.min(bytesInBuffer, bytesToCopy);
+		Assert.assertTrue((toCopy > 0) || canFail);
+		
+		// See our seek point.
+		int startOffset = _data.length - bytesToCopy;
+		
+		buffer.get(_data, startOffset, toCopy);
+		
+		// Return a description of how many more we expect.
+		return (toCopy < bytesToCopy)
+				? (bytesToCopy - toCopy)
+				: null
+		;
 	}
 
 	public OctreeShort cloneData()
