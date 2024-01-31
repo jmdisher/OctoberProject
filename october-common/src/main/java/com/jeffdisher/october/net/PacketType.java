@@ -38,6 +38,10 @@ public enum PacketType
 	 * clients, if the mutation is committed.
 	 */
 	MUTATION_ENTITY,
+	/**
+	 * A mutation targeting a block in the world.  These are only send from server to client.
+	 */
+	MUTATION_BLOCK,
 	
 	END_OF_LIST,
 }

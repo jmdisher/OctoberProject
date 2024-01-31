@@ -14,6 +14,7 @@ import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_Entity;
+import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntity;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
@@ -310,8 +311,15 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
-				// TODO:  Serialize and deserialize.
-				_clientListener.receivedMutation(mutation);
+				// Serialize and deserialize.
+				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
+				Packet_MutationBlock packet = new Packet_MutationBlock(mutation);
+				PacketCodec.serializeToBuffer(_packetBuffer, packet);
+				_packetBuffer.flip();
+				Packet_MutationBlock decoded = (Packet_MutationBlock) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+				Assert.assertTrue(!_packetBuffer.hasRemaining());
+				_packetBuffer.clear();
+				_clientListener.receivedMutation(decoded.mutation);
 			});
 		}
 		@Override

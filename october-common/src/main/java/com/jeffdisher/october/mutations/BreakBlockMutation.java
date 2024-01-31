@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -19,6 +20,16 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BreakBlockMutation implements IMutationBlock
 {
+	public static final MutationBlockType TYPE = MutationBlockType.BREAK_BLOCK;
+
+	public static BreakBlockMutation deserializeFromBuffer(ByteBuffer buffer)
+	{
+		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
+		Item expectedBlockType = CodecHelpers.readItem(buffer);
+		return new BreakBlockMutation(location, expectedBlockType);
+	}
+
+
 	private final AbsoluteLocation _location;
 	private final Item _expectedBlockType;
 
@@ -56,14 +67,13 @@ public class BreakBlockMutation implements IMutationBlock
 	@Override
 	public MutationBlockType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeAbsoluteLocation(buffer, _location);
+		CodecHelpers.writeItem(buffer, _expectedBlockType);
 	}
 }

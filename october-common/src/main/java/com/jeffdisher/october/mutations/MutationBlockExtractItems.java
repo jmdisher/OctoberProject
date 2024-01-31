@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -17,6 +18,17 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class MutationBlockExtractItems implements IMutationBlock
 {
+	public static final MutationBlockType TYPE = MutationBlockType.EXTRACT_ITEMS;
+
+	public static MutationBlockExtractItems deserializeFromBuffer(ByteBuffer buffer)
+	{
+		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
+		Items requested = CodecHelpers.readItems(buffer);
+		int returnEntity = buffer.getInt();
+		return new MutationBlockExtractItems(location, requested, returnEntity);
+	}
+
+
 	private final AbsoluteLocation _blockLocation;
 	private final Items _requested;
 	private final int _returnEntityId;
@@ -64,14 +76,14 @@ public class MutationBlockExtractItems implements IMutationBlock
 	@Override
 	public MutationBlockType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
+		CodecHelpers.writeItems(buffer, _requested);
+		buffer.putInt(_returnEntityId);
 	}
 }

@@ -28,6 +28,7 @@ public class PacketCodec
 		Packet_CuboidFragment.register(_CODEC_TABLE);
 		Packet_Entity.register(_CODEC_TABLE);
 		Packet_MutationEntity.register(_CODEC_TABLE);
+		Packet_MutationBlock.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
