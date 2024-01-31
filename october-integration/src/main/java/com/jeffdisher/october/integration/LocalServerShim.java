@@ -1,12 +1,18 @@
 package com.jeffdisher.october.integration;
 
+import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.client.IClientAdapter;
+import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketCodec;
+import com.jeffdisher.october.net.Packet_CuboidFragment;
+import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -17,6 +23,9 @@ import com.jeffdisher.october.utils.MessageQueue;
 /**
  * Intended to be used by clients which support purely single-player modes to connect client-side logic to an embedded
  * server process.
+ * All data passed through this mechanism is serialized and deserialized in order to verify that instance assumptions
+ * and codec details are fully exercised in both single-player and multi-player modes, reducing the testing surface
+ * area.
  * A thread running within the shim ferries this data between the client and server to add the expected sort of
  * asynchronous timing.
  */
@@ -46,6 +55,7 @@ public class LocalServerShim
 	private Thread _thread = new Thread(() -> {
 		_backgroundThreadMain();
 	}, "LocalServerShim");
+	private final ByteBuffer _packetBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES);
 	private ClientAdapter _clientAdapter = new ClientAdapter();
 	private ServerAdapter _serverAdapter = new ServerAdapter();
 	private ServerRunner _server;
@@ -204,6 +214,7 @@ public class LocalServerShim
 		public void sendChange(IMutationEntity change, long commitLevel)
 		{
 			_queue.enqueue(() -> {
+				// TODO:  Serialize and deserialize.
 				_serverListener.changeReceived(CLIENT_ID, change, commitLevel);
 			});
 		}
@@ -223,6 +234,7 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
+				// TODO:  Serialize and deserialize.
 				_clientListener.receivedEntity(entity);
 			});
 		}
@@ -231,7 +243,34 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
-				_clientListener.receivedCuboid(cuboid);
+				// Note that the size of a single packet is 64 KiB but a cuboid can have multiple aspects, some of which can be very large.  Therefore, we need to carve this into many packets.
+				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
+				CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);
+				Packet packetToSend = serializer.getNextPacket();
+				CuboidCodec.Deserializer deserializer = null;
+				CuboidData result = null;
+				while (null != packetToSend)
+				{
+					PacketCodec.serializeToBuffer(_packetBuffer, packetToSend);
+					_packetBuffer.flip();
+					Packet decoded = PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+					Assert.assertTrue(!_packetBuffer.hasRemaining());
+					_packetBuffer.clear();
+					
+					// Handle this - we know that the first must be the start while the others are fragments.
+					if (null == deserializer)
+					{
+						deserializer = new CuboidCodec.Deserializer((Packet_CuboidStart) decoded);
+					}
+					else
+					{
+						result = deserializer.processPacket((Packet_CuboidFragment) decoded);
+					}
+					packetToSend = serializer.getNextPacket();
+					// Once we see no more work, we must be done.
+					Assert.assertTrue((null == packetToSend) == (null != result));
+				}
+				_clientListener.receivedCuboid(result);
 			});
 		}
 		@Override
@@ -239,6 +278,7 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
+				// TODO:  Serialize and deserialize.
 				_clientListener.receivedChange(entityId, change);
 			});
 		}
@@ -247,6 +287,7 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
+				// TODO:  Serialize and deserialize.
 				_clientListener.receivedMutation(mutation);
 			});
 		}
