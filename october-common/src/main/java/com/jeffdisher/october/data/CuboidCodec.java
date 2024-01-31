@@ -16,12 +16,12 @@ public class CuboidCodec
 {
 	public static class Serializer
 	{
-		private final CuboidData _cuboid;
+		private final IReadOnlyCuboidData _cuboid;
 		private boolean _hasStarted;
 		private boolean _isDone;
 		private Object _state;
 		
-		public Serializer(CuboidData input)
+		public Serializer(IReadOnlyCuboidData input)
 		{
 			_cuboid = input;
 		}
