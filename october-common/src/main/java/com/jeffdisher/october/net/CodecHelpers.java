@@ -3,8 +3,13 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -53,6 +58,104 @@ public class CodecHelpers
 	public static void writeInventory(ByteBuffer buffer, Inventory inventory)
 	{
 		_writeInventory(buffer, inventory);
+	}
+
+	public static EntityLocation readEntityLocation(ByteBuffer buffer)
+	{
+		return _readEntityLocation(buffer);
+	}
+
+	public static void writeEntityLocation(ByteBuffer buffer, EntityLocation location)
+	{
+		_writeEntityLocation(buffer, location);
+	}
+
+	public static AbsoluteLocation readAbsoluteLocation(ByteBuffer buffer)
+	{
+		int x = buffer.getInt();
+		int y = buffer.getInt();
+		int z = buffer.getInt();
+		return new AbsoluteLocation(x, y, z);
+	}
+
+	public static void writeAbsoluteLocation(ByteBuffer buffer, AbsoluteLocation location)
+	{
+		buffer.putInt(location.x());
+		buffer.putInt(location.y());
+		buffer.putInt(location.z());
+	}
+
+	public static Item readItem(ByteBuffer buffer)
+	{
+		return _readItemNoAir(buffer);
+	}
+
+	public static void writeItem(ByteBuffer buffer, Item item)
+	{
+		_writeItemNoAir(buffer, item);
+	}
+
+	public static Items readItems(ByteBuffer buffer)
+	{
+		return _readItems(buffer);
+	}
+
+	public static void writeItems(ByteBuffer buffer, Items items)
+	{
+		_writeItems(buffer, items);
+	}
+
+	public static Craft readCraft(ByteBuffer buffer)
+	{
+		// This is an enum so just read a short as ordinal.
+		short ordinal = buffer.getShort();
+		return Craft.values()[ordinal];
+	}
+
+	public static void writeCraft(ByteBuffer buffer, Craft operation)
+	{
+		// This is an enum so just send ordinal as a short.
+		short ordinal = (short)operation.ordinal();
+		buffer.putShort(ordinal);
+	}
+
+	public static Entity readEntity(ByteBuffer buffer)
+	{
+		int id = buffer.getInt();
+		EntityLocation location = _readEntityLocation(buffer);
+		float zVelocityPerSecond = buffer.getFloat();
+		EntityVolume volume = _readEntityVolume(buffer);
+		float blocksPerTickSpeed = buffer.getFloat();
+		Inventory inventory = _readInventory(buffer);
+		Item selectedItem = _readItemNoAir(buffer);
+		
+		return new Entity(id
+				, location
+				, zVelocityPerSecond
+				, volume
+				, blocksPerTickSpeed
+				, inventory
+				, selectedItem
+		);
+	}
+
+	public static void writeEntity(ByteBuffer buffer, Entity entity)
+	{
+		int id = entity.id();
+		EntityLocation location = entity.location();
+		float zVelocityPerSecond = entity.zVelocityPerSecond();
+		EntityVolume volume = entity.volume();
+		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
+		Inventory inventory = entity.inventory();
+		Item selectedItem = entity.selectedItem();
+		
+		buffer.putInt(id);
+		_writeEntityLocation(buffer, location);
+		buffer.putFloat(zVelocityPerSecond);
+		_writeEntityVolume(buffer, volume);
+		buffer.putFloat(blocksPerTickSpeed);
+		_writeInventory(buffer, inventory);
+		_writeItemNoAir(buffer, selectedItem);
 	}
 
 
@@ -117,5 +220,35 @@ public class CodecHelpers
 		{
 			_writeItems(buffer, items);
 		}
+	}
+
+	private static EntityLocation _readEntityLocation(ByteBuffer buffer)
+	{
+		float x = buffer.getFloat();
+		float y = buffer.getFloat();
+		float z = buffer.getFloat();
+		return new EntityLocation(x, y, z);
+	}
+
+	private static void _writeEntityLocation(ByteBuffer buffer, EntityLocation location)
+	{
+		buffer.putFloat(location.x());
+		buffer.putFloat(location.y());
+		buffer.putFloat(location.z());
+	}
+
+	private static EntityVolume _readEntityVolume(ByteBuffer buffer)
+	{
+		float height = buffer.getFloat();
+		float width = buffer.getFloat();
+		return new EntityVolume(height, width);
+	}
+
+	private static void _writeEntityVolume(ByteBuffer buffer, EntityVolume volume)
+	{
+		float height = volume.height();
+		float width = volume.width();
+		buffer.putFloat(height);
+		buffer.putFloat(width);
 	}
 }
