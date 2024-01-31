@@ -18,10 +18,16 @@ public enum PacketType
 	 */
 	CHAT,
 	/**
-	 * Sent from server to client when first loading a cuboid.  Contains part of a short aspect plane (usually all of
-	 * it).
+	 * Sent when we will start sending cuboid data to a client.  This puts the receiver into a mode where it can start
+	 * processing CUBOID_FRAGMENT messages.  The receiver knows when it has received the last fragment.
 	 */
-	CUBOID_SET_ASPECT_SHORT_PART,
+	CUBOID_START,
+	/**
+	 * A single fragment of data to load into a cuboid.  Depending on the complexity of the cuboid, there could be many
+	 * of these or only 1.  The receiver will know, based on the content of the data, when all the data has been
+	 * received.
+	 */
+	CUBOID_FRAGMENT,
 	
 	END_OF_LIST,
 }

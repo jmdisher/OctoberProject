@@ -12,12 +12,18 @@ import java.util.concurrent.CyclicBarrier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.data.CuboidCodec;
+import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_Chat;
-import com.jeffdisher.october.net.Packet_CuboidSetAspectShortPart;
+import com.jeffdisher.october.net.Packet_CuboidFragment;
+import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
@@ -191,18 +197,24 @@ public class TestIntegratedNetwork
 				}
 			}
 		}
-		byte[] rawData = octree.copyRawData();
-		// Get the fragments.
-		Packet_CuboidSetAspectShortPart[] fragments = Packet_CuboidSetAspectShortPart.fragmentData(new CuboidAddress((short)0, (short)0, (short)0), 0, rawData);
-		// We expect this to be split.
-		Assert.assertEquals(2, fragments.length);
+		// Combine this into a basic cuboid.
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree, OctreeObject.create()});
+		
+		// We should be able to send this as 1 start packet and 2 fragment packets.
+		CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);
+		Packet_CuboidStart start = (Packet_CuboidStart) serializer.getNextPacket();
+		Packet_CuboidFragment frag1 = (Packet_CuboidFragment) serializer.getNextPacket();
+		Packet_CuboidFragment frag2 = (Packet_CuboidFragment) serializer.getNextPacket();
+		Assert.assertNull(serializer.getNextPacket());
+		Packet[] outgoing = new Packet[] { start, frag1, frag2 };
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
 		NetworkServer[] holder = new NetworkServer[1];
 		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
 		{
-			boolean _sent = false;
+			int _nextIndex = 0;
 			@Override
 			public void userLeft(int id)
 			{
@@ -211,7 +223,8 @@ public class TestIntegratedNetwork
 			public void userJoined(int id, String name)
 			{
 				// Starts ready - we can send the message now.
-				holder[0].sendMessage(id, fragments[0]);
+				holder[0].sendMessage(id, outgoing[_nextIndex]);
+				_nextIndex += 1;
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
@@ -222,50 +235,54 @@ public class TestIntegratedNetwork
 			@Override
 			public void networkReady(int id)
 			{
-				if (!_sent)
+				if (_nextIndex < outgoing.length)
 				{
-					holder[0].sendMessage(id, fragments[1]);
-					_sent = true;
+					holder[0].sendMessage(id, outgoing[_nextIndex]);
+					_nextIndex += 1;
 				}
 			}
 		}, port);
 		holder[0] = server;
 		
 		// Connect the client.
-		Packet_CuboidSetAspectShortPart[] received = new Packet_CuboidSetAspectShortPart[2];
+		Packet[] received = new Packet[3];
 		CountDownLatch latch = new CountDownLatch(1);
 		NetworkClient client = new NetworkClient(new NetworkClient.IListener()
 		{
-			@Override
-			public void packetReceived(Packet packet)
-			{
-				Assert.assertNull(received[1]);
-				if (null == received[0])
-				{
-					received[0] = (Packet_CuboidSetAspectShortPart)packet;
-				}
-				else
-				{
-					received[1] = (Packet_CuboidSetAspectShortPart)packet;
-					latch.countDown();
-				}
-			}
+			int _nextIndex = 0;
 			@Override
 			public void networkReady()
 			{
+				// We don't send anything from the client in this case.
+			}
+			@Override
+			public void packetReceived(Packet packet)
+			{
+				received[_nextIndex] = packet;
+				_nextIndex += 1;
+				if (received.length == _nextIndex)
+				{
+					latch.countDown();
+				}
 			}
 		}, InetAddress.getLocalHost(), port);
 		
 		// Wait to receive these and then stitch them together.
 		latch.await();
-		byte[] stitched = Packet_CuboidSetAspectShortPart.stitchPlanes(new Packet_CuboidSetAspectShortPart[] {
-				received[0],
-				received[1],
-		});
-		Assert.assertArrayEquals(rawData, stitched);
 		
 		client.stop();
 		server.stop();
+		
+		// Now, deserialize these.
+		CuboidCodec.Deserializer deserializer = new CuboidCodec.Deserializer((Packet_CuboidStart) received[0]);
+		Assert.assertNull(deserializer.processPacket((Packet_CuboidFragment) received[1]));
+		CuboidData finished = deserializer.processPacket((Packet_CuboidFragment) received[2]);
+		Assert.assertNotNull(finished);
+		
+		// Verify that a few of the entries are consistent.
+		Assert.assertEquals(0, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals((32 * 32 * 10) + (32 * 10) + 10, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)10)));
+		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)30, (byte)30, (byte)30)));
 	}
 
 

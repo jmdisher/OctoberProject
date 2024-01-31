@@ -11,7 +11,12 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.data.CuboidCodec;
+import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
@@ -105,11 +110,17 @@ public class TestNetworkLayer
 				}
 			}
 		}
-		byte[] rawData = octree.copyRawData();
-		// Get the fragments.
-		Packet_CuboidSetAspectShortPart[] fragments = Packet_CuboidSetAspectShortPart.fragmentData(new CuboidAddress((short)0, (short)0, (short)0), 0, rawData);
-		// We expect this to be split.
-		Assert.assertEquals(2, fragments.length);
+		// Combine this into a basic cuboid.
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree, OctreeObject.create()});
+		
+		// We should be able to send this as 1 start packet and 2 fragment packets.
+		CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);
+		Packet_CuboidStart start = (Packet_CuboidStart) serializer.getNextPacket();
+		Packet_CuboidFragment frag1 = (Packet_CuboidFragment) serializer.getNextPacket();
+		Packet_CuboidFragment frag2 = (Packet_CuboidFragment) serializer.getNextPacket();
+		Assert.assertNull(serializer.getNextPacket());
+		Packet[] outgoing = new Packet[] { start, frag1, frag2 };
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
@@ -117,7 +128,7 @@ public class TestNetworkLayer
 		NetworkLayer<Integer>[] holder = new NetworkLayer[1];
 		NetworkLayer<Integer> server = NetworkLayer.startListening(new NetworkLayer.IListener<Integer>()
 		{
-			boolean _sent = false;
+			int _nextIndex = 0;
 			@Override
 			public Integer buildToken()
 			{
@@ -127,7 +138,8 @@ public class TestNetworkLayer
 			public void peerConnected(Integer token)
 			{
 				// Starts ready - we can send the message now.
-				holder[0].sendMessage(token, fragments[0]);
+				holder[0].sendMessage(token, outgoing[_nextIndex]);
+				_nextIndex += 1;
 			}
 			@Override
 			public void peerDisconnected(Integer token)
@@ -136,10 +148,10 @@ public class TestNetworkLayer
 			@Override
 			public void peerReadyForWrite(Integer token)
 			{
-				if (!_sent)
+				if (_nextIndex < outgoing.length)
 				{
-					holder[0].sendMessage(token, fragments[1]);
-					_sent = true;
+					holder[0].sendMessage(token, outgoing[_nextIndex]);
+					_nextIndex += 1;
 				}
 			}
 			@Override
@@ -154,17 +166,23 @@ public class TestNetworkLayer
 		// Connect the client.
 		SocketChannel client1 = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
 		
-		Packet_CuboidSetAspectShortPart read1 = (Packet_CuboidSetAspectShortPart)_readOnePacket(client1);
-		Packet_CuboidSetAspectShortPart read2 = (Packet_CuboidSetAspectShortPart)_readOnePacket(client1);
-		byte[] stitched = Packet_CuboidSetAspectShortPart.stitchPlanes(new Packet_CuboidSetAspectShortPart[] {
-				read1,
-				read2,
-		});
-		Assert.assertArrayEquals(rawData, stitched);
+		Packet_CuboidStart in1 = (Packet_CuboidStart)_readOnePacket(client1);
+		Packet_CuboidFragment in2 = (Packet_CuboidFragment)_readOnePacket(client1);
+		Packet_CuboidFragment in3 = (Packet_CuboidFragment)_readOnePacket(client1);
 		
 		client1.close();
-		
 		server.stop();
+		
+		// Now, deserialize these.
+		CuboidCodec.Deserializer deserializer = new CuboidCodec.Deserializer(in1);
+		Assert.assertNull(deserializer.processPacket(in2));
+		CuboidData finished = deserializer.processPacket(in3);
+		Assert.assertNotNull(finished);
+		
+		// Verify that a few of the entries are consistent.
+		Assert.assertEquals(0, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals((32 * 32 * 10) + (32 * 10) + 10, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)10)));
+		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)30, (byte)30, (byte)30)));
 	}
 
 	@Test

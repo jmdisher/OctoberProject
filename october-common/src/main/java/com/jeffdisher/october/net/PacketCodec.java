@@ -24,7 +24,8 @@ public class PacketCodec
 		Packet_AssignClientId.register(_CODEC_TABLE);
 		Packet_SetClientName.register(_CODEC_TABLE);
 		Packet_Chat.register(_CODEC_TABLE);
-		Packet_CuboidSetAspectShortPart.register(_CODEC_TABLE);
+		Packet_CuboidStart.register(_CODEC_TABLE);
+		Packet_CuboidFragment.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -49,13 +50,20 @@ public class PacketCodec
 			}
 			Assert.assertTrue(size <= MAX_PACKET_BYTES);
 			Assert.assertTrue(size >= HEADER_BYTES);
-			if (size <= buffer.limit())
+			int limit = buffer.limit();
+			int end = start + size;
+			if (end <= limit)
 			{
+				// Update the limit so the parser knows how much it should be seeing.
+				// (the size includes the header).
+				buffer.limit(end);
 				// Parse the opcode and shift the buffer over.
 				byte opcode = buffer.get();
 				parsed = _CODEC_TABLE[opcode].apply(buffer);
 				// This can't fail.
 				Assert.assertTrue(null != parsed);
+				// Reset the limit.
+				buffer.limit(limit);
 			}
 			else
 			{

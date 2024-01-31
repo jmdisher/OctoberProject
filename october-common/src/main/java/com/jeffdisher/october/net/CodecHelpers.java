@@ -45,24 +45,6 @@ public class CodecHelpers
 		buffer.putShort(value.z());
 	}
 
-	public static byte[] readBytes(ByteBuffer buffer)
-	{
-		// Get the size.
-		int size = Short.toUnsignedInt(buffer.getShort());
-		byte[] data = new byte[size];
-		// Read the buffer.
-		buffer.get(data);
-		return data;
-	}
-
-	public static void writeBytes(ByteBuffer buffer, byte[] data)
-	{
-		// Write the size.
-		buffer.putShort((short)data.length);
-		// Write the buffer.
-		buffer.put(data);
-	}
-
 	public static Inventory readInventory(ByteBuffer buffer)
 	{
 		return _readInventory(buffer);
