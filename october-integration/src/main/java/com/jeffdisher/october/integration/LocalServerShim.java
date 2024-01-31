@@ -13,6 +13,7 @@ import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -234,8 +235,15 @@ public class LocalServerShim
 		{
 			Assert.assertTrue(CLIENT_ID == clientId);
 			_queue.enqueue(() -> {
-				// TODO:  Serialize and deserialize.
-				_clientListener.receivedEntity(entity);
+				// Serialize and deserialize.
+				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
+				Packet_Entity packet = new Packet_Entity(entity);
+				PacketCodec.serializeToBuffer(_packetBuffer, packet);
+				_packetBuffer.flip();
+				Packet_Entity decoded = (Packet_Entity) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+				Assert.assertTrue(!_packetBuffer.hasRemaining());
+				_packetBuffer.clear();
+				_clientListener.receivedEntity(decoded.entity);
 			});
 		}
 		@Override

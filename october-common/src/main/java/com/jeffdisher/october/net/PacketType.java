@@ -28,6 +28,10 @@ public enum PacketType
 	 * received.
 	 */
 	CUBOID_FRAGMENT,
+	/**
+	 * A complete entity in the system.  This includes all details such as volume and inventory, as well.
+	 */
+	ENTITY,
 	
 	END_OF_LIST,
 }
