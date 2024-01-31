@@ -1,9 +1,12 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -42,5 +45,19 @@ public class ReplaceBlockMutation implements IMutationBlock
 			didApply = true;
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationBlockType getType()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
 	}
 }

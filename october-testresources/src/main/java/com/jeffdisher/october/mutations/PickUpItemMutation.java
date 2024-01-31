@@ -1,5 +1,6 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -93,5 +94,19 @@ public class PickUpItemMutation implements IMutationBlock
 			}
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationBlockType getType()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
 	}
 }

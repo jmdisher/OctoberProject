@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -32,4 +34,19 @@ public interface IMutationBlock
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
 	boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock);
+
+	/**
+	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal
+	 * implementation details and should never go over the network.
+	 * 
+	 * @return The type for mutation serialization.
+	 */
+	MutationBlockType getType();
+
+	/**
+	 * Called during serialization to serialize any internal instance variables of the mutation to the given buffer.
+	 * 
+	 * @param buffer The buffer where the mutation should be written.
+	 */
+	void serializeToBuffer(ByteBuffer buffer);
 }
