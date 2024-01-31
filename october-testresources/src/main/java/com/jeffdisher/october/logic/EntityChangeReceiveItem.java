@@ -1,10 +1,14 @@
 package com.jeffdisher.october.logic;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -48,5 +52,19 @@ public class EntityChangeReceiveItem implements IMutationEntity
 			didApply = inventory.addAllItems(_itemType, _itemCount);
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
 	}
 }

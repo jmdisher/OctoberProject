@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Item;
@@ -43,5 +45,19 @@ public class EndBreakBlockChange implements IMutationEntity
 			didApply = true;
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
 	}
 }

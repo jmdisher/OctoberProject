@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
@@ -39,5 +41,19 @@ public class EntityChangeJump implements IMutationEntity
 			didApply = true;
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
 	}
 }

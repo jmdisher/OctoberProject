@@ -1,7 +1,10 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -25,5 +28,19 @@ public class EntityChangeCancel implements IMutationEntity
 	{
 		// We don't want this passed to any clients so just fail.  This only runs to update the local commit level for the client.
 		return false;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
 	}
 }

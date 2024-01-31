@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -27,5 +29,19 @@ public class EntityChangeImplicit implements IMutationEntity
 		// If this does anything, we want to say it applied so we will send it to the clients.
 		boolean didApply = false;
 		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// Not yet used.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Not yet used.
+		throw Assert.unreachable();
 	}
 }

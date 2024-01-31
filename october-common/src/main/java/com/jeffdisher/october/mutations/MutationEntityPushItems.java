@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.registries.AspectRegistry;
@@ -68,5 +70,19 @@ public class MutationEntityPushItems implements IMutationEntity
 			}
 		}
 		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// TODO:  Implement.
+		throw new AssertionError("Unimplemented - stop-gap");
 	}
 }

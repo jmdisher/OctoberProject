@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -41,4 +43,19 @@ public interface IMutationEntity
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
 	boolean applyChange(TickProcessingContext context, MutableEntity newEntity);
+
+	/**
+	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal
+	 * implementation details and should never go over the network.
+	 * 
+	 * @return The type for entity serialization.
+	 */
+	MutationEntityType getType();
+
+	/**
+	 * Called during serialization to serialize any internal instance variables of the mutation to the given buffer.
+	 * 
+	 * @param buffer The buffer where the mutation should be written.
+	 */
+	void serializeToBuffer(ByteBuffer buffer);
 }

@@ -1,7 +1,10 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -32,5 +35,19 @@ public class EntityChangeMutation implements IMutationEntity
 			context.newMutationSink.accept(_contents);
 		}
 		return true;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
 	}
 }
