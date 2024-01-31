@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -22,6 +23,16 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutationEntityPushItems implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PUSH;
+
+	public static MutationEntityPushItems deserializeFromBuffer(ByteBuffer buffer)
+	{
+		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
+		Items offered = CodecHelpers.readItems(buffer);
+		return new MutationEntityPushItems(blockLocation, offered);
+	}
+
+
 	private final AbsoluteLocation _blockLocation;
 	private final Items _offered;
 
@@ -75,14 +86,13 @@ public class MutationEntityPushItems implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
+		CodecHelpers.writeItems(buffer, _offered);
 	}
 }

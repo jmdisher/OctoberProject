@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,6 +14,15 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityChangeCraft implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.CRAFT;
+
+	public static EntityChangeCraft deserializeFromBuffer(ByteBuffer buffer)
+	{
+		Craft operation = CodecHelpers.readCraft(buffer);
+		return new EntityChangeCraft(operation);
+	}
+
+
 	private final Craft _operation;
 
 	public EntityChangeCraft(Craft operation)
@@ -44,14 +54,12 @@ public class EntityChangeCraft implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeCraft(buffer, _operation);
 	}
 }

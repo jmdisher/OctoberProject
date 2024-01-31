@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -18,6 +19,16 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class MutationEntityRequestItemPickUp implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PULL;
+
+	public static MutationEntityRequestItemPickUp deserializeFromBuffer(ByteBuffer buffer)
+	{
+		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
+		Items requested = CodecHelpers.readItems(buffer);
+		return new MutationEntityRequestItemPickUp(blockLocation, requested);
+	}
+
+
 	private final AbsoluteLocation _blockLocation;
 	private final Items _requested;
 
@@ -52,14 +63,13 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
+		CodecHelpers.writeItems(buffer, _requested);
 	}
 }

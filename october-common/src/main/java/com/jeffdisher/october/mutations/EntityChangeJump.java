@@ -18,6 +18,13 @@ public class EntityChangeJump implements IMutationEntity
 	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block (1.47)).
 	 */
 	public static final float JUMP_FORCE = -0.6f * EntityChangeMove.GRAVITY_CHANGE_PER_SECOND;
+	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
+
+	public static EntityChangeJump deserializeFromBuffer(ByteBuffer buffer)
+	{
+		return new EntityChangeJump();
+	}
+
 
 	@Override
 	public long getTimeCostMillis()
@@ -46,14 +53,12 @@ public class EntityChangeJump implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		// There is nothing in this type.
 	}
 }

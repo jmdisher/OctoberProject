@@ -32,6 +32,12 @@ public enum PacketType
 	 * A complete entity in the system.  This includes all details such as volume and inventory, as well.
 	 */
 	ENTITY,
+	/**
+	 * A mutation targeting an entity.  Note that the client can only send mutations which target its own entity and the
+	 * entity ID will be ignored when received by the server and attached, itself, when sending the mutation back to
+	 * clients, if the mutation is committed.
+	 */
+	MUTATION_ENTITY,
 	
 	END_OF_LIST,
 }

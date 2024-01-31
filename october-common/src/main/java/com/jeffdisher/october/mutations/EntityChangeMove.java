@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MutableEntity;
@@ -30,6 +31,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class EntityChangeMove implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.MOVE;
+
 	/**
 	 * The flat distance that an entity can move in a single second.
 	 * NOTE:  We currently operate using just axis-aligned movement, so no diagonals.
@@ -67,6 +70,15 @@ public class EntityChangeMove implements IMutationEntity
 	public static long getTimeMostMillis(float xDistance, float yDistance)
 	{
 		return _getTimeMostMillis(xDistance, yDistance);
+	}
+
+	public static EntityChangeMove deserializeFromBuffer(ByteBuffer buffer)
+	{
+		EntityLocation oldLocation = CodecHelpers.readEntityLocation(buffer);
+		long millisBeforeMovement = buffer.getLong();
+		float xDistance = buffer.getFloat();
+		float yDistance = buffer.getFloat();
+		return new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
 	}
 
 
@@ -200,14 +212,15 @@ public class EntityChangeMove implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeEntityLocation(buffer, _oldLocation);
+		buffer.putLong(_millisBeforeMovement);
+		buffer.putFloat(_xDistance);
+		buffer.putFloat(_yDistance);
 	}
 }

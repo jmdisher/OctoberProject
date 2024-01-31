@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -13,6 +14,15 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class MutationEntitySelectItem implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.SELECT_ITEM;
+
+	public static MutationEntitySelectItem deserializeFromBuffer(ByteBuffer buffer)
+	{
+		Item type = CodecHelpers.readItem(buffer);
+		return new MutationEntitySelectItem(type);
+	}
+
+
 	private final Item _itemType;
 
 	public MutationEntitySelectItem(Item itemType)
@@ -41,14 +51,12 @@ public class MutationEntitySelectItem implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeItem(buffer, _itemType);
 	}
 }

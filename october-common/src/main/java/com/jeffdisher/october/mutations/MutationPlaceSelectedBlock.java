@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -16,6 +17,15 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class MutationPlaceSelectedBlock implements IMutationEntity
 {
+	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_PLACE;
+
+	public static MutationPlaceSelectedBlock deserializeFromBuffer(ByteBuffer buffer)
+	{
+		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
+		return new MutationPlaceSelectedBlock(target);
+	}
+
+
 	private final AbsoluteLocation _targetBlock;
 
 	public MutationPlaceSelectedBlock(AbsoluteLocation targetBlock)
@@ -57,14 +67,12 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 	@Override
 	public MutationEntityType getType()
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		return TYPE;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		// TODO:  Implement.
-		throw new AssertionError("Unimplemented - stop-gap");
+		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 	}
 }
