@@ -221,13 +221,13 @@ public class LocalServerShim
 			_queue.enqueue(() -> {
 				// Serialize and deserialize.
 				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
-				Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change);
+				Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
 				PacketCodec.serializeToBuffer(_packetBuffer, packet);
 				_packetBuffer.flip();
 				Packet_MutationEntityFromClient decoded = (Packet_MutationEntityFromClient) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
 				Assert.assertTrue(!_packetBuffer.hasRemaining());
 				_packetBuffer.clear();
-				_serverListener.changeReceived(CLIENT_ID, decoded.mutation, commitLevel);
+				_serverListener.changeReceived(CLIENT_ID, decoded.mutation, decoded.commitLevel);
 			});
 		}
 	}

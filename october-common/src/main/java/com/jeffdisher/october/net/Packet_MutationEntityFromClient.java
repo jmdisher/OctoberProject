@@ -18,22 +18,26 @@ public class Packet_MutationEntityFromClient extends Packet
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			IMutationEntity mutation = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
-			return new Packet_MutationEntityFromClient(mutation);
+			long commitLevel = buffer.getLong();
+			return new Packet_MutationEntityFromClient(mutation, commitLevel);
 		};
 	}
 
 
 	public final IMutationEntity mutation;
+	public final long commitLevel;
 
-	public Packet_MutationEntityFromClient(IMutationEntity mutation)
+	public Packet_MutationEntityFromClient(IMutationEntity mutation, long commitLevel)
 	{
 		super(TYPE);
 		this.mutation = mutation;
+		this.commitLevel = commitLevel;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		MutationEntityCodec.serializeToBuffer(buffer, this.mutation);
+		buffer.putLong(this.commitLevel);
 	}
 }
