@@ -15,7 +15,8 @@ import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_MutationBlock;
-import com.jeffdisher.october.net.Packet_MutationEntity;
+import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -219,10 +220,10 @@ public class LocalServerShim
 			_queue.enqueue(() -> {
 				// Serialize and deserialize.
 				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
-				Packet_MutationEntity packet = new Packet_MutationEntity(CLIENT_ID, change);
+				Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change);
 				PacketCodec.serializeToBuffer(_packetBuffer, packet);
 				_packetBuffer.flip();
-				Packet_MutationEntity decoded = (Packet_MutationEntity) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+				Packet_MutationEntityFromClient decoded = (Packet_MutationEntityFromClient) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
 				Assert.assertTrue(!_packetBuffer.hasRemaining());
 				_packetBuffer.clear();
 				_serverListener.changeReceived(CLIENT_ID, decoded.mutation, commitLevel);
@@ -297,13 +298,13 @@ public class LocalServerShim
 			_queue.enqueue(() -> {
 				// Serialize and deserialize.
 				Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
-				Packet_MutationEntity packet = new Packet_MutationEntity(CLIENT_ID, change);
+				Packet_MutationEntityFromServer packet = new Packet_MutationEntityFromServer(entityId, change);
 				PacketCodec.serializeToBuffer(_packetBuffer, packet);
 				_packetBuffer.flip();
-				Packet_MutationEntity decoded = (Packet_MutationEntity) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+				Packet_MutationEntityFromServer decoded = (Packet_MutationEntityFromServer) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
 				Assert.assertTrue(!_packetBuffer.hasRemaining());
 				_packetBuffer.clear();
-				_clientListener.receivedChange(entityId, decoded.mutation);
+				_clientListener.receivedChange(decoded.entityId, decoded.mutation);
 			});
 		}
 		@Override

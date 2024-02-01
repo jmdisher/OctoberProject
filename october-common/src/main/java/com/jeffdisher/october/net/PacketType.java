@@ -33,11 +33,15 @@ public enum PacketType
 	 */
 	ENTITY,
 	/**
-	 * A mutation targeting an entity.  Note that the client can only send mutations which target its own entity and the
-	 * entity ID will be ignored when received by the server and attached, itself, when sending the mutation back to
-	 * clients, if the mutation is committed.
+	 * A mutation targeting an entity when sent from the client to the server.  Note that the server will always
+	 * interpret these mutations as targeting the client's own entity.
 	 */
-	MUTATION_ENTITY,
+	MUTATION_ENTITY_FROM_CLIENT,
+	/**
+	 * A mutation targeting an entity when sent from the server to a client.  This will include an entity ID which will
+	 * identify which entity is changing.
+	 */
+	MUTATION_ENTITY_FROM_SERVER,
 	/**
 	 * A mutation targeting a block in the world.  These are only send from server to client.
 	 */
