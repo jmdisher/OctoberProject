@@ -8,7 +8,8 @@ package com.jeffdisher.october.types;
  * We don't have a concept analogous to Minecraft's "item stack", instead using "encumbrance" to limit how many items
  * can be stored in a given inventory, more like how Project Zomboid does.
  */
-public record Item(short number
+public record Item(String name
+		, short number
 		, int encumbrance
 ) {
 }
