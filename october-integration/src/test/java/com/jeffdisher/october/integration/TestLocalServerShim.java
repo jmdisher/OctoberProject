@@ -51,7 +51,6 @@ public class TestLocalServerShim
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		shim.injectCuboidToServer(cuboid);
-		shim.waitForTickAdvance(1L);
 		
 		// Connect the client.
 		ClientListener listener = new ClientListener();
@@ -87,7 +86,6 @@ public class TestLocalServerShim
 		// Load a cuboids.
 		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
 		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
-		shim.waitForTickAdvance(1L);
 		
 		// Connect the client.
 		ClientListener listener = new ClientListener();
