@@ -13,6 +13,7 @@ import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
@@ -334,7 +335,14 @@ public class LocalServerShim
 				else
 				{
 					Assert.assertTrue(CLIENT_ID == clientId);
-					_clientListener.receivedEndOfTick(tickNumber, latestLocalCommitIncluded);
+					Assert.assertTrue(PacketCodec.MAX_PACKET_BYTES == _packetBuffer.remaining());
+					Packet_EndOfTick packet = new Packet_EndOfTick(tickNumber, latestLocalCommitIncluded);
+					PacketCodec.serializeToBuffer(_packetBuffer, packet);
+					_packetBuffer.flip();
+					Packet_EndOfTick decoded = (Packet_EndOfTick) PacketCodec.parseAndSeekFlippedBuffer(_packetBuffer);
+					Assert.assertTrue(!_packetBuffer.hasRemaining());
+					_packetBuffer.clear();
+					_clientListener.receivedEndOfTick(decoded.tickNumber, decoded.latestLocalCommitIncluded);
 				}
 			});
 		}

@@ -46,6 +46,11 @@ public enum PacketType
 	 * A mutation targeting a block in the world.  These are only send from server to client.
 	 */
 	MUTATION_BLOCK,
+	/**
+	 * The packet sent by the server at the end of each logic game tick.  It includes the tick number but also the last
+	 * incorporated commit number from the target client.
+	 */
+	END_OF_TICK,
 	
 	END_OF_LIST,
 }
