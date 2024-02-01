@@ -201,7 +201,7 @@ public class TestCommonChanges
 				, null
 		);
 		MutableEntity newEntity = new MutableEntity(original);
-		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
@@ -331,5 +331,42 @@ public class TestCommonChanges
 		Assert.assertEquals(2, blockInventory.items.get(ItemRegistry.STONE).count());
 		Assert.assertEquals(0, freeze.inventory().items.size());
 		Assert.assertNull(freeze.selectedItem());
+	}
+
+	@Test
+	public void invalidPlacements() throws Throwable
+	{
+		// We will try to place a block colliding with the entity or too far from them to verify that this fails.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.LOG, 1).finish(), ItemRegistry.LOG);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		IMutationBlock[] holder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> holder[0] = newMutation
+				, null
+		);
+		MutableEntity newEntity = new MutableEntity(original);
+		
+		// Try too close (colliding).
+		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
+		MutationPlaceSelectedBlock placeTooClose = new MutationPlaceSelectedBlock(tooClose);
+		Assert.assertFalse(placeTooClose.applyChange(context, newEntity));
+		
+		// Try too far.
+		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 10);
+		MutationPlaceSelectedBlock placeTooFar = new MutationPlaceSelectedBlock(tooFar);
+		Assert.assertFalse(placeTooFar.applyChange(context, newEntity));
+		
+		// Try reasonable location.
+		AbsoluteLocation reasonable = new AbsoluteLocation(1, 1, 8);
+		MutationPlaceSelectedBlock placeReasonable = new MutationPlaceSelectedBlock(reasonable);
+		Assert.assertTrue(placeReasonable.applyChange(context, newEntity));
+		
+		// Make sure we fail if there is no selection.
+		reasonable = new AbsoluteLocation(1, 1, 8);
+		placeReasonable = new MutationPlaceSelectedBlock(reasonable);
+		newEntity.newSelectedItem = null;
+		Assert.assertFalse(placeReasonable.applyChange(context, newEntity));
 	}
 }
