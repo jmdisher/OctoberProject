@@ -22,9 +22,10 @@ public class NetworkClient
 	 * @param listener The listener which will receive callbacks related to the client (on the network thread).
 	 * @param host The remote host to contact.
 	 * @param port The port to use when connecting to the remote host.
+	 * @param clientName The name to send to the server to identify ourselves.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkClient(IListener listener, InetAddress host, int port) throws IOException
+	public NetworkClient(IListener listener, InetAddress host, int port, String clientName) throws IOException
 	{
 		_listener = listener;
 		_token = new _State();
@@ -51,8 +52,6 @@ public class NetworkClient
 			@Override
 			public void peerReadyForWrite(_State token)
 			{
-				// TODO:  Handle anything still pending to send out.
-				
 				// We can pass this back, even if right after handshake, since we sent the last handshake message, meaning it is now complete.
 				_listener.networkReady();
 			}
@@ -68,10 +67,12 @@ public class NetworkClient
 				{
 					// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
 					Assert.assertTrue(PacketType.ASSIGN_CLIENT_ID == packet.type);
-					token.setHandshakeCompleted(((Packet_AssignClientId) packet).clientId);
+					int assignedId = ((Packet_AssignClientId) packet).clientId;
+					token.setHandshakeCompleted(assignedId);
+					_listener.handshakeCompleted(assignedId);
 					
-					// Send our name back as the respone.
-					_network.sendMessage(_token, new Packet_SetClientName("name"));
+					// Send our name back as the response.
+					_network.sendMessage(_token, new Packet_SetClientName(clientName));
 				}
 			}
 		}, host, port);
@@ -118,6 +119,12 @@ public class NetworkClient
 	 */
 	public static interface IListener
 	{
+		/**
+		 * Called when the handshake with the server is complete.  Note that the network isn't yet ready for write.
+		 * 
+		 * @param assignedId The ID the server assigned to this client's entity.
+		 */
+		void handshakeCompleted(int assignedId);
 		/**
 		 * Called when the network is free to send more messages to the server.  Note that this is first called once the
 		 * handshake with the server is complete.

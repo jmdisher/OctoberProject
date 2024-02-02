@@ -36,6 +36,11 @@ public class TestNetworkClient
 		NetworkClient.IListener emptyListener = new NetworkClient.IListener()
 		{
 			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
 			public void networkReady()
 			{
 				// We aren't acting on this in our test.
@@ -48,9 +53,9 @@ public class TestNetworkClient
 			}
 		};
 		
-		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port);
+		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
 		SocketChannel connection1 = _serverHandshake(server, 1);
-		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port);
+		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
 		SocketChannel connection2 = _serverHandshake(server, 2);
 		
 		client1.stop();
@@ -105,6 +110,11 @@ public class TestNetworkClient
 		{
 			int _nextIndex = 0;
 			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
 			public void networkReady()
 			{
 				// We don't send anything from the client in this case.
@@ -119,7 +129,7 @@ public class TestNetworkClient
 					latch.countDown();
 				}
 			}
-		}, InetAddress.getLocalHost(), port);
+		}, InetAddress.getLocalHost(), port, "test");
 		holder[0] = client;
 		SocketChannel connection = _serverHandshake(server, 1);
 		

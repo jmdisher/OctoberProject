@@ -52,8 +52,6 @@ public class LocalServerShim
 	}
 
 
-	private static int CLIENT_ID = 1;
-
 	private final ServerProcess _server;
 	private final LowLevelNetwork _network;
 	private NetworkClient _client;
@@ -144,7 +142,7 @@ public class LocalServerShim
 		_clientListener = clientListener;
 		try
 		{
-			_client = new NetworkClient(_network, InetAddress.getLocalHost(), PORT);
+			_client = new NetworkClient(_network, InetAddress.getLocalHost(), PORT, "Client");
 		}
 		catch (IOException e)
 		{
@@ -192,7 +190,6 @@ public class LocalServerShim
 		private boolean _networkReady = false;
 		private final Queue<Packet> _outgoing = new LinkedList<>();
 		
-		private boolean _didHandshake = false;
 		private CuboidCodec.Deserializer _deserializer = null;
 		
 		public synchronized void bufferPacket(Packet packet)
@@ -208,15 +205,14 @@ public class LocalServerShim
 			}
 		}
 		@Override
+		public synchronized void handshakeCompleted(int assignedId)
+		{
+			_clientListener.adapterConnected(assignedId);
+		}
+		@Override
 		public synchronized void networkReady()
 		{
 			Assert.assertTrue(!_networkReady);
-			// First, handle the start-up case (we either want to remove visibility into this ID or create a callback here to plumb it through).
-			if (!_didHandshake)
-			{
-				_clientListener.adapterConnected(CLIENT_ID);
-				_didHandshake = true;
-			}
 			if (_outgoing.isEmpty())
 			{
 				_networkReady = true;

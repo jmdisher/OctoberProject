@@ -125,6 +125,10 @@ public class TestIntegratedNetwork
 		NetworkClient client1 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+			}
+			@Override
 			public void packetReceived(Packet packet)
 			{
 				handoff.store(packet);
@@ -133,10 +137,14 @@ public class TestIntegratedNetwork
 			public void networkReady()
 			{
 			}
-		}, InetAddress.getLocalHost(), port);
+		}, InetAddress.getLocalHost(), port, "test");
 		CyclicBarrier readyBarrier = new CyclicBarrier(2);
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
+			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+			}
 			@Override
 			public void packetReceived(Packet packet)
 			{
@@ -153,7 +161,7 @@ public class TestIntegratedNetwork
 					throw new AssertionError("Not expected in test", e);
 				}
 			}
-		}, InetAddress.getLocalHost(), port);
+		}, InetAddress.getLocalHost(), port, "test");
 		
 		// Send messages from client 2 to 1.
 		for (int i = 0; i < 10; ++i)
@@ -251,6 +259,10 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+			}
+			@Override
 			public void networkReady()
 			{
 				// We don't send anything from the client in this case.
@@ -265,7 +277,7 @@ public class TestIntegratedNetwork
 					latch.countDown();
 				}
 			}
-		}, InetAddress.getLocalHost(), port);
+		}, InetAddress.getLocalHost(), port, "test");
 		
 		// Wait to receive these and then stitch them together.
 		latch.await();
@@ -291,6 +303,10 @@ public class TestIntegratedNetwork
 		NetworkClient client = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+			}
+			@Override
 			public void packetReceived(Packet packet)
 			{
 			}
@@ -298,7 +314,7 @@ public class TestIntegratedNetwork
 			public void networkReady()
 			{
 			}
-		}, InetAddress.getLocalHost(), port);
+		}, InetAddress.getLocalHost(), port, "test");
 		int clientId = client.getClientId();
 		client.stop();
 		return clientId;
