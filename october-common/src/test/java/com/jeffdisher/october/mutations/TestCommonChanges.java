@@ -369,4 +369,45 @@ public class TestCommonChanges
 		newEntity.newSelectedItem = null;
 		Assert.assertFalse(placeReasonable.applyChange(context, newEntity));
 	}
+
+	@Test
+	public void invalidBreak() throws Throwable
+	{
+		// We will try to place a breaking a block of the wrong type or too far away.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
+		
+		AbsoluteLocation tooFar = new AbsoluteLocation(3, 0, 10);
+		AbsoluteLocation wrongType = new AbsoluteLocation(0, 0, 10);
+		AbsoluteLocation reasonable = new AbsoluteLocation(1, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), ItemRegistry.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wrongType.getBlockAddress(), ItemRegistry.PLANK.number());
+		Assert.assertEquals(ItemRegistry.PLANK.number(), cuboid.getData15(AspectRegistry.BLOCK, wrongType.getBlockAddress()));
+		cuboid.setData15(AspectRegistry.BLOCK, reasonable.getBlockAddress(), ItemRegistry.STONE.number());
+		
+		IMutationEntity[] holder = new IMutationEntity[1];
+		boolean[] didSchedule = new boolean[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> didSchedule[0] = true
+				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
+		);
+		MutableEntity newEntity = new MutableEntity(original);
+		
+		// Try too far.
+		EndBreakBlockChange breakTooFar = new EndBreakBlockChange(tooFar, ItemRegistry.STONE);
+		Assert.assertFalse(breakTooFar.applyChange(context, newEntity));
+		Assert.assertFalse(didSchedule[0]);
+		
+		// Try wrong type.
+		EndBreakBlockChange breakWrongType = new EndBreakBlockChange(wrongType, ItemRegistry.STONE);
+		Assert.assertFalse(breakWrongType.applyChange(context, newEntity));
+		Assert.assertFalse(didSchedule[0]);
+		
+		// Try reasonable location.
+		EndBreakBlockChange breakReasonable = new EndBreakBlockChange(reasonable, ItemRegistry.STONE);
+		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
+		Assert.assertTrue(didSchedule[0]);
+	}
 }

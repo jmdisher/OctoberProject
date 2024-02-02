@@ -45,10 +45,20 @@ public class EndBreakBlockChange implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		// Make sure that the block is the same type.
-		short blockType = context.previousBlockLookUp.apply(_targetBlock).getData15(AspectRegistry.BLOCK);
+		// There are a few things to check here:
+		// -is the target block the expected type (we weren't preempted in a race)?
+		// -is this target location close by?
+		
+		boolean doesTargetBlockMatch = (_expectedBlockType.number() == context.previousBlockLookUp.apply(_targetBlock).getData15(AspectRegistry.BLOCK));
+		
+		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
+		int absX = Math.abs(_targetBlock.x() - Math.round(newEntity.newLocation.x()));
+		int absY = Math.abs(_targetBlock.y() - Math.round(newEntity.newLocation.y()));
+		int absZ = Math.abs(_targetBlock.z() - Math.round(newEntity.newLocation.z()));
+		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
+		
 		boolean didApply = false;
-		if (_expectedBlockType.number() == blockType)
+		if (doesTargetBlockMatch && isLocationClose)
 		{
 			// This means that this worked so create the mutation to break the block.
 			BreakBlockMutation mutation = new BreakBlockMutation(_targetBlock, _expectedBlockType);
