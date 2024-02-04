@@ -1,65 +1,82 @@
 package com.jeffdisher.october.integration;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.LongSupplier;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.client.ClientRunner;
-import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.process.ClientProcess;
+import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.registries.ItemRegistry;
-import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
-public class TestLocalServerShim
+/**
+ * Tests for the pairing of ServerProcess and ClientProcess.
+ */
+public class TestProcesses
 {
+	public static final int PORT = 5678;
+	public static final long MILLIS_PER_TICK = 100L;
+	public static final LongSupplier TIME_SUPPLIER = () -> System.currentTimeMillis();
+
+	@Test
+	public void startStopServer() throws Throwable
+	{
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		server.stop();
+	}
+
+	@Test(expected = IOException.class)
+	public void noConnectClient() throws Throwable
+	{
+		_ClientListener listener = new _ClientListener();
+		new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
+	}
+
 	@Test
 	public void startStop() throws Throwable
 	{
-		// Just start and stop the shim.
-		LocalServerShim shim = LocalServerShim.startedServerShim(ServerRunner.DEFAULT_MILLIS_PER_TICK, () -> System.currentTimeMillis());
+		// Start everything, connect and disconnect once the see the entity arrive.
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		_ClientListener listener = new _ClientListener();
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
-		// Connect the client.
-		ClientListener listener = new ClientListener();
-		ClientRunner client = new ClientRunner(shim.getClientAdapter(), listener, listener);
-		shim.waitForClient();
+		// Wait until we see the entity arrive.
+		client.waitForTickAdvance(3L, System.currentTimeMillis());
+		listener.waitForEntity();
 		
-		// Let some time pass and verify the entity is loaded.
-		shim.waitForTickAdvance(3L);
-		client.runPendingCalls(System.currentTimeMillis());
-		Assert.assertNotNull(listener.entity);
-		
-		// Disconnect the client.
+		// Disconnect the client and shut down the server.
 		client.disconnect();
-		shim.waitForServerShutdown();
+		server.stop();
 	}
 
 	@Test
 	public void basicMovement() throws Throwable
 	{
 		// Demonstrate that a client can move around the server without issue.
-		LocalServerShim shim = LocalServerShim.startedServerShim(ServerRunner.DEFAULT_MILLIS_PER_TICK, () -> System.currentTimeMillis());
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
 		
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		shim.injectCuboidToServer(cuboid);
+		server.loadCuboid(cuboid);
 		
 		// Connect the client.
-		ClientListener listener = new ClientListener();
-		ClientRunner client = new ClientRunner(shim.getClientAdapter(), listener, listener);
-		shim.waitForClient();
+		_ClientListener listener = new _ClientListener();
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Let some time pass and verify the data is loaded.
-		shim.waitForTickAdvance(3L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.waitForTickAdvance(3L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.entity);
 		Assert.assertEquals(1, listener.cuboids.size());
 		
@@ -68,33 +85,30 @@ public class TestLocalServerShim
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		Thread.sleep(EntityChangeMove.getTimeMostMillis(0.4f, 0.0f));
 		client.moveHorizontal(0.4f, 0.0f, System.currentTimeMillis());
-		shim.waitForTickAdvance(2L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.waitForTickAdvance(2L, System.currentTimeMillis());
 		Assert.assertEquals(newLocation, listener.entity.location());
 		
 		// Disconnect the client.
 		client.disconnect();
-		shim.waitForServerShutdown();
+		server.stop();
 	}
 
 	@Test
 	public void falling() throws Throwable
 	{
 		// Demonstrate that a client will fall through air and this will make sense in the projection.
-		LocalServerShim shim = LocalServerShim.startedServerShim(ServerRunner.DEFAULT_MILLIS_PER_TICK, () -> System.currentTimeMillis());
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
 		
 		// Load a cuboids.
-		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
-		shim.injectCuboidToServer(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
+		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
 		
 		// Connect the client.
-		ClientListener listener = new ClientListener();
-		ClientRunner client = new ClientRunner(shim.getClientAdapter(), listener, listener);
-		shim.waitForClient();
+		_ClientListener listener = new _ClientListener();
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Let some time pass and verify the data is loaded.
-		shim.waitForTickAdvance(3L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.waitForTickAdvance(3L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.entity);
 		Assert.assertEquals(2, listener.cuboids.size());
 		
@@ -106,24 +120,37 @@ public class TestLocalServerShim
 		Thread.sleep(100L);
 		client.doNothing(System.currentTimeMillis());
 		
-		shim.waitForTickAdvance(2L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.waitForTickAdvance(2L, System.currentTimeMillis());
 		Assert.assertEquals(0.0f, listener.entity.location().x(), 0.01f);
 		Assert.assertEquals(0.0f, listener.entity.location().y(), 0.01f);
 		Assert.assertTrue(listener.entity.location().z() <= -0.098);
 		
 		// Disconnect the client.
 		client.disconnect();
-		shim.waitForServerShutdown();
+		server.stop();
 	}
 
 
-	private final static class ClientListener implements SpeculativeProjection.IProjectionListener, ClientRunner.IListener
+	private static class _ClientListener implements ClientProcess.IListener
 	{
 		public final Map<CuboidAddress, IReadOnlyCuboidData> cuboids = new HashMap<>();
 		public Entity entity;
 		
-		// SpeculativeProjection.IProjectionListener
+		public synchronized void waitForEntity() throws InterruptedException
+		{
+			while (null == this.entity)
+			{
+				this.wait();
+			}
+		}
+		@Override
+		public void connectionEstablished(int assignedEntityId)
+		{
+		}
+		@Override
+		public void connectionClosed()
+		{
+		}
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
 		{
@@ -143,10 +170,11 @@ public class TestLocalServerShim
 			Assert.assertNotNull(old);
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public synchronized void entityDidLoad(Entity entity)
 		{
 			Assert.assertNull(this.entity);
 			this.entity = entity;
+			this.notifyAll();
 		}
 		@Override
 		public void entityDidChange(Entity entity)
@@ -156,18 +184,6 @@ public class TestLocalServerShim
 		}
 		@Override
 		public void entityDidUnload(int id)
-		{
-			Assert.assertEquals(this.entity.id(), id);
-			this.entity = null;
-		}
-		
-		// IListener
-		@Override
-		public void clientDidConnectAndLogin(int assignedLocalEntityId)
-		{
-		}
-		@Override
-		public void clientDisconnected()
 		{
 		}
 	}
