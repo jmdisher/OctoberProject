@@ -36,6 +36,9 @@ public class ServerProcess
 
 	private IServerAdapter.IListener _serverListener;
 
+	// Internal tick counter for tests and monitoring.
+	private long _latestTickNumber;
+
 	/**
 	 * Starts a server process, listening on the given TCP port.  This call returns after the network has come up and
 	 * the server has started running.
@@ -62,6 +65,16 @@ public class ServerProcess
 	public void loadCuboid(CuboidData cuboid)
 	{
 		_server.loadCuboid(cuboid);
+	}
+
+	public synchronized long waitForTicksToPass(long ticksToAdvance) throws InterruptedException
+	{
+		long target = _latestTickNumber + ticksToAdvance;
+		while (_latestTickNumber < target)
+		{
+			this.wait();
+		}
+		return _latestTickNumber;
 	}
 
 	/**
@@ -121,6 +134,12 @@ public class ServerProcess
 		{
 			buffer.outgoing.add(packet);
 		}
+	}
+
+	public synchronized void _updateTickNumber(long tickNumber)
+	{
+		_latestTickNumber = tickNumber;
+		this.notifyAll();
 	}
 
 
@@ -193,8 +212,11 @@ public class ServerProcess
 		@Override
 		public void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 		{
-			// We ignore calls to the fake client in this path.
-			if (ServerRunner.FAKE_CLIENT_ID != clientId)
+			if (ServerRunner.FAKE_CLIENT_ID == clientId)
+			{
+				_updateTickNumber(tickNumber);
+			}
+			else
 			{
 				Packet_EndOfTick packet = new Packet_EndOfTick(tickNumber, latestLocalCommitIncluded);
 				_bufferPacket(clientId, packet);

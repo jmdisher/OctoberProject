@@ -53,7 +53,9 @@ public class TestProcesses
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Wait until we see the entity arrive.
-		client.waitForTickAdvance(3L, System.currentTimeMillis());
+		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		// (wait for an end of tick so that we know this is flushed).
+		client.waitForTick(startTick + 1L, System.currentTimeMillis());
 		listener.waitForEntity();
 		
 		// Disconnect the client and shut down the server.
@@ -76,7 +78,9 @@ public class TestProcesses
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Let some time pass and verify the data is loaded.
-		client.waitForTickAdvance(3L, System.currentTimeMillis());
+		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		// (wait for an end of tick so that we know this is flushed).
+		client.waitForTick(startTick + 1L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.entity);
 		Assert.assertEquals(1, listener.cuboids.size());
 		
@@ -85,7 +89,8 @@ public class TestProcesses
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		Thread.sleep(EntityChangeMove.getTimeMostMillis(0.4f, 0.0f));
 		client.moveHorizontal(0.4f, 0.0f, System.currentTimeMillis());
-		client.waitForTickAdvance(2L, System.currentTimeMillis());
+		long serverTick = server.waitForTicksToPass(2L);
+		client.waitForTick(serverTick, System.currentTimeMillis());
 		Assert.assertEquals(newLocation, listener.entity.location());
 		
 		// Disconnect the client.
@@ -108,19 +113,19 @@ public class TestProcesses
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Let some time pass and verify the data is loaded.
-		client.waitForTickAdvance(3L, System.currentTimeMillis());
+		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		client.waitForTick(startTick + 1, System.currentTimeMillis());
 		Assert.assertNotNull(listener.entity);
 		Assert.assertEquals(2, listener.cuboids.size());
 		
 		// Wait a few ticks and verify that they are below the starting location.
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
-		Thread.sleep(100L);
 		client.doNothing(System.currentTimeMillis());
+		client.waitForTick(startTick + 2, System.currentTimeMillis());
 		// (we need to do 2 since the first move starts falling and the second will actually do the fall)
-		Thread.sleep(100L);
 		client.doNothing(System.currentTimeMillis());
+		client.waitForTick(startTick + 3, System.currentTimeMillis());
 		
-		client.waitForTickAdvance(2L, System.currentTimeMillis());
 		Assert.assertEquals(0.0f, listener.entity.location().x(), 0.01f);
 		Assert.assertEquals(0.0f, listener.entity.location().y(), 0.01f);
 		Assert.assertTrue(listener.entity.location().z() <= -0.098);

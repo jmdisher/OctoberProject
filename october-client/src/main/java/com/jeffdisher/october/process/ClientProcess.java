@@ -43,7 +43,11 @@ public class ClientProcess
 	private final _LockingList _pendingCallbacks;
 	private final ClientRunner _clientRunner;
 	private IClientAdapter.IListener _messagesToClientRunner;
+
+	// State which can be used in synchronization, as it is updated by background threads.
 	private long _lastTickFromServer;
+	private int _assignedClientId;
+	private boolean _isEntityLoaded;
 
 	private final NetworkClient _client;
 
@@ -96,25 +100,61 @@ public class ClientProcess
 	public void sendAction(IMutationEntity change, long commitLevel)
 	{
 		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
-		_bufferPacket(packet);
+		_background_bufferPacket(packet);
 		_runPendingCallbacks();
 	}
 
 	/**
-	 * Waits for the given number of ticks to be reported by the server and then runs any pending call-outs.
+	 * Waits until this client's ID has been received with the end of the handshake.
 	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @throws InterruptedException 
+	 * @return The client's ID.
+	 * @throws InterruptedException Interrupted while waiting.
 	 */
-	public synchronized void waitForTickAdvance(long ticksToWait, long currentTimeMillis) throws InterruptedException
+	public synchronized int waitForClientId() throws InterruptedException
 	{
-		long target = _lastTickFromServer + ticksToWait;
-		while (_lastTickFromServer < target)
+		while (0 == _assignedClientId)
+		{
+			this.wait();
+		}
+		return _assignedClientId;
+	}
+
+	/**
+	 * Waits until this client's first entity packet has arrived and returns the latest tick observed.
+	 * NOTE:  Even though the packet has been received, this may return before it has been relayed to the listener as
+	 * there is some buffering of those callbacks.
+	 * 
+	 * @return The last tick observed in a packet.
+	 * @throws InterruptedException Interrupted while waiting.
+	 */
+	public synchronized long waitForLocalEntity(long currentTimeMillis) throws InterruptedException
+	{
+		while (!_isEntityLoaded)
 		{
 			this.wait();
 		}
 		_clientRunner.runPendingCalls(currentTimeMillis);
 		_runPendingCallbacks();
+		return _lastTickFromServer;
+	}
+
+	/**
+	 * Waits until the packet with the given tick number has been observed.
+	 * NOTE:  Even though the packet has been received, this may return before it has been relayed to the listener as
+	 * there is some buffering of those callbacks.
+	 * 
+	 * @return The last tick observed in a packet.
+	 * @throws InterruptedException Interrupted while waiting.
+	 */
+	public synchronized long waitForTick(long tickNumber, long currentTimeMillis) throws InterruptedException
+	{
+		while (_lastTickFromServer < tickNumber)
+		{
+			this.wait();
+		}
+		_clientRunner.runPendingCalls(currentTimeMillis);
+		_runPendingCallbacks();
+		return _lastTickFromServer;
 	}
 
 	/**
@@ -269,7 +309,7 @@ public class ClientProcess
 	}
 
 
-	private void _bufferPacket(Packet packet)
+	private void _background_bufferPacket(Packet packet)
 	{
 		_networkBufferLock.lock();
 		try
@@ -290,7 +330,7 @@ public class ClientProcess
 		}
 	}
 
-	private void _networkReadyForWrite()
+	private void _background_networkReadyForWrite()
 	{
 		_networkBufferLock.lock();
 		try
@@ -312,11 +352,28 @@ public class ClientProcess
 		}
 	}
 
-	private synchronized void _updateTickNumber(long latestTickNumer)
+	private synchronized void _background_updateTickNumber(long latestTickNumer)
 	{
 		Assert.assertTrue((0 == _lastTickFromServer) || ((_lastTickFromServer + 1) == latestTickNumer));
 		_lastTickFromServer = latestTickNumer;
 		this.notifyAll();
+	}
+
+	private synchronized void _background_setClientId(int assignedId)
+	{
+		Assert.assertTrue(0 == _assignedClientId);
+		Assert.assertTrue(assignedId > 0);
+		_assignedClientId = assignedId;
+		this.notifyAll();
+	}
+
+	private synchronized void _background_entityLoaded(int entityId)
+	{
+		if (!_isEntityLoaded && (entityId == _assignedClientId))
+		{
+			_isEntityLoaded = true;
+			this.notifyAll();
+		}
 	}
 
 	private void _runPendingCallbacks()
@@ -330,6 +387,7 @@ public class ClientProcess
 	}
 
 
+	// NOTE:  These callbacks are issued on the background network thread.
 	private class _NetworkClientListener implements NetworkClient.IListener
 	{
 		private CuboidCodec.Deserializer _deserializer = null;
@@ -338,11 +396,12 @@ public class ClientProcess
 		public void handshakeCompleted(int assignedId)
 		{
 			_messagesToClientRunner.adapterConnected(assignedId);
+			_background_setClientId(assignedId);
 		}
 		@Override
 		public synchronized void networkReady()
 		{
-			_networkReadyForWrite();
+			_background_networkReadyForWrite();
 		}
 		@Override
 		public void packetReceived(Packet packet)
@@ -365,7 +424,9 @@ public class ClientProcess
 			}
 			else if (packet instanceof Packet_Entity)
 			{
-				_messagesToClientRunner.receivedEntity(((Packet_Entity)packet).entity);
+				Packet_Entity safe = (Packet_Entity)packet;
+				_messagesToClientRunner.receivedEntity(safe.entity);
+				_background_entityLoaded(safe.entity.id());
 			}
 			else if (packet instanceof Packet_MutationEntityFromClient)
 			{
@@ -386,11 +447,12 @@ public class ClientProcess
 			{
 				Packet_EndOfTick safe = (Packet_EndOfTick) packet;
 				_messagesToClientRunner.receivedEndOfTick(safe.tickNumber, safe.latestLocalCommitIncluded);
-				_updateTickNumber(safe.tickNumber);
+				_background_updateTickNumber(safe.tickNumber);
 			}
 		}
 	}
 
+	// NOTE:  These callbacks are issued on the background network thread.
 	private class _NetworkAdapter implements IClientAdapter
 	{
 		@Override
@@ -408,10 +470,11 @@ public class ClientProcess
 		public void sendChange(IMutationEntity change, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
-			_bufferPacket(packet);
+			_background_bufferPacket(packet);
 		}
 	}
 
+	// Note that these calls are issued on the thread which calls into the ClientRunner, meaning the thread we are treating as "main", from the user.
 	private class _ProjectionListener implements SpeculativeProjection.IProjectionListener
 	{
 		@Override
@@ -458,6 +521,7 @@ public class ClientProcess
 		}
 	}
 
+	// Note that these calls are issued on the thread which calls into the ClientRunner, meaning the thread we are treating as "main", from the user.
 	private class _RunnerListener implements ClientRunner.IListener
 	{
 		@Override
