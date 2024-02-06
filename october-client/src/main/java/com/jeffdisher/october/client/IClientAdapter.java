@@ -58,6 +58,12 @@ public interface IClientAdapter
 		 */
 		void receivedEntity(Entity entity);
 		/**
+		 * Called when an entity should be removed.
+		 * 
+		 * @param entityId The ID of the entity to remove.
+		 */
+		void removeEntity(int entityId);
+		/**
 		 * Called when a full cuboid is received from the server.
 		 * 
 		 * @param cuboid The cuboid.

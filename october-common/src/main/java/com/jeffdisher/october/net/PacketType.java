@@ -51,6 +51,10 @@ public enum PacketType
 	 * incorporated commit number from the target client.
 	 */
 	END_OF_TICK,
+	/**
+	 * Contains just the ID of an entity which should be removed.
+	 */
+	REMOVE_ENTITY,
 	
 	END_OF_LIST,
 }

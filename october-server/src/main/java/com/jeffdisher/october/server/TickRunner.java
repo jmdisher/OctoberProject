@@ -46,6 +46,7 @@ public class TickRunner
 	private List<CuboidData> _newCuboids;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
+	private List<Integer> _departedEntityIds;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
@@ -224,6 +225,26 @@ public class TickRunner
 		}
 	}
 
+	public void entityDidLeave(int entityId)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			// We must already have this.
+			Assert.assertTrue(_entitySharedAccess.containsKey(entityId));
+			_entitySharedAccess.remove(entityId);
+			if (null == _departedEntityIds)
+			{
+				_departedEntityIds = new ArrayList<>();
+			}
+			_departedEntityIds.add(entityId);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
 	public void enqueueEntityChange(int entityId, IMutationEntity change)
 	{
 		_sharedDataLock.lock();
@@ -372,6 +393,7 @@ public class TickRunner
 				List<CuboidData> newCuboids;
 				List<IMutationBlock> newMutations;
 				List<Entity> newEntities;
+				List<Integer> removedEntityIds;
 				Map<Integer, Queue<IMutationEntity>> newEntityChanges = new HashMap<>();
 				
 				_sharedDataLock.lock();
@@ -383,6 +405,8 @@ public class TickRunner
 					_mutations = null;
 					newEntities = _newEntities;
 					_newEntities = null;
+					removedEntityIds = _departedEntityIds;
+					_departedEntityIds = null;
 					
 					// We need to do some scheduling work under this lock.
 					for (Map.Entry<Integer, PerEntitySharedAccess> entry : _entitySharedAccess.entrySet())
@@ -432,6 +456,17 @@ public class TickRunner
 						Entity old = nextCrowdState.put(entity.id(), entity);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
+					}
+				}
+				
+				// Remove any departed entities.
+				if (null != removedEntityIds)
+				{
+					for (int entityId : removedEntityIds)
+					{
+						Entity old = nextCrowdState.remove(entityId);
+						// This must have been present.
+						Assert.assertTrue(null != old);
 					}
 				}
 				

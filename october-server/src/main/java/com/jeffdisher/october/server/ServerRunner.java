@@ -2,6 +2,7 @@ package com.jeffdisher.october.server;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -56,6 +57,7 @@ public class ServerRunner
 	private long _nextTickMillis;
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Queue<Integer> _newClients;
+	private final Queue<Integer> _removedClients;
 	private final Queue<CuboidData> _newCuboids;
 	private final Runnable _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
@@ -89,6 +91,7 @@ public class ServerRunner
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		_connectedClients = new HashMap<>();
 		_newClients = new LinkedList<>();
+		_removedClients = new LinkedList<>();
 		_newCuboids = new LinkedList<>();
 		_tickAdvancer = () -> {
 			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
@@ -112,6 +115,20 @@ public class ServerRunner
 					{
 						_network.sendEntity(clientId, entry.getValue());
 						state.knownEntities.add(entityId);
+					}
+				}
+				// Remove any extra entities which have since departed.
+				if (state.knownEntities.size() > snapshot.completedEntities().size())
+				{
+					Iterator<Integer> entityIterator = state.knownEntities.iterator();
+					while (entityIterator.hasNext())
+					{
+						int entityId = entityIterator.next();
+						if (!snapshot.completedEntities().containsKey(entityId))
+						{
+							_network.removeEntity(clientId, entityId);
+							entityIterator.remove();
+						}
 					}
 				}
 				
@@ -164,6 +181,14 @@ public class ServerRunner
 				
 				// This client is now connected and can receive events.
 				_connectedClients.put(clientId, new ClientState(initial.location()));
+			}
+			
+			// Walk through any removed clients, removing them from the world.
+			while (!_removedClients.isEmpty())
+			{
+				int clientId = _removedClients.remove();
+				_tickRunner.entityDidLeave(clientId);
+				// (we removed this from the connected clients, earlier).
 			}
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
@@ -275,7 +300,8 @@ public class ServerRunner
 			_messages.enqueue(() -> {
 				// Remove them from the list of connected clients (we can do this immediately).
 				_connectedClients.remove(clientId);
-				// TODO:  Implement the support for unloading entities in the TickRunner and corresponding message to other clients.
+				// We also want to add them to the list of clients which must be unloaded in the logic engine.
+				_removedClients.add(clientId);
 			});
 		}
 		@Override

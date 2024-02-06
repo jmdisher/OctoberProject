@@ -408,6 +408,41 @@ public class TestTickRunner
 		Assert.assertTrue(initialCuboids.get(constantAddress) == laterCuboids.get(constantAddress));
 	}
 
+	@Test
+	public void joinAndDepart()
+	{
+		// Create an entity and have it join and then depart, verifying that we can observe this add and removal in the snapshot.
+		TickRunner.Snapshot[] snapshotRef = new TickRunner.Snapshot[1];
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
+			snapshotRef[0] = completed;
+		};
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
+		
+		// Verify that there is no snapshot until we start.
+		Assert.assertNull(snapshotRef[0]);
+		runner.start();
+		
+		// Wait for the start-up to complete and verify that there are no entities in the snapshot.
+		runner.waitForPreviousTick();
+		Assert.assertNotNull(snapshotRef[0]);
+		Assert.assertEquals(0, snapshotRef[0].completedEntities().size());
+		
+		// Add the new entity and run a tick.
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// We should see the entity.
+		Assert.assertEquals(1, snapshotRef[0].completedEntities().size());
+		
+		// Now, leave and verify that the entity has disappeared from the snapshot.
+		runner.entityDidLeave(1);
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshotRef[0].completedEntities().size());
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

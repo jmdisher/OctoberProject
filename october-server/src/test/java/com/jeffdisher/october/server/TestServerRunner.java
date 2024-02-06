@@ -163,6 +163,37 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void clientJoinAndDepart() throws Throwable
+	{
+		// Connect 2 clients and verify that 1 can see the other when they disconnect.
+		TestAdapter network = new TestAdapter();
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, () -> System.currentTimeMillis());
+		_loadDefaultMap(runner);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		int clientId2 = 2;
+		network.prepareForClient(clientId1);
+		network.prepareForClient(clientId2);
+		server.clientConnected(clientId1);
+		server.clientConnected(clientId2);
+		Entity entity1_1 = network.waitForEntity(clientId1, clientId1);
+		Assert.assertNotNull(entity1_1);
+		Entity entity1_2 = network.waitForEntity(clientId1, clientId2);
+		Assert.assertNotNull(entity1_2);
+		Entity entity2_1 = network.waitForEntity(clientId2, clientId1);
+		Assert.assertNotNull(entity2_1);
+		Entity entity2_2 = network.waitForEntity(clientId2, clientId2);
+		Assert.assertNotNull(entity2_2);
+		server.clientDisconnected(1);
+		
+		// For them to disappear.
+		network.waitForEntityRemoval(clientId2, clientId1);
+		
+		server.clientDisconnected(2);
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(ServerRunner runner)
 	{
@@ -194,6 +225,14 @@ public class TestServerRunner
 			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
 			Assert.assertFalse(clientMap.containsKey(entityId));
 			clientMap.put(entityId, entity);
+			this.notifyAll();
+		}
+		@Override
+		public synchronized void removeEntity(int clientId, int entityId)
+		{
+			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			Assert.assertTrue(clientMap.containsKey(entityId));
+			clientMap.remove(entityId);
 			this.notifyAll();
 		}
 		@Override
@@ -253,6 +292,14 @@ public class TestServerRunner
 				this.wait();
 			}
 			return clientMap.get(entityId);
+		}
+		public synchronized void waitForEntityRemoval(int clientId, int entityId) throws InterruptedException
+		{
+			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			while (clientMap.containsKey(entityId))
+			{
+				this.wait();
+			}
 		}
 		public synchronized Object waitForUpdate(int clientId, int index) throws InterruptedException
 		{

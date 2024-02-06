@@ -31,6 +31,7 @@ public class PacketCodec
 		Packet_MutationEntityFromServer.register(_CODEC_TABLE);
 		Packet_MutationBlock.register(_CODEC_TABLE);
 		Packet_EndOfTick.register(_CODEC_TABLE);
+		Packet_RemoveEntity.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

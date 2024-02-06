@@ -366,6 +366,11 @@ public class ClientRunner
 			_addedEntities.add(entity);
 		}
 		@Override
+		public void removeEntity(int entityId)
+		{
+			_removedEntities.add(entityId);
+		}
+		@Override
 		public void receivedCuboid(IReadOnlyCuboidData cuboid)
 		{
 			_addedCuboids.add(cuboid);
@@ -483,7 +488,8 @@ public class ClientRunner
 		@Override
 		public void entityDidUnload(int id)
 		{
-			// Ignored.
+			// Just make sure that this isn't us (since that can't happen).
+			Assert.assertTrue(_assignedEntityId != id);
 			_projectionListener.entityDidUnload(id);
 		}
 	}

@@ -29,6 +29,13 @@ public interface IServerAdapter
 	 */
 	void sendEntity(int clientId, Entity entity);
 	/**
+	 * Tells the given client that an entity should be discarded.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param entityId The ID of the entity to remove.
+	 */
+	void removeEntity(int clientId, int entityId);
+	/**
 	 * Sends a full cuboid to the given client.
 	 * 
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).

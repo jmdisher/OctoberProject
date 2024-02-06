@@ -19,6 +19,7 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -182,6 +183,12 @@ public class ServerProcess
 		public void sendEntity(int clientId, Entity entity)
 		{
 			Packet_Entity packet = new Packet_Entity(entity);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void removeEntity(int clientId, int entityId)
+		{
+			Packet_RemoveEntity packet = new Packet_RemoveEntity(entityId);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

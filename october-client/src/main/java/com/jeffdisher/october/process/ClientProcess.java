@@ -22,6 +22,7 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
+import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -448,6 +449,11 @@ public class ClientProcess
 				Packet_EndOfTick safe = (Packet_EndOfTick) packet;
 				_messagesToClientRunner.receivedEndOfTick(safe.tickNumber, safe.latestLocalCommitIncluded);
 				_background_updateTickNumber(safe.tickNumber);
+			}
+			else if (packet instanceof Packet_RemoveEntity)
+			{
+				Packet_RemoveEntity safe = (Packet_RemoveEntity)packet;
+				_messagesToClientRunner.removeEntity(safe.entityId);
 			}
 		}
 	}
