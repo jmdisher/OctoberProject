@@ -16,6 +16,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -94,29 +95,53 @@ public class WorldProcessor
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
-				boolean didApplyAnyChange = false;
-				CuboidData mutable = CuboidData.mutableClone(oldState);
+				// We will accumulate changing blocks and determine if we need to write any back at the end.
+				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
 				for (IMutationBlock mutation : mutations)
 				{
 					processor.mutationCount += 1;
-					MutableBlockProxy thisBlockProxy = new MutableBlockProxy(mutation.getAbsoluteLocation().getBlockAddress(), mutable);
+					BlockAddress address = mutation.getAbsoluteLocation().getBlockAddress();
+					MutableBlockProxy thisBlockProxy = proxies.get(address);
+					if (null == thisBlockProxy)
+					{
+						thisBlockProxy = new MutableBlockProxy(address, oldState);
+						proxies.put(address, thisBlockProxy);
+					}
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 					if (didApply)
 					{
 						listener.mutationApplied(mutation);
-						didApplyAnyChange = true;
 					}
 					else
 					{
 						listener.mutationDropped(mutation);
 					}
 				}
+				
 				// Return the old instance if nothing changed.
-				IReadOnlyCuboidData newData = didApplyAnyChange
-						? mutable
-						: oldState
-				;
-				fragment.put(key, newData);
+				List<MutableBlockProxy> proxiesToWrite = new ArrayList<>();
+				for (MutableBlockProxy proxy : proxies.values())
+				{
+					if (proxy.didChange())
+					{
+						proxiesToWrite.add(proxy);
+					}
+				}
+				if (proxiesToWrite.isEmpty())
+				{
+					// There were no actual changes to this cuboid so just use the old state.
+					fragment.put(key, oldState);
+				}
+				else
+				{
+					// At least something changed so create a new clone and write-back into it.
+					CuboidData mutable = CuboidData.mutableClone(oldState);
+					for (MutableBlockProxy proxy : proxiesToWrite)
+					{
+						proxy.writeBack(mutable);
+					}
+					fragment.put(key, mutable);
+				}
 			}
 		}
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).

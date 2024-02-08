@@ -34,6 +34,8 @@ public class TestCommonMutations
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
 		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
 		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
@@ -49,6 +51,7 @@ public class TestCommonMutations
 		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
+		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
 		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertNull(inv);
@@ -75,6 +78,8 @@ public class TestCommonMutations
 		Assert.assertNotNull(sinks.nextMutation);
 		didApply = sinks.nextMutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
 		
 		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
 		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);

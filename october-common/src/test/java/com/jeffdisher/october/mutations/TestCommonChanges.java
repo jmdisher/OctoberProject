@@ -207,7 +207,9 @@ public class TestCommonChanges
 		
 		// We also need to apply the actual mutation.
 		Assert.assertTrue(holder[0] instanceof MutationBlockOverwrite);
-		Assert.assertTrue(holder[0].applyMutation(context, new MutableBlockProxy(holder[0].getAbsoluteLocation().getBlockAddress(), cuboid)));
+		MutableBlockProxy proxy = new MutableBlockProxy(holder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		Assert.assertTrue(holder[0].applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
 		
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(ItemRegistry.LOG.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -249,6 +251,7 @@ public class TestCommonChanges
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockExtractItems);
 		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		newBlock.writeBack(cuboid);
 		
 		// By this point, the entity shouldn't yet have changed.
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
@@ -272,6 +275,7 @@ public class TestCommonChanges
 		request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1));
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		newBlock.writeBack(cuboid);
 		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertNull(blockInventory);
@@ -311,6 +315,7 @@ public class TestCommonChanges
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		newBlock.writeBack(cuboid);
 		blockHolder[0] = null;
 		
 		// By this point, we should be able to verify both the entity and the block.
@@ -324,6 +329,7 @@ public class TestCommonChanges
 		push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1));
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		newBlock.writeBack(cuboid);
 		
 		// By this point, we should be able to verify both the entity and the block.
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());

@@ -78,7 +78,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(1, listener.loadCount);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(0, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Apply a few local mutations.
@@ -100,7 +100,7 @@ public class TestSpeculativeProjection
 			mutationsToCommit.add(mutation);
 			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L, true);
 		}
-		Assert.assertEquals(1 + 7, listener.changeCount);
+		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the first 2, one at a time, and then the last ones at the same time.
@@ -116,7 +116,7 @@ public class TestSpeculativeProjection
 		);
 		// Only the changes are in the speculative list:  We passed in 7 and committed 1.
 		Assert.assertEquals(6, speculativeCount);
-		Assert.assertEquals(1 + 7 + 1, listener.changeCount);
+		Assert.assertEquals(7 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
@@ -130,7 +130,7 @@ public class TestSpeculativeProjection
 		);
 		// 5 changes left.
 		Assert.assertEquals(5, speculativeCount);
-		Assert.assertEquals(1 + 7 + 1 + 1, listener.changeCount);
+		Assert.assertEquals(7 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
@@ -143,7 +143,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(1 + 7 + 1 + 1 + 1, listener.changeCount);
+		Assert.assertEquals(7 + 1 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Now, unload.
@@ -196,7 +196,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutationBlock mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
@@ -206,7 +206,7 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0, 1L, true);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1, 1L, true);
-		Assert.assertEquals(2 + 2, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one.
@@ -221,7 +221,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
+		Assert.assertEquals(2 + 1, listener.changeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -274,7 +274,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutationBlock mutation0 = new ReplaceBlockMutation(new AbsoluteLocation(1, 0, 0), BlockAspect.AIR, BlockAspect.STONE);
@@ -284,7 +284,7 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0, 1L, true);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		long commit1 = projector.applyLocalChange(lone1, 1L, true);
-		Assert.assertEquals(2 + 2, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
@@ -301,7 +301,7 @@ public class TestSpeculativeProjection
 		// We will still see 2 elements in the speculative list since EntityChangeMutation always claims to have applied.  Hence, we will only remove them when the commit level passes them.
 		Assert.assertEquals(2, speculativeCount);
 		// We see another 2 changes due to the reverses (that is, when applying changes from the server, they will be different instances compared to what WAS in the speculative projection).
-		Assert.assertEquals(2 + 2 + 2, listener.changeCount);
+		Assert.assertEquals(2 + 2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		// Commit the other one normally.
@@ -318,7 +318,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		// This time, we will only add a +1 since the previous commit of mutation0 meant that our speculative change would have failed to apply on top so it ISN'T reverted here.
 		// That is, the only change from the previous commit action is the application of mutation1.
-		Assert.assertEquals(2 + 2 + 2 + 1, listener.changeCount);
+		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
 		speculativeCount = projector.applyChangesForServerTick(3L
@@ -369,7 +369,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(2, listener.loadCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Apply a few local mutations.
 		IMutationBlock mutation0 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 5), 2);
@@ -378,7 +378,8 @@ public class TestSpeculativeProjection
 		IMutationEntity lone1 = new EntityChangeMutation(mutation1);
 		projector.applyLocalChange(lone0, 1L, true);
 		long commit1 = projector.applyLocalChange(lone1, 1L, true);
-		Assert.assertEquals(2 + 2, listener.changeCount);
+		// Note that shockwave doesn't change blocks.
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
 		int speculativeCount = projector.applyChangesForServerTick(1L
@@ -393,8 +394,7 @@ public class TestSpeculativeProjection
 		);
 		// We should still just see the initial changes in the speculative list.
 		Assert.assertEquals(2, speculativeCount);
-		// We see another 2 changes due to the reverses.
-		Assert.assertEquals(2 + 2 + 2, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Commit the other one normally.
 		speculativeCount = projector.applyChangesForServerTick(1L
@@ -409,7 +409,7 @@ public class TestSpeculativeProjection
 		);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2 + 2 + 2 + 2, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
@@ -442,6 +442,8 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		Assert.assertEquals(0, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -457,7 +459,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(1, listener.loadCount);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Try to drop a few items.
 		int encumbrance = 2;
@@ -470,7 +472,7 @@ public class TestSpeculativeProjection
 		IMutationEntity lone2 = new EntityChangeMutation(mutation2);
 		long commit1 = projector.applyLocalChange(lone1, 1L, true);
 		long commit2 = projector.applyLocalChange(lone2, 1L, true);
-		Assert.assertEquals(1 + 2, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
@@ -487,7 +489,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(1 + 2 + 1, listener.changeCount);
+		Assert.assertEquals(2 + 1, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
@@ -503,7 +505,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(1 + 2 + 1 + 1, listener.changeCount);
+		Assert.assertEquals(2 + 1 + 1, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
@@ -608,7 +610,8 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
@@ -616,13 +619,13 @@ public class TestSpeculativeProjection
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Allow time to pass in the local environment and observe that the change has happened.
 		currentTimeMillis += 200L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
@@ -638,7 +641,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 	}
 
@@ -663,7 +666,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
@@ -671,7 +674,7 @@ public class TestSpeculativeProjection
 		EndBreakBlockChange interrupted = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(interrupted, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Allow a small amount of time to pass, cancel the previous, and put in the updated change.
 		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 1);
@@ -681,7 +684,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(commitNumber, cancelledCommit);
 		commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(2, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
@@ -699,7 +702,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		// They should only see the later change modify the state.
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation1.getBlockAddress()));
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation2.getBlockAddress()));
@@ -726,7 +729,8 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
@@ -734,13 +738,13 @@ public class TestSpeculativeProjection
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Allow time to pass in the local environment and observe that the change has happened.
 		currentTimeMillis += 200L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Check what happens when the server sends us a change which already broke that block.
@@ -757,13 +761,13 @@ public class TestSpeculativeProjection
 		);
 		// We should see this invalidated but the change from the server be applied.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Make sure nothing goes wrong when time advances.
 		currentTimeMillis += 100L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 	}
 
@@ -789,7 +793,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
@@ -797,16 +801,16 @@ public class TestSpeculativeProjection
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Allow time to pass in the local environment and observe that the change has happened.
 		currentTimeMillis += 200L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
-		// Check what happens if we commit all of this - note that we need to fake-up all the changes and mutations which would come from this.
+		// We will act as though the server rejected the mutation:  The commit number is updated but no mutations are passed in.
 		currentTimeMillis += 50L;
 		int speculativeCount = projector.applyChangesForServerTick(1L
 				, Collections.emptyList()
@@ -820,7 +824,7 @@ public class TestSpeculativeProjection
 		);
 		// We have an orphan but nothing else in the speculative list.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Check what happens if we commit the rest of the faked-up updates from the server
@@ -836,13 +840,13 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Make sure nothing goes wrong when time advances.
 		currentTimeMillis += 100L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 	}
 
@@ -868,7 +872,8 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
 		
 		// Enqueue a local change to break a block but observe that nothing has changed in the data.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
@@ -876,7 +881,7 @@ public class TestSpeculativeProjection
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		long commitNumber = projector.applyLocalChange(longRunningChange, currentTimeMillis, true);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// See what happens when the server responds with phase1 before we apply phase2.
@@ -894,13 +899,13 @@ public class TestSpeculativeProjection
 		);
 		// We have an orphan but nothing else in the speculative list.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Allow time to pass in the local environment and observe that the change has happened.
 		currentTimeMillis += 200L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Check what happens if we commit the rest of the faked-up updates from the server
@@ -916,13 +921,13 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Make sure nothing goes wrong when time advances.
 		currentTimeMillis += 100L;
 		projector.checkCurrentActivity(currentTimeMillis);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 	}
 
