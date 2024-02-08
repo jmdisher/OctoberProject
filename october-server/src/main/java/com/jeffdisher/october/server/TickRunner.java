@@ -50,8 +50,7 @@ public class TickRunner
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
-	private final WorldProcessor.ProcessedFragment[] _partial;
-	private final CrowdProcessor.ProcessedGroup[] _partialGroup;
+	private final _PartialHandoffData[] _partial;
 	private long _nextTick;
 	
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
@@ -81,8 +80,7 @@ public class TickRunner
 		_threads = new Thread[threadCount];
 		_millisPerTick = millisPerTick;
 		_entitySharedAccess = new HashMap<>();
-		_partial = new WorldProcessor.ProcessedFragment[threadCount];
-		_partialGroup = new CrowdProcessor.ProcessedGroup[threadCount];
+		_partial = new _PartialHandoffData[threadCount];
 		_nextTick = 1L;
 		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
@@ -123,6 +121,8 @@ public class TickRunner
 		// Initial snapshot is tick "0".
 		_snapshot = new Snapshot(0L
 				// Create an empty world - the cuboids will be asynchronously loaded.
+				, Collections.emptyMap()
+				// No commit levels.
 				, Collections.emptyMap()
 				// Create it with no users.
 				, Collections.emptyMap()
@@ -245,12 +245,12 @@ public class TickRunner
 		}
 	}
 
-	public void enqueueEntityChange(int entityId, IMutationEntity change)
+	public void enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
 	{
 		_sharedDataLock.lock();
 		try
 		{
-			_entitySharedAccess.get(entityId).newChanges.add(change);
+			_entitySharedAccess.get(entityId).newChanges.add(new _EntityMutationWrapper(change, commitLevel));
 		}
 		finally
 		{
@@ -301,6 +301,7 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				, Collections.emptyMap()
 				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
 				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
 		);
@@ -320,6 +321,7 @@ public class TickRunner
 					, tickCompletionListener
 					, materials.completedCuboids
 					, materials.completedEntities
+					, materials.commitLevels
 					, fragment
 					, group
 			);
@@ -348,13 +350,13 @@ public class TickRunner
 			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 			, Map<Integer, Entity> mutableCrowdState
+			, Map<Integer, Long> commitLevels
 			, WorldProcessor.ProcessedFragment fragmentCompleted
 			, CrowdProcessor.ProcessedGroup processedGroup
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
-		_partial[elt.id] = fragmentCompleted;
-		_partialGroup[elt.id] = processedGroup;
+		_partial[elt.id] = new _PartialHandoffData(fragmentCompleted, processedGroup, commitLevels);
 		
 		// We synchronize threads here for a few reasons:
 		// 1) We need to collect all the data from the just-finished frame and produce the updated immutable snapshot (this is a stitching operation so we do it on one thread).
@@ -363,21 +365,22 @@ public class TickRunner
 		if (elt.synchronizeAndReleaseLast())
 		{
 			// Rebuild the immutable snapshot of the state.
-			// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
-			for (WorldProcessor.ProcessedFragment fragment : _partial)
+			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
+			for (_PartialHandoffData fragment : _partial)
 			{
-				mutableWorldState.putAll(fragment.stateFragment());
-			}
-			// Similarly, collect the results of the changed entities for the snapshot.
-			for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
-			{
-				mutableCrowdState.putAll(fragment.groupFragment());
+				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
+				mutableWorldState.putAll(fragment.world.stateFragment());
+				// Similarly, collect the results of the changed entities for the snapshot.
+				mutableCrowdState.putAll(fragment.crowd.groupFragment());
+				// We will also collect all the per-client commit levels.
+				combinedCommitLevels.putAll(fragment.commitLevels);
 			}
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			Snapshot completedTick = new Snapshot(_nextTick
 					, Collections.unmodifiableMap(mutableCrowdState)
+					, Collections.unmodifiableMap(combinedCommitLevels)
 					, Collections.unmodifiableMap(mutableWorldState)
 			);
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
@@ -395,6 +398,7 @@ public class TickRunner
 				List<Entity> newEntities;
 				List<Integer> removedEntityIds;
 				Map<Integer, Queue<IMutationEntity>> newEntityChanges = new HashMap<>();
+				Map<Integer, Long> newCommitLevels = new HashMap<>();
 				
 				_sharedDataLock.lock();
 				try
@@ -417,10 +421,20 @@ public class TickRunner
 						long schedulingBudget = _millisPerTick;
 						Queue<IMutationEntity> queue = new LinkedList<>();
 						
-						_sharedLock_ScheduleForEntity(access, queue, schedulingBudget);
+						long commitLevel = _sharedLock_ScheduleForEntity(access, queue, schedulingBudget);
 						if (!queue.isEmpty())
 						{
 							newEntityChanges.put(id, queue);
+							newCommitLevels.put(id, commitLevel);
+						}
+						else
+						{
+							// There may not be a previous commit level if this was just added.
+							commitLevel = combinedCommitLevels.containsKey(id)
+									? combinedCommitLevels.get(id)
+									: 0L
+							;
+							newCommitLevels.put(id, commitLevel);
 						}
 					}
 				}
@@ -471,24 +485,24 @@ public class TickRunner
 				}
 				
 				// Next step is to schedule anything from the previous tick.
-				for (WorldProcessor.ProcessedFragment fragment : _partial)
+				for (_PartialHandoffData fragment : _partial)
 				{
-					for (IMutationBlock mutation : fragment.exportedMutations())
+					// World data.
+					for (IMutationBlock mutation : fragment.world.exportedMutations())
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.exportedEntityChanges().entrySet())
+					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.world.exportedEntityChanges().entrySet())
 					{
 						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
-				}
-				for (CrowdProcessor.ProcessedGroup fragment : _partialGroup)
-				{
-					for (IMutationBlock mutation : fragment.exportedMutations())
+					
+					// Crowd data.
+					for (IMutationBlock mutation : fragment.crowd.exportedMutations())
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
-					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.exportedChanges().entrySet())
+					for (Map.Entry<Integer, Queue<IMutationEntity>> container : fragment.crowd.exportedChanges().entrySet())
 					{
 						_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
 					}
@@ -528,10 +542,6 @@ public class TickRunner
 				{
 					_partial[i] = null;
 				}
-				for (int i = 0; i < _partialGroup.length; ++i)
-				{
-					_partialGroup[i] = null;
-				}
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
 				_thisTickMaterials = new TickMaterials(_nextTick
@@ -539,6 +549,7 @@ public class TickRunner
 						, nextCrowdState
 						, nextTickMutations
 						, nextTickChanges
+						, newCommitLevels
 				);
 			}
 			else
@@ -613,13 +624,15 @@ public class TickRunner
 		return _snapshot;
 	}
 
-	private void _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, Queue<IMutationEntity> scheduledQueue, long schedulingBudget)
+	// Returns the commit level of the last mutation scheduled on the entity (0 if nothing scheduled).
+	private long _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, Queue<IMutationEntity> scheduledQueue, long schedulingBudget)
 	{
+		long commitLevel = 0L;
 		// First, check if this next change is a cancellation (-1 cost).
-		IMutationEntity next = access.newChanges.peek();
+		_EntityMutationWrapper next = access.newChanges.peek();
 		if (null != next)
 		{
-			long delayMillis = next.getTimeCostMillis();
+			long delayMillis = next.mutation.getTimeCostMillis();
 			if (-1L == delayMillis)
 			{
 				// We are consuming this so remove it.
@@ -627,7 +640,8 @@ public class TickRunner
 				// If there was something in-progress, drop it and run the cancellation instead (just so that we will update the commit level through the common path in the caller).
 				if (null != access.inProgress)
 				{
-					scheduledQueue.add(next);
+					scheduledQueue.add(next.mutation);
+					commitLevel = next.commitLevel;
 					access.inProgress = null;
 				}
 				// Advance to the next for scheduling decisions.
@@ -642,7 +656,8 @@ public class TickRunner
 			{
 				// Schedule the waiting change.
 				schedulingBudget -= access.millisUntilInProgressExecution;
-				scheduledQueue.add(access.inProgress);
+				scheduledQueue.add(access.inProgress.mutation);
+				commitLevel = access.inProgress.commitLevel;
 				access.inProgress = null;
 			}
 			else
@@ -656,11 +671,12 @@ public class TickRunner
 		// Schedule anything else which fits in the budget.
 		while ((null != next) && (schedulingBudget > 0L))
 		{
-			long cost = next.getTimeCostMillis();
+			long cost = next.mutation.getTimeCostMillis();
 			if (cost <= schedulingBudget)
 			{
 				// Just schedule this.
-				scheduledQueue.add(next);
+				scheduledQueue.add(next.mutation);
+				commitLevel = next.commitLevel;
 				schedulingBudget -= cost;
 			}
 			else
@@ -674,6 +690,7 @@ public class TickRunner
 			access.newChanges.remove();
 			next = access.newChanges.peek();
 		}
+		return commitLevel;
 	}
 
 
@@ -683,6 +700,7 @@ public class TickRunner
 	public static record Snapshot(long tickNumber
 			// Read-only entities from the previous tick, resolved by ID.
 			, Map<Integer, Entity> completedEntities
+			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 	)
@@ -693,6 +711,7 @@ public class TickRunner
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun
 			, Map<Integer, Queue<IMutationEntity>> changesToRun
+			, Map<Integer, Long> commitLevels
 	) {}
 
 	/**
@@ -705,9 +724,21 @@ public class TickRunner
 	 */
 	private static class PerEntitySharedAccess
 	{
-		private final Queue<IMutationEntity> newChanges = new LinkedList<>();
-		private IMutationEntity inProgress;
+		private final Queue<_EntityMutationWrapper> newChanges = new LinkedList<>();
+		private _EntityMutationWrapper inProgress;
 		private long millisUntilInProgressExecution;
-		
 	}
+
+	/**
+	 * A wrapper over the IMutationEntity to store commit level data.
+	 */
+	private static record _EntityMutationWrapper(IMutationEntity mutation, long commitLevel) {}
+
+	/**
+	 * A wrapper over the per-thread partial data which we hand-off at synchronization.
+	 */
+	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
+			, CrowdProcessor.ProcessedGroup crowd
+			, Map<Integer, Long> commitLevels
+	) {}
 }

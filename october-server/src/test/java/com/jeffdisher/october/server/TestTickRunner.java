@@ -206,14 +206,17 @@ public class TestTickRunner
 		
 		// Now, add a mutation from this entity to deliver the block replacement mutation.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)));
+		long commit1 = 1L;
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)), commit1);
 		
 		// This will take a few ticks to be observable:
 		// -after tick 1, the change will have been run and the mutation enqueued
 		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
-		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		snapshot = runner.waitForPreviousTick();
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
@@ -243,9 +246,12 @@ public class TestTickRunner
 		
 		// Try to pass the items to the other entity.
 		IMutationEntity send = new EntityChangeSendItem(1, ItemRegistry.STONE);
-		runner.enqueueEntityChange(0, send);
+		long commit1 = 1L;
+		runner.enqueueEntityChange(0, send, commit1);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(0).longValue());
 		// (run a tick to run the final change)
 		runner.startNextTick();
 		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
@@ -292,15 +298,14 @@ public class TestTickRunner
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE);
-		
-		// The ServerRunner would wrap this in ServerEntityChangeWrapper so do that here.
-		long commitLevel = 1L;
-		ServerEntityChangeWrapper wrapper = new ServerEntityChangeWrapper(longRunningChange, entityId, commitLevel);
-		runner.enqueueEntityChange(entityId, wrapper);
+		long commit1 = 1L;
+		runner.enqueueEntityChange(entityId, longRunningChange, commit1);
 		
 		// We now run the tick.
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		// The change didn't commit yet.
+		Assert.assertEquals(0L, snapshot.commitLevels().get(entityId).longValue());
 		
 		// Nothing should have changed.
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -310,6 +315,7 @@ public class TestTickRunner
 		// So long as we don't enqueue a cancel, we should see this run in the next tick.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		
 		// The mutation has been scheduled but not run, so the block should be the same.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -319,6 +325,7 @@ public class TestTickRunner
 		// Run another tick for the final mutation this scheduled to take effect.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		
 		// We should see the result.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -332,20 +339,20 @@ public class TestTickRunner
 		// Create the change to deliver a basic mutation.
 		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 2);
 		EntityChangeMutation singleChange = new EntityChangeMutation(new ReplaceBlockMutation(changeLocation2, BlockAspect.STONE, BlockAspect.AIR));
-		
-		// We wrap it in a "standard" meta-change.
-		commitLevel = 2L;
-		ServerEntityChangeWrapper standard = new ServerEntityChangeWrapper(singleChange, entityId, commitLevel);
-		runner.enqueueEntityChange(entityId, standard);
+		long commit2 = 2L;
+		runner.enqueueEntityChange(entityId, singleChange, commit2);
 		
 		// Run the tick.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
+		// The change didn't commit yet.
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		
 		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
 		// In our case, we will just proceed to run another tick to see the mutation change the block value.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation2);
 		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
 		

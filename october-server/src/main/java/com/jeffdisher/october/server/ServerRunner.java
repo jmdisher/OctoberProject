@@ -158,7 +158,12 @@ public class ServerRunner
 				}
 				
 				// Finally, send them the end of tick.
-				_network.sendEndOfTick(clientId, snapshot.tickNumber(), state.lastCompletedCommitLevel);
+				// (note that the commit level won't be in the snapshot if they just joined).
+				long commitLevel = snapshot.commitLevels().containsKey(clientId)
+						? snapshot.commitLevels().get(clientId)
+						: 0L
+				;
+				_network.sendEndOfTick(clientId, snapshot.tickNumber(), commitLevel);
 			}
 			
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
@@ -264,25 +269,6 @@ public class ServerRunner
 		}
 	}
 
-	private IMutationEntity _updateClientMetaState(IMutationEntity change)
-	{
-		// When changes are passed in, we wrap them in ServerEntityChangeWrapper.
-		// When they originate internally (using the change sink), we just see the bare change.
-		IMutationEntity underlying;
-		if (change instanceof ServerEntityChangeWrapper)
-		{
-			ServerEntityChangeWrapper wrapper = (ServerEntityChangeWrapper) change;
-			ClientState state = _connectedClients.get(wrapper.clientId);
-			state.lastCompletedCommitLevel = wrapper.commitLevel;
-			underlying = wrapper.realChange;
-		}
-		else
-		{
-			underlying = change;
-		}
-		return underlying;
-	}
-
 
 	private class NetworkListener implements IServerAdapter.IListener
 	{
@@ -309,12 +295,7 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
-				// We will just wrap the changes in a wrapper which allows us to attach extra data instead of building some sort of instance map.
-				ServerEntityChangeWrapper wrapper = new ServerEntityChangeWrapper(change
-						, clientId
-						, commitLevel
-				);
-				_tickRunner.enqueueEntityChange(clientId, wrapper);
+				_tickRunner.enqueueEntityChange(clientId, change, commitLevel);
 			});
 		}
 	}
@@ -325,16 +306,13 @@ public class ServerRunner
 		public void changeApplied(int targetEntityId, IMutationEntity change)
 		{
 			_messages.enqueue(() -> {
-				// Update the meta-state and see if change needs unwrapping.
-				IMutationEntity underlyingChange = _updateClientMetaState(change);
-				
 				// Now, send the change.
 				for (Map.Entry<Integer, ClientState> elt: _connectedClients.entrySet())
 				{
 					// If the client has seen this entity, send them the update.
 					if (elt.getValue().knownEntities.contains(targetEntityId))
 					{
-						_network.sendChange(elt.getKey(), targetEntityId, underlyingChange);
+						_network.sendChange(elt.getKey(), targetEntityId, change);
 					}
 				}
 			});
@@ -342,10 +320,7 @@ public class ServerRunner
 		@Override
 		public void changeDropped(int targetEntityId, IMutationEntity change)
 		{
-			_messages.enqueue(() -> {
-				// We don't send dropped changes to the client but we will update the tracking.
-				_updateClientMetaState(change);
-			});
+			// We ignore this since we only care about the commit level, but that is in the snapshot.
 		}
 		@Override
 		public void mutationApplied(IMutationBlock mutation)
@@ -385,7 +360,6 @@ public class ServerRunner
 	private static final class ClientState
 	{
 		public EntityLocation location;
-		public long lastCompletedCommitLevel;
 		
 		// The data we think that this client already has.  These are used for determining what they should be told to load/drop as well as filtering updates to what they can apply.
 		public final Set<Integer> knownEntities;
@@ -394,9 +368,6 @@ public class ServerRunner
 		public ClientState(EntityLocation initialLocation)
 		{
 			this.location = initialLocation;
-			
-			// All the "progress-related" counters start at 0 since all data starts at 1.
-			this.lastCompletedCommitLevel = 0L;
 			
 			// Create empty containers for what this client has observed.
 			this.knownEntities = new HashSet<>();
