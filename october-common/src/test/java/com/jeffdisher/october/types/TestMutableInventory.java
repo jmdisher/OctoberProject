@@ -59,4 +59,18 @@ public class TestMutableInventory
 		Assert.assertEquals(0, frozen.items.size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
+
+	@Test
+	public void addRemoveUnchanged() throws Throwable
+	{
+		Inventory original = Inventory.start(10).add(ItemRegistry.LOG, 2).finish();
+		MutableInventory inv = new MutableInventory(original);
+		inv.addAllItems(ItemRegistry.STONE, 1);
+		inv.removeItems(ItemRegistry.LOG, 1);
+		inv.removeItems(ItemRegistry.STONE, 1);
+		inv.addAllItems(ItemRegistry.LOG, 1);
+		
+		Inventory frozen = inv.freeze();
+		Assert.assertTrue(original == frozen);
+	}
 }

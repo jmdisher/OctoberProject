@@ -2,6 +2,7 @@ package com.jeffdisher.october.types;
 
 import com.jeffdisher.october.utils.Assert;
 
+
 /**
  * A short-lived mutable version of an entity to allow for parallel tick processing.
  */
@@ -27,6 +28,7 @@ public class MutableEntity
 
 	/**
 	 * Creates an immutable snapshot of the receiver.
+	 * Note that this will return the original instance if a new instance would have been identical.
 	 * 
 	 * @return A read-only copy of the current state of the mutable entity.
 	 */
@@ -37,7 +39,7 @@ public class MutableEntity
 		{
 			Assert.assertTrue(this.newInventory.getCount(this.newSelectedItem) > 0);
 		}
-		return new Entity(this.original.id()
+		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
 				, this.newZVelocityPerSecond
 				, this.original.volume()
@@ -45,5 +47,10 @@ public class MutableEntity
 				, this.newInventory.freeze()
 				, this.newSelectedItem
 		);
+		// See if these are identical.
+		return this.original.equals(newInstance)
+				? this.original
+				: newInstance
+		;
 	}
 }

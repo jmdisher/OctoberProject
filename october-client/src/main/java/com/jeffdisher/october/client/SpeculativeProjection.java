@@ -166,13 +166,14 @@ public class SpeculativeProjection
 		
 		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (and we will add to this as we apply our local updates.
 		// Note that these are all immutable so instance comparison is sufficient.
-		Set<Integer> modifiedEntityIds = new HashSet<>();
+		Set<Integer> revertedEntityIds = new HashSet<>();
 		for (Map.Entry<Integer, Entity> elt : _shadowCrowd.entrySet())
 		{
 			Integer key = elt.getKey();
-			if (_projectedCrowd.get(key) != elt.getValue())
+			Entity projectedEntity = _projectedCrowd.get(key);
+			if ((null != projectedEntity) && (projectedEntity != elt.getValue()))
 			{
-				modifiedEntityIds.add(key);
+				revertedEntityIds.add(key);
 			}
 		}
 		Set<CuboidAddress> revertedCuboidAddresses = new HashSet<>();
@@ -192,6 +193,7 @@ public class SpeculativeProjection
 		
 		// (we use an iterator to remove commits which reject).
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		Set<Integer> modifiedEntityIds = new HashSet<>();
 		Iterator<SpeculativeWrapper> iter = _speculativeChanges.iterator();
 		while (iter.hasNext())
 		{
@@ -224,7 +226,7 @@ public class SpeculativeProjection
 		{
 			_listener.cuboidDidLoad(cuboid);
 		}
-		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, modifiedEntityIds);
+		_notifyChanges(revertedCuboidAddresses, revertedEntityIds, modifiedCuboidAddresses, modifiedEntityIds);
 		for (Integer id : removedEntities)
 		{
 			_listener.entityDidUnload(id);
@@ -292,7 +294,7 @@ public class SpeculativeProjection
 		}
 		
 		// Notify the listener of what changed.
-		_notifyChanges(null, modifiedCuboidAddresses, modifiedEntityIds);
+		_notifyChanges(null, null, modifiedCuboidAddresses, modifiedEntityIds);
 		return commitNumber;
 	}
 
@@ -309,7 +311,7 @@ public class SpeculativeProjection
 		_checkInProgress(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
 		
 		// Notify the listener of what changed.
-		_notifyChanges(null, modifiedCuboidAddresses, modifiedEntityIds);
+		_notifyChanges(null, null, modifiedCuboidAddresses, modifiedEntityIds);
 		return (null != _inProgress);
 	}
 
@@ -331,7 +333,7 @@ public class SpeculativeProjection
 	}
 
 
-	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<CuboidAddress> changedCuboidAddresses, Set<Integer> entityIds)
+	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<Integer> revertedEntityIds, Set<CuboidAddress> changedCuboidAddresses, Set<Integer> entityIds)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		for (CuboidAddress address : changedCuboidAddresses)
@@ -355,14 +357,33 @@ public class SpeculativeProjection
 				}
 			}
 		}
+		Map<Integer, Entity> entitiesToReport = new HashMap<>();
+		for (Integer entityId : entityIds)
+		{
+			Entity activeVersion = _projectedCrowd.get(entityId);
+			if (activeVersion != _shadowCrowd.get(entityId))
+			{
+				entitiesToReport.put(entityId, activeVersion);
+			}
+		}
+		if (null != revertedEntityIds)
+		{
+			for (Integer entityId : revertedEntityIds)
+			{
+				if (!entitiesToReport.containsKey(entityId))
+				{
+					entitiesToReport.put(entityId, _projectedCrowd.get(entityId));
+				}
+			}
+		}
 		
 		for (IReadOnlyCuboidData data : cuboidsToReport.values())
 		{
 			_listener.cuboidDidChange(data);
 		}
-		for (Integer id : entityIds)
+		for (Entity entity : entitiesToReport.values())
 		{
-			_listener.entityDidChange(_projectedCrowd.get(id));
+			_listener.entityDidChange(entity);
 		}
 	}
 

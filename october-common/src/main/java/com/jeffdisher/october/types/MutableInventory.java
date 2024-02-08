@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableInventory
 {
-	private final int _maxEncumbrance;
+	private final Inventory _original;
 	private final Map<Item, Items> _items;
 	private int _currentEncumbrance;
 
@@ -22,7 +22,7 @@ public class MutableInventory
 	 */
 	public MutableInventory(Inventory original)
 	{
-		_maxEncumbrance = original.maxEncumbrance;
+		_original = original;
 		_items = new HashMap<>(original.items);
 		_currentEncumbrance = original.currentEncumbrance;
 	}
@@ -55,7 +55,7 @@ public class MutableInventory
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		boolean didApply = false;
-		if (updatedEncumbrance <= _maxEncumbrance)
+		if (updatedEncumbrance <= _original.maxEncumbrance)
 		{
 			_addItems(type, count);
 			didApply = true;
@@ -72,7 +72,7 @@ public class MutableInventory
 	 */
 	public int addItemsBestEfforts(Item type, int count)
 	{
-		int availableEncumbrance = _maxEncumbrance - _currentEncumbrance;
+		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
 		int maxToAdd = availableEncumbrance / type.encumbrance();
 		int countToAdd = Math.min(maxToAdd, count);
 		
@@ -88,7 +88,7 @@ public class MutableInventory
 	 */
 	public int maxVacancyForItem(Item type)
 	{
-		int availableEncumbrance = _maxEncumbrance - _currentEncumbrance;
+		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
 		int maxToAdd = availableEncumbrance / type.encumbrance();
 		return maxToAdd;
 	}
@@ -130,12 +130,34 @@ public class MutableInventory
 
 	/**
 	 * Creates an immutable copy of the receiver.
+	 * Note that this will return the original instance if a new instance would have been identical.
 	 * 
 	 * @return The new immutable copy of the current state.
 	 */
 	public Inventory freeze()
 	{
-		return Inventory.build(_maxEncumbrance, _items, _currentEncumbrance);
+		// Compare this to the original (which is somewhat expensive).
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == _original.items.size());
+		if (doMatch)
+		{
+			for (Items items : _items.values())
+			{
+				Items originalItems = _original.items.get(items.type());
+				int originalCount = (null != originalItems)
+						? originalItems.count()
+						: 0
+				;
+				if (items.count() != originalCount)
+				{
+					doMatch = false;
+					break;
+				}
+			}
+		}
+		return doMatch
+				? _original
+				: Inventory.build(_original.maxEncumbrance, _items, _currentEncumbrance)
+		;
 	}
 
 
@@ -152,6 +174,6 @@ public class MutableInventory
 		Items updated = new Items(type, newCount);
 		_items.put(type, updated);
 		_currentEncumbrance = updatedEncumbrance;
-		Assert.assertTrue(_currentEncumbrance <= _maxEncumbrance);
+		Assert.assertTrue(_currentEncumbrance <= _original.maxEncumbrance);
 	}
 }

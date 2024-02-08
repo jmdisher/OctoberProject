@@ -1047,6 +1047,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		
 		// Move the entity and verify that the move is in-progress until we advance the clock.
@@ -1054,11 +1055,14 @@ public class TestSpeculativeProjection
 		EntityLocation target = new EntityLocation(0.4f, 0.0f, 0.0f);
 		IMutationEntity move = new EntityChangeMove(startLocation, 0L, 0.4f, 0.0f);
 		long commit1 = projector.applyLocalChange(move, 1L, true);
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertEquals(1L, commit1);
 		
 		Assert.assertTrue(projector.checkCurrentActivity(51L));
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
 		Assert.assertFalse(projector.checkCurrentActivity(101L));
+		Assert.assertEquals(1, listener.entityChangeCount);
 		Assert.assertEquals(target, listener.lastEntityStates.get(0).location());
 	}
 
@@ -1081,15 +1085,20 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		Assert.assertEquals(ItemRegistry.STONE, listener.lastEntityStates.get(0).selectedItem());
 		
 		// Do the craft and observe it takes some time.
 		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK);
 		long commit = projector.applyLocalChange(craft, 1000L, true);
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertTrue(projector.checkCurrentActivity(2000L));
+		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertEquals(1L, commit);
 		Assert.assertFalse(projector.checkCurrentActivity(4000L));
+		// The craft will finally have changed the selection and inventory.
+		Assert.assertEquals(1, listener.entityChangeCount);
 		
 		// Check the inventory to see the craft completed.
 		Inventory inv = listener.lastEntityStates.get(0).inventory();
@@ -1137,6 +1146,7 @@ public class TestSpeculativeProjection
 		public int changeCount = 0;
 		public int unloadCount = 0;
 		public IReadOnlyCuboidData lastData = null;
+		public int entityChangeCount = 0;
 		public Map<Integer, Entity> lastEntityStates = new HashMap<>();
 		
 		@Override
@@ -1167,6 +1177,7 @@ public class TestSpeculativeProjection
 		{
 			Entity old = this.lastEntityStates.put(entity.id(), entity);
 			Assert.assertNotNull(old);
+			this.entityChangeCount += 1;
 		}
 		@Override
 		public void entityDidUnload(int id)

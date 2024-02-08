@@ -90,7 +90,6 @@ public class CrowdProcessor
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
-				boolean didApplyAnyChange = false;
 				MutableEntity mutable = new MutableEntity(entity);
 				for (IMutationEntity change : changes)
 				{
@@ -99,18 +98,16 @@ public class CrowdProcessor
 					if (didApply)
 					{
 						listener.changeApplied(id, change);
-						didApplyAnyChange = true;
 					}
 					else
 					{
 						listener.changeDropped(id, change);
 					}
 				}
+				
 				// Return the old instance if nothing changed.
-				Entity newEntity = didApplyAnyChange
-						? mutable.freeze()
-						: entity
-				;
+				// This freeze() call will return the original instance if it is identical.
+				Entity newEntity = mutable.freeze();
 				fragment.put(id, newEntity);
 			}
 		}
