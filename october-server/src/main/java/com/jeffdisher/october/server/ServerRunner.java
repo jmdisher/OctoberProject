@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -12,9 +13,7 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityActionValidator;
-import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
@@ -70,7 +69,7 @@ public class ServerRunner
 		network.readyAndStartListening(networkListener);
 		_network = network;
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, tickListener, tickListener, tickListener);
+		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, tickListener);
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {
@@ -107,12 +106,26 @@ public class ServerRunner
 				int clientId = elt.getKey();
 				ClientState state = elt.getValue();
 				
+				// We want to send the mutations for any of the cuboids and entities which are already loaded.
 				// Add any entities this client hasn't seen.
 				for (Map.Entry<Integer, Entity> entry : snapshot.completedEntities().entrySet())
 				{
 					int entityId = entry.getKey();
-					if (!state.knownEntities.contains(entityId))
+					if (state.knownEntities.contains(entityId))
 					{
+						// We know this entity so send any updated mutations.
+						List<IMutationEntity> mutations = snapshot.completedEntityMutations().get(entityId);
+						if (null != mutations)
+						{
+							for (IMutationEntity mutation : mutations)
+							{
+								_network.sendChange(clientId, entityId, mutation);
+							}
+						}
+					}
+					else
+					{
+						// We don't know this entity so send them.
 						_network.sendEntity(clientId, entry.getValue());
 						state.knownEntities.add(entityId);
 					}
@@ -143,8 +156,21 @@ public class ServerRunner
 						for (int k = -1; k <= 1; ++k)
 						{
 							CuboidAddress oneCuboid = new CuboidAddress((short) (currentCuboid.x() + i), (short) (currentCuboid.y() + j), (short) (currentCuboid.z() + k));
-							if (!state.knownCuboids.contains(oneCuboid))
+							if (state.knownCuboids.contains(oneCuboid))
 							{
+								// We know about this cuboid so send any updates.
+								List<IMutationBlock> mutations = snapshot.completedBlockMutations().get(oneCuboid);
+								if (null != mutations)
+								{
+									for (IMutationBlock mutation : mutations)
+									{
+										_network.sendMutation(clientId, mutation);
+									}
+								}
+							}
+							else
+							{
+								// We haven't seen this yet so just send it.
 								IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(oneCuboid);
 								// This may not yet be loaded.
 								if (null != cuboidData)
@@ -300,49 +326,8 @@ public class ServerRunner
 		}
 	}
 
-	private class TickListener implements CrowdProcessor.IEntityChangeListener, WorldProcessor.IBlockChangeListener, Consumer<TickRunner.Snapshot>
+	private class TickListener implements Consumer<TickRunner.Snapshot>
 	{
-		@Override
-		public void changeApplied(int targetEntityId, IMutationEntity change)
-		{
-			_messages.enqueue(() -> {
-				// Now, send the change.
-				for (Map.Entry<Integer, ClientState> elt: _connectedClients.entrySet())
-				{
-					// If the client has seen this entity, send them the update.
-					if (elt.getValue().knownEntities.contains(targetEntityId))
-					{
-						_network.sendChange(elt.getKey(), targetEntityId, change);
-					}
-				}
-			});
-		}
-		@Override
-		public void changeDropped(int targetEntityId, IMutationEntity change)
-		{
-			// We ignore this since we only care about the commit level, but that is in the snapshot.
-		}
-		@Override
-		public void mutationApplied(IMutationBlock mutation)
-		{
-			_messages.enqueue(() -> {
-				// Mutations don't change the client meta-state so just send this to the clients.
-				CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-				for (Map.Entry<Integer, ClientState> elt: _connectedClients.entrySet())
-				{
-					// If the client has seen this cuboid, send them the update.
-					if (elt.getValue().knownCuboids.contains(address))
-					{
-						_network.sendMutation(elt.getKey(), mutation);
-					}
-				}
-			});
-		}
-		@Override
-		public void mutationDropped(IMutationBlock mutation)
-		{
-			// Do nothing - the server doesn't act on this information.
-		}
 		@Override
 		public void accept(Snapshot completedSnapshot)
 		{

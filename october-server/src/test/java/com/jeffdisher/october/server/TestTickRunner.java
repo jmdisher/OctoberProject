@@ -1,8 +1,9 @@
 package com.jeffdisher.october.server;
 
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,11 +14,9 @@ import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ShockwaveMutation;
-import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EndBreakBlockChange;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
@@ -44,18 +43,17 @@ public class TestTickRunner
 	{
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
 		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
-		Assert.assertEquals(1, blockListener.mutationApplied.get());
-		Assert.assertEquals(0, blockListener.mutationDropped.get());
+		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
 	}
 
 	@Test
@@ -63,29 +61,29 @@ public class TestTickRunner
 	{
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
 		runner.startNextTick();
+		TickRunner.Snapshot snap1 = runner.startNextTick();
+		TickRunner.Snapshot snap2 =runner.waitForPreviousTick();
 		runner.startNextTick();
-		runner.waitForPreviousTick();
-		runner.startNextTick();
+		TickRunner.Snapshot snap3 = runner.startNextTick();
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, blockListener.mutationApplied.get());
-		Assert.assertEquals(0, blockListener.mutationDropped.get());
+		Assert.assertEquals(1, snap1.completedBlockMutations().get(address).size());
+		Assert.assertEquals(6, snap2.completedBlockMutations().get(address).size());
+		Assert.assertEquals(36, snap3.completedBlockMutations().get(address).size());
 	}
 
 	@Test
 	public void shockwaveMultiCuboids()
 	{
-		CountingWorldListener blockListener = new CountingWorldListener();
-		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
@@ -99,14 +97,15 @@ public class TestTickRunner
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
 		runner.startNextTick();
-		runner.startNextTick();
-		runner.startNextTick();
-		runner.startNextTick();
+		TickRunner.Snapshot snap1 = runner.startNextTick();
+		TickRunner.Snapshot snap2 = runner.startNextTick();
+		TickRunner.Snapshot snap3 = runner.startNextTick();
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(43, blockListener.mutationApplied.get());
-		Assert.assertEquals(0, blockListener.mutationDropped.get());
+		Assert.assertEquals(1, snap1.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
+		Assert.assertEquals(6, snap2.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
+		Assert.assertEquals(36, snap3.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
 	}
 
 	@Test
@@ -115,7 +114,7 @@ public class TestTickRunner
 		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		TickRunner.Snapshot startState = runner.waitForPreviousTick();
@@ -152,7 +151,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		
 		// Create a tick runner with a single cuboid and get it running.
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		runner.startNextTick();
@@ -191,9 +190,7 @@ public class TestTickRunner
 	{
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		CountingWorldListener blockListener = new CountingWorldListener();
-		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidWasLoaded(cuboid);
 		runner.start();
 		
@@ -214,53 +211,49 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
 		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		int unchangedInternalChanges = 3;
-		Assert.assertEquals(1, blockListener.mutationApplied.get());
-		Assert.assertEquals(0, blockListener.mutationDropped.get());
-		Assert.assertEquals(1, entityListener.changeApplied.get());
-		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
 		Assert.assertEquals(BlockAspect.STONE, _getBlockProxy(snapshot, changeLocation).getData15(AspectRegistry.BLOCK));
 	}
 
 	@Test
 	public void dependentEntityChanges()
 	{
-		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
+		int entityId = 1;
 		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
 		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null));
-		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(1));
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		// (run a tick to pick up the users)
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
-		IMutationEntity send = new EntityChangeSendItem(1, ItemRegistry.STONE);
+		IMutationEntity send = new EntityChangeSendItem(entityId, ItemRegistry.STONE);
 		long commit1 = 1L;
 		runner.enqueueEntityChange(0, send, commit1);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(0).longValue());
+		Assert.assertEquals(1, snapshot.completedEntityMutations().get(0).size());
 		// (run a tick to run the final change)
 		runner.startNextTick();
 		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
 		// Now, check for results.
-		int unchangedInternalChanges = 6;
-		Assert.assertEquals(2, entityListener.changeApplied.get());
-		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
+		Assert.assertEquals(1, finalSnapshot.completedEntityMutations().get(entityId).size());
 		Entity sender = finalSnapshot.completedEntities().get(0);
 		Entity receiver = finalSnapshot.completedEntities().get(1);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
@@ -276,9 +269,7 @@ public class TestTickRunner
 		// been adapted to show how they would use TickRunner to accomplish this.
 		
 		// We will show how the TickRunner's caller would schedule a normal change as well as a multi-phase change, to highlight the differences.
-		CountingWorldListener blockListener = new CountingWorldListener();
-		CountingEntityListener entityListener = new CountingEntityListener();
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, blockListener, entityListener, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		
 		// Create a cuboid of stone.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -316,6 +307,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
 		
 		// The mutation has been scheduled but not run, so the block should be the same.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -326,6 +318,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
 		
 		// We should see the result.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -344,28 +337,22 @@ public class TestTickRunner
 		
 		// Run the tick.
 		runner.startNextTick();
-		runner.waitForPreviousTick();
-		// The change didn't commit yet.
-		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
 		
 		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
 		// In our case, we will just proceed to run another tick to see the mutation change the block value.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation2);
 		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
 		
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
-		
-		// Verify remaining counts.
-		int unchangedInternalChanges = 6;
-		Assert.assertEquals(2, blockListener.mutationApplied.get());
-		Assert.assertEquals(0, blockListener.mutationDropped.get());
-		Assert.assertEquals(2, entityListener.changeApplied.get());
-		Assert.assertEquals(0 + unchangedInternalChanges, entityListener.changeDropped.get());
 	}
 
 	@Test
@@ -375,7 +362,7 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
@@ -423,7 +410,7 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, new CountingWorldListener(), new CountingEntityListener(), snapshotListener);
+		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
 		
 		// Verify that there is no snapshot until we start.
 		Assert.assertNull(snapshotRef[0]);
@@ -476,40 +463,5 @@ public class TestTickRunner
 			block = new BlockProxy(blockAddress, cuboid);
 		}
 		return block;
-	}
-
-
-	private static class CountingWorldListener implements WorldProcessor.IBlockChangeListener
-	{
-		public AtomicInteger mutationApplied = new AtomicInteger(0);
-		public AtomicInteger mutationDropped = new AtomicInteger(0);
-		
-		@Override
-		public void mutationApplied(IMutationBlock mutation)
-		{
-			mutationApplied.incrementAndGet();
-		}
-		@Override
-		public void mutationDropped(IMutationBlock mutation)
-		{
-			mutationDropped.incrementAndGet();
-		}
-	}
-
-	private static class CountingEntityListener implements CrowdProcessor.IEntityChangeListener
-	{
-		public AtomicInteger changeApplied = new AtomicInteger(0);
-		public AtomicInteger changeDropped = new AtomicInteger(0);
-		
-		@Override
-		public void changeApplied(int targetEntityId, IMutationEntity change)
-		{
-			changeApplied.incrementAndGet();
-		}
-		@Override
-		public void changeDropped(int targetEntityId, IMutationEntity change)
-		{
-			changeDropped.incrementAndGet();
-		}
 	}
 }

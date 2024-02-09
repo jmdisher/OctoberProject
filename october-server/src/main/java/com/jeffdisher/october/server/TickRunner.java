@@ -61,17 +61,11 @@ public class TickRunner
 	 * 
 	 * @param threadCount The number of threads to use to run the ticks.
 	 * @param millisPerTick The number of milliseconds to target for scheduling load within a tick.
-	 * @param worldListener A listener for change events (note that these calls come on internal threads so must be trivial
-	 * or hand-off to another thread).
-	 * @param entityListener A listener for change events (note that these calls come on internal threads so must be trivial
-	 * or hand-off to another thread).
 	 * @param tickCompletionListener The consumer which we will given the completed snapshot of the state immediately before
 	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
 	 */
 	public TickRunner(int threadCount
 			, long millisPerTick
-			, WorldProcessor.IBlockChangeListener worldListener
-			, CrowdProcessor.IEntityChangeListener entityListener
 			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
@@ -99,7 +93,7 @@ public class TickRunner
 				try
 				{
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread, loader, worldListener, entityListener, tickCompletionListener);
+					_backgroundThreadMain(thisThread, loader, tickCompletionListener);
 				}
 				catch (Throwable t)
 				{
@@ -125,6 +119,9 @@ public class TickRunner
 				// No commit levels.
 				, Collections.emptyMap()
 				// Create it with no users.
+				, Collections.emptyMap()
+				// No mutations, obviously.
+				, Collections.emptyMap()
 				, Collections.emptyMap()
 		);
 		for (Thread thread : _threads)
@@ -291,8 +288,6 @@ public class TickRunner
 
 	private void _backgroundThreadMain(ProcessorElement thisThread
 			, Function<AbsoluteLocation, BlockProxy> loader
-			, WorldProcessor.IBlockChangeListener worldListener
-			, CrowdProcessor.IEntityChangeListener entityListener
 			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
@@ -302,19 +297,19 @@ public class TickRunner
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
-				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap())
+				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap())
+				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap())
 		);
 		while (null != materials)
 		{
 			// Run the tick.
 			// Process all entity changes first and synchronize to lock-step.
 			Map<Integer, Queue<IMutationEntity>> changesToRun = _injectImplicitChange(materials.completedEntities, materials.changesToRun);
-			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, entityListener, loader, materials.thisGameTick, changesToRun);
+			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, loader, materials.thisGameTick, changesToRun);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
-			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, worldListener, loader, materials.thisGameTick, materials.mutationsToRun);
+			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, loader, materials.thisGameTick, materials.mutationsToRun);
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
 			materials = _mergeTickStateAndWaitForNext(thisThread
@@ -366,6 +361,9 @@ public class TickRunner
 		{
 			// Rebuild the immutable snapshot of the state.
 			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
+			// Stitch together the maps of completed mutations within this tick.
+			Map<Integer, List<IMutationEntity>> completedEntityMutations = new HashMap<>();
+			Map<CuboidAddress, List<IMutationBlock>> completedBlockMutations = new HashMap<>();
 			for (_PartialHandoffData fragment : _partial)
 			{
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
@@ -374,6 +372,9 @@ public class TickRunner
 				mutableCrowdState.putAll(fragment.crowd.groupFragment());
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
+				// Collect the mutations.
+				completedEntityMutations.putAll(fragment.crowd.commitedMutations());
+				completedBlockMutations.putAll(fragment.world.commitedMutations());
 			}
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
@@ -382,6 +383,8 @@ public class TickRunner
 					, Collections.unmodifiableMap(mutableCrowdState)
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					, Collections.unmodifiableMap(mutableWorldState)
+					, Collections.unmodifiableMap(completedEntityMutations)
+					, Collections.unmodifiableMap(completedBlockMutations)
 			);
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
 			tickCompletionListener.accept(completedTick);
@@ -703,6 +706,10 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			// The entity mutations which describe the updates in this tick, by ID.
+			, Map<Integer, List<IMutationEntity>> completedEntityMutations
+			// The block mutations which describe the updates in this tick, by cuboid address.
+			, Map<CuboidAddress, List<IMutationBlock>> completedBlockMutations
 	)
 	{}
 

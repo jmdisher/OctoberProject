@@ -39,7 +39,6 @@ public class CrowdProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param entitiesById The map of all read-only entities from the previous tick.
-	 * @param listener Receives callbacks (on the calling thread) related to entity changes.
 	 * @param loader Used to resolve read-only block data from the previous tick.
 	 * @param gameTick The game tick being processed.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
@@ -48,7 +47,6 @@ public class CrowdProcessor
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
-			, IEntityChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
 			, Map<Integer, Queue<IMutationEntity>> changesToRun
@@ -79,6 +77,7 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
+		Map<Integer, List<IMutationEntity>> commitedMutations = new HashMap<>();
 		for (Map.Entry<Integer, Queue<IMutationEntity>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -97,11 +96,14 @@ public class CrowdProcessor
 					boolean didApply = change.applyChange(context, mutable);
 					if (didApply)
 					{
-						listener.changeApplied(id, change);
-					}
-					else
-					{
-						listener.changeDropped(id, change);
+						List<IMutationEntity> committedPerEntity = commitedMutations.get(id);
+						if (null == committedPerEntity)
+						{
+							committedPerEntity = new ArrayList<>();
+							commitedMutations.put(id, committedPerEntity);
+							
+						}
+						committedPerEntity.add(change);
 					}
 				}
 				
@@ -111,19 +113,17 @@ public class CrowdProcessor
 				fragment.put(id, newEntity);
 			}
 		}
-		return new ProcessedGroup(fragment, exportedMutations, exportedChanges);
+		return new ProcessedGroup(fragment
+				, exportedMutations
+				, exportedChanges
+				, commitedMutations
+		);
 	}
 
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, Queue<IMutationEntity>> exportedChanges
+			, Map<Integer, List<IMutationEntity>> commitedMutations
 	) {}
-
-
-	public interface IEntityChangeListener
-	{
-		void changeApplied(int targetEntityId, IMutationEntity change);
-		void changeDropped(int targetEntityId, IMutationEntity change);
-	}
 }

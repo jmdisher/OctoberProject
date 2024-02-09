@@ -42,7 +42,6 @@ public class WorldProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
-	 * @param listener Receives callbacks (on the calling thread) related to block changes.
 	 * @param loader Used to resolve read-only block data from the previous tick.
 	 * @param gameTick The game tick being processed.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
@@ -51,7 +50,6 @@ public class WorldProcessor
 	 */
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
-			, IBlockChangeListener listener
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
 			, Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun
@@ -84,6 +82,7 @@ public class WorldProcessor
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
+		Map<CuboidAddress, List<IMutationBlock>> commitedMutationsPerCuboid = new HashMap<>();
 		for (Map.Entry<CuboidAddress, Queue<IMutationBlock>> elt : mutationsToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -110,11 +109,13 @@ public class WorldProcessor
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 					if (didApply)
 					{
-						listener.mutationApplied(mutation);
-					}
-					else
-					{
-						listener.mutationDropped(mutation);
+						List<IMutationBlock> committedMutation = commitedMutationsPerCuboid.get(key);
+						if (null == committedMutation)
+						{
+							committedMutation = new ArrayList<>();
+							commitedMutationsPerCuboid.put(key, committedMutation);
+						}
+						committedMutation.add(mutation);
 					}
 				}
 				
@@ -145,19 +146,17 @@ public class WorldProcessor
 			}
 		}
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
-		return new ProcessedFragment(fragment, exportedMutations, exportedEntityChanges);
+		return new ProcessedFragment(fragment
+				, exportedMutations
+				, exportedEntityChanges
+				, commitedMutationsPerCuboid
+		);
 	}
 
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, Queue<IMutationEntity>> exportedEntityChanges
+			, Map<CuboidAddress, List<IMutationBlock>> commitedMutations
 	) {}
-
-
-	public interface IBlockChangeListener
-	{
-		void mutationApplied(IMutationBlock mutation);
-		void mutationDropped(IMutationBlock mutation);
-	}
 }
