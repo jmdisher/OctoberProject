@@ -207,7 +207,8 @@ public class TestCommonChanges
 		
 		// We also need to apply the actual mutation.
 		Assert.assertTrue(holder[0] instanceof MutationBlockOverwrite);
-		MutableBlockProxy proxy = new MutableBlockProxy(holder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		AbsoluteLocation location = holder[0].getAbsoluteLocation();
+		MutableBlockProxy proxy = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
 		Assert.assertTrue(holder[0].applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		
@@ -249,7 +250,8 @@ public class TestCommonChanges
 		
 		// We should see the mutation requested and then we can process step 2.
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockExtractItems);
-		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
 		
@@ -313,7 +315,8 @@ public class TestCommonChanges
 		
 		// We should see the mutation requested and then we can process step 2.
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		MutableBlockProxy newBlock = new MutableBlockProxy(blockHolder[0].getAbsoluteLocation().getBlockAddress(), cuboid);
+		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
 		blockHolder[0] = null;

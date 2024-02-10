@@ -31,7 +31,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
-		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -48,7 +48,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
 		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
-		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
@@ -74,7 +74,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		
 		// Check that the final mutation to actually break the block is as expected and then run it.
-		MutableBlockProxy proxy = new MutableBlockProxy(target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
 		Assert.assertNotNull(sinks.nextMutation);
 		didApply = sinks.nextMutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);

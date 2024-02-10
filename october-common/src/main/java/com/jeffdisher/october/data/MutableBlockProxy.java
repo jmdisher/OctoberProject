@@ -2,6 +2,7 @@ package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Assert;
 
@@ -11,6 +12,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableBlockProxy
 {
+	public final AbsoluteLocation absoluteLocation;
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
 
@@ -20,8 +22,9 @@ public class MutableBlockProxy
 	private final Object[] _writeObject;
 	private final Object[] _writes;
 
-	public MutableBlockProxy(BlockAddress address, IReadOnlyCuboidData data)
+	public MutableBlockProxy(AbsoluteLocation absoluteLocation, BlockAddress address, IReadOnlyCuboidData data)
 	{
+		this.absoluteLocation = absoluteLocation;
 		_address = address;
 		_data = data;
 		

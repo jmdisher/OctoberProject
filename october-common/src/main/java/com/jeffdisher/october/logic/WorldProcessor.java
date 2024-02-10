@@ -100,11 +100,12 @@ public class WorldProcessor
 				for (IMutationBlock mutation : mutations)
 				{
 					processor.mutationCount += 1;
-					BlockAddress address = mutation.getAbsoluteLocation().getBlockAddress();
+					AbsoluteLocation absoluteLocation = mutation.getAbsoluteLocation();
+					BlockAddress address = absoluteLocation.getBlockAddress();
 					MutableBlockProxy thisBlockProxy = proxies.get(address);
 					if (null == thisBlockProxy)
 					{
-						thisBlockProxy = new MutableBlockProxy(address, oldState);
+						thisBlockProxy = new MutableBlockProxy(absoluteLocation, address, oldState);
 						proxies.put(address, thisBlockProxy);
 					}
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
