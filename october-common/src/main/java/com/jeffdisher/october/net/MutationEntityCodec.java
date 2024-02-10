@@ -11,6 +11,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -34,6 +35,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[MutationEntityPushItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityPushItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationEntityRequestItemPickUp.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityRequestItemPickUp.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationEntityStoreToInventory.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityStoreToInventory.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationEntitySetEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySetEntity.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

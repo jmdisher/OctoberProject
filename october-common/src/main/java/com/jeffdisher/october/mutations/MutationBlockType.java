@@ -9,6 +9,7 @@ public enum MutationBlockType
 	OVERWRITE_BLOCK,
 	EXTRACT_ITEMS,
 	STORE_ITEMS,
+	SET_BLOCK,
 	
 	END_OF_LIST,
 }

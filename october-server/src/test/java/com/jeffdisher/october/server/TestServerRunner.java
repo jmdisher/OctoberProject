@@ -11,12 +11,13 @@ import org.junit.Test;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.mutations.EndBreakBlockChange;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -89,11 +90,9 @@ public class TestServerRunner
 		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
 		server.changeReceived(clientId, longRunningChange, 1L);
 		
-		// Wait for the output and verify it is what is expected.
-		Object change = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(longRunningChange == change);
-		Object mutation = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(mutation instanceof BreakBlockMutation);
+		// Note that the EndBreakBlockChange doesn't modify the entity so we will only see the block break.
+		Object mutation = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		runner.shutdown();
 	}
@@ -116,11 +115,11 @@ public class TestServerRunner
 		server.changeReceived(clientId, new EntityChangeTrickleInventory(new Items(ItemRegistry.STONE, 3)), 1L);
 		
 		Object change0 = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(change0 instanceof EntityChangeTrickleInventory);
+		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		Object change1 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(change1 instanceof EntityChangeTrickleInventory);
+		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
 		Object change2 = network.waitForUpdate(clientId, 2);
-		Assert.assertTrue(change2 instanceof EntityChangeTrickleInventory);
+		Assert.assertTrue(change2 instanceof MutationEntitySetEntity);
 		
 		runner.shutdown();
 	}
@@ -156,9 +155,9 @@ public class TestServerRunner
 		
 		// Watch the entity fall as a result of implicit changes.
 		Object change0 = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(change0 instanceof EntityChangeMove);
+		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		Object change1 = network.waitForUpdate(clientId, 1);
-		Assert.assertTrue(change1 instanceof EntityChangeMove);
+		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
 		
 		runner.shutdown();
 	}

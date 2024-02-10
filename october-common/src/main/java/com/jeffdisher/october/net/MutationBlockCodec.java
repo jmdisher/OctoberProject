@@ -7,6 +7,7 @@ import com.jeffdisher.october.mutations.BreakBlockMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.utils.Assert;
@@ -24,6 +25,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockOverwrite.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwrite.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockExtractItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockExtractItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockStoreItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStoreItems.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockSetBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetBlock.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

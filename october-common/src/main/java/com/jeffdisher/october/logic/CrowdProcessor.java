@@ -12,6 +12,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -97,13 +98,6 @@ public class CrowdProcessor
 					boolean didApply = change.applyChange(context, mutable);
 					if (didApply)
 					{
-						List<IMutationEntity> committedPerEntity = resultantMutationsById.get(id);
-						if (null == committedPerEntity)
-						{
-							committedPerEntity = new ArrayList<>();
-							resultantMutationsById.put(id, committedPerEntity);
-						}
-						committedPerEntity.add(change);
 						committedMutationCount += 1;
 					}
 				}
@@ -112,6 +106,13 @@ public class CrowdProcessor
 				// This freeze() call will return the original instance if it is identical.
 				Entity newEntity = mutable.freeze();
 				fragment.put(id, newEntity);
+				
+				// If there was a change, we want to send the entity as the mutation.
+				if (newEntity != entity)
+				{
+					MutationEntitySetEntity setEntity = new MutationEntitySetEntity(newEntity);
+					resultantMutationsById.put(id, List.of(setEntity));
+				}
 			}
 		}
 		return new ProcessedGroup(fragment

@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -111,30 +112,27 @@ public class WorldProcessor
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 					if (didApply)
 					{
-						List<IMutationBlock> committedMutation = resultantMutationsByCuboid.get(key);
-						if (null == committedMutation)
-						{
-							committedMutation = new ArrayList<>();
-							resultantMutationsByCuboid.put(key, committedMutation);
-						}
-						committedMutation.add(mutation);
 						committedMutationCount += 1;
 					}
 				}
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = new ArrayList<>();
+				List<IMutationBlock> updateMutations = new ArrayList<>();
 				for (MutableBlockProxy proxy : proxies.values())
 				{
 					if (proxy.didChange())
 					{
 						proxiesToWrite.add(proxy);
+						// Since this one changed, we also want to send the set block mutation.
+						updateMutations.add(MutationBlockSetBlock.extractFromProxy(proxy));
 					}
 				}
 				if (proxiesToWrite.isEmpty())
 				{
 					// There were no actual changes to this cuboid so just use the old state.
 					fragment.put(key, oldState);
+					Assert.assertTrue(updateMutations.isEmpty());
 				}
 				else
 				{
@@ -145,6 +143,9 @@ public class WorldProcessor
 						proxy.writeBack(mutable);
 					}
 					fragment.put(key, mutable);
+					
+					// Add the mutations associated with updating this cuboid.
+					resultantMutationsByCuboid.put(key, updateMutations);
 				}
 			}
 		}
