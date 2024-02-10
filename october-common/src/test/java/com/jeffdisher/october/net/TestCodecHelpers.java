@@ -61,6 +61,17 @@ public class TestCodecHelpers
 	}
 
 	@Test
+	public void nullInventory() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Inventory test = null;
+		CodecHelpers.writeInventory(buffer, test);
+		buffer.flip();
+		Inventory output = CodecHelpers.readInventory(buffer);
+		Assert.assertNull(output);
+	}
+
+	@Test
 	public void entityLocation() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

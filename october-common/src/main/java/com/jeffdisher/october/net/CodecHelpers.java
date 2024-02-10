@@ -195,30 +195,49 @@ public class CodecHelpers
 
 	private static Inventory _readInventory(ByteBuffer buffer)
 	{
+		Inventory parsed;
 		int maxEncumbrance = buffer.getInt();
-		Inventory.Builder builder = Inventory.start(maxEncumbrance);
-		int itemsToLoad = Byte.toUnsignedInt(buffer.get());
-		for (int i = 0; i < itemsToLoad; ++i)
+		if (maxEncumbrance > 0)
 		{
-			Items items = _readItems(buffer);
-			builder.add(items.type(), items.count());
+			Inventory.Builder builder = Inventory.start(maxEncumbrance);
+			int itemsToLoad = Byte.toUnsignedInt(buffer.get());
+			for (int i = 0; i < itemsToLoad; ++i)
+			{
+				Items items = _readItems(buffer);
+				builder.add(items.type(), items.count());
+			}
+			parsed = builder.finish();
 		}
-		return builder.finish();
+		else
+		{
+			// The 0 value is used to describe a null.
+			Assert.assertTrue(0 == maxEncumbrance);
+			parsed = null;
+		}
+		return parsed;
 	}
 
 	private static void _writeInventory(ByteBuffer buffer, Inventory inventory)
 	{
-		int maxEncumbrance = inventory.maxEncumbrance;
-		// We don't currently limit how many items can be serialized in one Inventory since it should never fill a packet.
-		int itemsToWrite = inventory.items.size();
-		// We only store the size as a byte.
-		Assert.assertTrue(itemsToWrite < 256);
-		
-		buffer.putInt(maxEncumbrance);
-		buffer.put((byte) itemsToWrite);
-		for (Items items : inventory.items.values())
+		if (null != inventory)
 		{
-			_writeItems(buffer, items);
+			int maxEncumbrance = inventory.maxEncumbrance;
+			// We don't currently limit how many items can be serialized in one Inventory since it should never fill a packet.
+			int itemsToWrite = inventory.items.size();
+			// We only store the size as a byte.
+			Assert.assertTrue(itemsToWrite < 256);
+			
+			buffer.putInt(maxEncumbrance);
+			buffer.put((byte) itemsToWrite);
+			for (Items items : inventory.items.values())
+			{
+				_writeItems(buffer, items);
+			}
+		}
+		else
+		{
+			// We overload the maxEncumbrance as 0 to describe a null.
+			buffer.putInt(0);
 		}
 	}
 

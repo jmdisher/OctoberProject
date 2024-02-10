@@ -129,6 +129,15 @@ public class MutableInventory
 	}
 
 	/**
+	 * Removes all items from the inventory, setting its encumbrance to 0.
+	 */
+	public void clearInventory()
+	{
+		_items.clear();
+		_currentEncumbrance = 0;
+	}
+
+	/**
 	 * Creates an immutable copy of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
 	 * 
