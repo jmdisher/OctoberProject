@@ -114,7 +114,7 @@ public class ServerRunner
 					if (state.knownEntities.contains(entityId))
 					{
 						// We know this entity so send any updated mutations.
-						List<IMutationEntity> mutations = snapshot.completedEntityMutations().get(entityId);
+						List<IMutationEntity> mutations = snapshot.resultantMutationsById().get(entityId);
 						if (null != mutations)
 						{
 							for (IMutationEntity mutation : mutations)
@@ -159,7 +159,7 @@ public class ServerRunner
 							if (state.knownCuboids.contains(oneCuboid))
 							{
 								// We know about this cuboid so send any updates.
-								List<IMutationBlock> mutations = snapshot.completedBlockMutations().get(oneCuboid);
+								List<IMutationBlock> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
 								if (null != mutations)
 								{
 									for (IMutationBlock mutation : mutations)

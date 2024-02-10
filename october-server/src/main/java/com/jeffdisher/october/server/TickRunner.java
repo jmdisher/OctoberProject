@@ -122,7 +122,9 @@ public class TickRunner
 				, Collections.emptyMap()
 				// No mutations, obviously.
 				, Collections.emptyMap()
+				, 0
 				, Collections.emptyMap()
+				, 0
 		);
 		for (Thread thread : _threads)
 		{
@@ -297,8 +299,8 @@ public class TickRunner
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap())
-				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap())
+				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
+				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
 		);
 		while (null != materials)
 		{
@@ -362,8 +364,10 @@ public class TickRunner
 			// Rebuild the immutable snapshot of the state.
 			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
 			// Stitch together the maps of completed mutations within this tick.
-			Map<Integer, List<IMutationEntity>> completedEntityMutations = new HashMap<>();
-			Map<CuboidAddress, List<IMutationBlock>> completedBlockMutations = new HashMap<>();
+			Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
+			int committedEntityMutationCount = 0;
+			Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid = new HashMap<>();
+			int committedCuboidMutationCount = 0;
 			for (_PartialHandoffData fragment : _partial)
 			{
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
@@ -373,8 +377,10 @@ public class TickRunner
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
 				// Collect the mutations.
-				completedEntityMutations.putAll(fragment.crowd.commitedMutations());
-				completedBlockMutations.putAll(fragment.world.commitedMutations());
+				resultantMutationsById.putAll(fragment.crowd.resultantMutationsById());
+				committedEntityMutationCount += fragment.crowd.committedMutationCount();
+				resultantMutationsByCuboid.putAll(fragment.world.resultantMutationsByCuboid());
+				committedCuboidMutationCount += fragment.world.committedMutationCount();
 			}
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
@@ -383,8 +389,10 @@ public class TickRunner
 					, Collections.unmodifiableMap(mutableCrowdState)
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					, Collections.unmodifiableMap(mutableWorldState)
-					, Collections.unmodifiableMap(completedEntityMutations)
-					, Collections.unmodifiableMap(completedBlockMutations)
+					, Collections.unmodifiableMap(resultantMutationsById)
+					, committedEntityMutationCount
+					, Collections.unmodifiableMap(resultantMutationsByCuboid)
+					, committedCuboidMutationCount
 			);
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
 			tickCompletionListener.accept(completedTick);
@@ -706,10 +714,12 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
-			// The entity mutations which describe the updates in this tick, by ID.
-			, Map<Integer, List<IMutationEntity>> completedEntityMutations
-			// The block mutations which describe the updates in this tick, by cuboid address.
-			, Map<CuboidAddress, List<IMutationBlock>> completedBlockMutations
+			// Note that the resultantMutationsById may not be the input mutations, but will have an equivalent impact on the crowd.
+			, Map<Integer, List<IMutationEntity>> resultantMutationsById
+			, int committedEntityMutationCount
+			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
+			, Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid
+			, int committedCuboidMutationCount
 	)
 	{}
 

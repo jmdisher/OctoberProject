@@ -77,7 +77,8 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
-		Map<Integer, List<IMutationEntity>> commitedMutations = new HashMap<>();
+		Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
+		int committedMutationCount = 0;
 		for (Map.Entry<Integer, Queue<IMutationEntity>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -96,14 +97,14 @@ public class CrowdProcessor
 					boolean didApply = change.applyChange(context, mutable);
 					if (didApply)
 					{
-						List<IMutationEntity> committedPerEntity = commitedMutations.get(id);
+						List<IMutationEntity> committedPerEntity = resultantMutationsById.get(id);
 						if (null == committedPerEntity)
 						{
 							committedPerEntity = new ArrayList<>();
-							commitedMutations.put(id, committedPerEntity);
-							
+							resultantMutationsById.put(id, committedPerEntity);
 						}
 						committedPerEntity.add(change);
+						committedMutationCount += 1;
 					}
 				}
 				
@@ -116,7 +117,8 @@ public class CrowdProcessor
 		return new ProcessedGroup(fragment
 				, exportedMutations
 				, exportedChanges
-				, commitedMutations
+				, resultantMutationsById
+				, committedMutationCount
 		);
 	}
 
@@ -124,6 +126,8 @@ public class CrowdProcessor
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, Queue<IMutationEntity>> exportedChanges
-			, Map<Integer, List<IMutationEntity>> commitedMutations
+			// Note that the resultantMutationsById may not be the input mutations, but will have an equivalent impact on the crowd.
+			, Map<Integer, List<IMutationEntity>> resultantMutationsById
+			, int committedMutationCount
 	) {}
 }

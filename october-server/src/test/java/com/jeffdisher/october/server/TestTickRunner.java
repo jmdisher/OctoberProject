@@ -1,9 +1,7 @@
 package com.jeffdisher.october.server;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,7 +51,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
-		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 	}
 
 	@Test
@@ -75,9 +73,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(1, snap1.completedBlockMutations().get(address).size());
-		Assert.assertEquals(6, snap2.completedBlockMutations().get(address).size());
-		Assert.assertEquals(36, snap3.completedBlockMutations().get(address).size());
+		Assert.assertEquals(1, snap1.committedCuboidMutationCount());
+		Assert.assertEquals(6, snap2.committedCuboidMutationCount());
+		Assert.assertEquals(36, snap3.committedCuboidMutationCount());
 	}
 
 	@Test
@@ -103,9 +101,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(1, snap1.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
-		Assert.assertEquals(6, snap2.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
-		Assert.assertEquals(36, snap3.completedBlockMutations().values().stream().collect(Collectors.summingInt((List<IMutationBlock> list) -> list.size())).intValue());
+		Assert.assertEquals(1, snap1.committedCuboidMutationCount());
+		Assert.assertEquals(6, snap2.committedCuboidMutationCount());
+		Assert.assertEquals(36, snap3.committedCuboidMutationCount());
 	}
 
 	@Test
@@ -211,11 +209,11 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
 		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
@@ -246,14 +244,14 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(0).longValue());
-		Assert.assertEquals(1, snapshot.completedEntityMutations().get(0).size());
+		Assert.assertEquals(1, snapshot.resultantMutationsById().get(0).size());
 		// (run a tick to run the final change)
 		runner.startNextTick();
 		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
 		// Now, check for results.
-		Assert.assertEquals(1, finalSnapshot.completedEntityMutations().get(entityId).size());
+		Assert.assertEquals(1, finalSnapshot.resultantMutationsById().get(entityId).size());
 		Entity sender = finalSnapshot.completedEntities().get(0);
 		Entity receiver = finalSnapshot.completedEntities().get(1);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
@@ -307,7 +305,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
 		
 		// The mutation has been scheduled but not run, so the block should be the same.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -318,7 +316,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		
 		// We should see the result.
 		proxy1 = _getBlockProxy(snapshot, changeLocation1);
@@ -339,14 +337,14 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.completedEntityMutations().get(entityId).size());
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
 		
 		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
 		// In our case, we will just proceed to run another tick to see the mutation change the block value.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.completedBlockMutations().get(address).size());
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation2);
 		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
 		

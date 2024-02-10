@@ -381,18 +381,18 @@ public class SpeculativeProjection
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
-		Set<Integer> locallyModifiedIds = new HashSet<>(group.commitedMutations().keySet());
+		Set<Integer> locallyModifiedIds = new HashSet<>(group.resultantMutationsById().keySet());
 		while (!exportedChanges.isEmpty() || !exportedMutations.isEmpty())
 		{
 			// Run these changes and mutations, collecting the resultant output from them.
 			Map<CuboidAddress, Queue<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.shadowBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
-			modifiedCuboids.addAll(innerFragment.commitedMutations().keySet());
+			modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
 			
 			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.shadowBlockLoader, gameTick, exportedChanges);
 			_projectedCrowd.putAll(innerGroup.groupFragment());
-			locallyModifiedIds.addAll(innerGroup.commitedMutations().keySet());
+			locallyModifiedIds.addAll(innerGroup.resultantMutationsById().keySet());
 			
 			// Coalesce the results of these.
 			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
@@ -412,10 +412,10 @@ public class SpeculativeProjection
 			exportedMutations.addAll(innerFragment.exportedMutations());
 			exportedMutations.addAll(innerGroup.exportedMutations());
 		}
-		
-		// We will assume that the initial change was applied if we see them in the modified set.
 		modifiedEntityIds.addAll(locallyModifiedIds);
-		return locallyModifiedIds.contains(_localEntityId);
+		
+		// Since we only provided a single mutation, we will assume it applied if we see 1 commit count.
+		return (1 == group.committedMutationCount());
 	}
 
 	private Map<CuboidAddress, Queue<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations)

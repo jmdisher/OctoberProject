@@ -82,7 +82,8 @@ public class WorldProcessor
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
-		Map<CuboidAddress, List<IMutationBlock>> commitedMutationsPerCuboid = new HashMap<>();
+		Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid = new HashMap<>();
+		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, Queue<IMutationBlock>> elt : mutationsToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -109,13 +110,14 @@ public class WorldProcessor
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
 					if (didApply)
 					{
-						List<IMutationBlock> committedMutation = commitedMutationsPerCuboid.get(key);
+						List<IMutationBlock> committedMutation = resultantMutationsByCuboid.get(key);
 						if (null == committedMutation)
 						{
 							committedMutation = new ArrayList<>();
-							commitedMutationsPerCuboid.put(key, committedMutation);
+							resultantMutationsByCuboid.put(key, committedMutation);
 						}
 						committedMutation.add(mutation);
+						committedMutationCount += 1;
 					}
 				}
 				
@@ -149,7 +151,8 @@ public class WorldProcessor
 		return new ProcessedFragment(fragment
 				, exportedMutations
 				, exportedEntityChanges
-				, commitedMutationsPerCuboid
+				, resultantMutationsByCuboid
+				, committedMutationCount
 		);
 	}
 
@@ -157,6 +160,8 @@ public class WorldProcessor
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, Queue<IMutationEntity>> exportedEntityChanges
-			, Map<CuboidAddress, List<IMutationBlock>> commitedMutations
+			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
+			, Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid
+			, int committedMutationCount
 	) {}
 }
