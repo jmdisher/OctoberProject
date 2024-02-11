@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.persistence.CuboidLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -34,7 +35,8 @@ public class TestProcesses
 	@Test
 	public void startStopServer() throws Throwable
 	{
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		CuboidLoader cuboidLoader = new CuboidLoader();
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		server.stop();
 	}
 
@@ -49,7 +51,8 @@ public class TestProcesses
 	public void startStop() throws Throwable
 	{
 		// Start everything, connect and disconnect once the see the entity arrive.
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		CuboidLoader cuboidLoader = new CuboidLoader();
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
@@ -68,11 +71,12 @@ public class TestProcesses
 	public void basicMovement() throws Throwable
 	{
 		// Demonstrate that a client can move around the server without issue.
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		CuboidLoader cuboidLoader = new CuboidLoader();
 		
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		server.loadCuboid(cuboid);
+		cuboidLoader.preload(cuboid);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
@@ -81,7 +85,7 @@ public class TestProcesses
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
 		// (wait for an end of tick so that we know this is flushed).
-		client.waitForTick(startTick + 1L, System.currentTimeMillis());
+		client.waitForTick(startTick + 2L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(1, listener.cuboids.size());
 		
@@ -103,11 +107,12 @@ public class TestProcesses
 	public void falling() throws Throwable
 	{
 		// Demonstrate that a client will fall through air and this will make sense in the projection.
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, TIME_SUPPLIER);
+		CuboidLoader cuboidLoader = new CuboidLoader();
 		
 		// Load a cuboids.
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
@@ -115,7 +120,7 @@ public class TestProcesses
 		
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
-		client.waitForTick(startTick + 1, System.currentTimeMillis());
+		client.waitForTick(startTick + 2L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(2, listener.cuboids.size());
 		
@@ -141,19 +146,20 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long currentTimeMillis = 1000L;
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, () -> currentTimeMillis);
+		CuboidLoader cuboidLoader = new CuboidLoader();
 		
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
-		server.loadCuboid(cuboid);
+		cuboidLoader.preload(cuboid);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis);
 		
 		// Connect a client and wait to receive their entity.
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		long tick = client.waitForLocalEntity(currentTimeMillis);
 		// Now, wait for a tick to make sure that the cuboid is loaded.
-		client.waitForTick(tick + 1, currentTimeMillis);
+		client.waitForTick(tick + 2L, currentTimeMillis);
 		
 		client.runPendingCalls(currentTimeMillis);
 		Assert.assertNotNull(listener.entities.get(1));
@@ -169,11 +175,12 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long[] currentTimeMillis = new long[] { 1000L };
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, () -> currentTimeMillis[0]);
+		CuboidLoader cuboidLoader = new CuboidLoader();
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ItemRegistry.AIR));
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis[0]);
 		
 		// Create the first client.
 		_ClientListener listener1 = new _ClientListener();

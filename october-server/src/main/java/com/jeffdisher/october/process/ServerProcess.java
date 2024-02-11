@@ -8,7 +8,6 @@ import java.util.Queue;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidCodec;
-import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -20,6 +19,7 @@ import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.persistence.CuboidLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.Entity;
@@ -46,26 +46,21 @@ public class ServerProcess
 	 * 
 	 * @param port The port on which to listen for client connections.
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
+	 * @param cuboidLoader The loader object which will load or generate required cuboids.
 	 * @param currentTimeMillisProvider The provider of the current system time, in milliseconds.
 	 * @throws IOException There was an error starting up the network.
 	 */
-	public ServerProcess(int port, long millisPerTick, LongSupplier currentTimeMillisProvider) throws IOException
+	public ServerProcess(int port
+			, long millisPerTick
+			, CuboidLoader cuboidLoader
+			, LongSupplier currentTimeMillisProvider
+	) throws IOException
 	{
 		_clients = new HashMap<>();
-		_server = new ServerRunner(millisPerTick, new _ServerListener(), currentTimeMillisProvider);
+		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
 		_network = new NetworkServer(new _NetworkListener(), port);
-	}
-
-	/**
-	 * Tells the server to load in the given cuboid.
-	 * 
-	 * @param cuboid The cuboid to inject into the server.
-	 */
-	public void loadCuboid(CuboidData cuboid)
-	{
-		_server.loadCuboid(cuboid);
 	}
 
 	public synchronized long waitForTicksToPass(long ticksToAdvance) throws InterruptedException

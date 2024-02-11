@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.persistence.CuboidLoader;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.server.ServerRunner;
@@ -24,8 +25,9 @@ public class ServerMain
 			System.out.println("Starting server on port " + port);
 			try
 			{
-				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, () -> System.currentTimeMillis());
-				_populateDemoWorld(process);
+				CuboidLoader cuboidLoader = new CuboidLoader();
+				_populateDemoWorld(cuboidLoader);
+				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
 				// We will just wait for input before shutting down.
 				System.in.read();
 				System.out.println("Shutting down...");
@@ -46,7 +48,7 @@ public class ServerMain
 	}
 
 
-	private static void _populateDemoWorld(ServerProcess server)
+	private static void _populateDemoWorld(CuboidLoader cuboidLoader)
 	{
 		// Since the location is standing in 0.0, we need to load at least the 8 cuboids around the origin.
 		// Note that we want them to stand on the ground so we will fill the bottom 4 with stone and the top 4 with air.
@@ -58,15 +60,15 @@ public class ServerMain
 				.add(ItemRegistry.PLANK, 1)
 				.finish();
 		cuboid000.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)0), starting);
-		server.loadCuboid(cuboid000);
-		server.loadCuboid(_generateColumnCuboid(new CuboidAddress((short)0, (short)-1, (short)0)));
-		server.loadCuboid(_generateColumnCuboid(new CuboidAddress((short)-1, (short)-1, (short)0)));
-		server.loadCuboid(_generateColumnCuboid(new CuboidAddress((short)-1, (short)0, (short)0)));
+		cuboidLoader.preload(cuboid000);
+		cuboidLoader.preload(_generateColumnCuboid(new CuboidAddress((short)0, (short)-1, (short)0)));
+		cuboidLoader.preload(_generateColumnCuboid(new CuboidAddress((short)-1, (short)-1, (short)0)));
+		cuboidLoader.preload(_generateColumnCuboid(new CuboidAddress((short)-1, (short)0, (short)0)));
 		
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.STONE));
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.STONE));
-		server.loadCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.STONE));
 	}
 
 	private static CuboidData _generateColumnCuboid(CuboidAddress address)

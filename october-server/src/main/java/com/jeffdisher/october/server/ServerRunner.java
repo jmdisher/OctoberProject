@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -16,6 +17,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.persistence.CuboidLoader;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -45,6 +47,7 @@ public class ServerRunner
 	// General and configuration variables.
 	private final long _millisPerTick;
 	private final IServerAdapter _network;
+	private final CuboidLoader _loader;
 	private final TickRunner _tickRunner;
 
 	// Information related to internal thread state and message passing.
@@ -57,17 +60,21 @@ public class ServerRunner
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Queue<Integer> _newClients;
 	private final Queue<Integer> _removedClients;
-	private final Queue<CuboidData> _newCuboids;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
 	private _TickAdvancer _scheduledAdvancer;
 
-	public ServerRunner(long millisPerTick, IServerAdapter network, LongSupplier currentTimeMillisProvider)
+	public ServerRunner(long millisPerTick
+			, IServerAdapter network
+			, CuboidLoader loader
+			, LongSupplier currentTimeMillisProvider
+	)
 	{
 		_millisPerTick = millisPerTick;
 		NetworkListener networkListener = new NetworkListener();
 		network.readyAndStartListening(networkListener);
 		_network = network;
+		_loader = loader;
 		TickListener tickListener = new TickListener();
 		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, tickListener);
 		
@@ -91,7 +98,6 @@ public class ServerRunner
 		_connectedClients = new HashMap<>();
 		_newClients = new LinkedList<>();
 		_removedClients = new LinkedList<>();
-		_newCuboids = new LinkedList<>();
 		_tickAdvancer = new _TickAdvancer();
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
@@ -119,14 +125,6 @@ public class ServerRunner
 			// We don't use interruption.
 			throw Assert.unexpected(e);
 		}
-	}
-
-	public void loadCuboid(CuboidData cuboid)
-	{
-		// TODO:  This is just temporary until we define an asynchronous loader/generator.
-		_messages.enqueue(() -> {
-			_newCuboids.add(cuboid);
-		});
 	}
 
 
@@ -229,6 +227,9 @@ public class ServerRunner
 
 	private final class _TickAdvancer implements Runnable
 	{
+		// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
+		private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
+		
 		@Override
 		public void run()
 		{
@@ -237,7 +238,19 @@ public class ServerRunner
 			// (any new callbacks will be queued behind this, anyway, which is all that matters).
 			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
 			
+			// Remove any of the cuboids in the snapshot from any that we had requested.
+			_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
+			
 			// Here, all we are interested in doing is incrementally loading more of the world and crowd for connected clients not completely enlightened.
+			Set<CuboidAddress> cuboidsToLoad = new HashSet<>();
+			Consumer<CuboidAddress> cuboidRequester = (CuboidAddress address) -> {
+				// If this is something we already requested, it just means it hasn't yet arrived or been loaded into a snapshot so don't request it again.
+				boolean didAdd = _requestedCuboids.add(address);
+				if (didAdd)
+				{
+					cuboidsToLoad.add(address);
+				}
+			};
 			for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 			{
 				// In the future, this is where we will add cuboids from a radius around the entity and drop whatever they move away from.
@@ -245,17 +258,17 @@ public class ServerRunner
 				int clientId = elt.getKey();
 				ClientState state = elt.getValue();
 				
-				_sendUpdatesToClient(clientId, state, snapshot);
+				_sendUpdatesToClient(clientId, state, snapshot, cuboidRequester);
 			}
 			
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
 			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
-			// Add any new cuboids.
-			if (!_newCuboids.isEmpty())
+			// Request any missing cuboids and see what we got back from last time.
+			Collection<CuboidData> newCuboids = _loader.getResultsAndIssueRequest(cuboidsToLoad);
+			if (!newCuboids.isEmpty())
 			{
-				_tickRunner.cuboidsWereLoaded(_newCuboids);
-				_newCuboids.clear();
+				_tickRunner.cuboidsWereLoaded(newCuboids);
 			}
 			
 			// Walk through any new clients, adding them to the world.
@@ -284,12 +297,16 @@ public class ServerRunner
 			_scheduledAdvancer = null;
 		}
 		
-		private void _sendUpdatesToClient(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+		private void _sendUpdatesToClient(int clientId
+				, ClientState state
+				, TickRunner.Snapshot snapshot
+				, Consumer<CuboidAddress> cuboidRequester
+		)
 		{
 			// We want to send the mutations for any of the cuboids and entities which are already loaded.
 			_sendEntityUpdates(clientId, state, snapshot);
 			
-			_sendCuboidUpdates(clientId, state, snapshot);
+			_sendCuboidUpdates(clientId, state, snapshot, cuboidRequester);
 			
 			// Finally, send them the end of tick.
 			// (note that the commit level won't be in the snapshot if they just joined).
@@ -341,7 +358,11 @@ public class ServerRunner
 			}
 		}
 		
-		private void _sendCuboidUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+		private void _sendCuboidUpdates(int clientId
+				, ClientState state
+				, TickRunner.Snapshot snapshot
+				, Consumer<CuboidAddress> cuboidRequester
+		)
 		{
 			// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
 			// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
@@ -375,6 +396,11 @@ public class ServerRunner
 							{
 								_network.sendCuboid(clientId, cuboidData);
 								state.knownCuboids.add(oneCuboid);
+							}
+							else
+							{
+								// Request this from the loader.
+								cuboidRequester.accept(oneCuboid);
 							}
 						}
 					}
