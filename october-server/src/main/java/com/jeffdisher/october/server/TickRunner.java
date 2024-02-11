@@ -1,6 +1,7 @@
 package com.jeffdisher.october.server;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -182,12 +183,11 @@ public class TickRunner
 	}
 
 	/**
-	 * Provides newly-loaded cuboid data to be loaded into the runner in a future tick (it will be picked up in the
-	 * current or next tick).
+	 * Adds the given collection of newly-loaded cuboid data into the runner to be included in the next tick.
 	 * 
-	 * @param cuboid The cuboid data to inject.
+	 * @param cuboids The loaded cuboids to inject.
 	 */
-	public void cuboidWasLoaded(CuboidData cuboid)
+	public void cuboidsWereLoaded(Collection<CuboidData> cuboids)
 	{
 		_sharedDataLock.lock();
 		try
@@ -196,7 +196,7 @@ public class TickRunner
 			{
 				_newCuboids = new ArrayList<>();
 			}
-			_newCuboids.add(cuboid);
+			_newCuboids.addAll(cuboids);
 		}
 		finally
 		{

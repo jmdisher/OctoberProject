@@ -58,9 +58,9 @@ public class ServerRunner
 	private final Queue<Integer> _newClients;
 	private final Queue<Integer> _removedClients;
 	private final Queue<CuboidData> _newCuboids;
-	private final Runnable _tickAdvancer;
+	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
-	private Runnable _scheduledAdvancer;
+	private _TickAdvancer _scheduledAdvancer;
 
 	public ServerRunner(long millisPerTick, IServerAdapter network, LongSupplier currentTimeMillisProvider)
 	{
@@ -92,141 +92,7 @@ public class ServerRunner
 		_newClients = new LinkedList<>();
 		_removedClients = new LinkedList<>();
 		_newCuboids = new LinkedList<>();
-		_tickAdvancer = () -> {
-			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
-			// Note:  We could just wait here to force all new entities to load in the next tick, but that isn't essential so just unblock it.
-			// (any new callbacks will be queued behind this, anyway, which is all that matters).
-			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
-			
-			// Here, all we are interested in doing is incrementally loading more of the world and crowd for connected clients not completely enlightened.
-			for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
-			{
-				// In the future, this is where we will add cuboids from a radius around the entity and drop whatever they move away from.
-				// For now, we just tell them about all the entities and the single cuboid where they are.
-				int clientId = elt.getKey();
-				ClientState state = elt.getValue();
-				
-				// We want to send the mutations for any of the cuboids and entities which are already loaded.
-				// Add any entities this client hasn't seen.
-				for (Map.Entry<Integer, Entity> entry : snapshot.completedEntities().entrySet())
-				{
-					int entityId = entry.getKey();
-					if (state.knownEntities.contains(entityId))
-					{
-						// We know this entity so send any updated mutations.
-						List<IMutationEntity> mutations = snapshot.resultantMutationsById().get(entityId);
-						if (null != mutations)
-						{
-							for (IMutationEntity mutation : mutations)
-							{
-								_network.sendChange(clientId, entityId, mutation);
-							}
-						}
-					}
-					else
-					{
-						// We don't know this entity so send them.
-						_network.sendEntity(clientId, entry.getValue());
-						state.knownEntities.add(entityId);
-					}
-				}
-				// Remove any extra entities which have since departed.
-				if (state.knownEntities.size() > snapshot.completedEntities().size())
-				{
-					Iterator<Integer> entityIterator = state.knownEntities.iterator();
-					while (entityIterator.hasNext())
-					{
-						int entityId = entityIterator.next();
-						if (!snapshot.completedEntities().containsKey(entityId))
-						{
-							_network.removeEntity(clientId, entityId);
-							entityIterator.remove();
-						}
-					}
-				}
-				
-				// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
-				// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
-				
-				CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
-				for (int i = -1; i <= 1; ++i)
-				{
-					for (int j = -1; j <= 1; ++j)
-					{
-						for (int k = -1; k <= 1; ++k)
-						{
-							CuboidAddress oneCuboid = new CuboidAddress((short) (currentCuboid.x() + i), (short) (currentCuboid.y() + j), (short) (currentCuboid.z() + k));
-							if (state.knownCuboids.contains(oneCuboid))
-							{
-								// We know about this cuboid so send any updates.
-								List<IMutationBlock> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
-								if (null != mutations)
-								{
-									for (IMutationBlock mutation : mutations)
-									{
-										_network.sendMutation(clientId, mutation);
-									}
-								}
-							}
-							else
-							{
-								// We haven't seen this yet so just send it.
-								IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(oneCuboid);
-								// This may not yet be loaded.
-								if (null != cuboidData)
-								{
-									_network.sendCuboid(clientId, cuboidData);
-									state.knownCuboids.add(oneCuboid);
-								}
-							}
-						}
-					}
-				}
-				
-				// Finally, send them the end of tick.
-				// (note that the commit level won't be in the snapshot if they just joined).
-				long commitLevel = snapshot.commitLevels().containsKey(clientId)
-						? snapshot.commitLevels().get(clientId)
-						: 0L
-				;
-				_network.sendEndOfTick(clientId, snapshot.tickNumber(), commitLevel);
-			}
-			
-			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
-			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
-			
-			// Add any new cuboids.
-			while (!_newCuboids.isEmpty())
-			{
-				CuboidData cuboid = _newCuboids.remove();
-				_tickRunner.cuboidWasLoaded(cuboid);
-			}
-			
-			// Walk through any new clients, adding them to the world.
-			while (!_newClients.isEmpty())
-			{
-				int clientId = _newClients.remove();
-				Entity initial = EntityActionValidator.buildDefaultEntity(clientId);
-				// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
-				_tickRunner.entityDidJoin(initial);
-				
-				// This client is now connected and can receive events.
-				_connectedClients.put(clientId, new ClientState(initial.location()));
-			}
-			
-			// Walk through any removed clients, removing them from the world.
-			while (!_removedClients.isEmpty())
-			{
-				int clientId = _removedClients.remove();
-				_tickRunner.entityDidLeave(clientId);
-				// (we removed this from the connected clients, earlier).
-			}
-			
-			// Determine when the next tick should run (we increment the previous time to not slide).
-			_nextTickMillis += _millisPerTick;
-			// We will schedule the next tick once we get the completed callback.
-			_scheduledAdvancer = null;
-		};
+		_tickAdvancer = new _TickAdvancer();
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
 		_background.start();
@@ -357,6 +223,163 @@ public class ServerRunner
 			// Create empty containers for what this client has observed.
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();
+		}
+	}
+
+
+	private final class _TickAdvancer implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
+			// Note:  We could just wait here to force all new entities to load in the next tick, but that isn't essential so just unblock it.
+			// (any new callbacks will be queued behind this, anyway, which is all that matters).
+			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
+			
+			// Here, all we are interested in doing is incrementally loading more of the world and crowd for connected clients not completely enlightened.
+			for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
+			{
+				// In the future, this is where we will add cuboids from a radius around the entity and drop whatever they move away from.
+				// For now, we just tell them about all the entities and the single cuboid where they are.
+				int clientId = elt.getKey();
+				ClientState state = elt.getValue();
+				
+				_sendUpdatesToClient(clientId, state, snapshot);
+			}
+			
+			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
+			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
+			
+			// Add any new cuboids.
+			if (!_newCuboids.isEmpty())
+			{
+				_tickRunner.cuboidsWereLoaded(_newCuboids);
+				_newCuboids.clear();
+			}
+			
+			// Walk through any new clients, adding them to the world.
+			while (!_newClients.isEmpty())
+			{
+				int clientId = _newClients.remove();
+				Entity initial = EntityActionValidator.buildDefaultEntity(clientId);
+				// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
+				_tickRunner.entityDidJoin(initial);
+				
+				// This client is now connected and can receive events.
+				_connectedClients.put(clientId, new ClientState(initial.location()));
+			}
+			
+			// Walk through any removed clients, removing them from the world.
+			while (!_removedClients.isEmpty())
+			{
+				int clientId = _removedClients.remove();
+				_tickRunner.entityDidLeave(clientId);
+				// (we removed this from the connected clients, earlier).
+			}
+			
+			// Determine when the next tick should run (we increment the previous time to not slide).
+			_nextTickMillis += _millisPerTick;
+			// We will schedule the next tick once we get the completed callback.
+			_scheduledAdvancer = null;
+		}
+		
+		private void _sendUpdatesToClient(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+		{
+			// We want to send the mutations for any of the cuboids and entities which are already loaded.
+			_sendEntityUpdates(clientId, state, snapshot);
+			
+			_sendCuboidUpdates(clientId, state, snapshot);
+			
+			// Finally, send them the end of tick.
+			// (note that the commit level won't be in the snapshot if they just joined).
+			long commitLevel = snapshot.commitLevels().containsKey(clientId)
+					? snapshot.commitLevels().get(clientId)
+					: 0L
+			;
+			_network.sendEndOfTick(clientId, snapshot.tickNumber(), commitLevel);
+		}
+		
+		private void _sendEntityUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+		{
+			// Add any entities this client hasn't seen.
+			for (Map.Entry<Integer, Entity> entry : snapshot.completedEntities().entrySet())
+			{
+				int entityId = entry.getKey();
+				if (state.knownEntities.contains(entityId))
+				{
+					// We know this entity so send any updated mutations.
+					List<IMutationEntity> mutations = snapshot.resultantMutationsById().get(entityId);
+					if (null != mutations)
+					{
+						for (IMutationEntity mutation : mutations)
+						{
+							_network.sendChange(clientId, entityId, mutation);
+						}
+					}
+				}
+				else
+				{
+					// We don't know this entity so send them.
+					_network.sendEntity(clientId, entry.getValue());
+					state.knownEntities.add(entityId);
+				}
+			}
+			// Remove any extra entities which have since departed.
+			if (state.knownEntities.size() > snapshot.completedEntities().size())
+			{
+				Iterator<Integer> entityIterator = state.knownEntities.iterator();
+				while (entityIterator.hasNext())
+				{
+					int entityId = entityIterator.next();
+					if (!snapshot.completedEntities().containsKey(entityId))
+					{
+						_network.removeEntity(clientId, entityId);
+						entityIterator.remove();
+					}
+				}
+			}
+		}
+		
+		private void _sendCuboidUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+		{
+			// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
+			// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
+			
+			CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
+			for (int i = -1; i <= 1; ++i)
+			{
+				for (int j = -1; j <= 1; ++j)
+				{
+					for (int k = -1; k <= 1; ++k)
+					{
+						CuboidAddress oneCuboid = new CuboidAddress((short) (currentCuboid.x() + i), (short) (currentCuboid.y() + j), (short) (currentCuboid.z() + k));
+						if (state.knownCuboids.contains(oneCuboid))
+						{
+							// We know about this cuboid so send any updates.
+							List<IMutationBlock> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
+							if (null != mutations)
+							{
+								for (IMutationBlock mutation : mutations)
+								{
+									_network.sendMutation(clientId, mutation);
+								}
+							}
+						}
+						else
+						{
+							// We haven't seen this yet so just send it.
+							IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(oneCuboid);
+							// This may not yet be loaded.
+							if (null != cuboidData)
+							{
+								_network.sendCuboid(clientId, cuboidData);
+								state.knownCuboids.add(oneCuboid);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }

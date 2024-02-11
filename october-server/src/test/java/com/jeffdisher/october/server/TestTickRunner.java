@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -42,7 +43,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
@@ -60,7 +61,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
@@ -82,14 +83,15 @@ public class TestTickRunner
 	public void shockwaveMultiCuboids()
 	{
 		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR));
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR));
+		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR)
+				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR)
+		));
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
@@ -113,7 +115,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		runner.start();
 		TickRunner.Snapshot startState = runner.waitForPreviousTick();
 		
@@ -150,7 +152,7 @@ public class TestTickRunner
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		runner.start();
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -189,7 +191,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		runner.start();
 		
 		// Have a new entity join and wait for them to be added.
@@ -272,7 +274,7 @@ public class TestTickRunner
 		// Create a cuboid of stone.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
-		runner.cuboidWasLoaded(cuboid);
+		runner.cuboidsWereLoaded(List.of(cuboid));
 		
 		// We can use the default entity since we don't yet check that they are standing in solid rock.
 		int entityId = 1;
@@ -362,9 +364,9 @@ public class TestTickRunner
 		};
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR));
+		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR)));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
-		runner.cuboidWasLoaded(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR));
+		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR)));
 		
 		// Verify that there is no snapshot until we start.
 		Assert.assertNull(snapshotRef[0]);
