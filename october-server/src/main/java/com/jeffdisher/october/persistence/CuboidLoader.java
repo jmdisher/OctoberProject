@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -18,6 +19,7 @@ import com.jeffdisher.october.utils.MessageQueue;
  */
 public class CuboidLoader
 {
+	private final Function<CuboidAddress, CuboidData> _cuboidGenerator;
 	private final Map<CuboidAddress, CuboidData> _inFlight;
 	private final MessageQueue _queue;
 	private final Thread _background;
@@ -26,8 +28,9 @@ public class CuboidLoader
 	private final ReentrantLock _sharedDataLock;
 	private Collection<CuboidData> _shared_resolved;
 
-	public CuboidLoader()
+	public CuboidLoader(Function<CuboidAddress, CuboidData> generator)
 	{
+		_cuboidGenerator = generator;
 		_inFlight = new HashMap<>();
 		_queue = new MessageQueue();
 		_background = new Thread(() -> {
@@ -87,9 +90,14 @@ public class CuboidLoader
 					{
 						_background_storeResult(_inFlight.get(address));
 					}
+					else if (null != _cuboidGenerator)
+					{
+						CuboidData generated = _cuboidGenerator.apply(address);
+						_background_storeResult(generated);
+					}
 					else
 					{
-						// TODO:  Generate anything missing once the generator is added.
+						// This case should only happen with tests but we will just ignore the request and not respond.
 					}
 				}
 			});

@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.server.ServerRunner;
@@ -25,7 +26,8 @@ public class ServerMain
 			System.out.println("Starting server on port " + port);
 			try
 			{
-				CuboidLoader cuboidLoader = new CuboidLoader();
+				// We will just default to a flat world generator but still build the demo world on top as preload.
+				CuboidLoader cuboidLoader = new CuboidLoader(new FlatWorldGenerator());
 				_populateDemoWorld(cuboidLoader);
 				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
 				// We will just wait for input before shutting down.
