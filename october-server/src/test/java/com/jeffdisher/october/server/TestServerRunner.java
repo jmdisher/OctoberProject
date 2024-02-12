@@ -38,8 +38,8 @@ public class TestServerRunner
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, new CuboidLoader(), () -> System.currentTimeMillis());
-		// We expect to see an extra 2 threads:  One for ServerRunner and one for TickRunner.
-		Assert.assertEquals(startingActiveCount + 2, Thread.currentThread().getThreadGroup().activeCount());
+		// We expect to see an extra 3 threads:  ServerRunner, TickRunner, CuboidLoader.
+		Assert.assertEquals(startingActiveCount + 3, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
 		
 		// Verify that the threads have stopped.
@@ -143,6 +143,9 @@ public class TestServerRunner
 		server.clientConnected(clientId);
 		Entity entity = network.waitForEntity(clientId, clientId);
 		Assert.assertNotNull(entity);
+		// We also want to wait for the world to load before we start moving (we run the local mutation against a fake
+		// cuboid so we will need the server to have loaded something to get the same answer).
+		network.waitForCuboidCount(clientId, 2);
 		
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
@@ -214,6 +217,7 @@ public class TestServerRunner
 		public IServerAdapter.IListener server;
 		public final Map<Integer, Map<Integer, Entity>> clientEntities = new HashMap<>();
 		public final Map<Integer, List<Object>> clientUpdates = new HashMap<>();
+		public final Map<Integer, Integer> clientCuboidCount = new HashMap<>();
 		public long lastTick = 0L;
 		
 		@Override
@@ -243,6 +247,9 @@ public class TestServerRunner
 		@Override
 		public synchronized void sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
+			int count = this.clientCuboidCount.get(clientId);
+			this.clientCuboidCount.put(clientId, count + 1);
+			this.notifyAll();
 		}
 		@Override
 		public synchronized void sendChange(int clientId, int entityId, IMutationEntity change)
@@ -286,8 +293,10 @@ public class TestServerRunner
 		{
 			Assert.assertFalse(this.clientEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
+			Assert.assertFalse(this.clientCuboidCount.containsKey(clientId));
 			this.clientEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
+			this.clientCuboidCount.put(clientId, 0);
 		}
 		public synchronized Entity waitForEntity(int clientId, int entityId) throws InterruptedException
 		{
@@ -315,5 +324,13 @@ public class TestServerRunner
 			}
 			return updates.get(index);
 		}
+		public synchronized void waitForCuboidCount(int clientId, int count) throws InterruptedException
+		{
+			while (this.clientCuboidCount.get(clientId) < count)
+			{
+				this.wait();
+			}
+		}
+
 	}
 }

@@ -3,11 +3,13 @@ package com.jeffdisher.october.persistence;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.MessageQueue;
 
 
 /**
@@ -17,10 +19,38 @@ import com.jeffdisher.october.types.CuboidAddress;
 public class CuboidLoader
 {
 	private final Map<CuboidAddress, CuboidData> _inFlight;
+	private final MessageQueue _queue;
+	private final Thread _background;
+
+	// Shared data for passing information back from the background thread.
+	private final ReentrantLock _sharedDataLock;
+	private Collection<CuboidData> _shared_resolved;
 
 	public CuboidLoader()
 	{
 		_inFlight = new HashMap<>();
+		_queue = new MessageQueue();
+		_background = new Thread(() -> {
+			_background_main();
+		}, "Cuboid Loader");
+		
+		_sharedDataLock = new ReentrantLock();
+		
+		_background.start();
+	}
+
+	public void shutdown()
+	{
+		_queue.shutdown();
+		try
+		{
+			_background.join();
+		}
+		catch (InterruptedException e)
+		{
+			// We don't use interruption.
+			throw Assert.unexpected(e);
+		}
 	}
 
 	/**
@@ -43,20 +73,68 @@ public class CuboidLoader
 	 * in the background.
 	 * 
 	 * @param requestedCuboids The collection of cuboids to load/generate, by address.
-	 * @return A collection of previously-requested cuboids which have been satisfied in the background.
+	 * @return A collection of previously-requested cuboids which have been satisfied in the background (null or non-empty).
 	 */
 	public Collection<CuboidData> getResultsAndIssueRequest(Collection<CuboidAddress> requestedCuboids)
 	{
-		// Note that we are currently faking this as a purely synchronous request.
-		// TODO:  Generate anything missing once the generator is added.
-		List<CuboidData> loaded = new ArrayList<>();
-		for (CuboidAddress address : requestedCuboids)
+		// Send this request to the background thread.
+		if (!requestedCuboids.isEmpty())
 		{
-			if (_inFlight.containsKey(address))
-			{
-				loaded.add(_inFlight.get(address));
-			}
+			_queue.enqueue(() -> {
+				for (CuboidAddress address : requestedCuboids)
+				{
+					if (_inFlight.containsKey(address))
+					{
+						_background_storeResult(_inFlight.get(address));
+					}
+					else
+					{
+						// TODO:  Generate anything missing once the generator is added.
+					}
+				}
+			});
 		}
-		return loaded;
+		
+		// Pass back anything we have completed.
+		Collection<CuboidData> resolved;
+		_sharedDataLock.lock();
+		try
+		{
+			resolved = _shared_resolved;
+			_shared_resolved = null;
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+		return resolved;
+	}
+
+
+	private void _background_main()
+	{
+		Runnable toRun = _queue.pollForNext(0L, null);
+		while (null != toRun)
+		{
+			toRun.run();
+			toRun = _queue.pollForNext(0L, null);
+		}
+	}
+
+	private void _background_storeResult(CuboidData loaded)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _shared_resolved)
+			{
+				_shared_resolved = new ArrayList<>();
+			}
+			_shared_resolved.add(loaded);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
 	}
 }

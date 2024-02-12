@@ -64,6 +64,7 @@ public class ServerRunner
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
 	private _TickAdvancer _scheduledAdvancer;
 
+	// Note that the runner takes ownership of CuboidLoader and will shut it down.
 	public ServerRunner(long millisPerTick
 			, IServerAdapter network
 			, CuboidLoader loader
@@ -115,6 +116,8 @@ public class ServerRunner
 		_messages.shutdown();
 		// Shut down the tick runner.
 		_tickRunner.shutdown();
+		// Shut down the cuboid loader.
+		_loader.shutdown();
 		// We can now join on the background thread since it has nothing else to block on.
 		try
 		{
@@ -266,8 +269,10 @@ public class ServerRunner
 			
 			// Request any missing cuboids and see what we got back from last time.
 			Collection<CuboidData> newCuboids = _loader.getResultsAndIssueRequest(cuboidsToLoad);
-			if (!newCuboids.isEmpty())
+			if (null != newCuboids)
 			{
+				// If this was non-null, it must contain something.
+				Assert.assertTrue(!newCuboids.isEmpty());
 				_tickRunner.cuboidsWereLoaded(newCuboids);
 			}
 			

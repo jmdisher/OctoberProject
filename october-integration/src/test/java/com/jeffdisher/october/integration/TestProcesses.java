@@ -84,8 +84,8 @@ public class TestProcesses
 		
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
-		// (wait for an end of tick so that we know this is flushed).
-		client.waitForTick(startTick + 2L, System.currentTimeMillis());
+		// Wait until we have received the entity and cuboid.
+		client.waitForTick(startTick + 3L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(1, listener.cuboids.size());
 		
@@ -120,7 +120,8 @@ public class TestProcesses
 		
 		// Let some time pass and verify the data is loaded.
 		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
-		client.waitForTick(startTick + 2L, System.currentTimeMillis());
+		// Wait until we have received the entity and cuboid.
+		client.waitForTick(startTick + 3L, System.currentTimeMillis());
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(2, listener.cuboids.size());
 		
@@ -158,8 +159,8 @@ public class TestProcesses
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		long tick = client.waitForLocalEntity(currentTimeMillis);
-		// Now, wait for a tick to make sure that the cuboid is loaded.
-		client.waitForTick(tick + 2L, currentTimeMillis);
+		// Wait until we have received the entity and cuboid.
+		client.waitForTick(tick + 3L, currentTimeMillis);
 		
 		client.runPendingCalls(currentTimeMillis);
 		Assert.assertNotNull(listener.entities.get(1));

@@ -43,6 +43,7 @@ public class ServerProcess
 	/**
 	 * Starts a server process, listening on the given TCP port.  This call returns after the network has come up and
 	 * the server has started running.
+	 * Note that the instance takes ownership of CuboidLoader and will shut it down when stopped.
 	 * 
 	 * @param port The port on which to listen for client connections.
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
@@ -57,6 +58,7 @@ public class ServerProcess
 	) throws IOException
 	{
 		_clients = new HashMap<>();
+		// We will assume that ServerRunner will shut down the cuboidLoader for us.
 		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
