@@ -3,6 +3,7 @@ package com.jeffdisher.october.server;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -42,6 +43,13 @@ public interface IServerAdapter
 	 * @param cuboid The cuboid to send.
 	 */
 	void sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
+	/**
+	 * Tells the given client that a cuboid should be discarded.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param address The address of the cuboid to remove.
+	 */
+	void removeCuboid(int clientId, CuboidAddress address);
 	/**
 	 * Sends an incremental entity change to the given client.
 	 * 

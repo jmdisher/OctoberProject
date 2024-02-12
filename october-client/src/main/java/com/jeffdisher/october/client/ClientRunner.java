@@ -376,6 +376,11 @@ public class ClientRunner
 			_addedCuboids.add(cuboid);
 		}
 		@Override
+		public void removeCuboid(CuboidAddress address)
+		{
+			_removedCuboids.add(address);
+		}
+		@Override
 		public void receivedChange(int entityId, IMutationEntity change)
 		{
 			Queue<IMutationEntity> oneQueue = _entityChanges.get(entityId);

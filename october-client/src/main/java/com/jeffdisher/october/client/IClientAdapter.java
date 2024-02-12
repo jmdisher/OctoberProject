@@ -3,6 +3,7 @@ package com.jeffdisher.october.client;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -69,6 +70,12 @@ public interface IClientAdapter
 		 * @param cuboid The cuboid.
 		 */
 		void receivedCuboid(IReadOnlyCuboidData cuboid);
+		/**
+		 * Called when a cuboid should be removed.
+		 * 
+		 * @param address The address of the cuboid to remove.
+		 */
+		void removeCuboid(CuboidAddress address);
 		
 		/**
 		 * Called when an incremental change is received from the server.  Note that the server only sends us changes

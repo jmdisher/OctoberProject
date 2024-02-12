@@ -18,10 +18,12 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_MutationBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
+import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.persistence.CuboidLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.utils.Assert;
 
@@ -200,6 +202,12 @@ public class ServerProcess
 				_bufferPacket(clientId, packet);
 				packet = serializer.getNextPacket();
 			}
+		}
+		@Override
+		public void removeCuboid(int clientId, CuboidAddress address)
+		{
+			Packet_RemoveCuboid packet = new Packet_RemoveCuboid(address);
+			_bufferPacket(clientId, packet);
 		}
 		@Override
 		public void sendChange(int clientId, int entityId, IMutationEntity change)

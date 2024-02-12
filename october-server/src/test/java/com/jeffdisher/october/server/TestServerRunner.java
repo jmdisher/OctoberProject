@@ -145,7 +145,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity);
 		// We also want to wait for the world to load before we start moving (we run the local mutation against a fake
 		// cuboid so we will need the server to have loaded something to get the same answer).
-		network.waitForCuboidCount(clientId, 2);
+		network.waitForCuboidAddedCount(clientId, 2);
 		
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
@@ -205,7 +205,7 @@ public class TestServerRunner
 	@Test
 	public void changesCuboidsWhileMoving() throws Throwable
 	{
-		// Connect a client and have them walk over a cuboid boundary so that new cuboids are loaded.
+		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
 		CuboidLoader cuboidLoader = new CuboidLoader(null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), ItemRegistry.STONE));
@@ -225,13 +225,14 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// We expect to see 6 cuboids loaded (not the -2).
-		network.waitForCuboidCount(clientId1, 6);
+		network.waitForCuboidAddedCount(clientId1, 6);
 		
-		// Now, we want to take a step to the West and see 2 new cuboids added.
+		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		EntityChangeMove move = new EntityChangeMove(entity1.location(), 0L, -0.4f, 0.0f);
 		server.changeReceived(clientId1, move, 1L);
 		
-		network.waitForCuboidCount(clientId1, 8);
+		network.waitForCuboidRemovedCount(clientId1, 2);
+		network.waitForCuboidAddedCount(clientId1, 8);
 		
 		server.clientDisconnected(clientId1);
 		runner.shutdown();
@@ -252,7 +253,8 @@ public class TestServerRunner
 		public IServerAdapter.IListener server;
 		public final Map<Integer, Map<Integer, Entity>> clientEntities = new HashMap<>();
 		public final Map<Integer, List<Object>> clientUpdates = new HashMap<>();
-		public final Map<Integer, Integer> clientCuboidCount = new HashMap<>();
+		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
+		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
 		public long lastTick = 0L;
 		
 		@Override
@@ -282,8 +284,15 @@ public class TestServerRunner
 		@Override
 		public synchronized void sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
-			int count = this.clientCuboidCount.get(clientId);
-			this.clientCuboidCount.put(clientId, count + 1);
+			int count = this.clientCuboidAddedCount.get(clientId);
+			this.clientCuboidAddedCount.put(clientId, count + 1);
+			this.notifyAll();
+		}
+		@Override
+		public synchronized void removeCuboid(int clientId, CuboidAddress address)
+		{
+			int count = this.clientCuboidRemovedCount.get(clientId);
+			this.clientCuboidRemovedCount.put(clientId, count + 1);
 			this.notifyAll();
 		}
 		@Override
@@ -328,10 +337,12 @@ public class TestServerRunner
 		{
 			Assert.assertFalse(this.clientEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
-			Assert.assertFalse(this.clientCuboidCount.containsKey(clientId));
+			Assert.assertFalse(this.clientCuboidAddedCount.containsKey(clientId));
+			Assert.assertFalse(this.clientCuboidRemovedCount.containsKey(clientId));
 			this.clientEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
-			this.clientCuboidCount.put(clientId, 0);
+			this.clientCuboidAddedCount.put(clientId, 0);
+			this.clientCuboidRemovedCount.put(clientId, 0);
 		}
 		public synchronized Entity waitForEntity(int clientId, int entityId) throws InterruptedException
 		{
@@ -359,13 +370,19 @@ public class TestServerRunner
 			}
 			return updates.get(index);
 		}
-		public synchronized void waitForCuboidCount(int clientId, int count) throws InterruptedException
+		public synchronized void waitForCuboidAddedCount(int clientId, int count) throws InterruptedException
 		{
-			while (this.clientCuboidCount.get(clientId) < count)
+			while (this.clientCuboidAddedCount.get(clientId) < count)
 			{
 				this.wait();
 			}
 		}
-
+		public synchronized void waitForCuboidRemovedCount(int clientId, int count) throws InterruptedException
+		{
+			while (this.clientCuboidRemovedCount.get(clientId) < count)
+			{
+				this.wait();
+			}
+		}
 	}
 }

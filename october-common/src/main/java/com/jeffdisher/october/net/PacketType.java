@@ -55,6 +55,10 @@ public enum PacketType
 	 * Contains just the ID of an entity which should be removed.
 	 */
 	REMOVE_ENTITY,
+	/**
+	 * Contains just the address of a cuboid which should be removed.
+	 */
+	REMOVE_CUBOID,
 	
 	END_OF_LIST,
 }

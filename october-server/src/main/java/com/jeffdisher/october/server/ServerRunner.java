@@ -379,6 +379,23 @@ public class ServerRunner
 			// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
 			
 			CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
+			
+			// Walk the existing cuboids and remove any which are out of range.
+			Iterator<CuboidAddress> iter = state.knownCuboids.iterator();
+			while (iter.hasNext())
+			{
+				CuboidAddress address = iter.next();
+				int xDelta = Math.abs(currentCuboid.x() - address.x());
+				int yDelta = Math.abs(currentCuboid.y() - address.y());
+				int zDelta = Math.abs(currentCuboid.z() - address.z());
+				if ((xDelta > 1) || (yDelta > 1) || (zDelta > 1))
+				{
+					_network.removeCuboid(clientId, address);
+					iter.remove();
+				}
+			}
+			
+			// Check the cuboids immediately around the entity and send any which are missing.
 			for (int i = -1; i <= 1; ++i)
 			{
 				for (int j = -1; j <= 1; ++j)
