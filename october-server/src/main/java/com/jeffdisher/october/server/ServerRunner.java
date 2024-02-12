@@ -256,10 +256,16 @@ public class ServerRunner
 			};
 			for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 			{
-				// In the future, this is where we will add cuboids from a radius around the entity and drop whatever they move away from.
-				// For now, we just tell them about all the entities and the single cuboid where they are.
 				int clientId = elt.getKey();
 				ClientState state = elt.getValue();
+				
+				// Update the location snapshot in the ClientState in case the entity moved.
+				Entity entity = snapshot.completedEntities().get(clientId);
+				// This may not be here if they just joined.
+				if (null != entity)
+				{
+					state.location = entity.location();
+				}
 				
 				_sendUpdatesToClient(clientId, state, snapshot, cuboidRequester);
 			}

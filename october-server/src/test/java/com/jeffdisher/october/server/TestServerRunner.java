@@ -202,6 +202,41 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void changesCuboidsWhileMoving() throws Throwable
+	{
+		// Connect a client and have them walk over a cuboid boundary so that new cuboids are loaded.
+		TestAdapter network = new TestAdapter();
+		CuboidLoader cuboidLoader = new CuboidLoader(null);
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), ItemRegistry.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ItemRegistry.AIR));
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1);
+		Entity entity1 = network.waitForEntity(clientId1, clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// We expect to see 6 cuboids loaded (not the -2).
+		network.waitForCuboidCount(clientId1, 6);
+		
+		// Now, we want to take a step to the West and see 2 new cuboids added.
+		EntityChangeMove move = new EntityChangeMove(entity1.location(), 0L, -0.4f, 0.0f);
+		server.changeReceived(clientId1, move, 1L);
+		
+		network.waitForCuboidCount(clientId1, 8);
+		
+		server.clientDisconnected(clientId1);
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(CuboidLoader cuboidLoader)
 	{
