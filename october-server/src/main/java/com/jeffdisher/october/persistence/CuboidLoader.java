@@ -1,5 +1,6 @@
 package com.jeffdisher.october.persistence;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,8 +29,11 @@ public class CuboidLoader
 	private final ReentrantLock _sharedDataLock;
 	private Collection<CuboidData> _shared_resolved;
 
-	public CuboidLoader(Function<CuboidAddress, CuboidData> generator)
+	public CuboidLoader(File saveDirectory, Function<CuboidAddress, CuboidData> generator)
 	{
+		// The save directory must exist as a directory before we get here.
+		Assert.assertTrue(saveDirectory.isDirectory());
+		
 		_cuboidGenerator = generator;
 		_inFlight = new HashMap<>();
 		_queue = new MessageQueue();

@@ -5,7 +5,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.registries.AspectRegistry;
@@ -17,10 +19,13 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestCuboidLoader
 {
+	@ClassRule
+	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
+
 	@Test
-	public void empty()
+	public void empty() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(null);
+		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		
 		// We should see nothing come back, not matter how many times we issue the request.
@@ -33,7 +38,7 @@ public class TestCuboidLoader
 	@Test
 	public void basic() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(null);
+		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		loader.preload(cuboid);
@@ -53,7 +58,7 @@ public class TestCuboidLoader
 	@Test
 	public void flatWorld() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(new FlatWorldGenerator());
+		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), new FlatWorldGenerator());
 		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
 		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		

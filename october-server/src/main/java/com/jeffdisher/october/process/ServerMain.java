@@ -1,5 +1,6 @@
 package com.jeffdisher.october.process;
 
+import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
@@ -12,6 +13,7 @@ import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -26,8 +28,14 @@ public class ServerMain
 			System.out.println("Starting server on port " + port);
 			try
 			{
+				// We will just store the world in the current directory.
+				File worldDirectory = new File("world");
+				if (!worldDirectory.isDirectory())
+				{
+					Assert.assertTrue(worldDirectory.mkdirs());
+				}
 				// We will just default to a flat world generator but still build the demo world on top as preload.
-				CuboidLoader cuboidLoader = new CuboidLoader(new FlatWorldGenerator());
+				CuboidLoader cuboidLoader = new CuboidLoader(worldDirectory, new FlatWorldGenerator());
 				_populateDemoWorld(cuboidLoader);
 				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
 				// We will just wait for input before shutting down.
