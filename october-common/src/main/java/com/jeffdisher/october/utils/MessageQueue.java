@@ -58,13 +58,19 @@ public class MessageQueue
 				throw Assert.unexpected(e);
 			}
 		}
-		return _running
+		Runnable runnable = _running
 				? (!_queue.isEmpty()
 						? _queue.remove()
 						: timeoutRunnable
 				)
 				: null
 		;
+		// We want to notify anyone waiting for the queue to drain.
+		if (_queue.isEmpty())
+		{
+			this.notifyAll();
+		}
+		return runnable;
 	}
  
 	/**
@@ -78,9 +84,31 @@ public class MessageQueue
 		if (_running)
 		{
 			_queue.add(r);
-			this.notify();
+			this.notifyAll();
 		}
 		return _running;
+	}
+
+	/**
+	 * Called by a thread which should not normally be consuming messages in order to wait for the consuming thread to
+	 * drain the queue.  This will block until the queue is empty.
+	 * Note that the queue must NOT be shut down during this operation (as that would negate the purpose).
+	 */
+	public synchronized void waitForEmptyQueue()
+	{
+		while (!_queue.isEmpty())
+		{
+			Assert.assertTrue(_running);
+			try
+			{
+				this.wait();
+			}
+			catch (InterruptedException e)
+			{
+				// We don't use interruption.
+				throw Assert.unexpected(e);
+			}
+		}
 	}
 
 	/**

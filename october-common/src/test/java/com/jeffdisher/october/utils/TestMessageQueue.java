@@ -98,4 +98,60 @@ public class TestMessageQueue
 		thread.join();
 		Assert.assertEquals(10, count[0]);
 	}
+
+	@Test
+	public void shutdownFull() throws Throwable
+	{
+		MessageQueue queue = new MessageQueue();
+		Thread thread = new Thread(() -> {
+			Runnable r = queue.pollForNext(0L, null);
+			while (null != r)
+			{
+				r.run();
+				r = queue.pollForNext(0L, null);
+			}
+		});
+		
+		int count[] = new int[1];
+		for (int i = 0; i < 10; ++i)
+		{
+			queue.enqueue(() -> {
+				count[0] += 1;
+			});
+		}
+		// Now that everything is set up, shut down the queue before we start, since that will leave it full, without
+		// running anything.
+		queue.shutdown();
+		thread.start();
+		thread.join();
+		Assert.assertEquals(0, count[0]);
+	}
+
+	@Test
+	public void drainBeforeShutdown() throws Throwable
+	{
+		MessageQueue queue = new MessageQueue();
+		Thread thread = new Thread(() -> {
+			Runnable r = queue.pollForNext(0L, null);
+			while (null != r)
+			{
+				r.run();
+				r = queue.pollForNext(0L, null);
+			}
+		});
+		
+		int count[] = new int[1];
+		for (int i = 0; i < 10; ++i)
+		{
+			queue.enqueue(() -> {
+				count[0] += 1;
+			});
+		}
+		// Now that everything is set up, start the thread and immediately wait for the queue to drain.
+		thread.start();
+		queue.waitForEmptyQueue();
+		queue.shutdown();
+		thread.join();
+		Assert.assertEquals(10, count[0]);
+	}
 }
