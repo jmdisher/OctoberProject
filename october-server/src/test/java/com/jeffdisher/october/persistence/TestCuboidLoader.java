@@ -1,5 +1,6 @@
 package com.jeffdisher.october.persistence;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -82,5 +83,55 @@ public class TestCuboidLoader
 		Assert.assertTrue((ItemRegistry.AIR.number() == test0) || (ItemRegistry.AIR.number() == test1));
 		Assert.assertTrue((ItemRegistry.STONE.number() == test0) || (ItemRegistry.STONE.number() == test1));
 		loader.shutdown();
+	}
+
+	@Test
+	public void writeThenRead() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		CuboidLoader loader = new CuboidLoader(worldDirectory, new FlatWorldGenerator());
+		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		
+		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
+		Collection<CuboidData> results = loader.getResultsAndIssueRequest(List.of(airAddress));
+		Assert.assertNull(results);
+		CuboidData loaded = _waitForOne(loader);
+		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
+		// Modify a block and write this back.
+		loaded.setData15(AspectRegistry.BLOCK, block, ItemRegistry.STONE.number());
+		loader.writeBackToDisk(List.of(loaded));
+		// (the shutdown will wait for the queue to drain)
+		loader.shutdown();
+		
+		// Make sure that we see this written back.
+		String fileName = "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid";
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, create a new loader to verify that we can read this.
+		loader = new CuboidLoader(worldDirectory, null);
+		results = loader.getResultsAndIssueRequest(List.of(airAddress));
+		Assert.assertNull(results);
+		loaded = _waitForOne(loader);
+		Assert.assertEquals(ItemRegistry.STONE.number(), loaded.getData15(AspectRegistry.BLOCK, block));
+		loader.shutdown();
+	}
+
+
+	private static CuboidData _waitForOne(CuboidLoader loader) throws InterruptedException
+	{
+		CuboidData loaded = null;
+		for (int i = 0; (null == loaded) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			Collection<CuboidData> results = loader.getResultsAndIssueRequest(List.of());
+			if (null != results)
+			{
+				Assert.assertTrue(1 == results.size());
+				loaded = results.iterator().next();
+			}
+		}
+		// We expect that this should be loaded.
+		Assert.assertNotNull(loaded);
+		return loaded;
 	}
 }

@@ -1,6 +1,12 @@
 package com.jeffdisher.october.persistence;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -20,10 +27,14 @@ import com.jeffdisher.october.utils.MessageQueue;
  */
 public class CuboidLoader
 {
+	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
+
+	private final File _saveDirectory;
 	private final Function<CuboidAddress, CuboidData> _cuboidGenerator;
 	private final Map<CuboidAddress, CuboidData> _inFlight;
 	private final MessageQueue _queue;
 	private final Thread _background;
+	private final ByteBuffer _backround_serializationBuffer;
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
@@ -34,12 +45,14 @@ public class CuboidLoader
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());
 		
+		_saveDirectory = saveDirectory;
 		_cuboidGenerator = generator;
 		_inFlight = new HashMap<>();
 		_queue = new MessageQueue();
 		_background = new Thread(() -> {
 			_background_main();
 		}, "Cuboid Loader");
+		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
 		
 		_sharedDataLock = new ReentrantLock();
 		
@@ -48,6 +61,8 @@ public class CuboidLoader
 
 	public void shutdown()
 	{
+		// We want to make sure any other IO operations requested are completed.
+		_queue.waitForEmptyQueue();
 		_queue.shutdown();
 		try
 		{
@@ -90,18 +105,30 @@ public class CuboidLoader
 			_queue.enqueue(() -> {
 				for (CuboidAddress address : requestedCuboids)
 				{
-					if (_inFlight.containsKey(address))
+					// Priority of loads:
+					// 1) Disk (since that is always considered authoritative)
+					// 2) _inFlight (since these are supposed to be prioritized over generation
+					// 3) The generator (if present).
+					// 4) Return null (only happens in tests)
+					
+					// See if we can load this from disk.
+					CuboidData data = _background_readFromDisk(address);
+					if (null == data)
 					{
-						_background_storeResult(_inFlight.get(address));
+						if (_inFlight.containsKey(address))
+						{
+							// We will "consume" this since we will load from disk on the next call.
+							data = _inFlight.remove(address);
+						}
+						else if (null != _cuboidGenerator)
+						{
+							data = _cuboidGenerator.apply(address);
+						}
 					}
-					else if (null != _cuboidGenerator)
+					// If we found anything, return it.
+					if (null != data)
 					{
-						CuboidData generated = _cuboidGenerator.apply(address);
-						_background_storeResult(generated);
-					}
-					else
-					{
-						// This case should only happen with tests but we will just ignore the request and not respond.
+						_background_storeResult(data);
 					}
 				}
 			});
@@ -120,6 +147,24 @@ public class CuboidLoader
 			_sharedDataLock.unlock();
 		}
 		return resolved;
+	}
+
+	/**
+	 * Requests that the given collection of cuboids be written back to disk.  This call will return immediately while
+	 * the write-back will complete asynchronously.
+	 * 
+	 * @param cuboids The cuboids to write (cannot be empty).
+	 */
+	public void writeBackToDisk(Collection<IReadOnlyCuboidData> cuboids)
+	{
+		// This one should only be called if there are some to remove.
+		Assert.assertTrue(!cuboids.isEmpty());
+		_queue.enqueue(() -> {
+			for (IReadOnlyCuboidData cuboid : cuboids)
+			{
+				_background_writeToDisk(cuboid);
+			}
+		});
 	}
 
 
@@ -148,5 +193,69 @@ public class CuboidLoader
 		{
 			_sharedDataLock.unlock();
 		}
+	}
+
+	private CuboidData _background_readFromDisk(CuboidAddress address)
+	{
+		// These data files are relatively small so we can just read this in, completely.
+		CuboidData cuboid;
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(_getFile(address), "r");
+				FileChannel inChannel = aFile.getChannel();
+		)
+		{
+			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+			buffer.load();
+			cuboid = CuboidData.createEmpty(address);
+			Object state = cuboid.deserializeResumable(null, buffer);
+			// There should be no resumable state since the file is complete.
+			Assert.assertTrue(null == state);
+		}
+		catch (FileNotFoundException e)
+		{
+			// This is ok and means we should return null.
+			cuboid = null;
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		return cuboid;
+	}
+
+	private void _background_writeToDisk(IReadOnlyCuboidData cuboid)
+	{
+		// Serialize the entire cuboid into memory and write it out.
+		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
+		// We currently assume that we just do the write in a single call.
+		Assert.assertTrue(null == state);
+		_backround_serializationBuffer.flip();
+		
+		try (
+				
+				RandomAccessFile aFile = new RandomAccessFile(_getFile(cuboid.getCuboidAddress()), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			outChannel.write(_backround_serializationBuffer);
+			// We expect that this wrote fully.
+			Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+			_backround_serializationBuffer.clear();
+		}
+		catch (FileNotFoundException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+	}
+
+	private File _getFile(CuboidAddress address)
+	{
+		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		return new File(_saveDirectory, fileName);
 	}
 }

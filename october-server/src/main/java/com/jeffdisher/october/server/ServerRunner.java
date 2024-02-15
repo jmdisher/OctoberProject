@@ -1,6 +1,7 @@
 package com.jeffdisher.october.server;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -117,6 +118,11 @@ public class ServerRunner
 		// Shut down the tick runner.
 		_tickRunner.shutdown();
 		// Shut down the cuboid loader.
+		// (first, we want to finish any remaining write-back).
+		if (!_tickAdvancer.completedCuboids.isEmpty())
+		{
+			_loader.writeBackToDisk(_tickAdvancer.completedCuboids);
+		}
 		_loader.shutdown();
 		// We can now join on the background thread since it has nothing else to block on.
 		try
@@ -232,6 +238,8 @@ public class ServerRunner
 	{
 		// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
 		private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
+		// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
+		public Collection<IReadOnlyCuboidData> completedCuboids = Collections.emptySet();
 		
 		@Override
 		public void run()
@@ -240,6 +248,7 @@ public class ServerRunner
 			// Note:  We could just wait here to force all new entities to load in the next tick, but that isn't essential so just unblock it.
 			// (any new callbacks will be queued behind this, anyway, which is all that matters).
 			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
+			this.completedCuboids = snapshot.completedCuboids().values();
 			
 			// Remove any of the cuboids in the snapshot from any that we had requested.
 			_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
