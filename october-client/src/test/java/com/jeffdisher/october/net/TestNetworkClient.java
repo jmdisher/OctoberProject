@@ -7,7 +7,9 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,6 +49,12 @@ public class TestNetworkClient
 			}
 			@Override
 			public void packetReceived(Packet packet)
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
+			@Override
+			public void serverDisconnected()
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -129,6 +137,12 @@ public class TestNetworkClient
 					latch.countDown();
 				}
 			}
+			@Override
+			public void serverDisconnected()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
 		}, InetAddress.getLocalHost(), port, "test");
 		holder[0] = client;
 		SocketChannel connection = _serverHandshake(server, 1);
@@ -153,6 +167,63 @@ public class TestNetworkClient
 		Assert.assertEquals(0, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
 		Assert.assertEquals((32 * 32 * 10) + (32 * 10) + 10, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)10)));
 		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)30, (byte)30, (byte)30)));
+	}
+
+	@Test
+	public void serverSideDisconnect() throws Throwable
+	{
+		int port = 3000;
+		// We want to fake up a server.
+		InetSocketAddress address = new InetSocketAddress(port);
+		ServerSocketChannel server = ServerSocketChannel.open();
+		server.bind(address);
+		
+		// We will use this listener for both so we want to see 2 disconnects happen and the final wait.
+		CyclicBarrier barrier = new CyclicBarrier(3);
+		NetworkClient.IListener emptyListener = new NetworkClient.IListener()
+		{
+			@Override
+			public void handshakeCompleted(int assignedId)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
+			public void networkReady()
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
+			public void packetReceived(Packet packet)
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
+			@Override
+			public void serverDisconnected()
+			{
+				try
+				{
+					barrier.await();
+				}
+				catch (InterruptedException | BrokenBarrierException e)
+				{
+					throw new AssertionError("Not in test", e);
+				}
+			}
+		};
+		
+		NetworkClient client1 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		SocketChannel connection1 = _serverHandshake(server, 1);
+		NetworkClient client2 = new NetworkClient(emptyListener, InetAddress.getLocalHost(), port, "test");
+		SocketChannel connection2 = _serverHandshake(server, 2);
+		
+		connection1.close();
+		connection2.close();
+		server.close();
+		
+		barrier.await();
+		client1.stop();
+		client2.stop();
 	}
 
 

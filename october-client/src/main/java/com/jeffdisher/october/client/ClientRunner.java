@@ -499,9 +499,24 @@ public class ClientRunner
 		}
 	}
 
+	/**
+	 * These callbacks are internally buffered, based on changes to the network state.  They are run on the caller
+	 * thread when a method is called on ClientRunner.  This way, the client has complete control over when the
+	 * callbacks are run and on which thread.
+	 * Call "runPendingCalls(long)" to run any buffered callbacks if no action is to be taken.
+	 */
 	public interface IListener
 	{
+		/**
+		 * The client has contacted the server and the handshake completed.
+		 * 
+		 * @param assignedLocalEntityId The ID assigned to this client by the server.
+		 */
 		void clientDidConnectAndLogin(int assignedLocalEntityId);
+		/**
+		 * The connection to the server has been closed by some external factor (NOT an explicit disconnect on the
+		 * client side).  This would mean a server-initiated disconnect or a more general connection timeout.
+		 */
 		void clientDisconnected();
 	}
 }

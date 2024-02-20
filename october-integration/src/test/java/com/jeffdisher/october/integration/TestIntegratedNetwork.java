@@ -137,6 +137,12 @@ public class TestIntegratedNetwork
 			public void networkReady()
 			{
 			}
+			@Override
+			public void serverDisconnected()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
 		}, InetAddress.getLocalHost(), port, "test");
 		CyclicBarrier readyBarrier = new CyclicBarrier(2);
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
@@ -160,6 +166,12 @@ public class TestIntegratedNetwork
 				{
 					throw new AssertionError("Not expected in test", e);
 				}
+			}
+			@Override
+			public void serverDisconnected()
+			{
+				// Should not happen in this test.
+				Assert.fail();
 			}
 		}, InetAddress.getLocalHost(), port, "test");
 		
@@ -277,6 +289,12 @@ public class TestIntegratedNetwork
 					latch.countDown();
 				}
 			}
+			@Override
+			public void serverDisconnected()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
 		}, InetAddress.getLocalHost(), port, "test");
 		
 		// Wait to receive these and then stitch them together.
@@ -313,6 +331,12 @@ public class TestIntegratedNetwork
 			@Override
 			public void networkReady()
 			{
+			}
+			@Override
+			public void serverDisconnected()
+			{
+				// Should not happen in this test.
+				Assert.fail();
 			}
 		}, InetAddress.getLocalHost(), port, "test");
 		int clientId = client.getClientId();

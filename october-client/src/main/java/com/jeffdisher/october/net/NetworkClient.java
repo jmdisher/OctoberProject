@@ -46,8 +46,7 @@ public class NetworkClient
 			@Override
 			public void peerDisconnected(_State token)
 			{
-				// Not called in client mode.
-				throw Assert.unreachable();
+				_listener.serverDisconnected();
 			}
 			@Override
 			public void peerReadyForWrite(_State token)
@@ -136,6 +135,10 @@ public class NetworkClient
 		 * @param packet The new message received.
 		 */
 		void packetReceived(Packet packet);
+		/**
+		 * Called when the server has disconnected the client or a network error broke the connection.
+		 */
+		void serverDisconnected();
 	}
 
 	private static class _State

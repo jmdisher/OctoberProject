@@ -462,6 +462,11 @@ public class ClientProcess
 				_messagesToClientRunner.removeCuboid(safe.address);
 			}
 		}
+		@Override
+		public void serverDisconnected()
+		{
+			_messagesToClientRunner.adapterDisconnected();
+		}
 	}
 
 	// NOTE:  These callbacks are issued on the background network thread.
@@ -546,7 +551,6 @@ public class ClientProcess
 		@Override
 		public void clientDisconnected()
 		{
-			_messagesToClientRunner.adapterDisconnected();
 			_pendingCallbacks.add(() -> {
 				_listener.connectionClosed();
 			});
