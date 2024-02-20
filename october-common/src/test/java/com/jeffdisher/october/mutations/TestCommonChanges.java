@@ -161,29 +161,37 @@ public class TestCommonChanges
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null);
 		MutableEntity newEntity = new MutableEntity(original);
 		
+		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, null
+		);
+		
 		// Give the entity some items and verify that they default to selected.
 		EntityChangeAcceptItems accept = new EntityChangeAcceptItems(new Items(ItemRegistry.LOG, 1));
-		Assert.assertTrue(accept.applyChange(null, newEntity));
+		Assert.assertTrue(accept.applyChange(context, newEntity));
 		Assert.assertEquals(ItemRegistry.LOG, newEntity.freeze().selectedItem());
 		
 		// Craft some items to use these up and verify that the selection is cleared.
 		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS);
-		Assert.assertTrue(craft.applyChange(null, newEntity));
+		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertNull(newEntity.freeze().selectedItem());
 		
 		// Actively select the type and verify it is selected.
 		MutationEntitySelectItem select = new MutationEntitySelectItem(ItemRegistry.PLANK);
-		Assert.assertTrue(select.applyChange(null, newEntity));
+		Assert.assertTrue(select.applyChange(context, newEntity));
 		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
 		
 		// Demonstrate that we can't select something we don't have.
 		MutationEntitySelectItem select2 = new MutationEntitySelectItem(ItemRegistry.LOG);
-		Assert.assertFalse(select2.applyChange(null, newEntity));
+		Assert.assertFalse(select2.applyChange(context, newEntity));
 		Assert.assertEquals(ItemRegistry.PLANK, newEntity.freeze().selectedItem());
 		
 		// Show that we can unselect.
 		MutationEntitySelectItem select3 = new MutationEntitySelectItem(null);
-		Assert.assertTrue(select3.applyChange(null, newEntity));
+		Assert.assertTrue(select3.applyChange(context, newEntity));
 		Assert.assertNull(newEntity.freeze().selectedItem());
 	}
 
@@ -418,5 +426,36 @@ public class TestCommonChanges
 		EndBreakBlockChange breakReasonable = new EndBreakBlockChange(reasonable, ItemRegistry.STONE);
 		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
 		Assert.assertTrue(didSchedule[0]);
+	}
+
+	@Test
+	public void fallAfterCraft() throws Throwable
+	{
+		// We want to run a basic craft operation and observe that we start falling when it completes.
+		// (this will need to be adapted when the crafting system changes, later)
+		EntityLocation oldLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
+		Entity original = new Entity(1
+				, oldLocation
+				, 0.0f
+				, new EntityVolume(1.2f, 0.5f)
+				, 0.4f
+				, Inventory.start(10).add(ItemRegistry.LOG, 1).finish()
+				, ItemRegistry.LOG
+		);
+		MutableEntity newEntity = new MutableEntity(original);
+		
+		// We will create a bogus context which just says that they are floating in the air so they can drop.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, null
+		);
+		
+		// Craft some items to use these up and verify that we also moved.
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS);
+		Assert.assertTrue(craft.applyChange(context, newEntity));
+		Assert.assertEquals(10.2f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);
 	}
 }

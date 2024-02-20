@@ -48,7 +48,13 @@ public class EntityChangeCraft implements IMutationEntity
 				newEntity.newSelectedItem = null;
 			}
 		}
-		return didCraft;
+		
+		// Account for any movement while we were busy.
+		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
+		// This will need to be revisited when we change the crafting action.
+		boolean didMove = EntityChangeMove.handleMotion(newEntity, context.previousBlockLookUp, _operation.millisPerCraft);
+		
+		return didCraft || didMove;
 	}
 
 	@Override

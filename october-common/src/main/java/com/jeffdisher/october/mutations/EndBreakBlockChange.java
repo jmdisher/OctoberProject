@@ -17,6 +17,10 @@ public class EndBreakBlockChange implements IMutationEntity
 {
 	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_BREAK_END;
 
+	// In the future, this will depend no the type of block and the tool being used, etc.
+	// For now, we use 200 ms since 100 will use an entire tick, but still finish inside that tick, so 200 will force it to finish in the second tick.
+	public static final long TIME_MILLIS = 200L;
+
 	public static EndBreakBlockChange deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
@@ -37,9 +41,7 @@ public class EndBreakBlockChange implements IMutationEntity
 	@Override
 	public long getTimeCostMillis()
 	{
-		// In the future, this will depend no the type of block and the tool being used, etc.
-		// For now, we use 200 ms since 100 will use an entire tick, but still finish inside that tick, so 200 will force it to finish in the second tick.
-		return 200L;
+		return TIME_MILLIS;
 	}
 
 	@Override
@@ -65,7 +67,13 @@ public class EndBreakBlockChange implements IMutationEntity
 			context.newMutationSink.accept(mutation);
 			didApply = true;
 		}
-		return didApply;
+		
+		// Account for any movement while we were busy.
+		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
+		// This will need to be revisited when we change how blocks are broken.
+		boolean didMove = EntityChangeMove.handleMotion(newEntity, context.previousBlockLookUp, TIME_MILLIS);
+		
+		return didApply || didMove;
 	}
 
 	@Override
