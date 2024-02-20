@@ -123,6 +123,25 @@ public class NetworkServer
 		_network.sendMessage(client, packet);
 	}
 
+	/**
+	 * Disconnects the client with the given ID.
+	 * 
+	 * @param clientId The ID of a specific attached client.
+	 */
+	public void disconnectClient(int clientId)
+	{
+		_ClientState client;
+		synchronized(this)
+		{
+			// We will not remove this until we get the callback from the other side, so we don't have multiple paths causing races.
+			client = _channelsById.get(clientId);
+		}
+		// This could be racy or already gone.
+		if (null != client)
+		{
+			_network.disconnectPeer(client);
+		}
+	}
 
 	/**
 	 * The interface for listening to events from inside the server.  Note that all calls will be issued on the internal

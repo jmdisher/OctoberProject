@@ -237,8 +237,8 @@ public class ServerProcess
 		@Override
 		public void disconnectClient(int clientId)
 		{
-			// TODO:  Implement.
-			throw new AssertionError("Not implemented");
+			// We just pass this along since we will handle any state update when we see the disconnected callback (so there is only one relevant path).
+			_network.disconnectClient(clientId);
 		}
 	}
 

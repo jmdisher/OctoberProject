@@ -36,6 +36,12 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class TickRunner
 {
+	/**
+	 * The maximum number of actions allowed waiting to be scheduled, per-client.  Attempting to go beyond this limit
+	 * will disconnect the client.
+	 */
+	public static final int PENDING_ACTION_LIMIT = 10;
+
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	private final long _millisPerTick;
@@ -244,17 +250,38 @@ public class TickRunner
 		}
 	}
 
-	public void enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
+	/**
+	 * Enqueues a change to be scheduled on the given entityId.  Returns false if the entity should be disconnected.
+	 * 
+	 * @param entityId The entity where the change should be scheduled.
+	 * @param change The change to schedule.
+	 * @param commitLevel The client's commit level associated with this change.
+	 * @return True if this was enqueued, false if the client should be disconnected.
+	 */
+	public boolean enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
 	{
+		boolean didAdd;
 		_sharedDataLock.lock();
 		try
 		{
-			_entitySharedAccess.get(entityId).newChanges.add(new _EntityMutationWrapper(change, commitLevel));
+			// Make sure that the entity isn't too far behind (has enqueued too many actions which aren't being run).
+			PerEntitySharedAccess access = _entitySharedAccess.get(entityId);
+			if (access.newChanges.size() < PENDING_ACTION_LIMIT)
+			{
+				access.newChanges.add(new _EntityMutationWrapper(change, commitLevel));
+				didAdd = true;
+			}
+			else
+			{
+				// Disconnect the client by failing to add.
+				didAdd = false;
+			}
 		}
 		finally
 		{
 			_sharedDataLock.unlock();
 		}
+		return didAdd;
 	}
 
 	/**

@@ -194,7 +194,13 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
-				_tickRunner.enqueueEntityChange(clientId, change, commitLevel);
+				boolean didAdd = _tickRunner.enqueueEntityChange(clientId, change, commitLevel);
+				if (!didAdd)
+				{
+					// There is something wrong with this client so disconnect them.
+					System.out.println("Disconnecting client due to overflow: " + clientId);
+					_network.disconnectClient(clientId);
+				}
 			});
 		}
 	}
