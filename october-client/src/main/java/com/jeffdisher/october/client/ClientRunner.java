@@ -302,11 +302,19 @@ public class ClientRunner
 
 	private void _commonMove(float xDistance, float yDistance, long currentTimeMillis)
 	{
-		long millisBeforeCall = (currentTimeMillis - _lastMoveMillis);
-		// Make sure we have at least something to do.
-		if ((millisBeforeCall > 0L) || (0.0f != xDistance) || (0.0f != yDistance))
+		EntityLocation oldLocation = _localEntityProjection.location();
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.shadowBlockLoader, oldLocation, _localEntityProjection.volume());
+		// Make sure we have at least something to do:
+		// -if we have any horizontal component
+		// -if we have a z-vector (0.0 comparison should be ok since we assign it to that when stopped - not calculated)
+		// -if we aren't standing on the ground
+		if ((0.0f != xDistance) || (0.0f != yDistance)
+				|| (0.0f != _localEntityProjection.zVelocityPerSecond())
+				|| !isOnGround
+		)
 		{
 			// We assume that we spent time before this movement at least partially performing the move so update it.
+			long millisBeforeCall = (currentTimeMillis - _lastMoveMillis);
 			long millisToMove = EntityChangeMove.getTimeMostMillis(xDistance, yDistance);
 			// We will skip any millis which don't fit (accounting for them all is ideal but the real-time nature of the client means we can miss some - especially during startup).
 			if (millisToMove <= millisBeforeCall)
@@ -317,12 +325,13 @@ public class ClientRunner
 				long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
 				Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
 				
-				EntityChangeMove moveChange = new EntityChangeMove(_localEntityProjection.location(), millisBeforeMovement, xDistance, yDistance);
+				EntityChangeMove moveChange = new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
 				_applyLocalChange(moveChange, currentTimeMillis, false);
-				_runAllPendingCalls(currentTimeMillis);
 				_lastMoveMillis = currentTimeMillis;
 			}
 		}
+		// Whether or not we did anything, run any pending calls while we are here.
+		_runAllPendingCalls(currentTimeMillis);
 	}
 
 

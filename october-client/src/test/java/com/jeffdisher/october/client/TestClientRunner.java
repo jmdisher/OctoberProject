@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
@@ -20,6 +21,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -233,6 +235,55 @@ public class TestClientRunner
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.49f), location);
 	}
 
+	@Test
+	public void fallAndStop() throws Throwable
+	{
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 1L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		// We want to position ourselves above the ground and drop onto the ground and observe that we no longer move.
+		Entity entity = new Entity(clientId
+				, new EntityLocation(0.0f, 0.0f, 2.0f)
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish()
+				, null
+		);
+		network.client.receivedEntity(entity);
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Allow ourselves to fall onto the ground with the expected number of ticks.
+		int expectedChangeCount = 7;
+		for (int i = 0; i < expectedChangeCount; ++i)
+		{
+			currentTimeMillis += 100L;
+			runner.doNothing(currentTimeMillis);
+		}
+		
+		// We should no be standing on the floor.
+		EntityLocation location = projection.loadedEnties.get(clientId).location();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), location);
+		
+		// Make sure we won't send another action.
+		long changeCount = projection.allEntityChangeCount;
+		Assert.assertEquals(expectedChangeCount, changeCount);
+		currentTimeMillis += 100L;
+		runner.doNothing(currentTimeMillis);
+		Assert.assertEquals(changeCount, projection.allEntityChangeCount);
+	}
+
 
 	private static class TestAdapter implements IClientAdapter
 	{
@@ -260,6 +311,7 @@ public class TestClientRunner
 	private static class TestProjection implements SpeculativeProjection.IProjectionListener
 	{
 		public Map<Integer, Entity> loadedEnties = new HashMap<>();
+		public int allEntityChangeCount = 0;
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
@@ -292,6 +344,7 @@ public class TestClientRunner
 			int id = entity.id();
 			Assert.assertTrue(this.loadedEnties.containsKey(id));
 			this.loadedEnties.put(id, entity);
+			this.allEntityChangeCount += 1;
 		}
 		@Override
 		public void entityDidUnload(int id)
