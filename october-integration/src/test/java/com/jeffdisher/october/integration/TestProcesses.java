@@ -169,7 +169,7 @@ public class TestProcesses
 		client.waitForTick(tick + 3L, currentTimeMillis);
 		
 		client.runPendingCalls(currentTimeMillis);
-		Assert.assertNotNull(listener.entities.get(1));
+		Assert.assertNotNull(listener.entities.get("test".hashCode()));
 		Assert.assertNotNull(listener.cuboids.get(cuboid.getCuboidAddress()));
 		
 		// We are done.
@@ -191,13 +191,13 @@ public class TestProcesses
 		
 		// Create the first client.
 		_ClientListener listener1 = new _ClientListener();
-		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1");
 		client1.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId1 = client1.waitForClientId();
 		
 		// Create the second client.
 		_ClientListener listener2 = new _ClientListener();
-		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "test");
+		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2");
 		client2.waitForLocalEntity(currentTimeMillis[0]);
 		int clientId2 = client2.waitForClientId();
 		

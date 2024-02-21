@@ -94,10 +94,23 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized void _createClient(int clientId)
+	private synchronized int _createClient(String name)
 	{
-		_clients.put(clientId, new _ClientBuffer());
-		_serverListener.clientConnected(clientId);
+		// For now, we will just hash the string and use that as the ID (Java's string hash is reasonable).  We still want the number to be positive, though.
+		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
+		int hash = Math.abs(name.hashCode());
+		if (_clients.containsKey(hash))
+		{
+			// Already present, so fail.
+			hash = 0;
+		}
+		else
+		{
+			// This is valid so install it.
+			_clients.put(hash, new _ClientBuffer());
+			_serverListener.clientConnected(hash);
+		}
+		return hash;
 	}
 
 	private synchronized void _destroyClient(int clientId)
@@ -147,9 +160,9 @@ public class ServerProcess
 	private class _NetworkListener implements NetworkServer.IListener
 	{
 		@Override
-		public void userJoined(int id, String name)
+		public int userJoined(String name)
 		{
-			_createClient(id);
+			return _createClient(name);
 		}
 		@Override
 		public void userLeft(int id)

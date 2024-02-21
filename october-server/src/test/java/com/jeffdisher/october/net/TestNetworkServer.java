@@ -41,10 +41,12 @@ public class TestNetworkServer
 				leftCount[0] += 1;
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
+				int id = name.hashCode();
 				Assert.assertFalse(joinNames.containsKey(id));
 				joinNames.put(id, name);
+				return id;
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
@@ -61,8 +63,8 @@ public class TestNetworkServer
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
-		Assert.assertEquals(1, client1);
-		Assert.assertEquals(2, client2);
+		Assert.assertEquals("Client 1".hashCode(), client1);
+		Assert.assertEquals("Client 2".hashCode(), client2);
 		// We should see at least one disconnect, since we do these in series.
 		Assert.assertTrue(leftCount[0] > 0);
 		// Similarly, we will see the first client appear, since the disconnect-accept is lock-step on the server, but maybe not the second.
@@ -85,17 +87,18 @@ public class TestNetworkServer
 			{
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
 				// Starts ready.
 				_isReady1 = true;
+				return name.hashCode();
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
 			{
 				// We only expect chat messages.
 				Packet_Chat chat = (Packet_Chat) packet;
-				Assert.assertEquals(2, id);
+				Assert.assertEquals("Client 2".hashCode(), id);
 				_messagesFor1.add(chat.message);
 				_handle();
 			}
@@ -111,7 +114,7 @@ public class TestNetworkServer
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(1, new Packet_Chat(2, message));
+					holder[0].sendMessage("Client 1".hashCode(), new Packet_Chat(2, message));
 				}
 			}
 		}, port);
@@ -197,9 +200,10 @@ public class TestNetworkServer
 			{
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
 				// We need to wait for the network ready callback.
+				return name.hashCode();
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)

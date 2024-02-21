@@ -15,7 +15,6 @@ public class NetworkServer
 {
 	private final IListener _listener;
 	private final Map<Integer, _ClientState> _channelsById;
-	private int _nextClientId;
 	private final NetworkLayer<_ClientState> _network;
 
 	/**
@@ -29,21 +28,13 @@ public class NetworkServer
 	{
 		_listener = listener;
 		_channelsById = new HashMap<>();
-		_nextClientId = 1;
 		
 		_network = NetworkLayer.startListening(new NetworkLayer.IListener<_ClientState>()
 		{
 			@Override
 			public _ClientState buildToken()
 			{
-				int clientId = _nextClientId;
-				_nextClientId += 1;
-				_ClientState token = new _ClientState(clientId);
-				synchronized(NetworkServer.this)
-				{
-					_channelsById.put(clientId, token);
-				}
-				return token;
+				return new _ClientState();
 			}
 			@Override
 			public void peerConnected(_ClientState token)
@@ -55,21 +46,25 @@ public class NetworkServer
 			public void peerDisconnected(_ClientState token)
 			{
 				int clientId = token.clientId;
-				_ClientState channel = _channelsById.remove(clientId);
-				Assert.assertTrue(null != channel);
-				_listener.userLeft(clientId);
+				// Note that we still see this disconnect if we failed the handshake and we disconnect them.
+				if (clientId > 0)
+				{
+					_ClientState channel = _channelsById.remove(clientId);
+					Assert.assertTrue(null != channel);
+					_listener.userLeft(clientId);
+				}
 			}
 			@Override
 			public void peerReadyForWrite(_ClientState token)
 			{
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
-				Assert.assertTrue(token.didHandshake());
+				Assert.assertTrue(token.didHandshake);
 				_listener.networkReady(token.clientId);
 			}
 			@Override
 			public void packetReceived(_ClientState token, Packet packet)
 			{
-				if (token.didHandshake())
+				if (token.didHandshake)
 				{
 					_listener.packetReceived(token.clientId, packet);
 				}
@@ -81,12 +76,28 @@ public class NetworkServer
 						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
 						if (0 == safe.version)
 						{
-							// Send out description and consider the handshake completed.
-							// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
-							long millisPerTick = 100L;
-							_network.sendMessage(token, new Packet_ServerSendConfiguration(token.clientId, millisPerTick));
-							token.setHandshakeCompleted();
-							_listener.userJoined(token.clientId, safe.name);
+							// Make sure that we can resolve this user (and that they aren't already here).
+							int clientId  = _listener.userJoined(safe.name);
+							if (clientId > 0)
+							{
+								token.clientId = clientId;
+								token.didHandshake = true;
+								synchronized(NetworkServer.this)
+								{
+									_channelsById.put(clientId, token);
+								}
+								
+								// Send out description and consider the handshake completed.
+								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
+								long millisPerTick = 100L;
+								_network.sendMessage(token, new Packet_ServerSendConfiguration(token.clientId, millisPerTick));
+							}
+							else
+							{
+								// This user is not allowed to join.
+								System.err.println("Client \"" + safe.name + "\" rejected during handshake");
+								_network.disconnectPeer(token);
+							}
 						}
 						else
 						{
@@ -159,13 +170,13 @@ public class NetworkServer
 	public static interface IListener
 	{
 		/**
-		 * Called when a user joins, once its handshake is complete.  Note that the network is still not ready until
+		 * Called when a user joins, in order to complete its handshake.  Note that the network is still not ready until
 		 * networkReady(int) is received.
 		 * 
-		 * @param id The ID of the new client.
 		 * @param name The client's human name.
+		 * @return The ID to use for this user (<=0 implies the client should be rejected).
 		 */
-		void userJoined(int id, String name);
+		int userJoined(String name);
 		/**
 		 * Called when a user has disconnected.
 		 * 
@@ -190,23 +201,7 @@ public class NetworkServer
 
 	private static class _ClientState
 	{
-		public final int clientId;
-		private boolean _didHandshake;
-		
-		public _ClientState(int clientId)
-		{
-			this.clientId = clientId;
-		}
-		
-		public void setHandshakeCompleted()
-		{
-			Assert.assertTrue(!_didHandshake);
-			_didHandshake = true;
-		}
-		
-		public boolean didHandshake()
-		{
-			return _didHandshake;
-		}
+		public int clientId;
+		public boolean didHandshake;
 	}
 }

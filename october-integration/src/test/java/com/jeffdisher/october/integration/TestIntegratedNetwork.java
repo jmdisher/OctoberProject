@@ -39,11 +39,13 @@ public class TestIntegratedNetwork
 		{
 			Map<Integer, String> _joinNames = new HashMap<>();
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
 				// We might not see these if we connect/disconnect too quickly but we shouldn't see duplication.
+				int id = name.hashCode();
 				Assert.assertFalse(_joinNames.containsKey(id));
 				_joinNames.put(id, name);
+				return id;
 			}
 			@Override
 			public void userLeft(int id)
@@ -66,8 +68,8 @@ public class TestIntegratedNetwork
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
-		Assert.assertEquals(1, client1);
-		Assert.assertEquals(2, client2);
+		Assert.assertEquals("Client 1".hashCode(), client1);
+		Assert.assertEquals("Client 2".hashCode(), client2);
 		// We should see at least one disconnect, since we do these in series.
 		Assert.assertTrue(leftCount[0] > 0);
 		
@@ -88,17 +90,18 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
 				// Starts ready.
 				_isReady1 = true;
+				return name.hashCode();
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
 			{
 				// We only expect chat messages.
 				Packet_Chat chat = (Packet_Chat) packet;
-				Assert.assertEquals(2, id);
+				Assert.assertEquals("Client 2".hashCode(), id);
 				_messagesFor1.add(chat.message);
 				_handle();
 			}
@@ -114,7 +117,7 @@ public class TestIntegratedNetwork
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(1, new Packet_Chat(2, message));
+					holder[0].sendMessage("Client 1".hashCode(), new Packet_Chat("Client 2".hashCode(), message));
 				}
 			}
 		}, port);
@@ -143,7 +146,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "test");
+		}, InetAddress.getLocalHost(), port, "Client 1");
 		CyclicBarrier readyBarrier = new CyclicBarrier(2);
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
@@ -173,7 +176,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "test");
+		}, InetAddress.getLocalHost(), port, "Client 2");
 		
 		// Send messages from client 2 to 1.
 		for (int i = 0; i < 10; ++i)
@@ -240,9 +243,10 @@ public class TestIntegratedNetwork
 			{
 			}
 			@Override
-			public void userJoined(int id, String name)
+			public int userJoined(String name)
 			{
 				// We will sent the message once the network is ready.
+				return name.hashCode();
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
@@ -336,7 +340,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, InetAddress.getLocalHost(), port, "test");
+		}, InetAddress.getLocalHost(), port, name);
 		int clientId = client.getClientId();
 		client.stop();
 		return clientId;
