@@ -18,7 +18,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
-public class TestCuboidLoader
+public class TestResourceLoader
 {
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
@@ -26,7 +26,7 @@ public class TestCuboidLoader
 	@Test
 	public void empty() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		
 		// We should see nothing come back, not matter how many times we issue the request.
@@ -39,7 +39,7 @@ public class TestCuboidLoader
 	@Test
 	public void basic() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		loader.preload(cuboid);
@@ -59,7 +59,7 @@ public class TestCuboidLoader
 	@Test
 	public void flatWorld() throws Throwable
 	{
-		CuboidLoader loader = new CuboidLoader(DIRECTORY.newFolder(), new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator());
 		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
 		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		
@@ -89,7 +89,7 @@ public class TestCuboidLoader
 	public void writeThenRead() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		CuboidLoader loader = new CuboidLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
 		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -108,7 +108,7 @@ public class TestCuboidLoader
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 		
 		// Now, create a new loader to verify that we can read this.
-		loader = new CuboidLoader(worldDirectory, null);
+		loader = new ResourceLoader(worldDirectory, null);
 		results = loader.getResultsAndIssueRequest(List.of(airAddress));
 		Assert.assertNull(results);
 		loaded = _waitForOne(loader);
@@ -117,7 +117,7 @@ public class TestCuboidLoader
 	}
 
 
-	private static CuboidData _waitForOne(CuboidLoader loader) throws InterruptedException
+	private static CuboidData _waitForOne(ResourceLoader loader) throws InterruptedException
 	{
 		CuboidData loaded = null;
 		for (int i = 0; (null == loaded) && (i < 10); ++i)

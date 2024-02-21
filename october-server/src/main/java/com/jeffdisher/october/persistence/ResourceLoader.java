@@ -25,7 +25,7 @@ import com.jeffdisher.october.utils.MessageQueue;
  * Handles loading or generating cuboids.  This is done asynchronously but results are exposed as call-return in order
  * to avoid cross-thread interaction details becoming part of the interface.
  */
-public class CuboidLoader
+public class ResourceLoader
 {
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
@@ -40,7 +40,7 @@ public class CuboidLoader
 	private final ReentrantLock _sharedDataLock;
 	private Collection<CuboidData> _shared_resolved;
 
-	public CuboidLoader(File saveDirectory, Function<CuboidAddress, CuboidData> generator)
+	public ResourceLoader(File saveDirectory, Function<CuboidAddress, CuboidData> generator)
 	{
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());

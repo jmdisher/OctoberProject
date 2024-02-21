@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -35,7 +35,7 @@ public class ServerMain
 					Assert.assertTrue(worldDirectory.mkdirs());
 				}
 				// We will just default to a flat world generator but still build the demo world on top as preload.
-				CuboidLoader cuboidLoader = new CuboidLoader(worldDirectory, new FlatWorldGenerator());
+				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
 				_populateDemoWorld(cuboidLoader);
 				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
 				// We will just wait for input before shutting down.
@@ -58,7 +58,7 @@ public class ServerMain
 	}
 
 
-	private static void _populateDemoWorld(CuboidLoader cuboidLoader)
+	private static void _populateDemoWorld(ResourceLoader cuboidLoader)
 	{
 		// Since the location is standing in 0.0, we need to load at least the 8 cuboids around the origin.
 		// Note that we want them to stand on the ground so we will fill the bottom 4 with stone and the top 4 with air.

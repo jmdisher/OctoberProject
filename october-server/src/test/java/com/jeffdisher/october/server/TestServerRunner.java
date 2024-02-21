@@ -20,7 +20,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
-import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -42,7 +42,7 @@ public class TestServerRunner
 		// Get the starting number of threads in our group.
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, new CuboidLoader(DIRECTORY.newFolder(), null), () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, new ResourceLoader(DIRECTORY.newFolder(), null), () -> System.currentTimeMillis());
 		// We expect to see an extra 3 threads:  ServerRunner, TickRunner, CuboidLoader.
 		Assert.assertEquals(startingActiveCount + 3, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
@@ -56,7 +56,7 @@ public class TestServerRunner
 	{
 		// Just connect two clients and verify that they see themselves and each other.
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -83,7 +83,7 @@ public class TestServerRunner
 	public void multiPhase() throws Throwable
 	{
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -110,7 +110,7 @@ public class TestServerRunner
 	{
 		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -138,7 +138,7 @@ public class TestServerRunner
 	{
 		// Send some empty move changes to see that the entity is falling over time.
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
@@ -180,7 +180,7 @@ public class TestServerRunner
 	{
 		// Connect 2 clients and verify that 1 can see the other when they disconnect.
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -212,7 +212,7 @@ public class TestServerRunner
 	{
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), ItemRegistry.STONE));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ItemRegistry.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
@@ -244,7 +244,7 @@ public class TestServerRunner
 	}
 
 
-	private static void _loadDefaultMap(CuboidLoader cuboidLoader)
+	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);

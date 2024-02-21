@@ -18,7 +18,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -48,7 +48,7 @@ public class ServerRunner
 	// General and configuration variables.
 	private final long _millisPerTick;
 	private final IServerAdapter _network;
-	private final CuboidLoader _loader;
+	private final ResourceLoader _loader;
 	private final TickRunner _tickRunner;
 
 	// Information related to internal thread state and message passing.
@@ -68,7 +68,7 @@ public class ServerRunner
 	// Note that the runner takes ownership of CuboidLoader and will shut it down.
 	public ServerRunner(long millisPerTick
 			, IServerAdapter network
-			, CuboidLoader loader
+			, ResourceLoader loader
 			, LongSupplier currentTimeMillisProvider
 	)
 	{

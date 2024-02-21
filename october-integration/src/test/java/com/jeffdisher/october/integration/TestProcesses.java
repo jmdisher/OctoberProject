@@ -14,7 +14,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -40,7 +40,7 @@ public class TestProcesses
 	@Test
 	public void startStopServer() throws Throwable
 	{
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		server.stop();
 	}
@@ -56,7 +56,7 @@ public class TestProcesses
 	public void startStop() throws Throwable
 	{
 		// Start everything, connect and disconnect once the see the entity arrive.
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
@@ -76,7 +76,7 @@ public class TestProcesses
 	public void basicMovement() throws Throwable
 	{
 		// Demonstrate that a client can move around the server without issue.
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
@@ -112,7 +112,7 @@ public class TestProcesses
 	public void falling() throws Throwable
 	{
 		// Demonstrate that a client will fall through air and this will make sense in the projection.
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboids.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
@@ -153,7 +153,7 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long currentTimeMillis = 1000L;
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -182,7 +182,7 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long[] currentTimeMillis = new long[] { 1000L };
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ItemRegistry.AIR));
@@ -276,7 +276,7 @@ public class TestProcesses
 	public void floodMovementCommands() throws Throwable
 	{
 		// Send lots of movement commands since the client should be disconnected.
-		CuboidLoader cuboidLoader = new CuboidLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);

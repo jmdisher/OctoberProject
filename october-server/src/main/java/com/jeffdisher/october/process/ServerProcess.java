@@ -20,7 +20,7 @@ import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
-import com.jeffdisher.october.persistence.CuboidLoader;
+import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -55,7 +55,7 @@ public class ServerProcess
 	 */
 	public ServerProcess(int port
 			, long millisPerTick
-			, CuboidLoader cuboidLoader
+			, ResourceLoader cuboidLoader
 			, LongSupplier currentTimeMillisProvider
 	) throws IOException
 	{
