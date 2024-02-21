@@ -6,13 +6,14 @@ public enum PacketType
 	ERROR,
 	
 	/**
-	 * Sent from server to client as the first message in handshake.
+	 * Sent from the client to the server as the first message in the handshake.
 	 */
-	ASSIGN_CLIENT_ID,
+	CLIENT_SEND_DESCRIPTION,
 	/**
-	 * Sent from client to server in response to ASSIGN_CLIENT_ID to complete handshake.
+	 * Send from the server to the client in response to CLIENT_SENT_DESCRIPTION to complete handshake (or disconnects).
 	 */
-	SET_CLIENT_NAME,
+	SERVER_SEND_CONFIGURATION,
+	
 	/**
 	 * Sent both to/from server, but the ID is ignored when sent TO the server.
 	 */

@@ -21,8 +21,8 @@ public class PacketCodec
 	// We tried doing this as a "push" in static{} for each opcode but they aren't eagerly initialized (not surprising).
 	static
 	{
-		Packet_AssignClientId.register(_CODEC_TABLE);
-		Packet_SetClientName.register(_CODEC_TABLE);
+		Packet_ClientSendDescription.register(_CODEC_TABLE);
+		Packet_ServerSendConfiguration.register(_CODEC_TABLE);
 		Packet_Chat.register(_CODEC_TABLE);
 		Packet_CuboidStart.register(_CODEC_TABLE);
 		Packet_CuboidFragment.register(_CODEC_TABLE);

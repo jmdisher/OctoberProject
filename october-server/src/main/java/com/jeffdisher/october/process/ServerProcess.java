@@ -246,6 +246,6 @@ public class ServerProcess
 	private static class _ClientBuffer
 	{
 		public final Queue<Packet> outgoing = new LinkedList<>();
-		public boolean isNetworkReady = true;
+		public boolean isNetworkReady = false;
 	}
 }

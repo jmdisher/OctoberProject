@@ -51,31 +51,50 @@ public class NetworkClient
 			@Override
 			public void peerReadyForWrite(_State token)
 			{
-				// We can pass this back, even if right after handshake, since we sent the last handshake message, meaning it is now complete.
-				_listener.networkReady();
+				if (_token.didFinishHandshake())
+				{
+					Assert.assertTrue(!_token.networkIsReady);
+					_token.networkIsReady = true;
+					// Just pass this back since we are done with it.
+					_listener.networkReady();
+				}
+				else
+				{
+					// We already started the handshake so record the network is ready while we wait for it to finish.
+					Assert.assertTrue(!_token.networkIsReady);
+					_token.networkIsReady = true;
+				}
 			}
 			@Override
 			public void packetReceived(_State token, Packet packet)
 			{
-				if (_token.didHandshake())
+				if (_token.didFinishHandshake())
 				{
 					// Pass this on to the listener.
 					_listener.packetReceived(packet);
 				}
 				else
 				{
+					// We are expected to consume this as the completion of the handshake.
 					// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
-					Assert.assertTrue(PacketType.ASSIGN_CLIENT_ID == packet.type);
-					int assignedId = ((Packet_AssignClientId) packet).clientId;
+					Assert.assertTrue(PacketType.SERVER_SEND_CONFIGURATION == packet.type);
+					Packet_ServerSendConfiguration safe = (Packet_ServerSendConfiguration) packet;
+					int assignedId = safe.clientId;
 					token.setHandshakeCompleted(assignedId);
+					// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.
 					_listener.handshakeCompleted(assignedId);
 					
-					// Send our name back as the response.
-					_network.sendMessage(_token, new Packet_SetClientName(clientName));
+					// See if the network is ready yet (since there was likely a race here).
+					if (token.networkIsReady)
+					{
+						_listener.networkReady();
+					}
 				}
 			}
 		}, host, port);
 		
+		// The connection starts writable so kick-off the handshake.
+		_network.sendMessage(_token, new Packet_ClientSendDescription(0, clientName));
 	}
 
 	/**
@@ -94,9 +113,10 @@ public class NetworkClient
 	public void sendMessage(Packet packet)
 	{
 		// We need to wait for handshake before trying to use the client.
-		Assert.assertTrue(_token.didHandshake());
-		// TODO: Buffer this.
+		Assert.assertTrue(_token.didFinishHandshake());
+		Assert.assertTrue(_token.networkIsReady);
 		_network.sendMessage(_token, packet);
+		_token.networkIsReady = false;
 	}
 
 	/**
@@ -143,23 +163,25 @@ public class NetworkClient
 
 	private static class _State
 	{
-		private boolean _didHandshake;
+		public boolean networkIsReady;
+		
+		private boolean _didFinishHandshake;
 		private int _clientId;
 		
 		public synchronized void setHandshakeCompleted(int clientId)
 		{
-			Assert.assertTrue(!_didHandshake);
-			_didHandshake = true;
+			Assert.assertTrue(!_didFinishHandshake);
+			_didFinishHandshake = true;
 			_clientId = clientId;
 			this.notifyAll();
 		}
-		public boolean didHandshake()
+		public boolean didFinishHandshake()
 		{
-			return _didHandshake;
+			return _didFinishHandshake;
 		}
 		public synchronized int getClientId() throws InterruptedException
 		{
-			while (!_didHandshake)
+			while (!_didFinishHandshake)
 			{
 				this.wait();
 			}

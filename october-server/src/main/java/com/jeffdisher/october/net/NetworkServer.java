@@ -48,9 +48,8 @@ public class NetworkServer
 			@Override
 			public void peerConnected(_ClientState token)
 			{
-				// We start by immediately sending the handshake.
-				Assert.assertTrue(!token.didHandshake());
-				_network.sendMessage(token, new Packet_AssignClientId(token.clientId));
+				// We don't do anything until they introduce themselves.
+				// TODO:  We probably want to consider setting some timeout here.
 			}
 			@Override
 			public void peerDisconnected(_ClientState token)
@@ -63,13 +62,9 @@ public class NetworkServer
 			@Override
 			public void peerReadyForWrite(_ClientState token)
 			{
-				// TODO:  Handle anything still pending to send out.
-				
-				// We will only pass this back if the handshake has completed, otherwise it is just the echo of the first handshake message we sent (which we want to consume, here).
-				if (token.didHandshake())
-				{
-					_listener.networkReady(token.clientId);
-				}
+				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
+				Assert.assertTrue(token.didHandshake());
+				_listener.networkReady(token.clientId);
 			}
 			@Override
 			public void packetReceived(_ClientState token, Packet packet)
@@ -80,11 +75,25 @@ public class NetworkServer
 				}
 				else
 				{
-					// This MUST be the response type.
-					if (PacketType.SET_CLIENT_NAME == packet.type)
+					// This MUST be the client's introduction.
+					if (PacketType.CLIENT_SEND_DESCRIPTION == packet.type)
 					{
-						token.setHandshakeCompleted();
-						_listener.userJoined(token.clientId, ((Packet_SetClientName)packet).name);
+						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
+						if (0 == safe.version)
+						{
+							// Send out description and consider the handshake completed.
+							// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
+							long millisPerTick = 100L;
+							_network.sendMessage(token, new Packet_ServerSendConfiguration(token.clientId, millisPerTick));
+							token.setHandshakeCompleted();
+							_listener.userJoined(token.clientId, safe.name);
+						}
+						else
+						{
+							// Unknown version so just disconnect them.
+							System.err.println("Client " + token.clientId + ": Requested unknown protocol version: " + safe.version);
+							_network.disconnectPeer(token);
+						}
 					}
 					else
 					{
@@ -150,7 +159,8 @@ public class NetworkServer
 	public static interface IListener
 	{
 		/**
-		 * Called when a user joins, once its handshake is complete.
+		 * Called when a user joins, once its handshake is complete.  Note that the network is still not ready until
+		 * networkReady(int) is received.
 		 * 
 		 * @param id The ID of the new client.
 		 * @param name The client's human name.

@@ -231,7 +231,18 @@ public class TestNetworkClient
 	{
 		SocketChannel connection = server.accept();
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		PacketCodec.serializeToBuffer(buffer, new Packet_AssignClientId(clientId));
+		
+		// Wait for the first step of the handshake.
+		connection.read(buffer);
+		buffer.flip();
+		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		Packet_ClientSendDescription fromClient = (Packet_ClientSendDescription) packet;
+		Assert.assertNotNull(fromClient);
+		
+		// Send out response.
+		buffer.clear();
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfiguration(clientId, 100L));
 		buffer.flip();
 		connection.write(buffer);
 		return connection;

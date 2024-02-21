@@ -242,9 +242,7 @@ public class TestIntegratedNetwork
 			@Override
 			public void userJoined(int id, String name)
 			{
-				// Starts ready - we can send the message now.
-				holder[0].sendMessage(id, outgoing[_nextIndex]);
-				_nextIndex += 1;
+				// We will sent the message once the network is ready.
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)

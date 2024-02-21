@@ -186,6 +186,7 @@ public class TestNetworkServer
 		Packet[] outgoing = new Packet[] { start, frag1, frag2 };
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
+		System.out.println("Beginning network test");
 		int port = 3000;
 		NetworkServer[] holder = new NetworkServer[1];
 		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
@@ -198,9 +199,7 @@ public class TestNetworkServer
 			@Override
 			public void userJoined(int id, String name)
 			{
-				// Starts ready - we can send the message now.
-				holder[0].sendMessage(id, outgoing[_nextIndex]);
-				_nextIndex += 1;
+				// We need to wait for the network ready callback.
 			}
 			@Override
 			public void packetReceived(int id, Packet packet)
@@ -247,15 +246,19 @@ public class TestNetworkServer
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		client.read(buffer);
-		buffer.flip();
-		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_AssignClientId assign = (Packet_AssignClientId) packet;
-		buffer.clear();
-		PacketCodec.serializeToBuffer(buffer, new Packet_SetClientName(name));
+		
+		// Send the first step of the handshake.
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, name));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
+		
+		// Now read the response.
+		buffer.clear();
+		client.read(buffer);
+		buffer.flip();
+		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Packet_ServerSendConfiguration assign = (Packet_ServerSendConfiguration) packet;
 		client.close();
 		return assign.clientId;
 	}
@@ -264,16 +267,20 @@ public class TestNetworkServer
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		client.read(buffer);
-		buffer.flip();
-		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_AssignClientId assign = (Packet_AssignClientId) packet;
-		Assert.assertNotNull(assign);
-		buffer.clear();
-		PacketCodec.serializeToBuffer(buffer, new Packet_SetClientName(name));
+		
+		// Send the first step of the handshake.
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, name));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
+		
+		// Now read the response.
+		buffer.clear();
+		client.read(buffer);
+		buffer.flip();
+		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Packet_ServerSendConfiguration assign = (Packet_ServerSendConfiguration) packet;
+		Assert.assertNotNull(assign);
 		return client;
 	}
 
