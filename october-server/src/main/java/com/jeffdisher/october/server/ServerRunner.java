@@ -177,6 +177,7 @@ public class ServerRunner
 			_messages.enqueue(() -> {
 				// Add this to the list of new clients (we will send them the snapshot and inject them after the the current tick is done tick).
 				_newClients.add(clientId);
+				System.out.println("Client connected: " + clientId);
 			});
 		}
 		@Override
@@ -187,6 +188,7 @@ public class ServerRunner
 				_connectedClients.remove(clientId);
 				// We also want to add them to the list of clients which must be unloaded in the logic engine.
 				_removedClients.add(clientId);
+				System.out.println("Client disconnected: " + clientId);
 			});
 		}
 		@Override

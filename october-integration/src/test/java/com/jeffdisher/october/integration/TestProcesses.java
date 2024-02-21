@@ -303,10 +303,10 @@ public class TestProcesses
 		passiveClient.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(2, passiveListener.entities.size());
 		
-		// Send 20 move commands (since the limit is 10, there is little chance that we will observe the flakiness of this approach).
+		// Send 30 move commands (since the limit is 20, there is little chance that we will observe the flakiness of this approach).
 		// (we will just use the counter as the commit number since these aren't in a speculative projection but the server still expects them).
 		EntityLocation oldLocation = listener.getLocalEntity().location();
-		for (long i = 1L; i <= 20L; ++i)
+		for (long i = 1L; i <= 30L; ++i)
 		{
 			// Note that we need to send using the low-level sendAction to bypass the ClientRunner checks and internal back-pressure in order to see how the server handles this.
 			EntityChangeMove change = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);

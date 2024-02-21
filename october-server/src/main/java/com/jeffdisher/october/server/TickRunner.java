@@ -39,8 +39,10 @@ public class TickRunner
 	/**
 	 * The maximum number of actions allowed waiting to be scheduled, per-client.  Attempting to go beyond this limit
 	 * will disconnect the client.
+	 * The rationale for this number is that we typically see 6 actions per tick (10 TPS with 60 FPS) which means that
+	 * the slack should be at least 2 ticks and this gives us around 3.
 	 */
-	public static final int PENDING_ACTION_LIMIT = 10;
+	public static final int PENDING_ACTION_LIMIT = 20;
 
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
