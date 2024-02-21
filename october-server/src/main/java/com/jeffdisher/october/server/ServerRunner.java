@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -121,7 +122,8 @@ public class ServerRunner
 		// (first, we want to finish any remaining write-back).
 		if (!_tickAdvancer.completedCuboids.isEmpty())
 		{
-			_loader.writeBackToDisk(_tickAdvancer.completedCuboids);
+			// TODO:  Add entities here.
+			_loader.writeBackToDisk(_tickAdvancer.completedCuboids, List.of());
 		}
 		_loader.shutdown();
 		// We can now join on the background thread since it has nothing else to block on.
@@ -291,11 +293,11 @@ public class ServerRunner
 			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
 			// Request any missing cuboids and see what we got back from last time.
-			Collection<CuboidData> newCuboids = _loader.getResultsAndIssueRequest(cuboidsToLoad);
-			if (null != newCuboids)
+			// TODO:  Add entities here.
+			Collection<CuboidData> newCuboids = new ArrayList<>();
+			_loader.getResultsAndRequestBackgroundLoad(newCuboids, List.of(), cuboidsToLoad, List.of());
+			if (!newCuboids.isEmpty())
 			{
-				// If this was non-null, it must contain something.
-				Assert.assertTrue(!newCuboids.isEmpty());
 				_tickRunner.cuboidsWereLoaded(newCuboids);
 			}
 			

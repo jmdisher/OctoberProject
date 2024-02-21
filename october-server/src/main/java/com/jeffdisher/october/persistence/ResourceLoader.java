@@ -14,40 +14,54 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
 
 
 /**
- * Handles loading or generating cuboids.  This is done asynchronously but results are exposed as call-return in order
- * to avoid cross-thread interaction details becoming part of the interface.
+ * Handles loading or generating cuboids and entities.  This is done asynchronously but results are exposed as
+ * call-return in order to avoid cross-thread interaction details becoming part of the interface.
  */
 public class ResourceLoader
 {
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
+	// Defaults for entity creation.
+	public static final EntityVolume ENTITY_DEFAULT_VOLUME = new EntityVolume(1.8f, 0.5f);
+	public static final EntityLocation ENTITY_DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
+	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
+
 	private final File _saveDirectory;
 	private final Function<CuboidAddress, CuboidData> _cuboidGenerator;
-	private final Map<CuboidAddress, CuboidData> _inFlight;
+	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
-	private Collection<CuboidData> _shared_resolved;
+	private Collection<CuboidData> _shared_resolvedCuboids;
+	private Collection<Entity> _shared_resolvedEntities;
 
-	public ResourceLoader(File saveDirectory, Function<CuboidAddress, CuboidData> generator)
+	public ResourceLoader(File saveDirectory
+			, Function<CuboidAddress, CuboidData> cuboidGenerator
+	)
 	{
 		// The save directory must exist as a directory before we get here.
 		Assert.assertTrue(saveDirectory.isDirectory());
 		
 		_saveDirectory = saveDirectory;
-		_cuboidGenerator = generator;
-		_inFlight = new HashMap<>();
+		_cuboidGenerator = cuboidGenerator;
+		_preLoaded = new HashMap<>();
 		_queue = new MessageQueue();
 		_background = new Thread(() -> {
 			_background_main();
@@ -85,22 +99,30 @@ public class ResourceLoader
 	 */
 	public void preload(CuboidData cuboid)
 	{
-		_inFlight.put(cuboid.getCuboidAddress(), cuboid);
+		_preLoaded.put(cuboid.getCuboidAddress(), cuboid);
 	}
 
 	/**
-	 * Queues up a background request for the given collection of cuboids.  These will be returned in a future call as
-	 * they will be internally loaded, asynchronously.
-	 * Consequently, this call will return a collection of previously-requested cuboids which have been loaded/generated
-	 * in the background.
+	 * Queues up a background request for the given collection of cuboids and entities.  These will be returned in a
+	 * future call as they will be internally loaded, asynchronously.
+	 * Consequently, this call will return a collection of previously-requested cuboids and entities which have been
+	 * loaded/generated in the background via their corresponding out parameters.
 	 * 
+	 * @param out_loadedCuboids Will be filled with previously-requested cuboids which have been satisfied in the
+	 * background (null or non-empty).
+	 * @param out_loadedEntities Will be filled with previously-requested entities which have been satisfied in the
+	 * background.
 	 * @param requestedCuboids The collection of cuboids to load/generate, by address.
-	 * @return A collection of previously-requested cuboids which have been satisfied in the background (null or non-empty).
+	 * @param requestedEntityIds The collection of entities to load/generate, by ID.
 	 */
-	public Collection<CuboidData> getResultsAndIssueRequest(Collection<CuboidAddress> requestedCuboids)
+	public void getResultsAndRequestBackgroundLoad(Collection<CuboidData> out_loadedCuboids
+			, Collection<Entity> out_loadedEntities
+			, Collection<CuboidAddress> requestedCuboids
+			, Collection<Integer> requestedEntityIds
+	)
 	{
 		// Send this request to the background thread.
-		if (!requestedCuboids.isEmpty())
+		if (!requestedCuboids.isEmpty() || !requestedEntityIds.isEmpty())
 		{
 			_queue.enqueue(() -> {
 				for (CuboidAddress address : requestedCuboids)
@@ -112,13 +134,13 @@ public class ResourceLoader
 					// 4) Return null (only happens in tests)
 					
 					// See if we can load this from disk.
-					CuboidData data = _background_readFromDisk(address);
+					CuboidData data = _background_readCuboidFromDisk(address);
 					if (null == data)
 					{
-						if (_inFlight.containsKey(address))
+						if (_preLoaded.containsKey(address))
 						{
 							// We will "consume" this since we will load from disk on the next call.
-							data = _inFlight.remove(address);
+							data = _preLoaded.remove(address);
 						}
 						else if (null != _cuboidGenerator)
 						{
@@ -128,41 +150,71 @@ public class ResourceLoader
 					// If we found anything, return it.
 					if (null != data)
 					{
-						_background_storeResult(data);
+						_background_returnCuboid(data);
 					}
+				}
+				for (int id : requestedEntityIds)
+				{
+					// Priority of loads:
+					// 1) Disk (since that is always considered authoritative)
+					// 2) The generator
+					
+					// See if we can load this from disk.
+					Entity data = _background_readEntityFromDisk(id);
+					if (null == data)
+					{
+						// Note that the entity generator is always present.
+						data = _buildDefaultEntity(id);
+					}
+					
+					// Return the result.
+					Assert.assertTrue(null != data);
+					_background_returnEntity(data);
 				}
 			});
 		}
 		
-		// Pass back anything we have completed.
-		Collection<CuboidData> resolved;
+		// Pass back anything we have completed via out-params.
 		_sharedDataLock.lock();
 		try
 		{
-			resolved = _shared_resolved;
-			_shared_resolved = null;
+			if (null != _shared_resolvedCuboids)
+			{
+				out_loadedCuboids.addAll(_shared_resolvedCuboids);
+				_shared_resolvedCuboids = null;
+			}
+			if (null != _shared_resolvedEntities)
+			{
+				out_loadedEntities.addAll(_shared_resolvedEntities);
+				_shared_resolvedEntities = null;
+			}
 		}
 		finally
 		{
 			_sharedDataLock.unlock();
 		}
-		return resolved;
 	}
 
 	/**
-	 * Requests that the given collection of cuboids be written back to disk.  This call will return immediately while
-	 * the write-back will complete asynchronously.
+	 * Requests that the given collection of cuboids and entities be written back to disk.  This call will return
+	 * immediately while the write-back will complete asynchronously.
+	 * Note that at least one of these collections must contain something.
 	 * 
-	 * @param cuboids The cuboids to write (cannot be empty).
+	 * @param cuboids The cuboids to write.
+	 * @param entities The entities to write.
 	 */
-	public void writeBackToDisk(Collection<IReadOnlyCuboidData> cuboids)
+	public void writeBackToDisk(Collection<IReadOnlyCuboidData> cuboids, Collection<Entity> entities)
 	{
-		// This one should only be called if there are some to remove.
-		Assert.assertTrue(!cuboids.isEmpty());
+		// This one should only be called if there are some to write.
+		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
 		_queue.enqueue(() -> {
 			for (IReadOnlyCuboidData cuboid : cuboids)
 			{
-				_background_writeToDisk(cuboid);
+				_background_writeCuboidToDisk(cuboid);
+			}
+			for (Entity entity : entities)
+			{
+				_background_writeEntityToDisk(entity);
 			}
 		});
 	}
@@ -178,16 +230,16 @@ public class ResourceLoader
 		}
 	}
 
-	private void _background_storeResult(CuboidData loaded)
+	private void _background_returnCuboid(CuboidData loaded)
 	{
 		_sharedDataLock.lock();
 		try
 		{
-			if (null == _shared_resolved)
+			if (null == _shared_resolvedCuboids)
 			{
-				_shared_resolved = new ArrayList<>();
+				_shared_resolvedCuboids = new ArrayList<>();
 			}
-			_shared_resolved.add(loaded);
+			_shared_resolvedCuboids.add(loaded);
 		}
 		finally
 		{
@@ -195,12 +247,29 @@ public class ResourceLoader
 		}
 	}
 
-	private CuboidData _background_readFromDisk(CuboidAddress address)
+	private void _background_returnEntity(Entity loaded)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _shared_resolvedEntities)
+			{
+				_shared_resolvedEntities = new ArrayList<>();
+			}
+			_shared_resolvedEntities.add(loaded);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
+	private CuboidData _background_readCuboidFromDisk(CuboidAddress address)
 	{
 		// These data files are relatively small so we can just read this in, completely.
 		CuboidData cuboid;
 		try (
-				RandomAccessFile aFile = new RandomAccessFile(_getFile(address), "r");
+				RandomAccessFile aFile = new RandomAccessFile(_getCuboidFile(address), "r");
 				FileChannel inChannel = aFile.getChannel();
 		)
 		{
@@ -223,7 +292,7 @@ public class ResourceLoader
 		return cuboid;
 	}
 
-	private void _background_writeToDisk(IReadOnlyCuboidData cuboid)
+	private void _background_writeCuboidToDisk(IReadOnlyCuboidData cuboid)
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
@@ -234,7 +303,7 @@ public class ResourceLoader
 		
 		try (
 				
-				RandomAccessFile aFile = new RandomAccessFile(_getFile(cuboid.getCuboidAddress()), "rw");
+				RandomAccessFile aFile = new RandomAccessFile(_getCuboidFile(cuboid.getCuboidAddress()), "rw");
 				FileChannel outChannel = aFile.getChannel();
 		)
 		{
@@ -253,9 +322,82 @@ public class ResourceLoader
 		}
 	}
 
-	private File _getFile(CuboidAddress address)
+	private File _getCuboidFile(CuboidAddress address)
 	{
 		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
 		return new File(_saveDirectory, fileName);
+	}
+
+	private Entity _background_readEntityFromDisk(int id)
+	{
+		// These data files are relatively small so we can just read this in, completely.
+		Entity entity;
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(_getEntityFile(id), "r");
+				FileChannel inChannel = aFile.getChannel();
+		)
+		{
+			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
+			buffer.load();
+			entity = CodecHelpers.readEntity(buffer);
+		}
+		catch (FileNotFoundException e)
+		{
+			// This is ok and means we should return null.
+			entity = null;
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		return entity;
+	}
+
+	private void _background_writeEntityToDisk(Entity entity)
+	{
+		// Serialize the entire entity into memory and write it out.
+		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		CodecHelpers.writeEntity(_backround_serializationBuffer, entity);
+		_backround_serializationBuffer.flip();
+		
+		try (
+				
+				RandomAccessFile aFile = new RandomAccessFile(_getEntityFile(entity.id()), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			outChannel.write(_backround_serializationBuffer);
+			// We expect that this wrote fully.
+			Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
+			_backround_serializationBuffer.clear();
+		}
+		catch (FileNotFoundException e)
+		{
+			throw Assert.unexpected(e);
+		}
+		catch (IOException e)
+		{
+			throw Assert.unexpected(e);
+		}
+	}
+
+	private File _getEntityFile(int id)
+	{
+		String fileName = "entity_" + id + ".entity";
+		return new File(_saveDirectory, fileName);
+	}
+
+	private static Entity _buildDefaultEntity(int id)
+	{
+		// We start by giving the user an empty inventory.
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
+		return new Entity(id
+				, ENTITY_DEFAULT_LOCATION
+				, 0.0f
+				, ENTITY_DEFAULT_VOLUME
+				, ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, null
+		);
 	}
 }
