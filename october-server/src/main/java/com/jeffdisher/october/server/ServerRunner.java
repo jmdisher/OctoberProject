@@ -292,6 +292,16 @@ public class ServerRunner
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
 			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
+			// Note that We will walk the removed clients BEFORE adding new ones since it is theoretically possible for
+			// a client to disconnect and reconnect in the same tick and the logic has this implicit assumption.
+			// Walk through any removed clients, removing them from the world.
+			while (!_removedClients.isEmpty())
+			{
+				int clientId = _removedClients.remove();
+				_tickRunner.entityDidLeave(clientId);
+				// (we removed this from the connected clients, earlier).
+			}
+			
 			// Request any missing cuboids and see what we got back from last time.
 			// TODO:  Add entities here.
 			Collection<CuboidData> newCuboids = new ArrayList<>();
@@ -311,14 +321,6 @@ public class ServerRunner
 				
 				// This client is now connected and can receive events.
 				_connectedClients.put(clientId, new ClientState(initial.location()));
-			}
-			
-			// Walk through any removed clients, removing them from the world.
-			while (!_removedClients.isEmpty())
-			{
-				int clientId = _removedClients.remove();
-				_tickRunner.entityDidLeave(clientId);
-				// (we removed this from the connected clients, earlier).
 			}
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).

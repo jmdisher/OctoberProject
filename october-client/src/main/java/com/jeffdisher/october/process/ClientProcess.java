@@ -131,6 +131,13 @@ public class ClientProcess
 	 */
 	public synchronized long waitForLocalEntity(long currentTimeMillis) throws InterruptedException
 	{
+		// We want to wait until we see the end of at least a single tick since we don't want to return after the first
+		// entity packet, but before the first tick packet (would give us 0).
+		while (0 == _lastTickFromServer)
+		{
+			this.wait();
+		}
+		// Now, we can wait for the entity (although it likely came in before the tick).
 		while (!_isEntityLoaded)
 		{
 			this.wait();

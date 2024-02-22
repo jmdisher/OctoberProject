@@ -124,8 +124,11 @@ public class ResourceLoader
 		// Send this request to the background thread.
 		if (!requestedCuboids.isEmpty() || !requestedEntityIds.isEmpty())
 		{
+			// Copy these since they could change out from under us once we hand-off.
+			Collection<CuboidAddress> copiedCuboids = new ArrayList<>(requestedCuboids);
+			Collection<Integer> copiedEntityIds = new ArrayList<>(requestedEntityIds);
 			_queue.enqueue(() -> {
-				for (CuboidAddress address : requestedCuboids)
+				for (CuboidAddress address : copiedCuboids)
 				{
 					// Priority of loads:
 					// 1) Disk (since that is always considered authoritative)
@@ -153,7 +156,7 @@ public class ResourceLoader
 						_background_returnCuboid(data);
 					}
 				}
-				for (int id : requestedEntityIds)
+				for (int id : copiedEntityIds)
 				{
 					// Priority of loads:
 					// 1) Disk (since that is always considered authoritative)
