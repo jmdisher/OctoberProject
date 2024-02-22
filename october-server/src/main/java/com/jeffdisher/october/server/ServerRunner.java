@@ -16,7 +16,6 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -122,8 +121,7 @@ public class ServerRunner
 		// (first, we want to finish any remaining write-back).
 		if (!_tickAdvancer.completedCuboids.isEmpty())
 		{
-			// TODO:  Add entities here.
-			_loader.writeBackToDisk(_tickAdvancer.completedCuboids, List.of());
+			_loader.writeBackToDisk(_tickAdvancer.completedCuboids, _tickAdvancer.completedEntities);
 		}
 		_loader.shutdown();
 		// We can now join on the background thread since it has nothing else to block on.
@@ -250,6 +248,8 @@ public class ServerRunner
 		private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
 		// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
 		public Collection<IReadOnlyCuboidData> completedCuboids = Collections.emptySet();
+		// Same thing with entities.
+		public Collection<Entity> completedEntities = Collections.emptySet();
 		
 		@Override
 		public void run()
@@ -259,6 +259,7 @@ public class ServerRunner
 			// (any new callbacks will be queued behind this, anyway, which is all that matters).
 			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
 			this.completedCuboids = snapshot.completedCuboids().values();
+			this.completedEntities = snapshot.completedEntities().values();
 			
 			// Remove any of the cuboids in the snapshot from any that we had requested.
 			_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
@@ -300,27 +301,31 @@ public class ServerRunner
 				int clientId = _removedClients.remove();
 				_tickRunner.entityDidLeave(clientId);
 				// (we removed this from the connected clients, earlier).
+				
+				// We also want to write-back the entity (these generally only happen one at a time so we don't bother batching).
+				Entity removedEntity = snapshot.completedEntities().get(clientId);
+				_loader.writeBackToDisk(List.of(), List.of(removedEntity));
 			}
 			
-			// Request any missing cuboids and see what we got back from last time.
-			// TODO:  Add entities here.
+			// Request any missing cuboids or new entities and see what we got back from last time.
 			Collection<CuboidData> newCuboids = new ArrayList<>();
-			_loader.getResultsAndRequestBackgroundLoad(newCuboids, List.of(), cuboidsToLoad, List.of());
+			Collection<Entity> newEntities = new ArrayList<>();
+			_loader.getResultsAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients);
+			// We have requested the clients so drop this, now.
+			_newClients.clear();
 			if (!newCuboids.isEmpty())
 			{
 				_tickRunner.cuboidsWereLoaded(newCuboids);
 			}
 			
 			// Walk through any new clients, adding them to the world.
-			while (!_newClients.isEmpty())
+			for (Entity newEntity : newEntities)
 			{
-				int clientId = _newClients.remove();
-				Entity initial = EntityActionValidator.buildDefaultEntity(clientId);
 				// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
-				_tickRunner.entityDidJoin(initial);
+				_tickRunner.entityDidJoin(newEntity);
 				
 				// This client is now connected and can receive events.
-				_connectedClients.put(clientId, new ClientState(initial.location()));
+				_connectedClients.put(newEntity.id(), new ClientState(newEntity.location()));
 			}
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).

@@ -243,6 +243,45 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void clientRejoin() throws Throwable
+	{
+		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		_loadDefaultMap(cuboidLoader);
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		
+		// Connect.
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1);
+		Entity entity1 = network.waitForEntity(clientId1, clientId1);
+		Assert.assertNotNull(entity1);
+		Assert.assertEquals(0, entity1.inventory().items.size());
+		
+		// Change something - we will add items to the inventory.
+		server.changeReceived(clientId1, new EntityChangeTrickleInventory(new Items(ItemRegistry.STONE, 1)), 1L);
+		Object change0 = network.waitForUpdate(clientId1, 0);
+		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		
+		// Disconnect.
+		server.clientDisconnected(1);
+		// (remove this manually since we can't be there to see ourselves be removed).
+		network.resetClient(clientId1);
+		
+		// Reconnect and verify that the change is visible.
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1);
+		entity1 = network.waitForEntity(clientId1, clientId1);
+		Assert.assertNotNull(entity1);
+		Assert.assertEquals(1, entity1.inventory().items.size());
+		
+		server.clientDisconnected(1);
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
@@ -388,6 +427,13 @@ public class TestServerRunner
 			{
 				this.wait();
 			}
+		}
+		public synchronized void resetClient(int clientId)
+		{
+			this.clientEntities.remove(clientId);
+			this.clientUpdates.remove(clientId);
+			this.clientCuboidAddedCount.remove(clientId);
+			this.clientCuboidRemovedCount.remove(clientId);
 		}
 	}
 }
