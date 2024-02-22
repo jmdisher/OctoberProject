@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.jeffdisher.october</groupId>
 		<artifactId>october-project</artifactId>
-		<version>0.0-SNAPSHOT</version>
+		<version>0.0-demo1</version>
 	</parent>
 	<artifactId>october-common</artifactId>
 	<name>OctoberCommon</name>
