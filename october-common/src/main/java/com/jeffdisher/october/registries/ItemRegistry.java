@@ -1,6 +1,7 @@
 package com.jeffdisher.october.registries;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
@@ -15,11 +16,31 @@ public class ItemRegistry
 
 	// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
 	// negative number are for items which cannot be placed.
-	public static final Item AIR = new Item("Air", BlockAspect.AIR, NON_INVENTORY);
-	public static final Item STONE = new Item("Stone", BlockAspect.STONE, 2);
-	public static final Item LOG = new Item("Log", BlockAspect.LOG, 2);
-	public static final Item PLANK = new Item("Plank", BlockAspect.PLANK, 1);
-	public static final Item STONE_BRICK = new Item("Stone Brick", BlockAspect.STONE_BRICK, 2);
+	public static final Item AIR = new Item("Air"
+			, BlockAspect.AIR
+			, NON_INVENTORY
+			, DamageAspect.UNBREAKABLE
+	);
+	public static final Item STONE = new Item("Stone"
+			, BlockAspect.STONE
+			, 2
+			, DamageAspect.MEDIUM
+	);
+	public static final Item LOG = new Item("Log"
+			, BlockAspect.LOG
+			, 2
+			, DamageAspect.WEAK
+	);
+	public static final Item PLANK = new Item("Plank"
+			, BlockAspect.PLANK
+			, 1
+			, DamageAspect.WEAK
+	);
+	public static final Item STONE_BRICK = new Item("Stone Brick"
+			, BlockAspect.STONE_BRICK
+			, 2
+			, DamageAspect.MEDIUM
+	);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.

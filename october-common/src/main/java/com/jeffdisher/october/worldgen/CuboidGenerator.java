@@ -60,6 +60,7 @@ public class CuboidGenerator
 	{
 		OctreeShort blockData = OctreeShort.create(fillItem.number());
 		OctreeObject inventoryData = OctreeObject.create();
-		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		OctreeShort damageData = OctreeShort.create((short) 0);
+		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData, damageData });
 	}
 }

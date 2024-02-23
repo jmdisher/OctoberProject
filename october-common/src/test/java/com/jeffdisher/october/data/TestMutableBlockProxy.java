@@ -8,6 +8,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestMutableBlockProxy
@@ -17,9 +18,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.AIR.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
@@ -32,9 +31,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.AIR.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
@@ -51,9 +48,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		OctreeShort blockData = OctreeShort.create(ItemRegistry.AIR.number());
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);

@@ -11,5 +11,6 @@ package com.jeffdisher.october.types;
 public record Item(String name
 		, short number
 		, int encumbrance
+		, short toughness
 ) {
 }

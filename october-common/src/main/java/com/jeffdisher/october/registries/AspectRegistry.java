@@ -20,6 +20,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class AspectRegistry
 {
+	/**
+	 * Block types - "air", "stone", etc.
+	 */
 	public static final Aspect<Short, OctreeShort> BLOCK = registerAspect(Short.class
 			, OctreeShort.class
 			, () -> OctreeShort.empty()
@@ -29,6 +32,9 @@ public class AspectRegistry
 			// IAspectCodec only exists for OctreeObject types.
 			, null
 	);
+	/**
+	 * Inventory objects, usually null.
+	 */
 	public static final Aspect<Inventory, OctreeObject> INVENTORY = registerAspect(Inventory.class
 			, OctreeObject.class
 			, () -> OctreeObject.create()
@@ -38,6 +44,21 @@ public class AspectRegistry
 			}
 			, new InventoryAspectCodec()
 	);
+	/**
+	 * Block "damage value".  This is usually 0 ("not damaged") but can be as high as 32000, used to handle things like
+	 * incremental block breaking, etc.
+	 * In theory, this could probably be made into something non-persistent if we wanted to save storage space, but the
+	 * benefit would probably be negligible.
+	 */
+	public static final Aspect<Short, OctreeShort> DAMAGE = registerAspect(Short.class
+			, OctreeShort.class
+			, () -> OctreeShort.empty()
+			, (OctreeShort original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -45,11 +66,13 @@ public class AspectRegistry
 		// Just verify indices are assigned as expected.
 		Assert.assertTrue(0 == BLOCK.index());
 		Assert.assertTrue(1 == INVENTORY.index());
+		Assert.assertTrue(2 == DAMAGE.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
 			BLOCK,
 			INVENTORY,
+			DAMAGE,
 		};
 	}
 

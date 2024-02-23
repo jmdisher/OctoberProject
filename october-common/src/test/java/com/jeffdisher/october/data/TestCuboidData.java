@@ -10,6 +10,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestCuboidData
@@ -18,9 +19,7 @@ public class TestCuboidData
 	public void serializeEmpty()
 	{
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		OctreeShort blockData = OctreeShort.create((short)0);
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Object resume = input.serializeResumable(null, buffer);
@@ -40,9 +39,7 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		OctreeShort blockData = OctreeShort.create((short)0);
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
 		
@@ -67,9 +64,7 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		OctreeShort blockData = OctreeShort.create((short)0);
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
 		
@@ -93,9 +88,7 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		OctreeShort blockData = OctreeShort.create((short)0);
-		OctreeObject inventoryData = OctreeObject.create();
-		CuboidData input = CuboidData.createNew(cuboidAddress, new IOctree[] { blockData, inventoryData });
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
 		
