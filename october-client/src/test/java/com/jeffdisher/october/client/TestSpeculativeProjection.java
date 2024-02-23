@@ -1007,10 +1007,12 @@ public class TestSpeculativeProjection
 		projector.checkCurrentActivity(1000L);
 		Assert.assertEquals(1L, commit1);
 		
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS);
-		long commit2 = projector.applyLocalChange(craft, 1000L, true);
-		projector.checkCurrentActivity(2000L);
+		// We will handle this as a single crafting operation to test the simpler case.
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS, Craft.LOG_TO_PLANKS.millisPerCraft);
+		long commit2 = projector.applyLocalChange(craft, 1000L, false);
 		Assert.assertEquals(2L, commit2);
+		// Verify that we finished the craft (no longer in progress).
+		Assert.assertNull(listener.lastEntityStates.get(0).localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
 		Inventory inv = listener.lastEntityStates.get(0).inventory();
@@ -1089,16 +1091,20 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.lastEntityStates.get(0));
 		Assert.assertEquals(ItemRegistry.STONE, listener.lastEntityStates.get(0).selectedItem());
 		
-		// Do the craft and observe it takes some time.
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK);
-		long commit = projector.applyLocalChange(craft, 1000L, true);
-		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertTrue(projector.checkCurrentActivity(2000L));
-		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertEquals(1L, commit);
-		Assert.assertFalse(projector.checkCurrentActivity(4000L));
-		// The craft will finally have changed the selection and inventory.
+		// Do the craft and observe it takes multiple actions with no current activity.
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
+		long commit1 = projector.applyLocalChange(craft, 1000L, false);
+		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(1, listener.entityChangeCount);
+		Assert.assertFalse(projector.checkCurrentActivity(2000L));
+		Assert.assertNotNull(listener.lastEntityStates.get(0).localCraftOperation());
+		
+		craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
+		long commit2 = projector.applyLocalChange(craft, 1000L, false);
+		Assert.assertEquals(2L, commit2);
+		Assert.assertEquals(2, listener.entityChangeCount);
+		Assert.assertFalse(projector.checkCurrentActivity(3000L));
+		Assert.assertNull(listener.lastEntityStates.get(0).localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
 		Inventory inv = listener.lastEntityStates.get(0).inventory();

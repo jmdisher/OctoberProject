@@ -4,13 +4,16 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
  * A crafting activity performed by this user.  Crafting converts items in the entity's inventory into different items
- * after expending some amount of time.
+ * after completing the craft operation.  This CraftOperation is part of the Entity object.
+ * Note that this is meant to be used incrementally - multiple calls to this mutation will eventually complete the
+ * craft.
  */
 public class EntityChangeCraft implements IMutationEntity
 {
@@ -19,34 +22,63 @@ public class EntityChangeCraft implements IMutationEntity
 	public static EntityChangeCraft deserializeFromBuffer(ByteBuffer buffer)
 	{
 		Craft operation = CodecHelpers.readCraft(buffer);
-		return new EntityChangeCraft(operation);
+		long millisToApply = buffer.getLong();
+		return new EntityChangeCraft(operation, millisToApply);
 	}
 
 
 	private final Craft _operation;
+	private final long _millisToApply;
 
-	public EntityChangeCraft(Craft operation)
+	public EntityChangeCraft(Craft operation, long millisToApply)
 	{
 		_operation = operation;
+		_millisToApply = millisToApply;
 	}
 
 	@Override
 	public long getTimeCostMillis()
 	{
-		return _operation.millisPerCraft;
+		return _millisToApply;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		boolean didCraft = _operation.craft(newEntity.newInventory);
-		if (didCraft)
+		// See if there is an in-progress operation (replacing it or creating a new one, if none).
+		CraftOperation existing = newEntity.newLocalCraftOperation;
+		if ((null == existing) || (existing.selectedCraft() != _operation))
 		{
-			// Make sure that this cleared the selection, if we used the last of them.
-			if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
+			// We will start a new operation, here.
+			existing = new CraftOperation(_operation, 0L);
+		}
+		// (for now, we will assume that someone already checked that this was valid - we will check on completion, anyway).
+		
+		// Now, increment the time.
+		existing = new CraftOperation(existing.selectedCraft(), existing.completedMillis() + _millisToApply);
+		
+		// See if this is completed.
+		boolean isValid;
+		if (existing.isCompleted())
+		{
+			// We can now apply this and clear it.
+			boolean didCraft = existing.selectedCraft().craft(newEntity.newInventory);
+			if (didCraft)
 			{
-				newEntity.newSelectedItem = null;
+				// Make sure that this cleared the selection, if we used the last of them.
+				if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
+				{
+					newEntity.newSelectedItem = null;
+				}
 			}
+			newEntity.newLocalCraftOperation = null;
+			isValid = didCraft;
+		}
+		else
+		{
+			// Save back the remaining state and complete it later.
+			newEntity.newLocalCraftOperation = existing;
+			isValid = true;
 		}
 		
 		// Account for any movement while we were busy.
@@ -54,7 +86,7 @@ public class EntityChangeCraft implements IMutationEntity
 		// This will need to be revisited when we change the crafting action.
 		boolean didMove = EntityChangeMove.handleMotion(newEntity, context.previousBlockLookUp, _operation.millisPerCraft);
 		
-		return didCraft || didMove;
+		return isValid || didMove;
 	}
 
 	@Override
@@ -67,5 +99,6 @@ public class EntityChangeCraft implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeCraft(buffer, _operation);
+		buffer.putLong(_millisToApply);
 	}
 }

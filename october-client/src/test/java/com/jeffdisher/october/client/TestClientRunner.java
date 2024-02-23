@@ -148,7 +148,7 @@ public class TestClientRunner
 	@Test
 	public void accidentalInterruption() throws Throwable
 	{
-		// Verify that we see assertion failures if there is still an in-progress activity when we ask the ClientRunner to do something new.
+		// We will start a crafting operation and then move before it completes, verifying that it cancels it.
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
@@ -160,45 +160,33 @@ public class TestClientRunner
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		Entity startEntity = new Entity(clientId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, Inventory.start(20).add(ItemRegistry.LOG, 2).finish()
+				, null
+				, null
+		);
+		network.client.receivedEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
-		// Ask them to start crafting something, since that will put them in a pending activity.
+		// Start crafting, but not with enough time to complete it.
+		currentTimeMillis += 500L;
 		runner.craft(Craft.LOG_TO_PLANKS, currentTimeMillis);
-		
-		// Make sure that any change made now will assert fail.
-		Assert.assertTrue(runner.isActivityInProgress(currentTimeMillis));
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, -1);
-		boolean didFail = false;
-		try
-		{
-			runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, currentTimeMillis);
-		}
-		catch (AssertionError e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
+		// Verify that we now see this in the entity.
+		Assert.assertNotNull(projection.loadedEnties.get(clientId).localCraftOperation());
 		
 		currentTimeMillis += 100L;
-		didFail = false;
-		try
-		{
-			runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
-		}
-		catch (AssertionError e)
-		{
-			didFail = true;
-		}
-		Assert.assertTrue(didFail);
-		
-		// Now, advance time and verify that we can call one of these.
-		currentTimeMillis += 1000L;
-		Assert.assertFalse(runner.isActivityInProgress(currentTimeMillis));
-		runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, currentTimeMillis);
+		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
+		// Verify that the craft operation was aborted and that we moved.
+		Assert.assertNull(projection.loadedEnties.get(clientId).localCraftOperation());
+		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().items.get(ItemRegistry.LOG).count());
+		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), projection.loadedEnties.get(clientId).location());
 	}
 
 	@Test

@@ -133,6 +133,12 @@ public class EntityChangeMove implements IMutationEntity
 		{
 			long millisInMotion = _millisBeforeMovement + _getTimeMostMillis(_xDistance, _yDistance);
 			didApply = _handleMotion(newEntity, context.previousBlockLookUp, millisInMotion, _xDistance, _yDistance);
+			
+			if (didApply)
+			{
+				// Do other state reset now that we are moving.
+				newEntity.newLocalCraftOperation = null;
+			}
 		}
 		return didApply;
 	}

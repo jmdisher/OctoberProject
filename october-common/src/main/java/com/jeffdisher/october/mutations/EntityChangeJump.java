@@ -46,6 +46,9 @@ public class EntityChangeJump implements IMutationEntity
 		{
 			newEntity.newZVelocityPerSecond = JUMP_FORCE;
 			didApply = true;
+			
+			// Do other state reset.
+			newEntity.newLocalCraftOperation = null;
 		}
 		return didApply;
 	}

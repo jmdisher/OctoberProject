@@ -87,6 +87,9 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			MutationBlockOverwrite write = new MutationBlockOverwrite(_targetBlock, blockType);
 			context.newMutationSink.accept(write);
 			didApply = true;
+			
+			// Do other state reset.
+			newEntity.newLocalCraftOperation = null;
 		}
 		return didApply;
 	}

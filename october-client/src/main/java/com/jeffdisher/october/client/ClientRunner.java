@@ -55,8 +55,9 @@ public class ClientRunner
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
 
-	// We are responsible for managing concerns like jumping and falling, when packaging up the movement changes, here.
-	private long _lastMoveMillis;
+	// We track the last time we called into the runner since time-sensitive changes need to know the time delta.
+	// (failing to correctly set the delta will cause the server to block changes, meaning that the client could be disconnected due to flooding)
+	private long _lastCallMillis;
 
 	public ClientRunner(IClientAdapter network, SpeculativeProjection.IProjectionListener projectionListener, IListener clientListener)
 	{
@@ -80,6 +81,7 @@ public class ClientRunner
 	public void runPendingCalls(long currentTimeMillis)
 	{
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -100,6 +102,7 @@ public class ClientRunner
 		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, expectedBlock);
 		_applyLocalChange(breakBlock, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 		return breakBlock.getTimeCostMillis();
 	}
 
@@ -118,6 +121,7 @@ public class ClientRunner
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
 		_applyLocalChange(request, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -134,6 +138,7 @@ public class ClientRunner
 		MutationEntityPushItems push = new MutationEntityPushItems(blockLocation, itemsToPush);
 		_applyLocalChange(push, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -148,6 +153,7 @@ public class ClientRunner
 		MutationEntitySelectItem select = new MutationEntitySelectItem(itemType);
 		_applyLocalChange(select, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -162,6 +168,7 @@ public class ClientRunner
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(blockLocation);
 		_applyLocalChange(place, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -217,6 +224,7 @@ public class ClientRunner
 			thisY = validated.y() - previous.y();
 		}
 		_commonMove(thisX, thisY, currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -232,30 +240,40 @@ public class ClientRunner
 		EntityChangeJump jumpChange = new EntityChangeJump();
 		_applyLocalChange(jumpChange, currentTimeMillis, true);
 		_runAllPendingCalls(currentTimeMillis);
-		// We don't set the last "move" time since a jump and a move are distinct.
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
 	 * Requests a crafting operation start.
+	 * NOTE:  We will continue this in our "doNothing" calls.
 	 * 
 	 * @param operation The crafting operation to run.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
 	public void craft(Craft operation, long currentTimeMillis)
 	{
-		EntityChangeCraft craftOperation = new EntityChangeCraft(operation);
-		_applyLocalChange(craftOperation, currentTimeMillis, true);
-		_runAllPendingCalls(currentTimeMillis);
+		_commonCraft(operation, currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
-	 * Allows time to pass to account for things like falling, etc.
+	 * Allows time to pass to account for things like falling, crafting, etc.
 	 * 
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
 	public void doNothing(long currentTimeMillis)
 	{
-		_commonMove(0.0f, 0.0f, currentTimeMillis);
+		if (null != _localEntityProjection.localCraftOperation())
+		{
+			// We are crafting something, so continue with that.
+			_commonCraft(_localEntityProjection.localCraftOperation().selectedCraft(), currentTimeMillis);
+		}
+		else
+		{
+			// Nothing is happening so just account for passive movement.
+			_commonMove(0.0f, 0.0f, currentTimeMillis);
+		}
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -314,7 +332,7 @@ public class ClientRunner
 		)
 		{
 			// We assume that we spent time before this movement at least partially performing the move so update it.
-			long millisBeforeCall = (currentTimeMillis - _lastMoveMillis);
+			long millisBeforeCall = (currentTimeMillis - _lastCallMillis);
 			long millisToMove = EntityChangeMove.getTimeMostMillis(xDistance, yDistance);
 			// We will skip any millis which don't fit (accounting for them all is ideal but the real-time nature of the client means we can miss some - especially during startup).
 			if (millisToMove <= millisBeforeCall)
@@ -327,10 +345,18 @@ public class ClientRunner
 				
 				EntityChangeMove moveChange = new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
 				_applyLocalChange(moveChange, currentTimeMillis, false);
-				_lastMoveMillis = currentTimeMillis;
 			}
 		}
 		// Whether or not we did anything, run any pending calls while we are here.
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	private void _commonCraft(Craft operation, long currentTimeMillis)
+	{
+		// We will account for how much time we have waited since the last action.
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
+		_applyLocalChange(craftOperation, currentTimeMillis, false);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 
@@ -356,7 +382,7 @@ public class ClientRunner
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_assignedEntityId = assignedId;
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection());
-				_lastMoveMillis = currentTimeMillis;
+				_lastCallMillis = currentTimeMillis;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);
 			});

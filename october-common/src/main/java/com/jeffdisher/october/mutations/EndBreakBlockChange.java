@@ -66,6 +66,9 @@ public class EndBreakBlockChange implements IMutationEntity
 			BreakBlockMutation mutation = new BreakBlockMutation(_targetBlock, _expectedBlockType);
 			context.newMutationSink.accept(mutation);
 			didApply = true;
+			
+			// Do other state reset.
+			newEntity.newLocalCraftOperation = null;
 		}
 		
 		// Account for any movement while we were busy.
