@@ -401,6 +401,7 @@ public class ResourceLoader
 				, ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, null
+				, null
 		);
 	}
 }

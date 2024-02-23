@@ -535,7 +535,7 @@ public class TestSpeculativeProjection
 		// We need 2 entities for this but we will give one some items.
 		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
 		projector.applyChangesForServerTick(0L
-				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null)
+				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null)
 						, EntityActionValidator.buildDefaultEntity(1))
 				, Collections.emptyList()
 				, Collections.emptyMap()
@@ -1073,7 +1073,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		// Start the entity with some stone and with them selected.
 		Inventory start = Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 1).finish();
-		Entity entity = new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, start, ItemRegistry.STONE);
+		Entity entity = new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, start, ItemRegistry.STONE, null);
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)

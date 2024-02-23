@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -107,16 +108,12 @@ public class CodecHelpers
 
 	public static Craft readCraft(ByteBuffer buffer)
 	{
-		// This is an enum so just read a short as ordinal.
-		short ordinal = buffer.getShort();
-		return Craft.values()[ordinal];
+		return _readCraft(buffer);
 	}
 
 	public static void writeCraft(ByteBuffer buffer, Craft operation)
 	{
-		// This is an enum so just send ordinal as a short.
-		short ordinal = (short)operation.ordinal();
-		buffer.putShort(ordinal);
+		_writeCraft(buffer, operation);
 	}
 
 	public static Entity readEntity(ByteBuffer buffer)
@@ -128,6 +125,7 @@ public class CodecHelpers
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
 		Item selectedItem = _readItemNoAir(buffer);
+		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		
 		return new Entity(id
 				, location
@@ -136,6 +134,7 @@ public class CodecHelpers
 				, blocksPerTickSpeed
 				, inventory
 				, selectedItem
+				, localCraftOperation
 		);
 	}
 
@@ -148,6 +147,7 @@ public class CodecHelpers
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
 		Item selectedItem = entity.selectedItem();
+		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
 		_writeEntityLocation(buffer, location);
@@ -156,6 +156,17 @@ public class CodecHelpers
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
 		_writeItemNoAir(buffer, selectedItem);
+		_writeCraftOperation(buffer, localCraftOperation);
+	}
+
+	public static CraftOperation readCraftOperation(ByteBuffer buffer)
+	{
+		return _readCraftOperation(buffer);
+	}
+
+	public static void writeCraftOperation(ByteBuffer buffer, CraftOperation operation)
+	{
+		_writeCraftOperation(buffer, operation);
 	}
 
 
@@ -269,5 +280,53 @@ public class CodecHelpers
 		float width = volume.width();
 		buffer.putFloat(height);
 		buffer.putFloat(width);
+	}
+
+	private static CraftOperation _readCraftOperation(ByteBuffer buffer)
+	{
+		CraftOperation parsed;
+		// We encode the millis completed first so that 0 can mean null.
+		long completedMillis = buffer.getLong();
+		if (completedMillis > 0)
+		{
+			Craft selectedCraft = _readCraft(buffer);
+			parsed = new CraftOperation(selectedCraft, completedMillis);
+		}
+		else
+		{
+			Assert.assertTrue(0 == completedMillis);
+			parsed = null;
+		}
+		return parsed;
+	}
+
+	private static void _writeCraftOperation(ByteBuffer buffer, CraftOperation operation)
+	{
+		if (null != operation)
+		{
+			long completedMillis = operation.completedMillis();
+			Assert.assertTrue(completedMillis > 0);
+			buffer.putLong(completedMillis);
+			_writeCraft(buffer, operation.selectedCraft());
+		}
+		else
+		{
+			// We overload the completedMillis as 0 to describe a null.
+			buffer.putLong(0L);
+		}
+	}
+
+	private static Craft _readCraft(ByteBuffer buffer)
+	{
+		// This is an enum so just read a short as ordinal.
+		short ordinal = buffer.getShort();
+		return Craft.values()[ordinal];
+	}
+
+	private static void _writeCraft(ByteBuffer buffer, Craft operation)
+	{
+		// This is an enum so just send ordinal as a short.
+		short ordinal = (short)operation.ordinal();
+		buffer.putShort(ordinal);
 	}
 }

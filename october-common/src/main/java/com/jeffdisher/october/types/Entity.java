@@ -16,5 +16,7 @@ public record Entity(int id
 		, Inventory inventory
 		// The selected item is either null of something which MUST have some items in the inventory.
 		, Item selectedItem
+		// This is typically null but is used in the case where the entity is currently crafting something.
+		, CraftOperation localCraftOperation
 ) {
 }

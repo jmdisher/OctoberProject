@@ -232,7 +232,7 @@ public class TestTickRunner
 		// We need 2 entities for this but we will give one some items.
 		int entityId = 1;
 		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
-		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null));
+		runner.entityDidJoin(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null));
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		// (run a tick to pick up the users)
 		runner.startNextTick();

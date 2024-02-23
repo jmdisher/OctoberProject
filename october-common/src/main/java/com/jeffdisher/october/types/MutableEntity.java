@@ -16,6 +16,7 @@ public class MutableEntity
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
 	public Item newSelectedItem;
+	public CraftOperation newLocalCraftOperation;
 
 	public MutableEntity(Entity original)
 	{
@@ -24,6 +25,7 @@ public class MutableEntity
 		this.newLocation = original.location();
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
 		this.newSelectedItem = original.selectedItem();
+		this.newLocalCraftOperation = original.localCraftOperation();
 	}
 
 	/**
@@ -46,6 +48,7 @@ public class MutableEntity
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
 				, this.newSelectedItem
+				, this.newLocalCraftOperation
 		);
 		// See if these are identical.
 		return this.original.equals(newInstance)

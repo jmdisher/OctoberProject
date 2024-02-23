@@ -5,10 +5,12 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -141,5 +143,27 @@ public class TestCodecHelpers
 		Assert.assertEquals(test.volume(), output.volume());
 		Assert.assertEquals(test.blocksPerTickSpeed(), output.blocksPerTickSpeed(), 0.01f);
 		Assert.assertEquals(test.selectedItem(), output.selectedItem());
+	}
+
+	@Test
+	public void entityWithCraft() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
+		Entity test = new Entity(1
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, null
+				, new CraftOperation(Craft.STONE_TO_STONE_BRICK, 50L)
+		);
+		CodecHelpers.writeEntity(buffer, test);
+		buffer.flip();
+		Entity output = CodecHelpers.readEntity(buffer);
+		
+		Assert.assertEquals(test.id(), output.id());
+		Assert.assertEquals(test.localCraftOperation(), output.localCraftOperation());
 	}
 }

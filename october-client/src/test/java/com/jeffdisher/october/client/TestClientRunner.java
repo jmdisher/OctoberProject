@@ -257,6 +257,7 @@ public class TestClientRunner
 				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
 				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish()
 				, null
+				, null
 		);
 		network.client.receivedEntity(entity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE));

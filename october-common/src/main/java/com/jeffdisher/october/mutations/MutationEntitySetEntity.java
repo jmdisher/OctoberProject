@@ -48,6 +48,7 @@ public class MutationEntitySetEntity implements IMutationEntity
 		newEntity.newLocation = _entity.location();
 		newEntity.newSelectedItem = _entity.selectedItem();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
+		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
 		return true;
 	}
 

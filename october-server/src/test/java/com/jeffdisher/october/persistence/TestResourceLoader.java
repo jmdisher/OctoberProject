@@ -143,6 +143,7 @@ public class TestResourceLoader
 				, original.blocksPerTickSpeed()
 				, original.inventory()
 				, original.selectedItem()
+				, null
 		);
 		loader.writeBackToDisk(List.of(), List.of(modified, other));
 		// (the shutdown will wait for the queue to drain)
