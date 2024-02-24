@@ -85,8 +85,8 @@ public class TestSpeculativeProjection
 		IMutationEntity lone1 = new EntityChangeMutation(mutation1);
 		IMutationBlock mutation2 = new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 1), BlockAspect.AIR, BlockAspect.STONE);
 		IMutationEntity lone2 = new EntityChangeMutation(mutation2);
-		long commit1 = projector.applyLocalChange(lone1, 1L, true);
-		long commit2 = projector.applyLocalChange(lone2, 1L, true);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
+		long commit2 = projector.applyLocalChange(lone2, 1L);
 		List<IMutationBlock> mutationsToCommit = new ArrayList<>();
 		Queue<IMutationEntity> localEntityChangesToCommit = new LinkedList<>();
 		long[] commitNumbers = new long[5];
@@ -97,7 +97,7 @@ public class TestSpeculativeProjection
 			IMutationEntity entityChange = new EntityChangeMutation(mutation);
 			localEntityChangesToCommit.add(entityChange);
 			mutationsToCommit.add(mutation);
-			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L, true);
+			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L);
 		}
 		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, BlockAspect.STONE));
@@ -202,9 +202,9 @@ public class TestSpeculativeProjection
 		IMutationEntity lone0 = new EntityChangeMutation(mutation0);
 		IMutationBlock mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
 		IMutationEntity lone1 = new EntityChangeMutation(mutation1);
-		projector.applyLocalChange(lone0, 1L, true);
+		projector.applyLocalChange(lone0, 1L);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalChange(lone1, 1L, true);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -280,9 +280,9 @@ public class TestSpeculativeProjection
 		IMutationEntity lone0 = new EntityChangeMutation(mutation0);
 		IMutationBlock mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 32), BlockAspect.AIR, BlockAspect.STONE);
 		IMutationEntity lone1 = new EntityChangeMutation(mutation1);
-		projector.applyLocalChange(lone0, 1L, true);
+		projector.applyLocalChange(lone0, 1L);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
-		long commit1 = projector.applyLocalChange(lone1, 1L, true);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, BlockAspect.STONE));
 		
@@ -375,8 +375,8 @@ public class TestSpeculativeProjection
 		IMutationEntity lone0 = new EntityChangeMutation(mutation0);
 		IMutationBlock mutation1 = new ShockwaveMutation(new AbsoluteLocation(5, 5, 37), 2);
 		IMutationEntity lone1 = new EntityChangeMutation(mutation1);
-		projector.applyLocalChange(lone0, 1L, true);
-		long commit1 = projector.applyLocalChange(lone1, 1L, true);
+		projector.applyLocalChange(lone0, 1L);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
 		// Note that shockwave doesn't change blocks.
 		Assert.assertEquals(0, listener.changeCount);
 		
@@ -469,8 +469,8 @@ public class TestSpeculativeProjection
 		AbsoluteLocation block2 = new AbsoluteLocation(3, 3, 3);
 		IMutationBlock mutation2 = new DropItemMutation(block2, stoneItem, 3);
 		IMutationEntity lone2 = new EntityChangeMutation(mutation2);
-		long commit1 = projector.applyLocalChange(lone1, 1L, true);
-		long commit2 = projector.applyLocalChange(lone2, 1L, true);
+		long commit1 = projector.applyLocalChange(lone1, 1L);
+		long commit2 = projector.applyLocalChange(lone2, 1L);
 		Assert.assertEquals(2, listener.changeCount);
 		
 		// Check the values.
@@ -549,7 +549,7 @@ public class TestSpeculativeProjection
 		
 		// Try to pass the items to the other entity.
 		IMutationEntity send = new EntityChangeSendItem(1, ItemRegistry.STONE);
-		long commit1 = projector.applyLocalChange(send, 1L, true);
+		long commit1 = projector.applyLocalChange(send, 1L);
 		
 		// Check the values.
 		Assert.assertTrue(listener.lastEntityStates.get(0).inventory().items.isEmpty());
@@ -616,7 +616,7 @@ public class TestSpeculativeProjection
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
 		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
-		long commit1 = projector.applyLocalChange(blockBreak, currentTimeMillis, false);
+		long commit1 = projector.applyLocalChange(blockBreak, currentTimeMillis);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(BlockAspect.STONE, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
@@ -625,7 +625,7 @@ public class TestSpeculativeProjection
 		
 		// Allow time to pass in the local environment apply the second stage of the change.
 		currentTimeMillis += 200L;
-		long commit2 = projector.applyLocalChange(blockBreak, currentTimeMillis, false);
+		long commit2 = projector.applyLocalChange(blockBreak, currentTimeMillis);
 		Assert.assertEquals(2, commit2);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(BlockAspect.AIR, listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
@@ -694,10 +694,8 @@ public class TestSpeculativeProjection
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		IMutationEntity move1 = new EntityChangeMove(startLocation, 0L, 0.4f, 0.0f);
 		IMutationEntity move2 = new EntityChangeMove(midStep, 0L, 0.4f, 0.0f);
-		long commit1 = projector.applyLocalChange(move1, 1L, true);
-		projector.checkCurrentActivity(1000L);
-		long commit2 = projector.applyLocalChange(move2, 1001L, true);
-		projector.checkCurrentActivity(2000L);
+		long commit1 = projector.applyLocalChange(move1, 1L);
+		long commit2 = projector.applyLocalChange(move2, 1001L);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(2L, commit2);
 		
@@ -741,13 +739,12 @@ public class TestSpeculativeProjection
 		
 		// Load some items into the inventory.
 		EntityChangeAcceptItems load = new EntityChangeAcceptItems(new Items(ItemRegistry.LOG, 2));
-		long commit1 = projector.applyLocalChange(load, 0L, true);
-		projector.checkCurrentActivity(1000L);
+		long commit1 = projector.applyLocalChange(load, 0L);
 		Assert.assertEquals(1L, commit1);
 		
 		// We will handle this as a single crafting operation to test the simpler case.
 		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS, Craft.LOG_TO_PLANKS.millisPerCraft);
-		long commit2 = projector.applyLocalChange(craft, 1000L, false);
+		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		// Verify that we finished the craft (no longer in progress).
 		Assert.assertNull(listener.lastEntityStates.get(0).localCraftOperation());
@@ -769,41 +766,6 @@ public class TestSpeculativeProjection
 				, 3000L
 		);
 		Assert.assertEquals(0, speculativeCount);
-	}
-
-	@Test
-	public void inProgressOperation()
-	{
-		// Test that we can check that an in-progress operation is still running.
-		CountingListener listener = new CountingListener();
-		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
-		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
-				, Collections.emptyMap()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, 0L
-				, 1L
-		);
-		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertNotNull(listener.lastEntityStates.get(0));
-		
-		// Move the entity and verify that the move is in-progress until we advance the clock.
-		EntityLocation startLocation = listener.lastEntityStates.get(0).location();
-		EntityLocation target = new EntityLocation(0.4f, 0.0f, 0.0f);
-		IMutationEntity move = new EntityChangeMove(startLocation, 0L, 0.4f, 0.0f);
-		long commit1 = projector.applyLocalChange(move, 1L, true);
-		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertEquals(1L, commit1);
-		
-		Assert.assertTrue(projector.checkCurrentActivity(51L));
-		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertEquals(startLocation, listener.lastEntityStates.get(0).location());
-		Assert.assertFalse(projector.checkCurrentActivity(101L));
-		Assert.assertEquals(1, listener.entityChangeCount);
-		Assert.assertEquals(target, listener.lastEntityStates.get(0).location());
 	}
 
 	@Test
@@ -831,17 +793,15 @@ public class TestSpeculativeProjection
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
 		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
-		long commit1 = projector.applyLocalChange(craft, 1000L, false);
+		long commit1 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(1, listener.entityChangeCount);
-		Assert.assertFalse(projector.checkCurrentActivity(2000L));
 		Assert.assertNotNull(listener.lastEntityStates.get(0).localCraftOperation());
 		
 		craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
-		long commit2 = projector.applyLocalChange(craft, 1000L, false);
+		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		Assert.assertEquals(2, listener.entityChangeCount);
-		Assert.assertFalse(projector.checkCurrentActivity(3000L));
 		Assert.assertNull(listener.lastEntityStates.get(0).localCraftOperation());
 		
 		// Check the inventory to see the craft completed.

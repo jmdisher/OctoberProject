@@ -98,7 +98,7 @@ public class ClientRunner
 		if (millisToApply > 10L)
 		{
 			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
-			_applyLocalChange(hit, currentTimeMillis, false);
+			_applyLocalChange(hit, currentTimeMillis);
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;
 		}
@@ -117,7 +117,7 @@ public class ClientRunner
 	{
 		// Start the multi-step process.
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
-		_applyLocalChange(request, currentTimeMillis, false);
+		_applyLocalChange(request, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -134,7 +134,7 @@ public class ClientRunner
 	public void pushItemsToInventory(AbsoluteLocation blockLocation, Items itemsToPush, long currentTimeMillis)
 	{
 		MutationEntityPushItems push = new MutationEntityPushItems(blockLocation, itemsToPush);
-		_applyLocalChange(push, currentTimeMillis, false);
+		_applyLocalChange(push, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -149,7 +149,7 @@ public class ClientRunner
 	{
 		// This is just a simple one.
 		MutationEntitySelectItem select = new MutationEntitySelectItem(itemType);
-		_applyLocalChange(select, currentTimeMillis, false);
+		_applyLocalChange(select, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -164,7 +164,7 @@ public class ClientRunner
 	{
 		// This is also relatively simple and is considered instant.
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(blockLocation);
-		_applyLocalChange(place, currentTimeMillis, false);
+		_applyLocalChange(place, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -236,7 +236,7 @@ public class ClientRunner
 	{
 		// We don't generate a move for passing time before jumping since we don't want to create something in-progress (and it would only matter if falling - in which the jump fails).
 		EntityChangeJump jumpChange = new EntityChangeJump();
-		_applyLocalChange(jumpChange, currentTimeMillis, true);
+		_applyLocalChange(jumpChange, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -275,18 +275,6 @@ public class ClientRunner
 	}
 
 	/**
-	 * Tries to complete any in-progress activity, returning true if it is still pending and false if it completed or
-	 * there was nothing pending.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return True if there is still an in-progress activity pending.
-	 */
-	public boolean isActivityInProgress(long currentTimeMillis)
-	{
-		return _projection.checkCurrentActivity(currentTimeMillis);
-	}
-
-	/**
 	 * Requests that this client disconnect from the server.
 	 */
 	public void disconnect()
@@ -304,9 +292,9 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IMutationEntity change, long currentTimeMillis, boolean canBeInProgress)
+	private void _applyLocalChange(IMutationEntity change, long currentTimeMillis)
 	{
-		long localCommit = _projection.applyLocalChange(change, currentTimeMillis, canBeInProgress);
+		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
 		if (localCommit > 0L)
 		{
 			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
@@ -342,7 +330,7 @@ public class ClientRunner
 				Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
 				
 				EntityChangeMove moveChange = new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
-				_applyLocalChange(moveChange, currentTimeMillis, false);
+				_applyLocalChange(moveChange, currentTimeMillis);
 			}
 		}
 		// Whether or not we did anything, run any pending calls while we are here.
@@ -354,7 +342,7 @@ public class ClientRunner
 		// We will account for how much time we have waited since the last action.
 		long millisToApply = (currentTimeMillis - _lastCallMillis);
 		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
-		_applyLocalChange(craftOperation, currentTimeMillis, false);
+		_applyLocalChange(craftOperation, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 

@@ -299,18 +299,6 @@ public class ClientProcess
 		_runPendingCallbacks();
 	}
 
-	/**
-	 * Tries to complete any in-progress activity, returning true if it is still pending and false if it completed or
-	 * there was nothing pending.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return True if there is still an in-progress activity pending.
-	 */
-	public boolean isActivityInProgress(long currentTimeMillis)
-	{
-		return _clientRunner.isActivityInProgress(currentTimeMillis);
-	}
-
 
 	private void _background_bufferPacket(Packet packet)
 	{

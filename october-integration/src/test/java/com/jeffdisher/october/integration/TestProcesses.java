@@ -224,9 +224,7 @@ public class TestProcesses
 			// We can walk 0.4 horizontally in a single tick.
 			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
-			Assert.assertFalse(client1.isActivityInProgress(currentTimeMillis[0]));
 			client1.moveHorizontal(0.4f, 0.0f, currentTimeMillis[0]);
-			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis[0]));
 			client2.moveHorizontal(0.0f, -0.4f, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
@@ -234,7 +232,6 @@ public class TestProcesses
 		for (int i = 0; i < 5; ++i)
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
-			Assert.assertFalse(client2.isActivityInProgress(currentTimeMillis[0]));
 			client2.moveHorizontal(0.0f, -0.4f, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}

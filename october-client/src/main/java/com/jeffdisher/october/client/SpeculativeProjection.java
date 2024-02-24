@@ -55,8 +55,6 @@ public class SpeculativeProjection
 	
 	private final List<SpeculativeWrapper> _speculativeChanges;
 	private long _nextLocalCommitNumber;
-	private SpeculativeWrapper _inProgress;
-	private long _inProgressCompletionTime;
 
 	/**
 	 * Creates a speculative projection for a single client.
@@ -192,9 +190,6 @@ public class SpeculativeProjection
 			}
 		}
 		
-		// See if we have an in-progress change which is ready to run.
-		_checkInProgress(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
-		
 		// Notify the listener of what changed.
 		for (Entity entity : addedEntities)
 		{
@@ -225,11 +220,9 @@ public class SpeculativeProjection
 	 * 
 	 * @param change The entity change to apply.
 	 * @param currentTimeMillis Current system time, in milliseconds.
-	 * @param canBeInProgress True if this is something which should occupy us for some time (false means it occupied us
-	 * in the past).
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IMutationEntity change, long currentTimeMillis, boolean canBeInProgress)
+	public long applyLocalChange(IMutationEntity change, long currentTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -239,75 +232,22 @@ public class SpeculativeProjection
 		Set<Integer> modifiedEntityIds = new HashSet<>();
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
-		// See if there is an in-progress change.
-		_checkInProgress(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
-		
-		// We shouldn't see something in progress, which didn't complete above and wasn't cancelled, at this point.
-		Assert.assertTrue(null == _inProgress);
-		
-		// See if this should run yet.
-		long timeCostMillis = change.getTimeCostMillis();
-		if (canBeInProgress && (timeCostMillis > 0L))
+		// Attempt to apply the change.
+		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
+		if (didApply)
 		{
-			// This is a change which consumes time to complete so we just hold on to it before putting it in our local queue.
-			_inProgress = new SpeculativeWrapper(commitNumber, change);
-			_inProgressCompletionTime = timeCostMillis + currentTimeMillis;
+			_speculativeChanges.add(new SpeculativeWrapper(commitNumber, change));
 		}
 		else
 		{
-			// This can happen right away.
-			// (if this is a cancellation, it should have come in another path.
-			
-			boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
-			if (didApply)
-			{
-				_speculativeChanges.add(new SpeculativeWrapper(commitNumber, change));
-			}
-			else
-			{
-				// We failed to apply a local immediate commit so just revert the commit number.
-				_nextLocalCommitNumber -= 1;
-				commitNumber = 0L;
-			}
+			// We failed to apply a local immediate commit so just revert the commit number.
+			_nextLocalCommitNumber -= 1;
+			commitNumber = 0L;
 		}
 		
 		// Notify the listener of what changed.
 		_notifyChanges(null, null, modifiedCuboidAddresses, modifiedEntityIds);
 		return commitNumber;
-	}
-
-	/**
-	 * Called to notify the projection of the current time so that it can complete any active activities, if due.
-	 * 
-	 * @param currentTimeMillis Current system time, in milliseconds.
-	 * @return True if there is still a current activity pending.
-	 */
-	public boolean checkCurrentActivity(long currentTimeMillis)
-	{
-		Set<Integer> modifiedEntityIds = new HashSet<>();
-		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
-		_checkInProgress(modifiedCuboidAddresses, modifiedEntityIds, currentTimeMillis);
-		
-		// Notify the listener of what changed.
-		_notifyChanges(null, null, modifiedCuboidAddresses, modifiedEntityIds);
-		return (null != _inProgress);
-	}
-
-	/**
-	 * Cancels any in-progress entity change which is still waiting to complete, returning its commit number or 0, if
-	 * there was no in-progress change.
-	 * 
-	 * @return The commit number of the in-progress change, or 0L if nothing was in progress.
-	 */
-	public long cancelCurrentActivity()
-	{
-		long commitOfCancelled = 0L;
-		if (null != _inProgress)
-		{
-			commitOfCancelled = _inProgress.commitLevel;
-			_inProgress = null;
-		}
-		return commitOfCancelled;
 	}
 
 
@@ -433,25 +373,6 @@ public class SpeculativeProjection
 			queue.add(mutation);
 		}
 		return mutationsToRun;
-	}
-
-	private void _checkInProgress(Set<CuboidAddress> modifiedCuboidAddresses, Set<Integer> modifiedEntityIds, long currentTimeMillis)
-	{
-		if (null != _inProgress)
-		{
-			if (_inProgressCompletionTime <= currentTimeMillis)
-			{
-				// This is due so try applying it.
-				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, _inProgress.change);
-				if (didApply)
-				{
-					// This has completed to move it to the normal list.
-					_speculativeChanges.add(_inProgress);
-				}
-				// Whether this passed or not, we are done tracking it.
-				_inProgress = null;
-			}
-		}
 	}
 
 
