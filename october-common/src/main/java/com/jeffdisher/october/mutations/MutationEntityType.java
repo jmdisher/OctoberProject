@@ -7,7 +7,6 @@ public enum MutationEntityType
 	
 	MOVE,
 	JUMP,
-	BLOCK_BREAK_END,
 	BLOCK_PLACE,
 	CRAFT,
 	SELECT_ITEM,
@@ -15,6 +14,7 @@ public enum MutationEntityType
 	ITEMS_REQUEST_PULL,
 	ITEMS_STORE_TO_INVENTORY,
 	SET_ENTITY,
+	INCREMENTAL_BREAK_BLOCK,
 	
 	END_OF_LIST,
 }

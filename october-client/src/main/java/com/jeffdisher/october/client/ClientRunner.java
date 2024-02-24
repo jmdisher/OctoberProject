@@ -10,8 +10,8 @@ import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EndBreakBlockChange;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -85,25 +85,23 @@ public class ClientRunner
 	}
 
 	/**
-	 * Creates the change to begin breaking a block.  Note that changes which come in before it completes will
-	 * invalidate it.
-	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
-	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
+	 * Sends a single break block change, targeting the given block location.  Note that it typically takes many such
+	 * changes to break a block.
 	 * 
 	 * @param blockLocation The location of the block to break.
-	 * @param expectedBlock The block we expect to see in this location (so we fail on race).
 	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return The number of milliseconds this operation will take (meaning an explicit cancel should be sent if it
-	 * shouldn't wait to complete).
 	 */
-	public long beginBreakBlock(AbsoluteLocation blockLocation, Item expectedBlock, long currentTimeMillis)
+	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		// Send the end change since it has the appropriate delay (meaning we will need to 
-		EndBreakBlockChange breakBlock = new EndBreakBlockChange(blockLocation, expectedBlock);
-		_applyLocalChange(breakBlock, currentTimeMillis, true);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
-		return breakBlock.getTimeCostMillis();
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Only apply this if it has been running for a while.
+		if (millisToApply > 10L)
+		{
+			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
+			_applyLocalChange(hit, currentTimeMillis, false);
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
 	}
 
 	/**

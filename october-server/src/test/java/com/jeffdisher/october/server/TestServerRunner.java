@@ -13,7 +13,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -92,14 +92,21 @@ public class TestServerRunner
 		server.clientConnected(clientId);
 		Entity entity = network.waitForEntity(clientId, clientId);
 		Assert.assertNotNull(entity);
+		// (we also want to wait until the server has loaded the cuboid, since this change reads them)
+		network.waitForCuboidAddedCount(clientId, 1);
 		
-		// Submit the requests to break the block and observe that the change and mutation come back after they have delayed.
+		// Break a block in 2 steps, observing the changes coming out.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
-		server.changeReceived(clientId, longRunningChange, 1L);
-		
-		// Note that the EndBreakBlockChange doesn't modify the entity so we will only see the block break.
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
+		server.changeReceived(clientId, break1, 1L);
+		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
 		Object mutation = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
+		
+		// Send it again and see the block break.
+		server.changeReceived(clientId, break1, 2L);
+		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
+		mutation = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		runner.shutdown();

@@ -178,22 +178,16 @@ public class ClientProcess
 	}
 
 	/**
-	 * Creates the change to begin breaking a block.  Note that changes which come in before it completes will
-	 * invalidate it.
-	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
-	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
+	 * Sends a single break block change, targeting the given block location.  Note that it typically takes many such
+	 * changes to break a block.
 	 * 
 	 * @param blockLocation The location of the block to break.
-	 * @param expectedBlock The block we expect to see in this location (so we fail on race).
 	 * @param currentTimeMillis The current time, in milliseconds.
-	 * @return The number of milliseconds this operation will take (meaning an explicit cancel should be sent if it
-	 * shouldn't wait to complete).
 	 */
-	public long beginBreakBlock(AbsoluteLocation blockLocation, Item expectedBlock, long currentTimeMillis)
+	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		long millisCost = _clientRunner.beginBreakBlock(blockLocation, expectedBlock, currentTimeMillis);
+		_clientRunner.hitBlock(blockLocation, currentTimeMillis);
 		_runPendingCallbacks();
-		return millisCost;
 	}
 
 	/**

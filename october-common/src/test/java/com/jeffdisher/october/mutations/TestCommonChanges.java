@@ -413,17 +413,12 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		// Try too far.
-		EndBreakBlockChange breakTooFar = new EndBreakBlockChange(tooFar, ItemRegistry.STONE);
+		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar, (short)100);
 		Assert.assertFalse(breakTooFar.applyChange(context, newEntity));
 		Assert.assertFalse(didSchedule[0]);
 		
-		// Try wrong type.
-		EndBreakBlockChange breakWrongType = new EndBreakBlockChange(wrongType, ItemRegistry.STONE);
-		Assert.assertFalse(breakWrongType.applyChange(context, newEntity));
-		Assert.assertFalse(didSchedule[0]);
-		
 		// Try reasonable location.
-		EndBreakBlockChange breakReasonable = new EndBreakBlockChange(reasonable, ItemRegistry.STONE);
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(reasonable, (short)100);
 		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
 		Assert.assertTrue(didSchedule[0]);
 	}

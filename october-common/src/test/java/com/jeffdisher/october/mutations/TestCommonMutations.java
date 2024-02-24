@@ -30,7 +30,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
-		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
@@ -47,7 +47,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
-		BreakBlockMutation mutation = new BreakBlockMutation(target, ItemRegistry.STONE);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
@@ -64,7 +64,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(target, ItemRegistry.STONE);
+		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)200);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		Entity entity = EntityActionValidator.buildDefaultEntity(0);
@@ -85,6 +85,22 @@ public class TestCommonMutations
 		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
+	}
+
+	@Test
+	public void breakBlockPartial()
+	{
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
+		boolean didApply = mutation.applyMutation(null, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(BlockAspect.STONE, proxy.getData15(AspectRegistry.BLOCK));
+		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.INVENTORY));
+		Assert.assertEquals((short) 1000, proxy.getData15(AspectRegistry.DAMAGE));
 	}
 
 

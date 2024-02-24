@@ -17,7 +17,7 @@ import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
-import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -263,12 +263,9 @@ public class TestTickRunner
 	}
 
 	@Test
-	public void phasedChangeBlockBreak()
+	public void multiStepBlockBreak()
 	{
-		// NOTE:  Technically, multi-phase changes are managed by the component above the TickRunner but this test has
-		// been adapted to show how they would use TickRunner to accomplish this.
-		
-		// We will show how the TickRunner's caller would schedule a normal change as well as a multi-phase change, to highlight the differences.
+		// Show what happens if we break a block in 2 steps.
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		
 		// Create a cuboid of stone.
@@ -286,72 +283,50 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		
+		// Schedule the first step.
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		EndBreakBlockChange longRunningChange = new EndBreakBlockChange(changeLocation1, ItemRegistry.STONE);
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, longRunningChange, commit1);
+		runner.enqueueEntityChange(entityId, break1, commit1);
 		
 		// We now run the tick.
+		// (note that this will commit the entity change but not the block change)
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
-		// The change didn't commit yet.
-		Assert.assertEquals(0L, snapshot.commitLevels().get(entityId).longValue());
-		
-		// Nothing should have changed.
-		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
-		
-		// So long as we don't enqueue a cancel, we should see this run in the next tick.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
 		
-		// The mutation has been scheduled but not run, so the block should be the same.
-		proxy1 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
-		
-		// Run another tick for the final mutation this scheduled to take effect.
+		// Run another tick to see the underlying block change applied.
+		// We should see the commit and the change to the damage value.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
+		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals((short) 1000, proxy1.getData15(AspectRegistry.DAMAGE));
+		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
 		
-		// We should see the result.
-		proxy1 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(BlockAspect.AIR, proxy1.getData15(AspectRegistry.BLOCK));
-		Inventory inv = proxy1.getDataSpecial(AspectRegistry.INVENTORY);
+		// Now, enqueue the second hit to finish the break.
+		EntityChangeIncrementalBlockBreak break2 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
+		long commit2 = 2L;
+		runner.enqueueEntityChange(entityId, break2, commit2);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		// Run the second tick to see the block change.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
+		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals((short) 0, proxy2.getData15(AspectRegistry.DAMAGE));
+		Inventory inv = proxy2.getDataSpecial(AspectRegistry.INVENTORY);
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
 		
-		
-		// Now that the multi-phase has completed, here is how a caller would schedule a normal change (just to see how it completed).
-		// Create the change to deliver a basic mutation.
-		AbsoluteLocation changeLocation2 = new AbsoluteLocation(0, 0, 2);
-		EntityChangeMutation singleChange = new EntityChangeMutation(new ReplaceBlockMutation(changeLocation2, BlockAspect.STONE, BlockAspect.AIR));
-		long commit2 = 2L;
-		runner.enqueueEntityChange(entityId, singleChange, commit2);
-		
-		// Run the tick.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
-		
-		// When the change completes, the caller would use that stored commit level to update its per-client commit level.
-		// In our case, we will just proceed to run another tick to see the mutation change the block value.
-		runner.startNextTick();
-		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation2);
-		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
-		
-		
-		// Shutdown and observe expected results.
 		runner.shutdown();
 	}
 

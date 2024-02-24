@@ -11,9 +11,9 @@ import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
-import com.jeffdisher.october.mutations.BreakBlockMutation;
-import com.jeffdisher.october.mutations.EndBreakBlockChange;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -95,8 +95,10 @@ public class TestClientRunner
 		
 		// Connect them.
 		int clientId = 1;
+		long currentTimeMillis = 1000L;
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		network.client.adapterConnected(clientId);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity and a cuboid.
@@ -105,36 +107,47 @@ public class TestClientRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
+		Assert.assertEquals(BlockAspect.STONE, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
-		// Start a multi-phase locally.
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		// (we create the change we expect the ClientRunner to create).
-		EndBreakBlockChange longRunningAction = new EndBreakBlockChange(changeLocation, ItemRegistry.STONE);
-		runner.beginBreakBlock(changeLocation, ItemRegistry.STONE, System.currentTimeMillis());
+		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 100 ms each time.
+		currentTimeMillis += 100L;
+		runner.hitBlock(changeLocation, currentTimeMillis);
 		// (they only send this after the next tick).
-		network.client.receivedEndOfTick(2L, 1L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		network.client.receivedEndOfTick(2L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
 		
-		// Observe that this came out in the network and then send back the 3 ticks associated with it, applying each.
-		Assert.assertTrue(network.toSend instanceof EndBreakBlockChange);
+		// Observe that this came out in the network.
+		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
 		Assert.assertTrue(1L == network.commitLevel);
 		
-		// The server won't send anything back until this runs.
+		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
+		network.client.receivedChange(clientId, network.toSend);
 		network.client.receivedEndOfTick(3L, 1L);
-		runner.runPendingCalls(System.currentTimeMillis());
-		
-		// It will send it once complete.
-		network.client.receivedChange(clientId, longRunningAction);
+		runner.runPendingCalls(currentTimeMillis);
+		network.client.receivedMutation(new MutationBlockIncrementalBreak(changeLocation, (short)1000));
 		network.client.receivedEndOfTick(4L, 1L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
 		
-		// Finally, we will see the actual mutation to break the block.
-		BreakBlockMutation mutation = new BreakBlockMutation(changeLocation, ItemRegistry.STONE);
-		network.client.receivedMutation(mutation);
+		// Verify that the block isn't broken, but is damaged.
+		Assert.assertEquals(BlockAspect.STONE, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		
+		// Send the second hit and wait for the same operation.
+		currentTimeMillis += 100L;
+		runner.hitBlock(changeLocation, currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
+		Assert.assertTrue(2L == network.commitLevel);
+		network.client.receivedChange(clientId, network.toSend);
+		network.client.receivedEndOfTick(6L, 2L);
+		runner.runPendingCalls(currentTimeMillis);
+		network.client.receivedMutation(new MutationBlockIncrementalBreak(changeLocation, (short)1000));
+		network.client.receivedEndOfTick(7L, 2L);
+		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify the final state of the projection.
 		Assert.assertEquals(BlockAspect.AIR, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
