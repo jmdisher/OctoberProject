@@ -4,11 +4,13 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.data.CraftingAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
@@ -59,6 +61,18 @@ public class AspectRegistry
 			// IAspectCodec only exists for OctreeObject types.
 			, null
 	);
+	/**
+	 * CraftOperation objects, usually null.  Note that these must be combined with Inventory aspect in order to craft.
+	 */
+	public static final Aspect<CraftOperation, OctreeObject> CRAFTING = registerAspect(CraftOperation.class
+			, OctreeObject.class
+			, () -> OctreeObject.create()
+			, (OctreeObject original) -> {
+				// These are immutable so create the shallow clone.
+				return original.cloneMapShallow();
+			}
+			, new CraftingAspectCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -67,12 +81,14 @@ public class AspectRegistry
 		Assert.assertTrue(0 == BLOCK.index());
 		Assert.assertTrue(1 == INVENTORY.index());
 		Assert.assertTrue(2 == DAMAGE.index());
+		Assert.assertTrue(3 == CRAFTING.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
 			BLOCK,
 			INVENTORY,
 			DAMAGE,
+			CRAFTING,
 		};
 	}
 

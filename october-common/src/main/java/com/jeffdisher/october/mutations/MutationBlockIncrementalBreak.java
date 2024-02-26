@@ -66,6 +66,9 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				newBlock.setData15(AspectRegistry.BLOCK, BlockAspect.AIR);
 				newBlock.setData15(AspectRegistry.DAMAGE, DamageAspect.UNBREAKABLE);
 				Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+				
+				// Clean up any other aspects which might be present.  Cancel crafting and but keep inventory.
+				newBlock.setDataSpecial(AspectRegistry.CRAFTING, null);
 				// This MUST be null or we were given a bogus expectation type (a container, not a block).
 				Assert.assertTrue(null == oldInventory);
 				Inventory newInventory = Inventory.start(InventoryAspect.CAPACITY_AIR).add(block, 1).finish();
