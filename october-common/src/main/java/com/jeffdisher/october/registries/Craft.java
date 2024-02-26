@@ -22,6 +22,11 @@ public enum Craft
 			, new Items(ItemRegistry.STONE_BRICK, 1)
 			, 2000L
 	),
+	PLANKS_TO_CRAFTING_TABLE("Convert wood planks into a crafting table"
+			, new Items(ItemRegistry.PLANK, 4)
+			, new Items(ItemRegistry.CRAFTING_TABLE, 1)
+			, 4000L
+	),
 	;
 
 	public final String name;

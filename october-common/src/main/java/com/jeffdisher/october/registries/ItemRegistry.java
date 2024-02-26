@@ -41,6 +41,11 @@ public class ItemRegistry
 			, 2
 			, DamageAspect.MEDIUM
 	);
+	public static final Item CRAFTING_TABLE = new Item("Crafting Table"
+			, BlockAspect.CRAFTING_TABLE
+			, 2
+			, DamageAspect.WEAK
+	);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -51,6 +56,7 @@ public class ItemRegistry
 			LOG,
 			PLANK,
 			STONE_BRICK,
+			CRAFTING_TABLE, 
 	};
 
 	static {

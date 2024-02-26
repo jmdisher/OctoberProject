@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
@@ -22,12 +23,14 @@ import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAcceptItems;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
@@ -852,6 +855,83 @@ public class TestSpeculativeProjection
 		// (verify that it fails if we try to run it again.
 		long commit2 = projector.applyLocalChange(place, 1L);
 		Assert.assertEquals(0, commit2);
+	}
+
+	@Test
+	public void placeAndUseTable()
+	{
+		// Test the in-inventory crafting operation.
+		CountingListener listener = new CountingListener();
+		int localEntityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		Entity entity = new Entity(localEntityId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.CRAFTING_TABLE, 1).add(ItemRegistry.STONE, 2).finish()
+				, ItemRegistry.CRAFTING_TABLE
+				, null
+		);
+		projector.applyChangesForServerTick(0L
+				, List.of(entity)
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		
+		// Place the crafting table.
+		long currentTimeMillis = 1000L;
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
+		Assert.assertEquals(1L, commit1);
+		
+		// Store the stones in the inventory.
+		currentTimeMillis += 1000L;
+		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ItemRegistry.STONE, 2));
+		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
+		Assert.assertEquals(2L, commit2);
+		
+		// Now, craft against the table (it has 10x speed so we will do this in 2 shots).
+		currentTimeMillis += 100L;
+		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(location, Craft.STONE_TO_STONE_BRICK, 100L);
+		long commit3 = projector.applyLocalChange(craft, currentTimeMillis);
+		Assert.assertEquals(3L, commit3);
+		
+		// Check the block and all of its aspects.
+		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE.number(), proxy.getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals(2, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1000L, proxy.getDataSpecial(AspectRegistry.CRAFTING).completedMillis());
+		
+		// Complete the craft and check the proxy.
+		currentTimeMillis += 100L;
+		craft = new EntityChangeCraftInBlock(location, null, 100L);
+		long commit4 = projector.applyLocalChange(craft, currentTimeMillis);
+		Assert.assertEquals(4L, commit4);
+		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE.number(), proxy.getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.CRAFTING));
+		
+		// Now, break the table and verify that the final inventory state makes sense.
+		currentTimeMillis += 200L;
+		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)20);
+		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
+		Assert.assertEquals(5L, commit5);
+		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		Assert.assertEquals(ItemRegistry.AIR.number(), proxy.getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.CRAFTING_TABLE));
 	}
 
 

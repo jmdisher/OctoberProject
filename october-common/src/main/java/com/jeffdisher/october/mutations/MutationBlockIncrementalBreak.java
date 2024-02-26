@@ -12,6 +12,7 @@ import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -68,11 +69,14 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
 				
 				// Clean up any other aspects which might be present.  Cancel crafting and but keep inventory.
+				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.
+				Assert.assertTrue((null == oldInventory) || (oldInventory.currentEncumbrance <= InventoryAspect.CAPACITY_AIR));
 				newBlock.setDataSpecial(AspectRegistry.CRAFTING, null);
-				// This MUST be null or we were given a bogus expectation type (a container, not a block).
-				Assert.assertTrue(null == oldInventory);
-				Inventory newInventory = Inventory.start(InventoryAspect.CAPACITY_AIR).add(block, 1).finish();
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, newInventory);
+				
+				// We want to drop this block in the inventory, if it fits.
+				MutableInventory mutable = new MutableInventory((null != oldInventory) ? oldInventory :  Inventory.start(InventoryAspect.CAPACITY_AIR).finish());
+				mutable.addItemsBestEfforts(block, 1);
+				newBlock.setDataSpecial(AspectRegistry.INVENTORY, mutable.freeze());
 			}
 			else
 			{

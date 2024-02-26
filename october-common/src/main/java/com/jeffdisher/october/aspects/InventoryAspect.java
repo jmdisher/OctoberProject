@@ -11,4 +11,5 @@ public class InventoryAspect
 	 */
 	public static final int CAPACITY_AIR = 10;
 	public static final int CAPACITY_PLAYER = 20;
+	public static final int CAPACITY_CRAFTING_TABLE = CAPACITY_AIR;
 }

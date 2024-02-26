@@ -9,6 +9,7 @@ import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
@@ -58,7 +59,8 @@ public class MutationEntityPushItems implements IMutationEntity
 		
 		// First off, we want to make sure that this is a block which can accept items (currently just air).
 		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
-		if (ItemRegistry.AIR.number() == block.getData15(AspectRegistry.BLOCK))
+		Item blockType = ItemRegistry.BLOCKS_BY_TYPE[block.getData15(AspectRegistry.BLOCK)];
+		if ((ItemRegistry.AIR == blockType) || (ItemRegistry.CRAFTING_TABLE == blockType))
 		{
 			// See if there is space in the inventory.
 			Inventory inv = block.getDataSpecial(AspectRegistry.INVENTORY);

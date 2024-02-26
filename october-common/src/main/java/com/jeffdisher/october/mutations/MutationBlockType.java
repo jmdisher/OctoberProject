@@ -10,6 +10,7 @@ public enum MutationBlockType
 	STORE_ITEMS,
 	SET_BLOCK,
 	INCREMENTAL_BREAK_BLOCK,
+	CRAFT_IN_BLOCK,
 	
 	END_OF_LIST,
 }
