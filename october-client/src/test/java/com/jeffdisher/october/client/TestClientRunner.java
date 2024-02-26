@@ -8,12 +8,15 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -22,6 +25,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -227,7 +231,8 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Jump and then try to move to the West and observe the updated location.
-		runner.jump(currentTimeMillis);
+		EntityChangeJump jumpChange = new EntityChangeJump();
+		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.moveHorizontal(-0.2f, 0.0f, currentTimeMillis);
 		
@@ -284,6 +289,58 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		runner.doNothing(currentTimeMillis);
 		Assert.assertEquals(changeCount, projection.allEntityChangeCount);
+	}
+
+	@Test
+	public void craftInTable() throws Throwable
+	{
+		// We will run a multi-step crafting operation in a crafting table.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 1L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Entity startEntity = new Entity(clientId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, Inventory.start(20).add(ItemRegistry.LOG, 2).finish()
+				, null
+				, null
+		);
+		network.client.receivedEntity(startEntity);
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR));
+		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.CRAFTING_TABLE));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Select a table and load an item into it.
+		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
+		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ItemRegistry.LOG, 1));
+		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(push, currentTimeMillis);
+		
+		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
+		currentTimeMillis += 50L;
+		runner.craftInBlock(table, Craft.LOG_TO_PLANKS, currentTimeMillis);
+		// Verify that we now see this is in progress in the block.
+		BlockProxy proxy = projection.readBlock(table);
+		Assert.assertEquals(500L, proxy.getDataSpecial(AspectRegistry.CRAFTING).completedMillis());
+		
+		// Now, complete the craft.
+		currentTimeMillis += 50L;
+		runner.craftInBlock(table, null, currentTimeMillis);
+		proxy = projection.readBlock(table);
+		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.CRAFTING));
+		Assert.assertEquals(2, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.PLANK));
 	}
 
 
@@ -353,6 +410,11 @@ public class TestClientRunner
 		{
 			Assert.assertTrue(this.loadedEnties.containsKey(id));
 			this.loadedEnties.remove(id);
+		}
+		public BlockProxy readBlock(AbsoluteLocation block)
+		{
+			IReadOnlyCuboidData cuboid = this.loadedCuboids.get(block.getCuboidAddress());
+			return new BlockProxy(block.getBlockAddress(), cuboid);
 		}
 	}
 

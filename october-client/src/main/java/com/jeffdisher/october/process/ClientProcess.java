@@ -12,7 +12,12 @@ import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntityPushItems;
+import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
+import com.jeffdisher.october.mutations.MutationEntitySelectItem;
+import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
@@ -201,7 +206,8 @@ public class ClientProcess
 	 */
 	public void pullItemsFromInventory(AbsoluteLocation blockLocation, Items itemsToPull, long currentTimeMillis)
 	{
-		_clientRunner.pullItemsFromInventory(blockLocation, itemsToPull, currentTimeMillis);
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
+		_clientRunner.commonApplyEntityAction(request, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -216,7 +222,8 @@ public class ClientProcess
 	 */
 	public void pushItemsToInventory(AbsoluteLocation blockLocation, Items itemsToPush, long currentTimeMillis)
 	{
-		_clientRunner.pushItemsToInventory(blockLocation, itemsToPush, currentTimeMillis);
+		MutationEntityPushItems push = new MutationEntityPushItems(blockLocation, itemsToPush);
+		_clientRunner.commonApplyEntityAction(push, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -228,7 +235,8 @@ public class ClientProcess
 	 */
 	public void selectItemInInventory(Item itemType, long currentTimeMillis)
 	{
-		_clientRunner.selectItemInInventory(itemType, currentTimeMillis);
+		MutationEntitySelectItem select = new MutationEntitySelectItem(itemType);
+		_clientRunner.commonApplyEntityAction(select, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -240,7 +248,8 @@ public class ClientProcess
 	 */
 	public void placeSelectedBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		_clientRunner.placeSelectedBlock(blockLocation, currentTimeMillis);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(blockLocation);
+		_clientRunner.commonApplyEntityAction(place, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -272,7 +281,8 @@ public class ClientProcess
 	 */
 	public void jump(long currentTimeMillis)
 	{
-		_clientRunner.jump(currentTimeMillis);
+		EntityChangeJump jumpChange = new EntityChangeJump();
+		_clientRunner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
