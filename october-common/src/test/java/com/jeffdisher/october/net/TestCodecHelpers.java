@@ -166,4 +166,15 @@ public class TestCodecHelpers
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.localCraftOperation(), output.localCraftOperation());
 	}
+
+	@Test
+	public void nullCraft() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Craft test = null;
+		CodecHelpers.writeCraft(buffer, test);
+		buffer.flip();
+		Craft output = CodecHelpers.readCraft(buffer);
+		Assert.assertNull(output);
+	}
 }

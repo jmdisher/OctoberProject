@@ -320,13 +320,31 @@ public class CodecHelpers
 	{
 		// This is an enum so just read a short as ordinal.
 		short ordinal = buffer.getShort();
-		return Craft.values()[ordinal];
+		Craft craft;
+		if (-1 == ordinal)
+		{
+			// -1 is our "null"
+			craft = null;
+		}
+		else
+		{
+			craft = Craft.values()[ordinal];
+		}
+		return craft;
 	}
 
 	private static void _writeCraft(ByteBuffer buffer, Craft operation)
 	{
-		// This is an enum so just send ordinal as a short.
-		short ordinal = (short)operation.ordinal();
-		buffer.putShort(ordinal);
+		// We will use -1 as a "null".
+		if (null == operation)
+		{
+			buffer.putShort((short) -1);
+		}
+		else
+		{
+			// This is an enum so just send ordinal as a short.
+			short ordinal = (short)operation.ordinal();
+			buffer.putShort(ordinal);
+		}
 	}
 }
