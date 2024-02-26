@@ -48,10 +48,10 @@ public class SpeculativeProjection
 	
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
 	private final Map<Integer, Entity> _shadowCrowd;
-	public final Function<AbsoluteLocation, BlockProxy> shadowBlockLoader;
 	
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
 	private Map<Integer, Entity> _projectedCrowd;
+	public final Function<AbsoluteLocation, BlockProxy> projectionBlockLoader;
 	
 	private final List<SpeculativeWrapper> _speculativeChanges;
 	private long _nextLocalCommitNumber;
@@ -72,17 +72,18 @@ public class SpeculativeProjection
 		// The initial states start as empty and are populated by the server.
 		_shadowWorld = new HashMap<>();
 		_shadowCrowd = new HashMap<>();
-		this.shadowBlockLoader = (AbsoluteLocation location) -> {
+		
+		_projectedWorld = new HashMap<>();
+		_projectedCrowd = new HashMap<>();
+		this.projectionBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData cuboid = _shadowWorld.get(address);
+			IReadOnlyCuboidData cuboid = _projectedWorld.get(address);
 			return (null != cuboid)
 					? new BlockProxy(location.getBlockAddress(), cuboid)
 					: null
 			;
 		};
 		
-		_projectedWorld = new HashMap<>();
-		_projectedCrowd = new HashMap<>();
 		_speculativeChanges = new ArrayList<>();
 		_nextLocalCommitNumber = 1L;
 	}
@@ -125,11 +126,11 @@ public class SpeculativeProjection
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.shadowBlockLoader, gameTick, entityChanges);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
 		Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
-		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.shadowBlockLoader, gameTick, mutationsToRun);
+		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -315,7 +316,7 @@ public class SpeculativeProjection
 		Queue<IMutationEntity> queue = new LinkedList<IMutationEntity>();
 		queue.add(change);
 		Map<Integer, Queue<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.shadowBlockLoader, gameTick, changesToRun);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
 		Map<Integer, Queue<IMutationEntity>> exportedChanges = group.exportedChanges();
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
@@ -326,11 +327,11 @@ public class SpeculativeProjection
 		{
 			// Run these changes and mutations, collecting the resultant output from them.
 			Map<CuboidAddress, Queue<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
-			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.shadowBlockLoader, gameTick, innerMutations);
+			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
 			modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
 			
-			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.shadowBlockLoader, gameTick, exportedChanges);
+			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, exportedChanges);
 			_projectedCrowd.putAll(innerGroup.groupFragment());
 			locallyModifiedIds.addAll(innerGroup.resultantMutationsById().keySet());
 			

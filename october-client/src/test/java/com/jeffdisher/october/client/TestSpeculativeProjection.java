@@ -28,6 +28,7 @@ import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
@@ -809,6 +810,48 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, inv.getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, inv.getCount(ItemRegistry.STONE_BRICK));
 		Assert.assertNull(listener.lastEntityStates.get(0).selectedItem());
+	}
+
+	@Test
+	public void placeBlockTwice()
+	{
+		// Make sure that the speculative projection will prevent us from placing the same block down twice.
+		CountingListener listener = new CountingListener();
+		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.STONE, 2).finish();
+		int entityId = 0;
+		Entity entity = new Entity(entityId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, ItemRegistry.STONE
+				, null
+		);
+		projector.applyChangesForServerTick(0L
+				, List.of(entity)
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		Assert.assertEquals(0, _countBlocks(listener.lastData, BlockAspect.STONE));
+		
+		// Apply the local change.
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		long commit1 = projector.applyLocalChange(place, 1L);
+		Assert.assertEquals(1, commit1);
+		// (verify that it fails if we try to run it again.
+		long commit2 = projector.applyLocalChange(place, 1L);
+		Assert.assertEquals(0, commit2);
 	}
 
 

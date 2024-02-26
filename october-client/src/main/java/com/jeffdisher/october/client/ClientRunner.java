@@ -188,24 +188,24 @@ public class ClientRunner
 		EntityLocation previous = _localEntityProjection.location();
 		EntityVolume volume = _localEntityProjection.volume();
 		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
-		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.shadowBlockLoader, validated, volume))
+		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.projectionBlockLoader, validated, volume))
 		{
 			// Adjust the coordinates.
 			if (xDistance > 0.0f)
 			{
-				validated = SpatialHelpers.locationTouchingEastWall(_projection.shadowBlockLoader, validated, volume, previous.x());
+				validated = SpatialHelpers.locationTouchingEastWall(_projection.projectionBlockLoader, validated, volume, previous.x());
 			}
 			else if (xDistance < 0.0f)
 			{
-				validated = SpatialHelpers.locationTouchingWestWall(_projection.shadowBlockLoader, validated, volume, previous.x());
+				validated = SpatialHelpers.locationTouchingWestWall(_projection.projectionBlockLoader, validated, volume, previous.x());
 			}
 			else if (yDistance > 0.0f)
 			{
-				validated = SpatialHelpers.locationTouchingNorthWall(_projection.shadowBlockLoader, validated, volume, previous.y());
+				validated = SpatialHelpers.locationTouchingNorthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
 			}
 			else if (yDistance < 0.0f)
 			{
-				validated = SpatialHelpers.locationTouchingSouthWall(_projection.shadowBlockLoader, validated, volume, previous.y());
+				validated = SpatialHelpers.locationTouchingSouthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
 			}
 			else
 			{
@@ -307,7 +307,7 @@ public class ClientRunner
 	private void _commonMove(float xDistance, float yDistance, long currentTimeMillis)
 	{
 		EntityLocation oldLocation = _localEntityProjection.location();
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.shadowBlockLoader, oldLocation, _localEntityProjection.volume());
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, _localEntityProjection.volume());
 		// Make sure we have at least something to do:
 		// -if we have any horizontal component
 		// -if we have a z-vector (0.0 comparison should be ok since we assign it to that when stopped - not calculated)
