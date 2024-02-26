@@ -12,12 +12,7 @@ import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.MutationEntityPushItems;
-import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
-import com.jeffdisher.october.mutations.MutationEntitySelectItem;
-import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
@@ -33,8 +28,6 @@ import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -102,12 +95,11 @@ public class ClientProcess
 	 * to the server.
 	 * 
 	 * @param change The change to apply.
-	 * @param commitLevel The commit level associated with this change.
+	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void sendAction(IMutationEntity change, long commitLevel)
+	public void sendAction(IMutationEntity change, long currentTimeMillis)
 	{
-		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
-		_background_bufferPacket(packet);
+		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -196,71 +188,11 @@ public class ClientProcess
 	}
 
 	/**
-	 * Creates the mutation to the entity to begin the sequence of operations to pick up items from an inventory block.
-	 * Note that this CANNOT be called if there is still an in-progress activity running.  Call "isActivityInProgress()"
-	 * first.
-	 * 
-	 * @param blockLocation The location of the block containing items.
-	 * @param itemsToPull The items to transfer (actual item transfer could be smaller).
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void pullItemsFromInventory(AbsoluteLocation blockLocation, Items itemsToPull, long currentTimeMillis)
-	{
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(blockLocation, itemsToPull);
-		_clientRunner.commonApplyEntityAction(request, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Creates the mutation to the entity to begin the sequence of operations to put items into a block's inventory.
-	 * Note that this CANNOT be called if there is still an in-progress activity running.  Call "isActivityInProgress()"
-	 * first.
-	 * 
-	 * @param blockLocation The location of the block where the items should be stored.
-	 * @param itemsToPush The items to transfer (actual item transfer could be smaller if they can't all fit).
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void pushItemsToInventory(AbsoluteLocation blockLocation, Items itemsToPush, long currentTimeMillis)
-	{
-		MutationEntityPushItems push = new MutationEntityPushItems(blockLocation, itemsToPush);
-		_clientRunner.commonApplyEntityAction(push, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Changes the item selected by the current entity.
-	 * 
-	 * @param itemType The item type to select (will fail if not in their inventory).
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void selectItemInInventory(Item itemType, long currentTimeMillis)
-	{
-		MutationEntitySelectItem select = new MutationEntitySelectItem(itemType);
-		_clientRunner.commonApplyEntityAction(select, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Places an instance of the item currently selected in the inventory in the world.
-	 * 
-	 * @param blockLocation The location where the block will be placed.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void placeSelectedBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
-	{
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(blockLocation);
-		_clientRunner.commonApplyEntityAction(place, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
 	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
 	 * distances.  The change will internally account for things like an existing z-vector, when falling or jumping,
 	 * when building the final target location.
 	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
 	 * existing z movement to be handled.
-	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
-	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
 	 * 
 	 * @param xDistance How far to move in the x direction.
 	 * @param yDistance How far to move in the y direction.
@@ -273,20 +205,6 @@ public class ClientProcess
 	}
 
 	/**
-	 * Makes the entity "jump", giving it a positive z-vector.
-	 * Note that this CANNOT be called if there is still an in-progress activity running (as that could allow the move
-	 * to be "from" a stale location).  Call "isActivityInProgress()" first.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void jump(long currentTimeMillis)
-	{
-		EntityChangeJump jumpChange = new EntityChangeJump();
-		_clientRunner.commonApplyEntityAction(jumpChange, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
 	 * Requests a crafting operation start.
 	 * 
 	 * @param operation The crafting operation to run.
@@ -295,6 +213,21 @@ public class ClientProcess
 	public void craft(Craft operation, long currentTimeMillis)
 	{
 		_clientRunner.craft(operation, currentTimeMillis);
+		_runPendingCallbacks();
+	}
+
+	/**
+	 * Requests that we start or continue a crafting operation in a block.  Note that these calls must be made
+	 * explicitly and cannot be implicitly continued in "doNothing" the way some other crafting operations can be, since
+	 * we don't know what the user is looking at.
+	 * 
+	 * @param block The crafting station location.
+	 * @param operation The crafting operation to run (can be null if just continuing what is already happening).
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
+	{
+		_clientRunner.craftInBlock(block, operation, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 

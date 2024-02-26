@@ -307,9 +307,12 @@ public class TestProcesses
 		{
 			// Note that we need to send using the low-level sendAction to bypass the ClientRunner checks and internal back-pressure in order to see how the server handles this.
 			EntityChangeMove change = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-			client.sendAction(change, i);
+			client.sendAction(change, System.currentTimeMillis());
 			oldLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z());
 		}
+		// Note that the client will only flush these calls when it receives end of tick so wait for some ticks to happen so that we should see and end reach the client.
+		server.waitForTicksToPass(2L);
+		client.runPendingCalls(System.currentTimeMillis());
 		
 		// Wait for the server to process.
 		server.waitForTicksToPass(10L);
