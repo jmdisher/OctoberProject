@@ -333,14 +333,14 @@ public class TestClientRunner
 		runner.craftInBlock(table, Craft.LOG_TO_PLANKS, currentTimeMillis);
 		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
-		Assert.assertEquals(500L, proxy.getDataSpecial(AspectRegistry.CRAFTING).completedMillis());
+		Assert.assertEquals(500L, proxy.getCrafting().completedMillis());
 		
 		// Now, complete the craft.
 		currentTimeMillis += 50L;
 		runner.craftInBlock(table, null, currentTimeMillis);
 		proxy = projection.readBlock(table);
-		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.CRAFTING));
-		Assert.assertEquals(2, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.PLANK));
+		Assert.assertNull(proxy.getCrafting());
+		Assert.assertEquals(2, proxy.getInventory().getCount(ItemRegistry.PLANK));
 	}
 
 

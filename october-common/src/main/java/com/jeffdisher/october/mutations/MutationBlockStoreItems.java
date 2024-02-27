@@ -2,10 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
@@ -51,12 +49,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
 		// Get the inventory, creating it if required.
-		Inventory existing = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-		MutableInventory inv = new MutableInventory((null != existing) ? existing : Inventory.start(InventoryAspect.CAPACITY_AIR).finish());
+		Inventory existing = newBlock.getInventory();
+		MutableInventory inv = new MutableInventory(existing);
 		int stored = inv.addItemsBestEfforts(_offered.type(), _offered.count());
 		if (stored > 0)
 		{
-			newBlock.setDataSpecial(AspectRegistry.INVENTORY, inv.freeze());
+			newBlock.setInventory(inv.freeze());
 		}
 		return (stored > 0);
 	}

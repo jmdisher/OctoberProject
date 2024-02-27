@@ -2,16 +2,15 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -54,34 +53,41 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		boolean didApply = false;
 		
 		// We want to see if this is a kind of block which can be broken.
-		Item block = ItemRegistry.BLOCKS_BY_TYPE[newBlock.getData15(AspectRegistry.BLOCK)];
+		Item block = newBlock.getItem();
 		if (DamageAspect.UNBREAKABLE != block.toughness())
 		{
 			// Apply the damage.
-			short damage = (short)(newBlock.getData15(AspectRegistry.DAMAGE) + _damageToApply);
+			short damage = (short)(newBlock.getDamage() + _damageToApply);
 			
 			// See if this is broken (note that this could overflow.
 			if ((damage >= block.toughness()) || (damage < 0))
 			{
 				// The block is broken so replace it with air and place the block in the inventory.
-				newBlock.setData15(AspectRegistry.BLOCK, BlockAspect.AIR);
-				newBlock.setData15(AspectRegistry.DAMAGE, DamageAspect.UNBREAKABLE);
-				Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+				Inventory oldInventory = newBlock.getInventory();
+				newBlock.setItemAndClear(ItemRegistry.AIR);
 				
-				// Clean up any other aspects which might be present.  Cancel crafting and but keep inventory.
+				// If the inventory fits, move it over to the new block.
 				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.
 				Assert.assertTrue((null == oldInventory) || (oldInventory.currentEncumbrance <= InventoryAspect.CAPACITY_AIR));
-				newBlock.setDataSpecial(AspectRegistry.CRAFTING, null);
 				
 				// We want to drop this block in the inventory, if it fits.
-				MutableInventory mutable = new MutableInventory((null != oldInventory) ? oldInventory :  Inventory.start(InventoryAspect.CAPACITY_AIR).finish());
+				// This will create the new inventory since setting the item clears.
+				Inventory newInventory = newBlock.getInventory();
+				MutableInventory mutable = new MutableInventory(newInventory);
+				if (null != oldInventory)
+				{
+					for (Items items : oldInventory.items.values())
+					{
+						mutable.addAllItems(items.type(), items.count());
+					}
+				}
 				mutable.addItemsBestEfforts(block, 1);
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, mutable.freeze());
+				newBlock.setInventory(mutable.freeze());
 			}
 			else
 			{
 				// The block still exists so just update the damage.
-				newBlock.setData15(AspectRegistry.DAMAGE, damage);
+				newBlock.setDamage(damage);
 			}
 			didApply = true;
 		}

@@ -1,17 +1,14 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -55,42 +52,15 @@ public class DropItemMutation implements IMutationBlock
 	{
 		// We can only drop an item into air.
 		boolean didApply = false;
-		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
-		if (BlockAspect.AIR == oldValue)
+		if (ItemRegistry.AIR == newBlock.getItem())
 		{
 			// Disect existing inventory into mutable copies or create defaults.
-			int maxEncumbrance = InventoryAspect.CAPACITY_AIR;
-			int currentEncumbrance = 0;
-			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-			if (null != oldInventory)
+			Inventory oldInventory = newBlock.getInventory();
+			MutableInventory mutable = new MutableInventory(oldInventory);
+			if (mutable.addAllItems(_type, _count))
 			{
-				// We checked that this was air so it should match.
-				Assert.assertTrue(maxEncumbrance == oldInventory.maxEncumbrance);
-				currentEncumbrance = oldInventory.currentEncumbrance;
-			}
-			// Check if this will fit (note that a fresh inventory will _always_ fit (see assertion in constructor).
-			int encumbranceToAdd = _type.encumbrance() * _count;
-			if (encumbranceToAdd <= (maxEncumbrance - currentEncumbrance))
-			{
-				// This will fit so see if there is an existing Items to which we can add this or if we need to just insert this.
-				Items existing = (null != oldInventory)
-						? oldInventory.items.get(_type)
-						: null
-				;
-				Items toInsert = (null != existing)
-						? new Items(_type, existing.count() + _count)
-						: new Items(_type, _count)
-				;
-				Map<Item, Items> mutableItemMap = new HashMap<>();
-				if (null != oldInventory)
-				{
-					mutableItemMap.putAll(oldInventory.items);
-				}
-				mutableItemMap.put(_type, toInsert);
-				currentEncumbrance += encumbranceToAdd;
-				
 				// Now, update the block with the new inventory.
-				newBlock.setDataSpecial(AspectRegistry.INVENTORY, Inventory.build(maxEncumbrance, mutableItemMap, currentEncumbrance));
+				newBlock.setInventory(mutable.freeze());
 				didApply = true;
 			}
 			else

@@ -3,12 +3,10 @@ package com.jeffdisher.october.mutations;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityActionValidator;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
@@ -36,8 +34,8 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
-		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
 	}
@@ -52,9 +50,9 @@ public class TestCommonMutations
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
-		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
-		Assert.assertNull(inv);
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Inventory inv = proxy.getInventory();
+		Assert.assertEquals(0, inv.currentEncumbrance);
 	}
 
 	@Test
@@ -81,8 +79,8 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		Assert.assertEquals(BlockAspect.AIR, proxy.getData15(AspectRegistry.BLOCK));
-		Inventory inv = proxy.getDataSpecial(AspectRegistry.INVENTORY);
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
 	}
@@ -98,9 +96,9 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(BlockAspect.STONE, proxy.getData15(AspectRegistry.BLOCK));
-		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.INVENTORY));
-		Assert.assertEquals((short) 1000, proxy.getData15(AspectRegistry.DAMAGE));
+		Assert.assertEquals(ItemRegistry.STONE, proxy.getItem());
+		Assert.assertNull(proxy.getInventory());
+		Assert.assertEquals((short) 1000, proxy.getDamage());
 	}
 
 

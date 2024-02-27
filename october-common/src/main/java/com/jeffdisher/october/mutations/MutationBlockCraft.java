@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -57,10 +56,10 @@ public class MutationBlockCraft implements IMutationBlock
 		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
-		if (ItemRegistry.CRAFTING_TABLE.number() == newBlock.getData15(AspectRegistry.BLOCK))
+		if (ItemRegistry.CRAFTING_TABLE == newBlock.getItem())
 		{
 			// See if this is something new or if we are continuing.
-			CraftOperation currentOperation = newBlock.getDataSpecial(AspectRegistry.CRAFTING);
+			CraftOperation currentOperation = newBlock.getCrafting();
 			Craft currentCraft = (null != currentOperation) ? currentOperation.selectedCraft() : null;
 			if ((null == _craft) || (_craft == currentCraft))
 			{
@@ -72,20 +71,20 @@ public class MutationBlockCraft implements IMutationBlock
 					if (completedMillis >= currentCraft.millisPerCraft)
 					{
 						// We are done so try to apply the craft.
-						Inventory inventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+						Inventory inventory = newBlock.getInventory();
 						if (currentCraft.canApply(inventory))
 						{
 							MutableInventory mutable = new MutableInventory(inventory);
 							currentCraft.craft(mutable);
-							newBlock.setDataSpecial(AspectRegistry.INVENTORY, mutable.freeze());
-							newBlock.setDataSpecial(AspectRegistry.CRAFTING, null);
+							newBlock.setInventory(mutable.freeze());
+							newBlock.setCrafting(null);
 						}
 					}
 					else
 					{
 						// Just save this back.
 						CraftOperation updated = new CraftOperation(currentCraft, completedMillis);
-						newBlock.setDataSpecial(AspectRegistry.CRAFTING, updated);
+						newBlock.setCrafting(updated);
 					}
 					// We changed something so say we applied.
 					didApply = true;
@@ -94,12 +93,12 @@ public class MutationBlockCraft implements IMutationBlock
 			else
 			{
 				// We are changing so see if the craft makes sense and then start it.
-				Inventory inventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
+				Inventory inventory = newBlock.getInventory();
 				if (_craft.canApply(inventory))
 				{
 					long millisToApply = CRAFTING_SPEED_MODIFIER * _millisToApply;
 					CraftOperation updated = new CraftOperation(_craft, millisToApply);
-					newBlock.setDataSpecial(AspectRegistry.CRAFTING, updated);
+					newBlock.setCrafting(updated);
 					// We changed something so say we applied.
 					didApply = true;
 				}

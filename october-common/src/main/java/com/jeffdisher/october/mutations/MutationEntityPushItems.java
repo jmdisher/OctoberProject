@@ -2,11 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -59,22 +56,22 @@ public class MutationEntityPushItems implements IMutationEntity
 		
 		// First off, we want to make sure that this is a block which can accept items (currently just air).
 		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
-		Item blockType = ItemRegistry.BLOCKS_BY_TYPE[block.getData15(AspectRegistry.BLOCK)];
-		if ((ItemRegistry.AIR == blockType) || (ItemRegistry.CRAFTING_TABLE == blockType))
+		Inventory inv = block.getInventory();
+		if (null != inv)
 		{
 			// See if there is space in the inventory.
-			Inventory inv = block.getDataSpecial(AspectRegistry.INVENTORY);
-			MutableInventory checker = new MutableInventory((null != inv) ? inv : Inventory.start(InventoryAspect.CAPACITY_AIR).finish());
-			int capacity = checker.maxVacancyForItem(_offered.type());
+			MutableInventory checker = new MutableInventory(inv);
+			Item offeredType = _offered.type();
+			int capacity = checker.maxVacancyForItem(offeredType);
 			int toDrop = Math.min(capacity, _offered.count());
 			if (toDrop > 0)
 			{
 				// We will proceed to remove the items from our inventory and pass them to the block.
-				newEntity.newInventory.removeItems(_offered.type(), toDrop);
-				context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(_offered.type(), toDrop)));
+				newEntity.newInventory.removeItems(offeredType, toDrop);
+				context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop)));
 				
 				// We want to deselect this if it was selected.
-				if ((_offered.type() == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(_offered.type())))
+				if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
 				{
 					newEntity.newSelectedItem = null;
 				}

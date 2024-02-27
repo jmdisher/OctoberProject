@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Item;
@@ -51,12 +50,10 @@ public class MutationBlockOverwrite implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (ItemRegistry.AIR.number() == newBlock.getData15(AspectRegistry.BLOCK))
+		if (ItemRegistry.AIR == newBlock.getItem())
 		{
 			// Replace the block with the type we have.
-			newBlock.setData15(AspectRegistry.BLOCK, _blockType.number());
-			// Clear the inventory aspect.
-			newBlock.setDataSpecial(AspectRegistry.INVENTORY, null);
+			newBlock.setItemAndClear(_blockType);
 			didApply = true;
 		}
 		return didApply;

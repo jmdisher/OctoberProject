@@ -1,17 +1,14 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -54,42 +51,14 @@ public class PickUpItemMutation implements IMutationBlock
 	{
 		// We can only operator on air.
 		boolean didApply = false;
-		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
-		if (BlockAspect.AIR == oldValue)
+		if (ItemRegistry.AIR == newBlock.getItem())
 		{
-			Inventory oldInventory = newBlock.getDataSpecial(AspectRegistry.INVENTORY);
-			Items existing = (null != oldInventory)
-					? oldInventory.items.get(_type)
-					: null
-			;
-			
-			if ((null != existing) && (existing.count() >= _count))
+			Inventory oldInventory = newBlock.getInventory();
+			MutableInventory mutable = new MutableInventory(oldInventory);
+			if (mutable.getCount(_type) >= _count)
 			{
-				// By this point, we know that we can perform the action so create the new inventory map.
-				Map<Item, Items> mutableItemMap = new HashMap<>(oldInventory.items);
-				int remaining = existing.count() - _count;
-				if (remaining > 0)
-				{
-					Items updated = new Items(_type, remaining);
-					mutableItemMap.put(_type, updated);
-				}
-				else
-				{
-					// Remove this and see if the map is empty.
-					mutableItemMap.remove(_type);
-				}
-				// Now, re-save the updated inventory.
-				if (mutableItemMap.isEmpty())
-				{
-					// The map is empty so we should remove the inventory.
-					newBlock.setDataSpecial(AspectRegistry.INVENTORY, null);
-				}
-				else
-				{
-					// Just save the updated inventory.
-					int encumbranceToRemove = _type.encumbrance() * _count;
-					newBlock.setDataSpecial(AspectRegistry.INVENTORY, Inventory.build(oldInventory.maxEncumbrance, mutableItemMap, oldInventory.currentEncumbrance - encumbranceToRemove));
-				}
+				mutable.removeItems(_type, _count);
+				newBlock.setInventory(mutable.freeze());
 				didApply = true;
 			}
 		}

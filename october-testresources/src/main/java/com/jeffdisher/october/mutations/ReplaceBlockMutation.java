@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -37,11 +37,10 @@ public class ReplaceBlockMutation implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
-		short oldValue = newBlock.getData15(AspectRegistry.BLOCK);
 		boolean didApply = false;
-		if (_oldType == oldValue)
+		if (_oldType == newBlock.getItem().number())
 		{
-			newBlock.setData15(AspectRegistry.BLOCK, _newType);
+			newBlock.setItemAndClear(ItemRegistry.BLOCKS_BY_TYPE[_newType]);
 			didApply = true;
 		}
 		return didApply;

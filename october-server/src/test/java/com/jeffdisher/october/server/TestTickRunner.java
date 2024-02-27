@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -23,7 +22,6 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -111,7 +109,6 @@ public class TestTickRunner
 	@Test
 	public void basicBlockRead()
 	{
-		Aspect<Short, ?> aspectShort = AspectRegistry.BLOCK;
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(1, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
@@ -127,7 +124,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		// Now, we should see a block with default properties.
 		BlockProxy block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals(BlockAspect.AIR, block.getData15(aspectShort));
+		Assert.assertEquals(ItemRegistry.AIR, block.getItem());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
@@ -137,14 +134,13 @@ public class TestTickRunner
 		
 		// We should now see the new data.
 		block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals(BlockAspect.STONE, block.getData15(aspectShort));
+		Assert.assertEquals(ItemRegistry.STONE, block.getItem());
 	}
 
 	@Test
 	public void basicInventoryOperations()
 	{
 		// Just add, add, and remove some inventory items.
-		Aspect<Inventory, ?> aspectInventory = AspectRegistry.INVENTORY;
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
 		Item stoneItem = ItemRegistry.STONE;
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -157,29 +153,29 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
-		// Make sure that we see the null inventory.
+		// Make sure that we see the empty inventory.
 		BlockProxy block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
+		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
 		// Apply the first mutation to add data.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
+		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
 		
 		// Try to drop too much to fit and verify that nothing changes.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(1, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
+		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
 		
 		// Add a little more data and make sure that it updates.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(3, block.getDataSpecial(aspectInventory).items.get(stoneItem).count());
+		Assert.assertEquals(3, block.getInventory().items.get(stoneItem).count());
 		
-		// Remove everything and make sure that we end up with a null inventory.
+		// Remove everything and make sure that we end up with an empty inventory.
 		snapshot = _runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(null, block.getDataSpecial(aspectInventory));
+		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
 		// Test is done.
 		runner.shutdown();
@@ -220,7 +216,7 @@ public class TestTickRunner
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		Assert.assertEquals(BlockAspect.STONE, _getBlockProxy(snapshot, changeLocation).getData15(AspectRegistry.BLOCK));
+		Assert.assertEquals(ItemRegistry.STONE, _getBlockProxy(snapshot, changeLocation).getItem());
 	}
 
 	@Test
@@ -303,9 +299,9 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(BlockAspect.STONE, proxy1.getData15(AspectRegistry.BLOCK));
-		Assert.assertEquals((short) 1000, proxy1.getData15(AspectRegistry.DAMAGE));
-		Assert.assertNull(proxy1.getDataSpecial(AspectRegistry.INVENTORY));
+		Assert.assertEquals(ItemRegistry.STONE, proxy1.getItem());
+		Assert.assertEquals((short) 1000, proxy1.getDamage());
+		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the second hit to finish the break.
 		EntityChangeIncrementalBlockBreak break2 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
@@ -321,9 +317,9 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(BlockAspect.AIR, proxy2.getData15(AspectRegistry.BLOCK));
-		Assert.assertEquals((short) 0, proxy2.getData15(AspectRegistry.DAMAGE));
-		Inventory inv = proxy2.getDataSpecial(AspectRegistry.INVENTORY);
+		Assert.assertEquals(ItemRegistry.AIR, proxy2.getItem());
+		Assert.assertEquals((short) 0, proxy2.getDamage());
+		Inventory inv = proxy2.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
 		

@@ -907,9 +907,9 @@ public class TestSpeculativeProjection
 		
 		// Check the block and all of its aspects.
 		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE.number(), proxy.getData15(AspectRegistry.BLOCK));
-		Assert.assertEquals(2, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
-		Assert.assertEquals(1000L, proxy.getDataSpecial(AspectRegistry.CRAFTING).completedMillis());
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getItem());
+		Assert.assertEquals(2, proxy.getInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
 		
 		// Complete the craft and check the proxy.
 		currentTimeMillis += 100L;
@@ -917,10 +917,10 @@ public class TestSpeculativeProjection
 		long commit4 = projector.applyLocalChange(craft, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE.number(), proxy.getData15(AspectRegistry.BLOCK));
-		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
-		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE_BRICK));
-		Assert.assertNull(proxy.getDataSpecial(AspectRegistry.CRAFTING));
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getItem());
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertNull(proxy.getCrafting());
 		
 		// Now, break the table and verify that the final inventory state makes sense.
 		currentTimeMillis += 200L;
@@ -928,10 +928,10 @@ public class TestSpeculativeProjection
 		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.AIR.number(), proxy.getData15(AspectRegistry.BLOCK));
-		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE));
-		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.STONE_BRICK));
-		Assert.assertEquals(1, proxy.getDataSpecial(AspectRegistry.INVENTORY).getCount(ItemRegistry.CRAFTING_TABLE));
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.CRAFTING_TABLE));
 	}
 
 
