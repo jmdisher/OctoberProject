@@ -27,6 +27,11 @@ public enum Craft
 			, new Items(ItemRegistry.CRAFTING_TABLE, 1)
 			, 4000L
 	),
+	STONE_BRICKS_TO_FURNACE("Convert stone bricks into a furnace"
+			, new Items(ItemRegistry.STONE_BRICK, 4)
+			, new Items(ItemRegistry.FURNACE, 1)
+			, 8000L
+	),
 	;
 
 	public final String name;

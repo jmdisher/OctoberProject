@@ -46,6 +46,11 @@ public class ItemRegistry
 			, 2
 			, DamageAspect.WEAK
 	);
+	public static final Item FURNACE = new Item("Furnace"
+			, BlockAspect.FURNACE
+			, 4
+			, DamageAspect.MEDIUM
+	);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -56,7 +61,8 @@ public class ItemRegistry
 			LOG,
 			PLANK,
 			STONE_BRICK,
-			CRAFTING_TABLE, 
+			CRAFTING_TABLE,
+			FURNACE,
 	};
 
 	static {

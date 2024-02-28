@@ -12,4 +12,5 @@ public class BlockAspect
 	public static final short PLANK = 3;
 	public static final short STONE_BRICK = 4;
 	public static final short CRAFTING_TABLE = 5;
+	public static final short FURNACE = 6;
 }
