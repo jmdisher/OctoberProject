@@ -131,7 +131,7 @@ public class TestClientRunner
 		network.client.receivedChange(clientId, network.toSend);
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedMutation(new MutationBlockIncrementalBreak(changeLocation, (short)1000));
+		network.client.receivedBlockUpdate(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -149,7 +149,7 @@ public class TestClientRunner
 		network.client.receivedChange(clientId, network.toSend);
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedMutation(new MutationBlockIncrementalBreak(changeLocation, (short)1000));
+		network.client.receivedBlockUpdate(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		

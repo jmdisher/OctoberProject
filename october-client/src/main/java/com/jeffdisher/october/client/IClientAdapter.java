@@ -1,7 +1,7 @@
 package com.jeffdisher.october.client;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -86,12 +86,11 @@ public interface IClientAdapter
 		 */
 		void receivedChange(int entityId, IMutationEntity change);
 		/**
-		 * Called when an incremental mutation is received from the server.  Note that the server only sends us
-		 * mutations which it applied successfully so this can't fail to apply.
+		 * Called when a block state update is received from the server.
 		 * 
-		 * @param mutation The mutation
+		 * @param stateUpdate The update.
 		 */
-		void receivedMutation(IMutationBlock mutation);
+		void receivedBlockUpdate(IBlockStateUpdate stateUpdate);
 		/**
 		 * Called when the server sends us the end of tick message.  Any messages received since the previous end of
 		 * tick are considered part of this tick.

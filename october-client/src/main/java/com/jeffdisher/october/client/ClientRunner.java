@@ -13,7 +13,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -299,7 +299,7 @@ public class ClientRunner
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private Map<Integer, List<IMutationEntity>> _entityChanges = new HashMap<>();
-		private List<IMutationBlock> _cuboidMutations = new ArrayList<>();
+		private List<IBlockStateUpdate> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
@@ -357,9 +357,9 @@ public class ClientRunner
 			oneQueue.add(change);
 		}
 		@Override
-		public void receivedMutation(IMutationBlock mutation)
+		public void receivedBlockUpdate(IBlockStateUpdate stateUpdate)
 		{
-			_cuboidMutations.add(mutation);
+			_cuboidUpdates.add(stateUpdate);
 		}
 		@Override
 		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded)
@@ -371,8 +371,8 @@ public class ClientRunner
 			_addedCuboids.clear();
 			Map<Integer, List<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
 			_entityChanges.clear();
-			List<IMutationBlock> cuboidMutations = new ArrayList<>(_cuboidMutations);
-			_cuboidMutations.clear();
+			List<IBlockStateUpdate> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
+			_cuboidUpdates.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);
 			_removedEntities.clear();
 			List<CuboidAddress> removedCuboids = new ArrayList<>(_removedCuboids);
@@ -390,7 +390,7 @@ public class ClientRunner
 						, addedEntities
 						, addedCuboids
 						, entityChanges
-						, cuboidMutations
+						, cuboidUpdates
 						, removedEntities
 						, removedCuboids
 						, latestLocalCommitIncluded

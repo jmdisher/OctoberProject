@@ -18,6 +18,7 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -97,7 +98,7 @@ public class SpeculativeProjection
 	 * @param addedEntities The list of entities which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
 	 * @param entityChanges The map of per-entity change queues which committed in this tick.
-	 * @param cuboidMutations The list of cuboid mutations which committed in this tick.
+	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
@@ -110,7 +111,7 @@ public class SpeculativeProjection
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, Map<Integer, List<IMutationEntity>> entityChanges
-			, List<IMutationBlock> cuboidMutations
+			, List<IBlockStateUpdate> cuboidUpdates
 			
 			, List<Integer> removedEntities
 			, List<CuboidAddress> removedCuboids
@@ -128,6 +129,7 @@ public class SpeculativeProjection
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
+		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((IBlockStateUpdate update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun);
 		

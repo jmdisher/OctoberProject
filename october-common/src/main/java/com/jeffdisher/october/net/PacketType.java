@@ -44,10 +44,6 @@ public enum PacketType
 	 */
 	MUTATION_ENTITY_FROM_SERVER,
 	/**
-	 * A mutation targeting a block in the world.  These are only send from server to client.
-	 */
-	MUTATION_BLOCK,
-	/**
 	 * The packet sent by the server at the end of each logic game tick.  It includes the tick number but also the last
 	 * incorporated commit number from the target client.
 	 */
@@ -60,6 +56,10 @@ public enum PacketType
 	 * Contains just the address of a cuboid which should be removed.
 	 */
 	REMOVE_CUBOID,
+	/**
+	 * Contains an IBlockStateUpdate object.  These are only send from server to client.
+	 */
+	BLOCK_STATE_UPDATE,
 	
 	END_OF_LIST,
 }

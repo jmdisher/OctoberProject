@@ -16,7 +16,7 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
@@ -432,12 +432,12 @@ public class ServerRunner
 						if (state.knownCuboids.contains(oneCuboid))
 						{
 							// We know about this cuboid so send any updates.
-							List<IMutationBlock> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
+							List<IBlockStateUpdate> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
 							if (null != mutations)
 							{
-								for (IMutationBlock mutation : mutations)
+								for (IBlockStateUpdate mutation : mutations)
 								{
-									_network.sendMutation(clientId, mutation);
+									_network.sendBlockUpdate(clientId, mutation);
 								}
 							}
 						}

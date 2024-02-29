@@ -26,6 +26,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -90,7 +91,7 @@ public class TestSpeculativeProjection
 		IMutationEntity lone2 = new EntityChangeMutation(mutation2);
 		long commit1 = projector.applyLocalChange(lone1, 1L);
 		long commit2 = projector.applyLocalChange(lone2, 1L);
-		List<IMutationBlock> mutationsToCommit = new ArrayList<>();
+		List<IBlockStateUpdate> mutationsToCommit = new ArrayList<>();
 		List<IMutationEntity> localEntityChangesToCommit = new LinkedList<>();
 		long[] commitNumbers = new long[5];
 		for (int i = 0; i < commitNumbers.length; ++i)
@@ -99,7 +100,7 @@ public class TestSpeculativeProjection
 			IMutationBlock mutation = new ReplaceBlockMutation(location, BlockAspect.AIR, BlockAspect.STONE);
 			IMutationEntity entityChange = new EntityChangeMutation(mutation);
 			localEntityChangesToCommit.add(entityChange);
-			mutationsToCommit.add(mutation);
+			mutationsToCommit.add(new FakeBlockUpdate(mutation));
 			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L);
 		}
 		Assert.assertEquals(7, listener.changeCount);
@@ -110,7 +111,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(mutation1)
+				, List.of(new FakeBlockUpdate(mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -124,7 +125,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone2)))
-				, List.of(mutation2)
+				, List.of(new FakeBlockUpdate(mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -216,7 +217,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(mutation0)
+				, List.of(new FakeBlockUpdate(mutation0))
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
@@ -294,7 +295,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(mutation0)
+				, List.of(new FakeBlockUpdate(mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -311,7 +312,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(mutation1)
+				, List.of(new FakeBlockUpdate(mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -388,7 +389,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(mutation0)
+				, List.of(new FakeBlockUpdate(mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -403,7 +404,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(mutation1)
+				, List.of(new FakeBlockUpdate(mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -484,7 +485,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(mutation1)
+				, List.of(new FakeBlockUpdate(mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -500,7 +501,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone2)))
-				, List.of(mutation2)
+				, List.of(new FakeBlockUpdate(mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -641,7 +642,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(blockBreak)))
-				, List.of(new MutationBlockIncrementalBreak(changeLocation, (short) 1000))
+				, List.of(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -659,7 +660,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(blockBreak)))
-				, List.of(new MutationBlockIncrementalBreak(changeLocation, (short) 1000))
+				, List.of(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2

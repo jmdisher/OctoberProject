@@ -8,12 +8,15 @@ import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
-import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.utils.Assert;
 
 
+/**
+ * NOTE:  IMutationBlock instances are never sent over the network but may be written to disk.
+ * TODO:  Move this to a more appropriate package.
+ */
 public class MutationBlockCodec
 {
 	@SuppressWarnings("unchecked")
@@ -25,7 +28,6 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockOverwrite.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwrite.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockExtractItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockExtractItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockStoreItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStoreItems.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockSetBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockIncrementalBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalBreak.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockCraft.deserializeFromBuffer(buffer);
 		

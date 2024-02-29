@@ -6,15 +6,14 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
  * Completely replaces all aspects of a given block.
  */
-public class MutationBlockSetBlock implements IMutationBlock
+public class MutationBlockSetBlock implements IBlockStateUpdate
 {
-	public static final MutationBlockType TYPE = MutationBlockType.SET_BLOCK;
+	public static final BlockStateUpdateType TYPE = BlockStateUpdateType.SET_BLOCK;
 
 	public static MutationBlockSetBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -51,16 +50,15 @@ public class MutationBlockSetBlock implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public void applyState(MutableBlockProxy newBlock)
 	{
 		// We want to decode the raw data as we feed it in to the proxy.
 		ByteBuffer buffer = ByteBuffer.wrap(_rawData);
 		newBlock.deserializeFromBuffer(buffer);
-		return true;
 	}
 
 	@Override
-	public MutationBlockType getType()
+	public BlockStateUpdateType getType()
 	{
 		return TYPE;
 	}

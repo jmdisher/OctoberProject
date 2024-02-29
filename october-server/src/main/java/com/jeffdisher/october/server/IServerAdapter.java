@@ -1,7 +1,7 @@
 package com.jeffdisher.october.server;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -59,12 +59,12 @@ public interface IServerAdapter
 	 */
 	void sendChange(int clientId, int entityId, IMutationEntity change);
 	/**
-	 * Sends an incremental cuboid mutation to the given client.
+	 * Sends block state update to the given client.
 	 * 
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
-	 * @param mutation The mutation to send.
+	 * @param update The state update to send.
 	 */
-	void sendMutation(int clientId, IMutationBlock mutation);
+	void sendBlockUpdate(int clientId, IBlockStateUpdate update);
 	/**
 	 * Sends the end of tick message to the given client.  All the messages which the client received since the previous
 	 * end of tick are considered part of this tick.

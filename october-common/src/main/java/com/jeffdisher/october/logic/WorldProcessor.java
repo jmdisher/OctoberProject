@@ -12,6 +12,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -82,7 +83,7 @@ public class WorldProcessor
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
-		Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid = new HashMap<>();
+		Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, List<IMutationBlock>> elt : mutationsToRun.entrySet())
 		{
@@ -117,7 +118,7 @@ public class WorldProcessor
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = new ArrayList<>();
-				List<IMutationBlock> updateMutations = new ArrayList<>();
+				List<IBlockStateUpdate> updateMutations = new ArrayList<>();
 				for (MutableBlockProxy proxy : proxies.values())
 				{
 					if (proxy.didChange())
@@ -162,7 +163,7 @@ public class WorldProcessor
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
 			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
-			, Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid
+			, Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid
 			, int committedMutationCount
 	) {}
 }

@@ -19,7 +19,7 @@ import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
-import com.jeffdisher.october.net.Packet_MutationBlock;
+import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
@@ -372,10 +372,10 @@ public class ClientProcess
 				Packet_MutationEntityFromServer safe = (Packet_MutationEntityFromServer) packet;
 				_messagesToClientRunner.receivedChange(safe.entityId, safe.mutation);
 			}
-			else if (packet instanceof Packet_MutationBlock)
+			else if (packet instanceof Packet_BlockStateUpdate)
 			{
-				Packet_MutationBlock safe = (Packet_MutationBlock) packet;
-				_messagesToClientRunner.receivedMutation(safe.mutation);
+				Packet_BlockStateUpdate safe = (Packet_BlockStateUpdate) packet;
+				_messagesToClientRunner.receivedBlockUpdate(safe.stateUpdate);
 			}
 			else if (packet instanceof Packet_EndOfTick)
 			{
