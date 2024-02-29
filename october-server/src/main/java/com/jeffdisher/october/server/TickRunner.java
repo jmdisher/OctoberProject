@@ -51,7 +51,6 @@ public class TickRunner
 	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
-	private List<IMutationBlock> _mutations;
 	private List<CuboidData> _newCuboids;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
@@ -167,29 +166,6 @@ public class TickRunner
 		_nextTick += 1;
 		this.notifyAll();
 		return snapshot;
-	}
-
-	/**
-	 * Enqueues a mutation to be run in a future tick (it will be picked up in the current or next tick and run in the
-	 * following tick).
-	 * 
-	 * @param mutation The mutation to enqueue.
-	 */
-	public void enqueueMutation(IMutationBlock mutation)
-	{
-		_sharedDataLock.lock();
-		try
-		{
-			if (null == _mutations)
-			{
-				_mutations = new ArrayList<>();
-			}
-			_mutations.add(mutation);
-		}
-		finally
-		{
-			_sharedDataLock.unlock();
-		}
 	}
 
 	/**
@@ -448,7 +424,6 @@ public class TickRunner
 			{
 				// Load other cuboids and apply other mutations enqueued since the last tick.
 				List<CuboidData> newCuboids;
-				List<IMutationBlock> newMutations;
 				List<Entity> newEntities;
 				List<Integer> removedEntityIds;
 				Map<Integer, List<IMutationEntity>> newEntityChanges = new HashMap<>();
@@ -459,8 +434,6 @@ public class TickRunner
 				{
 					newCuboids = _newCuboids;
 					_newCuboids = null;
-					newMutations = _mutations;
-					_mutations = null;
 					newEntities = _newEntities;
 					_newEntities = null;
 					removedEntityIds = _departedEntityIds;
@@ -555,13 +528,6 @@ public class TickRunner
 					Assert.assertTrue(null == prev);
 				}
 				scheduledEntityMutations = null;
-				if (null != newMutations)
-				{
-					for (IMutationBlock mutation : newMutations)
-					{
-						_scheduleMutationForCuboid(nextTickMutations, mutation);
-					}
-				}
 				for (Map.Entry<Integer, List<IMutationEntity>> container : newEntityChanges.entrySet())
 				{
 					_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());

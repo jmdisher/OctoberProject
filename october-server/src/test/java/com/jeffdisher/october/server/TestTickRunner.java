@@ -42,10 +42,14 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidsWereLoaded(List.of(cuboid));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
@@ -60,10 +64,14 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidsWereLoaded(List.of(cuboid));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2)), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		runner.startNextTick();
 		TickRunner.Snapshot snap1 = runner.startNextTick();
 		Assert.assertEquals(1, snap1.scheduledBlockMutations().size());
@@ -96,10 +104,14 @@ public class TestTickRunner
 				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR)
 				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR)
 		));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2)), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		runner.startNextTick();
 		TickRunner.Snapshot snap1 = runner.startNextTick();
 		Assert.assertEquals(4, snap1.scheduledBlockMutations().size());
@@ -122,6 +134,8 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidsWereLoaded(List.of(cuboid));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
 		TickRunner.Snapshot startState = runner.waitForPreviousTick();
 		
@@ -136,7 +150,9 @@ public class TestTickRunner
 		Assert.assertEquals(ItemRegistry.AIR, block.getItem());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
@@ -158,6 +174,8 @@ public class TestTickRunner
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.cuboidsWereLoaded(List.of(cuboid));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -350,6 +368,8 @@ public class TestTickRunner
 		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR)));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
 		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR)));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		
 		// Verify that there is no snapshot until we start.
 		Assert.assertNull(snapshotRef[0]);
@@ -369,7 +389,9 @@ public class TestTickRunner
 		Assert.assertEquals(2, initialCuboids.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
-		runner.enqueueMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE));
+		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		Assert.assertNotNull(snapshotRef[0]);
@@ -427,7 +449,9 @@ public class TestTickRunner
 		// 1) Wait for any in-flight tick to complete.
 		runner.waitForPreviousTick();
 		// 2) Enqueue the mutation to be picked up by the next tick.
-		runner.enqueueMutation(mutation);
+		runner.enqueueEntityChange(1, new EntityChangeMutation(mutation), 1L);
+		// (run an extra tick to unwrap the entity change)
+		runner.startNextTick();
 		// 3) Run the tick which will execute the mutation.
 		runner.startNextTick();
 		// 4) Wait for this tick to complete in order to rely on the result being observable.
