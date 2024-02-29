@@ -1,4 +1,4 @@
-package com.jeffdisher.october.net;
+package com.jeffdisher.october.persistence;
 
 import java.nio.ByteBuffer;
 import java.util.function.Function;
@@ -15,7 +15,6 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * NOTE:  IMutationBlock instances are never sent over the network but may be written to disk.
- * TODO:  Move this to a more appropriate package.
  */
 public class MutationBlockCodec
 {
