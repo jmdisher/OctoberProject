@@ -66,9 +66,14 @@ public class TestTickRunner
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2));
 		runner.startNextTick();
 		TickRunner.Snapshot snap1 = runner.startNextTick();
+		Assert.assertEquals(1, snap1.scheduledBlockMutations().size());
+		Assert.assertEquals(6, snap1.scheduledBlockMutations().get(address).size());
 		TickRunner.Snapshot snap2 =runner.waitForPreviousTick();
+		Assert.assertEquals(1, snap2.scheduledBlockMutations().size());
+		Assert.assertEquals(36, snap2.scheduledBlockMutations().get(address).size());
 		runner.startNextTick();
 		TickRunner.Snapshot snap3 = runner.startNextTick();
+		Assert.assertEquals(0, snap3.scheduledBlockMutations().size());
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
@@ -96,8 +101,11 @@ public class TestTickRunner
 		runner.enqueueMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2));
 		runner.startNextTick();
 		TickRunner.Snapshot snap1 = runner.startNextTick();
+		Assert.assertEquals(4, snap1.scheduledBlockMutations().size());
 		TickRunner.Snapshot snap2 = runner.startNextTick();
+		Assert.assertEquals(7, snap2.scheduledBlockMutations().size());
 		TickRunner.Snapshot snap3 = runner.startNextTick();
+		Assert.assertEquals(0, snap3.scheduledBlockMutations().size());
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
@@ -243,9 +251,12 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(0).longValue());
 		Assert.assertEquals(1, snapshot.resultantMutationsById().get(0).size());
+		Assert.assertEquals(1, snapshot.scheduledEntityMutations().size());
+		Assert.assertEquals(1, snapshot.scheduledEntityMutations().get(entityId).size());
 		// (run a tick to run the final change)
 		runner.startNextTick();
 		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, finalSnapshot.scheduledEntityMutations().size());
 		runner.shutdown();
 		
 		// Now, check for results.
