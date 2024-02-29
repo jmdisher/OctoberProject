@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -110,7 +109,7 @@ public class SpeculativeProjection
 			, List<Entity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, Map<Integer, Queue<IMutationEntity>> entityChanges
+			, Map<Integer, List<IMutationEntity>> entityChanges
 			, List<IMutationBlock> cuboidMutations
 			
 			, List<Integer> removedEntities
@@ -129,7 +128,7 @@ public class SpeculativeProjection
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
-		Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
+		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun);
 		
 		// Apply these to the shadow collections.
@@ -313,12 +312,12 @@ public class SpeculativeProjection
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
 		
-		Queue<IMutationEntity> queue = new LinkedList<IMutationEntity>();
+		List<IMutationEntity> queue = new LinkedList<IMutationEntity>();
 		queue.add(change);
-		Map<Integer, Queue<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
+		Map<Integer, List<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, changesToRun);
 		_projectedCrowd.putAll(group.groupFragment());
-		Map<Integer, Queue<IMutationEntity>> exportedChanges = group.exportedChanges();
+		Map<Integer, List<IMutationEntity>> exportedChanges = group.exportedChanges();
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -326,7 +325,7 @@ public class SpeculativeProjection
 		while (!exportedChanges.isEmpty() || !exportedMutations.isEmpty())
 		{
 			// Run these changes and mutations, collecting the resultant output from them.
-			Map<CuboidAddress, Queue<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
+			Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations);
 			_projectedWorld.putAll(innerFragment.stateFragment());
 			modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
@@ -337,9 +336,9 @@ public class SpeculativeProjection
 			
 			// Coalesce the results of these.
 			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
-			for (Map.Entry<Integer, Queue<IMutationEntity>> entry : innerGroup.exportedChanges().entrySet())
+			for (Map.Entry<Integer, List<IMutationEntity>> entry : innerGroup.exportedChanges().entrySet())
 			{
-				Queue<IMutationEntity> oneQueue = exportedChanges.get(entry.getKey());
+				List<IMutationEntity> oneQueue = exportedChanges.get(entry.getKey());
 				if (null == oneQueue)
 				{
 					exportedChanges.put(entry.getKey(), entry.getValue());
@@ -359,13 +358,13 @@ public class SpeculativeProjection
 		return (1 == group.committedMutationCount());
 	}
 
-	private Map<CuboidAddress, Queue<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations)
+	private Map<CuboidAddress, List<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations)
 	{
-		Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun = new HashMap<>();
+		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = new HashMap<>();
 		for (IMutationBlock mutation : mutations)
 		{
 			CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-			Queue<IMutationBlock> queue = mutationsToRun.get(address);
+			List<IMutationBlock> queue = mutationsToRun.get(address);
 			if (null == queue)
 			{
 				queue = new LinkedList<>();

@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -299,7 +298,7 @@ public class ClientRunner
 		private List<Entity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private Map<Integer, Queue<IMutationEntity>> _entityChanges = new HashMap<>();
+		private Map<Integer, List<IMutationEntity>> _entityChanges = new HashMap<>();
 		private List<IMutationBlock> _cuboidMutations = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
@@ -349,7 +348,7 @@ public class ClientRunner
 		@Override
 		public void receivedChange(int entityId, IMutationEntity change)
 		{
-			Queue<IMutationEntity> oneQueue = _entityChanges.get(entityId);
+			List<IMutationEntity> oneQueue = _entityChanges.get(entityId);
 			if (null == oneQueue)
 			{
 				oneQueue = new LinkedList<>();
@@ -370,7 +369,7 @@ public class ClientRunner
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			Map<Integer, Queue<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
+			Map<Integer, List<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
 			_entityChanges.clear();
 			List<IMutationBlock> cuboidMutations = new ArrayList<>(_cuboidMutations);
 			_cuboidMutations.clear();

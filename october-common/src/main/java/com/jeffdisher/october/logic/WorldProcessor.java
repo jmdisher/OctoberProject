@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -53,12 +52,12 @@ public class WorldProcessor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
-			, Map<CuboidAddress, Queue<IMutationBlock>> mutationsToRun
+			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		List<IMutationBlock> exportedMutations = new ArrayList<>();
-		Map<Integer, Queue<IMutationEntity>> exportedEntityChanges = new HashMap<>();
+		Map<Integer, List<IMutationEntity>> exportedEntityChanges = new HashMap<>();
 		Consumer<IMutationBlock> sink = new Consumer<IMutationBlock>() {
 			@Override
 			public void accept(IMutationBlock arg0)
@@ -71,7 +70,7 @@ public class WorldProcessor
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
 			{
-				Queue<IMutationEntity> entityChanges = exportedEntityChanges.get(targetEntityId);
+				List<IMutationEntity> entityChanges = exportedEntityChanges.get(targetEntityId);
 				if (null == entityChanges)
 				{
 					entityChanges = new LinkedList<>();
@@ -85,13 +84,13 @@ public class WorldProcessor
 		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
 		Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<CuboidAddress, Queue<IMutationBlock>> elt : mutationsToRun.entrySet())
+		for (Map.Entry<CuboidAddress, List<IMutationBlock>> elt : mutationsToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				CuboidAddress key = elt.getKey();
-				Queue<IMutationBlock> mutations = elt.getValue();
+				List<IMutationBlock> mutations = elt.getValue();
 				IReadOnlyCuboidData oldState = worldMap.get(key);
 				
 				// We can't be told to operate on something which isn't in the state.
@@ -161,7 +160,7 @@ public class WorldProcessor
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutationBlock> exportedMutations
-			, Map<Integer, Queue<IMutationEntity>> exportedEntityChanges
+			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
 			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
 			, Map<CuboidAddress, List<IMutationBlock>> resultantMutationsByCuboid
 			, int committedMutationCount

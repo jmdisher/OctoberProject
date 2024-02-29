@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -92,7 +91,7 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(lone1, 1L);
 		long commit2 = projector.applyLocalChange(lone2, 1L);
 		List<IMutationBlock> mutationsToCommit = new ArrayList<>();
-		Queue<IMutationEntity> localEntityChangesToCommit = new LinkedList<>();
+		List<IMutationEntity> localEntityChangesToCommit = new LinkedList<>();
 		long[] commitNumbers = new long[5];
 		for (int i = 0; i < commitNumbers.length; ++i)
 		{

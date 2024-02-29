@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -50,12 +49,12 @@ public class CrowdProcessor
 			, Map<Integer, Entity> entitiesById
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
-			, Map<Integer, Queue<IMutationEntity>> changesToRun
+			, Map<Integer, List<IMutationEntity>> changesToRun
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
 		List<IMutationBlock> exportedMutations = new ArrayList<>();
-		Map<Integer, Queue<IMutationEntity>> exportedChanges = new HashMap<>();
+		Map<Integer, List<IMutationEntity>> exportedChanges = new HashMap<>();
 		Consumer<IMutationBlock> newMutationSink = new Consumer<>() {
 			@Override
 			public void accept(IMutationBlock arg0)
@@ -67,7 +66,7 @@ public class CrowdProcessor
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
 			{
-				Queue<IMutationEntity> entityChanges = exportedChanges.get(targetEntityId);
+				List<IMutationEntity> entityChanges = exportedChanges.get(targetEntityId);
 				if (null == entityChanges)
 				{
 					entityChanges = new LinkedList<>();
@@ -80,13 +79,13 @@ public class CrowdProcessor
 		
 		Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<Integer, Queue<IMutationEntity>> elt : changesToRun.entrySet())
+		for (Map.Entry<Integer, List<IMutationEntity>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				Queue<IMutationEntity> changes = elt.getValue();
+				List<IMutationEntity> changes = elt.getValue();
 				Entity entity = entitiesById.get(id);
 				
 				// We can't be told to operate on something which isn't in the state.
@@ -126,7 +125,7 @@ public class CrowdProcessor
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutationBlock> exportedMutations
-			, Map<Integer, Queue<IMutationEntity>> exportedChanges
+			, Map<Integer, List<IMutationEntity>> exportedChanges
 			// Note that the resultantMutationsById may not be the input mutations, but will have an equivalent impact on the crowd.
 			, Map<Integer, List<IMutationEntity>> resultantMutationsById
 			, int committedMutationCount
