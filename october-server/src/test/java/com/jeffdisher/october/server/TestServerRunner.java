@@ -43,8 +43,8 @@ public class TestServerRunner
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, new ResourceLoader(DIRECTORY.newFolder(), null), () -> System.currentTimeMillis());
-		// We expect to see an extra 3 threads:  ServerRunner, TickRunner, CuboidLoader.
-		Assert.assertEquals(startingActiveCount + 3, Thread.currentThread().getThreadGroup().activeCount());
+		// We expect to see an extra 6 threads:  ServerRunner, CuboidLoader, and 4xTickRunner.
+		Assert.assertEquals(startingActiveCount + 2 + ServerRunner.TICK_RUNNER_THREAD_COUNT, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
 		
 		// Verify that the threads have stopped.

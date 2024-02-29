@@ -35,7 +35,11 @@ import com.jeffdisher.october.utils.MessageQueue;
  */
 public class ServerRunner
 {
-	public static final int TICK_RUNNER_THREAD_COUNT = 1;
+	/**
+	 * Currently, we default to running 4 threads since that should give reasonable stress testing while being feasible
+	 * on modern systems.
+	 */
+	public static final int TICK_RUNNER_THREAD_COUNT = 4;
 	/**
 	 * The "fake" client receives the end-of-tick message so that tests can see progress before client connections.
 	 */
