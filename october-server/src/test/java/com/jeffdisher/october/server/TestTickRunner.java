@@ -20,8 +20,11 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -41,7 +44,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
@@ -63,7 +66,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
@@ -95,14 +98,14 @@ public class TestTickRunner
 	{
 		// Use extra threads here to stress further.
 		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR)
-				, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR)
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR), List.of())
+				, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
 		));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
@@ -133,7 +136,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
@@ -173,7 +176,7 @@ public class TestTickRunner
 		
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		runner.start();
@@ -214,7 +217,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		runner.start();
 		
 		// Have a new entity join and wait for them to be added.
@@ -297,7 +300,7 @@ public class TestTickRunner
 		// Create a cuboid of stone.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
-		runner.cuboidsWereLoaded(List.of(cuboid));
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
 		
 		// We can use the default entity since we don't yet check that they are standing in solid rock.
 		int entityId = 1;
@@ -365,9 +368,13 @@ public class TestTickRunner
 		};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR)));
+		runner.cuboidsWereLoaded(List.of(
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR), List.of())
+		));
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
-		runner.cuboidsWereLoaded(List.of(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR)));
+		runner.cuboidsWereLoaded(List.of(
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR), List.of())
+		));
 		int entityId = 1;
 		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
 		
@@ -438,6 +445,59 @@ public class TestTickRunner
 		runner.startNextTick();
 		runner.waitForPreviousTick();
 		Assert.assertEquals(0, snapshotRef[0].completedEntities().size());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void startStopReloadWithSuspendedMutations()
+	{
+		// We will start a runner, attach an entity, have it send an action with block mutation consequences, wait until we see this in the snapshot, shut it down, then restart it and see that these resume.
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		runner.start();
+		
+		// Wait for the start-up to complete and then load the entity and some cuboids.
+		runner.waitForPreviousTick();
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
+		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
+		runner.cuboidsWereLoaded(List.of(
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(airAddress, ItemRegistry.AIR), List.of()),
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(stoneAddress, ItemRegistry.STONE), List.of())
+		));
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		// Verify that we see the entity and cuboids.
+		Assert.assertEquals(1, snapshot.completedEntities().size());
+		Assert.assertEquals(2, snapshot.completedCuboids().size());
+		
+		// Tell them to start breaking a stone block.
+		short damage = 10;
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1), damage), 1L);
+		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
+		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(1, snapshot.scheduledBlockMutations().get(stoneAddress).size());
+		MutationBlockIncrementalBreak mutation = (MutationBlockIncrementalBreak) snapshot.scheduledBlockMutations().get(stoneAddress).get(0);
+		
+		// Shut down the runner, start a new one, and load the cuboids back in.
+		runner.shutdown();
+		runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.cuboidsWereLoaded(List.of(
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of()),
+				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE), List.of(mutation))
+		));
+		runner.startNextTick();
+		// Verify that this mutation has been run.
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		// Remember that there is a 10x damage multiplier until tools are added.
+		Assert.assertEquals(10 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
 		
 		runner.shutdown();
 	}

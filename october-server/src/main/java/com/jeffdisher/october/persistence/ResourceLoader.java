@@ -10,6 +10,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -17,6 +18,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -49,7 +51,7 @@ public class ResourceLoader
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
-	private Collection<CuboidData> _shared_resolvedCuboids;
+	private Collection<SuspendedCuboid<CuboidData>> _shared_resolvedCuboids;
 	private Collection<Entity> _shared_resolvedEntities;
 
 	public ResourceLoader(File saveDirectory
@@ -115,7 +117,7 @@ public class ResourceLoader
 	 * @param requestedCuboids The collection of cuboids to load/generate, by address.
 	 * @param requestedEntityIds The collection of entities to load/generate, by ID.
 	 */
-	public void getResultsAndRequestBackgroundLoad(Collection<CuboidData> out_loadedCuboids
+	public void getResultsAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 			, Collection<Entity> out_loadedEntities
 			, Collection<CuboidAddress> requestedCuboids
 			, Collection<Integer> requestedEntityIds
@@ -137,17 +139,17 @@ public class ResourceLoader
 					// 4) Return null (only happens in tests)
 					
 					// See if we can load this from disk.
-					CuboidData data = _background_readCuboidFromDisk(address);
+					SuspendedCuboid<CuboidData> data = _background_readCuboidFromDisk(address);
 					if (null == data)
 					{
 						if (_preLoaded.containsKey(address))
 						{
 							// We will "consume" this since we will load from disk on the next call.
-							data = _preLoaded.remove(address);
+							data = new SuspendedCuboid<>(_preLoaded.remove(address), List.of());
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = _cuboidGenerator.apply(address);
+							data = new SuspendedCuboid<>(_cuboidGenerator.apply(address), List.of());
 						}
 					}
 					// If we found anything, return it.
@@ -203,15 +205,15 @@ public class ResourceLoader
 	 * immediately while the write-back will complete asynchronously.
 	 * Note that at least one of these collections must contain something.
 	 * 
-	 * @param cuboids The cuboids to write.
+	 * @param cuboids The cuboids (and any suspended mutations) to write.
 	 * @param entities The entities to write.
 	 */
-	public void writeBackToDisk(Collection<IReadOnlyCuboidData> cuboids, Collection<Entity> entities)
+	public void writeBackToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<Entity> entities)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
 		_queue.enqueue(() -> {
-			for (IReadOnlyCuboidData cuboid : cuboids)
+			for (SuspendedCuboid<IReadOnlyCuboidData> cuboid : cuboids)
 			{
 				_background_writeCuboidToDisk(cuboid);
 			}
@@ -233,7 +235,7 @@ public class ResourceLoader
 		}
 	}
 
-	private void _background_returnCuboid(CuboidData loaded)
+	private void _background_returnCuboid(SuspendedCuboid<CuboidData> loaded)
 	{
 		_sharedDataLock.lock();
 		try
@@ -267,10 +269,10 @@ public class ResourceLoader
 		}
 	}
 
-	private CuboidData _background_readCuboidFromDisk(CuboidAddress address)
+	private SuspendedCuboid<CuboidData> _background_readCuboidFromDisk(CuboidAddress address)
 	{
 		// These data files are relatively small so we can just read this in, completely.
-		CuboidData cuboid;
+		SuspendedCuboid<CuboidData> result;
 		try (
 				RandomAccessFile aFile = new RandomAccessFile(_getCuboidFile(address), "r");
 				FileChannel inChannel = aFile.getChannel();
@@ -278,30 +280,47 @@ public class ResourceLoader
 		{
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
-			cuboid = CuboidData.createEmpty(address);
+			CuboidData cuboid = CuboidData.createEmpty(address);
 			Object state = cuboid.deserializeResumable(null, buffer);
 			// There should be no resumable state since the file is complete.
 			Assert.assertTrue(null == state);
+			
+			// Now, load any suspended mutations.
+			List<IMutationBlock> suspended = new ArrayList<>();
+			while (buffer.hasRemaining())
+			{
+				IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+				suspended.add(mutation);
+			}
+			result = new SuspendedCuboid<>(cuboid, suspended);
 		}
 		catch (FileNotFoundException e)
 		{
 			// This is ok and means we should return null.
-			cuboid = null;
+			result = null;
 		}
 		catch (IOException e)
 		{
 			throw Assert.unexpected(e);
 		}
-		return cuboid;
+		return result;
 	}
 
-	private void _background_writeCuboidToDisk(IReadOnlyCuboidData cuboid)
+	private void _background_writeCuboidToDisk(SuspendedCuboid<IReadOnlyCuboidData> data)
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		IReadOnlyCuboidData cuboid = data.cuboid();
+		List<IMutationBlock> mutations = data.mutations();
 		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
 		// We currently assume that we just do the write in a single call.
 		Assert.assertTrue(null == state);
+		
+		// We now write any suspended mutations.
+		for (IMutationBlock mutation : mutations)
+		{
+			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, mutation);
+		}
 		_backround_serializationBuffer.flip();
 		
 		try (

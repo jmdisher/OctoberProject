@@ -11,8 +11,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -101,7 +103,7 @@ public class TestResourceLoader
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		// Modify a block and write this back.
 		loaded.setData15(AspectRegistry.BLOCK, block, ItemRegistry.STONE.number());
-		loader.writeBackToDisk(List.of(loaded), List.of());
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -172,6 +174,46 @@ public class TestResourceLoader
 		loader.shutdown();
 	}
 
+	@Test
+	public void writeAndReadSuspended() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		
+		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
+		Collection<CuboidData> results = _loadCuboids(loader, List.of(airAddress));
+		Assert.assertNull(results);
+		CuboidData loaded = _waitForOne(loader);
+		// Create a mutation which targets this and save it back with the cuboid.
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ItemRegistry.STONE);
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(mutation))), List.of());
+		// (the shutdown will wait for the queue to drain)
+		loader.shutdown();
+		
+		// Make sure that we see this written back.
+		String fileName = "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid";
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, create a new loader to verify that we can read this.
+		loader = new ResourceLoader(worldDirectory, null);
+		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(airAddress), List.of());
+		// The first call should give us nothing so loop until we see an answer.
+		Assert.assertTrue(out_loadedCuboids.isEmpty());
+		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, out_loadedCuboids.size());
+		SuspendedCuboid<CuboidData> suspended = out_loadedCuboids.get(0);
+		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
+		Assert.assertEquals(1, suspended.mutations().size());
+		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationBlockOverwrite);
+		loader.shutdown();
+	}
+
 
 	private static CuboidData _waitForOne(ResourceLoader loader) throws InterruptedException
 	{
@@ -193,12 +235,20 @@ public class TestResourceLoader
 
 	private static Collection<CuboidData> _loadCuboids(ResourceLoader loader, Collection<CuboidAddress> addresses)
 	{
-		Collection<CuboidData> results = new ArrayList<>();
+		Collection<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), addresses, List.of());
-		return results.isEmpty()
-				? null
-				: results
-		;
+		// In this helper, we will just extract the cuboids.
+		Collection<CuboidData> extracted = null;
+		if (!results.isEmpty())
+		{
+			extracted = new ArrayList<>();
+			for (SuspendedCuboid<CuboidData> suspended : results)
+			{
+				extracted.add(suspended.cuboid());
+				Assert.assertTrue(suspended.mutations().isEmpty());
+			}
+		}
+		return extracted;
 	}
 
 	private static Collection<Entity> _loadEntities(ResourceLoader loader, Collection<Integer> ids)

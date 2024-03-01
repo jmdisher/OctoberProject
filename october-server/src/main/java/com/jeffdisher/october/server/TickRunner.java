@@ -23,6 +23,7 @@ import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -51,7 +52,7 @@ public class TickRunner
 	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
-	private List<CuboidData> _newCuboids;
+	private List<SuspendedCuboid<CuboidData>> _newCuboids;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
 	private List<Integer> _departedEntityIds;
@@ -173,7 +174,7 @@ public class TickRunner
 	 * 
 	 * @param cuboids The loaded cuboids to inject.
 	 */
-	public void cuboidsWereLoaded(Collection<CuboidData> cuboids)
+	public void cuboidsWereLoaded(Collection<SuspendedCuboid<CuboidData>> cuboids)
 	{
 		_sharedDataLock.lock();
 		try
@@ -423,7 +424,7 @@ public class TickRunner
 			if (_nextTick > 0)
 			{
 				// Load other cuboids and apply other mutations enqueued since the last tick.
-				List<CuboidData> newCuboids;
+				List<SuspendedCuboid<CuboidData>> newCuboids;
 				List<Entity> newEntities;
 				List<Integer> removedEntityIds;
 				Map<Integer, List<IMutationEntity>> newEntityChanges = new HashMap<>();
@@ -473,6 +474,7 @@ public class TickRunner
 				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
 				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
 				Map<Integer, Entity> nextCrowdState = new HashMap<>();
+				Map<CuboidAddress, List<IMutationBlock>> nextTickMutations = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
 				nextWorldState.putAll(_snapshot.completedCuboids);
@@ -481,11 +483,22 @@ public class TickRunner
 				// Add in anything new.
 				if (null != newCuboids)
 				{
-					for (CuboidData cuboid : newCuboids)
+					for (SuspendedCuboid<CuboidData> suspended : newCuboids)
 					{
-						IReadOnlyCuboidData old = nextWorldState.put(cuboid.getCuboidAddress(), cuboid);
+						CuboidData cuboid = suspended.cuboid();
+						CuboidAddress address = cuboid.getCuboidAddress();
+						Object old = nextWorldState.put(address, cuboid);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
+						
+						// Add any suspended mutations which came with the cuboid.
+						List<IMutationBlock> mutations = suspended.mutations();
+						if (!mutations.isEmpty())
+						{
+							old = nextTickMutations.put(address, new ArrayList<>(mutations));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
 					}
 				}
 				if (null != newEntities)
@@ -509,8 +522,7 @@ public class TickRunner
 					}
 				}
 				
-				// Schedule the new mutations and changes coming from outside (they are applied AFTER updates from the previous tick).
-				Map<CuboidAddress, List<IMutationBlock>> nextTickMutations = new HashMap<>();
+				// Add any of the mutations scheduled from the last tick.
 				for (List<IMutationBlock> list : scheduledBlockMutations.values())
 				{
 					for (IMutationBlock mutation : list)

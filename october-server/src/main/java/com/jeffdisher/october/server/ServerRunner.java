@@ -17,8 +17,10 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
+import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -125,7 +127,19 @@ public class ServerRunner
 		// (first, we want to finish any remaining write-back).
 		if (!_tickAdvancer.completedCuboids.isEmpty())
 		{
-			_loader.writeBackToDisk(_tickAdvancer.completedCuboids, _tickAdvancer.completedEntities);
+			// We need to package up the cuboids with any suspended operations.
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = new ArrayList<>();
+			for (IReadOnlyCuboidData cuboid : _tickAdvancer.completedCuboids)
+			{
+				CuboidAddress address = cuboid.getCuboidAddress();
+				List<IMutationBlock> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
+				if (null == suspended)
+				{
+					suspended = List.of();
+				}
+				cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended));
+			}
+			_loader.writeBackToDisk(cuboidResources, _tickAdvancer.completedEntities);
 		}
 		_loader.shutdown();
 		// We can now join on the background thread since it has nothing else to block on.
@@ -252,6 +266,7 @@ public class ServerRunner
 		private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
 		// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
 		public Collection<IReadOnlyCuboidData> completedCuboids = Collections.emptySet();
+		public Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations = Collections.emptyMap();
 		// Same thing with entities.
 		public Collection<Entity> completedEntities = Collections.emptySet();
 		
@@ -264,6 +279,7 @@ public class ServerRunner
 			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
 			this.completedCuboids = snapshot.completedCuboids().values();
 			this.completedEntities = snapshot.completedEntities().values();
+			this.scheduledBlockMutations = snapshot.scheduledBlockMutations();
 			
 			// Remove any of the cuboids in the snapshot from any that we had requested.
 			_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
@@ -312,7 +328,7 @@ public class ServerRunner
 			}
 			
 			// Request any missing cuboids or new entities and see what we got back from last time.
-			Collection<CuboidData> newCuboids = new ArrayList<>();
+			Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
 			Collection<Entity> newEntities = new ArrayList<>();
 			_loader.getResultsAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients);
 			// We have requested the clients so drop this, now.
