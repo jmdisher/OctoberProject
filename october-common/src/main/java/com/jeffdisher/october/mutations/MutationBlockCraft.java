@@ -1,6 +1,7 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -61,6 +62,7 @@ public class MutationBlockCraft implements IMutationBlock
 			// See if this is something new or if we are continuing.
 			CraftOperation currentOperation = newBlock.getCrafting();
 			Craft currentCraft = (null != currentOperation) ? currentOperation.selectedCraft() : null;
+			Set<Craft.Classification> classifications = Set.of(Craft.Classification.TRIVIAL, Craft.Classification.COMMON);
 			if ((null == _craft) || (_craft == currentCraft))
 			{
 				// We are continuing but we may have already finished.
@@ -72,7 +74,7 @@ public class MutationBlockCraft implements IMutationBlock
 					{
 						// We are done so try to apply the craft.
 						Inventory inventory = newBlock.getInventory();
-						if (currentCraft.canApply(inventory))
+						if (classifications.contains(currentOperation.selectedCraft().classification) && currentCraft.canApply(inventory))
 						{
 							MutableInventory mutable = new MutableInventory(inventory);
 							currentCraft.craft(mutable);
@@ -93,8 +95,9 @@ public class MutationBlockCraft implements IMutationBlock
 			else
 			{
 				// We are changing so see if the craft makes sense and then start it.
+				// Make sure that this crafting operation can be done within a table.
 				Inventory inventory = newBlock.getInventory();
-				if (_craft.canApply(inventory))
+				if (classifications.contains(_craft.classification) && _craft.canApply(inventory))
 				{
 					long millisToApply = CRAFTING_SPEED_MODIFIER * _millisToApply;
 					CraftOperation updated = new CraftOperation(_craft, millisToApply);

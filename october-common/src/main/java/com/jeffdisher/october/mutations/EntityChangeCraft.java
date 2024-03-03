@@ -50,35 +50,45 @@ public class EntityChangeCraft implements IMutationEntity
 		if ((null == existing) || (existing.selectedCraft() != _operation))
 		{
 			// We will start a new operation, here.
-			existing = new CraftOperation(_operation, 0L);
-		}
-		// (for now, we will assume that someone already checked that this was valid - we will check on completion, anyway).
-		
-		// Now, increment the time.
-		existing = new CraftOperation(existing.selectedCraft(), existing.completedMillis() + _millisToApply);
-		
-		// See if this is completed.
-		boolean isValid;
-		if (existing.isCompleted())
-		{
-			// We can now apply this and clear it.
-			boolean didCraft = existing.selectedCraft().craft(newEntity.newInventory);
-			if (didCraft)
+			// We need to make sure that this is a crafting operations which can be performed in their inventory.
+			if (_operation.classification == Craft.Classification.TRIVIAL)
 			{
-				// Make sure that this cleared the selection, if we used the last of them.
-				if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
-				{
-					newEntity.newSelectedItem = null;
-				}
+				existing = new CraftOperation(_operation, 0L);
 			}
-			newEntity.newLocalCraftOperation = null;
-			isValid = didCraft;
+		}
+		
+		boolean isValid;
+		if (null != existing)
+		{
+			// Now, increment the time.
+			existing = new CraftOperation(existing.selectedCraft(), existing.completedMillis() + _millisToApply);
+			
+			// See if this is completed.
+			if (existing.isCompleted())
+			{
+				// We can now apply this and clear it.
+				boolean didCraft = existing.selectedCraft().craft(newEntity.newInventory);
+				if (didCraft)
+				{
+					// Make sure that this cleared the selection, if we used the last of them.
+					if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
+					{
+						newEntity.newSelectedItem = null;
+					}
+				}
+				newEntity.newLocalCraftOperation = null;
+				isValid = didCraft;
+			}
+			else
+			{
+				// Save back the remaining state and complete it later.
+				newEntity.newLocalCraftOperation = existing;
+				isValid = true;
+			}
 		}
 		else
 		{
-			// Save back the remaining state and complete it later.
-			newEntity.newLocalCraftOperation = existing;
-			isValid = true;
+			isValid = false;
 		}
 		
 		// Account for any movement while we were busy.

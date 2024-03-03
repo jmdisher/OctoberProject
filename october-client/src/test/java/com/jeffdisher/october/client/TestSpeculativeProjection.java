@@ -934,6 +934,47 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.CRAFTING_TABLE));
 	}
 
+	@Test
+	public void craftFurnaceFailure()
+	{
+		// Test the in-inventory crafting operation.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.STONE_BRICK, 4).finish();
+		Entity entity = new Entity(entityId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, null
+				, null
+		);
+		projector.applyChangesForServerTick(0L
+				, List.of(entity)
+				, Collections.emptyList()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		
+		// Verify that this craft should be valid for the inventory.
+		Assert.assertTrue(Craft.STONE_BRICKS_TO_FURNACE.canApply(inventory));
+		
+		// But verify that it fails when applied to the entity, directly (as it isn't "trivial").
+		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_BRICKS_TO_FURNACE, 100L);
+		long commit = projector.applyLocalChange(craft, 1000L);
+		// This should fail to apply.
+		Assert.assertEquals(0, commit);
+		// There should be no active operation.
+		Assert.assertNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+	}
+
 
 	private int _countBlocks(IReadOnlyCuboidData cuboid, short blockType)
 	{
