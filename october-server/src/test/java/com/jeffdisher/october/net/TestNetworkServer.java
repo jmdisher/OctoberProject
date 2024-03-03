@@ -178,7 +178,12 @@ public class TestNetworkServer
 		}
 		// Combine this into a basic cuboid.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree, OctreeObject.create(), OctreeShort.create((short)0), OctreeObject.create() });
+		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree
+				, OctreeObject.create()
+				, OctreeShort.create((short)0)
+				, OctreeObject.create()
+				, OctreeObject.create()
+		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.
 		CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);

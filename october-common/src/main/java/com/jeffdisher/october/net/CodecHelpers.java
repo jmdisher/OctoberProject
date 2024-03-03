@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -167,6 +168,38 @@ public class CodecHelpers
 	public static void writeCraftOperation(ByteBuffer buffer, CraftOperation operation)
 	{
 		_writeCraftOperation(buffer, operation);
+	}
+
+	public static FuelState readFuelState(ByteBuffer buffer)
+	{
+		// We will use -1 as the "null".
+		int millisFueled = buffer.getInt();
+		FuelState result;
+		if (millisFueled > 0)
+		{
+			Inventory fuelInventory = _readInventory(buffer);
+			result = new FuelState(millisFueled, fuelInventory);
+		}
+		else
+		{
+			Assert.assertTrue(-1 == millisFueled);
+			result = null;
+		}
+		return result;
+	}
+
+	public static void writeFuelState(ByteBuffer buffer, FuelState fuel)
+	{
+		if (null != fuel)
+		{
+			buffer.putInt(fuel.millisFueled());
+			_writeInventory(buffer, fuel.fuelInventory());
+		}
+		else
+		{
+			// Write the -1.
+			buffer.putInt(-1);
+		}
 	}
 
 

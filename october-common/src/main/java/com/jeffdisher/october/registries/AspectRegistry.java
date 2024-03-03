@@ -5,12 +5,14 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.CraftingAspectCodec;
+import com.jeffdisher.october.data.FueledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
@@ -73,6 +75,19 @@ public class AspectRegistry
 			}
 			, new CraftingAspectCodec()
 	);
+	/**
+	 * FuelState objects, usually null.  These are used by things like furnaces to perform fuel-based crafting
+	 * operations.
+	 */
+	public static final Aspect<FuelState, OctreeObject> FUELED = registerAspect(FuelState.class
+			, OctreeObject.class
+			, () -> OctreeObject.create()
+			, (OctreeObject original) -> {
+				// These are immutable so create the shallow clone.
+				return original.cloneMapShallow();
+			}
+			, new FueledAspectCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -82,6 +97,7 @@ public class AspectRegistry
 		Assert.assertTrue(1 == INVENTORY.index());
 		Assert.assertTrue(2 == DAMAGE.index());
 		Assert.assertTrue(3 == CRAFTING.index());
+		Assert.assertTrue(4 == FUELED.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -89,6 +105,7 @@ public class AspectRegistry
 			INVENTORY,
 			DAMAGE,
 			CRAFTING,
+			FUELED,
 		};
 	}
 
