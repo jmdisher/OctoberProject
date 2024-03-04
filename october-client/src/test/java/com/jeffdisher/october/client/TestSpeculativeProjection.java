@@ -29,8 +29,11 @@ import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
+import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
+import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
@@ -485,7 +488,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(new FakeBlockUpdate(mutation1))
+				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -501,7 +504,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone2)))
-				, List.of(new FakeBlockUpdate(mutation2))
+				, List.of(new FakeBlockUpdate(mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -518,7 +521,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyMap()
-				, Collections.emptyList()
+				, List.of(new FakeBlockUpdate(mutation2))
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
@@ -973,6 +976,108 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, commit);
 		// There should be no active operation.
 		Assert.assertNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+	}
+
+	@Test
+	public void pickUpTwice()
+	{
+		// Create a cuboid with a single item on the ground and try to pick it up twice, showing that the projection is consistent at all points and doesn't duplicate an item.
+		// Test the in-inventory crafting operation.
+		CountingListener listener = new CountingListener();
+		int localEntityId = 1;
+		long currentTimeMillis = 1000L;
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
+		projector.applyChangesForServerTick(0L
+				, List.of(EntityActionValidator.buildDefaultEntity(localEntityId))
+				, List.of(cuboid)
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		
+		// Issue the command to pick up the item.
+		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, new Items(ItemRegistry.STONE, 1));
+		long commit1 = projector.applyLocalChange(request, currentTimeMillis);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		
+		// Apply the commit from the server and show it still works.
+		currentTimeMillis += 100L;
+		int speculative = projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of()
+				, Map.of(localEntityId, List.of(request))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculative);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		
+		// Now, try to apply it again (we don't check the inventory when applying it so it should eventually do nothing in a later phase).
+		long commit2 = projector.applyLocalChange(request, currentTimeMillis);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		Assert.assertEquals(2, commit2);
+		
+		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
+		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, new Items(ItemRegistry.STONE, 1), localEntityId);
+		currentTimeMillis += 100L;
+		speculative = projector.applyChangesForServerTick(2L
+				, List.of()
+				, List.of()
+				, Map.of(localEntityId, List.of(request))
+				, List.of(new FakeBlockUpdate(extract))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculative);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		
+		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ItemRegistry.STONE, 1));
+		currentTimeMillis += 100L;
+		speculative = projector.applyChangesForServerTick(3L
+				, List.of()
+				, List.of()
+				, Map.of(localEntityId, List.of(store))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculative);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		
+		currentTimeMillis += 100L;
+		speculative = projector.applyChangesForServerTick(4L
+				, List.of()
+				, List.of()
+				, Map.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculative);
+		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 	}
 
 

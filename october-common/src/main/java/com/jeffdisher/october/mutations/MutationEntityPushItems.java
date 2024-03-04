@@ -66,17 +66,21 @@ public class MutationEntityPushItems implements IMutationEntity
 			int toDrop = Math.min(capacity, _offered.count());
 			if (toDrop > 0)
 			{
-				// We will proceed to remove the items from our inventory and pass them to the block.
-				newEntity.newInventory.removeItems(offeredType, toDrop);
-				context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop)));
-				
-				// We want to deselect this if it was selected.
-				if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
+				// Make sure that the inventory actually _has_ these items (this would be an error in the mutation - can happen if a mutation is based on stale state).
+				if (newEntity.newInventory.getCount(offeredType) >= toDrop)
 				{
-					newEntity.newSelectedItem = null;
+					// We will proceed to remove the items from our inventory and pass them to the block.
+					newEntity.newInventory.removeItems(offeredType, toDrop);
+					context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop)));
+					
+					// We want to deselect this if it was selected.
+					if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
+					{
+						newEntity.newSelectedItem = null;
+					}
+					
+					didApply = true;
 				}
-				
-				didApply = true;
 			}
 		}
 		return didApply;

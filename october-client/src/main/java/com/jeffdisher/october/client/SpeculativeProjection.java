@@ -3,7 +3,6 @@ package com.jeffdisher.october.client;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +35,23 @@ import com.jeffdisher.october.utils.Assert;
  * of updates to its local shadow state of the server, prunes its list of local updates to remove any which were
  * accounted for by the last applied number, and applies the remaining to a copy of the shadow state to produce its
  * speculative projection.
+ * Note that, when pruning the changes which the server claims are already considered, it will record some number of
+ * ticks worth of or follow-up changes scheduled from within the pruned changes and will apply them for that many game
+ * ticks, going forward.  This is to ensure that operations which take multiple steps to take effect will not appear to
+ * "revert" when only the first step has been committed.  This is limited, since some operations could result in
+ * unbounded numbers of follow-ups which would take real time to be applied and couldn't be reasonably tracked.
  * 
  * When the client makes a local update, it adds it to its list of pending updates and applies it to its speculative
  * projection.  Note that the client can sometimes coalesce these updates (in the case of a move, for example).
  */
 public class SpeculativeProjection
 {
+	/**
+	 * When pruning a change from the list of speculative changes, we will store this many follow-up ticks' worth of
+	 * changes for application on future ticks.
+	 */
+	public static final int MAX_FOLLOW_UP_TICKS = 2;
+
 	private final int _localEntityId;
 	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
@@ -53,7 +63,8 @@ public class SpeculativeProjection
 	private Map<Integer, Entity> _projectedCrowd;
 	public final Function<AbsoluteLocation, BlockProxy> projectionBlockLoader;
 	
-	private final List<SpeculativeWrapper> _speculativeChanges;
+	private final List<_SpeculativeWrapper> _speculativeChanges;
+	private final List<_SpeculativeConsequences> _followUpTicks;
 	private long _nextLocalCommitNumber;
 
 	/**
@@ -85,6 +96,7 @@ public class SpeculativeProjection
 		};
 		
 		_speculativeChanges = new ArrayList<>();
+		_followUpTicks = new ArrayList<>();
 		_nextLocalCommitNumber = 1L;
 	}
 
@@ -130,7 +142,7 @@ public class SpeculativeProjection
 		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((IBlockStateUpdate update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
-		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations);
+		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun);
 		
 		// Apply these to the shadow collections.
@@ -169,27 +181,54 @@ public class SpeculativeProjection
 		_projectedCrowd = new HashMap<>(_shadowCrowd);
 		_projectedWorld = new HashMap<>(_shadowWorld);
 		
-		// (we use an iterator to remove commits which reject).
+		// Step forward the follow-ups before we add to them when processing speculative changes.
+		if (_followUpTicks.size() > 0)
+		{
+			_followUpTicks.remove(0);
+		}
+		
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		Set<Integer> modifiedEntityIds = new HashSet<>();
-		Iterator<SpeculativeWrapper> iter = _speculativeChanges.iterator();
-		while (iter.hasNext())
+		List<_SpeculativeWrapper> previous = new ArrayList<>(_speculativeChanges);
+		_speculativeChanges.clear();
+		for (_SpeculativeWrapper wrapper : previous)
 		{
-			SpeculativeWrapper wrapper = iter.next();
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change);
-				if (!didApply)
+				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change, wrapper.commitLevel);
+				// If this was applied, re-add the new wrapper.
+				if (null != appliedWrapper)
 				{
-					// This must have been conflicted with server changes so remove it.
-					iter.remove();
+					_speculativeChanges.add(appliedWrapper);
 				}
 			}
 			else
 			{
-				iter.remove();
+				// We are removing this so promote any follow-ups.
+				for (int i = 0; i < wrapper.followUpTicks.size(); ++i)
+				{
+					_SpeculativeConsequences followUp = wrapper.followUpTicks.get(i);
+					_SpeculativeConsequences shared;
+					if (i < _followUpTicks.size())
+					{
+						shared = _followUpTicks.get(i);
+					}
+					else
+					{
+						shared = new _SpeculativeConsequences(new HashMap<>(), new ArrayList<>());
+						_followUpTicks.add(i, shared);
+					}
+					shared.absorb(followUp);
+				}
 			}
+		}
+		
+		// Apply any remaining follow-up changes.
+		for (int i = 0; i < _followUpTicks.size(); ++i)
+		{
+			_SpeculativeConsequences followUp = _followUpTicks.get(i);
+			_applyFollowUp(modifiedCuboidAddresses, modifiedEntityIds, followUp);
 		}
 		
 		// Notify the listener of what changed.
@@ -235,10 +274,10 @@ public class SpeculativeProjection
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
 		// Attempt to apply the change.
-		boolean didApply = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change);
-		if (didApply)
+		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change, commitNumber);
+		if (null != appliedWrapper)
 		{
-			_speculativeChanges.add(new SpeculativeWrapper(commitNumber, change));
+			_speculativeChanges.add(appliedWrapper);
 		}
 		else
 		{
@@ -307,7 +346,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private boolean _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity change)
+	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity change, long commitNumber)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -324,30 +363,30 @@ public class SpeculativeProjection
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		Set<Integer> locallyModifiedIds = new HashSet<>(group.resultantMutationsById().keySet());
-		while (!exportedChanges.isEmpty() || !exportedMutations.isEmpty())
+		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
+		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty()); ++i)
 		{
-			// Run these changes and mutations, collecting the resultant output from them.
-			Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(exportedMutations);
-			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations);
-			_projectedWorld.putAll(innerFragment.stateFragment());
-			modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
+			_SpeculativeConsequences consequences = new _SpeculativeConsequences(exportedChanges, exportedMutations);
+			followUpTicks.add(consequences);
 			
-			CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, exportedChanges);
-			_projectedCrowd.putAll(innerGroup.groupFragment());
-			locallyModifiedIds.addAll(innerGroup.resultantMutationsById().keySet());
+			// Run these changes and mutations, collecting the resultant output from them.
+			WorldProcessor.ProcessedFragment innerFragment = _applyFollowUpBlockMutations(modifiedCuboids, exportedMutations);
+			CrowdProcessor.ProcessedGroup innerGroup = _applyFollowUpEntityMutations(locallyModifiedIds, exportedChanges);
 			
 			// Coalesce the results of these.
 			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
 			for (Map.Entry<Integer, List<IMutationEntity>> entry : innerGroup.exportedChanges().entrySet())
 			{
-				List<IMutationEntity> oneQueue = exportedChanges.get(entry.getKey());
+				int key = entry.getKey();
+				List<IMutationEntity> value = entry.getValue();
+				List<IMutationEntity> oneQueue = exportedChanges.get(key);
 				if (null == oneQueue)
 				{
-					exportedChanges.put(entry.getKey(), entry.getValue());
+					exportedChanges.put(key, new ArrayList<>(value));
 				}
 				else
 				{
-					oneQueue.addAll(entry.getValue());
+					oneQueue.addAll(value);
 				}
 			}
 			exportedMutations = new ArrayList<>();
@@ -357,24 +396,57 @@ public class SpeculativeProjection
 		modifiedEntityIds.addAll(locallyModifiedIds);
 		
 		// Since we only provided a single mutation, we will assume it applied if we see 1 commit count.
-		return (1 == group.committedMutationCount());
+		return (1 == group.committedMutationCount())
+				? new _SpeculativeWrapper(commitNumber, change, followUpTicks)
+				: null
+		;
 	}
 
-	private Map<CuboidAddress, List<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations)
+	private Map<CuboidAddress, List<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations, Set<CuboidAddress> loadedCuboids)
 	{
 		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = new HashMap<>();
 		for (IMutationBlock mutation : mutations)
 		{
 			CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-			List<IMutationBlock> queue = mutationsToRun.get(address);
-			if (null == queue)
+			// We will filter out things which aren't loaded (since this may be a follow-up).
+			if (loadedCuboids.contains(address))
 			{
-				queue = new LinkedList<>();
-				mutationsToRun.put(address, queue);
+				List<IMutationBlock> queue = mutationsToRun.get(address);
+				if (null == queue)
+				{
+					queue = new LinkedList<>();
+					mutationsToRun.put(address, queue);
+				}
+				queue.add(mutation);
 			}
-			queue.add(mutation);
 		}
 		return mutationsToRun;
+	}
+
+	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, _SpeculativeConsequences followUp)
+	{
+		// We ignore the results of these.
+		_applyFollowUpBlockMutations(modifiedCuboids, followUp.exportedMutations);
+		_applyFollowUpEntityMutations(modifiedEntityIds, followUp.exportedChanges);
+	}
+
+	private WorldProcessor.ProcessedFragment _applyFollowUpBlockMutations(Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
+	{
+		long gameTick = 0L;
+		Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
+		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations);
+		_projectedWorld.putAll(innerFragment.stateFragment());
+		modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
+		return innerFragment;
+	}
+
+	private CrowdProcessor.ProcessedGroup _applyFollowUpEntityMutations(Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity>> entityMutations)
+	{
+		long gameTick = 0L;
+		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, entityMutations);
+		_projectedCrowd.putAll(innerGroup.groupFragment());
+		modifiedEntityIds.addAll(innerGroup.resultantMutationsById().keySet());
+		return innerGroup;
 	}
 
 
@@ -389,7 +461,30 @@ public class SpeculativeProjection
 		void entityDidUnload(int id);
 	}
 
-	private static record SpeculativeWrapper(long commitLevel
+	private static record _SpeculativeWrapper(long commitLevel
 			, IMutationEntity change
+			, List<_SpeculativeConsequences> followUpTicks
 	) {}
+
+	private static record _SpeculativeConsequences(Map<Integer, List<IMutationEntity>> exportedChanges, List<IMutationBlock> exportedMutations)
+	{
+		public void absorb(_SpeculativeConsequences followUp)
+		{
+			for (Map.Entry<Integer, List<IMutationEntity>> change : followUp.exportedChanges.entrySet())
+			{
+				int key = change.getKey();
+				List<IMutationEntity> value = change.getValue();
+				List<IMutationEntity> list = this.exportedChanges.get(key);
+				if (null != list)
+				{
+					list.addAll(value);
+				}
+				else
+				{
+					this.exportedChanges.put(key, value);
+				}
+			}
+			this.exportedMutations.addAll(followUp.exportedMutations);
+		}
+	}
 }
