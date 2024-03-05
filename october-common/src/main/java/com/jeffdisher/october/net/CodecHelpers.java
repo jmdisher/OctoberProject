@@ -175,7 +175,7 @@ public class CodecHelpers
 		// We will use -1 as the "null".
 		int millisFueled = buffer.getInt();
 		FuelState result;
-		if (millisFueled > 0)
+		if (millisFueled >= 0)
 		{
 			Inventory fuelInventory = _readInventory(buffer);
 			result = new FuelState(millisFueled, fuelInventory);

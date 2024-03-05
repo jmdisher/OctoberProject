@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -175,6 +176,26 @@ public class TestCodecHelpers
 		CodecHelpers.writeCraft(buffer, test);
 		buffer.flip();
 		Craft output = CodecHelpers.readCraft(buffer);
+		Assert.assertNull(output);
+	}
+
+	@Test
+	public void fuelState() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		FuelState test = new FuelState(0, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
+		CodecHelpers.writeFuelState(buffer, test);
+		buffer.flip();
+		FuelState output = CodecHelpers.readFuelState(buffer);
+		Assert.assertEquals(test.millisFueled(), output.millisFueled());
+		Assert.assertEquals(test.fuelInventory().getCount(ItemRegistry.STONE), output.fuelInventory().getCount(ItemRegistry.STONE));
+		
+		// Verify the null.
+		buffer.clear();
+		test = null;
+		CodecHelpers.writeFuelState(buffer, test);
+		buffer.flip();
+		output = CodecHelpers.readFuelState(buffer);
 		Assert.assertNull(output);
 	}
 }
