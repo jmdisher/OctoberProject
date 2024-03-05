@@ -52,4 +52,20 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * @param buffer The buffer which will be deserialized to populate this block's aspects.
 	 */
 	void deserializeFromBuffer(ByteBuffer buffer);
+	/**
+	 * Note that ephemeral state only exists within a single tick (always null in speculative projection) so this will
+	 * be null if not set on THIS tick.
+	 * Note that this type is implementation dependent so multiple mutation types which want to use this will need to be
+	 * aware of each other.
+	 * 
+	 * @return Returns the result of the last "setEphemeralState(Object)" call from within this tick.
+	 */
+	Object getEphemeralState();
+	/**
+	 * Sets the ephemeral state for this tick which can later be requested with "getEphemeralState()".  Note that this
+	 * will always reset to null at the beginning of a tick (resets on every mutation in speculative projection).
+	 * 
+	 * @param state The state object to set.
+	 */
+	void setEphemeralState(Object state);
 }

@@ -23,6 +23,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
+import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -498,6 +499,51 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		// Remember that there is a 10x damage multiplier until tools are added.
 		Assert.assertEquals(10 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void saturatingMutations()
+	{
+		// Apply a few mutations which saturate within one tick.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
+		int entityId = 1;
+		runner.entityDidJoin(EntityActionValidator.buildDefaultEntity(entityId));
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Apply the saturating mutations to a few blocks - duplicating in one case.
+		short damage = 50;
+		AbsoluteLocation location0 = new AbsoluteLocation(0, 0, 0);
+		IMutationBlock mutation0 = new SaturatingDamage(location0, damage);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 2L);
+		AbsoluteLocation location1 = new AbsoluteLocation(1, 0, 0);
+		IMutationBlock mutation1 = new SaturatingDamage(location1, damage);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation1), 3L);
+		
+		// Run these and observe that the same damage was applied, no matter the number of mutations.
+		runner.startNextTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snap1 = runner.waitForPreviousTick();
+		BlockProxy proxy0 = _getBlockProxy(snap1, location0);
+		BlockProxy proxy1 = _getBlockProxy(snap1, location1);
+		Assert.assertEquals(damage, proxy0.getDamage());
+		Assert.assertEquals(damage, proxy1.getDamage());
+		
+		// But this shouldn't prevent another attempt in a later tick.
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 4L);
+		runner.startNextTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snap2 = runner.waitForPreviousTick();
+		proxy0 = _getBlockProxy(snap2, location0);
+		proxy1 = _getBlockProxy(snap2, location1);
+		Assert.assertEquals(2 * damage, proxy0.getDamage());
+		Assert.assertEquals(damage, proxy1.getDamage());
 		
 		runner.shutdown();
 	}

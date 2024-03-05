@@ -32,6 +32,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	private final Object[] _writes;
 
 	private Item _cachedItem;
+	private Object _ephemeralState;
 
 	public MutableBlockProxy(AbsoluteLocation absoluteLocation, BlockAddress address, IReadOnlyCuboidData data)
 	{
@@ -201,6 +202,18 @@ public class MutableBlockProxy implements IMutableBlockProxy
 				_readAndStore(type, buffer);
 			}
 		}
+	}
+
+	@Override
+	public Object getEphemeralState()
+	{
+		return _ephemeralState;
+	}
+
+	@Override
+	public void setEphemeralState(Object state)
+	{
+		_ephemeralState = state;
 	}
 
 	/**
