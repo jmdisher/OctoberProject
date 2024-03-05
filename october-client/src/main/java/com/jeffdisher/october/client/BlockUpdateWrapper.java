@@ -2,7 +2,7 @@ package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
@@ -30,7 +30,7 @@ public class BlockUpdateWrapper implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		_stateUpdate.applyState(newBlock);
 		return true;

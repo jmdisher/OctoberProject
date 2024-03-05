@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -41,13 +41,13 @@ public class PickUpItemMutation implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		return _common(newBlock);
 	}
 
 
-	private boolean _common(MutableBlockProxy newBlock)
+	private boolean _common(IMutableBlockProxy newBlock)
 	{
 		// We can only operator on air.
 		boolean didApply = false;

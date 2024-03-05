@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -49,7 +49,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		boolean didApply = false;
 		

@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.FuelAspect;
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
@@ -51,7 +51,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Inventory existing = _getInventory(newBlock);
 		MutableInventory inv = new MutableInventory(existing);
@@ -78,7 +78,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 	}
 
 
-	private Inventory _getInventory(MutableBlockProxy block)
+	private Inventory _getInventory(IMutableBlockProxy block)
 	{
 		Inventory inv;
 		switch (_inventoryAspect)
@@ -98,7 +98,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 		return inv;
 	}
 
-	private void _putInventory(MutableBlockProxy block, Inventory inv)
+	private void _putInventory(IMutableBlockProxy block, Inventory inv)
 	{
 		switch (_inventoryAspect)
 		{

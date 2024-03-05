@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -33,7 +33,7 @@ public interface IMutationBlock
 	 * @param newBlock The block currently being modified by this mutation in the current tick.
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock);
+	boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock);
 
 	/**
 	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal

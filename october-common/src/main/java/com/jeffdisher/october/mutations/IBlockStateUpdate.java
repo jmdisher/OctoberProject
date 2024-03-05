@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 
@@ -24,7 +24,7 @@ public interface IBlockStateUpdate
 	 * 
 	 * @param newBlock The block currently being modified by this mutation in the current tick.
 	 */
-	void applyState(MutableBlockProxy newBlock);
+	void applyState(IMutableBlockProxy newBlock);
 
 	/**
 	 * This type is just used for serialization.

@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.PacketCodec;
@@ -50,7 +51,7 @@ public class MutationBlockSetBlock implements IBlockStateUpdate
 	}
 
 	@Override
-	public void applyState(MutableBlockProxy newBlock)
+	public void applyState(IMutableBlockProxy newBlock)
 	{
 		// We want to decode the raw data as we feed it in to the proxy.
 		ByteBuffer buffer = ByteBuffer.wrap(_rawData);

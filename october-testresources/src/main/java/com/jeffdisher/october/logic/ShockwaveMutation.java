@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -29,7 +29,7 @@ public class ShockwaveMutation implements IMutationBlock
 	}
 
 	@Override
-	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
+	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		_commonMutation(context.newMutationSink);
 		return true;
