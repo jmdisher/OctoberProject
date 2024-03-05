@@ -5,11 +5,13 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -24,20 +26,23 @@ public class MutationBlockExtractItems implements IMutationBlock
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Items requested = CodecHelpers.readItems(buffer);
+		byte inventoryAspect = buffer.get();
 		int returnEntity = buffer.getInt();
-		return new MutationBlockExtractItems(location, requested, returnEntity);
+		return new MutationBlockExtractItems(location, requested, inventoryAspect, returnEntity);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
 	private final Items _requested;
+	private final byte _inventoryAspect;
 	private final int _returnEntityId;
 
-	public MutationBlockExtractItems(AbsoluteLocation blockLocation, Items requested, int returnEntityId)
+	public MutationBlockExtractItems(AbsoluteLocation blockLocation, Items requested, byte inventoryAspect, int returnEntityId)
 	{
 		_blockLocation = blockLocation;
 		_requested = requested;
 		_returnEntityId = returnEntityId;
+		_inventoryAspect = inventoryAspect;
 	}
 
 	@Override
@@ -50,7 +55,7 @@ public class MutationBlockExtractItems implements IMutationBlock
 	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
 		boolean didApply = false;
-		Inventory existing = newBlock.getInventory();
+		Inventory existing = _getInventory(newBlock);
 		if (null != existing)
 		{
 			// We will still try a best-efforts request if the inventory has changed.
@@ -61,8 +66,8 @@ public class MutationBlockExtractItems implements IMutationBlock
 			if (toFetch > 0)
 			{
 				mutable.removeItems(requestedType, toFetch);
+				_putInventory(newBlock, mutable.freeze());
 				context.newChangeSink.accept(_returnEntityId, new MutationEntityStoreToInventory(new Items(requestedType, toFetch)));
-				newBlock.setInventory(mutable.freeze());
 				didApply = true;
 			}
 		}
@@ -80,6 +85,45 @@ public class MutationBlockExtractItems implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
 		CodecHelpers.writeItems(buffer, _requested);
+		buffer.put(_inventoryAspect);
 		buffer.putInt(_returnEntityId);
+	}
+
+
+	private Inventory _getInventory(MutableBlockProxy block)
+	{
+		Inventory inv;
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			inv = block.getInventory();
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			FuelState fuel = block.getFuel();
+			inv = (null != fuel)
+					? fuel.fuelInventory()
+					: null
+			;
+			break;
+		default:
+			throw Assert.unreachable();
+		}
+		return inv;
+	}
+
+	private void _putInventory(MutableBlockProxy block, Inventory inv)
+	{
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			block.setInventory(inv);
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			FuelState fuel = block.getFuel();
+			block.setFuel(new FuelState(fuel.millisFueled(), inv));
+			break;
+		default:
+			throw Assert.unreachable();
+		}
 	}
 }

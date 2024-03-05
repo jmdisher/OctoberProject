@@ -2,9 +2,11 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
@@ -24,19 +26,22 @@ public class MutationBlockStoreItems implements IMutationBlock
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Items offered = CodecHelpers.readItems(buffer);
-		return new MutationBlockStoreItems(location, offered);
+		byte inventoryAspect = buffer.get();
+		return new MutationBlockStoreItems(location, offered, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
 	private final Items _offered;
+	private final byte _inventoryAspect;
 
-	public MutationBlockStoreItems(AbsoluteLocation blockLocation, Items offered)
+	public MutationBlockStoreItems(AbsoluteLocation blockLocation, Items offered, byte inventoryAspect)
 	{
 		Assert.assertTrue(offered.count() > 0);
 		
 		_blockLocation = blockLocation;
 		_offered = offered;
+		_inventoryAspect = inventoryAspect;
 	}
 
 	@Override
@@ -48,13 +53,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, MutableBlockProxy newBlock)
 	{
-		// Get the inventory, creating it if required.
-		Inventory existing = newBlock.getInventory();
+		Inventory existing = _getInventory(newBlock);
 		MutableInventory inv = new MutableInventory(existing);
 		int stored = inv.addItemsBestEfforts(_offered.type(), _offered.count());
 		if (stored > 0)
 		{
-			newBlock.setInventory(inv.freeze());
+			_putInventory(newBlock, inv.freeze());
 		}
 		return (stored > 0);
 	}
@@ -70,5 +74,43 @@ public class MutationBlockStoreItems implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
 		CodecHelpers.writeItems(buffer, _offered);
+		buffer.put(_inventoryAspect);
+	}
+
+
+	private Inventory _getInventory(MutableBlockProxy block)
+	{
+		Inventory inv;
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			inv = block.getInventory();
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			inv = FuelAspect.hasFuelInventoryForType(block.getItem(), _offered.type())
+				? block.getFuel().fuelInventory()
+				: null
+			;
+			break;
+		default:
+			throw Assert.unreachable();
+		}
+		return inv;
+	}
+
+	private void _putInventory(MutableBlockProxy block, Inventory inv)
+	{
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			block.setInventory(inv);
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			FuelState fuel = block.getFuel();
+			block.setFuel(new FuelState(fuel.millisFueled(), inv));
+			break;
+		default:
+			throw Assert.unreachable();
+		}
 	}
 }

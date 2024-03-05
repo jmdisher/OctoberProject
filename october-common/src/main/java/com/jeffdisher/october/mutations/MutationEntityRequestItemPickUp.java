@@ -25,17 +25,20 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	{
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		Items requested = CodecHelpers.readItems(buffer);
-		return new MutationEntityRequestItemPickUp(blockLocation, requested);
+		byte inventoryAspect = buffer.get();
+		return new MutationEntityRequestItemPickUp(blockLocation, requested, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
 	private final Items _requested;
+	private final byte _inventoryAspect;
 
-	public MutationEntityRequestItemPickUp(AbsoluteLocation blockLocation, Items requested)
+	public MutationEntityRequestItemPickUp(AbsoluteLocation blockLocation, Items requested, byte inventoryAspect)
 	{
 		_blockLocation = blockLocation;
 		_requested = requested;
+		_inventoryAspect = inventoryAspect;
 	}
 
 	@Override
@@ -55,7 +58,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		if (toFetch > 0)
 		{
 			// Request that the items be extracted and sent back to us.
-			context.newMutationSink.accept(new MutationBlockExtractItems(_blockLocation, new Items(_requested.type(), toFetch), newEntity.original.id()));
+			context.newMutationSink.accept(new MutationBlockExtractItems(_blockLocation, new Items(_requested.type(), toFetch), _inventoryAspect, newEntity.original.id()));
 		}
 		return (toFetch > 0);
 	}
@@ -71,5 +74,6 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
 		CodecHelpers.writeItems(buffer, _requested);
+		buffer.put(_inventoryAspect);
 	}
 }

@@ -898,7 +898,7 @@ public class TestSpeculativeProjection
 		
 		// Store the stones in the inventory.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ItemRegistry.STONE, 2));
+		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ItemRegistry.STONE, 2), Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
 		Assert.assertEquals(2L, commit2);
 		
@@ -1004,7 +1004,7 @@ public class TestSpeculativeProjection
 		
 		// Issue the command to pick up the item.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, new Items(ItemRegistry.STONE, 1));
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit1 = projector.applyLocalChange(request, currentTimeMillis);
 		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
@@ -1032,7 +1032,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, commit2);
 		
 		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
-		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, new Items(ItemRegistry.STONE, 1), localEntityId);
+		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
 		currentTimeMillis += 100L;
 		speculative = projector.applyChangesForServerTick(2L
 				, List.of()
@@ -1078,6 +1078,77 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculative);
 		Assert.assertEquals(ItemRegistry.STONE.encumbrance(), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+	}
+
+	@Test
+	public void placeAndLoadFurnace()
+	{
+		CountingListener listener = new CountingListener();
+		int localEntityId = 0;
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		Entity entity = new Entity(localEntityId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.FURNACE, 1).add(ItemRegistry.PLANK, 1).add(ItemRegistry.STONE, 1).finish()
+				, ItemRegistry.FURNACE
+				, null
+		);
+		projector.applyChangesForServerTick(0L
+				, List.of(entity)
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.lastEntityStates.get(0));
+		
+		// Place the furnace.
+		long currentTimeMillis = 1000L;
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
+		Assert.assertEquals(1L, commit1);
+		
+		// Verify that storing stone in fuel inventory fails.
+		currentTimeMillis += 1000L;
+		MutationEntityPushItems pushFail = new MutationEntityPushItems(location, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		long commitFail = projector.applyLocalChange(pushFail, currentTimeMillis);
+		Assert.assertEquals(0, commitFail);
+		
+		// Storing the stone in the normal inventory should work.
+		currentTimeMillis += 1000L;
+		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
+		Assert.assertEquals(2L, commit2);
+		
+		// Verify that we can store the planks in the fuel inventory.
+		currentTimeMillis += 1000L;
+		MutationEntityPushItems pushFuel = new MutationEntityPushItems(location, new Items(ItemRegistry.PLANK, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		long commit3 = projector.applyLocalChange(pushFuel, currentTimeMillis);
+		Assert.assertEquals(3L, commit3);
+		
+		// Check the block and all of its aspects.
+		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		Assert.assertEquals(ItemRegistry.FURNACE, proxy.getItem());
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
+		
+		// Now, break the furnace and verify that the final inventory state makes sense.
+		currentTimeMillis += 2000L;
+		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)200);
+		long commit4 = projector.applyLocalChange(breaking, currentTimeMillis);
+		Assert.assertEquals(4L, commit4);
+		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.PLANK));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.FURNACE));
 	}
 
 

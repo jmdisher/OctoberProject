@@ -3,12 +3,14 @@ package com.jeffdisher.october.data;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
@@ -119,6 +121,32 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public void setCrafting(CraftOperation crafting)
 	{
 		_setDataSpecial(AspectRegistry.CRAFTING, crafting);
+	}
+
+	@Override
+	public FuelState getFuel()
+	{
+		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
+		// We can't return null if this block can support fuel.
+		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedItem))
+		{
+			fuel = new FuelState(0, Inventory.start(FuelAspect.CAPACITY).finish());
+		}
+		return fuel;
+	}
+
+	@Override
+	public void setFuel(FuelState fuel)
+	{
+		// If this is empty, we want to store null, instead.
+		if (fuel.isEmpty())
+		{
+			_setDataSpecial(AspectRegistry.FUELED, null);
+		}
+		else
+		{
+			_setDataSpecial(AspectRegistry.FUELED, fuel);
+		}
 	}
 
 	@Override

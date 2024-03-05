@@ -3,6 +3,7 @@ package com.jeffdisher.october.data;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 
@@ -33,6 +34,12 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * @param crafting The new crafting operation (can be null).
 	 */
 	void setCrafting(CraftOperation crafting);
+	/**
+	 * Stores the given fuel state for the block.  Note that an empty fuel state will be stored as a null.
+	 * 
+	 * @param fuel The new fuel state (not null).
+	 */
+	void setFuel(FuelState fuel);
 	/**
 	 * Serializes all known aspects for this block into the given buffer.
 	 * 

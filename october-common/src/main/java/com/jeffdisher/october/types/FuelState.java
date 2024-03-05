@@ -16,4 +16,13 @@ public record FuelState(int millisFueled
 		, Inventory fuelInventory
 )
 {
+	/**
+	 * Used to determine if this is empty and can therefore be replaced with a null, in storage.
+	 * 
+	 * @return True if this fuel state has no meaningful information.
+	 */
+	public boolean isEmpty()
+	{
+		return (0 == millisFueled) && (0 == fuelInventory.currentEncumbrance);
+	}
 }

@@ -14,6 +14,7 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 
@@ -41,7 +42,7 @@ public class TestMutationBlockCodec
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Items items = new Items(ItemRegistry.STONE, 2);
 		int returnEntityId = 1;
-		MutationBlockExtractItems mutation = new MutationBlockExtractItems(location, items, returnEntityId);
+		MutationBlockExtractItems mutation = new MutationBlockExtractItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY, returnEntityId);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
@@ -56,7 +57,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Items items = new Items(ItemRegistry.STONE, 2);
-		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items);
+		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

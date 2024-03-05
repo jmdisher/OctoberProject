@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -27,19 +28,22 @@ public class MutationEntityPushItems implements IMutationEntity
 	{
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
 		Items offered = CodecHelpers.readItems(buffer);
-		return new MutationEntityPushItems(blockLocation, offered);
+		byte inventoryAspect = buffer.get();
+		return new MutationEntityPushItems(blockLocation, offered, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
 	private final Items _offered;
+	private final byte _inventoryAspect;
 
-	public MutationEntityPushItems(AbsoluteLocation blockLocation, Items offered)
+	public MutationEntityPushItems(AbsoluteLocation blockLocation, Items offered, byte inventoryAspect)
 	{
 		Assert.assertTrue(offered.count() > 0);
 		
 		_blockLocation = blockLocation;
 		_offered = offered;
+		_inventoryAspect = inventoryAspect;
 	}
 
 	@Override
@@ -56,7 +60,7 @@ public class MutationEntityPushItems implements IMutationEntity
 		
 		// First off, we want to make sure that this is a block which can accept items (currently just air).
 		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
-		Inventory inv = block.getInventory();
+		Inventory inv = _getInventory(block);
 		if (null != inv)
 		{
 			// See if there is space in the inventory.
@@ -71,7 +75,7 @@ public class MutationEntityPushItems implements IMutationEntity
 				{
 					// We will proceed to remove the items from our inventory and pass them to the block.
 					newEntity.newInventory.removeItems(offeredType, toDrop);
-					context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop)));
+					context.newMutationSink.accept(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop), _inventoryAspect));
 					
 					// We want to deselect this if it was selected.
 					if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
@@ -97,5 +101,27 @@ public class MutationEntityPushItems implements IMutationEntity
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
 		CodecHelpers.writeItems(buffer, _offered);
+		buffer.put(_inventoryAspect);
+	}
+
+
+	private Inventory _getInventory(BlockProxy block)
+	{
+		Inventory inv;
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			inv = block.getInventory();
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			inv = FuelAspect.hasFuelInventoryForType(block.getItem(), _offered.type())
+				? block.getFuel().fuelInventory()
+				: null
+			;
+			break;
+		default:
+			throw Assert.unreachable();
+		}
+		return inv;
 	}
 }

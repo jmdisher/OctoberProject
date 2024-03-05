@@ -253,7 +253,7 @@ public class TestCommonChanges
 		
 		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
 		MutableEntity newEntity = new MutableEntity(original);
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1));
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.
@@ -282,7 +282,7 @@ public class TestCommonChanges
 		// Run the process again to pick up the last item and verify that the inventory is now null.
 		blockHolder[0] = null;
 		entityHolder[0] = null;
-		request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1));
+		request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
@@ -314,7 +314,7 @@ public class TestCommonChanges
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutableEntity newEntity = new MutableEntity(original);
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1));
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
 		// We can now verify that the entity has lost the item but the block is unchanged.
@@ -337,7 +337,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ItemRegistry.STONE, freeze.selectedItem());
 		
 		// Drop again to verify that this correctly handles dropping the last selected item.
-		push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1));
+		push = new MutationEntityPushItems(targetLocation, new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);

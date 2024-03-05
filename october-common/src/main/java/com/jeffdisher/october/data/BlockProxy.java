@@ -1,11 +1,13 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 
@@ -60,6 +62,18 @@ public class BlockProxy implements IBlockProxy
 	public CraftOperation getCrafting()
 	{
 		return _getDataSpecial(AspectRegistry.CRAFTING);
+	}
+
+	@Override
+	public FuelState getFuel()
+	{
+		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
+		// We can't return null if this block can support fuel.
+		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedItem))
+		{
+			fuel = new FuelState(0, Inventory.start(FuelAspect.CAPACITY).finish());
+		}
+		return fuel;
 	}
 
 

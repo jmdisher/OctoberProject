@@ -26,6 +26,7 @@ public class InventoryAspect
 				size = CAPACITY_AIR;
 				break;
 			case BlockAspect.CRAFTING_TABLE:
+			case BlockAspect.FURNACE:
 				size = CAPACITY_CRAFTING_TABLE;
 				break;
 			case BlockAspect.STONE:

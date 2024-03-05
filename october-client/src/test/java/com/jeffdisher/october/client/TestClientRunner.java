@@ -324,7 +324,7 @@ public class TestClientRunner
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
-		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ItemRegistry.LOG, 1));
+		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ItemRegistry.LOG, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
 		

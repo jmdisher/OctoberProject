@@ -14,6 +14,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class Inventory
 {
+	// For convenience, we store the constants we use to identify which type of inventory, here.
+	// These are used by mutations to describe which inventory-related aspect they should use.
+	public static final byte INVENTORY_ASPECT_INVENTORY = (byte)1;
+	public static final byte INVENTORY_ASPECT_FUEL = (byte)2;
+
 	/**
 	 * Builds a new immutable inventory with the given state.
 	 * 

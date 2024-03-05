@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -64,6 +65,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			{
 				// The block is broken so replace it with air and place the block in the inventory.
 				Inventory oldInventory = newBlock.getInventory();
+				FuelState oldFuel = newBlock.getFuel();
 				newBlock.setItemAndClear(ItemRegistry.AIR);
 				
 				// If the inventory fits, move it over to the new block.
@@ -74,12 +76,10 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// This will create the new inventory since setting the item clears.
 				Inventory newInventory = newBlock.getInventory();
 				MutableInventory mutable = new MutableInventory(newInventory);
-				if (null != oldInventory)
+				_combineInventory(mutable, oldInventory);
+				if (null != oldFuel)
 				{
-					for (Items items : oldInventory.items.values())
-					{
-						mutable.addAllItems(items.type(), items.count());
-					}
+					_combineInventory(mutable, oldFuel.fuelInventory());
 				}
 				mutable.addItemsBestEfforts(block, 1);
 				newBlock.setInventory(mutable.freeze());
@@ -105,5 +105,17 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 		buffer.putShort(_damageToApply);
+	}
+
+
+	private void _combineInventory(MutableInventory mutable, Inventory oldInventory)
+	{
+		if (null != oldInventory)
+		{
+			for (Items items : oldInventory.items.values())
+			{
+				mutable.addAllItems(items.type(), items.count());
+			}
+		}
 	}
 }
