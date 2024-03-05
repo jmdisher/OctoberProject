@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -20,7 +21,10 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
@@ -544,6 +548,99 @@ public class TestTickRunner
 		proxy1 = _getBlockProxy(snap2, location1);
 		Assert.assertEquals(2 * damage, proxy0.getDamage());
 		Assert.assertEquals(damage, proxy1.getDamage());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void furnaceLoadAndCraft()
+	{
+		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.FURNACE);
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of())));
+		int entityId = 1;
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.STONE_BRICK, 1).add(ItemRegistry.PLANK, 1).finish();
+		Entity entity = new Entity(entityId
+				, EntityActionValidator.DEFAULT_LOCATION
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, null
+				, null
+		);
+		runner.entityDidJoin(entity);
+		runner.start();
+		// Remember that the first tick is just returning the empty state.
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snap = runner.waitForPreviousTick();
+		Assert.assertNotNull(snap.completedCuboids().get(address));
+		
+		// Load the furnace with fuel and material.
+		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
+		BlockAddress block = location.getBlockAddress();
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ItemRegistry.STONE_BRICK, 1), Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ItemRegistry.PLANK, 1), Inventory.INVENTORY_ASPECT_FUEL), 2L);
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snap.committedEntityMutationCount());
+		// We should see the two calls to accept the items.
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(1) instanceof MutationBlockStoreItems);
+		
+		// Run the next tick to see the craft scheduled.
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snap.committedCuboidMutationCount());
+		// We should see the two calls to accept the items.
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+		BlockProxy proxy = new BlockProxy(block, snap.completedCuboids().get(address));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
+		
+		// Loop until the craft is done.
+		int completedMillis = 0;
+		for (int i = 0; i < 9; ++i)
+		{
+			completedMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			runner.startNextTick();
+			snap = runner.waitForPreviousTick();
+			
+			Assert.assertEquals(1, snap.committedCuboidMutationCount());
+			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
+			Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+			Assert.assertEquals(0, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
+			Assert.assertEquals(completedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+			Assert.assertEquals(completedMillis, proxy.getCrafting().completedMillis());
+		}
+		completedMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		
+		Assert.assertEquals(1, snap.committedCuboidMutationCount());
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
+		Assert.assertEquals(0, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.LOG));
+		Assert.assertEquals(completedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+		Assert.assertNull(proxy.getCrafting());
+		
+		// Now, wait for the fuel to finish.
+		for (int i = 0; i < 10; ++i)
+		{
+			completedMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			runner.startNextTick();
+			snap = runner.waitForPreviousTick();
+			
+			Assert.assertEquals(1, snap.committedCuboidMutationCount());
+			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
+			Assert.assertEquals(completedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+		}
+		Assert.assertTrue(snap.scheduledBlockMutations().isEmpty());
 		
 		runner.shutdown();
 	}

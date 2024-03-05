@@ -59,6 +59,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 		if (stored > 0)
 		{
 			_putInventory(newBlock, inv.freeze());
+			
+			// See if we might need to trigger an automatic crafting operation in this block.
+			if (null != MutationBlockFurnaceCraft.canCraft(newBlock))
+			{
+				context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+			}
 		}
 		return (stored > 0);
 	}

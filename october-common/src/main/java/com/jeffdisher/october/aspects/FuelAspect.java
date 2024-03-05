@@ -15,6 +15,13 @@ public class FuelAspect
 	public static final int CAPACITY = 10;
 
 	/**
+	 * The time length of various burns.
+	 */
+	public static final int BURN_MILLIS_TABLE = 8000;
+	public static final int BURN_MILLIS_PLANK = 2000;
+	public static final int BURN_MILLIS_LOG = 4000;
+
+	/**
 	 * Used to check if the given item type has a fuel aspect.
 	 * 
 	 * @param item The item type to check.
@@ -66,13 +73,13 @@ public class FuelAspect
 		switch (item.number())
 		{
 		case BlockAspect.CRAFTING_TABLE:
-			millis = 8000;
+			millis = BURN_MILLIS_TABLE;
 			break;
 		case BlockAspect.PLANK:
-			millis = 2000;
+			millis = BURN_MILLIS_PLANK;
 			break;
 		case BlockAspect.LOG:
-			millis = 4000;
+			millis = BURN_MILLIS_LOG;
 			break;
 		default:
 			millis = 0;

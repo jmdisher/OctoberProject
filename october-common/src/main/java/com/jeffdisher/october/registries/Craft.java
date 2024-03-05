@@ -40,6 +40,13 @@ public enum Craft
 			, new Items(ItemRegistry.FURNACE, 1)
 			, 8000L
 	),
+	// For short-term testing, we define a furnace recipe for creating logs from bricks.
+	TEMP_FURNACE_BRICKS_TO_LOGS("Converts bricks to logs in a furnace"
+			, Classification.SPECIAL_FURNACE
+			, new Items(ItemRegistry.STONE_BRICK, 1)
+			, new Items(ItemRegistry.LOG, 1)
+			, 1000L
+	),
 	;
 
 	/**
@@ -59,6 +66,10 @@ public enum Craft
 		 * Crafting operations which require a crafting table.
 		 */
 		COMMON,
+		/**
+		 * A special crafting operation which happens automatically within a furnace.
+		 */
+		SPECIAL_FURNACE,
 	}
 
 	/**
