@@ -97,6 +97,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 			// TODO:  Stop using this constant once we pass this tick time through the context.
 			long craftMillisRemaining = 100L;
 			CraftOperation craft = canCraft(newBlock);
+			boolean shouldReschedule = false;
 			if (null != craft)
 			{
 				// Advance the craft and store it and the fuel back.
@@ -127,34 +128,39 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 					newBlock.setInventory(inv.freeze());
 					craft = null;
 				}
-				if ((null != craft) || (fuelAvailable > 0))
-				{
-					context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
-				}
 				newBlock.setCrafting(craft);
 				newBlock.setFuel(fuel);
 				didApply = true;
+				
+				// After we have done everything and saving state, see if we have more crafting work to do or fuel to drain.
+				if ((fuelAvailable > 0) || (null != canCraft(newBlock)))
+				{
+					shouldReschedule = true;
+				}
 			}
 			else
 			{
 				// Even if not actively crafting, we still want to burn through any existing fuel.
 				FuelState fuel = newBlock.getFuel();
-				if ((null != fuel) && (fuel.millisFueled() > 0))
+				// Nothing should schedule this if there is nothing to craft and nothing to burn (implies a bug elsewhere).
+				Assert.assertTrue((null != fuel) && (fuel.millisFueled() > 0));
+				int fuelRemaining = fuel.millisFueled() - (int)craftMillisRemaining;
+				if (fuelRemaining < 0)
 				{
-					int fuelRemaining = fuel.millisFueled() - (int)craftMillisRemaining;
-					if (fuelRemaining < 0)
-					{
-						fuelRemaining = 0;
-					}
-					if (fuelRemaining > 0)
-					{
-						context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
-					}
-					newBlock.setFuel(new FuelState(fuelRemaining, fuel.fuelInventory()));
-					didApply = true;
+					fuelRemaining = 0;
 				}
+				if (fuelRemaining > 0)
+				{
+					shouldReschedule = true;
+				}
+				newBlock.setFuel(new FuelState(fuelRemaining, fuel.fuelInventory()));
+				didApply = true;
 			}
 			
+			if (shouldReschedule)
+			{
+				context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+			}
 			// Set the ephemeral state since we are done for this tick (we don't currently care what the object is).
 			newBlock.setEphemeralState(Boolean.TRUE);
 		}
