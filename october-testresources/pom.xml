@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.jeffdisher.october</groupId>
 		<artifactId>october-project</artifactId>
-		<version>0.0-SNAPSHOT</version>
+		<version>1.4</version>
 	</parent>
 	<artifactId>october-testresources</artifactId>
 	<name>OctoberTestResources</name>
@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>com.jeffdisher.october</groupId>
 			<artifactId>october-common</artifactId>
-			<version>0.0-SNAPSHOT</version>
+			<version>1.4</version>
 		</dependency>
 
 		<dependency>
