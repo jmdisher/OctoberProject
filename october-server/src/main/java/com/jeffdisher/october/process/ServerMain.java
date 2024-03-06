@@ -65,9 +65,7 @@ public class ServerMain
 		// (in order to better test inventory and crafting interfaces, we will drop a bunch of items on the ground where we start).
 		CuboidData cuboid000 = _generateColumnCuboid(new CuboidAddress((short)0, (short)0, (short)0));
 		Inventory starting = Inventory.start(InventoryAspect.CAPACITY_AIR)
-				.add(ItemRegistry.STONE, 1)
-				.add(ItemRegistry.LOG, 1)
-				.add(ItemRegistry.PLANK, 1)
+				.add(ItemRegistry.LOG, 5)
 				.finish();
 		cuboid000.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)0), starting);
 		cuboidLoader.preload(cuboid000);
