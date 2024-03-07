@@ -19,9 +19,8 @@ public class TestMutableBlockProxy
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
-		BlockAddress address = location.getBlockAddress();
 		
-		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
+		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		
 		Assert.assertFalse(proxy.didChange());
 	}
@@ -34,7 +33,7 @@ public class TestMutableBlockProxy
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
-		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
+		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
 		
 		CuboidData updated = CuboidData.mutableClone(input);
@@ -49,9 +48,8 @@ public class TestMutableBlockProxy
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
-		BlockAddress address = location.getBlockAddress();
 		
-		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
+		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
 		proxy.setBlockAndClear(ItemRegistry.AIR.asBlock());
 		

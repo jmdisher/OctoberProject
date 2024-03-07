@@ -34,10 +34,10 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	private Block _cachedBlock;
 	private Object _ephemeralState;
 
-	public MutableBlockProxy(AbsoluteLocation absoluteLocation, BlockAddress address, IReadOnlyCuboidData data)
+	public MutableBlockProxy(AbsoluteLocation absoluteLocation, IReadOnlyCuboidData data)
 	{
 		this.absoluteLocation = absoluteLocation;
-		_address = address;
+		_address = absoluteLocation.getBlockAddress();
 		_data = data;
 		
 		_write7 = new byte[AspectRegistry.ALL_ASPECTS.length];

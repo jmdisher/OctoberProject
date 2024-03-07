@@ -106,7 +106,7 @@ public class WorldProcessor
 					MutableBlockProxy thisBlockProxy = proxies.get(address);
 					if (null == thisBlockProxy)
 					{
-						thisBlockProxy = new MutableBlockProxy(absoluteLocation, address, oldState);
+						thisBlockProxy = new MutableBlockProxy(absoluteLocation, oldState);
 						proxies.put(address, thisBlockProxy);
 					}
 					boolean didApply = mutation.applyMutation(context, thisBlockProxy);

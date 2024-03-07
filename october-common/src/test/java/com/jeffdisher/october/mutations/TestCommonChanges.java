@@ -216,7 +216,7 @@ public class TestCommonChanges
 		// We also need to apply the actual mutation.
 		Assert.assertTrue(holder[0] instanceof MutationBlockOverwrite);
 		AbsoluteLocation location = holder[0].getAbsoluteLocation();
-		MutableBlockProxy proxy = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
 		Assert.assertTrue(holder[0].applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		
@@ -259,7 +259,7 @@ public class TestCommonChanges
 		// We should see the mutation requested and then we can process step 2.
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockExtractItems);
 		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
-		MutableBlockProxy newBlock = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
 		
@@ -324,7 +324,7 @@ public class TestCommonChanges
 		// We should see the mutation requested and then we can process step 2.
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
-		MutableBlockProxy newBlock = new MutableBlockProxy(location, location.getBlockAddress(), cuboid);
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
 		blockHolder[0] = null;
@@ -467,7 +467,7 @@ public class TestCommonChanges
 		
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		MutableBlockProxy proxy = new MutableBlockProxy(furnace, furnace.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
 		proxy.setBlockAndClear(ItemRegistry.FURNACE.asBlock());
 		proxy.writeBack(cuboid);
 		

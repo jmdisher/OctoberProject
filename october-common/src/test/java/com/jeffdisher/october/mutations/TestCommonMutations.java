@@ -29,7 +29,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
-		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -46,7 +46,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
-		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
@@ -72,7 +72,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		
 		// Check that the final mutation to actually break the block is as expected and then run it.
-		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		Assert.assertNotNull(sinks.nextMutation);
 		didApply = sinks.nextMutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -91,7 +91,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
-		MutableBlockProxy proxy = new MutableBlockProxy(target, target.getBlockAddress(), cuboid);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
