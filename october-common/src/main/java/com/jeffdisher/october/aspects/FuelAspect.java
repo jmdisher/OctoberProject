@@ -20,6 +20,7 @@ public class FuelAspect
 	public static final int BURN_MILLIS_TABLE = 8000;
 	public static final int BURN_MILLIS_PLANK = 2000;
 	public static final int BURN_MILLIS_LOG = 4000;
+	public static final int BURN_MILLIS_CHARCOAL = 20000;
 
 	/**
 	 * Used to check if the given item type has a fuel aspect.
@@ -80,6 +81,9 @@ public class FuelAspect
 			break;
 		case BlockAspect.LOG:
 			millis = BURN_MILLIS_LOG;
+			break;
+		case BlockAspect.CHARCOAL:
+			millis = BURN_MILLIS_CHARCOAL;
 			break;
 		default:
 			millis = 0;

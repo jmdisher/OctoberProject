@@ -2,10 +2,10 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -14,12 +14,12 @@ import com.jeffdisher.october.types.Item;
 public interface IMutableBlockProxy extends IBlockProxy
 {
 	/**
-	 * Sets the given item type and clears any other aspects.  This means that any aspects from the previous block type
+	 * Sets the given block type and clears any other aspects.  This means that any aspects from the previous block type
 	 * must be read first.
 	 * 
-	 * @param item The new item type.
+	 * @param block The new block type.
 	 */
-	void setItemAndClear(Item item);
+	void setBlockAndClear(Block block);
 	/**
 	 * Stores the given inventory for the block.  Note that an empty inventory will be stored as a null.
 	 * 

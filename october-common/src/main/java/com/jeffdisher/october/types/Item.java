@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.registries.BlockRegistry;
+
 
 /**
  * Represents an item type which can be in an inventory.  There is one instance for each type in the system.
@@ -13,4 +15,12 @@ public record Item(String name
 		, int encumbrance
 		, short toughness
 ) {
+
+	/**
+	 * @return The block object representing this item, null if it can't be placed as a block.
+	 */
+	public Block asBlock()
+	{
+		return BlockRegistry.BLOCKS_BY_TYPE[number];
+	}
 }

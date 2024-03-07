@@ -60,7 +60,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isCraftingTable = (null != proxy) && (ItemRegistry.CRAFTING_TABLE == proxy.getItem());
+		boolean isCraftingTable = (null != proxy) && (ItemRegistry.CRAFTING_TABLE == proxy.getBlock().asItem());
 		
 		boolean didApply = false;
 		if (isLocationClose && isCraftingTable)

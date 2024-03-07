@@ -6,13 +6,13 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.registries.BlockRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -31,7 +31,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	private final Object[] _writeObject;
 	private final Object[] _writes;
 
-	private Item _cachedItem;
+	private Block _cachedBlock;
 	private Object _ephemeralState;
 
 	public MutableBlockProxy(AbsoluteLocation absoluteLocation, BlockAddress address, IReadOnlyCuboidData data)
@@ -46,23 +46,23 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_writes = new Object[AspectRegistry.ALL_ASPECTS.length];
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedItem = ItemRegistry.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = BlockRegistry.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
 	}
 
 	@Override
-	public Item getItem()
+	public Block getBlock()
 	{
-		return _cachedItem;
+		return _cachedBlock;
 	}
 
 	@Override
-	public void setItemAndClear(Item item)
+	public void setBlockAndClear(Block block)
 	{
 		// Cache the item for internal checks.
-		_cachedItem = item;
+		_cachedBlock = block;
 		
 		// Set the updated item type.
-		_setData15(AspectRegistry.BLOCK, item.number());
+		_setData15(AspectRegistry.BLOCK, block.number());
 		
 		// Clear other aspects since they are all based on the item type.
 		_setDataSpecial(AspectRegistry.INVENTORY, null);
@@ -77,7 +77,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getSizeForType(_cachedItem);
+			int size = InventoryAspect.getSizeForType(_cachedBlock.asItem());
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();
@@ -129,7 +129,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
 		// We can't return null if this block can support fuel.
-		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedItem))
+		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedBlock.asItem()))
 		{
 			fuel = new FuelState(0, Inventory.start(FuelAspect.CAPACITY).finish());
 		}

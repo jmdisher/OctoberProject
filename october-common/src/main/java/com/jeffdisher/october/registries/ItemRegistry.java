@@ -8,6 +8,10 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * Items are defined as constants, and this is where they are all created and looked up.
+ * At the moment, items here are defined as a composition of other aspects but it isn't clear that this is the correct
+ * direction of relationship (it is convenient and simple, yet seems conceptually backward).
+ * Note that the ItemRegistry will eventually be loaded from data, once we have a sense of what kind of information is
+ * required.
  */
 public class ItemRegistry
 {
@@ -51,11 +55,16 @@ public class ItemRegistry
 			, 4
 			, DamageAspect.MEDIUM
 	);
+	public static final Item CHARCOAL = new Item("Charcoal"
+			, BlockAspect.CHARCOAL
+			, 4
+			, DamageAspect.NOT_BLOCK
+	);
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
 	 */
-	public static final Item[] BLOCKS_BY_TYPE = {
+	public static final Item[] ITEMS_BY_TYPE = {
 			AIR,
 			STONE,
 			LOG,
@@ -63,13 +72,14 @@ public class ItemRegistry
 			STONE_BRICK,
 			CRAFTING_TABLE,
 			FURNACE,
+			CHARCOAL,
 	};
 
 	static {
 		// Validate that the registry is internally consistent.
-		for (int i = 0; i < BLOCKS_BY_TYPE.length; ++i)
+		for (int i = 0; i < ITEMS_BY_TYPE.length; ++i)
 		{
-			Assert.assertTrue((short)i == BLOCKS_BY_TYPE[i].number());
+			Assert.assertTrue((short)i == ITEMS_BY_TYPE[i].number());
 		}
 	}
 

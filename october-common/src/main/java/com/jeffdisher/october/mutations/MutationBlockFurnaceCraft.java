@@ -37,7 +37,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	{
 		CraftOperation canCraft = null;
 		// Check that this block is a furnace (could have been changed).
-		if (ItemRegistry.FURNACE == proxy.getItem())
+		if (ItemRegistry.FURNACE == proxy.getBlock().asItem())
 		{
 			// See if there is an active crafting operation.
 			CraftOperation runningCraft = proxy.getCrafting();

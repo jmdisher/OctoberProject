@@ -54,7 +54,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		boolean didApply = false;
 		
 		// We want to see if this is a kind of block which can be broken.
-		Item block = newBlock.getItem();
+		Item block = newBlock.getBlock().asItem();
 		if (DamageAspect.UNBREAKABLE != block.toughness())
 		{
 			// Apply the damage.
@@ -66,7 +66,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// The block is broken so replace it with air and place the block in the inventory.
 				Inventory oldInventory = newBlock.getInventory();
 				FuelState oldFuel = newBlock.getFuel();
-				newBlock.setItemAndClear(ItemRegistry.AIR);
+				newBlock.setBlockAndClear(ItemRegistry.AIR.asBlock());
 				
 				// If the inventory fits, move it over to the new block.
 				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.

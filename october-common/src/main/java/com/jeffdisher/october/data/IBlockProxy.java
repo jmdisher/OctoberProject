@@ -1,9 +1,9 @@
 package com.jeffdisher.october.data;
 
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -12,9 +12,9 @@ import com.jeffdisher.october.types.Item;
 public interface IBlockProxy
 {
 	/**
-	 * @return The item at this block location.
+	 * @return The block at this block location.
 	 */
-	Item getItem();
+	Block getBlock();
 	/**
 	 * Note that this will fake up an empty inventory if this item can support one, only returning null if the block
 	 * type doesn't have one.

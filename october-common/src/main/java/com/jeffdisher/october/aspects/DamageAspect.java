@@ -12,6 +12,11 @@ public class DamageAspect
 	public static final short MAX_DAMAGE = 32000;
 
 	/**
+	 * The durability of items which CANNOT exist as blocks in the world.
+	 */
+	public static final short NOT_BLOCK = -1;
+
+	/**
 	 * Blocks which either can't be broken or don't make sense to break.
 	 */
 	public static final short UNBREAKABLE = 0;

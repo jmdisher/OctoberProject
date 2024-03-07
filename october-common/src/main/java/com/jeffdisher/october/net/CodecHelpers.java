@@ -208,7 +208,7 @@ public class CodecHelpers
 		// We look these up by number - we treat 0 "air" as null.
 		short number = buffer.getShort();
 		return (0 != number)
-				? ItemRegistry.BLOCKS_BY_TYPE[number]
+				? ItemRegistry.ITEMS_BY_TYPE[number]
 				: null
 		;
 	}

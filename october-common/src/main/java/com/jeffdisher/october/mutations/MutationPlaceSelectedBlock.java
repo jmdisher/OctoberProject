@@ -9,6 +9,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -54,9 +55,11 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is there a selected item?
 		// -is this target location close by?
 		// -is the target location not colliding with the entity, itself?
-		boolean isTargetAir = (ItemRegistry.AIR == context.previousBlockLookUp.apply(_targetBlock).getItem());
+		boolean isTargetAir = (ItemRegistry.AIR == context.previousBlockLookUp.apply(_targetBlock).getBlock().asItem());
 		
-		Item blockType = newEntity.newSelectedItem;
+		Item itemType = newEntity.newSelectedItem;
+		// Note that we will get a null from the asBlock if this can't be placed.
+		Block blockType = (null != itemType) ? itemType.asBlock() : null;
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
@@ -77,8 +80,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding)
 		{
 			// We want to apply this so remove the item from the inventory and create the replace mutation.
-			newEntity.newInventory.removeItems(blockType, 1);
-			if (0 == newEntity.newInventory.getCount(blockType))
+			newEntity.newInventory.removeItems(itemType, 1);
+			if (0 == newEntity.newInventory.getCount(itemType))
 			{
 				newEntity.newSelectedItem = null;
 			}

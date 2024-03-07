@@ -93,7 +93,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 			inv = block.getInventory();
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
-			inv = FuelAspect.hasFuelInventoryForType(block.getItem(), _offered.type())
+			inv = FuelAspect.hasFuelInventoryForType(block.getBlock().asItem(), _offered.type())
 				? block.getFuel().fuelInventory()
 				: null
 			;

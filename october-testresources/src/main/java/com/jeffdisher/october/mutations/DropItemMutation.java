@@ -52,7 +52,7 @@ public class DropItemMutation implements IMutationBlock
 	{
 		// We can only drop an item into air.
 		boolean didApply = false;
-		if (ItemRegistry.AIR == newBlock.getItem())
+		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
 		{
 			// Disect existing inventory into mutable copies or create defaults.
 			Inventory oldInventory = newBlock.getInventory();

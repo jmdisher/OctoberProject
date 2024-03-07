@@ -71,7 +71,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = (ItemRegistry.AIR == block.getItem());
+					isAir = (ItemRegistry.AIR == block.getBlock().asItem());
 				}
 				else
 				{
@@ -303,7 +303,7 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = (ItemRegistry.AIR == block.getItem());
+				canExist = (ItemRegistry.AIR == block.getBlock().asItem());
 			}
 			else
 			{
@@ -328,7 +328,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = (ItemRegistry.AIR == block.getItem());
+					isAir = (ItemRegistry.AIR == block.getBlock().asItem());
 				}
 				else
 				{

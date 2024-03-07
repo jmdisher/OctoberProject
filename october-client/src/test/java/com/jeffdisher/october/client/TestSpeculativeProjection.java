@@ -910,7 +910,7 @@ public class TestSpeculativeProjection
 		
 		// Check the block and all of its aspects.
 		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getBlock().asItem());
 		Assert.assertEquals(2, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
 		
@@ -920,7 +920,7 @@ public class TestSpeculativeProjection
 		long commit4 = projector.applyLocalChange(craft, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
 		Assert.assertNull(proxy.getCrafting());
@@ -931,7 +931,7 @@ public class TestSpeculativeProjection
 		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.CRAFTING_TABLE));
@@ -1135,7 +1135,7 @@ public class TestSpeculativeProjection
 		
 		// Check the block and all of its aspects.
 		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.FURNACE, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.FURNACE, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
 		
@@ -1145,7 +1145,7 @@ public class TestSpeculativeProjection
 		long commit4 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.PLANK));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.FURNACE));

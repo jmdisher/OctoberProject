@@ -51,7 +51,7 @@ public class PickUpItemMutation implements IMutationBlock
 	{
 		// We can only operator on air.
 		boolean didApply = false;
-		if (ItemRegistry.AIR == newBlock.getItem())
+		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
 		{
 			Inventory oldInventory = newBlock.getInventory();
 			MutableInventory mutable = new MutableInventory(oldInventory);

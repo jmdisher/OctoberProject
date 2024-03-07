@@ -4,12 +4,12 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.registries.BlockRegistry;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -19,7 +19,7 @@ public class BlockProxy implements IBlockProxy
 {
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
-	private final Item _cachedItem;
+	private final Block _cachedBlock;
 
 	public BlockProxy(BlockAddress address, IReadOnlyCuboidData data)
 	{
@@ -27,13 +27,13 @@ public class BlockProxy implements IBlockProxy
 		_data = data;
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedItem = ItemRegistry.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = BlockRegistry.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
 	}
 
 	@Override
-	public Item getItem()
+	public Block getBlock()
 	{
-		return _cachedItem;
+		return _cachedBlock;
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getSizeForType(_cachedItem);
+			int size = InventoryAspect.getSizeForType(_cachedBlock.asItem());
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();
@@ -69,7 +69,7 @@ public class BlockProxy implements IBlockProxy
 	{
 		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
 		// We can't return null if this block can support fuel.
-		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedItem))
+		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedBlock.asItem()))
 		{
 			fuel = new FuelState(0, Inventory.start(FuelAspect.CAPACITY).finish());
 		}

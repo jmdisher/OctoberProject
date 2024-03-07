@@ -35,7 +35,7 @@ public class TestMutableBlockProxy
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
-		proxy.setItemAndClear(ItemRegistry.STONE);
+		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
 		
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
@@ -52,8 +52,8 @@ public class TestMutableBlockProxy
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, address, input);
-		proxy.setItemAndClear(ItemRegistry.STONE);
-		proxy.setItemAndClear(ItemRegistry.AIR);
+		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
+		proxy.setBlockAndClear(ItemRegistry.AIR.asBlock());
 		
 		Assert.assertFalse(proxy.didChange());
 	}

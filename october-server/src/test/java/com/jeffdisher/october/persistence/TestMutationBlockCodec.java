@@ -26,7 +26,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Item type = ItemRegistry.STONE;
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, type);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, type.asBlock());
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

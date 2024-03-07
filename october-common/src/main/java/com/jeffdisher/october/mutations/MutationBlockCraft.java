@@ -57,7 +57,7 @@ public class MutationBlockCraft implements IMutationBlock
 		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
-		if (ItemRegistry.CRAFTING_TABLE == newBlock.getItem())
+		if (ItemRegistry.CRAFTING_TABLE == newBlock.getBlock().asItem())
 		{
 			// See if this is something new or if we are continuing.
 			CraftOperation currentOperation = newBlock.getCrafting();

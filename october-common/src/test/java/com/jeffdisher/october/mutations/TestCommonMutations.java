@@ -34,7 +34,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
@@ -50,7 +50,7 @@ public class TestCommonMutations
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(0, inv.currentEncumbrance);
 	}
@@ -79,7 +79,7 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
@@ -96,7 +96,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.STONE, proxy.getItem());
+		Assert.assertEquals(ItemRegistry.STONE, proxy.getBlock().asItem());
 		Assert.assertNull(proxy.getInventory());
 		Assert.assertEquals((short) 1000, proxy.getDamage());
 	}

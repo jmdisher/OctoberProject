@@ -6,7 +6,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -22,18 +22,18 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public static MutationBlockOverwrite deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Item blockType = CodecHelpers.readItem(buffer);
+		Block blockType = CodecHelpers.readItem(buffer).asBlock();
 		return new MutationBlockOverwrite(location, blockType);
 	}
 
 
 	private final AbsoluteLocation _location;
-	private final Item _blockType;
+	private final Block _blockType;
 
-	public MutationBlockOverwrite(AbsoluteLocation location, Item blockType)
+	public MutationBlockOverwrite(AbsoluteLocation location, Block blockType)
 	{
 		// Using this with AIR doesn't make sense.
-		Assert.assertTrue(ItemRegistry.AIR != blockType);
+		Assert.assertTrue(ItemRegistry.AIR != blockType.asItem());
 		
 		_location = location;
 		_blockType = blockType;
@@ -50,10 +50,10 @@ public class MutationBlockOverwrite implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (ItemRegistry.AIR == newBlock.getItem())
+		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
 		{
 			// Replace the block with the type we have.
-			newBlock.setItemAndClear(_blockType);
+			newBlock.setBlockAndClear(_blockType);
 			didApply = true;
 		}
 		return didApply;
@@ -69,6 +69,6 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
-		CodecHelpers.writeItem(buffer, _blockType);
+		CodecHelpers.writeItem(buffer, _blockType.asItem());
 	}
 }

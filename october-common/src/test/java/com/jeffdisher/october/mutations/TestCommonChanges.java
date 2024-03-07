@@ -371,7 +371,7 @@ public class TestCommonChanges
 		Assert.assertFalse(placeTooClose.applyChange(context, newEntity));
 		
 		// Try too far.
-		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 15);
 		MutationPlaceSelectedBlock placeTooFar = new MutationPlaceSelectedBlock(tooFar);
 		Assert.assertFalse(placeTooFar.applyChange(context, newEntity));
 		
@@ -453,5 +453,49 @@ public class TestCommonChanges
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertEquals(10.2f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);
+	}
+
+	@Test
+	public void nonBlockUsage() throws Throwable
+	{
+		// Show that a non-block item cannot be placed in the world, but can be placed in inventories.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10)
+				.add(ItemRegistry.LOG, 1)
+				.add(ItemRegistry.CHARCOAL, 2)
+				.finish(), ItemRegistry.CHARCOAL, null);
+		
+		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		MutableBlockProxy proxy = new MutableBlockProxy(furnace, furnace.getBlockAddress(), cuboid);
+		proxy.setBlockAndClear(ItemRegistry.FURNACE.asBlock());
+		proxy.writeBack(cuboid);
+		
+		IMutationBlock[] holder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> holder[0] = newMutation
+				, null
+		);
+		MutableEntity newEntity = new MutableEntity(original);
+		
+		// Fail to place the charcoal item on the ground.
+		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(air);
+		Assert.assertFalse(place.applyChange(context, newEntity));
+		
+		// Change the selection to the log and prove that this works.
+		MutationEntitySelectItem select = new MutationEntitySelectItem(ItemRegistry.LOG);
+		Assert.assertTrue(select.applyChange(context, newEntity));
+		Assert.assertTrue(place.applyChange(context, newEntity));
+		
+		// Verify that we can store the charcoal into the furnace inventory or fuel inventory.
+		MutationEntityPushItems pushInventory = new MutationEntityPushItems(furnace, new Items(ItemRegistry.CHARCOAL, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems pushFuel = new MutationEntityPushItems(furnace, new Items(ItemRegistry.CHARCOAL, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		Assert.assertTrue(pushInventory.applyChange(context, newEntity));
+		Assert.assertTrue(pushFuel.applyChange(context, newEntity));
+		
+		// Verify that their inventory is now empty.
+		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
 	}
 }
