@@ -329,7 +329,10 @@ public class ResourceLoader
 				FileChannel outChannel = aFile.getChannel();
 		)
 		{
-			outChannel.write(_backround_serializationBuffer);
+			int written = outChannel.write(_backround_serializationBuffer);
+			// In case we are over-writting an existing file, be sure to truncate it.
+			outChannel.truncate((long)written);
+			
 			// We expect that this wrote fully.
 			Assert.assertTrue(!_backround_serializationBuffer.hasRemaining());
 			_backround_serializationBuffer.clear();

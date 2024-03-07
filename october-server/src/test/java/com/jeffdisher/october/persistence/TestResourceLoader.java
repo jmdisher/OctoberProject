@@ -197,20 +197,55 @@ public class TestResourceLoader
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null);
-		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(airAddress), List.of());
-		// The first call should give us nothing so loop until we see an answer.
-		Assert.assertTrue(out_loadedCuboids.isEmpty());
-		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
-		{
-			Thread.sleep(10L);
-			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
-		}
-		Assert.assertEquals(1, out_loadedCuboids.size());
-		SuspendedCuboid<CuboidData> suspended = out_loadedCuboids.get(0);
+		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.mutations().size());
 		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationBlockOverwrite);
+		loader.shutdown();
+	}
+
+	@Test
+	public void overwiteFile() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		
+		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
+		Collection<CuboidData> results = _loadCuboids(loader, List.of(airAddress));
+		Assert.assertNull(results);
+		CuboidData loaded = _waitForOne(loader);
+		// Create a mutation which targets this and save it back with the cuboid.
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ItemRegistry.STONE);
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(mutation))), List.of());
+		// (the shutdown will wait for the queue to drain)
+		loader.shutdown();
+		
+		// Make sure that we see this written back.
+		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
+		Assert.assertTrue(cuboidFile.isFile());
+		// Experimentally, we know that this is 39 bytes.
+		Assert.assertEquals(39L, cuboidFile.length());
+		
+		// Now, create a new loader, load, and resave this.
+		loader = new ResourceLoader(worldDirectory, null);
+		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
+		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
+		Assert.assertEquals(1, suspended.mutations().size());
+		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationBlockOverwrite);
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(suspended.cuboid(), List.of())), List.of());
+		loader.shutdown();
+		
+		// Verify that the file has been truncated.
+		Assert.assertTrue(cuboidFile.isFile());
+		// Experimentally, we know that this is 24 bytes.
+		Assert.assertEquals(24L, cuboidFile.length());
+		
+		// Load it again and verify that the mutation is missing and we parsed without issue.
+		loader = new ResourceLoader(worldDirectory, null);
+		suspended = _loadOneSuspended(loader, airAddress);
+		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
+		Assert.assertEquals(0, suspended.mutations().size());
 		loader.shutdown();
 	}
 
@@ -259,5 +294,20 @@ public class TestResourceLoader
 				? null
 				: results
 		;
+	}
+
+	private SuspendedCuboid<CuboidData> _loadOneSuspended(ResourceLoader loader, CuboidAddress address) throws InterruptedException
+	{
+		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(address), List.of());
+		// The first call should give us nothing so loop until we see an answer.
+		Assert.assertTrue(out_loadedCuboids.isEmpty());
+		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, out_loadedCuboids.size());
+		return out_loadedCuboids.get(0);
 	}
 }
