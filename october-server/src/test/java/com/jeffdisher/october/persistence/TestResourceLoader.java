@@ -224,8 +224,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 39 bytes.
-		Assert.assertEquals(39L, cuboidFile.length());
+		// Experimentally, we know that this is 31 bytes.
+		Assert.assertEquals(31L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null);
@@ -238,8 +238,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 24 bytes.
-		Assert.assertEquals(24L, cuboidFile.length());
+		// Experimentally, we know that this is 16 bytes.
+		Assert.assertEquals(16L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null);

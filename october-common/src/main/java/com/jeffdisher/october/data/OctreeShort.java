@@ -37,14 +37,13 @@ public class OctreeShort implements IOctree
 	{
 		Assert.assertTrue(fillValue >= 0);
 		// The entire tree is compact so just write the value.
-		byte[] data = ByteBuffer.allocate(Short.BYTES).putShort(fillValue).array();
-		return new OctreeShort(data);
+		return new OctreeShort(fillValue, null);
 	}
 
 	public static OctreeShort empty()
 	{
 		// This is the case used when loading the octree - the data will be allocated and populated later (and cannot be used until then).
-		return new OctreeShort(null);
+		return new OctreeShort((short)-1, null);
 	}
 
 	private static short _findValue(ByteBuffer buffer, byte x, byte y, byte z, byte half)
@@ -259,19 +258,53 @@ public class OctreeShort implements IOctree
 		return value;
 	}
 
-
-	private byte[] _data;
-
-	private OctreeShort(byte[] data)
+	private static int _getTopLevelIndex(byte x, byte y, byte z)
 	{
-		_data = data;
+		int index = 0;
+		if (x >= 16)
+		{
+			index += 4;
+		}
+		if (y >= 16)
+		{
+			index += 2;
+		}
+		if (z >= 16)
+		{
+			index += 1;
+		}
+		return index;
+	}
+
+
+	// Either the _inlineCompact is set to >= 0 OR the _topLevelTrees is non-null.
+	private short _inlineCompact;
+	private byte[][] _topLevelTrees;
+
+	private OctreeShort(short inlineCompact, byte[][] topLevelTrees)
+	{
+		_inlineCompact = inlineCompact;
+		_topLevelTrees = topLevelTrees;
 	}
 
 	@Override
 	public <T, O extends IOctree> T getData(Aspect<T, O> type, BlockAddress address)
 	{
-		// Hash of 32 (the base size) is 16 so we use that as the initial half size.
-		short value = _findValue(ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16);
+		short value;
+		if (null != _topLevelTrees)
+		{
+			byte x = address.x();
+			byte y = address.y();
+			byte z = address.z();
+			byte[] data = _topLevelTrees[_getTopLevelIndex(x, y, z)];
+			// Half of 32 (the base size) is 16.
+			byte half = 16;
+			value = _findValue(ByteBuffer.wrap(data), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
+		}
+		else
+		{
+			value = _inlineCompact;
+		}
 		Assert.assertTrue(value >= 0);
 		return type.type().cast(Short.valueOf(value));
 	}
@@ -282,56 +315,144 @@ public class OctreeShort implements IOctree
 		short correct = ((Short)value).shortValue();
 		// The value cannot be negative.
 		Assert.assertTrue(correct >= 0);
-		ShortWriter writer = new ShortWriter(_data.length);
-		_updateValue(writer, ByteBuffer.wrap(_data), address.x(), address.y(), address.z(), (byte)16, correct);
-		_data = writer.getData();
+		
+		// We need to inline the top-level update concerns, here (duplicated from the actual _updateValue).
+		if (_inlineCompact == correct)
+		{
+			// Degenerate case - do nothing.
+		}
+		else if (null == _topLevelTrees)
+		{
+			// Just split out the trees and make the update.
+			byte x = address.x();
+			byte y = address.y();
+			byte z = address.z();
+			_topLevelTrees = new byte[8][];
+			ShortWriter writer = new ShortWriter(Short.BYTES);
+			writer.putShort(_inlineCompact);
+			byte[] raw = writer.getData();
+			for (int i = 0; i < 8; ++i)
+			{
+				_topLevelTrees[i] = raw;
+			}
+			_inlineCompact = -1;
+			
+			int index = _getTopLevelIndex(x, y, z);
+			writer = new ShortWriter(_topLevelTrees[index].length);
+			// Half of 32 (the base size) is 16.
+			byte half = 16;
+			_updateValue(writer, ByteBuffer.wrap(_topLevelTrees[index]), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), correct);
+			_topLevelTrees[index] = writer.getData();
+		}
+		else
+		{
+			// Do the normal update in the appropriate sub-tree.
+			byte x = address.x();
+			byte y = address.y();
+			byte z = address.z();
+			int index = _getTopLevelIndex(x, y, z);
+			byte[] data = _topLevelTrees[index];
+			ShortWriter writer = new ShortWriter(data.length);
+			// Half of 32 (the base size) is 16.
+			byte half = 16;
+			_updateValue(writer, ByteBuffer.wrap(data), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), correct);
+			_topLevelTrees[index] = writer.getData();
+			
+			// We also need to handle the case where this causes us to coalesce.
+			boolean shouldCoalesce = true;;
+			for (byte[] subTree : _topLevelTrees)
+			{
+				if ((Short.BYTES == subTree.length) && (ByteBuffer.wrap(subTree).getShort() == correct))
+				{
+					// This matches.
+				}
+				else
+				{
+					shouldCoalesce = false;
+					break;
+				}
+			}
+			if (shouldCoalesce)
+			{
+				_inlineCompact = correct;
+				_topLevelTrees = null;
+			}
+		}
+		
 	}
 
 	@Override
 	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
-		// NOTE:  For serializing, we just pass an Integer back:  Either the offset to continue the copy or -1 if we still need to write the size.
+		// NOTE:  For serializing, we just pass an Integer back:  Just the offset where we need to resume copying.
 		
-		// The only statefulness we have here is that we first send the 4-byte quantity describing the number of bytes we will be sending.
-		int startOffset = (null != lastCallState)
-				? (Integer) lastCallState
-				: -1
-		;
-		// We want to verify that we aren't stuck in a loop.
-		boolean canFail = (null == lastCallState);
-		Integer resumeToken = null;
-		if (-1 == startOffset)
+		int startOffset;
+		if (null == lastCallState)
 		{
-			// We still need to write our size so see if that fits.
-			if (buffer.remaining() >= Integer.BYTES)
+			// This is the first call so we need to write out our header:  either the inline value or all subtree sizes.
+			if (null == _topLevelTrees)
 			{
-				// We can write this.
-				buffer.putInt(_data.length);
-				canFail = true;
-				startOffset = 0;
+				// Just write the inline value with a tagged high bit.
+				Assert.assertTrue(buffer.remaining() >= Short.BYTES);
+				buffer.putShort((short)(0x8000 | _inlineCompact));
 			}
 			else
 			{
-				// We can't fit this so resume later.
-				Assert.assertTrue(canFail);
-				resumeToken = -1;
+				// Write all the sizes, in order, as shorts (we know that these are less than 32KiB).
+				Assert.assertTrue(buffer.remaining() >= (8 * Short.BYTES));
+				for (byte[] subtree : _topLevelTrees)
+				{
+					Assert.assertTrue(subtree.length <= Short.MAX_VALUE);
+					buffer.putShort((short) subtree.length);
+				}
 			}
+			startOffset = 0;
+		}
+		else
+		{
+			startOffset = (Integer)lastCallState;
 		}
 		
-		// See if we can proceed to copy.
-		if (null == resumeToken)
+		Integer resumeToken = null;
+		if (null != _topLevelTrees)
 		{
-			// See what can fit in the buffer.
-			int spaceInBuffer = buffer.remaining();
-			int bytesRemaining = _data.length - startOffset;
-			int toCopy = Math.min(spaceInBuffer, bytesRemaining);
-			Assert.assertTrue((toCopy > 0) || canFail);
-			buffer.put(_data, startOffset, toCopy);
-			
-			resumeToken = (toCopy < bytesRemaining)
-					? (startOffset + toCopy)
-					: null
-			;
+			int bytesProcessed = 0;
+			for (byte[] subtree : _topLevelTrees)
+			{
+				// Do any copying or skipping.
+				boolean workRemaing = false;
+				if (startOffset < subtree.length)
+				{
+					int spaceInBuffer = buffer.remaining();
+					int bytesRemaining = subtree.length - startOffset;
+					int toCopy = Math.min(spaceInBuffer, bytesRemaining);
+					Assert.assertTrue(toCopy > 0);
+					buffer.put(subtree, startOffset, toCopy);
+					
+					if (startOffset > 0)
+					{
+						// We have handled the case where the start offset mattered so "consume it".
+						bytesProcessed += startOffset;
+						startOffset = 0;
+					}
+					bytesProcessed += toCopy;
+					workRemaing = (bytesRemaining > toCopy);
+				}
+				else
+				{
+					// This is the next tree.
+					startOffset -= subtree.length;
+					bytesProcessed += subtree.length;
+				}
+				
+				if (!buffer.hasRemaining() && workRemaing)
+				{
+					// We have filled this so and there is at least this subtree to do so set the token.
+					Assert.assertTrue(0 == startOffset);
+					resumeToken = bytesProcessed;
+					break;
+				}
+			}
 		}
 		return resumeToken;
 	}
@@ -339,50 +460,113 @@ public class OctreeShort implements IOctree
 	@Override
 	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
-		// NOTE:  For deserializing, we just pass an Integer back:  Size is always in the first packet so just the number of byte we still need.
+		// NOTE:  For deserializing, we just pass an Integer back:  The number of bytes we have already processed.
 		
-		int bytesToCopy;
+		int startOffset;
 		if (null == lastCallState)
 		{
-			// This means that we should be able to read at least the size.
-			Assert.assertTrue(buffer.remaining() >= Integer.BYTES);
-			Assert.assertTrue(null == _data);
-			bytesToCopy = buffer.getInt();
-			_data = new byte[bytesToCopy];
+			// Make sure that this is uninitialized.
+			Assert.assertTrue(-1 == _inlineCompact);
+			Assert.assertTrue(null == _topLevelTrees);
+			
+			// We need to read the header, which is either a tagged short value or 8 short sizes.
+			short header = buffer.getShort();
+			if (0 != (0x8000 & header))
+			{
+				// This is an inline value.
+				_inlineCompact = (short)(header & ~0x8000);
+			}
+			else
+			{
+				// These are the top-level sizes.
+				Assert.assertTrue(buffer.remaining() >= (7 * Short.BYTES));
+				_topLevelTrees = new byte[8][];
+				_topLevelTrees[0] = new byte[header];
+				for (int i = 1; i < _topLevelTrees.length; ++i)
+				{
+					short size = buffer.getShort();
+					_topLevelTrees[i] = new byte[size];
+				}
+			}
+			startOffset = 0;
 		}
 		else
 		{
-			bytesToCopy = (Integer) lastCallState;
+			startOffset = (Integer)lastCallState;
 		}
-		// We want to verify that we aren't stuck in a loop.
-		boolean canFail = (null == lastCallState);
 		
-		// See how many of the remaining bytes are here.
-		int bytesInBuffer = buffer.remaining();
-		int toCopy = Math.min(bytesInBuffer, bytesToCopy);
-		Assert.assertTrue((toCopy > 0) || canFail);
-		
-		// See our seek point.
-		int startOffset = _data.length - bytesToCopy;
-		
-		buffer.get(_data, startOffset, toCopy);
-		
-		// Return a description of how many more we expect.
-		return (toCopy < bytesToCopy)
-				? (bytesToCopy - toCopy)
-				: null
-		;
+		Integer resumeToken = null;
+		if (null != _topLevelTrees)
+		{
+			int bytesProcessed = 0;
+			for (byte[] subtree : _topLevelTrees)
+			{
+				// Do any copying or skipping.
+				boolean workRemaing = false;
+				if (startOffset < subtree.length)
+				{
+					int spaceInBuffer = buffer.remaining();
+					int bytesRemaining = subtree.length - startOffset;
+					int toCopy = Math.min(spaceInBuffer, bytesRemaining);
+					Assert.assertTrue(toCopy > 0);
+					buffer.get(subtree, startOffset, toCopy);
+					
+					if (startOffset > 0)
+					{
+						// We have handled the case where the start offset mattered so "consume it".
+						bytesProcessed += startOffset;
+						startOffset = 0;
+					}
+					bytesProcessed += toCopy;
+					workRemaing = (bytesRemaining > toCopy);
+				}
+				else
+				{
+					// This is the next tree.
+					startOffset -= subtree.length;
+					bytesProcessed += subtree.length;
+				}
+				
+				if (!buffer.hasRemaining() && workRemaing)
+				{
+					// We have filled this so and there is at least this subtree to do so set the token.
+					Assert.assertTrue(0 == startOffset);
+					resumeToken = bytesProcessed;
+					break;
+				}
+			}
+		}
+		return resumeToken;
 	}
 
 	public OctreeShort cloneData()
 	{
-		return new OctreeShort(_data.clone());
+		byte[][] clone = null;
+		if (null != _topLevelTrees)
+		{
+			clone = new byte[8][];
+			for (int i = 0; i < _topLevelTrees.length; ++i)
+			{
+				clone[i] = _topLevelTrees[i].clone();
+			}
+		}
+		return new OctreeShort(_inlineCompact, clone);
 	}
 
 	public void walkTree(PrintStream out)
 	{
-		_walkTree(out, "", ByteBuffer.wrap(_data));
-		
+		if (null == _topLevelTrees)
+		{
+			System.out.println("Compact: " + _inlineCompact);
+		}
+		else
+		{
+			out.println("Expanded:");
+			for (byte[] data : _topLevelTrees)
+			{
+				_walkTree(out, "\t", ByteBuffer.wrap(data));
+			}
+		}
 	}
 
 

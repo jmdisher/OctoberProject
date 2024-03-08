@@ -24,17 +24,17 @@ public class TestOctreeBlock
 	public void update()
 	{
 		OctreeShort test = OctreeShort.create(BlockAspect.AIR);
-		// Change one value to cause the tree to split.
-		test.setData(new BlockAddress((byte)5, (byte)6, (byte)7), BlockAspect.STONE);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(BlockAspect.STONE, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		
+		// Write a value into each subtree.
+		_setAllSubtrees(test, (byte)0, BlockAspect.STONE);
+		// Check that it changed, but not adjacent blocks.
+		_checkAllSubtrees(test, (byte)0, BlockAspect.STONE);
+		_checkAllSubtrees(test, (byte)1, BlockAspect.AIR);
 		
 		// Change it back, causing it to coalesce.
-		test.setData(new BlockAddress((byte)5, (byte)6, (byte)7), BlockAspect.AIR);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		_setAllSubtrees(test, (byte)0, BlockAspect.AIR);
+		_checkAllSubtrees(test, (byte)0, BlockAspect.AIR);
+		_checkAllSubtrees(test, (byte)1, BlockAspect.AIR);
 	}
 
 	@Test
@@ -62,7 +62,7 @@ public class TestOctreeBlock
 		long endStore = System.currentTimeMillis();
 		System.out.println("Store total took " + (endStore -startStore) + " millis");
 		
-		OctreeShort verify = _codec(test, 70217);
+		OctreeShort verify = _codec(test, 70216);
 		
 		// Verify that we can read all of these.
 		value = 0;
@@ -128,7 +128,8 @@ public class TestOctreeBlock
 	private static OctreeShort _codec(OctreeShort input, int expectedSizeBytes)
 	{
 		// Note that the test is asking about the size of the actual data but the serializer has a size header.
-		ByteBuffer buffer = ByteBuffer.allocate(expectedSizeBytes + Integer.BYTES);
+		int headerSize = (expectedSizeBytes > Short.BYTES) ? (8 * Short.BYTES) : 0;
+		ByteBuffer buffer = ByteBuffer.allocate(expectedSizeBytes + headerSize);
 		Object state = input.serializeResumable(null, buffer, null);
 		Assert.assertNull(state);
 		Assert.assertFalse(buffer.hasRemaining());
@@ -139,5 +140,29 @@ public class TestOctreeBlock
 		Assert.assertNull(state);
 		Assert.assertFalse(buffer.hasRemaining());
 		return output;
+	}
+
+	private static void _setAllSubtrees(OctreeShort input, byte offset, short value)
+	{
+		input.setData(new BlockAddress((byte)0, (byte)0, (byte)(0 + offset)), value);
+		input.setData(new BlockAddress((byte)0, (byte)0, (byte)(16 + offset)), value);
+		input.setData(new BlockAddress((byte)0, (byte)16, (byte)(0 + offset)), value);
+		input.setData(new BlockAddress((byte)0, (byte)16, (byte)(16 + offset)), value);
+		input.setData(new BlockAddress((byte)16, (byte)0, (byte)(0 + offset)), value);
+		input.setData(new BlockAddress((byte)16, (byte)0, (byte)(16 + offset)), value);
+		input.setData(new BlockAddress((byte)16, (byte)16, (byte)(0 + offset)), value);
+		input.setData(new BlockAddress((byte)16, (byte)16, (byte)(16 + offset)), value);
+	}
+
+	private static void _checkAllSubtrees(OctreeShort input, byte offset, short value)
+	{
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)(0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)(16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)16, (byte)(0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)16, (byte)(16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)0, (byte)(0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)0, (byte)(16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(16 + offset))));
 	}
 }

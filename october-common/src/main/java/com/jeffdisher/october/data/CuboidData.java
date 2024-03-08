@@ -16,6 +16,12 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CuboidData implements IReadOnlyCuboidData
 {
+	/**
+	 * When serializing the cuboid, we will only try to start serializing a new aspect if we have at least this many
+	 * bytes remaining in the buffer (this is to allow them a non-resumable "header" + 1 byte to avoid an extra state).
+	 */
+	public static final int MINIMUM_ASPECT_BUFFER_BYTES = 17;
+
 	public static CuboidData mutableClone(IReadOnlyCuboidData raw)
 	{
 		CuboidData original = (CuboidData)raw;
@@ -102,6 +108,9 @@ public class CuboidData implements IReadOnlyCuboidData
 	@Override
 	public Object serializeResumable(Object lastCallState, ByteBuffer buffer)
 	{
+		// Our implementation requires some minimum buffer size.
+		Assert.assertTrue(buffer.remaining() >= MINIMUM_ASPECT_BUFFER_BYTES);
+		
 		_ResumableState previousCall = (_ResumableState) lastCallState;
 		int startIndex = (null != previousCall)
 				? previousCall.currentAspectIndex
@@ -115,7 +124,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		_ResumableState resume = null;
 		for (int i = startIndex; (null == resume) && (i < AspectRegistry.ALL_ASPECTS.length); ++i)
 		{
-			if (buffer.hasRemaining())
+			if (buffer.remaining() >= MINIMUM_ASPECT_BUFFER_BYTES)
 			{
 				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
 				Object octreeResume = _data[i].serializeResumable(octreeState, buffer, type.codec());

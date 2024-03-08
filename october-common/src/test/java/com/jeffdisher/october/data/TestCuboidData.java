@@ -94,7 +94,8 @@ public class TestCuboidData
 		
 		// Make the smallest buffer which can contain the single inventory element and its key (smaller than this and we will fail due to making no progress).
 		// "13" was determined experimentally but is a single inventory item:  4 (max_encumbrance) + 1 (items_in_inventory) + 2 (key) + 2 (item_type) + 4 (item_count).
-		ByteBuffer buffer = ByteBuffer.allocate(13);
+		// However, the minimum size for CuboidData is fixed at 17 bytes.
+		ByteBuffer buffer = ByteBuffer.allocate(17);
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
 		Object resumeSerialize = null;
 		Object resumeDeserialize = null;
