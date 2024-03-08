@@ -62,9 +62,7 @@ public class TestOctreeBlock
 		long endStore = System.currentTimeMillis();
 		System.out.println("Store total took " + (endStore -startStore) + " millis");
 		
-		byte[] rawData = test.copyRawData();
-		Assert.assertEquals(70217, rawData.length);
-		OctreeShort verify = OctreeShort.load(ByteBuffer.wrap(rawData));
+		OctreeShort verify = _codec(test, 70217);
 		
 		// Verify that we can read all of these.
 		value = 0;
@@ -104,9 +102,7 @@ public class TestOctreeBlock
 		endStore = System.currentTimeMillis();
 		System.out.println("Clean total took " + (endStore -startStore) + " millis");
 		
-		rawData = verify.copyRawData();
-		Assert.assertEquals(2, rawData.length);
-		verify = OctreeShort.load(ByteBuffer.wrap(rawData));
+		verify = _codec(verify, 2);
 		
 		// Perform final verification.
 		value = 0;
@@ -126,5 +122,22 @@ public class TestOctreeBlock
 		}
 		endStore = System.currentTimeMillis();
 		System.out.println("Verify total took " + (endStore -startStore) + " millis");
+	}
+
+
+	private static OctreeShort _codec(OctreeShort input, int expectedSizeBytes)
+	{
+		// Note that the test is asking about the size of the actual data but the serializer has a size header.
+		ByteBuffer buffer = ByteBuffer.allocate(expectedSizeBytes + Integer.BYTES);
+		Object state = input.serializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		buffer.flip();
+		OctreeShort output = OctreeShort.empty();
+		state = output.deserializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertFalse(buffer.hasRemaining());
+		return output;
 	}
 }

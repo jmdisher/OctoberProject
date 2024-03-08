@@ -33,20 +33,6 @@ public class OctreeShort implements IOctree
 {
 	public static final byte SUBTREE_HEADER = (byte)0xFF;
 
-	public static OctreeShort load(ByteBuffer raw)
-	{
-		// We want to parse forward until we find the end of the cuboid, then reverse and copy the bytes out.
-		int start = raw.position();
-		// We just want to read to the end of the octree, to see how big it is, so just say we are looking for the last element
-		short verify = _findValue(raw, (byte)31, (byte)31, (byte)31, (byte)16);
-		Assert.assertTrue(verify >= 0);
-		int end = raw.position();
-		byte[] data = new byte[end - start];
-		raw.position(start);
-		raw.get(data);
-		return new OctreeShort(data);
-	}
-
 	public static OctreeShort create(short fillValue)
 	{
 		Assert.assertTrue(fillValue >= 0);
@@ -397,11 +383,6 @@ public class OctreeShort implements IOctree
 	{
 		_walkTree(out, "", ByteBuffer.wrap(_data));
 		
-	}
-
-	public byte[] copyRawData()
-	{
-		return _data.clone();
 	}
 
 
