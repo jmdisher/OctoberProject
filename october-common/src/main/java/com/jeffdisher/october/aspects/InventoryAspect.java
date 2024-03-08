@@ -33,6 +33,10 @@ public class InventoryAspect
 			case BlockAspect.STONE_BRICK:
 			case BlockAspect.LOG:
 			case BlockAspect.PLANK:
+			case BlockAspect.CHARCOAL:
+			case BlockAspect.COAL_ORE:
+			case BlockAspect.IRON_ORE:
+			case BlockAspect.DIRT:
 				size = 0;
 				break;
 			default:

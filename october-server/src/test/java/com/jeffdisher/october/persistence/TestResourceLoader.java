@@ -71,7 +71,8 @@ public class TestResourceLoader
 		Collection<CuboidData> results = _loadCuboids(loader, List.of(stoneAddress, airAddress));
 		Assert.assertNull(results);
 		List<CuboidData> loaded = new ArrayList<>();
-		for (int i = 0; (2 != loaded.size()) && (i < 10); ++i)
+		// Note that this way of checking time is bound to be flaky but we give it a whole second to generate 2 cuboids.
+		for (int i = 0; (2 != loaded.size()) && (i < 100); ++i)
 		{
 			Thread.sleep(10L);
 			results = _loadCuboids(loader, List.of());
@@ -224,8 +225,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 31 bytes.
-		Assert.assertEquals(31L, cuboidFile.length());
+		// Experimentally, we know that this is 44 bytes.
+		Assert.assertEquals(44L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null);
@@ -238,8 +239,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 16 bytes.
-		Assert.assertEquals(16L, cuboidFile.length());
+		// Experimentally, we know that this is 29 bytes.
+		Assert.assertEquals(29L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null);

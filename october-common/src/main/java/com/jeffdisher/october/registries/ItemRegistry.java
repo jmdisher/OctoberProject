@@ -57,8 +57,23 @@ public class ItemRegistry
 	);
 	public static final Item CHARCOAL = new Item("Charcoal"
 			, BlockAspect.CHARCOAL
-			, 4
+			, 1
 			, DamageAspect.NOT_BLOCK
+	);
+	public static final Item COAL_ORE = new Item("Coal Ore"
+			, BlockAspect.COAL_ORE
+			, 2
+			, DamageAspect.MEDIUM
+	);
+	public static final Item IRON_ORE = new Item("Iron Ore"
+			, BlockAspect.IRON_ORE
+			, 4
+			, DamageAspect.HARD
+	);
+	public static final Item DIRT = new Item("Dirt"
+			, BlockAspect.DIRT
+			, 1
+			, DamageAspect.WEAK
 	);
 
 	/**
@@ -73,6 +88,9 @@ public class ItemRegistry
 			CRAFTING_TABLE,
 			FURNACE,
 			CHARCOAL,
+			COAL_ORE,
+			IRON_ORE,
+			DIRT,
 	};
 
 	static {

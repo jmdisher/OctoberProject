@@ -37,6 +37,11 @@ public class DamageAspect
 	public static final short MEDIUM = 2000;
 
 	/**
+	 * Common hard toughness blocks.
+	 */
+	public static final short HARD = 8000;
+
+	/**
 	 * Exceptionally strong blocks.
 	 */
 	public static final short STRONG = 20000;

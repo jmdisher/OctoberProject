@@ -83,6 +83,7 @@ public class FuelAspect
 			millis = BURN_MILLIS_LOG;
 			break;
 		case BlockAspect.CHARCOAL:
+		case BlockAspect.COAL_ORE:
 			millis = BURN_MILLIS_CHARCOAL;
 			break;
 		default:

@@ -17,6 +17,9 @@ public class BlockAspect
 	public static final short CRAFTING_TABLE = 5;
 	public static final short FURNACE = 6;
 	public static final short CHARCOAL = 7;
+	public static final short COAL_ORE = 8;
+	public static final short IRON_ORE = 9;
+	public static final short DIRT = 10;
 
-	public static final short TOTAL_BLOCK_TYPES = 8;
+	public static final short TOTAL_BLOCK_TYPES = 11;
 }
