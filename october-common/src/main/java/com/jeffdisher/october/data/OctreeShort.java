@@ -6,11 +6,33 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.utils.Encoding;
 
 
+/**
+ * Stores 15-bit values in a 32x32x32 octree.  All values in the sub-tree must be non-negative (15 bits shorts) and it
+ * is worth noting that the implementation stores all multi-byte quantities in big-endian format.  Walking the octree
+ * from its stored data format can be viewed as walking a number of "sub-trees", recursively:
+ * -At each level of the sub-tree, a byte is read.
+ * -If this byte has the value 0xFF, then the sub-tree is to be considered "expanded" and each of its sub-trees must be
+ * recursively walked.
+ * -Otherwise, the sub-tree is considered "compact" and this byte is interpreted as the high-byte of the short value
+ * representing the entire value of the sub-tree.
+ * 
+ * The order of the sub-trees is a 3-level nested loop:  x is outer-most, y is middle, and z is inner-most.  This means
+ * that, in data order, the sub-trees found are:
+ * -0, 0, 0
+ * -0, 0, 1
+ * -0, 1, 0
+ * -0, 1, 1
+ * -1, 0, 0
+ * -1, 0, 1
+ * -1, 1, 0
+ * -1, 1, 1
+ */
 public class OctreeShort implements IOctree
 {
+	public static final byte SUBTREE_HEADER = (byte)0xFF;
+
 	public static OctreeShort load(ByteBuffer raw)
 	{
 		// We want to parse forward until we find the end of the cuboid, then reverse and copy the bytes out.
@@ -28,7 +50,8 @@ public class OctreeShort implements IOctree
 	public static OctreeShort create(short fillValue)
 	{
 		Assert.assertTrue(fillValue >= 0);
-		byte[] data = ByteBuffer.allocate(Short.BYTES).putShort(Encoding.setShortTag(fillValue)).array();
+		// The entire tree is compact so just write the value.
+		byte[] data = ByteBuffer.allocate(Short.BYTES).putShort(fillValue).array();
 		return new OctreeShort(data);
 	}
 
@@ -98,14 +121,14 @@ public class OctreeShort implements IOctree
 			// 3 - we need to split out new sub-trees
 			if (newValue == oldValue)
 			{
-				// Just encode this into the output.
-				writer.putShort(Encoding.setShortTag(newValue));
+				// Just write this into the output.
+				writer.putShort(newValue);
 				value = newValue;
 			}
 			else if (0 == half)
 			{
 				// (technically, this is the same as above but split out for clarity)
-				writer.putShort(Encoding.setShortTag(newValue));
+				writer.putShort(newValue);
 				value = newValue;
 			}
 			else
@@ -124,12 +147,13 @@ public class OctreeShort implements IOctree
 							// Unless this is the relevant sub-tree, just treat it as the header.
 							if ((i == targetX) && (j == targetY) && (k == targetZ))
 							{
-								byte[] fake = ByteBuffer.allocate(Short.BYTES).putShort(Encoding.setShortTag(oldValue)).array();
+								byte[] fake = ByteBuffer.allocate(Short.BYTES).putShort(oldValue).array();
 								_updateValue(writer, ByteBuffer.wrap(fake), (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1), newValue);
 							}
 							else
 							{
-								writer.putShort(Encoding.setShortTag(oldValue));
+								// Write each other sub-tree as just the value.
+								writer.putShort(oldValue);
 							}
 						}
 					}
@@ -176,7 +200,7 @@ public class OctreeShort implements IOctree
 			if (isMatched)
 			{
 				// The sub-trees can be coalesced.
-				writer.putShort(Encoding.setShortTag(newValue));
+				writer.putShort(newValue);
 				value = newValue;
 			}
 			else
@@ -204,7 +228,7 @@ public class OctreeShort implements IOctree
 		if (oldValue >= 0)
 		{
 			// This is the entire subtree so copy it over and return it.
-			writer.putShort(Encoding.setShortTag(oldValue));
+			writer.putShort(oldValue);
 			value = oldValue;
 		}
 		else
@@ -232,16 +256,18 @@ public class OctreeShort implements IOctree
 	{
 		final short value;
 		byte header = buffer.get();
-		if (Encoding.checkTag(header))
+		if (header >= 0)
 		{
+			// This is an inline value so grab the next byte and build the short as big-endian.
 			byte low = buffer.get();
-			short combined = (short)((Byte.toUnsignedInt(header) << 8)
+			value = (short)((Byte.toUnsignedInt(header) << 8)
 					| Byte.toUnsignedInt(low)
 			);
-			value = Encoding.clearShortTag(combined);
 		}
 		else
 		{
+			// This MUST be the 0xFF special token.
+			Assert.assertTrue(SUBTREE_HEADER == header);
 			value = (short)-1;
 		}
 		return value;
@@ -420,7 +446,7 @@ public class OctreeShort implements IOctree
 		
 		public void putSubtreeStart()
 		{
-			_builder.put((byte)0);
+			_builder.put(SUBTREE_HEADER);
 		}
 		
 		public void putShort(short value)

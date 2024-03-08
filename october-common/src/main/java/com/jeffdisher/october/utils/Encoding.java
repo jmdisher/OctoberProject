@@ -9,21 +9,6 @@ public class Encoding
 	// NOTE:  While absolute and cuboid addresses are SIGNED, the block addresses are UNSIGNED.
 	public static int BLOCK_ADDRESS_MASK = (1 << CUBOID_SHIFT) - 1;
 
-	public static short setShortTag(short value)
-	{
-		return (short)(value | 0x8000);
-	}
-
-	public static short clearShortTag(short value)
-	{
-		return (short)(value & ~0x8000);
-	}
-
-	public static boolean checkTag(byte value)
-	{
-		return (value & 0x80) != 0;
-	}
-
 	public static short getCuboidAddress(int absolute)
 	{
 		return _getCuboidAddress(absolute);
