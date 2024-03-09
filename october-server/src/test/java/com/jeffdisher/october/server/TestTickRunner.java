@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -55,7 +54,7 @@ public class TestTickRunner
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -158,7 +157,7 @@ public class TestTickRunner
 		Assert.assertEquals(ItemRegistry.AIR, block.getBlock().asItem());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -235,7 +234,7 @@ public class TestTickRunner
 		// Now, add a mutation from this entity to deliver the block replacement mutation.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, BlockAspect.AIR, BlockAspect.STONE)), commit1);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), commit1);
 		
 		// This will take a few ticks to be observable:
 		// -after tick 1, the change will have been run and the mutation enqueued
@@ -401,7 +400,7 @@ public class TestTickRunner
 		Assert.assertEquals(2, initialCuboids.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
-		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), BlockAspect.AIR, BlockAspect.STONE)), 1L);
+		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();

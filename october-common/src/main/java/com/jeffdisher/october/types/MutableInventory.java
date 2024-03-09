@@ -3,6 +3,7 @@ package com.jeffdisher.october.types;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -51,7 +52,7 @@ public class MutableInventory
 	 */
 	public boolean addAllItems(Item type, int count)
 	{
-		int requiredEncumbrance = type.encumbrance() * count;
+		int requiredEncumbrance = InventoryAspect.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		boolean didApply = false;
@@ -73,7 +74,7 @@ public class MutableInventory
 	public int addItemsBestEfforts(Item type, int count)
 	{
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / type.encumbrance();
+		int maxToAdd = availableEncumbrance / InventoryAspect.getEncumbrance(type);
 		int countToAdd = Math.min(maxToAdd, count);
 		
 		_addItems(type, countToAdd);
@@ -89,7 +90,7 @@ public class MutableInventory
 	public int maxVacancyForItem(Item type)
 	{
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / type.encumbrance();
+		int maxToAdd = availableEncumbrance / InventoryAspect.getEncumbrance(type);
 		return maxToAdd;
 	}
 
@@ -116,7 +117,7 @@ public class MutableInventory
 		{
 			_items.remove(type);
 		}
-		int removedEncumbrance = type.encumbrance() * count;
+		int removedEncumbrance = InventoryAspect.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
 	}
 
@@ -172,7 +173,7 @@ public class MutableInventory
 
 	private void _addItems(Item type, int count)
 	{
-		int requiredEncumbrance = type.encumbrance() * count;
+		int requiredEncumbrance = InventoryAspect.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		Items existing = _items.get(type);

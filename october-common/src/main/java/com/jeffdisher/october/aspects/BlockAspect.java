@@ -1,25 +1,36 @@
 package com.jeffdisher.october.aspects;
 
+import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
+
 
 /**
- * Contains constants associated with the block aspect.
- * Note that technically, these constants are used for all "items", not just those which can be placed in the world as
- * blocks.  The constants are defined here, however, since it is the block aspect which constrains them and the blocks
- * are a strict subset of the items.
+ * Contains helpers for looking up information related to the block aspect.
+ * Note that the block aspect is fundamentally based on the "Damage" aspect, since it has to do with being able to
+ * break blocks.
  */
 public class BlockAspect
 {
-	public static final short AIR = 0;
-	public static final short STONE = 1;
-	public static final short LOG = 2;
-	public static final short PLANK = 3;
-	public static final short STONE_BRICK = 4;
-	public static final short CRAFTING_TABLE = 5;
-	public static final short FURNACE = 6;
-	public static final short CHARCOAL = 7;
-	public static final short COAL_ORE = 8;
-	public static final short IRON_ORE = 9;
-	public static final short DIRT = 10;
+	public static final Block[] BLOCKS_BY_TYPE = new Block[ItemRegistry.ITEMS_BY_TYPE.length];
 
-	public static final short TOTAL_BLOCK_TYPES = 11;
+	static {
+		// We construct the blocks by looking at items.
+		for (int i = 0; i < BLOCKS_BY_TYPE.length; ++i)
+		{
+			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
+			BLOCKS_BY_TYPE[i] = (DamageAspect.NOT_BLOCK != DamageAspect.getToughness(item))
+					? new Block(item.number())
+					: null
+			;
+		}
+	}
+
+	/**
+	 * @return The block object representing the given item, null if it can't be placed as a block.
+	 */
+	public static Block getBlock(Item item)
+	{
+		return BLOCKS_BY_TYPE[item.number()];
+	}
 }

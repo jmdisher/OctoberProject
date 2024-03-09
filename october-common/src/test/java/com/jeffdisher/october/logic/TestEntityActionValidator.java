@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -18,7 +18,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
+		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ItemRegistry.STONE.number() : ItemRegistry.AIR.number();
 		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), so test that.
@@ -34,7 +34,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
+		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ItemRegistry.STONE.number() : ItemRegistry.AIR.number();
 		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), so test that - walking half a block will fail.
@@ -48,7 +48,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? BlockAspect.STONE : BlockAspect.AIR;
+		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ItemRegistry.STONE.number() : ItemRegistry.AIR.number();
 		Entity start = EntityActionValidator.buildDefaultEntity(1);
 		
 		// We can walk .5 blocks per tick (by default), show that we can tip-toe around.

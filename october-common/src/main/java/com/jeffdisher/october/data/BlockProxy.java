@@ -1,10 +1,10 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.BlockRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
@@ -27,7 +27,7 @@ public class BlockProxy implements IBlockProxy
 		_data = data;
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedBlock = BlockRegistry.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = BlockAspect.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getSizeForType(_cachedBlock.asItem());
+			int size = InventoryAspect.getInventoryCapacity(_cachedBlock.asItem());
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();

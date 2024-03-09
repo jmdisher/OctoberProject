@@ -3,6 +3,7 @@ package com.jeffdisher.october.registries;
 import java.util.List;
 import java.util.Set;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
@@ -99,8 +100,8 @@ public enum Craft
 	{
 		Assert.assertTrue(Classification.ERROR != classification);
 		// We never want to allow encumbrance to increase through crafting.
-		int inputEncumbrance = input.type().encumbrance() * input.count();
-		int outputEncumbrance = output.type().encumbrance() * output.count();
+		int inputEncumbrance = InventoryAspect.getEncumbrance(input.type()) * input.count();
+		int outputEncumbrance = InventoryAspect.getEncumbrance(output.type()) * output.count();
 		Assert.assertTrue(inputEncumbrance >= outputEncumbrance);
 		
 		this.name = name;

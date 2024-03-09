@@ -3,6 +3,7 @@ package com.jeffdisher.october.data;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -34,7 +35,7 @@ public class TestMutableBlockProxy
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
+		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.STONE));
 		
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
@@ -50,8 +51,8 @@ public class TestMutableBlockProxy
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(ItemRegistry.STONE.asBlock());
-		proxy.setBlockAndClear(ItemRegistry.AIR.asBlock());
+		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.STONE));
+		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.AIR));
 		
 		Assert.assertFalse(proxy.didChange());
 	}

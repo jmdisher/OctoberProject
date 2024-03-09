@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -26,7 +27,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Item type = ItemRegistry.STONE;
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, type.asBlock());
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, BlockAspect.getBlock(type));
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

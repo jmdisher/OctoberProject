@@ -6,7 +6,6 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -113,7 +112,7 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
-		Assert.assertEquals(BlockAspect.STONE, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 100 ms each time.
@@ -136,7 +135,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
-		Assert.assertEquals(BlockAspect.STONE, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
@@ -154,7 +153,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify the final state of the projection.
-		Assert.assertEquals(BlockAspect.AIR, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.AIR.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();

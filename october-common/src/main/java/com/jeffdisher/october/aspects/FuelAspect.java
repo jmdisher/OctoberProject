@@ -71,22 +71,27 @@ public class FuelAspect
 	{
 		int millis;
 		// For now, we just store these constants inline and they will likely change and eventually become data.
-		switch (item.number())
+		if (ItemRegistry.CRAFTING_TABLE == item)
 		{
-		case BlockAspect.CRAFTING_TABLE:
 			millis = BURN_MILLIS_TABLE;
-			break;
-		case BlockAspect.PLANK:
+		}
+		else if (ItemRegistry.PLANK == item)
+		{
 			millis = BURN_MILLIS_PLANK;
-			break;
-		case BlockAspect.LOG:
+		}
+		else if (ItemRegistry.LOG == item)
+		{
 			millis = BURN_MILLIS_LOG;
-			break;
-		case BlockAspect.CHARCOAL:
-		case BlockAspect.COAL_ORE:
+		}
+		else if ((ItemRegistry.CHARCOAL == item)
+				|| (ItemRegistry.COAL_ORE == item)
+		)
+		{
 			millis = BURN_MILLIS_CHARCOAL;
-			break;
-		default:
+		}
+		else
+		{
+			// We assume other things don't burn.
 			millis = 0;
 		}
 		return millis;

@@ -28,7 +28,7 @@ public class PickUpItemMutation implements IMutationBlock
 	public PickUpItemMutation(AbsoluteLocation location, Item type, int count)
 	{
 		// We don't allow creation of this mutation if the items couldn't possibly be on the ground.
-		Assert.assertTrue((type.encumbrance() * count) <= InventoryAspect.CAPACITY_AIR);
+		Assert.assertTrue((InventoryAspect.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
 		_location = location;
 		_type = type;
 		_count = count;

@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -55,18 +56,18 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		
 		// We want to see if this is a kind of block which can be broken.
 		Item block = newBlock.getBlock().asItem();
-		if (DamageAspect.UNBREAKABLE != block.toughness())
+		if (DamageAspect.UNBREAKABLE != DamageAspect.getToughness(block))
 		{
 			// Apply the damage.
 			short damage = (short)(newBlock.getDamage() + _damageToApply);
 			
 			// See if this is broken (note that this could overflow.
-			if ((damage >= block.toughness()) || (damage < 0))
+			if ((damage >= DamageAspect.getToughness(block)) || (damage < 0))
 			{
 				// The block is broken so replace it with air and place the block in the inventory.
 				Inventory oldInventory = newBlock.getInventory();
 				FuelState oldFuel = newBlock.getFuel();
-				newBlock.setBlockAndClear(ItemRegistry.AIR.asBlock());
+				newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.AIR));
 				
 				// If the inventory fits, move it over to the new block.
 				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.

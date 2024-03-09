@@ -1,26 +1,16 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.registries.BlockRegistry;
-
 
 /**
  * Represents an item type which can be in an inventory.  There is one instance for each type in the system.
- * Note that positive numbers are also blocks which can be placed in the world, while negative numbers are
- * inventory-only (and 0 is air, of course).
- * We don't have a concept analogous to Minecraft's "item stack", instead using "encumbrance" to limit how many items
- * can be stored in a given inventory, more like how Project Zomboid does.
+ * All instances are expected to have a non-negative "number".
+ * Note that the current design approach is to make the Item into the lowest-level logical primitive of the world.  That
+ * means that it only has a name and assigned item number but incorporates no other information related to higher-level
+ * concepts build on top of it.
+ * Other aspects which need to attribute further meaning to an item are expected to use the number to look up that
+ * information in some out-of-line storage or algorithm.
  */
 public record Item(String name
 		, short number
-		, int encumbrance
-		, short toughness
 ) {
-
-	/**
-	 * @return The block object representing this item, null if it can't be placed as a block.
-	 */
-	public Block asBlock()
-	{
-		return BlockRegistry.BLOCKS_BY_TYPE[number];
-	}
 }

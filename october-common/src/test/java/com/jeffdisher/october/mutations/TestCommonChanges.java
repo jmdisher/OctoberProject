@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -468,7 +469,7 @@ public class TestCommonChanges
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
-		proxy.setBlockAndClear(ItemRegistry.FURNACE.asBlock());
+		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.FURNACE));
 		proxy.writeBack(cuboid);
 		
 		IMutationBlock[] holder = new IMutationBlock[1];

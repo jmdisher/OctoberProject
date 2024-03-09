@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -91,7 +92,7 @@ public class Inventory
 			int current = _items.containsKey(type) ? _items.get(type) : 0;
 			current += count;
 			_items.put(type, current);
-			_currentEncumbrance += type.encumbrance() * count;
+			_currentEncumbrance += InventoryAspect.getEncumbrance(type) * count;
 			Assert.assertTrue(_currentEncumbrance <= _maxEncumbrance);
 			return this;
 		}

@@ -29,7 +29,7 @@ public class DropItemMutation implements IMutationBlock
 	public DropItemMutation(AbsoluteLocation location, Item type, int count)
 	{
 		// We don't allow creation of this mutation if the items can't possibly fit.
-		Assert.assertTrue((type.encumbrance() * count) <= InventoryAspect.CAPACITY_AIR);
+		Assert.assertTrue((InventoryAspect.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
 		_location = location;
 		_type = type;
 		_count = count;

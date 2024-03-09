@@ -1,7 +1,7 @@
 package com.jeffdisher.october.aspects;
 
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -16,33 +16,81 @@ public class InventoryAspect
 	public static final int CAPACITY_PLAYER = 20;
 	public static final int CAPACITY_CRAFTING_TABLE = CAPACITY_AIR;
 
-	public static int getSizeForType(Item item)
+	// We will default to an encumbrance of "4" for undefined types (since it is big but not overwhelming.
+	public static final int ENCUMBRANCE_UNKNOWN = 4;
+	// Note that every item has a number and encumbrance, 0 is used for any item which cannot exist in an inventory.
+	public static final int ENCUMBRANCE_NON_INVENTORY = 0;
+
+	public static final int[] ENCUMBRANCE_BY_TYPE = new int[ItemRegistry.ITEMS_BY_TYPE.length];
+
+	static {
+		// We construct the encumbrance by looking at items.
+		// This purely exists to demonstrate the shape of the Item data once it is fully external data:  All aspects are
+		// out-of-line and their meaning for a specific Item type is answered through aspect-specific helpers, like this.
+		// TODO:  Replace this with a data file later on.
+		for (int i = 0; i < ENCUMBRANCE_BY_TYPE.length; ++i)
+		{
+			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
+			int encumbrance;
+			if (ItemRegistry.AIR == item)
+			{
+				encumbrance = ENCUMBRANCE_NON_INVENTORY;
+			}
+			else if ((ItemRegistry.PLANK == item)
+					|| (ItemRegistry.CHARCOAL == item)
+					|| (ItemRegistry.DIRT == item)
+			)
+			{
+				encumbrance = 1;
+			}
+			else if ((ItemRegistry.STONE == item)
+					|| (ItemRegistry.STONE_BRICK == item)
+					|| (ItemRegistry.LOG == item)
+					|| (ItemRegistry.CRAFTING_TABLE == item)
+					|| (ItemRegistry.COAL_ORE == item)
+			)
+			{
+				encumbrance = 2;
+			}
+			else if ((ItemRegistry.FURNACE == item)
+					|| (ItemRegistry.IRON_ORE == item)
+			)
+			{
+				encumbrance = 4;
+			}
+			else
+			{
+				// We need to add this entry.
+				encumbrance = ENCUMBRANCE_UNKNOWN;
+			}
+			ENCUMBRANCE_BY_TYPE[i] = encumbrance;
+		}
+	}
+
+	public static int getInventoryCapacity(Item item)
 	{
 		// Here, we will opt-in to specific item types, only returning 0 if the block type has no inventory.
 		int size;
-		switch (item.number())
+		if (ItemRegistry.AIR == item)
 		{
-			case BlockAspect.AIR:
-				size = CAPACITY_AIR;
-				break;
-			case BlockAspect.CRAFTING_TABLE:
-			case BlockAspect.FURNACE:
-				size = CAPACITY_CRAFTING_TABLE;
-				break;
-			case BlockAspect.STONE:
-			case BlockAspect.STONE_BRICK:
-			case BlockAspect.LOG:
-			case BlockAspect.PLANK:
-			case BlockAspect.CHARCOAL:
-			case BlockAspect.COAL_ORE:
-			case BlockAspect.IRON_ORE:
-			case BlockAspect.DIRT:
-				size = 0;
-				break;
-			default:
-				// We need to add this entry.
-				throw Assert.unreachable();
+			size = CAPACITY_AIR;
+		}
+		else if ((ItemRegistry.CRAFTING_TABLE == item)
+				|| (ItemRegistry.FURNACE == item)
+		)
+		{
+			size = CAPACITY_CRAFTING_TABLE;
+		}
+		else
+		{
+			// We default to 0.
+			size = 0;
 		}
 		return size;
+	}
+
+	public static int getEncumbrance(Item item)
+	{
+		return ENCUMBRANCE_BY_TYPE[item.number()];
 	}
 }

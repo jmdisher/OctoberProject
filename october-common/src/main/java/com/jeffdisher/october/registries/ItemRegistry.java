@@ -1,7 +1,8 @@
 package com.jeffdisher.october.registries;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.DamageAspect;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
@@ -15,90 +16,42 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ItemRegistry
 {
-	// Note that every item has a number and encumbrance, 0 is used for any item which cannot exist in an inventory.
-	public static final int NON_INVENTORY = 0;
+	// Variables used when initially populating the table.
+	private static List<Item> _items = new ArrayList<>();
 
 	// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
 	// negative number are for items which cannot be placed.
-	public static final Item AIR = new Item("Air"
-			, BlockAspect.AIR
-			, NON_INVENTORY
-			, DamageAspect.UNBREAKABLE
-	);
-	public static final Item STONE = new Item("Stone"
-			, BlockAspect.STONE
-			, 2
-			, DamageAspect.MEDIUM
-	);
-	public static final Item LOG = new Item("Log"
-			, BlockAspect.LOG
-			, 2
-			, DamageAspect.WEAK
-	);
-	public static final Item PLANK = new Item("Plank"
-			, BlockAspect.PLANK
-			, 1
-			, DamageAspect.WEAK
-	);
-	public static final Item STONE_BRICK = new Item("Stone Brick"
-			, BlockAspect.STONE_BRICK
-			, 2
-			, DamageAspect.MEDIUM
-	);
-	public static final Item CRAFTING_TABLE = new Item("Crafting Table"
-			, BlockAspect.CRAFTING_TABLE
-			, 2
-			, DamageAspect.WEAK
-	);
-	public static final Item FURNACE = new Item("Furnace"
-			, BlockAspect.FURNACE
-			, 4
-			, DamageAspect.MEDIUM
-	);
-	public static final Item CHARCOAL = new Item("Charcoal"
-			, BlockAspect.CHARCOAL
-			, 1
-			, DamageAspect.NOT_BLOCK
-	);
-	public static final Item COAL_ORE = new Item("Coal Ore"
-			, BlockAspect.COAL_ORE
-			, 2
-			, DamageAspect.MEDIUM
-	);
-	public static final Item IRON_ORE = new Item("Iron Ore"
-			, BlockAspect.IRON_ORE
-			, 4
-			, DamageAspect.HARD
-	);
-	public static final Item DIRT = new Item("Dirt"
-			, BlockAspect.DIRT
-			, 1
-			, DamageAspect.WEAK
-	);
+	public static final Item AIR = _register("Air");
+	public static final Item STONE = _register("Stone");
+	public static final Item LOG = _register("Log");
+	public static final Item PLANK = _register("Plank");
+	public static final Item STONE_BRICK = _register("Stone Brick");
+	public static final Item CRAFTING_TABLE = _register("Crafting Table");
+	public static final Item FURNACE = _register("Furnace");
+	public static final Item CHARCOAL = _register("Charcoal");
+	public static final Item COAL_ORE = _register("Coal Ore");
+	public static final Item IRON_ORE = _register("Iron Ore");
+	public static final Item DIRT = _register("Dirt");
+
+	private static Item _register(String name)
+	{
+		int size = _items.size();
+		Assert.assertTrue(size <= Short.MAX_VALUE);
+		short number = (short)size;
+		Item item = new Item(name, number);
+		_items.add(item);
+		return item;
+	}
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
 	 */
-	public static final Item[] ITEMS_BY_TYPE = {
-			AIR,
-			STONE,
-			LOG,
-			PLANK,
-			STONE_BRICK,
-			CRAFTING_TABLE,
-			FURNACE,
-			CHARCOAL,
-			COAL_ORE,
-			IRON_ORE,
-			DIRT,
-	};
+	public static final Item[] ITEMS_BY_TYPE;
 
 	static {
-		// Validate that the registry is internally consistent.
-		for (int i = 0; i < ITEMS_BY_TYPE.length; ++i)
-		{
-			Assert.assertTrue((short)i == ITEMS_BY_TYPE[i].number());
-		}
+		// Convert the items into the array as it is now fixed (since the static fields are initialized before this is called).
+		ITEMS_BY_TYPE = _items.toArray((int size) -> new Item[size]);
+		_items = null;
 	}
 
 	private ItemRegistry()

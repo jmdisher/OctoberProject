@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 
 
@@ -15,26 +15,26 @@ public class TestOctreeBlock
 	@Test
 	public void filled()
 	{
-		OctreeShort test = OctreeShort.create(BlockAspect.AIR);
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(BlockAspect.AIR, (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		OctreeShort test = OctreeShort.create(ItemRegistry.AIR.number());
+		Assert.assertEquals(ItemRegistry.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(ItemRegistry.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 	}
 
 	@Test
 	public void update()
 	{
-		OctreeShort test = OctreeShort.create(BlockAspect.AIR);
+		OctreeShort test = OctreeShort.create(ItemRegistry.AIR.number());
 		
 		// Write a value into each subtree.
-		_setAllSubtrees(test, (byte)0, BlockAspect.STONE);
+		_setAllSubtrees(test, (byte)0, ItemRegistry.STONE.number());
 		// Check that it changed, but not adjacent blocks.
-		_checkAllSubtrees(test, (byte)0, BlockAspect.STONE);
-		_checkAllSubtrees(test, (byte)1, BlockAspect.AIR);
+		_checkAllSubtrees(test, (byte)0, ItemRegistry.STONE.number());
+		_checkAllSubtrees(test, (byte)1, ItemRegistry.AIR.number());
 		
 		// Change it back, causing it to coalesce.
-		_setAllSubtrees(test, (byte)0, BlockAspect.AIR);
-		_checkAllSubtrees(test, (byte)0, BlockAspect.AIR);
-		_checkAllSubtrees(test, (byte)1, BlockAspect.AIR);
+		_setAllSubtrees(test, (byte)0, ItemRegistry.AIR.number());
+		_checkAllSubtrees(test, (byte)0, ItemRegistry.AIR.number());
+		_checkAllSubtrees(test, (byte)1, ItemRegistry.AIR.number());
 	}
 
 	@Test

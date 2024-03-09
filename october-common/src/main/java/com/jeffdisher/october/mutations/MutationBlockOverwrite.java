@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -22,7 +23,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public static MutationBlockOverwrite deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Block blockType = CodecHelpers.readItem(buffer).asBlock();
+		Block blockType = BlockAspect.getBlock(CodecHelpers.readItem(buffer));
 		return new MutationBlockOverwrite(location, blockType);
 	}
 

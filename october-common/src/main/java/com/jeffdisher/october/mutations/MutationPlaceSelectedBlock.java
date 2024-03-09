@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -59,7 +60,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		
 		Item itemType = newEntity.newSelectedItem;
 		// Note that we will get a null from the asBlock if this can't be placed.
-		Block blockType = (null != itemType) ? itemType.asBlock() : null;
+		Block blockType = (null != itemType) ? BlockAspect.getBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
