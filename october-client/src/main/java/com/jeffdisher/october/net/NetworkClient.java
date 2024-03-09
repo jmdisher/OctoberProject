@@ -115,8 +115,9 @@ public class NetworkClient
 		// We need to wait for handshake before trying to use the client.
 		Assert.assertTrue(_token.didFinishHandshake());
 		Assert.assertTrue(_token.networkIsReady);
-		_network.sendMessage(_token, packet);
+		// NOTE:  We need to clear the ready flag BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
 		_token.networkIsReady = false;
+		_network.sendMessage(_token, packet);
 	}
 
 	/**
