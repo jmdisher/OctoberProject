@@ -71,7 +71,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support fuel.
 		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedBlock.asItem()))
 		{
-			fuel = new FuelState(0, Inventory.start(FuelAspect.CAPACITY).finish());
+			fuel = new FuelState(0, null, Inventory.start(FuelAspect.CAPACITY).finish());
 		}
 		return fuel;
 	}

@@ -177,8 +177,9 @@ public class CodecHelpers
 		FuelState result;
 		if (millisFueled >= 0)
 		{
+			Item currentFuel = _readItemNoAir(buffer);
 			Inventory fuelInventory = _readInventory(buffer);
-			result = new FuelState(millisFueled, fuelInventory);
+			result = new FuelState(millisFueled, currentFuel, fuelInventory);
 		}
 		else
 		{
@@ -193,6 +194,7 @@ public class CodecHelpers
 		if (null != fuel)
 		{
 			buffer.putInt(fuel.millisFueled());
+			_writeItemNoAir(buffer, fuel.currentFuel());
 			_writeInventory(buffer, fuel.fuelInventory());
 		}
 		else

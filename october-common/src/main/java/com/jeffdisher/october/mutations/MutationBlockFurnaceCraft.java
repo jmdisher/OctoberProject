@@ -111,14 +111,15 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 					Item fuelType = inv.items.keySet().iterator().next();
 					fuelAvailable = FuelAspect.millisOfFuel(fuelType);
 					fuelInventory.removeItems(fuelType, 1);
-					fuel = new FuelState(fuelAvailable, fuelInventory.freeze());
+					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());
 				}
 				
 				long millisRequired = craft.selectedCraft().millisPerCraft - craft.completedMillis();
 				Assert.assertTrue(millisRequired >= 0L);
 				int fuelToApply = Math.min((int)craftMillisRemaining, Math.min((int)millisRequired, fuelAvailable));
 				fuelAvailable -= fuelToApply;
-				fuel = new FuelState(fuelAvailable, fuel.fuelInventory());
+				Item currentFuel = (fuelAvailable > 0) ? fuel.currentFuel() : null;
+				fuel = new FuelState(fuelAvailable, currentFuel, fuel.fuelInventory());
 				craft = new CraftOperation(craft.selectedCraft(), craft.completedMillis() + (long)fuelToApply);
 				if (craft.isCompleted())
 				{
@@ -153,7 +154,8 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 				{
 					shouldReschedule = true;
 				}
-				newBlock.setFuel(new FuelState(fuelRemaining, fuel.fuelInventory()));
+				Item currentFuel = (fuelRemaining > 0) ? fuel.currentFuel() : null;
+				newBlock.setFuel(new FuelState(fuelRemaining, currentFuel, fuel.fuelInventory()));
 				didApply = true;
 			}
 			

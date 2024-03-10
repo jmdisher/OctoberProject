@@ -183,11 +183,12 @@ public class TestCodecHelpers
 	public void fuelState() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		FuelState test = new FuelState(0, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
+		FuelState test = new FuelState(0, null, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
 		FuelState output = CodecHelpers.readFuelState(buffer);
 		Assert.assertEquals(test.millisFueled(), output.millisFueled());
+		Assert.assertEquals(test.currentFuel(), output.currentFuel());
 		Assert.assertEquals(test.fuelInventory().getCount(ItemRegistry.STONE), output.fuelInventory().getCount(ItemRegistry.STONE));
 		
 		// Verify the null.

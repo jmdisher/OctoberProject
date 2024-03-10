@@ -628,6 +628,11 @@ public class TestTickRunner
 			if (0 != (i % 20))
 			{
 				Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+				Assert.assertEquals(ItemRegistry.PLANK, proxy.getFuel().currentFuel());
+			}
+			else
+			{
+				Assert.assertNull(proxy.getFuel().currentFuel());
 			}
 			if (0 != (i % 10))
 			{
@@ -644,6 +649,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
 		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.LOG));
 		Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+		Assert.assertEquals(ItemRegistry.PLANK, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
 		// Now, wait for the fuel to finish.
@@ -657,6 +663,8 @@ public class TestTickRunner
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 			Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
 		}
+		Assert.assertEquals(0, proxy.getFuel().millisFueled());
+		Assert.assertNull(proxy.getFuel().currentFuel());
 		Assert.assertTrue(snap.scheduledBlockMutations().isEmpty());
 		
 		runner.shutdown();
