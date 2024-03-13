@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -23,6 +25,7 @@ import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -401,6 +404,9 @@ public class TickRunner
 				_partial[i] = null;
 			}
 			
+			// We will synthesize the block update events here since the WorldProcessor could create duplicates around cuboid boundaries.
+			_scheduleBlockUpdates(resultantMutationsByCuboid, mutableWorldState.keySet(), scheduledBlockMutations);
+			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			Snapshot completedTick = new Snapshot(_nextTick
@@ -709,6 +715,40 @@ public class TickRunner
 			next = access.newChanges.peek();
 		}
 		return commitLevel;
+	}
+
+	private void _scheduleBlockUpdates(Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid
+			, Set<CuboidAddress> loadedCuboids
+			, Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations
+	)
+	{
+		Set<AbsoluteLocation> updatedBlocks = new HashSet<>();
+		for (List<IBlockStateUpdate> list : resultantMutationsByCuboid.values())
+		{
+			for (IBlockStateUpdate stateChange : list)
+			{
+				AbsoluteLocation start = stateChange.getAbsoluteLocation();
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 0, -1));
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 0, 1));
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, -1, 0));
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 1, 0));
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(-1, 0, 0));
+				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(1, 0, 0));
+			}
+		}
+	}
+
+	private void _scheduleOneBlockUpdate(Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations
+			, Set<AbsoluteLocation> updatedBlocks
+			, Set<CuboidAddress> loadedCuboids
+			, AbsoluteLocation check
+	)
+	{
+		if (!updatedBlocks.contains(check) && loadedCuboids.contains(check.getCuboidAddress()))
+		{
+			updatedBlocks.add(check);
+			_scheduleMutationForCuboid(scheduledBlockMutations, new MutationBlockUpdate(check));
+		}
 	}
 
 

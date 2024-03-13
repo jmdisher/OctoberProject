@@ -179,5 +179,25 @@ public class TestFallingBehaviour
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.items.get(ItemRegistry.STONE).count());
+		
+		// Now, we will synthesize the update event which would normally be scheduled against this and see it fall.
+		topBlock = new MutableBlockProxy(topLocation, cuboid);
+		MutationBlockUpdate update = new MutationBlockUpdate(topLocation);
+		Assert.assertTrue(update.applyMutation(context, topBlock));
+		topBlock.writeBack(cuboid);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, topLocation.getBlockAddress()));
+		
+		// We should see this schedule the block move.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		MutationBlockStoreItems extracted = (MutationBlockStoreItems) blockHolder[0];
+		blockHolder[0] = null;
+		Assert.assertEquals(bottomLocation, extracted.getAbsoluteLocation());
+		bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
+		Assert.assertTrue(extracted.applyMutation(context, bottomBlock));
+		bottomBlock.writeBack(cuboid);
+		
+		Assert.assertNull(blockHolder[0]);
+		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
+		Assert.assertEquals(2, blockInventory.items.get(ItemRegistry.STONE).count());
 	}
 }

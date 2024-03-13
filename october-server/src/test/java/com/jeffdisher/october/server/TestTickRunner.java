@@ -499,7 +499,9 @@ public class TestTickRunner
 		runner.startNextTick();
 		// Verify that this mutation has been run.
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		// We should see block updates for 2 cuboids (since that is all that is loaded).  In total, this is the size adjacent blocks.
+		Assert.assertEquals(2, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(6, snapshot.scheduledBlockMutations().values().stream().map((List<IMutationBlock> list) -> list.size()).mapToInt((Integer i) -> i.intValue()).sum());
 		// Remember that there is a 10x damage multiplier until tools are added.
 		Assert.assertEquals(10 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
 		
@@ -665,6 +667,12 @@ public class TestTickRunner
 		}
 		Assert.assertEquals(0, proxy.getFuel().millisFueled());
 		Assert.assertNull(proxy.getFuel().currentFuel());
+		
+		// We should see the block update events for the 3 loaded blocks so running another tick should drain those.
+		Assert.assertEquals(1, snap.scheduledBlockMutations().size());
+		Assert.assertEquals(3, snap.scheduledBlockMutations().values().stream().map((List<IMutationBlock> list) -> list.size()).mapToInt((Integer i) -> i.intValue()).sum());
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
 		Assert.assertTrue(snap.scheduledBlockMutations().isEmpty());
 		
 		runner.shutdown();

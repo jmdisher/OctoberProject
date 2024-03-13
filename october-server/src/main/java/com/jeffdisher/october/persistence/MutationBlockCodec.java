@@ -11,6 +11,7 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
+import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -31,6 +32,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockIncrementalBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalBreak.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockCraft.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockFurnaceCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockFurnaceCraft.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockUpdate.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockUpdate.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

@@ -11,6 +11,7 @@ public enum MutationBlockType
 	INCREMENTAL_BREAK_BLOCK,
 	CRAFT_IN_BLOCK,
 	CRAFT_IN_FURNACE,
+	UPDATE,
 	
 	END_OF_LIST,
 }
