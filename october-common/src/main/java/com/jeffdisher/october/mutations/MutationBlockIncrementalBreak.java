@@ -5,10 +5,12 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -83,7 +85,25 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 					_combineInventory(mutable, oldFuel.fuelInventory());
 				}
 				mutable.addItemsBestEfforts(block, 1);
-				newBlock.setInventory(mutable.freeze());
+				
+				// Note that we need to handle the special-case where the block below this one is AIR and we should actually drop all the items.
+				AbsoluteLocation belowLocation = _location.getRelative(0, 0, -1);
+				Block airBlock = BlockAspect.getBlock(ItemRegistry.AIR);
+				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
+				// TODO:  Come up with a way to handle the case where this is null (not loaded).
+				if ((null != below) && (airBlock == below.getBlock()))
+				{
+					// We want to drop this inventory into the below block.
+					for (Items items : mutable.freeze().items.values())
+					{
+						context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
+					}
+				}
+				else
+				{
+					// We are just storing this into the block.
+					newBlock.setInventory(mutable.freeze());
+				}
 			}
 			else
 			{

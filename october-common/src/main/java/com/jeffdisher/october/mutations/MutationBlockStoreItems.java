@@ -2,10 +2,14 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
@@ -53,20 +57,45 @@ public class MutationBlockStoreItems implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		Inventory existing = _getInventory(newBlock);
-		MutableInventory inv = new MutableInventory(existing);
-		int stored = inv.addItemsBestEfforts(_offered.type(), _offered.count());
-		if (stored > 0)
+		boolean didApply = false;
+		// First, we want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
+		if (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect)
 		{
-			_putInventory(newBlock, inv.freeze());
-			
-			// See if we might need to trigger an automatic crafting operation in this block.
-			if (null != MutationBlockFurnaceCraft.canCraft(newBlock))
+			Block airBlock = BlockAspect.getBlock(ItemRegistry.AIR);
+			if (airBlock == newBlock.getBlock())
 			{
-				context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+				// This is an air block but see what is below it.
+				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
+				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
+				// TODO:  Come up with a way to handle the case where this is null (not loaded).
+				if ((null != below) && (airBlock == below.getBlock()))
+				{
+					// We want to drop this into the below block.
+					context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
+					didApply = true;
+				}
 			}
 		}
-		return (stored > 0);
+		
+		// If that didn't work, just apply the common case of storing into the block.
+		if (!didApply)
+		{
+			Inventory existing = _getInventory(newBlock);
+			MutableInventory inv = new MutableInventory(existing);
+			int stored = inv.addItemsBestEfforts(_offered.type(), _offered.count());
+			if (stored > 0)
+			{
+				_putInventory(newBlock, inv.freeze());
+				
+				// See if we might need to trigger an automatic crafting operation in this block.
+				if (null != MutationBlockFurnaceCraft.canCraft(newBlock))
+				{
+					context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+				}
+			}
+			didApply =  (stored > 0);
+		}
+		return didApply;
 	}
 
 	@Override
