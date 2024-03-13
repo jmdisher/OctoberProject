@@ -1,7 +1,9 @@
 package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.BlockStateUpdateType;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
@@ -18,10 +20,12 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class FakeBlockUpdate implements IBlockStateUpdate
 {
+	private final Function<AbsoluteLocation, BlockProxy> _previousBlockLookUp;
 	private final IMutationBlock _mutation;
 
-	public FakeBlockUpdate(IMutationBlock mutation)
+	public FakeBlockUpdate(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, IMutationBlock mutation)
 	{
+		_previousBlockLookUp = previousBlockLookUp;
 		_mutation = mutation;
 	}
 
@@ -36,7 +40,7 @@ public class FakeBlockUpdate implements IBlockStateUpdate
 	{
 		// We will just fake up the tick context to be benign (since the speculative projection will drop any new mutations) and only fail when it can't know the answer.
 		TickProcessingContext context = new TickProcessingContext(0L
-				, null
+				, _previousBlockLookUp
 				, (IMutationBlock newMutation) -> {}
 				, (int targetEntityId, IMutationEntity change) -> {}
 		);

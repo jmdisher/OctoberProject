@@ -22,6 +22,7 @@ public class TickProcessingContext
 
 	/**
 	 * The view of the entire world, as of the beginning of this tick.
+	 * Returns null if the requested block isn't in a loaded cuboid.
 	 */
 	public final Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 

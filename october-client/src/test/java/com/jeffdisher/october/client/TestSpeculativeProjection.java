@@ -102,7 +102,7 @@ public class TestSpeculativeProjection
 			IMutationBlock mutation = new ReplaceBlockMutation(location, ItemRegistry.AIR.number(), ItemRegistry.STONE.number());
 			IMutationEntity entityChange = new EntityChangeMutation(mutation);
 			localEntityChangesToCommit.add(entityChange);
-			mutationsToCommit.add(new FakeBlockUpdate(mutation));
+			mutationsToCommit.add(new FakeBlockUpdate(projector.projectionBlockLoader, mutation));
 			commitNumbers[i] = projector.applyLocalChange(entityChange, 1L);
 		}
 		Assert.assertEquals(7, listener.changeCount);
@@ -113,7 +113,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(new FakeBlockUpdate(mutation1))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -127,7 +127,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone2)))
-				, List.of(new FakeBlockUpdate(mutation2))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -219,7 +219,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(new FakeBlockUpdate(mutation0))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation0))
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
@@ -297,7 +297,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(new FakeBlockUpdate(mutation0))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -314,7 +314,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(new FakeBlockUpdate(mutation1))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -391,7 +391,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone0)))
-				, List.of(new FakeBlockUpdate(mutation0))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -406,7 +406,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone1)))
-				, List.of(new FakeBlockUpdate(mutation1))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -503,7 +503,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(0, new LinkedList<>(List.of(lone2)))
-				, List.of(new FakeBlockUpdate(mutation1))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -520,7 +520,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyMap()
-				, List.of(new FakeBlockUpdate(mutation2))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, mutation2))
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
@@ -644,7 +644,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(blockBreak)))
-				, List.of(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -662,7 +662,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(blockBreak)))
-				, List.of(new FakeBlockUpdate(new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -890,7 +890,8 @@ public class TestSpeculativeProjection
 		
 		// Place the crafting table.
 		long currentTimeMillis = 1000L;
-		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
+		BlockAddress blockLocation = location.getBlockAddress();
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
 		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
@@ -908,7 +909,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3L, commit3);
 		
 		// Check the block and all of its aspects.
-		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getBlock().asItem());
 		Assert.assertEquals(2, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
@@ -918,7 +919,7 @@ public class TestSpeculativeProjection
 		craft = new EntityChangeCraftInBlock(location, null, 100L);
 		long commit4 = projector.applyLocalChange(craft, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
-		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ItemRegistry.CRAFTING_TABLE, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
@@ -929,7 +930,7 @@ public class TestSpeculativeProjection
 		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)20);
 		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(5L, commit5);
-		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
@@ -1037,7 +1038,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, Map.of(localEntityId, List.of(request))
-				, List.of(new FakeBlockUpdate(extract))
+				, List.of(new FakeBlockUpdate(projector.projectionBlockLoader, extract))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -1109,7 +1110,8 @@ public class TestSpeculativeProjection
 		
 		// Place the furnace.
 		long currentTimeMillis = 1000L;
-		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
+		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
+		BlockAddress blockLocation = location.getBlockAddress();
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
 		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
@@ -1133,7 +1135,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3L, commit3);
 		
 		// Check the block and all of its aspects.
-		BlockProxy proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ItemRegistry.FURNACE, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
@@ -1143,7 +1145,7 @@ public class TestSpeculativeProjection
 		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)200);
 		long commit4 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
-		proxy = new BlockProxy(new BlockAddress((byte)1, (byte)1, (byte)1), listener.lastData);
+		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ItemRegistry.PLANK));

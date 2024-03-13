@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
@@ -27,10 +28,20 @@ public class TestCommonMutations
 	public void breakBlockSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		CuboidAddress cuboidAddress = target.getCuboidAddress();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		boolean didApply = mutation.applyMutation(null, proxy);
+		TickProcessingContext context = new TickProcessingContext(1L
+				, (AbsoluteLocation location) -> {
+					return cuboidAddress.equals(location.getCuboidAddress())
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+					;
+				}, null
+				, null
+		);
+		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
