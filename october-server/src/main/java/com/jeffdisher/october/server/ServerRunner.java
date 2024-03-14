@@ -312,10 +312,10 @@ public class ServerRunner
 			// Note that We will walk the removed clients BEFORE adding new ones since it is theoretically possible for
 			// a client to disconnect and reconnect in the same tick and the logic has this implicit assumption.
 			// Walk through any removed clients, removing them from the world.
+			Collection<Integer> removedClients = new ArrayList<>(_removedClients);
 			while (!_removedClients.isEmpty())
 			{
 				int clientId = _removedClients.remove();
-				_tickRunner.entityDidLeave(clientId);
 				// (we removed this from the connected clients, earlier).
 				
 				// We also want to write-back the entity (these generally only happen one at a time so we don't bother batching).
@@ -337,20 +337,17 @@ public class ServerRunner
 			_requestedCuboids.addAll(cuboidsToLoad);
 			// We have requested the clients so drop this, now.
 			_newClients.clear();
-			if (!newCuboids.isEmpty())
-			{
-				_tickRunner.cuboidsWereLoaded(newCuboids);
-			}
 			
 			// Walk through any new clients, adding them to the world.
 			for (Entity newEntity : newEntities)
 			{
 				// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
-				_tickRunner.entityDidJoin(newEntity);
-				
 				// This client is now connected and can receive events.
 				_connectedClients.put(newEntity.id(), new ClientState(newEntity.location()));
 			}
+			
+			// Push any required data into the TickRunner before we kick-off the tick.
+			_tickRunner.setupChangesForTick(newCuboids, null, newEntities, removedClients);
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
 			_nextTickMillis += _millisPerTick;
