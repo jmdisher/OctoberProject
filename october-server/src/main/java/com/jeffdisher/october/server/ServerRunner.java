@@ -284,16 +284,9 @@ public class ServerRunner
 			// Remove any of the cuboids in the snapshot from any that we had requested.
 			_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
 			
-			// Here, all we are interested in doing is incrementally loading more of the world and crowd for connected clients not completely enlightened.
-			Set<CuboidAddress> cuboidsToLoad = new HashSet<>();
-			Consumer<CuboidAddress> cuboidRequester = (CuboidAddress address) -> {
-				// If this is something we already requested, it just means it hasn't yet arrived or been loaded into a snapshot so don't request it again.
-				boolean didAdd = _requestedCuboids.add(address);
-				if (didAdd)
-				{
-					cuboidsToLoad.add(address);
-				}
-			};
+			// We want to create a set of all the cuboids which are actually required, based on the entities.
+			// (we will use this for load/unload decisions)
+			Set<CuboidAddress> referencedCuboids = new HashSet<>();
 			for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 			{
 				int clientId = elt.getKey();
@@ -307,7 +300,7 @@ public class ServerRunner
 					state.location = entity.location();
 				}
 				
-				_sendUpdatesToClient(clientId, state, snapshot, cuboidRequester);
+				_sendUpdatesToClient(clientId, state, snapshot, referencedCuboids);
 			}
 			
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
@@ -327,10 +320,18 @@ public class ServerRunner
 				_loader.writeBackToDisk(List.of(), List.of(removedEntity));
 			}
 			
+			// Determine what cuboids were referenced which are not yet loaded.
+			Set<CuboidAddress> cuboidsToLoad = new HashSet<>(referencedCuboids);
+			// -remove those we already requested
+			cuboidsToLoad.removeAll(_requestedCuboids);
+			// -remove those which are already loaded.
+			cuboidsToLoad.removeAll(snapshot.completedCuboids().keySet());
+			
 			// Request any missing cuboids or new entities and see what we got back from last time.
 			Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
 			Collection<Entity> newEntities = new ArrayList<>();
 			_loader.getResultsAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients);
+			_requestedCuboids.addAll(cuboidsToLoad);
 			// We have requested the clients so drop this, now.
 			_newClients.clear();
 			if (!newCuboids.isEmpty())
@@ -357,13 +358,13 @@ public class ServerRunner
 		private void _sendUpdatesToClient(int clientId
 				, ClientState state
 				, TickRunner.Snapshot snapshot
-				, Consumer<CuboidAddress> cuboidRequester
+				, Set<CuboidAddress> out_referencedCuboids
 		)
 		{
 			// We want to send the mutations for any of the cuboids and entities which are already loaded.
 			_sendEntityUpdates(clientId, state, snapshot);
 			
-			_sendCuboidUpdates(clientId, state, snapshot, cuboidRequester);
+			_sendCuboidUpdates(clientId, state, snapshot, out_referencedCuboids);
 			
 			// Finally, send them the end of tick.
 			// (note that the commit level won't be in the snapshot if they just joined).
@@ -418,7 +419,7 @@ public class ServerRunner
 		private void _sendCuboidUpdates(int clientId
 				, ClientState state
 				, TickRunner.Snapshot snapshot
-				, Consumer<CuboidAddress> cuboidRequester
+				, Set<CuboidAddress> out_referencedCuboids
 		)
 		{
 			// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
@@ -473,10 +474,11 @@ public class ServerRunner
 							}
 							else
 							{
-								// Request this from the loader.
-								cuboidRequester.accept(oneCuboid);
+								// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
 							}
 						}
+						// Record that we referenced this.
+						out_referencedCuboids.add(oneCuboid);
 					}
 				}
 			}
