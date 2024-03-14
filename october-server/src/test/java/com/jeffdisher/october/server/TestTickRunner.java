@@ -678,6 +678,47 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void loadAndUnload()
+	{
+		// We will load a few cuboids, verify that they are in the snapshot, then unload one, and verify that it is gone from the snapshot.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		
+		// Run the first tick and verify the empty cuboid set.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.completedCuboids().size());
+		
+		// Add the new cuboids, run a tick, and verify they are in the snapshot.
+		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
+		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.STONE);
+		runner.cuboidsWereLoaded(List.of(new SuspendedCuboid<CuboidData>(cuboid0, List.of())
+				, new SuspendedCuboid<CuboidData>(cuboid1, List.of())
+		));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snapshot.completedCuboids().size());
+		
+		// Request that one of the cuboids be unloaded, run a tick, and verify that it is missing from the snapshot.
+		runner.dropCuboidsNow(List.of(address0));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedCuboids().size());
+		Assert.assertTrue(snapshot.completedCuboids().containsKey(address1));
+		
+		// Now, unload the last cuboid and check it is empty (also show that redundant requests are ignored).
+		runner.dropCuboidsNow(List.of(address1, address1));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertTrue(snapshot.completedCuboids().isEmpty());
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

@@ -56,6 +56,7 @@ public class TickRunner
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
 	private List<SuspendedCuboid<CuboidData>> _newCuboids;
+	private Collection<CuboidAddress> _cuboidsToDrop;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
 	private List<Integer> _departedEntityIds;
@@ -187,6 +188,26 @@ public class TickRunner
 				_newCuboids = new ArrayList<>();
 			}
 			_newCuboids.addAll(cuboids);
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
+	}
+
+	/**
+	 * Requests that the collection of cuboid addresses be unloaded before running the next tick.
+	 * 
+	 * @param toUnload The cuboids to unload.
+	 */
+	public void dropCuboidsNow(Collection<CuboidAddress> toUnload)
+	{
+		_sharedDataLock.lock();
+		try
+		{
+			// We only expect this at most once per tick so this should be clear.
+			Assert.assertTrue(null == _cuboidsToDrop);
+			_cuboidsToDrop = new HashSet<>(toUnload);
 		}
 		finally
 		{
@@ -431,6 +452,7 @@ public class TickRunner
 			{
 				// Load other cuboids and apply other mutations enqueued since the last tick.
 				List<SuspendedCuboid<CuboidData>> newCuboids;
+				Collection<CuboidAddress> cuboidsToDrop;
 				List<Entity> newEntities;
 				List<Integer> removedEntityIds;
 				Map<Integer, List<IMutationEntity>> newEntityChanges = new HashMap<>();
@@ -441,6 +463,8 @@ public class TickRunner
 				{
 					newCuboids = _newCuboids;
 					_newCuboids = null;
+					cuboidsToDrop = _cuboidsToDrop;
+					_cuboidsToDrop = null;
 					newEntities = _newEntities;
 					_newEntities = null;
 					removedEntityIds = _departedEntityIds;
@@ -517,7 +541,16 @@ public class TickRunner
 					}
 				}
 				
-				// Remove any departed entities.
+				// Remove anything old.
+				if (null != cuboidsToDrop)
+				{
+					for (CuboidAddress address : cuboidsToDrop)
+					{
+						IReadOnlyCuboidData old = nextWorldState.remove(address);
+						// This must already be present.
+						Assert.assertTrue(null != old);
+					}
+				}
 				if (null != removedEntityIds)
 				{
 					for (int entityId : removedEntityIds)
