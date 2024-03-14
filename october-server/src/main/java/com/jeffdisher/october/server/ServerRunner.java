@@ -309,19 +309,20 @@ public class ServerRunner
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
 			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
-			// Note that We will walk the removed clients BEFORE adding new ones since it is theoretically possible for
+			// Note that we will clear the removed clients BEFORE adding new ones since it is theoretically possible for
 			// a client to disconnect and reconnect in the same tick and the logic has this implicit assumption.
-			// Walk through any removed clients, removing them from the world.
+			// Create a copy of the removed clients so we can clear the long-lived container.
+			// (we removed this from the connected clients, earlier).
 			Collection<Integer> removedClients = new ArrayList<>(_removedClients);
-			while (!_removedClients.isEmpty())
-			{
-				int clientId = _removedClients.remove();
-				// (we removed this from the connected clients, earlier).
-				
-				// We also want to write-back the entity (these generally only happen one at a time so we don't bother batching).
-				Entity removedEntity = snapshot.completedEntities().get(clientId);
-				_loader.writeBackToDisk(List.of(), List.of(removedEntity));
-			}
+			_removedClients.clear();
+			
+			// Determine what we should unload.
+			// -start with the currently loaded cuboids
+			Set<CuboidAddress> orphanedCuboids = new HashSet<>(snapshot.completedCuboids().keySet());
+			// -remove any which we referenced via entities
+			orphanedCuboids.removeAll(referencedCuboids);
+			// -remove any which we already know are pending loads
+			orphanedCuboids.removeAll(_requestedCuboids);
 			
 			// Determine what cuboids were referenced which are not yet loaded.
 			Set<CuboidAddress> cuboidsToLoad = new HashSet<>(referencedCuboids);
@@ -329,6 +330,25 @@ public class ServerRunner
 			cuboidsToLoad.removeAll(_requestedCuboids);
 			// -remove those which are already loaded.
 			cuboidsToLoad.removeAll(snapshot.completedCuboids().keySet());
+			
+			// Request that we save back anything we are unloading before we request that anything new be loaded.
+			// (this is most important in the corner-case where the same entity left and rejoined in the same tick)
+			if (!orphanedCuboids.isEmpty() || !removedClients.isEmpty())
+			{
+				Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = orphanedCuboids.stream().map((CuboidAddress address) -> {
+					IReadOnlyCuboidData cuboid = snapshot.completedCuboids().get(address);
+					List<IMutationBlock> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
+					if (null == suspended)
+					{
+						suspended = List.of();
+					}
+					return new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended);
+				}).toList();
+				Collection<Entity> saveEntities = removedClients.stream().map(
+						(Integer id) -> snapshot.completedEntities().get(id)
+				).toList();
+				_loader.writeBackToDisk(saveCuboids, saveEntities);
+			}
 			
 			// Request any missing cuboids or new entities and see what we got back from last time.
 			Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
@@ -347,7 +367,7 @@ public class ServerRunner
 			}
 			
 			// Push any required data into the TickRunner before we kick-off the tick.
-			_tickRunner.setupChangesForTick(newCuboids, null, newEntities, removedClients);
+			_tickRunner.setupChangesForTick(newCuboids, orphanedCuboids, newEntities, removedClients);
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
 			_nextTickMillis += _millisPerTick;
