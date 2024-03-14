@@ -121,8 +121,21 @@ public class ServerRunner
 	{
 		// Stop accepting messages.
 		_messages.shutdown();
+		
+		// Stop the background thread so that it stops trying to run ticks.
+		try
+		{
+			_background.join();
+		}
+		catch (InterruptedException e)
+		{
+			// We don't use interruption.
+			throw Assert.unexpected(e);
+		}
+		
 		// Shut down the tick runner.
 		_tickRunner.shutdown();
+		
 		// Shut down the cuboid loader.
 		// (first, we want to finish any remaining write-back).
 		if (!_tickAdvancer.completedCuboids.isEmpty())
@@ -142,16 +155,6 @@ public class ServerRunner
 			_loader.writeBackToDisk(cuboidResources, _tickAdvancer.completedEntities);
 		}
 		_loader.shutdown();
-		// We can now join on the background thread since it has nothing else to block on.
-		try
-		{
-			_background.join();
-		}
-		catch (InterruptedException e)
-		{
-			// We don't use interruption.
-			throw Assert.unexpected(e);
-		}
 	}
 
 
@@ -276,7 +279,7 @@ public class ServerRunner
 			// We schedule this only after receiving a callback that the tick is complete so this should return with the snapshot, immediately, and let the next tick start.
 			// Note:  We could just wait here to force all new entities to load in the next tick, but that isn't essential so just unblock it.
 			// (any new callbacks will be queued behind this, anyway, which is all that matters).
-			TickRunner.Snapshot snapshot = _tickRunner.startNextTick();
+			TickRunner.Snapshot snapshot = _tickRunner.waitForPreviousTick();
 			this.completedCuboids = snapshot.completedCuboids().values();
 			this.completedEntities = snapshot.completedEntities().values();
 			this.scheduledBlockMutations = snapshot.scheduledBlockMutations();
@@ -353,6 +356,9 @@ public class ServerRunner
 			_nextTickMillis += _millisPerTick;
 			// We will schedule the next tick once we get the completed callback.
 			_scheduledAdvancer = null;
+			
+			// Kick off the next tick since we are now done the setup.
+			_tickRunner.startNextTick();
 		}
 		
 		private void _sendUpdatesToClient(int clientId
