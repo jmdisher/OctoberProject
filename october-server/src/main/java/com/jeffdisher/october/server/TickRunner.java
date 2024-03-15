@@ -24,7 +24,6 @@ import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -312,7 +311,7 @@ public class TickRunner
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
-			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, loader, materials.thisGameTick, materials.mutationsToRun);
+			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, loader, materials.thisGameTick, materials.mutationsToRun, materials.modifiedBlocksByCuboidAddress);
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
 			materials = _mergeTickStateAndWaitForNext(thisThread
@@ -394,9 +393,6 @@ public class TickRunner
 				
 				_partial[i] = null;
 			}
-			
-			// We will synthesize the block update events here since the WorldProcessor could create duplicates around cuboid boundaries.
-			_scheduleBlockUpdates(resultantMutationsByCuboid, mutableWorldState.keySet(), scheduledBlockMutations);
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
@@ -573,12 +569,25 @@ public class TickRunner
 					}
 				}
 				
+				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
+				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
+				for (Map.Entry<CuboidAddress, List<IBlockStateUpdate>> entry : resultantMutationsByCuboid.entrySet())
+				{
+					List<AbsoluteLocation> locations = entry.getValue().stream().map(
+							(IBlockStateUpdate update) -> update.getAbsoluteLocation()
+					).toList();
+					updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
+				}
+				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, nextWorldState
 						, nextCrowdState
 						, nextTickMutations
 						, nextTickChanges
+						, updatedBlockLocationsByCuboid
+						
+						// Data only used by this method:
 						, newCommitLevels
 				);
 			}
@@ -723,40 +732,6 @@ public class TickRunner
 		return commitLevel;
 	}
 
-	private void _scheduleBlockUpdates(Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid
-			, Set<CuboidAddress> loadedCuboids
-			, Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations
-	)
-	{
-		Set<AbsoluteLocation> updatedBlocks = new HashSet<>();
-		for (List<IBlockStateUpdate> list : resultantMutationsByCuboid.values())
-		{
-			for (IBlockStateUpdate stateChange : list)
-			{
-				AbsoluteLocation start = stateChange.getAbsoluteLocation();
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 0, -1));
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 0, 1));
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, -1, 0));
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(0, 1, 0));
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(-1, 0, 0));
-				_scheduleOneBlockUpdate(scheduledBlockMutations, updatedBlocks, loadedCuboids, start.getRelative(1, 0, 0));
-			}
-		}
-	}
-
-	private void _scheduleOneBlockUpdate(Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations
-			, Set<AbsoluteLocation> updatedBlocks
-			, Set<CuboidAddress> loadedCuboids
-			, AbsoluteLocation check
-	)
-	{
-		if (!updatedBlocks.contains(check) && loadedCuboids.contains(check.getCuboidAddress()))
-		{
-			updatedBlocks.add(check);
-			_scheduleMutationForCuboid(scheduledBlockMutations, new MutationBlockUpdate(check));
-		}
-	}
-
 
 	/**
 	 * The snapshot of immutable state created whenever a tick is completed.
@@ -780,10 +755,19 @@ public class TickRunner
 	{}
 
 	private static record TickMaterials(long thisGameTick
+			// Read-only versions of the cuboids produced by the previous tick (by address).
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			// Read-only versions of the Entities produced by the previous tick (by ID).
 			, Map<Integer, Entity> completedEntities
+			// The block mutations to run in this tick (by cuboid address).
 			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
+			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<IMutationEntity>> changesToRun
+			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			
+			// ----- TickRunner private state attached to the materials below this line -----
+			// The last commit levels of all connected clients (by ID).
 			, Map<Integer, Long> commitLevels
 	) {}
 

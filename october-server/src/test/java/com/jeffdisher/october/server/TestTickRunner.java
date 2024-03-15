@@ -546,9 +546,8 @@ public class TestTickRunner
 		runner.startNextTick();
 		// Verify that this mutation has been run.
 		snapshot = runner.waitForPreviousTick();
-		// We should see block updates for 2 cuboids (since that is all that is loaded).  In total, this is the size adjacent blocks.
-		Assert.assertEquals(2, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(6, snapshot.scheduledBlockMutations().values().stream().map((List<IMutationBlock> list) -> list.size()).mapToInt((Integer i) -> i.intValue()).sum());
+		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		// Remember that there is a 10x damage multiplier until tools are added.
 		Assert.assertEquals(10 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
 		
@@ -722,9 +721,8 @@ public class TestTickRunner
 		Assert.assertEquals(0, proxy.getFuel().millisFueled());
 		Assert.assertNull(proxy.getFuel().currentFuel());
 		
-		// We should see the block update events for the 3 loaded blocks so running another tick should drain those.
-		Assert.assertEquals(1, snap.scheduledBlockMutations().size());
-		Assert.assertEquals(3, snap.scheduledBlockMutations().values().stream().map((List<IMutationBlock> list) -> list.size()).mapToInt((Integer i) -> i.intValue()).sum());
+		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
+		Assert.assertEquals(0, snap.scheduledBlockMutations().size());
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertTrue(snap.scheduledBlockMutations().isEmpty());
@@ -839,7 +837,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
-		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ItemRegistry.STONE));
 		
 		// Run another tick where we should see the items start falling.
@@ -847,8 +845,6 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		// We expect 5 mutations:  the store and 4 updates (since 2 mutations would spill off the edges into non-loaded cuboids).
-		Assert.assertEquals(5, snapshot.scheduledBlockMutations().values().stream().map((List<IMutationBlock> list) -> list.size()).mapToInt((Integer i) -> i.intValue()).sum());
 		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0) instanceof MutationBlockStoreItems);
 		Assert.assertNull(snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
 		

@@ -2,9 +2,11 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -16,6 +18,7 @@ import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -47,6 +50,7 @@ public class WorldProcessor
 	 * @param gameTick The game tick being processed.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
+	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
 	 * @return The subset of the mutationsToRun work which was completed by this thread.
 	 */
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
@@ -54,6 +58,7 @@ public class WorldProcessor
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
 			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
@@ -82,37 +87,37 @@ public class WorldProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
-		// Each thread will walk the map of mutations to run, each taking an entry and processing that cuboid.
+		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<CuboidAddress, List<IMutationBlock>> elt : mutationsToRun.entrySet())
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				CuboidAddress key = elt.getKey();
-				List<IMutationBlock> mutations = elt.getValue();
-				IReadOnlyCuboidData oldState = worldMap.get(key);
+				IReadOnlyCuboidData oldState = elt.getValue();
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
 				// We will accumulate changing blocks and determine if we need to write any back at the end.
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
-				for (IMutationBlock mutation : mutations)
+				
+				// First, handle block updates.
+				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies, context, oldState, modifiedBlocksByCuboidAddress);
+				
+				// Now run the normal mutations.
+				List<IMutationBlock> mutations = mutationsToRun.get(key);
+				if (null != mutations)
 				{
-					processor.mutationCount += 1;
-					AbsoluteLocation absoluteLocation = mutation.getAbsoluteLocation();
-					BlockAddress address = absoluteLocation.getBlockAddress();
-					MutableBlockProxy thisBlockProxy = proxies.get(address);
-					if (null == thisBlockProxy)
+					for (IMutationBlock mutation : mutations)
 					{
-						thisBlockProxy = new MutableBlockProxy(absoluteLocation, oldState);
-						proxies.put(address, thisBlockProxy);
-					}
-					boolean didApply = mutation.applyMutation(context, thisBlockProxy);
-					if (didApply)
-					{
-						committedMutationCount += 1;
+						processor.mutationCount += 1;
+						boolean didApply = _runOneMutation(proxies, context, oldState, mutation);
+						if (didApply)
+						{
+							committedMutationCount += 1;
+						}
 					}
 				}
 				
@@ -156,6 +161,86 @@ public class WorldProcessor
 				, resultantMutationsByCuboid
 				, committedMutationCount
 		);
+	}
+
+	private static boolean _runOneMutation(Map<BlockAddress, MutableBlockProxy> inout_proxies
+			, TickProcessingContext context
+			, IReadOnlyCuboidData oldState
+			, IMutationBlock mutation
+	)
+	{
+		AbsoluteLocation absoluteLocation = mutation.getAbsoluteLocation();
+		BlockAddress address = absoluteLocation.getBlockAddress();
+		MutableBlockProxy thisBlockProxy = inout_proxies.get(address);
+		if (null == thisBlockProxy)
+		{
+			thisBlockProxy = new MutableBlockProxy(absoluteLocation, oldState);
+			inout_proxies.put(address, thisBlockProxy);
+		}
+		return mutation.applyMutation(context, thisBlockProxy);
+	}
+
+	private static int _synthesizeAndRunBlockUpdates(Map<BlockAddress, MutableBlockProxy> inout_proxies
+			, TickProcessingContext context
+			, IReadOnlyCuboidData oldState
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+	)
+	{
+		// Look at the updates for the 7 cuboids we care about (this one and the 6 adjacent):
+		// -check each of the 6 blocks around each updated location
+		// -if any of those locations are in our current cuboid, add them to a set (avoids duplicates)
+		CuboidAddress thisAddress = oldState.getCuboidAddress();
+		Set<AbsoluteLocation> toSynthesize = new HashSet<>();
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(0, 0, -1)));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(0, 0, 1)));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(0, -1, 0)));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(0, 1, 0)));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(-1, 0, 0)));
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress.get(thisAddress.getRelative(1, 0, 0)));
+		
+		// Now, walk that set, synthesize and run a block update on each.
+		int appliedUpdates = 0;
+		for (AbsoluteLocation target : toSynthesize)
+		{
+			MutationBlockUpdate update = new MutationBlockUpdate(target);
+			boolean didApply = _runOneMutation(inout_proxies, context, oldState, update);
+			if (didApply)
+			{
+				appliedUpdates += 1;
+			}
+		}
+		return appliedUpdates;
+	}
+
+	private static void _checkCuboid(Set<AbsoluteLocation> inout_toSynthesize
+			, CuboidAddress targetCuboid
+			, List<AbsoluteLocation> modifiedBlocks
+	)
+	{
+		if (null != modifiedBlocks)
+		{
+			for (AbsoluteLocation modified : modifiedBlocks)
+			{
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(0, 0, -1));
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(0, 0, 1));
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(0, -1, 0));
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(0, 1, 0));
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(-1, 0, 0));
+				_checkLocation(inout_toSynthesize, targetCuboid, modified.getRelative(1, 0, 0));
+			}
+		}
+	}
+
+	private static void _checkLocation(Set<AbsoluteLocation> inout_toSynthesize
+			, CuboidAddress targetCuboid
+			, AbsoluteLocation location
+	)
+	{
+		if (targetCuboid.equals(location.getCuboidAddress()))
+		{
+			inout_toSynthesize.add(location);
+		}
 	}
 
 

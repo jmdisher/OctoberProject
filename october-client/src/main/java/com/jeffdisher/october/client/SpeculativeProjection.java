@@ -143,7 +143,9 @@ public class SpeculativeProjection
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((IBlockStateUpdate update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
-		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun);
+		// We ignore the block updates in the speculative projection (although this is theoretically possible).
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
+		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun, modifiedBlocksByCuboidAddress);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -434,7 +436,9 @@ public class SpeculativeProjection
 	{
 		long gameTick = 0L;
 		Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
-		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations);
+		// We ignore the block updates in the speculative projection (although this is theoretically possible).
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
+		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations, modifiedBlocksByCuboidAddress);
 		_projectedWorld.putAll(innerFragment.stateFragment());
 		modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
 		return innerFragment;
