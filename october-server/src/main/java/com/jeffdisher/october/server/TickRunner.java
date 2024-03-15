@@ -91,21 +91,12 @@ public class TickRunner
 		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
 		{
-			// Create the loader for the read-only state (note that this is bound to us so it will see the most recent _completedCuboids).
-			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
-				CuboidAddress address = location.getCuboidAddress();
-				IReadOnlyCuboidData cuboid = _snapshot.completedCuboids.get(address);
-				return (null != cuboid)
-						? new BlockProxy(location.getBlockAddress(), cuboid)
-						: null
-				;
-			};
 			int id = i;
 			_threads[i] = new Thread(() -> {
 				try
 				{
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread, loader, tickCompletionListener);
+					_backgroundThreadMain(thisThread, tickCompletionListener);
 				}
 				catch (Throwable t)
 				{
@@ -291,7 +282,6 @@ public class TickRunner
 
 
 	private void _backgroundThreadMain(ProcessorElement thisThread
-			, Function<AbsoluteLocation, BlockProxy> loader
 			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
@@ -307,6 +297,16 @@ public class TickRunner
 		while (null != materials)
 		{
 			// Run the tick.
+			// Create the BlockProxy loader for the read-only state from the previous tick.
+			final TickMaterials thisTickMaterials = materials;
+			Function<AbsoluteLocation, BlockProxy> loader = (AbsoluteLocation location) -> {
+				CuboidAddress address = location.getCuboidAddress();
+				IReadOnlyCuboidData cuboid = thisTickMaterials.completedCuboids.get(address);
+				return (null != cuboid)
+						? new BlockProxy(location.getBlockAddress(), cuboid)
+						: null
+				;
+			};
 			// Process all entity changes first and synchronize to lock-step.
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, loader, materials.thisGameTick, materials.changesToRun);
 			// There is always a returned group (even if it has no content).
@@ -511,6 +511,16 @@ public class TickRunner
 					}
 				}
 				
+				// Add any of the mutations scheduled from the last tick.
+				for (List<IMutationBlock> list : scheduledBlockMutations.values())
+				{
+					for (IMutationBlock mutation : list)
+					{
+						_scheduleMutationForCuboid(nextTickMutations, mutation);
+					}
+				}
+				scheduledBlockMutations = null;
+				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
 				{
@@ -519,6 +529,9 @@ public class TickRunner
 						IReadOnlyCuboidData old = nextWorldState.remove(address);
 						// This must already be present.
 						Assert.assertTrue(null != old);
+						
+						// Remove any of the scheduled operations for this cuboid.
+						nextTickMutations.remove(address);
 					}
 				}
 				if (null != removedEntityIds)
@@ -530,16 +543,6 @@ public class TickRunner
 						Assert.assertTrue(null != old);
 					}
 				}
-				
-				// Add any of the mutations scheduled from the last tick.
-				for (List<IMutationBlock> list : scheduledBlockMutations.values())
-				{
-					for (IMutationBlock mutation : list)
-					{
-						_scheduleMutationForCuboid(nextTickMutations, mutation);
-					}
-				}
-				scheduledBlockMutations = null;
 				Map<Integer, List<IMutationEntity>> nextTickChanges = new HashMap<>();
 				for (Map.Entry<Integer, List<IMutationEntity>> entry : scheduledEntityMutations.entrySet())
 				{
