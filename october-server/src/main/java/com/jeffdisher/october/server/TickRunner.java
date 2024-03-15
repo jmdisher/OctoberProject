@@ -16,7 +16,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
@@ -55,7 +54,7 @@ public class TickRunner
 	private Snapshot _snapshot;
 	
 	// Data which is part of "shared state" between external threads and the internal threads.
-	private List<SuspendedCuboid<CuboidData>> _newCuboids;
+	private List<SuspendedCuboid<IReadOnlyCuboidData>> _newCuboids;
 	private Set<CuboidAddress> _cuboidsToDrop;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<Entity> _newEntities;
@@ -183,7 +182,7 @@ public class TickRunner
 	 * @param loadedEntities The loaded entities to inject.
 	 * @param entitiesToUnload The entities to unload.
 	 */
-	public void setupChangesForTick(Collection<SuspendedCuboid<CuboidData>> loadedCuboids
+	public void setupChangesForTick(Collection<SuspendedCuboid<IReadOnlyCuboidData>> loadedCuboids
 			, Collection<CuboidAddress> cuboidsToUnload
 			, Collection<Entity> loadedEntities
 			, Collection<Integer> entitiesToUnload
@@ -422,7 +421,7 @@ public class TickRunner
 			if (_nextTick > 0)
 			{
 				// Load other cuboids and apply other mutations enqueued since the last tick.
-				List<SuspendedCuboid<CuboidData>> newCuboids;
+				List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids;
 				Set<CuboidAddress> cuboidsToDrop;
 				List<Entity> newEntities;
 				List<Integer> removedEntityIds;
@@ -484,9 +483,9 @@ public class TickRunner
 				// Add in anything new.
 				if (null != newCuboids)
 				{
-					for (SuspendedCuboid<CuboidData> suspended : newCuboids)
+					for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
 					{
-						CuboidData cuboid = suspended.cuboid();
+						IReadOnlyCuboidData cuboid = suspended.cuboid();
 						CuboidAddress address = cuboid.getCuboidAddress();
 						Object old = nextWorldState.put(address, cuboid);
 						// This must not already be present.

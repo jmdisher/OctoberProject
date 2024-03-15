@@ -22,8 +22,10 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
+import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
@@ -49,7 +51,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -74,7 +76,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -109,14 +111,14 @@ public class TestTickRunner
 		// Use extra threads here to stress further.
 		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)0), ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ItemRegistry.AIR), List.of())
 				)
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -150,7 +152,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -193,7 +195,7 @@ public class TestTickRunner
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -236,7 +238,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, null
 				, null
@@ -334,7 +336,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -403,8 +405,8 @@ public class TestTickRunner
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR), List.of())
-					, new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(targetAddress, ItemRegistry.AIR), List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(constantAddress, ItemRegistry.AIR), List.of())
 				)
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -504,8 +506,8 @@ public class TestTickRunner
 		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(
-					new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(airAddress, ItemRegistry.AIR), List.of()),
-					new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(stoneAddress, ItemRegistry.STONE), List.of())
+					new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(airAddress, ItemRegistry.AIR), List.of()),
+					new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(stoneAddress, ItemRegistry.STONE), List.of())
 				)
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -534,8 +536,8 @@ public class TestTickRunner
 		runner.start();
 		runner.waitForPreviousTick();
 		runner.setupChangesForTick(List.of(
-				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of()),
-				new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE), List.of(mutation))
+				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of()),
+				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE), List.of(mutation))
 			)
 			, null
 			, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -561,7 +563,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -619,7 +621,7 @@ public class TestTickRunner
 				, null
 				, null
 		);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(entity)
 				, null
@@ -748,8 +750,8 @@ public class TestTickRunner
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.STONE);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<CuboidData>(cuboid0, List.of())
-					, new SuspendedCuboid<CuboidData>(cuboid1, List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, List.of())
 				)
 				, null
 				, null

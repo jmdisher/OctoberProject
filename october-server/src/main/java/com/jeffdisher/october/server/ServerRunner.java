@@ -367,7 +367,11 @@ public class ServerRunner
 			}
 			
 			// Push any required data into the TickRunner before we kick-off the tick.
-			_tickRunner.setupChangesForTick(newCuboids, orphanedCuboids, newEntities, removedClients);
+			// We need to run through these to make them the read-only variants for the TickRunner.
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newCuboids.stream().map(
+					(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.mutations())
+			).toList();
+			_tickRunner.setupChangesForTick(readOnlyCuboids, orphanedCuboids, newEntities, removedClients);
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
 			_nextTickMillis += _millisPerTick;
