@@ -907,6 +907,49 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void fallIntoLoadedCuboid()
+	{
+		// Create a world with a single cuboid with some items in the bottom block and run a tick.
+		// Then, load another cuboid below it and observe that the items fall into the new cuboid.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		
+		// Load the initial cuboid and run a tick to verify nothing happens.
+		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 0);
+		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ItemRegistry.STONE));
+		
+		// Now, load an air cuboid below this and verify that the items start falling.
+		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, List.of()))
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snapshot.completedCuboids().size());
+		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address1).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertNull(snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -199,5 +200,51 @@ public class TestFallingBehaviour
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
 		Assert.assertEquals(2, blockInventory.items.get(ItemRegistry.STONE).count());
+	}
+
+	@Test
+	public void bottomOfCuboid() throws Throwable
+	{
+		// Create an air cuboid with some items in the bottom block, then load another air cuboid and verify that they fall.
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+		);
+		
+		// Send an update event and verify that nothing happens.
+		MutationBlockUpdate update = new MutationBlockUpdate(targetLocation);
+		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
+		Assert.assertFalse(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNull(blockHolder[0]);
+		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ItemRegistry.STONE));
+		
+		// Use a new context with a new cuboid to show that the items fall if updated now.
+		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: cuboidAddress1.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid1) : null
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+		);
+		proxy = new MutableBlockProxy(targetLocation, cuboid);
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 	}
 }

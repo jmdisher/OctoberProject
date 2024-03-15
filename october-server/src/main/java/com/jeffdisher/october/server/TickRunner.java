@@ -311,7 +311,14 @@ public class TickRunner
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
-			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread, materials.completedCuboids, loader, materials.thisGameTick, materials.mutationsToRun, materials.modifiedBlocksByCuboidAddress);
+			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
+					, materials.completedCuboids
+					, loader
+					, materials.thisGameTick
+					, materials.mutationsToRun
+					, materials.modifiedBlocksByCuboidAddress
+					, materials.cuboidsLoadedThisTick
+			);
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
 			materials = _mergeTickStateAndWaitForNext(thisThread
@@ -477,6 +484,7 @@ public class TickRunner
 				nextCrowdState.putAll(_snapshot.completedEntities);
 				
 				// Add in anything new.
+				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
 				if (null != newCuboids)
 				{
 					for (SuspendedCuboid<IReadOnlyCuboidData> suspended : newCuboids)
@@ -495,6 +503,7 @@ public class TickRunner
 							// This must not already be present (this was just created above here).
 							Assert.assertTrue(null == old);
 						}
+						cuboidsLoadedThisTick.add(address);
 					}
 				}
 				if (null != newEntities)
@@ -586,6 +595,7 @@ public class TickRunner
 						, nextTickMutations
 						, nextTickChanges
 						, updatedBlockLocationsByCuboid
+						, cuboidsLoadedThisTick
 						
 						// Data only used by this method:
 						, newCommitLevels
@@ -765,6 +775,8 @@ public class TickRunner
 			, Map<Integer, List<IMutationEntity>> changesToRun
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
+			, Set<CuboidAddress> cuboidsLoadedThisTick
 			
 			// ----- TickRunner private state attached to the materials below this line -----
 			// The last commit levels of all connected clients (by ID).
