@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -34,7 +33,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public MutationBlockOverwrite(AbsoluteLocation location, Block blockType)
 	{
 		// Using this with AIR doesn't make sense.
-		Assert.assertTrue(ItemRegistry.AIR != blockType.asItem());
+		Assert.assertTrue(!blockType.canBeReplaced());
 		
 		_location = location;
 		_blockType = blockType;
@@ -51,7 +50,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
+		if (newBlock.getBlock().canBeReplaced())
 		{
 			// Replace the block with the type we have.
 			newBlock.setBlockAndClear(_blockType);

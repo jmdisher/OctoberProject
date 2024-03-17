@@ -14,6 +14,31 @@ public record Block(short number)
 	 */
 	public Item asItem()
 	{
+		return _asItem();
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Block(" + _asItem().name() +")";
+	}
+
+	/**
+	 * Used to determine if this block is something like air/water/etc.
+	 * Note that those which cannot be replaced are potentially breakable (although could be indestructible).
+	 * 
+	 * @return True if this block can be directly overwritten by another.
+	 */
+	public boolean canBeReplaced()
+	{
+		Item item = _asItem();
+		return (ItemRegistry.AIR == item)
+		;
+	}
+
+
+	private Item _asItem()
+	{
 		return ItemRegistry.ITEMS_BY_TYPE[number];
 	}
 }

@@ -4,7 +4,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -71,7 +70,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = (ItemRegistry.AIR == block.getBlock().asItem());
+					isAir = block.getBlock().canBeReplaced();
 				}
 				else
 				{
@@ -303,7 +302,7 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = (ItemRegistry.AIR == block.getBlock().asItem());
+				canExist = block.getBlock().canBeReplaced();
 			}
 			else
 			{
@@ -328,7 +327,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = (ItemRegistry.AIR == block.getBlock().asItem());
+					isAir = block.getBlock().canBeReplaced();
 				}
 				else
 				{

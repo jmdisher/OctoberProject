@@ -56,7 +56,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is there a selected item?
 		// -is this target location close by?
 		// -is the target location not colliding with the entity, itself?
-		boolean isTargetAir = (ItemRegistry.AIR == context.previousBlockLookUp.apply(_targetBlock).getBlock().asItem());
+		boolean isTargetAir = context.previousBlockLookUp.apply(_targetBlock).getBlock().canBeReplaced();
 		
 		Item itemType = newEntity.newSelectedItem;
 		// Note that we will get a null from the asBlock if this can't be placed.

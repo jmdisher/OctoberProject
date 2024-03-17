@@ -2,14 +2,11 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
@@ -61,14 +58,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// First, we want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
 		if (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect)
 		{
-			Block airBlock = BlockAspect.getBlock(ItemRegistry.AIR);
-			if (airBlock == newBlock.getBlock())
+			if (newBlock.getBlock().canBeReplaced())
 			{
 				// This is an air block but see what is below it.
 				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				// TODO:  Come up with a way to handle the case where this is null (not loaded).
-				if ((null != below) && (airBlock == below.getBlock()))
+				if ((null != below) && below.getBlock().canBeReplaced())
 				{
 					// We want to drop this into the below block.
 					context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
