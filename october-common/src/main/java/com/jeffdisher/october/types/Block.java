@@ -33,6 +33,9 @@ public record Block(short number)
 	{
 		Item item = _asItem();
 		return (ItemRegistry.AIR == item)
+				|| (ItemRegistry.WATER_SOURCE == item)
+				|| (ItemRegistry.WATER_STRONG == item)
+				|| (ItemRegistry.WATER_WEAK == item)
 		;
 	}
 

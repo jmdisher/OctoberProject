@@ -32,6 +32,9 @@ public class ItemRegistry
 	public static final Item COAL_ORE = _register("Coal Ore");
 	public static final Item IRON_ORE = _register("Iron Ore");
 	public static final Item DIRT = _register("Dirt");
+	public static final Item WATER_SOURCE = _register("Water Source");
+	public static final Item WATER_STRONG = _register("Water (Strong Flow)");
+	public static final Item WATER_WEAK = _register("Water (Weak Flow)");
 
 	private static Item _register(String name)
 	{

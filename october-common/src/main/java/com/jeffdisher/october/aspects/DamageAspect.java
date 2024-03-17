@@ -60,7 +60,11 @@ public class DamageAspect
 		{
 			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
 			int toughness;
-			if (ItemRegistry.AIR == item)
+			if ((ItemRegistry.AIR == item)
+					|| (ItemRegistry.WATER_SOURCE == item)
+					|| (ItemRegistry.WATER_STRONG == item)
+					|| (ItemRegistry.WATER_WEAK == item)
+			)
 			{
 				toughness = UNBREAKABLE;
 			}

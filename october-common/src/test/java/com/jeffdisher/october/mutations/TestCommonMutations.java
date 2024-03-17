@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityActionValidator;
+import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -110,6 +111,44 @@ public class TestCommonMutations
 		Assert.assertEquals(ItemRegistry.STONE, proxy.getBlock().asItem());
 		Assert.assertNull(proxy.getInventory());
 		Assert.assertEquals((short) 1000, proxy.getDamage());
+	}
+
+	@Test
+	public void waterBehaviour()
+	{
+		// We want to verify what happens in a situation where we expect the water to flow into some gaps after breaking a block.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		AbsoluteLocation down = target.getRelative(0, 0, -1);
+		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ItemRegistry.WATER_STRONG.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ItemRegistry.WATER_WEAK.number());
+		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ItemRegistry.AIR.number());
+		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ItemRegistry.AIR.number());
+		TickProcessingContext context = new TickProcessingContext(1L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock mutation) -> {}
+				, null
+		);
+		
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		// If we break a block under weak flow, we expect it to be weak unless it lands on a solid block.
+		Assert.assertEquals(ItemRegistry.WATER_WEAK, proxy.getBlock().asItem());
+		
+		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
+		proxy = new MutableBlockProxy(down, cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(down).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ItemRegistry.WATER_STRONG, proxy.getBlock().asItem());
+		
+		proxy = new MutableBlockProxy(downOver, cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ItemRegistry.WATER_WEAK, proxy.getBlock().asItem());
 	}
 
 

@@ -31,6 +31,9 @@ public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
 			_fillPlane(data, (byte)29, ItemRegistry.LOG);
 			_fillPlane(data, (byte)27, ItemRegistry.COAL_ORE);
 			_fillPlane(data, (byte)25, ItemRegistry.IRON_ORE);
+			// We want to add a bit of water.
+			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)6, (byte)6, (byte)31), ItemRegistry.WATER_SOURCE.number());
+			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)7, (byte)7, (byte)31), ItemRegistry.WATER_SOURCE.number());
 		}
 		else
 		{

@@ -32,7 +32,11 @@ public class InventoryAspect
 		{
 			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
 			int encumbrance;
-			if (ItemRegistry.AIR == item)
+			if ((ItemRegistry.AIR == item)
+					|| (ItemRegistry.WATER_SOURCE == item)
+					|| (ItemRegistry.WATER_STRONG == item)
+					|| (ItemRegistry.WATER_WEAK == item)
+			)
 			{
 				encumbrance = ENCUMBRANCE_NON_INVENTORY;
 			}
@@ -71,7 +75,11 @@ public class InventoryAspect
 	{
 		// Here, we will opt-in to specific item types, only returning 0 if the block type has no inventory.
 		int size;
-		if (ItemRegistry.AIR == item)
+		if ((ItemRegistry.AIR == item)
+				|| (ItemRegistry.WATER_SOURCE == item)
+				|| (ItemRegistry.WATER_STRONG == item)
+				|| (ItemRegistry.WATER_WEAK == item)
+		)
 		{
 			size = CAPACITY_AIR;
 		}

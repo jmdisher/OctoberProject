@@ -2,14 +2,13 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -65,10 +64,11 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			// See if this is broken (note that this could overflow.
 			if ((damage >= DamageAspect.getToughness(block)) || (damage < 0))
 			{
-				// The block is broken so replace it with air and place the block in the inventory.
+				// The block is broken so replace it with the appropriate "empty" block and place the block in the inventory.
 				Inventory oldInventory = newBlock.getInventory();
 				FuelState oldFuel = newBlock.getFuel();
-				newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.AIR));
+				Block emptyBlock = MutationBlockUpdate.determineEmptyBlockType(context, _location);
+				newBlock.setBlockAndClear(emptyBlock);
 				
 				// If the inventory fits, move it over to the new block.
 				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.

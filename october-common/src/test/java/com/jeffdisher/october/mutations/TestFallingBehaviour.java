@@ -247,4 +247,64 @@ public class TestFallingBehaviour
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 	}
+
+	@Test
+	public void flowingWaterAfterBreak() throws Throwable
+	{
+		// Create a cuboid of stone with water sources around one block, air and inventory above it and below, then observe what happens when the block is broken.
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(15, 15, 15);
+		AbsoluteLocation eastLocation = targetLocation.getRelative(1, 0, 0);
+		AbsoluteLocation westLocation = targetLocation.getRelative(-1, 0, 0);
+		AbsoluteLocation northLocation = targetLocation.getRelative(0, 1, 0);
+		AbsoluteLocation southLocation = targetLocation.getRelative(0, -1, 0);
+		AbsoluteLocation upLocation = targetLocation.getRelative(0, 0, 1);
+		AbsoluteLocation downLocation = targetLocation.getRelative(0, 0, -1);
+		cuboid.setData15(AspectRegistry.BLOCK, eastLocation.getBlockAddress(), ItemRegistry.WATER_SOURCE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), ItemRegistry.WATER_SOURCE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ItemRegistry.AIR.number());
+		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ItemRegistry.AIR.number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+		);
+		
+		// Break the target block and observe the change.
+		MutableBlockProxy targetBlock = new MutableBlockProxy(targetLocation, cuboid);
+		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(targetLocation, (short) 2000);
+		Assert.assertTrue(breaking.applyMutation(context, targetBlock));
+		targetBlock.writeBack(cuboid);
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertEquals(ItemRegistry.WATER_SOURCE.number(), cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		
+		// Run this store operation.
+		MutationBlockStoreItems store = (MutationBlockStoreItems) blockHolder[0];
+		Assert.assertEquals(downLocation, store.getAbsoluteLocation());
+		blockHolder[0] = null;
+		MutableBlockProxy downBlock = new MutableBlockProxy(downLocation, cuboid);
+		Assert.assertTrue(store.applyMutation(context, downBlock));
+		downBlock.writeBack(cuboid);
+		Assert.assertNull(blockHolder[0]);
+		
+		// Apply the block updates and see the changes in block types and the enqueue of the new store for falling items.
+		downBlock = new MutableBlockProxy(downLocation, cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(downLocation).applyMutation(context, downBlock));
+		downBlock.writeBack(cuboid);
+		Assert.assertNull(blockHolder[0]);
+		Assert.assertEquals(ItemRegistry.WATER_STRONG.number(), cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
+		
+		Assert.assertFalse(new MutationBlockUpdate(eastLocation).applyMutation(context, new MutableBlockProxy(eastLocation, cuboid)));
+		Assert.assertFalse(new MutationBlockUpdate(westLocation).applyMutation(context, new MutableBlockProxy(westLocation, cuboid)));
+		Assert.assertFalse(new MutationBlockUpdate(northLocation).applyMutation(context, new MutableBlockProxy(northLocation, cuboid)));
+		Assert.assertFalse(new MutationBlockUpdate(southLocation).applyMutation(context, new MutableBlockProxy(southLocation, cuboid)));
+		Assert.assertTrue(new MutationBlockUpdate(upLocation).applyMutation(context, new MutableBlockProxy(upLocation, cuboid)));
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+	}
 }
