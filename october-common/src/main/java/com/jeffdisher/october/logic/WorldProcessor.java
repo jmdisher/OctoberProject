@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
+import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -145,30 +147,26 @@ public class WorldProcessor
 				}
 				
 				// Return the old instance if nothing changed.
-				List<MutableBlockProxy> proxiesToWrite = new ArrayList<>();
-				List<IBlockStateUpdate> updateMutations = new ArrayList<>();
-				for (MutableBlockProxy proxy : proxies.values())
-				{
-					if (proxy.didChange())
-					{
-						proxiesToWrite.add(proxy);
-						// Since this one changed, we also want to send the set block mutation.
-						updateMutations.add(MutationBlockSetBlock.extractFromProxy(proxy));
-					}
-				}
+				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(
+						(MutableBlockProxy proxy) -> proxy.didChange()
+				).toList();
 				if (proxiesToWrite.isEmpty())
 				{
 					// There were no actual changes to this cuboid so just use the old state.
 					fragment.put(key, oldState);
-					Assert.assertTrue(updateMutations.isEmpty());
 				}
 				else
 				{
+					ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
+					List<IBlockStateUpdate> updateMutations = new ArrayList<>();
 					// At least something changed so create a new clone and write-back into it.
 					CuboidData mutable = CuboidData.mutableClone(oldState);
 					for (MutableBlockProxy proxy : proxiesToWrite)
 					{
 						proxy.writeBack(mutable);
+						
+						// Since this one changed, we also want to send the set block mutation.
+						updateMutations.add(MutationBlockSetBlock.extractFromProxy(scratchBuffer, proxy));
 					}
 					fragment.put(key, mutable);
 					

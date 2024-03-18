@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
 
 
@@ -24,13 +23,23 @@ public class MutationBlockSetBlock implements IBlockStateUpdate
 		return new MutationBlockSetBlock(location, rawData);
 	}
 
-	public static MutationBlockSetBlock extractFromProxy(MutableBlockProxy proxy)
+	/**
+	 * Creates the set block mutation from the data held within a mutable proxy.
+	 * Note that scratchBuffer is provided to avoid allocating a large buffer for every one of these, since they are
+	 * common in the inner loop.
+	 * 
+	 * @param scratchBuffer A reusable scratch buffer which should be large enough to contain the entire serialized data
+	 * from the proxy.
+	 * @param proxy The proxy to extract.
+	 * @return The set block mutation describing the final state of the proxy.
+	 */
+	public static MutationBlockSetBlock extractFromProxy(ByteBuffer scratchBuffer, MutableBlockProxy proxy)
 	{
-		ByteBuffer buffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
-		proxy.serializeToBuffer(buffer);
-		buffer.flip();
-		byte[] rawData = new byte[buffer.remaining()];
-		buffer.get(rawData);
+		scratchBuffer.clear();
+		proxy.serializeToBuffer(scratchBuffer);
+		scratchBuffer.flip();
+		byte[] rawData = new byte[scratchBuffer.remaining()];
+		scratchBuffer.get(rawData);
 		return new MutationBlockSetBlock(proxy.absoluteLocation, rawData);
 	}
 
