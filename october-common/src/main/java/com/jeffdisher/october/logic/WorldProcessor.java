@@ -87,7 +87,6 @@ public class WorldProcessor
 				entityChanges.add(change);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, sink, newChangeSink);
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid = new HashMap<>();
@@ -104,6 +103,22 @@ public class WorldProcessor
 				Assert.assertTrue(null != oldState);
 				// We will accumulate changing blocks and determine if we need to write any back at the end.
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
+				
+				final Map<AbsoluteLocation, BlockProxy> cache = new HashMap<>();
+				Function<AbsoluteLocation, BlockProxy> local = (AbsoluteLocation location) -> {
+					BlockProxy proxy;
+					if (cache.containsKey(location))
+					{
+						proxy = cache.get(location);
+					}
+					else
+					{
+						proxy = loader.apply(location);
+						cache.put(location, proxy);
+					}
+					return proxy;
+				};
+				TickProcessingContext context = new TickProcessingContext(gameTick, local, sink, newChangeSink);
 				
 				// First, handle block updates.
 				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies
