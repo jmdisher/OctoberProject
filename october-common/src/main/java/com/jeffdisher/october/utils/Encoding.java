@@ -29,6 +29,11 @@ public class Encoding
 		return new byte[] { _getBlockAddress(absoluteLocation[0]), _getBlockAddress(absoluteLocation[1]), _getBlockAddress(absoluteLocation[2]) };
 	}
 
+	public static int getBaseLocationFromCuboid(short cuboid)
+	{
+		return cuboid << CUBOID_SHIFT;
+	}
+
 
 	private static short _getCuboidAddress(int absolute)
 	{

@@ -229,6 +229,7 @@ public class WorldProcessor
 		if (!targetCuboid.equals(checkingCuboid) && cuboidsLoadedThisTick.contains(checkingCuboid))
 		{
 			// We need to synthesize the entire face of targetCuboid which is touching checkingCuboid.
+			AbsoluteLocation cuboidBase = targetCuboid.getBase();
 			if (0 != relX)
 			{
 				int x = (1 == relX) ? 31 : 0;
@@ -236,7 +237,7 @@ public class WorldProcessor
 				{
 					for (int z = 0; z < 32; ++z)
 					{
-						inout_toSynthesize.add(new AbsoluteLocation(x, y, z));
+						inout_toSynthesize.add(cuboidBase.getRelative(x, y, z));
 					}
 				}
 			}
@@ -247,7 +248,7 @@ public class WorldProcessor
 				{
 					for (int z = 0; z < 32; ++z)
 					{
-						inout_toSynthesize.add(new AbsoluteLocation(x, y, z));
+						inout_toSynthesize.add(cuboidBase.getRelative(x, y, z));
 					}
 				}
 			}
@@ -258,7 +259,7 @@ public class WorldProcessor
 				{
 					for (int y = 0; y < 32; ++y)
 					{
-						inout_toSynthesize.add(new AbsoluteLocation(x, y, z));
+						inout_toSynthesize.add(cuboidBase.getRelative(x, y, z));
 					}
 				}
 			}
