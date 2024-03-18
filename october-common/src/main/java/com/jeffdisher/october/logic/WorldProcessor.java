@@ -106,7 +106,13 @@ public class WorldProcessor
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
 				
 				// First, handle block updates.
-				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies, context, oldState, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick);
+				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies
+						, context
+						, oldState
+						, modifiedBlocksByCuboidAddress
+						, worldMap.keySet()
+						, cuboidsLoadedThisTick
+				);
 				
 				// Now run the normal mutations.
 				List<IMutationBlock> mutations = mutationsToRun.get(key);
@@ -186,6 +192,7 @@ public class WorldProcessor
 			, TickProcessingContext context
 			, IReadOnlyCuboidData oldState
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			, Set<CuboidAddress> allLoadedCuboids
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
@@ -194,13 +201,13 @@ public class WorldProcessor
 		// -if any of those locations are in our current cuboid, add them to a set (avoids duplicates)
 		CuboidAddress thisAddress = oldState.getCuboidAddress();
 		Set<AbsoluteLocation> toSynthesize = new HashSet<>();
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 0, 0, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 0, 0, -1);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 0, 0, 1);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 0, -1, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 0, 1, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, -1, 0, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick, 1, 0, 0);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 0);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, -1);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 1);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, -1, 0);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 1, 0);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, -1, 0, 0);
+		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 1, 0, 0);
 		
 		// Now, walk that set, synthesize and run a block update on each.
 		int appliedUpdates = 0;
@@ -219,6 +226,7 @@ public class WorldProcessor
 	private static void _checkCuboid(Set<AbsoluteLocation> inout_toSynthesize
 			, CuboidAddress targetCuboid
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			, Set<CuboidAddress> allLoadedCuboids
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 			, int relX
 			, int relY
@@ -226,7 +234,12 @@ public class WorldProcessor
 	)
 	{
 		CuboidAddress checkingCuboid = targetCuboid.getRelative(relX, relY, relZ);
-		if (!targetCuboid.equals(checkingCuboid) && cuboidsLoadedThisTick.contains(checkingCuboid))
+		// Note that we will check this in 2 directions:
+		// 1) We need to run an update on each face bordering a cuboid just loaded this tick.
+		boolean isFacingNewCuboid = !targetCuboid.equals(checkingCuboid) && cuboidsLoadedThisTick.contains(checkingCuboid);
+		// 2) If WE were just loaded, we need to run and update on each face bordering a loaded cuboid.
+		boolean isNewFacingLoaded = cuboidsLoadedThisTick.contains(targetCuboid) && allLoadedCuboids.contains(checkingCuboid);
+		if (isFacingNewCuboid || isNewFacingLoaded)
 		{
 			// We need to synthesize the entire face of targetCuboid which is touching checkingCuboid.
 			AbsoluteLocation cuboidBase = targetCuboid.getBase();

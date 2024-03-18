@@ -950,6 +950,56 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void waterFlowsIntoAirCuboid()
+	{
+		// Create a cuboid of water sources, run a tick, then load a cuboud of air below it and observe the water flow.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		
+		// Load the initial cuboid and run a tick to verify nothing happens.
+		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.WATER_SOURCE);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		
+		// Now, load an air cuboid below this and verify that the water start falling.
+		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, List.of()))
+				, null
+				, null
+				, null
+		);
+		
+		// We should see a layer modified (1024 = 32 * 32) for each of the 32 layers.
+		for (int i = 0; i < 32; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+			Assert.assertEquals(2, snapshot.completedCuboids().size());
+			Assert.assertEquals(1, snapshot.resultantMutationsByCuboid().size());
+			Assert.assertEquals(1024, snapshot.resultantMutationsByCuboid().get(address1).size());
+		}
+		
+		// Now here should be none and there should be strong flowing water at the bottom.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(2, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.resultantMutationsByCuboid().size());
+		Assert.assertEquals(ItemRegistry.WATER_STRONG.number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
