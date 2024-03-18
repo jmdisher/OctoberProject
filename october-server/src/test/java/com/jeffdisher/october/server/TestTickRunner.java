@@ -36,6 +36,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -1000,6 +1001,105 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void waterCascade1()
+	{
+		// Create a single cascade cuboid, add a dirt block and water source in the top level, break the block, wait until the water completes flowing.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		
+		CuboidData cascade = _buildCascade(new CuboidAddress((short)-3, (short)-4, (short)-5));
+		AbsoluteLocation plug = cascade.getCuboidAddress().getBase().getRelative(16, 16, 30);
+		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), ItemRegistry.DIRT.number());
+		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ItemRegistry.WATER_SOURCE.number());
+		
+		int entityId = 1;
+		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of()))
+				, null
+				, List.of(new Entity(entityId, new EntityLocation(plug.x(), plug.y(), plug.z() + 1), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, ItemRegistry.STONE, null))
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		
+		// Now, break the plug.
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)20), 1L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		
+		// Wait for this to trickle through the cuboid.
+		// This will take 65 ticks - roughly half of the block movements are spreading out, as opposed to down, and there are a few at the bottom to spread.
+		for (int i = 0; i < 65; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+			Assert.assertFalse(snapshot.resultantMutationsByCuboid().isEmpty());
+		}
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertTrue(snapshot.resultantMutationsByCuboid().isEmpty());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void waterCascade8()
+	{
+		// Create 8 cascade cuboids in a cube, add a dirt block and water source at the top-centre of these, break the block and wait until the water completes flowing.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		
+		CuboidAddress startAddress = new CuboidAddress((short)-3, (short)-4, (short)-5);
+		CuboidData topNorthEast = _buildCascade(startAddress);
+		AbsoluteLocation plug = topNorthEast.getCuboidAddress().getBase().getRelative(0, 0, 30);
+		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), ItemRegistry.DIRT.number());
+		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ItemRegistry.WATER_SOURCE.number());
+		
+		int entityId = 1;
+		Inventory startInventory = Inventory.start(10).add(ItemRegistry.STONE, 2).finish();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(topNorthEast, List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, 0, -1)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, 0)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, -1)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, 0, 0)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, 0, -1)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, -1, 0)), List.of())
+				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, -1, -1)), List.of())
+		)
+				, null
+				, List.of(new Entity(entityId, new EntityLocation(plug.x(), plug.y(), plug.z() + 1), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, ItemRegistry.STONE, null))
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(8, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		
+		// Now, break the plug.
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)20), 1L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		
+		// Wait for this to trickle through the cuboids.
+		// This will take 125 ticks - roughly half of the block movements are spreading out, as opposed to down, and there are a few at the bottom to spread.
+		for (int i = 0; i < 125; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+			Assert.assertFalse(snapshot.resultantMutationsByCuboid().isEmpty());
+		}
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertTrue(snapshot.resultantMutationsByCuboid().isEmpty());
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
@@ -1028,5 +1128,25 @@ public class TestTickRunner
 			block = new BlockProxy(blockAddress, cuboid);
 		}
 		return block;
+	}
+
+	private CuboidData _buildCascade(CuboidAddress address)
+	{
+		// A "cascade" cuboid is one designed to force water to split as it fall through the cuboid.
+		// This means that the bottom layer is air but every odd-numbered layer is a checker-board of stone, with the
+		// opposite pattern of the last layer.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		for (byte z = 1; z < 32; z += 2)
+		{
+			byte offset = (byte)((z % 4) / 2);
+			for (byte y = offset; y < 32; y += 2)
+			{
+				for (byte x = offset; x < 32; x += 2)
+				{
+					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), ItemRegistry.STONE.number());
+				}
+			}
+		}
+		return cuboid;
 	}
 }

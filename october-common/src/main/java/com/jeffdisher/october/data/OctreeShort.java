@@ -63,26 +63,22 @@ public class OctreeShort implements IOctree
 			int targetX = (x < half) ? 0 : 1;
 			int targetY = (y < half) ? 0 : 1;
 			int targetZ = (z < half) ? 0 : 1;
-			short found = -1;
-			for (int i = 0; (-1 == found) && (i < 2); ++i)
+			
+			// We aren't interested in what is in these trees, we just need to step over them so we can compute how many
+			// to pass and walk over them.
+			int subTreesToPass = (targetX * 4) + (targetY * 2) + targetZ;
+			while (subTreesToPass > 0)
 			{
-				for (int j = 0; (-1 == found) && (j < 2); ++j)
+				short oneCheck = _loadHeader(buffer);
+				subTreesToPass -= 1;
+				if (oneCheck < 0)
 				{
-					for (int k = 0; (-1 == found) && (k < 2); ++k)
-					{
-						// Unless this is the one we want to look at, we just want to look for the last sub-element of each sub-tree.
-						if ((i == targetX) && (j == targetY) && (k == targetZ))
-						{
-							found = _findValue(buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
-						}
-						else
-						{
-							_findValue(buffer, (byte)(half - 1), (byte)(half - 1), (byte)(half - 1), (byte)(half >> 1));
-						}
-					}
+					// This is a subtree marker so 8 more reads.
+					subTreesToPass += 8;
 				}
 			}
-			value = found;
+			
+			value = _findValue(buffer, (byte)(x & ~half), (byte)(y & ~half), (byte)(z & ~half), (byte)(half >> 1));
 		}
 		else
 		{
