@@ -76,6 +76,12 @@ public class BlockProxy implements IBlockProxy
 		return fuel;
 	}
 
+	@Override
+	public short getLight()
+	{
+		return _getData15(AspectRegistry.LIGHT);
+	}
+
 
 	private short _getData15(Aspect<Short, ?> type)
 	{

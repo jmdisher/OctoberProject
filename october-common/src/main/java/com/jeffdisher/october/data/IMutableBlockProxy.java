@@ -41,6 +41,10 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 */
 	void setFuel(FuelState fuel);
 	/**
+	 * @param light The new light level for this block.
+	 */
+	void setLight(short light);
+	/**
 	 * Serializes all known aspects for this block into the given buffer.
 	 * 
 	 * @param buffer The buffer which should contain the serialized value of this block's aspects.

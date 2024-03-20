@@ -227,6 +227,7 @@ public class TestIntegratedNetwork
 				, OctreeShort.create((short)0)
 				, OctreeObject.create()
 				, OctreeObject.create()
+				, OctreeShort.create((short)0)
 		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.

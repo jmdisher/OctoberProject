@@ -88,6 +88,18 @@ public class AspectRegistry
 			}
 			, new FueledAspectCodec()
 	);
+	/**
+	 * Block "light value".  This is usually 0 ("dark") but can be as high as 15.
+	 */
+	public static final Aspect<Short, OctreeShort> LIGHT = registerAspect(Short.class
+			, OctreeShort.class
+			, () -> OctreeShort.empty()
+			, (OctreeShort original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -98,6 +110,7 @@ public class AspectRegistry
 		Assert.assertTrue(2 == DAMAGE.index());
 		Assert.assertTrue(3 == CRAFTING.index());
 		Assert.assertTrue(4 == FUELED.index());
+		Assert.assertTrue(5 == LIGHT.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -106,6 +119,7 @@ public class AspectRegistry
 			DAMAGE,
 			CRAFTING,
 			FUELED,
+			LIGHT,
 		};
 	}
 

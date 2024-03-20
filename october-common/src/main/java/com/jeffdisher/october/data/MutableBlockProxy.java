@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -68,6 +69,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setDataSpecial(AspectRegistry.INVENTORY, null);
 		_setData15(AspectRegistry.DAMAGE, (short)0);
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
+		_setDataSpecial(AspectRegistry.FUELED, null);
+		_setData15(AspectRegistry.LIGHT, (short)0);
 	}
 
 	@Override
@@ -148,6 +151,19 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		{
 			_setDataSpecial(AspectRegistry.FUELED, fuel);
 		}
+	}
+
+	@Override
+	public short getLight()
+	{
+		return _getData15(AspectRegistry.LIGHT);
+	}
+
+	@Override
+	public void setLight(short light)
+	{
+		Assert.assertTrue((light >= 0) && (light <= LightAspect.MAX_LIGHT));
+		_setData15(AspectRegistry.LIGHT, light);
 	}
 
 	@Override

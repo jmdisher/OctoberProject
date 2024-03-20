@@ -37,4 +37,8 @@ public interface IBlockProxy
 	 * @return The immutable fuel state object (potentially empty or null).
 	 */
 	FuelState getFuel();
+	/**
+	 * @return The light value for this block ([0..15]).
+	 */
+	short getLight();
 }
