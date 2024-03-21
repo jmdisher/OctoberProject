@@ -244,7 +244,20 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		for (int i = 0; !didChange && (i < _writes.length); ++i)
 		{
 			// Check what was modified.
-			if (_write15 == _writes[i])
+			if (_write7 == _writes[i])
+			{
+				byte original = _data.getData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), _address);
+				if (original == _write7[i])
+				{
+					// A change was reverted.
+					_writes[i] = null;
+				}
+				else
+				{
+					didChange = true;
+				}
+			}
+			else if (_write15 == _writes[i])
 			{
 				short original = _data.getData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), _address);
 				if (original == _write15[i])
@@ -290,7 +303,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		for (int i = 0; i < _writes.length; ++i)
 		{
 			// Write this back if modified.
-			if (_write15 == _writes[i])
+			if (_write7 == _writes[i])
+			{
+				newData.setData7(_aspectAsType(Byte.class, AspectRegistry.ALL_ASPECTS[i]), _address, _write7[i]);
+			}
+			else if (_write15 == _writes[i])
 			{
 				newData.setData15(_aspectAsType(Short.class, AspectRegistry.ALL_ASPECTS[i]), _address, _write15[i]);
 			}

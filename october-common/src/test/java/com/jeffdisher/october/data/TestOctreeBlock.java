@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
@@ -124,6 +125,102 @@ public class TestOctreeBlock
 		System.out.println("Verify total took " + (endStore -startStore) + " millis");
 	}
 
+	@Test
+	public void worstCaseByte()
+	{
+		// Fill an octree with each possible value (this will cycle since byte range is only [0..127]).
+		byte value = 0;
+		// We init to 0 and will set the first block to 0.
+		OctreeByte test = OctreeByte.create(value);
+		long startStore = System.currentTimeMillis();
+		for (int x = 0; x < 32; ++x)
+		{
+			long start = System.currentTimeMillis();
+			for (int y = 0; y < 32; ++y)
+			{
+				for (int z = 0; z < 32; ++z)
+				{
+					test.setData(new BlockAddress((byte)x, (byte)y, (byte)z), value);
+					value += 1;
+					if (value < 0)
+					{
+						value = 0;
+					}
+				}
+			}
+			long end = System.currentTimeMillis();
+			System.out.println("Store X: " + x + " took " + (end -start) + " millis");
+		}
+		long endStore = System.currentTimeMillis();
+		System.out.println("Store total took " + (endStore -startStore) + " millis");
+		
+		// This is precisely 32 KiB less than the short test.
+		OctreeByte verify = _codecByte(test, 37448);
+		
+		// Verify that we can read all of these.
+		value = 0;
+		startStore = System.currentTimeMillis();
+		for (int x = 0; x < 32; ++x)
+		{
+			long start = System.currentTimeMillis();
+			for (int y = 0; y < 32; ++y)
+			{
+				for (int z = 0; z < 32; ++z)
+				{
+					Assert.assertEquals(value, (byte)verify.getData(new Aspect<Byte, IOctree>(0, Byte.class, null, null, null, null), new BlockAddress((byte)x, (byte)y, (byte)z)));
+					value += 1;
+					if (value < 0)
+					{
+						value = 0;
+					}
+				}
+			}
+			long end = System.currentTimeMillis();
+			System.out.println("Load X: " + x + " took " + (end -start) + " millis");
+		}
+		endStore = System.currentTimeMillis();
+		System.out.println("Load total took " + (endStore -startStore) + " millis");
+		
+		// Clear all the bytes.
+		startStore = System.currentTimeMillis();
+		for (int x = 0; x < 32; ++x)
+		{
+			long start = System.currentTimeMillis();
+			for (int y = 0; y < 32; ++y)
+			{
+				for (int z = 0; z < 32; ++z)
+				{
+					verify.setData(new BlockAddress((byte)x, (byte)y, (byte)z), (byte)0);
+				}
+			}
+			long end = System.currentTimeMillis();
+			System.out.println("Clean X: " + x + " took " + (end -start) + " millis");
+		}
+		endStore = System.currentTimeMillis();
+		System.out.println("Clean total took " + (endStore -startStore) + " millis");
+		
+		verify = _codecByte(verify, 2);
+		
+		// Perform final verification.
+		value = 0;
+		startStore = System.currentTimeMillis();
+		for (int x = 0; x < 32; ++x)
+		{
+			long start = System.currentTimeMillis();
+			for (int y = 0; y < 32; ++y)
+			{
+				for (int z = 0; z < 32; ++z)
+				{
+					Assert.assertEquals(0, (byte)verify.getData(new Aspect<Byte, IOctree>(0, Byte.class, null, null, null, null), new BlockAddress((byte)x, (byte)y, (byte)z)));
+				}
+			}
+			long end = System.currentTimeMillis();
+			System.out.println("Verify X: " + x + " took " + (end -start) + " millis");
+		}
+		endStore = System.currentTimeMillis();
+		System.out.println("Verify total took " + (endStore -startStore) + " millis");
+	}
+
 
 	private static OctreeShort _codec(OctreeShort input, int expectedSizeBytes)
 	{
@@ -164,5 +261,22 @@ public class TestOctreeBlock
 		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)0, (byte)(16 + offset))));
 		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(0 + offset))));
 		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(16 + offset))));
+	}
+
+	private static OctreeByte _codecByte(OctreeByte input, int expectedSizeBytes)
+	{
+		// Note that the test is asking about the size of the actual data but the serializer has a size header.
+		int headerSize = (expectedSizeBytes > Short.BYTES) ? (8 * Short.BYTES) : 0;
+		ByteBuffer buffer = ByteBuffer.allocate(expectedSizeBytes + headerSize);
+		Object state = input.serializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		buffer.flip();
+		OctreeByte output = OctreeByte.empty();
+		state = output.deserializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertFalse(buffer.hasRemaining());
+		return output;
 	}
 }
