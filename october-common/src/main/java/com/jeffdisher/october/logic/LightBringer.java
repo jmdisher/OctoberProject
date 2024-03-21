@@ -34,12 +34,12 @@ public class LightBringer
 	 * @param startLevel The intensity of the new light source.
 	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Short> spreadLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, short startLevel)
+	public static Map<AbsoluteLocation, Byte> spreadLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, byte startLevel)
 	{
 		// We need to have something to do.
 		Assert.assertTrue(startLevel > 1);
 		Assert.assertTrue(startLevel <= LightAspect.MAX_LIGHT);
-		Map<AbsoluteLocation, Short> updates = new HashMap<>();
+		Map<AbsoluteLocation, Byte> updates = new HashMap<>();
 		updates.put(start, startLevel);
 		
 		Queue<_Step> queue = new LinkedList<>();
@@ -68,7 +68,7 @@ public class LightBringer
 	 * @param previousLevel The previous value of the light source, prior to its removal.
 	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Short> removeLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, short previousLevel)
+	public static Map<AbsoluteLocation, Byte> removeLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, byte previousLevel)
 	{
 		// Removing the light is somewhat more complicated as the operation needs to reverse if it finds a brighter than expected patch so this is 2 phases:
 		// -remove the light eminating from this source
@@ -76,9 +76,9 @@ public class LightBringer
 		
 		// We need to have something to do.
 		Assert.assertTrue(previousLevel > 0);
-		Map<AbsoluteLocation, Short> updates = new HashMap<>();
-		Map<AbsoluteLocation, Short> reFlood = new HashMap<>();
-		updates.put(start, (short)0);
+		Map<AbsoluteLocation, Byte> updates = new HashMap<>();
+		Map<AbsoluteLocation, Byte> reFlood = new HashMap<>();
+		updates.put(start, (byte)0);
 		
 		Queue<_Step> queue = new LinkedList<>();
 		
@@ -94,7 +94,7 @@ public class LightBringer
 			
 			// We already checked this so add it to the updates and check its neighbours.
 			AbsoluteLocation location = next.location;
-			short light = next.lightValue;
+			byte light = next.lightValue;
 			// This is only in the queue if it could illuminate something else.
 			Assert.assertTrue(light > 0);
 			_enqueueDarkNeighbours(queue, updates, reFlood, lookup, location, light);
@@ -115,12 +115,12 @@ public class LightBringer
 				;
 			};
 			
-			Map<AbsoluteLocation, Short> reUpdates = new HashMap<>();
+			Map<AbsoluteLocation, Byte> reUpdates = new HashMap<>();
 			Queue<_Step> reQueue = new LinkedList<>();
-			for (Map.Entry<AbsoluteLocation, Short> elt : reFlood.entrySet())
+			for (Map.Entry<AbsoluteLocation, Byte> elt : reFlood.entrySet())
 			{
 				AbsoluteLocation location = elt.getKey();
-				short value = elt.getValue();
+				byte value = elt.getValue();
 				reUpdates.put(location, value);
 				_enqueueLightNeighbours(reQueue, reUpdates, localLookup, location, value);
 			}
@@ -140,7 +140,7 @@ public class LightBringer
 	}
 
 
-	private static void _runLightQueue(Queue<_Step> queue, Map<AbsoluteLocation, Short> updates, Function<AbsoluteLocation, IBlockProxy> lookup)
+	private static void _runLightQueue(Queue<_Step> queue, Map<AbsoluteLocation, Byte> updates, Function<AbsoluteLocation, IBlockProxy> lookup)
 	{
 		while (!queue.isEmpty())
 		{
@@ -148,7 +148,7 @@ public class LightBringer
 			
 			// We already checked this so add it to the updates and check its neighbours.
 			AbsoluteLocation location = next.location;
-			short light = next.lightValue;
+			byte light = next.lightValue;
 			// This is only in the queue if it could illuminate something else.
 			Assert.assertTrue(light > 1);
 			_enqueueLightNeighbours(queue, updates, lookup, location, light);
@@ -156,10 +156,10 @@ public class LightBringer
 	}
 
 	private static void _enqueueLightNeighbours(Queue<_Step> queue
-			, Map<AbsoluteLocation, Short> updates
+			, Map<AbsoluteLocation, Byte> updates
 			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation start
-			, short light
+			, byte light
 	)
 	{
 		_checkLightNeighbour(queue, updates, lookup, start.getRelative(0, 0, -1), light);
@@ -171,22 +171,22 @@ public class LightBringer
 	}
 
 	private static void _checkLightNeighbour(Queue<_Step> queue
-			, Map<AbsoluteLocation, Short> updates
+			, Map<AbsoluteLocation, Byte> updates
 			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation location
-			, short lightEntering
+			, byte lightEntering
 	)
 	{
 		IBlockProxy proxy = lookup.apply(location);
 		if (null != proxy)
 		{
-			short previous = proxy.getLight();
+			byte previous = proxy.getLight();
 			// See if we have already processed this one (only happens for re-illumination or unusual opacity configurations).
 			if (updates.containsKey(location))
 			{
 				previous = updates.get(location);
 			}
-			short light = (short) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
+			byte light = (byte) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
 			if (light > previous)
 			{
 				// The block light can never be negative.
@@ -204,11 +204,11 @@ public class LightBringer
 	}
 
 	private static void _enqueueDarkNeighbours(Queue<_Step> queue
-			, Map<AbsoluteLocation, Short> updates
-			, Map<AbsoluteLocation, Short> reFlood
+			, Map<AbsoluteLocation, Byte> updates
+			, Map<AbsoluteLocation, Byte> reFlood
 			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation start
-			, short light
+			, byte light
 	)
 	{
 		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(0, 0, -1), light);
@@ -220,11 +220,11 @@ public class LightBringer
 	}
 
 	private static void _checkDarkNeighbour(Queue<_Step> queue
-			, Map<AbsoluteLocation, Short> updates
-			, Map<AbsoluteLocation, Short> reFlood
+			, Map<AbsoluteLocation, Byte> updates
+			, Map<AbsoluteLocation, Byte> reFlood
 			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation location
-			, short lightEntering
+			, byte lightEntering
 	)
 	{
 		if (!updates.containsKey(location) && !reFlood.containsKey(location))
@@ -236,12 +236,12 @@ public class LightBringer
 				// -if it matches the expected value, set it to zero and enqueue it
 				// -if it is greater than the expected value, add it to the reflood set
 				// -cannot be less than expected
-				short light = (short) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
-				short existingLight = proxy.getLight();
+				byte light = (byte) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
+				byte existingLight = proxy.getLight();
 				if ((existingLight == light) && (existingLight > 0))
 				{
 					// Add this to our map of updates and enqueue it for neighbour processing.
-					Assert.assertTrue(null == updates.put(location, (short)0));
+					Assert.assertTrue(null == updates.put(location, (byte)0));
 					// See if the neighbours need to be lit.
 					if (light > 1)
 					{
@@ -259,15 +259,15 @@ public class LightBringer
 	}
 
 
-	private static record _Step(AbsoluteLocation location, short lightValue)
+	private static record _Step(AbsoluteLocation location, byte lightValue)
 	{}
 
 	private static class _ShimProxy implements IBlockProxy
 	{
 		private final IBlockProxy _proxy;
-		private final short _light;
+		private final byte _light;
 		
-		public _ShimProxy(IBlockProxy proxy, short light)
+		public _ShimProxy(IBlockProxy proxy, byte light)
 		{
 			_proxy = proxy;
 			_light = light;
@@ -302,7 +302,7 @@ public class LightBringer
 			throw Assert.unreachable();
 		}
 		@Override
-		public short getLight()
+		public byte getLight()
 		{
 			return _light;
 		}

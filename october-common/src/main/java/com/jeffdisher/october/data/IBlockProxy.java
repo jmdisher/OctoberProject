@@ -40,5 +40,5 @@ public interface IBlockProxy
 	/**
 	 * @return The light value for this block ([0..15]).
 	 */
-	short getLight();
+	byte getLight();
 }

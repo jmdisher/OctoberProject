@@ -70,7 +70,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setData15(AspectRegistry.DAMAGE, (short)0);
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
 		_setDataSpecial(AspectRegistry.FUELED, null);
-		_setData15(AspectRegistry.LIGHT, (short)0);
+		_setData7(AspectRegistry.LIGHT, (byte)0);
 	}
 
 	@Override
@@ -154,16 +154,16 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	@Override
-	public short getLight()
+	public byte getLight()
 	{
-		return _getData15(AspectRegistry.LIGHT);
+		return _getData7(AspectRegistry.LIGHT);
 	}
 
 	@Override
-	public void setLight(short light)
+	public void setLight(byte light)
 	{
 		Assert.assertTrue((light >= 0) && (light <= LightAspect.MAX_LIGHT));
-		_setData15(AspectRegistry.LIGHT, light);
+		_setData7(AspectRegistry.LIGHT, light);
 	}
 
 	@Override

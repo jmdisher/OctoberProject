@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
@@ -167,7 +166,7 @@ public class TestOctreeBlock
 			{
 				for (int z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(value, (byte)verify.getData(new Aspect<Byte, IOctree>(0, Byte.class, null, null, null, null), new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(value, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress((byte)x, (byte)y, (byte)z)));
 					value += 1;
 					if (value < 0)
 					{
@@ -211,7 +210,7 @@ public class TestOctreeBlock
 			{
 				for (int z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(0, (byte)verify.getData(new Aspect<Byte, IOctree>(0, Byte.class, null, null, null, null), new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(0, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress((byte)x, (byte)y, (byte)z)));
 				}
 			}
 			long end = System.currentTimeMillis();

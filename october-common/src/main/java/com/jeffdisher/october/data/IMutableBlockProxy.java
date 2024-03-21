@@ -43,7 +43,7 @@ public interface IMutableBlockProxy extends IBlockProxy
 	/**
 	 * @param light The new light level for this block.
 	 */
-	void setLight(short light);
+	void setLight(byte light);
 	/**
 	 * Serializes all known aspects for this block into the given buffer.
 	 * 

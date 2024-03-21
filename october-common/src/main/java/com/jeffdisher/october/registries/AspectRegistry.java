@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.FueledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
+import com.jeffdisher.october.data.OctreeByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.CraftOperation;
@@ -91,10 +92,10 @@ public class AspectRegistry
 	/**
 	 * Block "light value".  This is usually 0 ("dark") but can be as high as 15.
 	 */
-	public static final Aspect<Short, OctreeShort> LIGHT = registerAspect(Short.class
-			, OctreeShort.class
-			, () -> OctreeShort.empty()
-			, (OctreeShort original) -> {
+	public static final Aspect<Byte, OctreeByte> LIGHT = registerAspect(Byte.class
+			, OctreeByte.class
+			, () -> OctreeByte.empty()
+			, (OctreeByte original) -> {
 				return original.cloneData();
 			}
 			// IAspectCodec only exists for OctreeObject types.

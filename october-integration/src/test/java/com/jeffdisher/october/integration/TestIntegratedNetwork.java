@@ -15,6 +15,7 @@ import org.junit.Test;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.net.NetworkClient;
@@ -227,7 +228,7 @@ public class TestIntegratedNetwork
 				, OctreeShort.create((short)0)
 				, OctreeObject.create()
 				, OctreeObject.create()
-				, OctreeShort.create((short)0)
+				, OctreeByte.create((byte)0)
 		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.

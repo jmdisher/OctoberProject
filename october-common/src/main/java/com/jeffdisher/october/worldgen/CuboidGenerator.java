@@ -2,6 +2,7 @@ package com.jeffdisher.october.worldgen;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.data.OctreeByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -63,7 +64,7 @@ public class CuboidGenerator
 		OctreeShort damageData = OctreeShort.create((short) 0);
 		OctreeObject craftingData = OctreeObject.create();
 		OctreeObject fueledData = OctreeObject.create();
-		OctreeShort lightData = OctreeShort.create((short) 0);
+		OctreeByte lightData = OctreeByte.create((byte) 0);
 		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData
 				, inventoryData
 				, damageData

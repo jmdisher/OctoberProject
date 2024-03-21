@@ -77,15 +77,20 @@ public class BlockProxy implements IBlockProxy
 	}
 
 	@Override
-	public short getLight()
+	public byte getLight()
 	{
-		return _getData15(AspectRegistry.LIGHT);
+		return _getData7(AspectRegistry.LIGHT);
 	}
 
 
 	private short _getData15(Aspect<Short, ?> type)
 	{
 		return _data.getData15(type, _address);
+	}
+
+	private byte _getData7(Aspect<Byte, ?> type)
+	{
+		return _data.getData7(type, _address);
 	}
 
 	private <T> T _getDataSpecial(Aspect<T, ?> type)
