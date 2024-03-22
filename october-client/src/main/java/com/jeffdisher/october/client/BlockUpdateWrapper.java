@@ -3,8 +3,8 @@ package com.jeffdisher.october.client;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -16,9 +16,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BlockUpdateWrapper implements IMutationBlock
 {
-	private final IBlockStateUpdate _stateUpdate;
+	private final MutationBlockSetBlock _stateUpdate;
 
-	public BlockUpdateWrapper(IBlockStateUpdate stateUpdate)
+	public BlockUpdateWrapper(MutationBlockSetBlock stateUpdate)
 	{
 		_stateUpdate = stateUpdate;
 	}

@@ -1,8 +1,8 @@
 package com.jeffdisher.october.client;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 
@@ -90,7 +90,7 @@ public interface IClientAdapter
 		 * 
 		 * @param stateUpdate The update.
 		 */
-		void receivedBlockUpdate(IBlockStateUpdate stateUpdate);
+		void receivedBlockUpdate(MutationBlockSetBlock stateUpdate);
 		/**
 		 * Called when the server sends us the end of tick message.  Any messages received since the previous end of
 		 * tick are considered part of this tick.

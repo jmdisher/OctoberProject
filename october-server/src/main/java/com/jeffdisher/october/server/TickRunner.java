@@ -21,9 +21,9 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -355,7 +355,7 @@ public class TickRunner
 			// Stitch together the maps of completed mutations within this tick.
 			Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
 			int committedEntityMutationCount = 0;
-			Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid = new HashMap<>();
+			Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid = new HashMap<>();
 			int committedCuboidMutationCount = 0;
 			
 			// We will also capture any of the mutations which should be scheduled into the next tick since we should publish those into the snapshot.
@@ -580,10 +580,10 @@ public class TickRunner
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
-				for (Map.Entry<CuboidAddress, List<IBlockStateUpdate>> entry : resultantMutationsByCuboid.entrySet())
+				for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : resultantMutationsByCuboid.entrySet())
 				{
 					List<AbsoluteLocation> locations = entry.getValue().stream().map(
-							(IBlockStateUpdate update) -> update.getAbsoluteLocation()
+							(MutationBlockSetBlock update) -> update.getAbsoluteLocation()
 					).toList();
 					updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
 				}
@@ -756,7 +756,7 @@ public class TickRunner
 			, Map<Integer, List<IMutationEntity>> resultantMutationsById
 			, int committedEntityMutationCount
 			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
-			, Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid
 			, int committedCuboidMutationCount
 			// These fields are related to what is scheduled for the _next_ tick (added here to expose them to serialization).
 			, Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations

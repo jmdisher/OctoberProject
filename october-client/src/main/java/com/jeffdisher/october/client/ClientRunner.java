@@ -13,8 +13,8 @@ import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -299,7 +299,7 @@ public class ClientRunner
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private Map<Integer, List<IMutationEntity>> _entityChanges = new HashMap<>();
-		private List<IBlockStateUpdate> _cuboidUpdates = new ArrayList<>();
+		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
@@ -357,7 +357,7 @@ public class ClientRunner
 			oneQueue.add(change);
 		}
 		@Override
-		public void receivedBlockUpdate(IBlockStateUpdate stateUpdate)
+		public void receivedBlockUpdate(MutationBlockSetBlock stateUpdate)
 		{
 			_cuboidUpdates.add(stateUpdate);
 		}
@@ -371,7 +371,7 @@ public class ClientRunner
 			_addedCuboids.clear();
 			Map<Integer, List<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
 			_entityChanges.clear();
-			List<IBlockStateUpdate> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
+			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
 			_cuboidUpdates.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);
 			_removedEntities.clear();

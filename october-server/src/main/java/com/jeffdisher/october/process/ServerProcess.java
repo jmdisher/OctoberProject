@@ -9,8 +9,8 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_EndOfTick;
@@ -229,7 +229,7 @@ public class ServerProcess
 			_bufferPacket(clientId, packet);
 		}
 		@Override
-		public void sendBlockUpdate(int clientId, IBlockStateUpdate update)
+		public void sendBlockUpdate(int clientId, MutationBlockSetBlock update)
 		{
 			Packet_BlockStateUpdate packet = new Packet_BlockStateUpdate(update);
 			_bufferPacket(clientId, packet);

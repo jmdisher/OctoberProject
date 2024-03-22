@@ -17,9 +17,9 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -123,7 +123,7 @@ public class SpeculativeProjection
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, Map<Integer, List<IMutationEntity>> entityChanges
-			, List<IBlockStateUpdate> cuboidUpdates
+			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
 			, List<CuboidAddress> removedCuboids
@@ -141,7 +141,7 @@ public class SpeculativeProjection
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, entityChanges);
 		
 		// Split the incoming mutations into the expected map shape.
-		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((IBlockStateUpdate update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
+		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();

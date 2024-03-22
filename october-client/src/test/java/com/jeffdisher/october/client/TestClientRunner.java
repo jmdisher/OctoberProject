@@ -2,7 +2,6 @@ package com.jeffdisher.october.client;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -92,18 +91,13 @@ public class TestClientRunner
 	@Test
 	public void multiPhase() throws Throwable
 	{
+		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
 		ClientRunner runner = new ClientRunner(network, projection, clientListener);
-		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) ->
-		{
-			IReadOnlyCuboidData cuboid = projection.loadedCuboids.get(location.getCuboidAddress());
-			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		};
 		
 		// Connect them.
 		int clientId = 1;
@@ -115,8 +109,6 @@ public class TestClientRunner
 		
 		// Send them an entity and a cuboid.
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
@@ -139,7 +131,7 @@ public class TestClientRunner
 		network.client.receivedChange(clientId, network.toSend);
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(new FakeBlockUpdate(previousBlockLookUp, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
+		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -157,7 +149,7 @@ public class TestClientRunner
 		network.client.receivedChange(clientId, network.toSend);
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(new FakeBlockUpdate(previousBlockLookUp, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
+		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		

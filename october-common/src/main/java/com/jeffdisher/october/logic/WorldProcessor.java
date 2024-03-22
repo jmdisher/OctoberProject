@@ -15,7 +15,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -91,7 +90,7 @@ public class WorldProcessor
 		};
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
-		Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid = new HashMap<>();
+		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
@@ -158,7 +157,7 @@ public class WorldProcessor
 				else
 				{
 					ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
-					List<IBlockStateUpdate> updateMutations = new ArrayList<>();
+					List<MutationBlockSetBlock> updateMutations = new ArrayList<>();
 					// At least something changed so create a new clone and write-back into it.
 					CuboidData mutable = CuboidData.mutableClone(oldState);
 					for (MutableBlockProxy proxy : proxiesToWrite)
@@ -321,7 +320,7 @@ public class WorldProcessor
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
 			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
-			, Map<CuboidAddress, List<IBlockStateUpdate>> resultantMutationsByCuboid
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid
 			, int committedMutationCount
 	) {}
 }

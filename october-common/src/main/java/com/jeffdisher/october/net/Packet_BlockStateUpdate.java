@@ -3,11 +3,11 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.mutations.IBlockStateUpdate;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 
 
 /**
- * Contains a specific IBlockStateUpdate instance.
+ * Contains a MutationBlockSetBlock instance.
  * Note that these only travel from server to client.
  */
 public class Packet_BlockStateUpdate extends Packet
@@ -17,15 +17,15 @@ public class Packet_BlockStateUpdate extends Packet
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			IBlockStateUpdate stateUpdate = BlockStateUpdateCodec.parseAndSeekFlippedBuffer(buffer);
+			MutationBlockSetBlock stateUpdate = MutationBlockSetBlock.deserializeFromBuffer(buffer);
 			return new Packet_BlockStateUpdate(stateUpdate);
 		};
 	}
 
 
-	public final IBlockStateUpdate stateUpdate;
+	public final MutationBlockSetBlock stateUpdate;
 
-	public Packet_BlockStateUpdate(IBlockStateUpdate stateUpdate)
+	public Packet_BlockStateUpdate(MutationBlockSetBlock stateUpdate)
 	{
 		super(TYPE);
 		this.stateUpdate = stateUpdate;
@@ -34,6 +34,6 @@ public class Packet_BlockStateUpdate extends Packet
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		BlockStateUpdateCodec.serializeToBuffer(buffer, this.stateUpdate);
+		this.stateUpdate.serializeToBuffer(buffer);
 	}
 }

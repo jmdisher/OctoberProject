@@ -9,12 +9,13 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 
 
 /**
- * Completely replaces all aspects of a given block.
+ * An operation which over-writes part of the state of a single block.  This may be the entire block state, a single
+ * aspect, or part of an aspect.
+ * Note that these operations are considered idempotent and should blindly write data, not basing that on any existing
+ * state.
  */
-public class MutationBlockSetBlock implements IBlockStateUpdate
+public class MutationBlockSetBlock
 {
-	public static final BlockStateUpdateType TYPE = BlockStateUpdateType.SET_BLOCK;
-
 	public static MutationBlockSetBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
@@ -53,13 +54,19 @@ public class MutationBlockSetBlock implements IBlockStateUpdate
 		_rawData = rawData;
 	}
 
-	@Override
+	/**
+	 * @return The absolute coordinates of the block to which the mutation applies.
+	 */
 	public AbsoluteLocation getAbsoluteLocation()
 	{
 		return _location;
 	}
 
-	@Override
+	/**
+	 * Applies the change to the given newBlock.
+	 * 
+	 * @param newBlock The block currently being modified by this mutation in the current tick.
+	 */
 	public void applyState(IMutableBlockProxy newBlock)
 	{
 		// We want to decode the raw data as we feed it in to the proxy.
@@ -67,13 +74,11 @@ public class MutationBlockSetBlock implements IBlockStateUpdate
 		newBlock.deserializeFromBuffer(buffer);
 	}
 
-	@Override
-	public BlockStateUpdateType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
+	/**
+	 * Called during serialization to serialize any internal instance variables of the state update to the given buffer.
+	 * 
+	 * @param buffer The buffer where the state update should be written.
+	 */
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
