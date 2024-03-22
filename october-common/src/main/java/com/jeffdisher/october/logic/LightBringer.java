@@ -4,15 +4,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.LightAspect;
-import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.CraftOperation;
-import com.jeffdisher.october.types.FuelState;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -29,12 +23,17 @@ public class LightBringer
 	 * already has startLevel light level set in the block).
 	 * Note that this doesn't change the underlying data, only returns the changes which must be made.
 	 * 
-	 * @param lookup A function to look up block proxies.
+	 * @param lightLookup A function to look up block light levels.
+	 * @param opacityLookup A function to look up block opacity.
 	 * @param start The starting light source location.
 	 * @param startLevel The intensity of the new light source.
 	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Byte> spreadLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, byte startLevel)
+	public static Map<AbsoluteLocation, Byte> spreadLight(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, AbsoluteLocation start
+			, byte startLevel
+	)
 	{
 		// We need to have something to do.
 		Assert.assertTrue(startLevel > 1);
@@ -45,12 +44,12 @@ public class LightBringer
 		Queue<_Step> queue = new LinkedList<>();
 		
 		// We assume that the starting block has already been set.
-		Assert.assertTrue(lookup.apply(start).getLight() == startLevel);
+		Assert.assertTrue(lightLookup.lookup(start) == startLevel);
 		
 		// Enqueue the surrounding blocks.
-		_enqueueLightNeighbours(queue, updates, lookup, start, startLevel);
+		_enqueueLightNeighbours(lightLookup, opacityLookup, queue, updates, start, startLevel);
 		
-		_runLightQueue(queue, updates, lookup);
+		_runLightQueue(lightLookup, opacityLookup, queue, updates);
 		
 		// Remove the original since it was just part of a termination condition.
 		updates.remove(start);
@@ -63,12 +62,17 @@ public class LightBringer
 	 * which still remain after removing this one.
 	 * Note that this doesn't change the underlying data, only returns the changes which must be made.
 	 * 
-	 * @param lookup A function to look up block proxies.
+	 * @param lightLookup A function to look up block light levels.
+	 * @param opacityLookup A function to look up block opacity.
 	 * @param start The location where the light source was removed.
 	 * @param previousLevel The previous value of the light source, prior to its removal.
 	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Byte> removeLight(Function<AbsoluteLocation, IBlockProxy> lookup, AbsoluteLocation start, byte previousLevel)
+	public static Map<AbsoluteLocation, Byte> removeLight(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, AbsoluteLocation start
+			, byte previousLevel
+	)
 	{
 		// Removing the light is somewhat more complicated as the operation needs to reverse if it finds a brighter than expected patch so this is 2 phases:
 		// -remove the light eminating from this source
@@ -83,10 +87,10 @@ public class LightBringer
 		Queue<_Step> queue = new LinkedList<>();
 		
 		// We assume that the starting block has already been cleared.
-		Assert.assertTrue(lookup.apply(start).getLight() == 0);
+		Assert.assertTrue(lightLookup.lookup(start) == 0);
 		
 		// Enqueue the surrounding blocks.
-		_enqueueDarkNeighbours(queue, updates, reFlood, lookup, start, previousLevel);
+		_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, updates, reFlood, start, previousLevel);
 		
 		while (!queue.isEmpty())
 		{
@@ -97,7 +101,7 @@ public class LightBringer
 			byte light = next.lightValue;
 			// This is only in the queue if it could illuminate something else.
 			Assert.assertTrue(light > 0);
-			_enqueueDarkNeighbours(queue, updates, reFlood, lookup, location, light);
+			_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, updates, reFlood, location, light);
 		}
 		
 		// Remove the original since it was just part of a termination condition.
@@ -107,11 +111,11 @@ public class LightBringer
 		if (!reFlood.isEmpty())
 		{
 			// We need to make a shim over the lookup mechanism to return values from the previous phase updates.
-			Function<AbsoluteLocation, IBlockProxy> localLookup = (AbsoluteLocation location) -> {
-				IBlockProxy proxy = lookup.apply(location);
-				return (null != proxy)
-						? (updates.containsKey(location) ? new _ShimProxy(proxy, updates.get(location)) : proxy)
-						: null
+			IByteLookup localLightLookup = (AbsoluteLocation location) -> {
+				byte original = lightLookup.lookup(location);
+				return (IByteLookup.NOT_FOUND != original)
+						? (updates.containsKey(location) ? updates.get(location) : original)
+						: IByteLookup.NOT_FOUND
 				;
 			};
 			
@@ -122,9 +126,9 @@ public class LightBringer
 				AbsoluteLocation location = elt.getKey();
 				byte value = elt.getValue();
 				reUpdates.put(location, value);
-				_enqueueLightNeighbours(reQueue, reUpdates, localLookup, location, value);
+				_enqueueLightNeighbours(localLightLookup, opacityLookup, reQueue, reUpdates, location, value);
 			}
-			_runLightQueue(reQueue, reUpdates, localLookup);
+			_runLightQueue(localLightLookup, opacityLookup, reQueue, reUpdates);
 			
 			// Remove the original since it was just part of a termination condition.
 			for (AbsoluteLocation location : reFlood.keySet())
@@ -140,7 +144,11 @@ public class LightBringer
 	}
 
 
-	private static void _runLightQueue(Queue<_Step> queue, Map<AbsoluteLocation, Byte> updates, Function<AbsoluteLocation, IBlockProxy> lookup)
+	private static void _runLightQueue(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, Queue<_Step> queue
+			, Map<AbsoluteLocation, Byte> updates
+	)
 	{
 		while (!queue.isEmpty())
 		{
@@ -151,42 +159,46 @@ public class LightBringer
 			byte light = next.lightValue;
 			// This is only in the queue if it could illuminate something else.
 			Assert.assertTrue(light > 1);
-			_enqueueLightNeighbours(queue, updates, lookup, location, light);
+			_enqueueLightNeighbours(lightLookup, opacityLookup, queue, updates, location, light);
 		}
 	}
 
-	private static void _enqueueLightNeighbours(Queue<_Step> queue
+	private static void _enqueueLightNeighbours(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> updates
-			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation start
 			, byte light
 	)
 	{
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative(0, 0, -1), light);
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative(0, 0,  1), light);
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative(0, -1, 0), light);
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative(0,  1, 0), light);
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative(-1, 0, 0), light);
-		_checkLightNeighbour(queue, updates, lookup, start.getRelative( 1, 0, 0), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative(0, 0, -1), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative(0, 0,  1), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative(0, -1, 0), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative(0,  1, 0), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative(-1, 0, 0), light);
+		_checkLightNeighbour(lightLookup, opacityLookup, queue, updates, start.getRelative( 1, 0, 0), light);
 	}
 
-	private static void _checkLightNeighbour(Queue<_Step> queue
+	private static void _checkLightNeighbour(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> updates
-			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation location
 			, byte lightEntering
 	)
 	{
-		IBlockProxy proxy = lookup.apply(location);
-		if (null != proxy)
+		byte previous = lightLookup.lookup(location);
+		if (IByteLookup.NOT_FOUND != previous)
 		{
-			byte previous = proxy.getLight();
 			// See if we have already processed this one (only happens for re-illumination or unusual opacity configurations).
 			if (updates.containsKey(location))
 			{
 				previous = updates.get(location);
 			}
-			byte light = (byte) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
+			byte opacity = opacityLookup.lookup(location);
+			// We must have found this and it must have positive opacity.
+			Assert.assertTrue(opacity > 0);
+			byte light = (byte) (lightEntering - opacity);
 			if (light > previous)
 			{
 				// The block light can never be negative.
@@ -203,41 +215,45 @@ public class LightBringer
 		}
 	}
 
-	private static void _enqueueDarkNeighbours(Queue<_Step> queue
+	private static void _enqueueDarkNeighbours(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> updates
 			, Map<AbsoluteLocation, Byte> reFlood
-			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation start
 			, byte light
 	)
 	{
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(0, 0, -1), light);
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(0, 0,  1), light);
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(0, -1, 0), light);
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(0,  1, 0), light);
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative(-1, 0, 0), light);
-		_checkDarkNeighbour(queue, updates, reFlood, lookup, start.getRelative( 1, 0, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, 0, -1), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, 0,  1), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, -1, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0,  1, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(-1, 0, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative( 1, 0, 0), light);
 	}
 
-	private static void _checkDarkNeighbour(Queue<_Step> queue
+	private static void _checkDarkNeighbour(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> updates
 			, Map<AbsoluteLocation, Byte> reFlood
-			, Function<AbsoluteLocation, IBlockProxy> lookup
 			, AbsoluteLocation location
 			, byte lightEntering
 	)
 	{
 		if (!updates.containsKey(location) && !reFlood.containsKey(location))
 		{
-			IBlockProxy proxy = lookup.apply(location);
-			if (null != proxy)
+			byte existingLight = lightLookup.lookup(location);
+			if (IByteLookup.NOT_FOUND != existingLight)
 			{
 				// Check the light level:
 				// -if it matches the expected value, set it to zero and enqueue it
 				// -if it is greater than the expected value, add it to the reflood set
 				// -cannot be less than expected
-				byte light = (byte) (lightEntering - LightAspect.getOpacity(proxy.getBlock().asItem()));
-				byte existingLight = proxy.getLight();
+				byte opacity = opacityLookup.lookup(location);
+				// We must have found this and it must have positive opacity.
+				Assert.assertTrue(opacity > 0);
+				byte light = (byte) (lightEntering - opacity);
 				if ((existingLight == light) && (existingLight > 0))
 				{
 					// Add this to our map of updates and enqueue it for neighbour processing.
@@ -259,52 +275,21 @@ public class LightBringer
 	}
 
 
+	/**
+	 * We use this instead of the generalized Function<> just to avoid gratuitous wrapping/unwrapping.
+	 */
+	public static interface IByteLookup
+	{
+		public static final byte NOT_FOUND = -1;
+		/**
+		 * Looks up the corresponding byte value at the given location, returning -1 if it can't be found.
+		 * 
+		 * @param location The location to lookup.
+		 * @return The byte value at that location or -1 if not found.
+		 */
+		byte lookup(AbsoluteLocation location);
+	}
+
 	private static record _Step(AbsoluteLocation location, byte lightValue)
 	{}
-
-	private static class _ShimProxy implements IBlockProxy
-	{
-		private final IBlockProxy _proxy;
-		private final byte _light;
-		
-		public _ShimProxy(IBlockProxy proxy, byte light)
-		{
-			_proxy = proxy;
-			_light = light;
-		}
-		@Override
-		public Block getBlock()
-		{
-			return _proxy.getBlock();
-		}
-		@Override
-		public Inventory getInventory()
-		{
-			// Not expected in this class.
-			throw Assert.unreachable();
-		}
-		@Override
-		public short getDamage()
-		{
-			// Not expected in this class.
-			throw Assert.unreachable();
-		}
-		@Override
-		public CraftOperation getCrafting()
-		{
-			// Not expected in this class.
-			throw Assert.unreachable();
-		}
-		@Override
-		public FuelState getFuel()
-		{
-			// Not expected in this class.
-			throw Assert.unreachable();
-		}
-		@Override
-		public byte getLight()
-		{
-			return _light;
-		}
-	}
 }

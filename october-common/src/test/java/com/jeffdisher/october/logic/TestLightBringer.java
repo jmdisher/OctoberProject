@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -55,12 +56,8 @@ public class TestLightBringer
 		{
 			source.setLight(i);
 			source.writeBack(cuboid);
-			Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight((AbsoluteLocation location) -> {
-				return address.equals(location.getCuboidAddress())
-						? new BlockProxy(location.getBlockAddress(), cuboid)
-						: null
-				;
-			}, centre, i);
+			_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+			Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight(lookup.lightLookup, lookup.opacityLookup, centre, i);
 			Assert.assertEquals(expectedValues[i], updates.size());
 		}
 	}
@@ -75,12 +72,8 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), value);
 		
-		Map<AbsoluteLocation, Byte> initialSet = LightBringer.spreadLight((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, centre, value);
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> initialSet = LightBringer.spreadLight(lookup.lightLookup, lookup.opacityLookup, centre, value);
 		Assert.assertEquals(4088, initialSet.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : initialSet.entrySet())
 		{
@@ -93,12 +86,8 @@ public class TestLightBringer
 		AbsoluteLocation secondLight = centre.getRelative(1, 1, 1);
 		_writeLight(System.out, cuboid, secondLight.getBlockAddress().z());
 		cuboid.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), value);
-		Map<AbsoluteLocation, Byte> secondUpdates = LightBringer.spreadLight((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, secondLight, value);
+		lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> secondUpdates = LightBringer.spreadLight(lookup.lightLookup, lookup.opacityLookup, secondLight, value);
 		Assert.assertEquals(2359, secondUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : secondUpdates.entrySet())
 		{
@@ -108,12 +97,8 @@ public class TestLightBringer
 		
 		// Now, remove the light source and watch the updates.
 		cuboid.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), (byte)0);
-		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.removeLight((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, centre.getRelative(1, 1, 1), value);
+		lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.removeLight(lookup.lightLookup, lookup.opacityLookup, centre.getRelative(1, 1, 1), value);
 		Assert.assertEquals(2360, resetUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : resetUpdates.entrySet())
 		{
@@ -186,12 +171,8 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, source, value);
 		AbsoluteLocation target = address.getBase().getRelative(source.x(), source.y(), source.z());
 		
-		Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, target, value);
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight(lookup.lightLookup, lookup.opacityLookup, target, value);
 		// We expect 38 updates to fill the maze.
 		int expectedUpdates = 38;
 		Assert.assertEquals(expectedUpdates, updates.size());
@@ -202,12 +183,8 @@ public class TestLightBringer
 		_writeLight(System.out, cuboid, source.z());
 		
 		cuboid.setData7(AspectRegistry.LIGHT, source, (byte)0);
-		updates = LightBringer.removeLight((AbsoluteLocation location) -> {
-			return address.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, target, value);
+		lookup = new _OneCuboidLookupCache(cuboid);
+		updates = LightBringer.removeLight(lookup.lightLookup, lookup.opacityLookup, target, value);
 		// The same number to clear the maze.
 		Assert.assertEquals(expectedUpdates, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -218,6 +195,56 @@ public class TestLightBringer
 		ByteBuffer buffer2 = ByteBuffer.allocate(40000);
 		Assert.assertNull(cuboid.serializeResumable(null, buffer2));
 		Assert.assertArrayEquals(buffer.array(), buffer2.array());
+	}
+
+	@Test
+	public void murky()
+	{
+		// We want to check adding a few light sources to a high-opacity environment and then remove some.
+		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
+		
+		// We will use the light values from the cuboid but a fixed high opacity.
+		LightBringer.IByteLookup opacity = (AbsoluteLocation location) -> 4;
+		
+		// Set a light on either side of the centre.
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		AbsoluteLocation west = centre.getRelative(-1, 0, 0);
+		cuboid.setData7(AspectRegistry.LIGHT, west.getBlockAddress(), (byte)15);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight(lookup.lightLookup, opacity, west, (byte)15);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		lookup = new _OneCuboidLookupCache(cuboid);
+		AbsoluteLocation east = centre.getRelative(1, 0, 0);
+		cuboid.setData7(AspectRegistry.LIGHT, east.getBlockAddress(), (byte)15);
+		updates = LightBringer.spreadLight(lookup.lightLookup, opacity, east, (byte)15);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+		Assert.assertEquals((byte)11, cuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
+		
+		// Remove the light on either side of the centre.
+		lookup = new _OneCuboidLookupCache(cuboid);
+		cuboid.setData7(AspectRegistry.LIGHT, west.getBlockAddress(), (byte)0);
+		updates = LightBringer.removeLight(lookup.lightLookup, opacity, west, (byte)15);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		lookup = new _OneCuboidLookupCache(cuboid);
+		cuboid.setData7(AspectRegistry.LIGHT, east.getBlockAddress(), (byte)0);
+		updates = LightBringer.removeLight(lookup.lightLookup, opacity, east, (byte)15);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+		Assert.assertEquals((byte)0, cuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
 	}
 
 
@@ -271,5 +298,40 @@ public class TestLightBringer
 			}
 		}
 		return match;
+	}
+
+	private static class _OneCuboidLookupCache
+	{
+		private final CuboidData _cuboid;
+		private final Map<AbsoluteLocation, BlockProxy> _cache;
+		public final LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) -> 
+		{
+			BlockProxy proxy = _readOrPopulateCache(location);
+			return (null != proxy)
+					? proxy.getLight()
+					: LightBringer.IByteLookup.NOT_FOUND
+			;
+		};
+		public final LightBringer.IByteLookup opacityLookup = (AbsoluteLocation location) -> 
+		{
+			BlockProxy proxy = _readOrPopulateCache(location);
+			return (null != proxy)
+					? LightAspect.getOpacity(proxy.getBlock().asItem())
+					: LightBringer.IByteLookup.NOT_FOUND
+			;
+		};
+		public _OneCuboidLookupCache(CuboidData cuboid)
+		{
+			_cuboid = cuboid;
+			_cache = new HashMap<>();
+		}
+		private BlockProxy _readOrPopulateCache(AbsoluteLocation location)
+		{
+			if (!_cache.containsKey(location))
+			{
+				_cache.put(location, new BlockProxy(location.getBlockAddress(), _cuboid));
+			}
+			return _cache.get(location);
+		}
 	}
 }
