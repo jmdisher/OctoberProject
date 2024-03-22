@@ -17,7 +17,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -90,7 +89,7 @@ public class WorldProcessor
 		};
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
-		Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid = new HashMap<>();
+		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
@@ -157,7 +156,7 @@ public class WorldProcessor
 				else
 				{
 					ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
-					List<MutationBlockSetBlock> updateMutations = new ArrayList<>();
+					List<BlockChangeDescription> updateMutations = new ArrayList<>();
 					// At least something changed so create a new clone and write-back into it.
 					CuboidData mutable = CuboidData.mutableClone(oldState);
 					for (MutableBlockProxy proxy : proxiesToWrite)
@@ -165,12 +164,12 @@ public class WorldProcessor
 						proxy.writeBack(mutable);
 						
 						// Since this one changed, we also want to send the set block mutation.
-						updateMutations.add(MutationBlockSetBlock.extractFromProxy(scratchBuffer, proxy));
+						updateMutations.add(BlockChangeDescription.extractFromProxy(scratchBuffer, proxy));
 					}
 					fragment.put(key, mutable);
 					
-					// Add the mutations associated with updating this cuboid.
-					resultantMutationsByCuboid.put(key, updateMutations);
+					// Add the change descriptions for this cuboid.
+					blockChangesByCuboid.put(key, updateMutations);
 				}
 			}
 		}
@@ -178,7 +177,7 @@ public class WorldProcessor
 		return new ProcessedFragment(fragment
 				, exportedMutations
 				, exportedEntityChanges
-				, resultantMutationsByCuboid
+				, blockChangesByCuboid
 				, committedMutationCount
 		);
 	}
@@ -319,8 +318,7 @@ public class WorldProcessor
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
-			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid
+			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
 	) {}
 }

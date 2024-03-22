@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.SyncPoint;
@@ -355,7 +356,7 @@ public class TickRunner
 			// Stitch together the maps of completed mutations within this tick.
 			Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
 			int committedEntityMutationCount = 0;
-			Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid = new HashMap<>();
+			Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 			int committedCuboidMutationCount = 0;
 			
 			// We will also capture any of the mutations which should be scheduled into the next tick since we should publish those into the snapshot.
@@ -375,7 +376,7 @@ public class TickRunner
 				// Collect the mutations.
 				resultantMutationsById.putAll(fragment.crowd.resultantMutationsById());
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
-				resultantMutationsByCuboid.putAll(fragment.world.resultantMutationsByCuboid());
+				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
 				committedCuboidMutationCount += fragment.world.committedMutationCount();
 				
 				// World data.
@@ -401,6 +402,16 @@ public class TickRunner
 				_partial[i] = null;
 			}
 			
+			// We want to extract the block state set objects from the block change information for the snapshot.
+			Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid = new HashMap<>();
+			for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> perCuboid : blockChangesByCuboid.entrySet())
+			{
+				List<MutationBlockSetBlock> list = perCuboid.getValue().stream()
+						.map((BlockChangeDescription description) -> description.serializedForm())
+						.toList();
+				resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
+			}
+			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			Snapshot completedTick = new Snapshot(_nextTick
@@ -409,7 +420,7 @@ public class TickRunner
 					, Collections.unmodifiableMap(mutableWorldState)
 					, Collections.unmodifiableMap(resultantMutationsById)
 					, committedEntityMutationCount
-					, Collections.unmodifiableMap(resultantMutationsByCuboid)
+					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
 					, committedCuboidMutationCount
 					, Collections.unmodifiableMap(scheduledBlockMutations)
 					, Collections.unmodifiableMap(scheduledEntityMutations)
@@ -580,11 +591,14 @@ public class TickRunner
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
-				for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : resultantMutationsByCuboid.entrySet())
+				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
 				{
-					List<AbsoluteLocation> locations = entry.getValue().stream().map(
-							(MutationBlockSetBlock update) -> update.getAbsoluteLocation()
-					).toList();
+					// Only store the updated block locations if the block change requires it.
+					List<AbsoluteLocation> locations = entry.getValue().stream()
+						.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
+						.map(
+							(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
+						).toList();
 					updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
 				}
 				
@@ -755,8 +769,7 @@ public class TickRunner
 			// Note that the resultantMutationsById may not be the input mutations, but will have an equivalent impact on the crowd.
 			, Map<Integer, List<IMutationEntity>> resultantMutationsById
 			, int committedEntityMutationCount
-			// Note that the resultantMutationsByCuboid may not be the input mutations, but will have an equivalent impact on the world.
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantMutationsByCuboid
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
 			, int committedCuboidMutationCount
 			// These fields are related to what is scheduled for the _next_ tick (added here to expose them to serialization).
 			, Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations

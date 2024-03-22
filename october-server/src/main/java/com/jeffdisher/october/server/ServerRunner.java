@@ -480,7 +480,7 @@ public class ServerRunner
 						if (state.knownCuboids.contains(oneCuboid))
 						{
 							// We know about this cuboid so send any updates.
-							List<MutationBlockSetBlock> mutations = snapshot.resultantMutationsByCuboid().get(oneCuboid);
+							List<MutationBlockSetBlock> mutations = snapshot.resultantBlockChangesByCuboid().get(oneCuboid);
 							if (null != mutations)
 							{
 								for (MutationBlockSetBlock mutation : mutations)

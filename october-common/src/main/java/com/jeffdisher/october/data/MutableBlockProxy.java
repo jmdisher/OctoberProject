@@ -293,6 +293,19 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	/**
+	 * Checks the internal writes to see if those are state changes which should trigger the creation of a block update
+	 * event for the adjacent blocks in the following tick.
+	 * NOTE:  This assumes that it was called AFTER didChange() in order to avoid vacuous changes.
+	 * 
+	 * @return True if the writes made to this proxy will require generating an update event for neighbouring blocks.
+	 */
+	public boolean shouldTriggerUpdateEvent()
+	{
+		// For now, we will only include BLOCK aspect changes in the list of aspects triggering block updates.
+		return (null != _writes[AspectRegistry.BLOCK.index()]);
+	}
+
+	/**
 	 * Writes back any changes cached to the given CuboidData object.  Note that this should be called after didChange()
 	 * since it will revert redundant parts of the change.
 	 * 

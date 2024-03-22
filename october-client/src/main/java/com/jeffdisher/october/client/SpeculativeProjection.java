@@ -442,7 +442,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick);
 		_projectedWorld.putAll(innerFragment.stateFragment());
-		modifiedCuboids.addAll(innerFragment.resultantMutationsByCuboid().keySet());
+		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 		return innerFragment;
 	}
 

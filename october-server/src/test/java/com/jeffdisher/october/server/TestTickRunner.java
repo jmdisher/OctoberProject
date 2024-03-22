@@ -987,15 +987,15 @@ public class TestTickRunner
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 			Assert.assertEquals(2, snapshot.completedCuboids().size());
-			Assert.assertEquals(1, snapshot.resultantMutationsByCuboid().size());
-			Assert.assertEquals(1024, snapshot.resultantMutationsByCuboid().get(address1).size());
+			Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
+			Assert.assertEquals(1024, snapshot.resultantBlockChangesByCuboid().get(address1).size());
 		}
 		
 		// Now here should be none and there should be strong flowing water at the bottom.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snapshot.completedCuboids().size());
-		Assert.assertEquals(0, snapshot.resultantMutationsByCuboid().size());
+		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ItemRegistry.WATER_STRONG.number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
 		
 		runner.shutdown();
@@ -1037,11 +1037,11 @@ public class TestTickRunner
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
-			Assert.assertFalse(snapshot.resultantMutationsByCuboid().isEmpty());
+			Assert.assertFalse(snapshot.resultantBlockChangesByCuboid().isEmpty());
 		}
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertTrue(snapshot.resultantMutationsByCuboid().isEmpty());
+		Assert.assertTrue(snapshot.resultantBlockChangesByCuboid().isEmpty());
 		
 		runner.shutdown();
 	}
@@ -1091,11 +1091,88 @@ public class TestTickRunner
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
-			Assert.assertFalse(snapshot.resultantMutationsByCuboid().isEmpty());
+			Assert.assertFalse(snapshot.resultantBlockChangesByCuboid().isEmpty());
 		}
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertTrue(snapshot.resultantMutationsByCuboid().isEmpty());
+		Assert.assertTrue(snapshot.resultantBlockChangesByCuboid().isEmpty());
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void waterFlowOnBlockBreakOnly()
+	{
+		// We want to verify that block updates don't happen for things like damage updates so we place a water source,
+		// a gap, and a stone, then incrementally break it.  We should only see the update once the block breaks.
+		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, snapshotListener);
+		runner.start();
+		CuboidAddress address = new CuboidAddress((short)-3, (short)-4, (short)-5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation stoneLocation = address.getBase().getRelative(5, 5, 0);
+		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
+		AbsoluteLocation emptyLocation = stoneLocation.getRelative(-1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ItemRegistry.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ItemRegistry.WATER_SOURCE.number());
+		
+		int entityId = 1;
+		Inventory startInventory = Inventory.start(10).finish();
+		Entity entity = new Entity(entityId, new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z()), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
+				, null
+				, List.of(entity)
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.completedCuboids().size());
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		
+		// Send an incremental update to break the stone, but only partially.
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)100), 1L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (we should see the update scheduled, but no change).
+		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		
+		// Let that mutation apply and verify the updated damage but no other change.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (we should see the update scheduled, but no change).
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals((short)1000, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
+		
+		// Apply the second break attempt, which should break it.
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)100), 1L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (we should see the update scheduled, but no change).
+		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		
+		// Let that mutation apply and verify that the block is broken (we won't see the update apply until the next tick).
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (we should see the update scheduled, but no change).
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		
+		// Run the tick which will trigger the block update, thus causing the water to flow.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// (we should see the update scheduled, but no change).
+		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(ItemRegistry.WATER_STRONG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		
 		runner.shutdown();
 	}
