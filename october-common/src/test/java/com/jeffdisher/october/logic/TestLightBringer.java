@@ -247,6 +247,54 @@ public class TestLightBringer
 		Assert.assertEquals((byte)0, cuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
 	}
 
+	@Test
+	public void differentOpacity()
+	{
+		// Make sure that the evaluation order is correct, even when opacity differs via different paths.
+		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
+		
+		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
+		{
+			// We will say that only the centre z-level is not fully opaque but say that south or west directions are more opaque.
+			byte value = LightAspect.MAX_LIGHT;
+			if (centre.z() == location.z())
+			{
+				value = 1;
+				if (location.y() < centre.y())
+				{
+					value += 5;
+				}
+				if (location.x() < centre.x())
+				{
+					value += 5;
+				}
+			}
+			return value;
+		};
+		
+		// Set a light in the centre and make sure it makes sense.
+		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), LightAspect.MAX_LIGHT);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.spreadLight(lookup.lightLookup, opacity, centre, LightAspect.MAX_LIGHT);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+		
+		// Now remove the light and make sure the area goes dark.
+		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), (byte)0);
+		updates = LightBringer.removeLight(lookup.lightLookup, opacity, centre, LightAspect.MAX_LIGHT);
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+	}
+
 
 	private static void _writeLight(PrintStream stream, CuboidData cuboid, byte z)
 	{

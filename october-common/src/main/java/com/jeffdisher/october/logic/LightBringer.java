@@ -1,9 +1,11 @@
 package com.jeffdisher.october.logic;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -80,9 +82,9 @@ public class LightBringer
 		
 		// We need to have something to do.
 		Assert.assertTrue(previousLevel > 0);
-		Map<AbsoluteLocation, Byte> updates = new HashMap<>();
+		Set<AbsoluteLocation> darkenedSet = new HashSet<>();
 		Map<AbsoluteLocation, Byte> reFlood = new HashMap<>();
-		updates.put(start, (byte)0);
+		darkenedSet.add(start);
 		
 		Queue<_Step> queue = new LinkedList<>();
 		
@@ -90,7 +92,7 @@ public class LightBringer
 		Assert.assertTrue(lightLookup.lookup(start) == 0);
 		
 		// Enqueue the surrounding blocks.
-		_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, updates, reFlood, start, previousLevel);
+		_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start, previousLevel);
 		
 		while (!queue.isEmpty())
 		{
@@ -101,20 +103,25 @@ public class LightBringer
 			byte light = next.lightValue;
 			// This is only in the queue if it could illuminate something else.
 			Assert.assertTrue(light > 0);
-			_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, updates, reFlood, location, light);
+			_enqueueDarkNeighbours(lightLookup, opacityLookup, queue, darkenedSet, reFlood, location, light);
 		}
 		
 		// Remove the original since it was just part of a termination condition.
-		updates.remove(start);
+		darkenedSet.remove(start);
 		
 		// Now, re-flood from all of those in the flood set, adding back new updates, over-writing whatever is there.
+		Map<AbsoluteLocation, Byte> updates = new HashMap<>();
+		for (AbsoluteLocation dark : darkenedSet)
+		{
+			updates.put(dark, (byte)0);
+		}
 		if (!reFlood.isEmpty())
 		{
-			// We need to make a shim over the lookup mechanism to return values from the previous phase updates.
+			// We need to make a shim over the lookup mechanism to return values from the darkening phase updates.
 			IByteLookup localLightLookup = (AbsoluteLocation location) -> {
 				byte original = lightLookup.lookup(location);
 				return (IByteLookup.NOT_FOUND != original)
-						? (updates.containsKey(location) ? updates.get(location) : original)
+						? (darkenedSet.contains(location) ? 0 : original)
 						: IByteLookup.NOT_FOUND
 				;
 			};
@@ -136,7 +143,7 @@ public class LightBringer
 				reUpdates.remove(location);
 			}
 			
-			// Now, write these back over the updates.
+			// Now, write these back our re-lit blocks, replacing whatever we darkened.
 			updates.putAll(reUpdates);
 		}
 		
@@ -205,7 +212,11 @@ public class LightBringer
 				Assert.assertTrue(light > 0);
 				
 				// Add this to our map of updates and enqueue it for neighbour processing.
-				Assert.assertTrue(null == updates.put(location, light));
+				Byte previousUpdate = updates.put(location, light);
+				if (null != previousUpdate)
+				{
+					Assert.assertTrue(previousUpdate < light);
+				}
 				// See if the neighbours need to be lit.
 				if (light > 1)
 				{
@@ -218,37 +229,39 @@ public class LightBringer
 	private static void _enqueueDarkNeighbours(IByteLookup lightLookup
 			, IByteLookup opacityLookup
 			, Queue<_Step> queue
-			, Map<AbsoluteLocation, Byte> updates
+			, Set<AbsoluteLocation> darkenedSet
 			, Map<AbsoluteLocation, Byte> reFlood
 			, AbsoluteLocation start
 			, byte light
 	)
 	{
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, 0, -1), light);
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, 0,  1), light);
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0, -1, 0), light);
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(0,  1, 0), light);
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative(-1, 0, 0), light);
-		_checkDarkNeighbour(lightLookup, opacityLookup, queue, updates, reFlood, start.getRelative( 1, 0, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative(0, 0, -1), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative(0, 0,  1), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative(0, -1, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative(0,  1, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative(-1, 0, 0), light);
+		_checkDarkNeighbour(lightLookup, opacityLookup, queue, darkenedSet, reFlood, start.getRelative( 1, 0, 0), light);
 	}
 
 	private static void _checkDarkNeighbour(IByteLookup lightLookup
 			, IByteLookup opacityLookup
 			, Queue<_Step> queue
-			, Map<AbsoluteLocation, Byte> updates
+			, Set<AbsoluteLocation> darkenedSet
 			, Map<AbsoluteLocation, Byte> reFlood
 			, AbsoluteLocation location
 			, byte lightEntering
 	)
 	{
-		if (!updates.containsKey(location) && !reFlood.containsKey(location))
+		// We normally won't visit the block twice but can in strange opacity environments.
+		// Even in those cases, we will only see the it in the darkened set if this one was already matched.
+		if (!darkenedSet.contains(location))
 		{
 			byte existingLight = lightLookup.lookup(location);
 			if (IByteLookup.NOT_FOUND != existingLight)
 			{
 				// Check the light level:
-				// -if it matches the expected value, set it to zero and enqueue it
-				// -if it is greater than the expected value, add it to the reflood set
+				// -if it matches the expected value, set it to zero and enqueue it (since this means we were lighting it - others could, too)
+				// -if it is greater than the expected value, add it to the reflood set (since this is beyond the boundary of what we lit)
 				// -cannot be less than expected
 				byte opacity = opacityLookup.lookup(location);
 				// We must have found this and it must have positive opacity.
@@ -256,12 +269,14 @@ public class LightBringer
 				byte light = (byte) (lightEntering - opacity);
 				if ((existingLight == light) && (existingLight > 0))
 				{
-					// Add this to our map of updates and enqueue it for neighbour processing.
-					Assert.assertTrue(null == updates.put(location, (byte)0));
-					// See if the neighbours need to be lit.
+					// Add this to our set of darkened updates and enqueue it for neighbour processing.
+					Assert.assertTrue(darkenedSet.add(location));
+					// See if the neighbours may be darkened by this path
 					if (light > 1)
 					{
 						queue.add(new _Step(location, light));
+						// We may have decided to reflood this via a different path but changed our mind.
+						reFlood.remove(location);
 					}
 				}
 				else if (existingLight > 1)
