@@ -43,6 +43,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
 			{
 				Inventory starting = Inventory.start(InventoryAspect.CAPACITY_AIR)
 						.add(ItemRegistry.CHARCOAL, 2)
+						.add(ItemRegistry.LANTERN, 2)
 						.finish();
 				data.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)0), starting);
 			}

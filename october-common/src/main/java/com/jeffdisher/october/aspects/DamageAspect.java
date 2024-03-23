@@ -76,6 +76,7 @@ public class DamageAspect
 					|| (ItemRegistry.PLANK == item)
 					|| (ItemRegistry.CRAFTING_TABLE == item)
 					|| (ItemRegistry.DIRT == item)
+					|| (ItemRegistry.LANTERN == item)
 			)
 			{
 				toughness = WEAK;

@@ -43,6 +43,7 @@ public class InventoryAspect
 			else if ((ItemRegistry.PLANK == item)
 					|| (ItemRegistry.CHARCOAL == item)
 					|| (ItemRegistry.DIRT == item)
+					|| (ItemRegistry.LANTERN == item)
 			)
 			{
 				encumbrance = 1;
