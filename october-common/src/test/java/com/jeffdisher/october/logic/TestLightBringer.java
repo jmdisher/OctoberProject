@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -118,7 +119,7 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), (byte)0);
 		sources.remove(secondLight);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.removeLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, centre.getRelative(1, 1, 1), value);
+		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.removeLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, secondLight, value);
 		Assert.assertEquals(2360, resetUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : resetUpdates.entrySet())
 		{
@@ -419,6 +420,96 @@ public class TestLightBringer
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
 		{
 			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+	}
+
+	@Test
+	public void batchProcess()
+	{
+		// We will add 3 light sources in one call, then remove 2 and add another 2 in the following call.
+		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
+		
+		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
+		{
+			// We will say that the entire cuboid is opaque, other than this single z-level.
+			return (centre.getBlockAddress().z() == location.getBlockAddress().z())
+					? (byte)1
+					: LightAspect.MAX_LIGHT
+			;
+		};
+		
+		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
+		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		{
+			return sources.containsKey(location)
+					? sources.get(location)
+					: 0
+			;
+		};
+		
+		// Set our initial lights.
+		AbsoluteLocation light1 = centre.getRelative(-2, 1, 0);
+		AbsoluteLocation light2 = centre.getRelative(0, -1, 0);
+		AbsoluteLocation light3 = centre.getRelative(2, 1, 0);
+		List<LightBringer.Light> toAdd1 = List.of(new LightBringer.Light(light1, LightAspect.MAX_LIGHT)
+				, new LightBringer.Light(light2, (byte)8)
+				, new LightBringer.Light(light3, LightAspect.MAX_LIGHT)
+		);
+		for (LightBringer.Light light : toAdd1)
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, light.location().getBlockAddress(), light.level());
+			sources.put(light.location(), light.level());
+		}
+		
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, toAdd1, List.of());
+		// This update value was found experimentally.
+		Assert.assertEquals(527, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (address.equals(location.getCuboidAddress()))
+			{
+				cuboid.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+		}
+		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
+		
+		// Create the new lights and remove some of the old ones.
+		AbsoluteLocation light4 = centre.getRelative(-5, 5, 0);
+		AbsoluteLocation light5 = centre.getRelative(3, -8, 0);
+		List<LightBringer.Light> toAdd2 = List.of(new LightBringer.Light(light4, LightAspect.MAX_LIGHT)
+				, new LightBringer.Light(light5, (byte)8)
+		);
+		List<LightBringer.Light> toRemove = List.of(new LightBringer.Light(light1, LightAspect.MAX_LIGHT)
+				, new LightBringer.Light(light3, LightAspect.MAX_LIGHT)
+		);
+		for (LightBringer.Light light : toAdd2)
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, light.location().getBlockAddress(), light.level());
+			sources.put(light.location(), light.level());
+		}
+		for (LightBringer.Light light : toRemove)
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, light.location().getBlockAddress(), (byte)0);
+			sources.remove(light.location());
+		}
+		
+		lookup = new _OneCuboidLookupCache(cuboid);
+		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, toAdd2, toRemove);
+		// This update value was found experimentally.
+		Assert.assertEquals(656, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (address.equals(location.getCuboidAddress()))
+			{
+				cuboid.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
 		}
 		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
 	}

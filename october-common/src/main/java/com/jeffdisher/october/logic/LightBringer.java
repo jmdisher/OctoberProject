@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -105,6 +106,61 @@ public class LightBringer
 			}
 			_runLightQueue(overlay, reQueue);
 		}
+		
+		return overlay.getChangedValues();
+	}
+
+
+	/**
+	 * Called to perform a batch update on the lighting model.  This allows multiple light sources to added or removed
+	 * in a single call.
+	 * Note that this assumes all toAdd and toRemove locations have already been updated with their new values.
+	 * Note that this doesn't change the underlying data, only returns the changes which must be made.
+	 * 
+	 * @param lightLookup A function to look up block light levels.
+	 * @param opacityLookup A function to look up block opacity.
+	 * @param sourceLookup A function to get the light eminating from a source block (0 if not a source).
+	 * @param toAdd The list of light sources to add.
+	 * @param toRemove The list of light sources to remove.
+	 * @return A map of locations and light levels to update.
+	 */
+	public static Map<AbsoluteLocation, Byte> batchProcessLight(IByteLookup lightLookup
+			, IByteLookup opacityLookup
+			, IByteLookup sourceLookup
+			, List<Light> toAdd
+			, List<Light> toRemove
+	)
+	{
+		// We want to intercept lighting lookups to use any updated values we have.
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup, sourceLookup);
+		
+		// We will build a light queue and start it with our list of sources to add.
+		// We will add the "re-flood" sources to this queue, afterward, since they are likely lower values (avoids redundant light changes).
+		Queue<_Step> lightQueue = new LinkedList<>();
+		for (Light add : toAdd)
+		{
+			_enqueueLightNeighbours(overlay, lightQueue, add.location, add.level);
+		}
+		
+		// First, we want to process all the removed light sources.
+		Map<AbsoluteLocation, Byte> reFlood = new HashMap<>();
+		Queue<_Step> darkQueue = new LinkedList<>();
+		for (Light remove : toRemove)
+		{
+			_enqueueDarkNeighbours(overlay, darkQueue, reFlood, remove.location, remove.level);
+		}
+		_runDarkQueue(overlay, darkQueue, reFlood);
+		
+		// We can now add the re-flood values to the light queue and then run it as a standard light flood.
+		for (Map.Entry<AbsoluteLocation, Byte> elt : reFlood.entrySet())
+		{
+			AbsoluteLocation location = elt.getKey();
+			byte value = elt.getValue();
+			_enqueueLightNeighbours(overlay, lightQueue, location, value);
+		}
+		
+		// Finally, since all light increasing operations are enqueued, run them.
+		_runLightQueue(overlay, lightQueue);
 		
 		return overlay.getChangedValues();
 	}
@@ -271,6 +327,9 @@ public class LightBringer
 		 */
 		byte lookup(AbsoluteLocation location);
 	}
+
+	public static record Light(AbsoluteLocation location, byte level)
+	{}
 
 	private static record _Step(AbsoluteLocation location, byte lightValue)
 	{}
