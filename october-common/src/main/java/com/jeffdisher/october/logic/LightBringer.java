@@ -25,12 +25,14 @@ public class LightBringer
 	 * 
 	 * @param lightLookup A function to look up block light levels.
 	 * @param opacityLookup A function to look up block opacity.
+	 * @param sourceLookup A function to get the light eminating from a source block (0 if not a source).
 	 * @param start The starting light source location.
 	 * @param startLevel The intensity of the new light source.
 	 * @return A map of locations and light levels to update.
 	 */
 	public static Map<AbsoluteLocation, Byte> spreadLight(IByteLookup lightLookup
 			, IByteLookup opacityLookup
+			, IByteLookup sourceLookup
 			, AbsoluteLocation start
 			, byte startLevel
 	)
@@ -42,7 +44,7 @@ public class LightBringer
 		Assert.assertTrue(lightLookup.lookup(start) == startLevel);
 		
 		// We want to intercept lighting lookups to use any updated values we have.
-		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup);
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup, sourceLookup);
 		
 		// Enqueue the surrounding blocks.
 		Queue<_Step> queue = new LinkedList<>();
@@ -60,12 +62,14 @@ public class LightBringer
 	 * 
 	 * @param lightLookup A function to look up block light levels.
 	 * @param opacityLookup A function to look up block opacity.
+	 * @param sourceLookup A function to get the light eminating from a source block (0 if not a source).
 	 * @param start The location where the light source was removed.
 	 * @param previousLevel The previous value of the light source, prior to its removal.
 	 * @return A map of locations and light levels to update.
 	 */
 	public static Map<AbsoluteLocation, Byte> removeLight(IByteLookup lightLookup
 			, IByteLookup opacityLookup
+			, IByteLookup sourceLookup
 			, AbsoluteLocation start
 			, byte previousLevel
 	)
@@ -80,7 +84,7 @@ public class LightBringer
 		Assert.assertTrue(lightLookup.lookup(start) == 0);
 		
 		// We want to intercept lighting lookups to use any updated values we have.
-		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup);
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup, sourceLookup);
 		
 		// Enqueue the surrounding blocks.
 		Map<AbsoluteLocation, Byte> reFlood = new HashMap<>();
@@ -227,11 +231,23 @@ public class LightBringer
 				if (light > 1)
 				{
 					queue.add(new _Step(location, light));
-					// We may have decided to reflood this via a different path but changed our mind.
-					reFlood.remove(location);
+					
+					// NOTE:  If this turns out to be a light source, just set its value and add it to the reflood set.
+					byte sourceLight = overlay.getLightSource(location);
+					if (sourceLight > 0)
+					{
+						overlay.setLight(location, sourceLight);
+						reFlood.put(location, sourceLight);
+					}
+					else
+					{
+						// We may have decided to reflood this via a different path but changed our mind.
+						reFlood.remove(location);
+					}
 				}
 			}
-			else if (existingLight > 1)
+			// Make sure that we didn't already flag this as a source or something.
+			else if ((existingLight > 1) && !reFlood.containsKey(location))
 			{
 				Assert.assertTrue(existingLight > light);
 				// We need to re-flood this one.
@@ -263,12 +279,14 @@ public class LightBringer
 	{
 		private final IByteLookup _lightLookup;
 		private final IByteLookup _opacityLookup;
+		private final IByteLookup _sourceLookup;
 		private final Map<AbsoluteLocation, Byte> _changedValues;
 		
-		public _BlockDataOverlay(IByteLookup lightLookup, IByteLookup opacityLookup)
+		public _BlockDataOverlay(IByteLookup lightLookup, IByteLookup opacityLookup, IByteLookup sourceLookup)
 		{
 			_lightLookup = lightLookup;
 			_opacityLookup = opacityLookup;
+			_sourceLookup = sourceLookup;
 			_changedValues = new HashMap<>();
 		}
 		public byte getLight(AbsoluteLocation location)
@@ -295,6 +313,10 @@ public class LightBringer
 		public byte getOpacity(AbsoluteLocation location)
 		{
 			return _opacityLookup.lookup(location);
+		}
+		public byte getLightSource(AbsoluteLocation location)
+		{
+			return _sourceLookup.lookup(location);
 		}
 		public Map<AbsoluteLocation, Byte> getChangedValues()
 		{
