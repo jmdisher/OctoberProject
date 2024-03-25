@@ -171,28 +171,40 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
+		// Note that we don't want to send all the data if it didn't all change (since things like lighting updates are common).
+		// This means we will send just the index (as a byte) and the data for that aspect if it changed.
 		for (int i = 0; i < AspectRegistry.ALL_ASPECTS.length; ++i)
 		{
-			Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-			// We want to honour the mutable proxy's internal type-specific data so check this type.
-			if (Short.class == type.type())
+			// We only want to send this if it changed.
+			if (null != _writes[i])
 			{
-				// We just checked this.
-				@SuppressWarnings("unchecked")
-				short value = _getData15((Aspect<Short, ?>) type);
-				buffer.putShort(value);
-			}
-			else if (Byte.class == type.type())
-			{
-				// We just checked this.
-				@SuppressWarnings("unchecked")
-				byte value = _getData7((Aspect<Byte, ?>) type);
-				buffer.put(value);
-			}
-			else
-			{
-				Object value = _getDataSpecial(type);
-				type.codec().storeData(buffer, value);
+				// There is some change so write this.
+				// First, the index as a byte.
+				Assert.assertTrue(i <= Byte.MAX_VALUE);
+				buffer.put((byte)i);
+				
+				// Now, serialize the data.
+				Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
+				// We want to honour the mutable proxy's internal type-specific data so check this type.
+				if (Short.class == type.type())
+				{
+					// We just checked this.
+					@SuppressWarnings("unchecked")
+					short value = _getData15((Aspect<Short, ?>) type);
+					buffer.putShort(value);
+				}
+				else if (Byte.class == type.type())
+				{
+					// We just checked this.
+					@SuppressWarnings("unchecked")
+					byte value = _getData7((Aspect<Byte, ?>) type);
+					buffer.put(value);
+				}
+				else
+				{
+					Object value = _getDataSpecial(type);
+					type.codec().storeData(buffer, value);
+				}
 			}
 		}
 	}
@@ -202,8 +214,13 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	@Override
 	public void deserializeFromBuffer(ByteBuffer buffer)
 	{
-		for (int i = 0; i < AspectRegistry.ALL_ASPECTS.length; ++i)
+		// We only store the data which actually changed so loop until the buffer segment is empty, checking for indices (byte).
+		while (buffer.hasRemaining())
 		{
+			byte i = buffer.get();
+			Assert.assertTrue(i >= 0);
+			Assert.assertTrue(i < AspectRegistry.ALL_ASPECTS.length);
+			
 			Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
 			if (Short.class == type.type())
 			{
@@ -243,7 +260,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public boolean didChange()
 	{
 		boolean didChange = false;
-		for (int i = 0; !didChange && (i < _writes.length); ++i)
+		for (int i = 0; i < _writes.length; ++i)
 		{
 			// Check what was modified.
 			if (_write7 == _writes[i])
