@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -1173,6 +1174,56 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ItemRegistry.WATER_STRONG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void simpleLighting()
+	{
+		// Just show a relatively simple lighting case - add a lantern and an opaque block and verify the lighting pattern.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation lanternLocation = address.getBase().getRelative(5, 6, 7);
+		AbsoluteLocation stoneLocation = address.getBase().getRelative(6, 6, 7);
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		int entityId = 1;
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
+				, null
+				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		// Enqueue the mutations to replace these 2 blocks (this mutation is just for testing and doesn't use the inventory or location).
+		// The mutation will be run in the next tick since there isn't one running.
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(lanternLocation, ItemRegistry.AIR.number(), ItemRegistry.LANTERN.number())), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(stoneLocation, ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(2, snapshot.committedEntityMutationCount());
+		
+		snapshot = runner.waitForPreviousTick();
+		// Here, we should see the block types changed but not yet the light.
+		Assert.assertEquals(2, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(2, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.LANTERN.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.STONE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Here, we should see the light changes.
+		Assert.assertEquals(3028, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.LANTERN.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getRelative(0, 1, 0).getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.STONE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(11, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getRelative(1, 0, 0).getBlockAddress()));
 		
 		runner.shutdown();
 	}

@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -22,6 +23,7 @@ import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -147,7 +149,8 @@ public class WorldProcessor
 					}
 				}
 				
-				// TODO:  Process light changes from previous tick.
+				// We also want to process lighting updates from the previous tick.
+				_processPreviousTickLightUpdates(key, oldState, potentialLightChangesByCuboid, proxies, local);
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(
@@ -316,6 +319,195 @@ public class WorldProcessor
 		if (targetCuboid.equals(location.getCuboidAddress()))
 		{
 			inout_toSynthesize.add(location);
+		}
+	}
+
+	private static void _processPreviousTickLightUpdates(CuboidAddress key
+			, IReadOnlyCuboidData oldState
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+			, Map<BlockAddress, MutableBlockProxy> proxies
+			, Function<AbsoluteLocation, BlockProxy> local
+	)
+	{
+		// This requires that we check all possible lighting updates in this cuboid and surrounding ones and
+		// reflood the lighting, writing back any changes in this cuboid.
+		// TODO:  See if we benefit from parallelizing this (in a second "handleNextWorkUnit()" for the cuboid)
+		// by adding more complex block change merging to the synchronization point (since each block would need
+		// to be updated in 2 ways).
+		List<LightBringer.Light> lightsToAdd = new ArrayList<>();
+		List<LightBringer.Light> lightsToRemove = new ArrayList<>();
+		Map<AbsoluteLocation, Byte> lightValueOverlay = new HashMap<>();
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0, 0));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 1, 0, 0));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key,-1, 0, 0));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 1, 0));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0,-1, 0));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0, 1));
+		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0,-1));
+		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
+		{
+			LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) ->
+			{
+				Byte overlayValue = lightValueOverlay.get(location);
+				byte value;
+				if (null == overlayValue)
+				{
+					BlockProxy proxy = local.apply(location);
+					value = (null != proxy)
+							? proxy.getLight()
+							: LightBringer.IByteLookup.NOT_FOUND
+					;
+				}
+				else
+				{
+					value = overlayValue;
+				}
+				return value;
+			};
+			LightBringer.IByteLookup opacityLookup = (AbsoluteLocation location) ->
+			{
+				BlockProxy proxy = local.apply(location);
+				return (null != proxy)
+						? LightAspect.getOpacity(proxy.getBlock().asItem())
+						: LightBringer.IByteLookup.NOT_FOUND
+				;
+			};
+			LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+			{
+				BlockProxy proxy = local.apply(location);
+				return (null != proxy)
+						? LightAspect.getLightEmission(proxy.getBlock().asItem())
+						: LightBringer.IByteLookup.NOT_FOUND
+				;
+			};
+			Map<AbsoluteLocation, Byte> lightChanges = LightBringer.batchProcessLight(lightLookup
+					, opacityLookup
+					, sourceLookup
+					, lightsToAdd
+					, lightsToRemove
+			);
+			// First, set the lights based on our change starts.
+			_flushLightChanges(key, oldState, proxies, lightValueOverlay);
+			// Now, re-update this with whatever was propagated.
+			_flushLightChanges(key, oldState, proxies, lightChanges);
+		}
+	}
+
+	private static Map<AbsoluteLocation, Byte> _getAndSplitLightUpdates(List<LightBringer.Light> lightsToAdd
+			, List<LightBringer.Light> lightsToRemove
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+			, Function<AbsoluteLocation, BlockProxy> proxyLookup
+			, CuboidAddress address
+			, int xOffset
+			, int yOffset
+			, int zOffset
+	)
+	{
+		Map<AbsoluteLocation, Byte> changes = new HashMap<>();
+		// TODO:  Optimize this to avoid updates further away from this cuboid than their light delta.
+		List<AbsoluteLocation> cuboidLights = potentialLightChangesByCuboid.get(address.getRelative(xOffset, yOffset, zOffset));
+		if (null != cuboidLights)
+		{
+			for (AbsoluteLocation location : cuboidLights)
+			{
+				// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
+				BlockProxy proxy = proxyLookup.apply(location);
+				Item item = proxy.getBlock().asItem();
+				byte currentLight = proxy.getLight();
+				// Check if this is a light source.
+				byte emission = LightAspect.getLightEmission(item);
+				if (emission > currentLight)
+				{
+					// We need to add this light source.
+					lightsToAdd.add(new LightBringer.Light(location, emission));
+					changes.put(location, emission);
+				}
+				else
+				{
+					// See if this was an opaque block placed on top of something with light.
+					byte opacity = LightAspect.getOpacity(item);
+					if ((LightAspect.MAX_LIGHT == opacity) && (currentLight > 0))
+					{
+						// We need to set this to zero and cast the shadow.
+						lightsToRemove.add(new LightBringer.Light(location, currentLight));
+						changes.put(location, (byte)0);
+					}
+					else
+					{
+						// These are the more complex cases where the value changed for non-obvious reasons:
+						// -block changed to different opacity (air <-> water, for example)
+						// -opaque block was broken and needs computed light value
+						
+						// Check the surrounding blocks to see if the light should change.
+						byte east = _lightLevelOrZero(proxyLookup.apply(location.getRelative( 1, 0, 0)));
+						byte west = _lightLevelOrZero(proxyLookup.apply(location.getRelative(-1, 0, 0)));
+						byte north = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 1, 0)));
+						byte south = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0,-1, 0)));
+						byte up = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0, 1)));
+						byte down = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0,-1)));
+						byte maxIncoming = _maxLight(east, west, north, south, up, down);
+						byte calculated = (byte)(maxIncoming - opacity);
+						if (calculated > currentLight)
+						{
+							// We add the new light level and reflow from here.
+							lightsToAdd.add(new LightBringer.Light(location, calculated));
+							changes.put(location, calculated);
+						}
+						else if (calculated < currentLight)
+						{
+							// We add the previous light level so we will quickly reflow from the actual source.
+							lightsToRemove.add(new LightBringer.Light(location, currentLight));
+							changes.put(location, (byte)0);
+						}
+						else
+						{
+							// This happens if the change didn't result in lighting change so do nothing.
+						}
+					}
+				}
+			}
+		}
+		return changes;
+	}
+
+	private static byte _lightLevelOrZero(BlockProxy proxy)
+	{
+		return (null != proxy)
+				? proxy.getLight()
+				: 0
+		;
+	}
+
+	private static byte _maxLight(byte east, byte west, byte north, byte south, byte up, byte down)
+	{
+		byte xMax = (byte)Math.max(east, west);
+		byte yMax = (byte)Math.max(north, south);
+		byte zMax = (byte)Math.max(up, down);
+		byte max = (byte) Math.max(xMax, Math.max(yMax, zMax));
+		return max;
+	}
+
+	private static void _flushLightChanges(CuboidAddress key
+			, IReadOnlyCuboidData oldState
+			, Map<BlockAddress, MutableBlockProxy> proxies
+			, Map<AbsoluteLocation, Byte> lightChanges
+	)
+	{
+		for (Map.Entry<AbsoluteLocation, Byte> change : lightChanges.entrySet())
+		{
+			AbsoluteLocation location = change.getKey();
+			if (key.equals(location.getCuboidAddress()))
+			{
+				byte value = change.getValue();
+				BlockAddress block = location.getBlockAddress();
+				MutableBlockProxy proxy = proxies.get(block);
+				if (null == proxy)
+				{
+					proxy = new MutableBlockProxy(location, oldState);
+					proxies.put(block, proxy);
+				}
+				proxy.setLight(value);
+			}
 		}
 	}
 
