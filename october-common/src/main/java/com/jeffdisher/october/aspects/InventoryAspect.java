@@ -53,6 +53,8 @@ public class InventoryAspect
 					|| (ItemRegistry.LOG == item)
 					|| (ItemRegistry.CRAFTING_TABLE == item)
 					|| (ItemRegistry.COAL_ORE == item)
+					|| (ItemRegistry.LANTERN == item)
+					|| (ItemRegistry.IRON_INGOT == item)
 			)
 			{
 				encumbrance = 2;

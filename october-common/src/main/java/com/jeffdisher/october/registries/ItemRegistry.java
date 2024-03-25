@@ -36,6 +36,7 @@ public class ItemRegistry
 	public static final Item WATER_STRONG = _register("Water (Strong Flow)");
 	public static final Item WATER_WEAK = _register("Water (Weak Flow)");
 	public static final Item LANTERN = _register("Lantern");
+	public static final Item IRON_INGOT = _register("Iron ingot");
 
 	private static Item _register(String name)
 	{

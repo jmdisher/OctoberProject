@@ -612,7 +612,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.FURNACE);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.STONE_BRICK, 3).add(ItemRegistry.PLANK, 2).finish();
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.LOG, 3).add(ItemRegistry.PLANK, 2).finish();
 		Entity entity = new Entity(entityId
 				, EntityActionValidator.DEFAULT_LOCATION
 				, 0.0f
@@ -638,7 +638,7 @@ public class TestTickRunner
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ItemRegistry.STONE_BRICK, 3), Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ItemRegistry.LOG, 3), Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
 		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ItemRegistry.PLANK, 2), Inventory.INVENTORY_ASPECT_FUEL), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
@@ -654,19 +654,19 @@ public class TestTickRunner
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.LOG));
 		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
 		
 		// Loop until the craft is done.
 		int burnedMillis = 0;
 		int craftedMillis = 0;
-		int brickCount = 3;
+		int logCount = 3;
 		int plankCount = 1;
 		for (int i = 1; i < 30; ++i)
 		{
 			if (0 == (i % 10))
 			{
-				brickCount -= 1;
+				logCount -= 1;
 			}
 			if (21 == i)
 			{
@@ -680,7 +680,7 @@ public class TestTickRunner
 			Assert.assertEquals(1, snap.committedCuboidMutationCount());
 			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-			Assert.assertEquals(brickCount, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
+			Assert.assertEquals(logCount, proxy.getInventory().getCount(ItemRegistry.LOG));
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
 			if (0 != (i % 20))
 			{
@@ -703,8 +703,8 @@ public class TestTickRunner
 		Assert.assertEquals(1, snap.committedCuboidMutationCount());
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-		Assert.assertEquals(0, proxy.getInventory().getCount(ItemRegistry.STONE_BRICK));
-		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.LOG));
+		Assert.assertEquals(0, proxy.getInventory().getCount(ItemRegistry.LOG));
+		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.CHARCOAL));
 		Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
 		Assert.assertEquals(ItemRegistry.PLANK, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
