@@ -322,7 +322,7 @@ public class WorldProcessor
 		}
 	}
 
-	private static void _processPreviousTickLightUpdates(CuboidAddress key
+	private static void _processPreviousTickLightUpdates(CuboidAddress targetAddress
 			, IReadOnlyCuboidData oldState
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			, Map<BlockAddress, MutableBlockProxy> proxies
@@ -337,13 +337,16 @@ public class WorldProcessor
 		List<LightBringer.Light> lightsToAdd = new ArrayList<>();
 		List<LightBringer.Light> lightsToRemove = new ArrayList<>();
 		Map<AbsoluteLocation, Byte> lightValueOverlay = new HashMap<>();
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0, 0));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 1, 0, 0));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key,-1, 0, 0));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 1, 0));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0,-1, 0));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0, 1));
-		lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, key, 0, 0,-1));
+		for (int x = -1; x <= 1; ++x)
+		{
+			for (int y = -1; y <= 1; ++y)
+			{
+				for (int z = -1; z <= 1; ++z)
+				{
+					lightValueOverlay.putAll(_getAndSplitLightUpdates(lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, local, targetAddress, x, y, z));
+				}
+			}
+		}
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
 			LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) ->
@@ -387,9 +390,9 @@ public class WorldProcessor
 					, lightsToRemove
 			);
 			// First, set the lights based on our change starts.
-			_flushLightChanges(key, oldState, proxies, lightValueOverlay);
+			_flushLightChanges(targetAddress, oldState, proxies, lightValueOverlay);
 			// Now, re-update this with whatever was propagated.
-			_flushLightChanges(key, oldState, proxies, lightChanges);
+			_flushLightChanges(targetAddress, oldState, proxies, lightChanges);
 		}
 	}
 
@@ -397,77 +400,112 @@ public class WorldProcessor
 			, List<LightBringer.Light> lightsToRemove
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			, Function<AbsoluteLocation, BlockProxy> proxyLookup
-			, CuboidAddress address
+			, CuboidAddress targetAddress
 			, int xOffset
 			, int yOffset
 			, int zOffset
 	)
 	{
 		Map<AbsoluteLocation, Byte> changes = new HashMap<>();
-		// TODO:  Optimize this to avoid updates further away from this cuboid than their light delta.
-		List<AbsoluteLocation> cuboidLights = potentialLightChangesByCuboid.get(address.getRelative(xOffset, yOffset, zOffset));
+		List<AbsoluteLocation> cuboidLights = potentialLightChangesByCuboid.get(targetAddress.getRelative(xOffset, yOffset, zOffset));
 		if (null != cuboidLights)
 		{
 			for (AbsoluteLocation location : cuboidLights)
 			{
-				// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
-				BlockProxy proxy = proxyLookup.apply(location);
-				Item item = proxy.getBlock().asItem();
-				byte currentLight = proxy.getLight();
-				// Check if this is a light source.
-				byte emission = LightAspect.getLightEmission(item);
-				if (emission > currentLight)
+				int distanceToCuboid = _distanceToCuboid(targetAddress, location);
+				if (distanceToCuboid < LightAspect.MAX_LIGHT)
 				{
-					// We need to add this light source.
-					lightsToAdd.add(new LightBringer.Light(location, emission));
-					changes.put(location, emission);
-				}
-				else
-				{
-					// See if this was an opaque block placed on top of something with light.
-					byte opacity = LightAspect.getOpacity(item);
-					if ((LightAspect.MAX_LIGHT == opacity) && (currentLight > 0))
-					{
-						// We need to set this to zero and cast the shadow.
-						lightsToRemove.add(new LightBringer.Light(location, currentLight));
-						changes.put(location, (byte)0);
-					}
-					else
-					{
-						// These are the more complex cases where the value changed for non-obvious reasons:
-						// -block changed to different opacity (air <-> water, for example)
-						// -opaque block was broken and needs computed light value
-						
-						// Check the surrounding blocks to see if the light should change.
-						byte east = _lightLevelOrZero(proxyLookup.apply(location.getRelative( 1, 0, 0)));
-						byte west = _lightLevelOrZero(proxyLookup.apply(location.getRelative(-1, 0, 0)));
-						byte north = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 1, 0)));
-						byte south = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0,-1, 0)));
-						byte up = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0, 1)));
-						byte down = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0,-1)));
-						byte maxIncoming = _maxLight(east, west, north, south, up, down);
-						byte calculated = (byte)(maxIncoming - opacity);
-						if (calculated > currentLight)
-						{
-							// We add the new light level and reflow from here.
-							lightsToAdd.add(new LightBringer.Light(location, calculated));
-							changes.put(location, calculated);
-						}
-						else if (calculated < currentLight)
-						{
-							// We add the previous light level so we will quickly reflow from the actual source.
-							lightsToRemove.add(new LightBringer.Light(location, currentLight));
-							changes.put(location, (byte)0);
-						}
-						else
-						{
-							// This happens if the change didn't result in lighting change so do nothing.
-						}
-					}
+					_processLightChange(lightsToAdd, lightsToRemove, changes, proxyLookup, location);
 				}
 			}
 		}
 		return changes;
+	}
+
+	private static void _processLightChange(List<LightBringer.Light> lightsToAdd
+			, List<LightBringer.Light> lightsToRemove
+			, Map<AbsoluteLocation, Byte> changes
+			, Function<AbsoluteLocation, BlockProxy> proxyLookup
+			, AbsoluteLocation location
+	)
+	{
+		// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
+		BlockProxy proxy = proxyLookup.apply(location);
+		Item item = proxy.getBlock().asItem();
+		byte currentLight = proxy.getLight();
+		// Check if this is a light source.
+		byte emission = LightAspect.getLightEmission(item);
+		if (emission > currentLight)
+		{
+			// We need to add this light source.
+			lightsToAdd.add(new LightBringer.Light(location, emission));
+			changes.put(location, emission);
+		}
+		else
+		{
+			// See if this was an opaque block placed on top of something with light.
+			byte opacity = LightAspect.getOpacity(item);
+			if ((LightAspect.MAX_LIGHT == opacity) && (currentLight > 0))
+			{
+				// We need to set this to zero and cast the shadow.
+				lightsToRemove.add(new LightBringer.Light(location, currentLight));
+				changes.put(location, (byte)0);
+			}
+			else
+			{
+				// These are the more complex cases where the value changed for non-obvious reasons:
+				// -block changed to different opacity (air <-> water, for example)
+				// -opaque block was broken and needs computed light value
+				
+				// Check the surrounding blocks to see if the light should change.
+				byte east = _lightLevelOrZero(proxyLookup.apply(location.getRelative( 1, 0, 0)));
+				byte west = _lightLevelOrZero(proxyLookup.apply(location.getRelative(-1, 0, 0)));
+				byte north = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 1, 0)));
+				byte south = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0,-1, 0)));
+				byte up = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0, 1)));
+				byte down = _lightLevelOrZero(proxyLookup.apply(location.getRelative(0, 0,-1)));
+				byte maxIncoming = _maxLight(east, west, north, south, up, down);
+				byte calculated = (byte)(maxIncoming - opacity);
+				if (calculated > currentLight)
+				{
+					// We add the new light level and reflow from here.
+					lightsToAdd.add(new LightBringer.Light(location, calculated));
+					changes.put(location, calculated);
+				}
+				else if (calculated < currentLight)
+				{
+					// We add the previous light level so we will quickly reflow from the actual source.
+					lightsToRemove.add(new LightBringer.Light(location, currentLight));
+					changes.put(location, (byte)0);
+				}
+				else
+				{
+					// This happens if the change didn't result in lighting change so do nothing.
+				}
+			}
+		}
+	}
+
+	private static int _distanceToCuboid(CuboidAddress targetAddress, AbsoluteLocation location)
+	{
+		AbsoluteLocation base = targetAddress.getBase();
+		AbsoluteLocation end = base.getRelative(32, 32, 32);
+		
+		// We check each dimension and sum them - this is "3D Manhattan distance".
+		int distanceX = _distanceInDirection(base.x(), location.x(), end.x());
+		int distanceY = _distanceInDirection(base.y(), location.y(), end.y());
+		int distanceZ = _distanceInDirection(base.z(), location.z(), end.z());
+		return distanceX + distanceY + distanceZ;
+	}
+
+	private static int _distanceInDirection(int base, int check, int end)
+	{
+		return (check < base)
+				? (base - check)
+				: (check > end)
+					? (check - end)
+					: 0
+		;
 	}
 
 	private static byte _lightLevelOrZero(BlockProxy proxy)

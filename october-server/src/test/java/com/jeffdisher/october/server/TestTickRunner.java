@@ -1181,15 +1181,22 @@ public class TestTickRunner
 	@Test
 	public void simpleLighting()
 	{
-		// Just show a relatively simple lighting case - add a lantern and an opaque block and verify the lighting pattern.
+		// Just show a relatively simple lighting case - add a lantern and an opaque block and verify the lighting pattern across 3 cuboids (diagonally).
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress otherAddress0 = address.getRelative(-1, 0, 0);
+		CuboidAddress otherAddress1 = address.getRelative(-1, -1, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData otherCuboid0 = CuboidGenerator.createFilledCuboid(otherAddress0, ItemRegistry.AIR);
+		CuboidData otherCuboid1 = CuboidGenerator.createFilledCuboid(otherAddress1, ItemRegistry.AIR);
 		AbsoluteLocation lanternLocation = address.getBase().getRelative(5, 6, 7);
 		AbsoluteLocation stoneLocation = address.getBase().getRelative(6, 6, 7);
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(otherCuboid0, List.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(otherCuboid1, List.of())
+				)
 				, null
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
 				, null
@@ -1218,12 +1225,16 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the light changes.
 		Assert.assertEquals(3028, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(483, snapshot.resultantBlockChangesByCuboid().get(otherAddress0).size());
+		Assert.assertEquals(5, snapshot.resultantBlockChangesByCuboid().get(otherAddress1).size());
 		Assert.assertEquals(ItemRegistry.LANTERN.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getRelative(0, 1, 0).getBlockAddress()));
 		Assert.assertEquals(ItemRegistry.STONE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(11, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(9, snapshot.completedCuboids().get(otherAddress0).getData7(AspectRegistry.LIGHT, new BlockAddress((byte)31, (byte)6, (byte)7)));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(otherAddress1).getData7(AspectRegistry.LIGHT, new BlockAddress((byte)31, (byte)31, (byte)7)));
 		
 		runner.shutdown();
 	}
