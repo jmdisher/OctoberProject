@@ -8,12 +8,14 @@ import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -70,7 +72,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setData15(AspectRegistry.DAMAGE, (short)0);
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
 		_setDataSpecial(AspectRegistry.FUELED, null);
-		_setData7(AspectRegistry.LIGHT, (byte)0);
+		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
 	}
 
 	@Override
@@ -303,6 +305,33 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		// For now, we will only include BLOCK aspect changes in the list of aspects triggering block updates.
 		return (null != _writes[AspectRegistry.BLOCK.index()]);
+	}
+
+	/**
+	 * Checks the internal writes to see if those are state changes which may require a lighting update in the
+	 * surrounding blocks.  Note that other details may mean that there is no change (breaking a block in a dark room,
+	 * for example) so the actual check must be made in the following tick (since the data is only consistent then).
+	 * NOTE:  This assumes that it was called AFTER didChange() in order to avoid vacuous changes.
+	 * 
+	 * @return True if this changed in a way which may require a lighting recalculation.
+	 */
+	public boolean mayTriggerLightingChange()
+	{
+		// The only thing which can trigger a lighting change is if the block type was changed in a way which changes
+		// its own light emission or opacity.
+		boolean lightMayChange = false;
+		if (null != _writes[AspectRegistry.BLOCK.index()])
+		{
+			short original = _data.getData15(AspectRegistry.BLOCK, _address);
+			Item originalItem = ItemRegistry.ITEMS_BY_TYPE[original];
+			Item updatedItem = _cachedBlock.asItem();
+			byte originalEmission = LightAspect.getLightEmission(originalItem);
+			byte updatedEmission = LightAspect.getLightEmission(updatedItem);
+			byte originalOpacity = LightAspect.getOpacity(originalItem);
+			byte updatedOpacity = LightAspect.getOpacity(updatedItem);
+			lightMayChange = (originalEmission != updatedEmission) || (originalOpacity != updatedOpacity);
+		}
+		return lightMayChange;
 	}
 
 	/**

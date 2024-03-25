@@ -318,6 +318,7 @@ public class TickRunner
 					, materials.thisGameTick
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
+					, materials.potentialLightChangesByCuboid
 					, materials.cuboidsLoadedThisTick
 			);
 			// There is always a returned fragment (even if it has no content).
@@ -591,6 +592,7 @@ public class TickRunner
 				
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
+				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
 				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
 				{
 					// Only store the updated block locations if the block change requires it.
@@ -600,6 +602,14 @@ public class TickRunner
 							(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
 						).toList();
 					updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
+					
+					// Store the possible lighting update locations, much in the same style.
+					List<AbsoluteLocation> lightChangeLocations = entry.getValue().stream()
+							.filter((BlockChangeDescription description) -> description.requiresLightingCheck())
+							.map(
+								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
+							).toList();
+					potentialLightChangesByCuboid.put(entry.getKey(), lightChangeLocations);
 				}
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
@@ -609,6 +619,7 @@ public class TickRunner
 						, nextTickMutations
 						, nextTickChanges
 						, updatedBlockLocationsByCuboid
+						, potentialLightChangesByCuboid
 						, cuboidsLoadedThisTick
 						
 						// Data only used by this method:
@@ -788,6 +799,8 @@ public class TickRunner
 			, Map<Integer, List<IMutationEntity>> changesToRun
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			// The blocks which were modified in such a way that they may require a lighting update.
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 			

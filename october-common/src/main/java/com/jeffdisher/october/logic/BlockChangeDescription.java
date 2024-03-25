@@ -11,14 +11,17 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
  * what kinds of updates are required beyond just packaging the data for network.
  */
 public record BlockChangeDescription(boolean requiresUpdateEvent
+		, boolean requiresLightingCheck
 		, MutationBlockSetBlock serializedForm
 )
 {
 	public static BlockChangeDescription extractFromProxy(ByteBuffer scratchBuffer, MutableBlockProxy proxy)
 	{
 		boolean requiresUpdateEvent = proxy.shouldTriggerUpdateEvent();
+		boolean requiresLightingCheck = proxy.mayTriggerLightingChange();
 		MutationBlockSetBlock serializedForm = MutationBlockSetBlock.extractFromProxy(scratchBuffer, proxy);
 		return new BlockChangeDescription(requiresUpdateEvent
+				, requiresLightingCheck
 				, serializedForm
 		);
 	}

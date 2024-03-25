@@ -39,4 +39,19 @@ public class LightAspect
 		}
 		return opacity;
 	}
+
+	/**
+	 * Returns the light level emitted by this item type.
+	 * 
+	 * @param item The block type.
+	 * @return The light level from this block ([0..15]).
+	 */
+	public static byte getLightEmission(Item item)
+	{
+		// Only the lantern currently emits light.
+		return (ItemRegistry.LANTERN == item)
+				? MAX_LIGHT
+				: 0
+		;
+	}
 }

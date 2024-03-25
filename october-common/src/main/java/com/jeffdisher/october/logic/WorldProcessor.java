@@ -51,6 +51,8 @@ public class WorldProcessor
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
+	 * @param potentialLightChangesByCuboid The map of block locations which may have incurred lighting updates in the
+	 * previous tick.
 	 * @param cuboidsLoadedThisTick The set of cuboids which were loaded this tick (for update even synthesis).
 	 * @return The subset of the mutationsToRun work which was completed by this thread.
 	 */
@@ -60,6 +62,7 @@ public class WorldProcessor
 			, long gameTick
 			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
@@ -143,6 +146,8 @@ public class WorldProcessor
 						}
 					}
 				}
+				
+				// TODO:  Process light changes from previous tick.
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(

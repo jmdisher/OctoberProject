@@ -145,8 +145,17 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
+		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _shadowWorld, this.projectionBlockLoader, gameTick, mutationsToRun, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick);
+		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
+				, _shadowWorld
+				, this.projectionBlockLoader
+				, gameTick
+				, mutationsToRun
+				, modifiedBlocksByCuboidAddress
+				, potentialLightChangesByCuboid
+				, cuboidsLoadedThisTick
+		);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -439,8 +448,17 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
+		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement, _projectedWorld, this.projectionBlockLoader, gameTick, innerMutations, modifiedBlocksByCuboidAddress, cuboidsLoadedThisTick);
+		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
+				, _projectedWorld
+				, this.projectionBlockLoader
+				, gameTick
+				, innerMutations
+				, modifiedBlocksByCuboidAddress
+				, potentialLightChangesByCuboid
+				, cuboidsLoadedThisTick
+		);
 		_projectedWorld.putAll(innerFragment.stateFragment());
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 		return innerFragment;
