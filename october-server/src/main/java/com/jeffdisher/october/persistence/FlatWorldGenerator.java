@@ -42,7 +42,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
 			if ((0 == address.x()) && (0 == address.y()) && (0 == address.z()))
 			{
 				Inventory starting = Inventory.start(InventoryAspect.CAPACITY_AIR)
-						.add(ItemRegistry.CHARCOAL, 2)
+						.add(ItemRegistry.SAPLING, 2)
 						.add(ItemRegistry.LANTERN, 2)
 						.finish();
 				data.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)0), starting);

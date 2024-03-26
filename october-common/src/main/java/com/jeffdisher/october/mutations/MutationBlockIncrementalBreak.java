@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
@@ -75,6 +76,16 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				Assert.assertTrue((null == oldInventory) || (oldInventory.currentEncumbrance <= InventoryAspect.CAPACITY_AIR));
 				
 				// We want to drop this block in the inventory, if it fits.
+				Item blockToDrop;
+				// TODO:  Find a good way to generalize this once we move the item definitions to data files.
+				if (ItemRegistry.LEAF == block)
+				{
+					blockToDrop = ItemRegistry.SAPLING;
+				}
+				else
+				{
+					blockToDrop = block;
+				}
 				// This will create the new inventory since setting the item clears.
 				Inventory newInventory = newBlock.getInventory();
 				MutableInventory mutable = new MutableInventory(newInventory);
@@ -83,7 +94,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					_combineInventory(mutable, oldFuel.fuelInventory());
 				}
-				mutable.addItemsBestEfforts(block, 1);
+				mutable.addItemsBestEfforts(blockToDrop, 1);
 				
 				// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 				AbsoluteLocation belowLocation = _location.getRelative(0, 0, -1);

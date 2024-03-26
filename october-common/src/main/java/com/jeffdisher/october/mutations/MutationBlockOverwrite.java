@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -54,6 +55,13 @@ public class MutationBlockOverwrite implements IMutationBlock
 		{
 			// Replace the block with the type we have.
 			newBlock.setBlockAndClear(_blockType);
+			
+			// TODO:  Find some good way to generalize the need for "growth" behaviour.
+			if (ItemRegistry.SAPLING == _blockType.asItem())
+			{
+				// TODO:  Add some kind of scheduling delay and random growth once those mechanisms are introduced.
+				context.newMutationSink.accept(new MutationBlockGrow(_location));
+			}
 			didApply = true;
 		}
 		return didApply;

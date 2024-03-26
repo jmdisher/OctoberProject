@@ -1239,6 +1239,61 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void treeGrowth()
+	{
+		// We just want to see what happens when we plant a sapling.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		int entityId = 1;
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.SAPLING, 1).finish();
+		Entity entity = new Entity(entityId
+				, new EntityLocation(location.x() + 1, location.y(), location.z())
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, ItemRegistry.SAPLING
+				, null
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
+				)
+				, null
+				, List.of(entity)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		snapshot = runner.waitForPreviousTick();
+		// We should see the sapling for one tick before it grows.
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(ItemRegistry.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.LOG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Now, we should see the leaf blocks which could be placed in the cuboid.
+		Assert.assertEquals(4, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.LEAF.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

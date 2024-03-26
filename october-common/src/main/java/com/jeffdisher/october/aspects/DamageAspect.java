@@ -72,6 +72,12 @@ public class DamageAspect
 			{
 				toughness = NOT_BLOCK;
 			}
+			else if ((ItemRegistry.SAPLING == item)
+					|| (ItemRegistry.LEAF == item)
+			)
+			{
+				toughness = TRIVIAL;
+			}
 			else if ((ItemRegistry.LOG == item)
 					|| (ItemRegistry.PLANK == item)
 					|| (ItemRegistry.CRAFTING_TABLE == item)

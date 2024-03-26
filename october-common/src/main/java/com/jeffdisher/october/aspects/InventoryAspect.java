@@ -36,6 +36,7 @@ public class InventoryAspect
 					|| (ItemRegistry.WATER_SOURCE == item)
 					|| (ItemRegistry.WATER_STRONG == item)
 					|| (ItemRegistry.WATER_WEAK == item)
+					|| (ItemRegistry.LEAF == item)
 			)
 			{
 				encumbrance = ENCUMBRANCE_NON_INVENTORY;
@@ -44,6 +45,7 @@ public class InventoryAspect
 					|| (ItemRegistry.CHARCOAL == item)
 					|| (ItemRegistry.DIRT == item)
 					|| (ItemRegistry.LANTERN == item)
+					|| (ItemRegistry.SAPLING == item)
 			)
 			{
 				encumbrance = 1;

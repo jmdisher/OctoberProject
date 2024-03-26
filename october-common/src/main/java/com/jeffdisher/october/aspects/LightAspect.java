@@ -29,9 +29,15 @@ public class LightAspect
 		else if ((ItemRegistry.WATER_SOURCE == item)
 				|| (ItemRegistry.WATER_STRONG == item)
 				|| (ItemRegistry.WATER_WEAK == item)
+				|| (ItemRegistry.SAPLING == item)
 		)
 		{
 			opacity = 2;
+		}
+		else if ((ItemRegistry.LEAF == item)
+		)
+		{
+			opacity = 4;
 		}
 		else
 		{

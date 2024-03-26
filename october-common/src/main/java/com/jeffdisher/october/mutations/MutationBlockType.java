@@ -12,6 +12,7 @@ public enum MutationBlockType
 	CRAFT_IN_BLOCK,
 	CRAFT_IN_FURNACE,
 	UPDATE,
+	GROW,
 	
 	END_OF_LIST,
 }

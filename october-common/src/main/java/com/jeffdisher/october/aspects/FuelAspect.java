@@ -21,6 +21,7 @@ public class FuelAspect
 	public static final int BURN_MILLIS_PLANK = 2000;
 	public static final int BURN_MILLIS_LOG = 4000;
 	public static final int BURN_MILLIS_CHARCOAL = 20000;
+	public static final int BURN_MILLIS_SAPLING = 500;
 
 	/**
 	 * Used to check if the given item type has a fuel aspect.
@@ -88,6 +89,10 @@ public class FuelAspect
 		)
 		{
 			millis = BURN_MILLIS_CHARCOAL;
+		}
+		else if (ItemRegistry.SAPLING == item)
+		{
+			millis = BURN_MILLIS_SAPLING;
 		}
 		else
 		{
