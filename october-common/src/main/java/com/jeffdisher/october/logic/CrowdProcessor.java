@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -62,6 +63,8 @@ public class CrowdProcessor
 				exportedMutations.add(arg0);
 			}
 		};
+		// Note that delayed mutations are not currently supported in entity mutations.
+		BiConsumer<IMutationBlock, Long> delayedMutationSink = null;
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
@@ -75,7 +78,7 @@ public class CrowdProcessor
 				entityChanges.add(change);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
+		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, delayedMutationSink, newChangeSink);
 		
 		Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
 		int committedMutationCount = 0;

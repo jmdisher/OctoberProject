@@ -39,7 +39,9 @@ public class TestCommonMutations
 							? new BlockProxy(location.getBlockAddress(), cuboid)
 							: null
 					;
-				}, null
+				}
+				, null
+				, null
 				, null
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
@@ -129,6 +131,7 @@ public class TestCommonMutations
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, (IMutationBlock mutation) -> {}
 				, null
+				, null
 		);
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
@@ -165,6 +168,7 @@ public class TestCommonMutations
 					, (IMutationBlock mutation) -> {
 						ProcessingSinks.this.nextMutation = mutation;
 					}
+					, null
 					, null
 			);
 		}

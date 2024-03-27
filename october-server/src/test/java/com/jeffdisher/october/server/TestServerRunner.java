@@ -167,6 +167,7 @@ public class TestServerRunner
 				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)
 				, null
 				, null
+				, null
 		), fake);
 		EntityChangeMove move2 = new EntityChangeMove(fake.newLocation, 100L, 0.0f, 0.0f);
 		server.changeReceived(clientId, move1, 1L);

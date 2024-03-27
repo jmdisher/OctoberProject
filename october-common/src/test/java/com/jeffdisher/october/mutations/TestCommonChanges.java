@@ -38,6 +38,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
 				, null
+				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
 		MutableEntity newEntity = new MutableEntity(original);
@@ -55,6 +56,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, null
 				, null
 		);
@@ -75,6 +77,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> null
 				, null
 				, null
+				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
 		MutableEntity newEntity = new MutableEntity(original);
@@ -92,6 +95,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, null
 				, null
 		);
@@ -117,6 +121,7 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
+				, null
 				, null
 				, null
 		);
@@ -168,6 +173,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
+				, null
 		);
 		
 		// Give the entity some items and verify that they default to selected.
@@ -208,6 +214,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, (IMutationBlock newMutation) -> holder[0] = newMutation
 				, null
+				, null
 		);
 		MutableEntity newEntity = new MutableEntity(original);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
@@ -245,6 +252,7 @@ public class TestCommonChanges
 					Assert.assertNull(blockHolder[0]);
 					blockHolder[0] = newMutation;
 				}
+				, null
 				, (int targetEntityId, IMutationEntity change) -> {
 					Assert.assertEquals(entityId, targetEntityId);
 					Assert.assertNull(entityHolder[0]);
@@ -313,6 +321,7 @@ public class TestCommonChanges
 					blockHolder[0] = newMutation;
 				}
 				, null
+				, null
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -365,6 +374,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, (IMutationBlock newMutation) -> holder[0] = newMutation
 				, null
+				, null
 		);
 		MutableEntity newEntity = new MutableEntity(original);
 		
@@ -411,6 +421,7 @@ public class TestCommonChanges
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, (IMutationBlock newMutation) -> didSchedule[0] = true
+				, null
 				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
 		);
 		MutableEntity newEntity = new MutableEntity(original);
@@ -449,6 +460,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
+				, null
 		);
 		
 		// Craft some items to use these up and verify that we also moved.
@@ -478,6 +490,7 @@ public class TestCommonChanges
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, (IMutationBlock newMutation) -> holder[0] = newMutation
+				, null
 				, null
 		);
 		MutableEntity newEntity = new MutableEntity(original);

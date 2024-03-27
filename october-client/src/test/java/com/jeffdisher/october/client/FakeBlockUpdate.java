@@ -38,6 +38,7 @@ public class FakeBlockUpdate
 		TickProcessingContext context = new TickProcessingContext(0L
 				, previousBlockLookUp
 				, (IMutationBlock newMutation) -> {}
+				, null
 				, (int targetEntityId, IMutationEntity change) -> {}
 		);
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);

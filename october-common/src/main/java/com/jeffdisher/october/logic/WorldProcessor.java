@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -77,9 +78,12 @@ public class WorldProcessor
 			{
 				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
 				exportedMutations.add(arg0);
-			}};
-			
-			TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
+			}
+		};
+		// TODO:  Implement this new delay mechanism.
+		BiConsumer<IMutationBlock, Long> delayedMutationSink = null;
+		
+		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
 			{
@@ -123,7 +127,7 @@ public class WorldProcessor
 					}
 					return proxy;
 				};
-				TickProcessingContext context = new TickProcessingContext(gameTick, local, sink, newChangeSink);
+				TickProcessingContext context = new TickProcessingContext(gameTick, local, sink, delayedMutationSink, newChangeSink);
 				
 				// First, handle block updates.
 				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies

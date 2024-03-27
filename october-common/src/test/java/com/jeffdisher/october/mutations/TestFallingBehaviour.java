@@ -43,6 +43,7 @@ public class TestFallingBehaviour
 					blockHolder[0] = newMutation;
 				}
 				, null
+				, null
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -105,6 +106,7 @@ public class TestFallingBehaviour
 					blockHolder[0] = newMutation;
 				}
 				, null
+				, null
 		);
 		
 		// Break the bottom block.
@@ -155,6 +157,7 @@ public class TestFallingBehaviour
 					Assert.assertNull(blockHolder[0]);
 					blockHolder[0] = newMutation;
 				}
+				, null
 				, null
 		);
 		
@@ -218,6 +221,7 @@ public class TestFallingBehaviour
 					blockHolder[0] = newMutation;
 				}
 				, null
+				, null
 		);
 		
 		// Send an update event and verify that nothing happens.
@@ -239,6 +243,7 @@ public class TestFallingBehaviour
 					Assert.assertNull(blockHolder[0]);
 					blockHolder[0] = newMutation;
 				}
+				, null
 				, null
 		);
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
@@ -273,6 +278,7 @@ public class TestFallingBehaviour
 					Assert.assertNull(blockHolder[0]);
 					blockHolder[0] = newMutation;
 				}
+				, null
 				, null
 		);
 		

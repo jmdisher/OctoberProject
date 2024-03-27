@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -33,6 +34,12 @@ public class TickProcessingContext
 	public final Consumer<IMutationBlock> newMutationSink;
 
 	/**
+	 * The consumer of delayed mutations which should be scheduled in the future after a given number of milliseconds.
+	 * Note that this is not supported when running entity mutations, only block mutations.
+	 */
+	public final BiConsumer<IMutationBlock, Long> delatedMutationSink;
+
+	/**
 	 * The consumer of any new entity changes produced as a side-effect of this operation (will be scheduled for the
 	 * next tick).
 	 */
@@ -41,12 +48,14 @@ public class TickProcessingContext
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Consumer<IMutationBlock> newMutationSink
+			, BiConsumer<IMutationBlock, Long>  delatedMutationSink
 			, IChangeSink newChangeSink
 	)
 	{
 		this.currentTick = currentTick;
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.newMutationSink = newMutationSink;
+		this.delatedMutationSink = delatedMutationSink; 
 		this.newChangeSink = newChangeSink;
 	}
 
