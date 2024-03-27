@@ -59,8 +59,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 			// TODO:  Find some good way to generalize the need for "growth" behaviour.
 			if (ItemRegistry.SAPLING == _blockType.asItem())
 			{
-				// TODO:  Add some kind of scheduling delay and random growth once those mechanisms are introduced.
-				context.newMutationSink.accept(new MutationBlockGrow(_location));
+				context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
 		}

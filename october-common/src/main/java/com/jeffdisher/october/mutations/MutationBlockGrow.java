@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class MutationBlockGrow implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.GROW;
+	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
 
 	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -48,6 +49,7 @@ public class MutationBlockGrow implements IMutationBlock
 		if (ItemRegistry.SAPLING == newBlock.getBlock().asItem())
 		{
 			// Replace this with a log and leaf blocks.
+			// TODO:  Add some kind of randomness to this so that this is a "growth attempt".
 			// TODO:  Figure out how to make more interesting trees.
 			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
 			_tryScheduleLeaf(context, -1,  0,  0);

@@ -1280,6 +1280,13 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		Assert.assertEquals(ItemRegistry.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
+		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
+		for (int i = 0; i < 100; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
