@@ -51,6 +51,7 @@ public class WorldProcessor
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
 	 * @param loader Used to resolve read-only block data from the previous tick.
 	 * @param gameTick The game tick being processed.
+	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
@@ -63,6 +64,7 @@ public class WorldProcessor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
+			, long millisSinceLastTick
 			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid

@@ -316,6 +316,7 @@ public class TickRunner
 					, materials.completedCuboids
 					, loader
 					, materials.thisGameTick
+					, _millisPerTick
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
 					, materials.potentialLightChangesByCuboid

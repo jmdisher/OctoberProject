@@ -147,10 +147,13 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
+		// The time between ticks doesn't matter when replaying from server.
+		long ignoredMillisBetweenTicks = 0L;
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
 				, this.projectionBlockLoader
 				, gameTick
+				, ignoredMillisBetweenTicks
 				, mutationsToRun
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
@@ -444,7 +447,10 @@ public class SpeculativeProjection
 
 	private WorldProcessor.ProcessedFragment _applyFollowUpBlockMutations(Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
 	{
+		// Ignored variables in speculative mode.
 		long gameTick = 0L;
+		long millisSinceLastTick = 0L;
+		
 		Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
@@ -454,6 +460,7 @@ public class SpeculativeProjection
 				, _projectedWorld
 				, this.projectionBlockLoader
 				, gameTick
+				, millisSinceLastTick
 				, innerMutations
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
