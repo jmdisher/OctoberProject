@@ -58,12 +58,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// First, we want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
 		if (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect)
 		{
-			if (newBlock.getBlock().canBeReplaced())
+			if (newBlock.getBlock().permitsEntityMovement())
 			{
 				// This is an air block but see what is below it.
 				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && below.getBlock().canBeReplaced())
+				if ((null != below) && below.getBlock().permitsEntityMovement())
 				{
 					// We want to drop this into the below block.
 					context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));

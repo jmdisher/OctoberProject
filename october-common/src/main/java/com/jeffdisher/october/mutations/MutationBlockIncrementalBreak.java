@@ -110,7 +110,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 				AbsoluteLocation belowLocation = _location.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && below.getBlock().canBeReplaced())
+				if ((null != below) && below.getBlock().permitsEntityMovement())
 				{
 					// We want to drop this inventory into the below block.
 					for (Items items : mutable.freeze().items.values())

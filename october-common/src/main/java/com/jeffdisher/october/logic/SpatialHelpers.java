@@ -70,7 +70,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = block.getBlock().canBeReplaced();
+					isAir = block.getBlock().permitsEntityMovement();
 				}
 				else
 				{
@@ -302,7 +302,7 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = block.getBlock().canBeReplaced();
+				canExist = block.getBlock().permitsEntityMovement();
 			}
 			else
 			{
@@ -327,7 +327,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = block.getBlock().canBeReplaced();
+					isAir = block.getBlock().permitsEntityMovement();
 				}
 				else
 				{

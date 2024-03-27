@@ -39,6 +39,27 @@ public record Block(short number)
 		;
 	}
 
+	/**
+	 * Used to determine if this block is something an entity can walk through, like air/water/etc.
+	 * NOTE:  These blocks should probably all permit an air inventory or entities will walk through them but items
+	 * can't be dropped here.
+	 * 
+	 * @return True if this block allows an entity to pass through.
+	 */
+	public boolean permitsEntityMovement()
+	{
+		Item item = _asItem();
+		return (ItemRegistry.AIR == item)
+				|| (ItemRegistry.WATER_SOURCE == item)
+				|| (ItemRegistry.WATER_STRONG == item)
+				|| (ItemRegistry.WATER_WEAK == item)
+				|| (ItemRegistry.SAPLING == item)
+				|| (ItemRegistry.WHEAT_SEEDLING == item)
+				|| (ItemRegistry.WHEAT_YOUNG == item)
+				|| (ItemRegistry.WHEAT_MATURE == item)
+		;
+	}
+
 
 	private Item _asItem()
 	{

@@ -87,13 +87,13 @@ public class MutationBlockUpdate implements IMutationBlock
 		}
 		
 		// Check to see if this has an inventory which should fall.
-		if (thisBlock.canBeReplaced() && (newBlock.getInventory().currentEncumbrance > 0))
+		if (thisBlock.permitsEntityMovement() && (newBlock.getInventory().currentEncumbrance > 0))
 		{
 			// This is an air block with an inventory so see what is below it.
 			AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 			BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
 			// TODO:  Come up with a way to handle the case where this is null (not loaded).
-			if ((null != below) && below.getBlock().canBeReplaced())
+			if ((null != below) && below.getBlock().permitsEntityMovement())
 			{
 				// Drop all the inventory items down.
 				for (Items toDrop : newBlock.getInventory().items.values())

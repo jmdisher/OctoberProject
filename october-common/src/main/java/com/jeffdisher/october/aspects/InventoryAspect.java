@@ -85,11 +85,8 @@ public class InventoryAspect
 	{
 		// Here, we will opt-in to specific item types, only returning 0 if the block type has no inventory.
 		int size;
-		if ((ItemRegistry.AIR == item)
-				|| (ItemRegistry.WATER_SOURCE == item)
-				|| (ItemRegistry.WATER_STRONG == item)
-				|| (ItemRegistry.WATER_WEAK == item)
-		)
+		// We will treat any block where the entity can walk as an "air inventory".
+		if (BlockAspect.getBlock(item).permitsEntityMovement())
 		{
 			size = CAPACITY_AIR;
 		}
