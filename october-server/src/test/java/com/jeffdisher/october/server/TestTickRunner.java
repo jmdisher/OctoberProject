@@ -3,6 +3,7 @@ package com.jeffdisher.october.server;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
+import com.jeffdisher.october.mutations.MutationBlockGrow;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -1243,6 +1245,7 @@ public class TestTickRunner
 	@Test
 	public void treeGrowth()
 	{
+		IntSupplier old = MutationBlockGrow.RANDOM_PROVIDER;
 		// We just want to see what happens when we plant a sapling.
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
@@ -1281,12 +1284,17 @@ public class TestTickRunner
 		Assert.assertEquals(ItemRegistry.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
-		for (int i = 0; i < 100; ++i)
+		// Then, there will be 1 growth attempt, but we set the random provider to 0 so it will fail.  Then we will see another 100 ticks pass.
+		MutationBlockGrow.RANDOM_PROVIDER = () -> 0;
+		for (int i = 0; i < 201; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 		}
+		Assert.assertEquals(ItemRegistry.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
+		// This time, set the provider to 1 so that it matches (it takes the number mod some constant and compares it to 1).
+		MutationBlockGrow.RANDOM_PROVIDER = () -> 1;
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
@@ -1300,6 +1308,7 @@ public class TestTickRunner
 		Assert.assertEquals(ItemRegistry.LEAF.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
+		MutationBlockGrow.RANDOM_PROVIDER = old;
 	}
 
 

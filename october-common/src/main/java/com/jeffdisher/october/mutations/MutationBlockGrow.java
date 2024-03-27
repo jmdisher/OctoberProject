@@ -1,6 +1,8 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.Random;
+import java.util.function.IntSupplier;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -20,6 +22,19 @@ public class MutationBlockGrow implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.GROW;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
+	public static final int GROWTH_DENOMINATOR = 10;
+	/**
+	 * The random provider is non-final since tests can replace it.
+	 */
+	public static IntSupplier RANDOM_PROVIDER;
+
+	static {
+		Random randomObject = new Random();
+		RANDOM_PROVIDER = () ->
+		{
+			return randomObject.nextInt();
+		};
+	}
 
 	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -48,15 +63,24 @@ public class MutationBlockGrow implements IMutationBlock
 		// Make sure that this is a block which can grow.
 		if (ItemRegistry.SAPLING == newBlock.getBlock().asItem())
 		{
-			// Replace this with a log and leaf blocks.
-			// TODO:  Add some kind of randomness to this so that this is a "growth attempt".
-			// TODO:  Figure out how to make more interesting trees.
-			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
-			_tryScheduleLeaf(context, -1,  0,  0);
-			_tryScheduleLeaf(context,  1,  0,  0);
-			_tryScheduleLeaf(context,  0, -1,  0);
-			_tryScheduleLeaf(context,  0,  1,  0);
-			_tryScheduleLeaf(context,  0,  0,  1);
+			// See if the random generator says we should grow this tick or try again later.
+			int randomBits = RANDOM_PROVIDER.getAsInt();
+			if (1 == (randomBits % GROWTH_DENOMINATOR))
+			{
+				// Replace this with a log and leaf blocks.
+				// TODO:  Figure out how to make more interesting trees.
+				newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
+				_tryScheduleLeaf(context, -1,  0,  0);
+				_tryScheduleLeaf(context,  1,  0,  0);
+				_tryScheduleLeaf(context,  0, -1,  0);
+				_tryScheduleLeaf(context,  0,  1,  0);
+				_tryScheduleLeaf(context,  0,  0,  1);
+			}
+			else
+			{
+				// Just reschedule this.
+				context.delatedMutationSink.accept(this, MILLIS_BETWEEN_GROWTH_CALLS);
+			}
 			didApply = true;
 		}
 		return didApply;
