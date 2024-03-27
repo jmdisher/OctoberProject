@@ -30,11 +30,14 @@ public class LightAspect
 				|| (ItemRegistry.WATER_STRONG == item)
 				|| (ItemRegistry.WATER_WEAK == item)
 				|| (ItemRegistry.SAPLING == item)
+				|| (ItemRegistry.WHEAT_SEEDLING == item)
+				|| (ItemRegistry.WHEAT_YOUNG == item)
 		)
 		{
 			opacity = 2;
 		}
 		else if ((ItemRegistry.LEAF == item)
+				|| (ItemRegistry.WHEAT_MATURE == item)
 		)
 		{
 			opacity = 4;

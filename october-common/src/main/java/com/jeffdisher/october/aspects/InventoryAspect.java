@@ -37,6 +37,9 @@ public class InventoryAspect
 					|| (ItemRegistry.WATER_STRONG == item)
 					|| (ItemRegistry.WATER_WEAK == item)
 					|| (ItemRegistry.LEAF == item)
+					|| (ItemRegistry.WHEAT_SEEDLING == item)
+					|| (ItemRegistry.WHEAT_YOUNG == item)
+					|| (ItemRegistry.WHEAT_MATURE == item)
 			)
 			{
 				encumbrance = ENCUMBRANCE_NON_INVENTORY;
@@ -46,6 +49,8 @@ public class InventoryAspect
 					|| (ItemRegistry.DIRT == item)
 					|| (ItemRegistry.LANTERN == item)
 					|| (ItemRegistry.SAPLING == item)
+					|| (ItemRegistry.WHEAT_SEED == item)
+					|| (ItemRegistry.WHEAT_ITEM == item)
 			)
 			{
 				encumbrance = 1;

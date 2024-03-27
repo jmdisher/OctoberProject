@@ -60,7 +60,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		
 		Item itemType = newEntity.newSelectedItem;
 		// Note that we will get a null from the asBlock if this can't be placed.
-		Block blockType = (null != itemType) ? BlockAspect.getBlock(itemType) : null;
+		Block blockType = _getAsPlaceableBlock(itemType);
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
@@ -108,5 +108,25 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
+	}
+
+
+	private static Block _getAsPlaceableBlock(Item itemType)
+	{
+		// For the most part, we just rely on the BlockAspect helper but there are some special-cases.
+		Block block = null;
+		if (null != itemType)
+		{
+			block = (null != itemType) ? BlockAspect.getBlock(itemType) : null;
+			if (null == block)
+			{
+				// Check the special-cases.
+				if (ItemRegistry.WHEAT_SEED == itemType)
+				{
+					block = BlockAspect.getBlock(ItemRegistry.WHEAT_SEEDLING);
+				}
+			}
+		}
+		return block;
 	}
 }

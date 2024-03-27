@@ -1311,6 +1311,98 @@ public class TestTickRunner
 		MutationBlockGrow.RANDOM_PROVIDER = old;
 	}
 
+	@Test
+	public void wheatGrowth()
+	{
+		IntSupplier old = MutationBlockGrow.RANDOM_PROVIDER;
+		// Plant a seed and watch it grow.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.STONE.number());
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		int entityId = 1;
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.WHEAT_SEED, 1).finish();
+		Entity entity = new Entity(entityId
+				, new EntityLocation(location.x() + 1, location.y(), location.z())
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, ItemRegistry.WHEAT_SEED
+				, null
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
+				)
+				, null
+				, List.of(entity)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		snapshot = runner.waitForPreviousTick();
+		// We should see the seed for one tick before it grows.
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(ItemRegistry.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
+		// We will just set the random number to 1 to easily watch it go through all phases.
+		MutationBlockGrow.RANDOM_PROVIDER = () -> 1;
+		for (int i = 0; i < 100; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		Assert.assertEquals(ItemRegistry.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.WHEAT_YOUNG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		// Wait another 100 ticks to see the next growth.
+		for (int i = 0; i < 100; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		Assert.assertEquals(ItemRegistry.WHEAT_YOUNG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.WHEAT_MATURE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		// Break the mature crop and check the inventory dropped.
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(location, (short) 100);
+		long commit1 = 1L;
+		runner.enqueueEntityChange(entityId, break1, commit1);
+		
+		// Run a tick for the unwrap and another to break the block before checking the inventory.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, location.getBlockAddress());
+		Assert.assertEquals(2, blockInventory.getCount(ItemRegistry.WHEAT_SEED));
+		Assert.assertEquals(2, blockInventory.getCount(ItemRegistry.WHEAT_ITEM));
+		
+		runner.shutdown();
+		MutationBlockGrow.RANDOM_PROVIDER = old;
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

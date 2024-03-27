@@ -68,12 +68,18 @@ public class DamageAspect
 			{
 				toughness = UNBREAKABLE;
 			}
-			else if (ItemRegistry.CHARCOAL == item)
+			else if ((ItemRegistry.CHARCOAL == item)
+					|| (ItemRegistry.WHEAT_SEED == item)
+					|| (ItemRegistry.WHEAT_ITEM == item)
+			)
 			{
 				toughness = NOT_BLOCK;
 			}
 			else if ((ItemRegistry.SAPLING == item)
 					|| (ItemRegistry.LEAF == item)
+					|| (ItemRegistry.WHEAT_SEEDLING == item)
+					|| (ItemRegistry.WHEAT_YOUNG == item)
+					|| (ItemRegistry.WHEAT_MATURE == item)
 			)
 			{
 				toughness = TRIVIAL;

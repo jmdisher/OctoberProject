@@ -75,17 +75,6 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.
 				Assert.assertTrue((null == oldInventory) || (oldInventory.currentEncumbrance <= InventoryAspect.CAPACITY_AIR));
 				
-				// We want to drop this block in the inventory, if it fits.
-				Item blockToDrop;
-				// TODO:  Find a good way to generalize this once we move the item definitions to data files.
-				if (ItemRegistry.LEAF == block)
-				{
-					blockToDrop = ItemRegistry.SAPLING;
-				}
-				else
-				{
-					blockToDrop = block;
-				}
 				// This will create the new inventory since setting the item clears.
 				Inventory newInventory = newBlock.getInventory();
 				MutableInventory mutable = new MutableInventory(newInventory);
@@ -94,7 +83,29 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					_combineInventory(mutable, oldFuel.fuelInventory());
 				}
-				mutable.addItemsBestEfforts(blockToDrop, 1);
+				
+				// We want to drop this block in the inventory, if it fits.
+				// TODO:  Find a good way to generalize this once we move the item definitions to data files.
+				if (ItemRegistry.LEAF == block)
+				{
+					mutable.addItemsBestEfforts(ItemRegistry.SAPLING, 1);
+				}
+				else if ((ItemRegistry.WHEAT_SEEDLING == block)
+						|| (ItemRegistry.WHEAT_YOUNG == block)
+				)
+				{
+					mutable.addItemsBestEfforts(ItemRegistry.WHEAT_SEED, 1);
+				}
+				else if ((ItemRegistry.WHEAT_MATURE == block)
+				)
+				{
+					mutable.addItemsBestEfforts(ItemRegistry.WHEAT_SEED, 2);
+					mutable.addItemsBestEfforts(ItemRegistry.WHEAT_ITEM, 2);
+				}
+				else
+				{
+					mutable.addItemsBestEfforts(block, 1);
+				}
 				
 				// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 				AbsoluteLocation belowLocation = _location.getRelative(0, 0, -1);

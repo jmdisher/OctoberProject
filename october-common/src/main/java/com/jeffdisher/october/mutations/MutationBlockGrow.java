@@ -72,10 +72,16 @@ public class MutationBlockGrow implements IMutationBlock
 			int randomBits = RANDOM_PROVIDER.getAsInt();
 			if (1 == (randomBits % growthDivisor))
 			{
-				// Currently, on the sapling takes this path.
-				Assert.assertTrue(ItemRegistry.SAPLING == item);
-				_growTree(context, newBlock);
-				shouldReschedule = false;
+				if (ItemRegistry.SAPLING == item)
+				{
+					_growTree(context, newBlock);
+					shouldReschedule = false;
+				}
+				else
+				{
+					// In other cases, just advance to the next stage.
+					shouldReschedule = _growCrop(context, newBlock, item);
+				}
 			}
 			else
 			{
@@ -129,5 +135,26 @@ public class MutationBlockGrow implements IMutationBlock
 				context.newMutationSink.accept(new MutationBlockOverwrite(location, BlockAspect.getBlock(ItemRegistry.LEAF)));
 			}
 		}
+	}
+
+	private boolean _growCrop(TickProcessingContext context, IMutableBlockProxy newBlock, Item item)
+	{
+		boolean shouldReschedule;
+		if (ItemRegistry.WHEAT_SEEDLING == item)
+		{
+			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.WHEAT_YOUNG));
+			shouldReschedule = true;
+		}
+		else if (ItemRegistry.WHEAT_YOUNG == item)
+		{
+			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.WHEAT_MATURE));
+			shouldReschedule = false;
+		}
+		else
+		{
+			// This is a missing piece of data.
+			throw Assert.unreachable();
+		}
+		return shouldReschedule;
 	}
 }

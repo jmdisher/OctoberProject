@@ -39,6 +39,11 @@ public class ItemRegistry
 	public static final Item IRON_INGOT = _register("Iron ingot");
 	public static final Item SAPLING = _register("Sapling");
 	public static final Item LEAF = _register("Leaf");
+	public static final Item WHEAT_SEED = _register("Wheat seed");
+	public static final Item WHEAT_ITEM = _register("Wheat item");
+	public static final Item WHEAT_SEEDLING = _register("Wheat seedling");
+	public static final Item WHEAT_YOUNG = _register("Young wheat");
+	public static final Item WHEAT_MATURE = _register("Mature wheat");
 
 	private static Item _register(String name)
 	{

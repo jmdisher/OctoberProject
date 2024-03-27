@@ -24,6 +24,13 @@ public class PlantRegistry
 			// Saplings grow 1/10th of the time.
 			divisor = 10;
 		}
+		else if ((ItemRegistry.WHEAT_SEEDLING == item)
+				|| (ItemRegistry.WHEAT_YOUNG == item)
+		)
+		{
+			// Crops grow 1/2th of the time.
+			divisor = 2;
+		}
 		else
 		{
 			// Return 0 if this can't grow.
