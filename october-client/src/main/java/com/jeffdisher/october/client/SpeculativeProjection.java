@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -142,7 +143,7 @@ public class SpeculativeProjection
 		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
-		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
+		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
@@ -405,7 +406,12 @@ public class SpeculativeProjection
 				}
 			}
 			exportedMutations = new ArrayList<>();
-			exportedMutations.addAll(innerFragment.exportedMutations());
+			// Note that we will ignore any "future" block mutations when running speculative.
+			exportedMutations.addAll(innerFragment.exportedMutations().stream()
+					.filter((ScheduledMutation scheduled) -> (0L == scheduled.millisUntilReady()))
+					.map((ScheduledMutation scheduled) -> scheduled.mutation())
+					.toList()
+			);
 			exportedMutations.addAll(innerGroup.exportedMutations());
 		}
 		modifiedEntityIds.addAll(locallyModifiedIds);
@@ -417,22 +423,22 @@ public class SpeculativeProjection
 		;
 	}
 
-	private Map<CuboidAddress, List<IMutationBlock>> _createMutationMap(List<IMutationBlock> mutations, Set<CuboidAddress> loadedCuboids)
+	private Map<CuboidAddress, List<ScheduledMutation>> _createMutationMap(List<IMutationBlock> mutations, Set<CuboidAddress> loadedCuboids)
 	{
-		Map<CuboidAddress, List<IMutationBlock>> mutationsToRun = new HashMap<>();
+		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = new HashMap<>();
 		for (IMutationBlock mutation : mutations)
 		{
 			CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
 			// We will filter out things which aren't loaded (since this may be a follow-up).
 			if (loadedCuboids.contains(address))
 			{
-				List<IMutationBlock> queue = mutationsToRun.get(address);
+				List<ScheduledMutation> queue = mutationsToRun.get(address);
 				if (null == queue)
 				{
 					queue = new LinkedList<>();
 					mutationsToRun.put(address, queue);
 				}
-				queue.add(mutation);
+				queue.add(new ScheduledMutation(mutation, 0L));
 			}
 		}
 		return mutationsToRun;
@@ -451,7 +457,7 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		long millisSinceLastTick = 0L;
 		
-		Map<CuboidAddress, List<IMutationBlock>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
+		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();

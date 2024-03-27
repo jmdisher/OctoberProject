@@ -20,6 +20,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -363,8 +364,8 @@ public class TickRunner
 			
 			// We will also capture any of the mutations which should be scheduled into the next tick since we should publish those into the snapshot.
 			// (this is in case they need to be serialized - that way they can be read back in without interrupting the enqueued operations)
-			Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations = new HashMap<>();
-			Map<Integer, List<IMutationEntity>> scheduledEntityMutations = new HashMap<>();
+			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
+			Map<Integer, List<IMutationEntity>> snapshotEntityMutations = new HashMap<>();
 			
 			for (int i = 0; i < _partial.length; ++i)
 			{
@@ -382,23 +383,23 @@ public class TickRunner
 				committedCuboidMutationCount += fragment.world.committedMutationCount();
 				
 				// World data.
-				for (IMutationBlock mutation : fragment.world.exportedMutations())
+				for (ScheduledMutation scheduledMutation : fragment.world.exportedMutations())
 				{
-					_scheduleMutationForCuboid(scheduledBlockMutations, mutation);
+					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 				}
 				for (Map.Entry<Integer, List<IMutationEntity>> container : fragment.world.exportedEntityChanges().entrySet())
 				{
-					_scheduleChangesForEntity(scheduledEntityMutations, container.getKey(), container.getValue());
+					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
 				
 				// Crowd data.
 				for (IMutationBlock mutation : fragment.crowd.exportedMutations())
 				{
-					_scheduleMutationForCuboid(scheduledBlockMutations, mutation);
+					_scheduleMutationForCuboid(snapshotBlockMutations, new ScheduledMutation(mutation, 0L));
 				}
 				for (Map.Entry<Integer, List<IMutationEntity>> container : fragment.crowd.exportedChanges().entrySet())
 				{
-					_scheduleChangesForEntity(scheduledEntityMutations, container.getKey(), container.getValue());
+					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
 				
 				_partial[i] = null;
@@ -424,8 +425,8 @@ public class TickRunner
 					, committedEntityMutationCount
 					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
 					, committedCuboidMutationCount
-					, Collections.unmodifiableMap(scheduledBlockMutations)
-					, Collections.unmodifiableMap(scheduledEntityMutations)
+					, Collections.unmodifiableMap(snapshotBlockMutations)
+					, Collections.unmodifiableMap(snapshotEntityMutations)
 			);
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
 			tickCompletionListener.accept(completedTick);
@@ -490,7 +491,7 @@ public class TickRunner
 				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
 				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
 				Map<Integer, Entity> nextCrowdState = new HashMap<>();
-				Map<CuboidAddress, List<IMutationBlock>> nextTickMutations = new HashMap<>();
+				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
 				nextWorldState.putAll(_snapshot.completedCuboids);
@@ -509,7 +510,7 @@ public class TickRunner
 						Assert.assertTrue(null == old);
 						
 						// Add any suspended mutations which came with the cuboid.
-						List<IMutationBlock> mutations = suspended.mutations();
+						List<ScheduledMutation> mutations = suspended.mutations();
 						if (!mutations.isEmpty())
 						{
 							old = nextTickMutations.put(address, new ArrayList<>(mutations));
@@ -530,14 +531,14 @@ public class TickRunner
 				}
 				
 				// Add any of the mutations scheduled from the last tick.
-				for (List<IMutationBlock> list : scheduledBlockMutations.values())
+				for (List<ScheduledMutation> list : snapshotBlockMutations.values())
 				{
-					for (IMutationBlock mutation : list)
+					for (ScheduledMutation mutation : list)
 					{
 						_scheduleMutationForCuboid(nextTickMutations, mutation);
 					}
 				}
-				scheduledBlockMutations = null;
+				snapshotBlockMutations = null;
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -562,14 +563,14 @@ public class TickRunner
 					}
 				}
 				Map<Integer, List<IMutationEntity>> nextTickChanges = new HashMap<>();
-				for (Map.Entry<Integer, List<IMutationEntity>> entry : scheduledEntityMutations.entrySet())
+				for (Map.Entry<Integer, List<IMutationEntity>> entry : snapshotEntityMutations.entrySet())
 				{
 					// We can't modify the original so use a new container.
 					Object prev = nextTickChanges.put(entry.getKey(), new LinkedList<>(entry.getValue()));
 					// This is the first time constructing this so it must be empty.
 					Assert.assertTrue(null == prev);
 				}
-				scheduledEntityMutations = null;
+				snapshotEntityMutations = null;
 				for (Map.Entry<Integer, List<IMutationEntity>> container : newEntityChanges.entrySet())
 				{
 					_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
@@ -657,10 +658,10 @@ public class TickRunner
 		}
 	}
 
-	private void _scheduleMutationForCuboid(Map<CuboidAddress, List<IMutationBlock>> nextTickMutations, IMutationBlock mutation)
+	private void _scheduleMutationForCuboid(Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations, ScheduledMutation mutation)
 	{
-		CuboidAddress address = mutation.getAbsoluteLocation().getCuboidAddress();
-		List<IMutationBlock> queue = nextTickMutations.get(address);
+		CuboidAddress address = mutation.mutation().getAbsoluteLocation().getCuboidAddress();
+		List<ScheduledMutation> queue = nextTickMutations.get(address);
 		if (null == queue)
 		{
 			queue = new LinkedList<>();
@@ -783,8 +784,9 @@ public class TickRunner
 			, int committedEntityMutationCount
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
 			, int committedCuboidMutationCount
-			// These fields are related to what is scheduled for the _next_ tick (added here to expose them to serialization).
-			, Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations
+			
+			// These fields are related to what is scheduled for the NEXT (or future) tick (added here to expose them to serialization).
+			, Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations
 			, Map<Integer, List<IMutationEntity>> scheduledEntityMutations
 	)
 	{}
@@ -795,7 +797,7 @@ public class TickRunner
 			// Read-only versions of the Entities produced by the previous tick (by ID).
 			, Map<Integer, Entity> completedEntities
 			// The block mutations to run in this tick (by cuboid address).
-			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
+			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<IMutationEntity>> changesToRun
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.

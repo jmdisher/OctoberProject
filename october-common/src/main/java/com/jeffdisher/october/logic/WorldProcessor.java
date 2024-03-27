@@ -65,25 +65,30 @@ public class WorldProcessor
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
 			, long millisSinceLastTick
-			, Map<CuboidAddress, List<IMutationBlock>> mutationsToRun
+			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		List<IMutationBlock> exportedMutations = new ArrayList<>();
+		List<ScheduledMutation> exportedMutations = new ArrayList<>();
 		Map<Integer, List<IMutationEntity>> exportedEntityChanges = new HashMap<>();
 		Consumer<IMutationBlock> sink = new Consumer<IMutationBlock>() {
 			@Override
-			public void accept(IMutationBlock arg0)
+			public void accept(IMutationBlock mutation)
 			{
 				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
-				exportedMutations.add(arg0);
+				exportedMutations.add(new ScheduledMutation(mutation, 0L));
 			}
 		};
-		// TODO:  Implement this new delay mechanism.
-		BiConsumer<IMutationBlock, Long> delayedMutationSink = null;
+		BiConsumer<IMutationBlock, Long> delayedMutationSink = new BiConsumer<>() {
+			@Override
+			public void accept(IMutationBlock mutation, Long delayMillis)
+			{
+				exportedMutations.add(new ScheduledMutation(mutation, delayMillis));
+			}
+		};
 		
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
@@ -141,16 +146,30 @@ public class WorldProcessor
 				);
 				
 				// Now run the normal mutations.
-				List<IMutationBlock> mutations = mutationsToRun.get(key);
+				List<ScheduledMutation> mutations = mutationsToRun.get(key);
 				if (null != mutations)
 				{
-					for (IMutationBlock mutation : mutations)
+					for (ScheduledMutation scheduledMutations : mutations)
 					{
-						processor.mutationCount += 1;
-						boolean didApply = _runOneMutation(proxies, context, oldState, mutation);
-						if (didApply)
+						long millisUntilReady = scheduledMutations.millisUntilReady();
+						IMutationBlock mutation = scheduledMutations.mutation();
+						if (0 == millisUntilReady)
 						{
-							committedMutationCount += 1;
+							processor.mutationCount += 1;
+							boolean didApply = _runOneMutation(proxies, context, oldState, mutation);
+							if (didApply)
+							{
+								committedMutationCount += 1;
+							}
+						}
+						else
+						{
+							long updatedMillis = millisUntilReady - millisSinceLastTick;
+							if (updatedMillis < 0L)
+							{
+								updatedMillis = 0L;
+							}
+							exportedMutations.add(new ScheduledMutation(mutation, updatedMillis));
 						}
 					}
 				}
@@ -557,7 +576,7 @@ public class WorldProcessor
 
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, List<IMutationBlock> exportedMutations
+			, List<ScheduledMutation> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount

@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
@@ -530,7 +531,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().get(stoneAddress).size());
-		MutationBlockIncrementalBreak mutation = (MutationBlockIncrementalBreak) snapshot.scheduledBlockMutations().get(stoneAddress).get(0);
+		MutationBlockIncrementalBreak mutation = (MutationBlockIncrementalBreak) snapshot.scheduledBlockMutations().get(stoneAddress).get(0).mutation();
 		
 		// Shut down the runner, start a new one, and load the cuboids back in.
 		runner.shutdown();
@@ -539,7 +540,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		runner.setupChangesForTick(List.of(
 				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR), List.of()),
-				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE), List.of(mutation))
+				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE), List.of(new ScheduledMutation(mutation, 0L)))
 			)
 			, null
 			, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -644,15 +645,15 @@ public class TestTickRunner
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.committedEntityMutationCount());
 		// We should see the two calls to accept the items.
-		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockStoreItems);
-		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(1) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(1).mutation() instanceof MutationBlockStoreItems);
 		
 		// Run the next tick to see the craft scheduled.
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.committedCuboidMutationCount());
 		// We should see the two calls to accept the items.
-		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.LOG));
 		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
@@ -678,7 +679,7 @@ public class TestTickRunner
 			snap = runner.waitForPreviousTick();
 			
 			Assert.assertEquals(1, snap.committedCuboidMutationCount());
-			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(ItemRegistry.LOG));
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(ItemRegistry.PLANK));
@@ -701,7 +702,7 @@ public class TestTickRunner
 		snap = runner.waitForPreviousTick();
 		
 		Assert.assertEquals(1, snap.committedCuboidMutationCount());
-		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockFurnaceCraft);
+		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(0, proxy.getInventory().getCount(ItemRegistry.LOG));
 		Assert.assertEquals(3, proxy.getInventory().getCount(ItemRegistry.CHARCOAL));
@@ -832,7 +833,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0) instanceof MutationBlockOverwrite);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0).mutation() instanceof MutationBlockOverwrite);
 		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ItemRegistry.STONE));
 		
 		// Run another tick and we shouldn't see anything scheduled (since updated don't go through that path).
@@ -847,7 +848,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0).mutation() instanceof MutationBlockStoreItems);
 		Assert.assertNull(snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
 		
 		runner.shutdown();
@@ -869,7 +870,7 @@ public class TestTickRunner
 		// Load in a cuboid with a suspended mutation to represent the falling.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY))))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(ItemRegistry.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY), 0L))))
 				, null
 				, null
 				, null
@@ -879,7 +880,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		// (since the block was never modified, we won't see the updates, only the next mutation)
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockStoreItems);
 		TickRunner.Snapshot saved = snapshot;
 		
 		// Unload this cuboid, capturing what is in-progress.
@@ -904,7 +905,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		// (since the block was never modified, we won't see the updates, only the next mutation)
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockStoreItems);
 		
 		runner.shutdown();
 	}
@@ -946,7 +947,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address1).get(0) instanceof MutationBlockStoreItems);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address1).get(0).mutation() instanceof MutationBlockStoreItems);
 		Assert.assertNull(snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()));
 		
 		runner.shutdown();

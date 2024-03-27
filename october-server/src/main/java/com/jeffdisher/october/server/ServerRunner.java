@@ -16,6 +16,7 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -145,7 +146,7 @@ public class ServerRunner
 			for (IReadOnlyCuboidData cuboid : _tickAdvancer.completedCuboids)
 			{
 				CuboidAddress address = cuboid.getCuboidAddress();
-				List<IMutationBlock> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
+				List<ScheduledMutation> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
 				if (null == suspended)
 				{
 					suspended = List.of();
@@ -269,7 +270,7 @@ public class ServerRunner
 		private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
 		// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
 		public Collection<IReadOnlyCuboidData> completedCuboids = Collections.emptySet();
-		public Map<CuboidAddress, List<IMutationBlock>> scheduledBlockMutations = Collections.emptyMap();
+		public Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations = Collections.emptyMap();
 		// Same thing with entities.
 		public Collection<Entity> completedEntities = Collections.emptySet();
 		
@@ -337,7 +338,7 @@ public class ServerRunner
 			{
 				Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = orphanedCuboids.stream().map((CuboidAddress address) -> {
 					IReadOnlyCuboidData cuboid = snapshot.completedCuboids().get(address);
-					List<IMutationBlock> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
+					List<ScheduledMutation> suspended = _tickAdvancer.scheduledBlockMutations.get(address);
 					if (null == suspended)
 					{
 						suspended = List.of();

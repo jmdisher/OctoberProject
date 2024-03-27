@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -189,7 +190,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), BlockAspect.getBlock(ItemRegistry.STONE));
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(mutation))), List.of());
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -202,7 +203,7 @@ public class TestResourceLoader
 		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.mutations().size());
-		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationBlockOverwrite);
+		Assert.assertTrue(suspended.mutations().get(0).mutation() instanceof MutationBlockOverwrite);
 		loader.shutdown();
 	}
 
@@ -219,22 +220,22 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), BlockAspect.getBlock(ItemRegistry.STONE));
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(mutation))), List.of());
+		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 52 bytes.
-		Assert.assertEquals(52L, cuboidFile.length());
+		// Experimentally, we know that this is 60 bytes.
+		Assert.assertEquals(60L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null);
 		SuspendedCuboid<CuboidData> suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.mutations().size());
-		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationBlockOverwrite);
+		Assert.assertTrue(suspended.mutations().get(0).mutation() instanceof MutationBlockOverwrite);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(suspended.cuboid(), List.of())), List.of());
 		loader.shutdown();
 		

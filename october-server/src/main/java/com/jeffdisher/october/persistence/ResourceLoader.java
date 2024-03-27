@@ -18,6 +18,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -286,11 +287,13 @@ public class ResourceLoader
 			Assert.assertTrue(null == state);
 			
 			// Now, load any suspended mutations.
-			List<IMutationBlock> suspended = new ArrayList<>();
+			List<ScheduledMutation> suspended = new ArrayList<>();
 			while (buffer.hasRemaining())
 			{
+				// Read the parts of the suspended data.
+				long millisUntilReady = buffer.getLong();
 				IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
-				suspended.add(mutation);
+				suspended.add(new ScheduledMutation(mutation, millisUntilReady));
 			}
 			result = new SuspendedCuboid<>(cuboid, suspended);
 		}
@@ -311,15 +314,17 @@ public class ResourceLoader
 		// Serialize the entire cuboid into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		IReadOnlyCuboidData cuboid = data.cuboid();
-		List<IMutationBlock> mutations = data.mutations();
+		List<ScheduledMutation> mutations = data.mutations();
 		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
 		// We currently assume that we just do the write in a single call.
 		Assert.assertTrue(null == state);
 		
 		// We now write any suspended mutations.
-		for (IMutationBlock mutation : mutations)
+		for (ScheduledMutation scheduled : mutations)
 		{
-			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, mutation);
+			// Write the parts of the data.
+			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
+			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
 		}
 		_backround_serializationBuffer.flip();
 		
