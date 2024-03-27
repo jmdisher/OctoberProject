@@ -53,14 +53,21 @@ public class MutationBlockOverwrite implements IMutationBlock
 		// Check to see if this is the expected type.
 		if (newBlock.getBlock().canBeReplaced())
 		{
-			// Replace the block with the type we have.
-			newBlock.setBlockAndClear(_blockType);
+			// Make sure that this block can be supported by the one under it.
+			boolean blockIsSupported = _blockType.canExistOnBlock(context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
 			
-			if (PlantRegistry.growthDivisor(_blockType.asItem()) > 0)
+			// Note that failing to place this means that the block will be destroyed.
+			if (blockIsSupported)
 			{
-				context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
+				// Replace the block with the type we have.
+				newBlock.setBlockAndClear(_blockType);
+				
+				if (PlantRegistry.growthDivisor(_blockType.asItem()) > 0)
+				{
+					context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
+				}
+				didApply = true;
 			}
-			didApply = true;
 		}
 		return didApply;
 	}

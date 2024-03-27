@@ -60,6 +60,29 @@ public record Block(short number)
 		;
 	}
 
+	/**
+	 * Used to determine if this block can exist on top of another.  This is generally true but some types have specific
+	 * requirements.
+	 * 
+	 * @param bottomBlock The block underneath the receiver.
+	 * @return True if this block can exist on top of bottomBlock.
+	 */
+	public boolean canExistOnBlock(Block bottomBlock)
+	{
+		boolean canExist = true;
+		Item item = _asItem();
+		if ((ItemRegistry.SAPLING == item)
+				|| (ItemRegistry.WHEAT_SEEDLING == item)
+				|| (ItemRegistry.WHEAT_YOUNG == item)
+				|| (ItemRegistry.WHEAT_MATURE == item)
+		)
+		{
+			// These growing blocks can only exist on dirt.
+			canExist = (null != bottomBlock) && (ItemRegistry.DIRT == bottomBlock.asItem());
+		}
+		return canExist;
+	}
+
 
 	private Item _asItem()
 	{

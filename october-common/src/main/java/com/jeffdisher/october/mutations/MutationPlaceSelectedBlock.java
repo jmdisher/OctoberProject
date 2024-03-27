@@ -78,7 +78,14 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), newEntity.newLocation, newEntity.original.volume());
 		}
 		
-		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding)
+		// Make sure that this block can be supported by the one under it.
+		boolean blockIsSupported = false;
+		if (null != blockType)
+		{
+			blockIsSupported = blockType.canExistOnBlock(context.previousBlockLookUp.apply(_targetBlock.getRelative(0, 0, -1)).getBlock());
+		}
+		
+		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// We want to apply this so remove the item from the inventory and create the replace mutation.
 			newEntity.newInventory.removeItems(itemType, 1);

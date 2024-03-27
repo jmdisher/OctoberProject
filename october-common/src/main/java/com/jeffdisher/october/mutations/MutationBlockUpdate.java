@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
@@ -65,6 +66,18 @@ public class MutationBlockUpdate implements IMutationBlock
 				newBlock.setInventory(inv);
 				thisBlock = newType;
 				didApply = true;
+			}
+		}
+		
+		if (!didApply)
+		{
+			// Make sure that this block can be supported by the one under it.
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(_blockLocation.getRelative(0, 0, -1));
+			boolean blockIsSupported = thisBlock.canExistOnBlock((null != belowBlock) ? belowBlock.getBlock() : null);
+			if (!blockIsSupported)
+			{
+				// We need to break this block.
+				CommonBlockMutationHelpers.breakBlockAndCoalesceInventory(context, _blockLocation, newBlock);
 			}
 		}
 		

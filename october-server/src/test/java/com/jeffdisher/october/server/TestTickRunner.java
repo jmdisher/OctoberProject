@@ -1250,6 +1250,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.DIRT.number());
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
@@ -1319,7 +1320,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.DIRT.number());
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
@@ -1401,6 +1402,96 @@ public class TestTickRunner
 		
 		runner.shutdown();
 		MutationBlockGrow.RANDOM_PROVIDER = old;
+	}
+
+	@Test
+	public void breakGrowingWheat()
+	{
+		// Plant a seed and then break the block under it, see that a seed drops, and run for a few cycles to make sure the delayed growth tick is ok.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
+		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), ItemRegistry.DIRT.number());
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.STONE.number());
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		int entityId = 1;
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ItemRegistry.WHEAT_SEED, 1).finish();
+		Entity entity = new Entity(entityId
+				, new EntityLocation(location.x() + 1, location.y(), location.z())
+				, 0.0f
+				, EntityActionValidator.DEFAULT_VOLUME
+				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, ItemRegistry.WHEAT_SEED
+				, null
+		);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
+				)
+				, null
+				, List.of(entity)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		snapshot = runner.waitForPreviousTick();
+		// We should see the seed for one tick before it grows.
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(ItemRegistry.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		
+		// Now, creak the dirt block.
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(dirtLocation, (short)100), 2L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		// Run another tick and see the dirt break but not yet the seedling.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(ItemRegistry.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.items.size());
+		Assert.assertEquals(1, blockInventory.getCount(ItemRegistry.DIRT));
+		
+		// Run another tick and see the seedling break.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(ItemRegistry.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.items.size());
+		
+		// Run another tick to see the seed drop into this inventory.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
+		Assert.assertEquals(2, blockInventory.items.size());
+		Assert.assertEquals(1, blockInventory.getCount(ItemRegistry.DIRT));
+		Assert.assertEquals(1, blockInventory.getCount(ItemRegistry.WHEAT_SEED));
+		
+		// Now, just run for another hundred ticks to make sure nothing goes wrong.
+		for (int i = 0; i < 100; ++i)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
+		Assert.assertEquals(2, blockInventory.items.size());
+		Assert.assertEquals(1, blockInventory.getCount(ItemRegistry.DIRT));
+		Assert.assertEquals(1, blockInventory.getCount(ItemRegistry.WHEAT_SEED));
+		
+		runner.shutdown();
 	}
 
 
