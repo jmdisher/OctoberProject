@@ -9,9 +9,12 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.registries.PlantRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -22,7 +25,6 @@ public class MutationBlockGrow implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.GROW;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
-	public static final int GROWTH_DENOMINATOR = 10;
 	/**
 	 * The random provider is non-final since tests can replace it.
 	 */
@@ -61,24 +63,28 @@ public class MutationBlockGrow implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Make sure that this is a block which can grow.
-		if (ItemRegistry.SAPLING == newBlock.getBlock().asItem())
+		Item item = newBlock.getBlock().asItem();
+		int growthDivisor = PlantRegistry.growthDivisor(item);
+		if (growthDivisor > 0)
 		{
+			boolean shouldReschedule;
 			// See if the random generator says we should grow this tick or try again later.
 			int randomBits = RANDOM_PROVIDER.getAsInt();
-			if (1 == (randomBits % GROWTH_DENOMINATOR))
+			if (1 == (randomBits % growthDivisor))
 			{
-				// Replace this with a log and leaf blocks.
-				// TODO:  Figure out how to make more interesting trees.
-				newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
-				_tryScheduleLeaf(context, -1,  0,  0);
-				_tryScheduleLeaf(context,  1,  0,  0);
-				_tryScheduleLeaf(context,  0, -1,  0);
-				_tryScheduleLeaf(context,  0,  1,  0);
-				_tryScheduleLeaf(context,  0,  0,  1);
+				// Currently, on the sapling takes this path.
+				Assert.assertTrue(ItemRegistry.SAPLING == item);
+				_growTree(context, newBlock);
+				shouldReschedule = false;
 			}
 			else
 			{
 				// Just reschedule this.
+				shouldReschedule = true;
+			}
+			
+			if (shouldReschedule)
+			{
 				context.delatedMutationSink.accept(this, MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
@@ -96,6 +102,19 @@ public class MutationBlockGrow implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
+	}
+
+
+	private void _growTree(TickProcessingContext context, IMutableBlockProxy newBlock)
+	{
+		// Replace this with a log and leaf blocks.
+		// TODO:  Figure out how to make more interesting trees.
+		newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
+		_tryScheduleLeaf(context, -1,  0,  0);
+		_tryScheduleLeaf(context,  1,  0,  0);
+		_tryScheduleLeaf(context,  0, -1,  0);
+		_tryScheduleLeaf(context,  0,  1,  0);
+		_tryScheduleLeaf(context,  0,  0,  1);
 	}
 
 	private void _tryScheduleLeaf(TickProcessingContext context, int x, int y, int z)
