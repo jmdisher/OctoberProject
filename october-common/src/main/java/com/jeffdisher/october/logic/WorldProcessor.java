@@ -22,9 +22,9 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -396,7 +396,7 @@ public class WorldProcessor
 			{
 				BlockProxy proxy = local.apply(location);
 				return (null != proxy)
-						? LightAspect.getOpacity(proxy.getBlock().asItem())
+						? LightAspect.getOpacity(proxy.getBlock())
 						: LightBringer.IByteLookup.NOT_FOUND
 				;
 			};
@@ -404,7 +404,7 @@ public class WorldProcessor
 			{
 				BlockProxy proxy = local.apply(location);
 				return (null != proxy)
-						? LightAspect.getLightEmission(proxy.getBlock().asItem())
+						? LightAspect.getLightEmission(proxy.getBlock())
 						: LightBringer.IByteLookup.NOT_FOUND
 				;
 			};
@@ -456,10 +456,10 @@ public class WorldProcessor
 	{
 		// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
 		BlockProxy proxy = proxyLookup.apply(location);
-		Item item = proxy.getBlock().asItem();
+		Block block = proxy.getBlock();
 		byte currentLight = proxy.getLight();
 		// Check if this is a light source.
-		byte emission = LightAspect.getLightEmission(item);
+		byte emission = LightAspect.getLightEmission(block);
 		if (emission > currentLight)
 		{
 			// We need to add this light source.
@@ -469,7 +469,7 @@ public class WorldProcessor
 		else
 		{
 			// See if this was an opaque block placed on top of something with light.
-			byte opacity = LightAspect.getOpacity(item);
+			byte opacity = LightAspect.getOpacity(block);
 			if ((LightAspect.MAX_LIGHT == opacity) && (currentLight > 0))
 			{
 				// We need to set this to zero and cast the shadow.

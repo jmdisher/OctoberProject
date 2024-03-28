@@ -583,7 +583,7 @@ public class TestLightBringer
 		{
 			BlockProxy proxy = _readOrPopulateCache(location);
 			return (null != proxy)
-					? LightAspect.getOpacity(proxy.getBlock().asItem())
+					? LightAspect.getOpacity(proxy.getBlock())
 					: LightBringer.IByteLookup.NOT_FOUND
 			;
 		};

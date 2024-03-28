@@ -8,14 +8,12 @@ import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -340,12 +338,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		if (null != _writes[AspectRegistry.BLOCK.index()])
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
-			Item originalItem = ItemRegistry.ITEMS_BY_TYPE[original];
-			Item updatedItem = _cachedBlock.asItem();
-			byte originalEmission = LightAspect.getLightEmission(originalItem);
-			byte updatedEmission = LightAspect.getLightEmission(updatedItem);
-			byte originalOpacity = LightAspect.getOpacity(originalItem);
-			byte updatedOpacity = LightAspect.getOpacity(updatedItem);
+			Block originalBlock = BlockAspect.BLOCKS_BY_TYPE[original];
+			byte originalEmission = LightAspect.getLightEmission(originalBlock);
+			byte updatedEmission = LightAspect.getLightEmission(_cachedBlock);
+			byte originalOpacity = LightAspect.getOpacity(originalBlock);
+			byte updatedOpacity = LightAspect.getOpacity(_cachedBlock);
 			lightMayChange = (originalEmission != updatedEmission) || (originalOpacity != updatedOpacity);
 		}
 		return lightMayChange;
