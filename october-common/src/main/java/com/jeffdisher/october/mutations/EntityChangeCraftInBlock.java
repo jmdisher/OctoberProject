@@ -2,10 +2,10 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.Craft;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -60,7 +60,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isCraftingTable = (null != proxy) && (ItemRegistry.CRAFTING_TABLE == proxy.getBlock().asItem());
+		boolean isCraftingTable = (null != proxy) && (BlockAspect.CRAFTING_TABLE == proxy.getBlock());
 		
 		boolean didApply = false;
 		if (isLocationClose && isCraftingTable)

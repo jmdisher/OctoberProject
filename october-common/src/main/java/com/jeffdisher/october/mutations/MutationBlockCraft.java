@@ -3,10 +3,10 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.Craft;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Inventory;
@@ -57,7 +57,7 @@ public class MutationBlockCraft implements IMutationBlock
 		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
-		if (ItemRegistry.CRAFTING_TABLE == newBlock.getBlock().asItem())
+		if (BlockAspect.CRAFTING_TABLE == newBlock.getBlock())
 		{
 			// See if this is something new or if we are continuing.
 			CraftOperation currentOperation = newBlock.getCrafting();

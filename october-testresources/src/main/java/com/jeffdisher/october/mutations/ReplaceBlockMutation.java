@@ -38,7 +38,7 @@ public class ReplaceBlockMutation implements IMutationBlock
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		boolean didApply = false;
-		if (_oldType == newBlock.getBlock().asItem().number())
+		if (_oldType == newBlock.getBlock().item().number())
 		{
 			newBlock.setBlockAndClear(BlockAspect.BLOCKS_BY_TYPE[_newType]);
 			didApply = true;

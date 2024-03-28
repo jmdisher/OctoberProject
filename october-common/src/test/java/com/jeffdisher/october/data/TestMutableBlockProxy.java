@@ -44,7 +44,7 @@ public class TestMutableBlockProxy
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(updated);
-		Assert.assertEquals(BlockAspect.STONE.number(), updated.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(BlockAspect.STONE.item().number(), updated.getData15(AspectRegistry.BLOCK, address));
 	}
 
 	@Test
@@ -115,7 +115,7 @@ public class TestMutableBlockProxy
 		proxy.writeBack(input);
 		buffer.clear();
 		
-		Assert.assertEquals(BlockAspect.STONE.number(), input.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(BlockAspect.STONE.item().number(), input.getData15(AspectRegistry.BLOCK, address));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.INVENTORY, address));
 	}
 }

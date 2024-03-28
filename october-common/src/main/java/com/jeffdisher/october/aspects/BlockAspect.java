@@ -36,7 +36,7 @@ public class BlockAspect
 	private static Block _register(Item item)
 	{
 		short number = item.number();
-		Block block = new Block(number);
+		Block block = new Block(item);
 		BLOCKS_BY_TYPE[number] = block;
 		return block;
 	}
@@ -160,7 +160,7 @@ public class BlockAspect
 		else
 		{
 			// By default, all other blocks just drop as their item type.
-			dropped = new Item[] { block.asItem() };
+			dropped = new Item[] { block.item() };
 		}
 		return dropped;
 	}

@@ -57,7 +57,7 @@ public class LightAspect
 	 */
 	public static byte getOpacity(Block block)
 	{
-		return OPACITY_BY_TYPE[block.asItem().number()];
+		return OPACITY_BY_TYPE[block.item().number()];
 	}
 
 	/**

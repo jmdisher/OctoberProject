@@ -63,7 +63,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_cachedBlock = block;
 		
 		// Set the updated item type.
-		_setData15(AspectRegistry.BLOCK, block.number());
+		_setData15(AspectRegistry.BLOCK, block.item().number());
 		
 		// Clear other aspects since they are all based on the item type.
 		_setDataSpecial(AspectRegistry.INVENTORY, null);

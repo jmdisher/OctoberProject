@@ -112,6 +112,6 @@ public class DamageAspect
 
 	public static short getToughness(Block block)
 	{
-		return TOUGHNESS_BY_TYPE[block.number()];
+		return TOUGHNESS_BY_TYPE[block.item().number()];
 	}
 }

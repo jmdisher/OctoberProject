@@ -82,6 +82,6 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
-		CodecHelpers.writeItem(buffer, _blockType.asItem());
+		CodecHelpers.writeItem(buffer, _blockType.item());
 	}
 }

@@ -3,11 +3,11 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.registries.Craft;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
@@ -37,7 +37,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	{
 		CraftOperation canCraft = null;
 		// Check that this block is a furnace (could have been changed).
-		if (ItemRegistry.FURNACE == proxy.getBlock().asItem())
+		if (BlockAspect.FURNACE == proxy.getBlock())
 		{
 			// See if there is an active crafting operation.
 			CraftOperation runningCraft = proxy.getCrafting();

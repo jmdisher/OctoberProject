@@ -2,9 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -51,7 +51,7 @@ public class PickUpItemMutation implements IMutationBlock
 	{
 		// We can only operator on air.
 		boolean didApply = false;
-		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
+		if (BlockAspect.AIR == newBlock.getBlock())
 		{
 			Inventory oldInventory = newBlock.getInventory();
 			MutableInventory mutable = new MutableInventory(oldInventory);

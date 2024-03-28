@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -48,7 +49,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
@@ -64,7 +65,7 @@ public class TestCommonMutations
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(0, inv.currentEncumbrance);
 	}
@@ -93,7 +94,7 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		Assert.assertEquals(ItemRegistry.AIR, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
 		Assert.assertEquals(1, inv.items.get(ItemRegistry.STONE).count());
@@ -110,7 +111,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.STONE, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.STONE, proxy.getBlock());
 		Assert.assertNull(proxy.getInventory());
 		Assert.assertEquals((short) 1000, proxy.getDamage());
 	}
@@ -140,18 +141,18 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		// If we break a block under weak flow, we expect it to be weak unless it lands on a solid block.
-		Assert.assertEquals(ItemRegistry.WATER_WEAK, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.WATER_WEAK, proxy.getBlock());
 		
 		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
 		proxy = new MutableBlockProxy(down, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(down).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.WATER_STRONG, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.WATER_STRONG, proxy.getBlock());
 		
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ItemRegistry.WATER_WEAK, proxy.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.WATER_WEAK, proxy.getBlock());
 	}
 
 

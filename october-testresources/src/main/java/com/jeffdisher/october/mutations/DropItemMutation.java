@@ -2,9 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -52,7 +52,7 @@ public class DropItemMutation implements IMutationBlock
 	{
 		// We can only drop an item into air.
 		boolean didApply = false;
-		if (ItemRegistry.AIR == newBlock.getBlock().asItem())
+		if (BlockAspect.AIR == newBlock.getBlock())
 		{
 			// Disect existing inventory into mutable copies or create defaults.
 			Inventory oldInventory = newBlock.getInventory();

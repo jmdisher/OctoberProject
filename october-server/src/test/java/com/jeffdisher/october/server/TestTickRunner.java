@@ -8,6 +8,7 @@ import java.util.function.IntSupplier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.aspects.LightAspect;
@@ -173,7 +174,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		// Now, we should see a block with default properties.
 		BlockProxy block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals(ItemRegistry.AIR, block.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.AIR, block.getBlock());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
 		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ItemRegistry.AIR.number(), ItemRegistry.STONE.number())), 1L);
@@ -185,7 +186,7 @@ public class TestTickRunner
 		
 		// We should now see the new data.
 		block = _getBlockProxy(snapshot, new AbsoluteLocation(0, 0, 0));
-		Assert.assertEquals(ItemRegistry.STONE, block.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.STONE, block.getBlock());
 	}
 
 	@Test
@@ -281,7 +282,7 @@ public class TestTickRunner
 		// Shutdown and observe expected results.
 		runner.shutdown();
 		
-		Assert.assertEquals(ItemRegistry.STONE, _getBlockProxy(snapshot, changeLocation).getBlock().asItem());
+		Assert.assertEquals(BlockAspect.STONE, _getBlockProxy(snapshot, changeLocation).getBlock());
 	}
 
 	@Test
@@ -372,7 +373,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(ItemRegistry.STONE, proxy1.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.STONE, proxy1.getBlock());
 		Assert.assertEquals((short) 1000, proxy1.getDamage());
 		Assert.assertNull(proxy1.getInventory());
 		
@@ -390,7 +391,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
-		Assert.assertEquals(ItemRegistry.AIR, proxy2.getBlock().asItem());
+		Assert.assertEquals(BlockAspect.AIR, proxy2.getBlock());
 		Assert.assertEquals((short) 0, proxy2.getDamage());
 		Inventory inv = proxy2.getInventory();
 		Assert.assertEquals(1, inv.items.size());
