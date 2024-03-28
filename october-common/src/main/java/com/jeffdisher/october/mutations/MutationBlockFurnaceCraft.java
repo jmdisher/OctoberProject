@@ -4,10 +4,10 @@ import java.nio.ByteBuffer;
 import java.util.Set;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;

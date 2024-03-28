@@ -1,9 +1,8 @@
-package com.jeffdisher.october.registries;
+package com.jeffdisher.october.aspects;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.CraftingAspectCodec;
 import com.jeffdisher.october.data.FueledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;

@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;

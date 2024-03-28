@@ -3,7 +3,7 @@ package com.jeffdisher.october.data;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Aspect;
-import com.jeffdisher.october.registries.AspectRegistry;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;

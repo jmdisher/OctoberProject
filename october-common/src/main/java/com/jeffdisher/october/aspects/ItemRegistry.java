@@ -1,4 +1,4 @@
-package com.jeffdisher.october.registries;
+package com.jeffdisher.october.aspects;
 
 import java.util.ArrayList;
 import java.util.List;

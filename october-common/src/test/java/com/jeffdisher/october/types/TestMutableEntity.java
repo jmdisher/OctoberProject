@@ -3,7 +3,7 @@ package com.jeffdisher.october.types;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.aspects.ItemRegistry;
 
 
 public class TestMutableEntity

@@ -2,8 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.MutableEntity;

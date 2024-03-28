@@ -1,10 +1,10 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.registries.AspectRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;

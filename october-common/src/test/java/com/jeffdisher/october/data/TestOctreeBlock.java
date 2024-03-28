@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.types.BlockAddress;
 
 

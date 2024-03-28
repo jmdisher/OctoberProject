@@ -1,6 +1,5 @@
 package com.jeffdisher.october.aspects;
 
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 
