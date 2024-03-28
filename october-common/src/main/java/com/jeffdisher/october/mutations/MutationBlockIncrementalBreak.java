@@ -6,7 +6,7 @@ import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -47,7 +47,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		boolean didApply = false;
 		
 		// We want to see if this is a kind of block which can be broken.
-		Item block = newBlock.getBlock().asItem();
+		Block block = newBlock.getBlock();
 		if (DamageAspect.UNBREAKABLE != DamageAspect.getToughness(block))
 		{
 			// Apply the damage.

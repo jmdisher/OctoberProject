@@ -1,11 +1,11 @@
 package com.jeffdisher.october.aspects;
 
-import com.jeffdisher.october.registries.ItemRegistry;
-import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Block;
 
 
 /**
  * Contains constants and helpers associated with the damage aspect.
+ * Since damage is only defined on blocks placed in the world, this aspect directly depends BlockAspect.
  */
 public class DamageAspect
 {
@@ -49,59 +49,54 @@ public class DamageAspect
 	 */
 	public static final short STRONG = 20000;
 
-	public static final int[] TOUGHNESS_BY_TYPE = new int[ItemRegistry.ITEMS_BY_TYPE.length];
+	public static final short[] TOUGHNESS_BY_TYPE = new short[BlockAspect.BLOCKS_BY_TYPE.length];
 
 	static {
-		// We construct the damage by looking at items.
-		// This purely exists to demonstrate the shape of the Item data once it is fully external data:  All aspects are
-		// out-of-line and their meaning for a specific Item type is answered through aspect-specific helpers, like this.
 		// TODO:  Replace this with a data file later on.
 		for (int i = 0; i < TOUGHNESS_BY_TYPE.length; ++i)
 		{
-			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
-			int toughness;
-			if ((ItemRegistry.AIR == item)
-					|| (ItemRegistry.WATER_SOURCE == item)
-					|| (ItemRegistry.WATER_STRONG == item)
-					|| (ItemRegistry.WATER_WEAK == item)
+			Block block = BlockAspect.BLOCKS_BY_TYPE[i];
+			short toughness;
+			if (null == block)
+			{
+				// This is NOT a block which can exist in the world.
+				toughness = NOT_BLOCK;
+			}
+			else if ((BlockAspect.AIR == block)
+					|| (BlockAspect.WATER_SOURCE == block)
+					|| (BlockAspect.WATER_STRONG == block)
+					|| (BlockAspect.WATER_WEAK == block)
 			)
 			{
 				toughness = UNBREAKABLE;
 			}
-			else if ((ItemRegistry.CHARCOAL == item)
-					|| (ItemRegistry.WHEAT_SEED == item)
-					|| (ItemRegistry.WHEAT_ITEM == item)
-			)
-			{
-				toughness = NOT_BLOCK;
-			}
-			else if ((ItemRegistry.SAPLING == item)
-					|| (ItemRegistry.LEAF == item)
-					|| (ItemRegistry.WHEAT_SEEDLING == item)
-					|| (ItemRegistry.WHEAT_YOUNG == item)
-					|| (ItemRegistry.WHEAT_MATURE == item)
+			else if ((BlockAspect.SAPLING == block)
+					|| (BlockAspect.LEAF == block)
+					|| (BlockAspect.WHEAT_SEEDLING == block)
+					|| (BlockAspect.WHEAT_YOUNG == block)
+					|| (BlockAspect.WHEAT_MATURE == block)
 			)
 			{
 				toughness = TRIVIAL;
 			}
-			else if ((ItemRegistry.LOG == item)
-					|| (ItemRegistry.PLANK == item)
-					|| (ItemRegistry.CRAFTING_TABLE == item)
-					|| (ItemRegistry.DIRT == item)
-					|| (ItemRegistry.LANTERN == item)
+			else if ((BlockAspect.LOG == block)
+					|| (BlockAspect.PLANK == block)
+					|| (BlockAspect.CRAFTING_TABLE == block)
+					|| (BlockAspect.DIRT == block)
+					|| (BlockAspect.LANTERN == block)
 			)
 			{
 				toughness = WEAK;
 			}
-			else if ((ItemRegistry.STONE == item)
-					|| (ItemRegistry.STONE_BRICK == item)
-					|| (ItemRegistry.FURNACE == item)
-					|| (ItemRegistry.COAL_ORE == item)
+			else if ((BlockAspect.STONE == block)
+					|| (BlockAspect.STONE_BRICK == block)
+					|| (BlockAspect.FURNACE == block)
+					|| (BlockAspect.COAL_ORE == block)
 			)
 			{
 				toughness = MEDIUM;
 			}
-			else if (ItemRegistry.IRON_ORE == item)
+			else if (BlockAspect.IRON_ORE == block)
 			{
 				toughness = HARD;
 			}
@@ -115,8 +110,8 @@ public class DamageAspect
 		}
 	}
 
-	public static int getToughness(Item item)
+	public static short getToughness(Block block)
 	{
-		return TOUGHNESS_BY_TYPE[item.number()];
+		return TOUGHNESS_BY_TYPE[block.number()];
 	}
 }
