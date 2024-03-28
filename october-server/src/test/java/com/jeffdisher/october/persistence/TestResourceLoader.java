@@ -47,7 +47,7 @@ public class TestResourceLoader
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
 		loader.preload(cuboid);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).

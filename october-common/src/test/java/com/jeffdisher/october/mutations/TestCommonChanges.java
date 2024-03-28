@@ -32,8 +32,8 @@ public class TestCommonChanges
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
@@ -53,7 +53,7 @@ public class TestCommonChanges
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -92,7 +92,7 @@ public class TestCommonChanges
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -117,8 +117,8 @@ public class TestCommonChanges
 	{
 		// Jump into the air and fall back down.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
@@ -168,7 +168,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -208,7 +208,7 @@ public class TestCommonChanges
 		// Create the entity in an air block so we can place this (give us a starter inventory).
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.LOG, 1).finish(), ItemRegistry.LOG, null);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -241,7 +241,7 @@ public class TestCommonChanges
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
 		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -309,7 +309,7 @@ public class TestCommonChanges
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
 		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.STONE, 2).finish(), ItemRegistry.STONE, null);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ItemRegistry.STONE.number());
@@ -368,7 +368,7 @@ public class TestCommonChanges
 		// We will try to place a block colliding with the entity or too far from them to verify that this fails.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.LOG, 1).finish(), ItemRegistry.LOG, null);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -410,7 +410,7 @@ public class TestCommonChanges
 		AbsoluteLocation tooFar = new AbsoluteLocation(3, 0, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(0, 0, 10);
 		AbsoluteLocation reasonable = new AbsoluteLocation(1, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), ItemRegistry.STONE.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wrongType.getBlockAddress(), ItemRegistry.PLANK.number());
 		Assert.assertEquals(ItemRegistry.PLANK.number(), cuboid.getData15(AspectRegistry.BLOCK, wrongType.getBlockAddress()));
@@ -455,7 +455,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = new MutableEntity(original);
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -481,7 +481,7 @@ public class TestCommonChanges
 				.finish(), ItemRegistry.CHARCOAL, null);
 		
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
 		proxy.setBlockAndClear(BlockAspect.FURNACE);
 		proxy.writeBack(cuboid);

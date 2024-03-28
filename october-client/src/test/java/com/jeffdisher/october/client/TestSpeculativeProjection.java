@@ -72,7 +72,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid))
@@ -189,8 +189,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, BlockAspect.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, BlockAspect.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
@@ -267,8 +267,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, BlockAspect.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, BlockAspect.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
@@ -362,8 +362,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ItemRegistry.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ItemRegistry.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, BlockAspect.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, BlockAspect.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
@@ -453,7 +453,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid)
@@ -604,7 +604,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
@@ -684,7 +684,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(EntityActionValidator.buildDefaultEntity(0))
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -837,7 +837,7 @@ public class TestSpeculativeProjection
 		);
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -878,8 +878,8 @@ public class TestSpeculativeProjection
 		);
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
-						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -988,7 +988,7 @@ public class TestSpeculativeProjection
 		int localEntityId = 1;
 		long currentTimeMillis = 1000L;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
 		projector.applyChangesForServerTick(0L
@@ -1098,8 +1098,8 @@ public class TestSpeculativeProjection
 		);
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR)
-						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()

@@ -5,9 +5,8 @@ import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.OctreeByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
-import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -18,48 +17,22 @@ import com.jeffdisher.october.types.Item;
  */
 public class CuboidGenerator
 {
-	public static CuboidData createFilledCuboid(CuboidAddress cuboidAddress, Item fillItem)
-	{
-		return _createFilledCuboid(cuboidAddress, fillItem);
-	}
-
 	/**
-	 * This helper returns the cuboids needed to describe the default static world we will be using for initial
-	 * integration play testing:  A 5x5x5 block of cuboids, centred around 0,0,0, with the top 3 layers air and the
-	 * bottom 2 layers stone.
-	 * This world will have dimensions in each axis of [-32, 48).
+	 * Returns a cuboid with all default aspects except for BLOCK which is filled with the given fillBlock.
 	 * 
-	 * @return The array of cuboids to load as the static world.
+	 * @param cuboidAddress The cuboid address.
+	 * @param fillBlock The block which should fill the entire cuboid.
+	 * @return The new cuboid.
 	 */
-	public static CuboidData[] generateStatic555World()
+	public static CuboidData createFilledCuboid(CuboidAddress cuboidAddress, Block fillBlock)
 	{
-		CuboidData[] list = new CuboidData[5*5*5];
-		int index = 0;
-		for (int x = -2; x < 3; ++x)
-		{
-			for (int y = -2; y < 3; ++y)
-			{
-				for (int z = -2; z < 3; ++z)
-				{
-					CuboidAddress address = new CuboidAddress((short)x, (short)y, (short)z);
-					Item fillItem = (z < 0)
-							// Stone in the bottom 2 layers.
-							? ItemRegistry.STONE
-							// Air in the top 3 layers.
-							: ItemRegistry.AIR
-					;
-					list[index] = _createFilledCuboid(address, fillItem);
-					index += 1;
-				}
-			}
-		}
-		return list;
+		return _createFilledCuboid(cuboidAddress, fillBlock);
 	}
 
 
-	private static CuboidData _createFilledCuboid(CuboidAddress cuboidAddress, Item fillItem)
+	private static CuboidData _createFilledCuboid(CuboidAddress cuboidAddress, Block fillBlock)
 	{
-		OctreeShort blockData = OctreeShort.create(fillItem.number());
+		OctreeShort blockData = OctreeShort.create(fillBlock.item().number());
 		OctreeObject inventoryData = OctreeObject.create();
 		OctreeShort damageData = OctreeShort.create((short) 0);
 		OctreeObject craftingData = OctreeObject.create();

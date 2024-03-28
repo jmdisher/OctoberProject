@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -28,7 +29,7 @@ public class TestLightBringer
 	{
 		// Create a single light source in the middle of an air cuboid and check how it propagates.
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		MutableBlockProxy source = new MutableBlockProxy(centre, cuboid);
 		source.setLight((byte)15);
@@ -77,7 +78,7 @@ public class TestLightBringer
 		byte value = LightAspect.MAX_LIGHT;
 		// Create a single light source in the middle of an air cuboid and check how it propagates.
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
@@ -151,7 +152,7 @@ public class TestLightBringer
 		// Add and them remove a single light source in a 2D maze, in a block of stone.
 		byte value = LightAspect.MAX_LIGHT;
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
 		BlockAddress source = _loadBlockMap(cuboid, (byte)16, ""
 				+ "SSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS"
 				+ "SSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS"
@@ -233,7 +234,7 @@ public class TestLightBringer
 	{
 		// We want to check adding a few light sources to a high-opacity environment and then remove some.
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// We will use the light values from the cuboid but a fixed high opacity.
@@ -307,7 +308,7 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
 		{
 			// We will say that only the centre z-level is not fully opaque but say that south or west directions are more opaque.
@@ -371,7 +372,7 @@ public class TestLightBringer
 		byte dim = 5;
 		
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		AbsoluteLocation strongLocation = centre.getRelative(-1, 0, 0);
 		AbsoluteLocation dimLocation = centre.getRelative(1, 0, 0);
@@ -432,7 +433,7 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.AIR);
 		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
 		{
 			// We will say that the entire cuboid is opaque, other than this single z-level.

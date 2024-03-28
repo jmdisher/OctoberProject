@@ -31,7 +31,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidAddress cuboidAddress = target.getCuboidAddress();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = new TickProcessingContext(1L
@@ -59,7 +59,7 @@ public class TestCommonMutations
 	public void breakBlockFailure()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), BlockAspect.AIR);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
@@ -74,7 +74,7 @@ public class TestCommonMutations
 	public void endBlockBreakSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), BlockAspect.STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)200);
@@ -104,7 +104,7 @@ public class TestCommonMutations
 	public void breakBlockPartial()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), BlockAspect.STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
@@ -121,7 +121,7 @@ public class TestCommonMutations
 	{
 		// We want to verify what happens in a situation where we expect the water to flow into some gaps after breaking a block.
 		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), BlockAspect.STONE);
 		AbsoluteLocation down = target.getRelative(0, 0, -1);
 		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ItemRegistry.WATER_STRONG.number());

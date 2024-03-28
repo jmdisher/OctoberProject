@@ -6,6 +6,7 @@ import java.util.Queue;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
@@ -24,7 +25,7 @@ public class TestCuboidCodec
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		
 		CuboidData output = _codec(input);
 		Assert.assertEquals((short) 0, output.getData15(AspectRegistry.BLOCK, testAddress));
@@ -36,7 +37,7 @@ public class TestCuboidCodec
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
 		

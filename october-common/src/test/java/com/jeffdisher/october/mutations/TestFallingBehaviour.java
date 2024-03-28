@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -31,7 +32,7 @@ public class TestFallingBehaviour
 		int entityId = 1;
 		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ItemRegistry.STONE, 2).finish(), ItemRegistry.STONE, null);
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
 		// Create a solid block a little below this so we can watch it fall down.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), ItemRegistry.STONE.number());
@@ -96,7 +97,7 @@ public class TestFallingBehaviour
 		// Verify that breaking the bottom block first results in the top inventory falling.
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.STONE);
 		AbsoluteLocation bottomLocation = new AbsoluteLocation(0, 0, 3);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -148,7 +149,7 @@ public class TestFallingBehaviour
 		// (this requires generalized block update logic).
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.STONE);
 		AbsoluteLocation topLocation = new AbsoluteLocation(0, 0, 4);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -210,7 +211,7 @@ public class TestFallingBehaviour
 	{
 		// Create an air cuboid with some items in the bottom block, then load another air cuboid and verify that they fall.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ItemRegistry.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -234,7 +235,7 @@ public class TestFallingBehaviour
 		
 		// Use a new context with a new cuboid to show that the items fall if updated now.
 		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
 					? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -258,7 +259,7 @@ public class TestFallingBehaviour
 	{
 		// Create a cuboid of stone with water sources around one block, air and inventory above it and below, then observe what happens when the block is broken.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.STONE);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(15, 15, 15);
 		AbsoluteLocation eastLocation = targetLocation.getRelative(1, 0, 0);
 		AbsoluteLocation westLocation = targetLocation.getRelative(-1, 0, 0);

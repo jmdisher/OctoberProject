@@ -23,7 +23,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		
@@ -35,7 +35,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
@@ -52,7 +52,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		proxy.setBlockAndClear(BlockAspect.STONE);
@@ -66,7 +66,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		// Store into the block's inventory and see how that serializes.

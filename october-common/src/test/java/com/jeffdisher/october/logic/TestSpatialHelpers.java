@@ -5,9 +5,9 @@ import java.util.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
@@ -24,7 +24,7 @@ public class TestSpatialHelpers
 	{
 		// Just ask if they can exist when only air is present.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean canExist = SpatialHelpers.canExistInLocation(blockTypeReader, location, VOLUME);
 		Assert.assertTrue(canExist);
@@ -35,7 +35,7 @@ public class TestSpatialHelpers
 	{
 		// Just ask if they can exist when only stone is present.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean canExist = SpatialHelpers.canExistInLocation(blockTypeReader, location, VOLUME);
 		Assert.assertFalse(canExist);
@@ -46,7 +46,7 @@ public class TestSpatialHelpers
 	{
 		// Just ask if they can stand when only air is present (as this doesn't check the blocks they occupy).
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean isStanding = SpatialHelpers.isStandingOnGround(blockTypeReader, location, VOLUME);
 		Assert.assertFalse(isStanding);
@@ -57,7 +57,7 @@ public class TestSpatialHelpers
 	{
 		// Just ask if they can stand when only stone is present (as this doesn't check the blocks they occupy).
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean isStanding = SpatialHelpers.isStandingOnGround(blockTypeReader, location, VOLUME);
 		Assert.assertTrue(isStanding);
@@ -68,7 +68,7 @@ public class TestSpatialHelpers
 	{
 		// Ask if they are touching the ceiling when clearly not.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(blockTypeReader, location, VOLUME);
 		Assert.assertFalse(isTouching);
@@ -79,7 +79,7 @@ public class TestSpatialHelpers
 	{
 		// Ask if they are touching the ceiling when they are right against it.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.2f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(blockTypeReader, location, VOLUME);
 		Assert.assertTrue(isTouching);
@@ -90,8 +90,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too high into the ceiling and observe the corrected location.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, -1.5f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
 				? new BlockProxy(l.getBlockAddress(), stone)
 				: new BlockProxy(l.getBlockAddress(), air)
@@ -105,8 +105,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too low into the ground and observe the corrected location.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, -0.5f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
 				? new BlockProxy(l.getBlockAddress(), air)
 				: new BlockProxy(l.getBlockAddress(), stone)
@@ -121,8 +121,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too for into the wall and observe the corrected location.
 		EntityLocation location = new EntityLocation(-0.3f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
 				? new BlockProxy(l.getBlockAddress(), stone)
 				: new BlockProxy(l.getBlockAddress(), air)
@@ -136,8 +136,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too for into the wall and observe the corrected location.
 		EntityLocation location = new EntityLocation(-0.3f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
 				? new BlockProxy(l.getBlockAddress(), air)
 				: new BlockProxy(l.getBlockAddress(), stone)
@@ -152,8 +152,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too for into the wall and observe the corrected location.
 		EntityLocation location = new EntityLocation(0.0f, -0.3f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.y() >= 0)
 				? new BlockProxy(l.getBlockAddress(), stone)
 				: new BlockProxy(l.getBlockAddress(), air)
@@ -167,8 +167,8 @@ public class TestSpatialHelpers
 	{
 		// Try to place the entity a little too for into the wall and observe the corrected location.
 		EntityLocation location = new EntityLocation(0.0f, -0.3f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), BlockAspect.STONE);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.y() >= 0)
 				? new BlockProxy(l.getBlockAddress(), air)
 				: new BlockProxy(l.getBlockAddress(), stone)

@@ -11,13 +11,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -79,7 +79,7 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		cuboidLoader.preload(cuboid);
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		
@@ -115,8 +115,8 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboids.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ItemRegistry.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), BlockAspect.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.AIR));
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		
 		// Connect the client.
@@ -157,7 +157,7 @@ public class TestProcesses
 		
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ItemRegistry.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
 		cuboidLoader.preload(cuboid);
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis);
 		
@@ -185,8 +185,8 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ItemRegistry.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ItemRegistry.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), BlockAspect.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), BlockAspect.AIR));
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis[0]);
 		
 		// Create the first client.
@@ -276,7 +276,7 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR);
 		cuboidLoader.preload(cuboid);
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
 		
