@@ -12,9 +12,10 @@ import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 
@@ -85,7 +86,7 @@ public class TestMutationBlockCodec
 	public void blockCraft() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Craft craft = Craft.LOG_TO_PLANKS;
+		Craft craft = CraftAspect.LOG_TO_PLANKS;
 		long millis = 100L;
 		MutationBlockCraft mutation = new MutationBlockCraft(location, craft, millis);
 		

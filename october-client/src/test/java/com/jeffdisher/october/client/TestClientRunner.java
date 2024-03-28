@@ -18,7 +18,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -195,7 +195,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 500L;
-		runner.craft(Craft.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craft(CraftAspect.LOG_TO_PLANKS, currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.loadedEnties.get(clientId).localCraftOperation());
 		
@@ -331,7 +331,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.craftInBlock(table, Craft.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craftInBlock(table, CraftAspect.LOG_TO_PLANKS, currentTimeMillis);
 		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
 		Assert.assertEquals(500L, proxy.getCrafting().completedMillis());

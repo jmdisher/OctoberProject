@@ -9,7 +9,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -182,7 +182,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ItemRegistry.LOG, newEntity.freeze().selectedItem());
 		
 		// Craft some items to use these up and verify that the selection is cleared.
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS, Craft.LOG_TO_PLANKS.millisPerCraft);
+		EntityChangeCraft craft = new EntityChangeCraft(CraftAspect.LOG_TO_PLANKS, CraftAspect.LOG_TO_PLANKS.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertNull(newEntity.freeze().selectedItem());
 		
@@ -464,7 +464,7 @@ public class TestCommonChanges
 		);
 		
 		// Craft some items to use these up and verify that we also moved.
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS, Craft.LOG_TO_PLANKS.millisPerCraft);
+		EntityChangeCraft craft = new EntityChangeCraft(CraftAspect.LOG_TO_PLANKS, CraftAspect.LOG_TO_PLANKS.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertEquals(10.2f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);

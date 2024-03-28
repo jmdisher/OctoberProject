@@ -7,9 +7,10 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.logic.EntityActionValidator;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -122,7 +123,7 @@ public class TestCodecHelpers
 	public void craft() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Craft test = Craft.LOG_TO_PLANKS;
+		Craft test = CraftAspect.LOG_TO_PLANKS;
 		CodecHelpers.writeCraft(buffer, test);
 		buffer.flip();
 		Craft output = CodecHelpers.readCraft(buffer);
@@ -158,7 +159,7 @@ public class TestCodecHelpers
 				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, null
-				, new CraftOperation(Craft.STONE_TO_STONE_BRICK, 50L)
+				, new CraftOperation(CraftAspect.STONE_TO_STONE_BRICK, 50L)
 		);
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();

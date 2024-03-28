@@ -7,8 +7,9 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
@@ -47,10 +48,10 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 			if (null == runningCraft)
 			{
 				Inventory inv = proxy.getInventory();
-				for (Craft craft : Craft.craftsForClassifications(Set.of(Craft.Classification.SPECIAL_FURNACE)))
+				for (Craft craft : CraftAspect.craftsForClassifications(Set.of(Craft.Classification.SPECIAL_FURNACE)))
 				{
 					// Just take the first match (we don't currently have a priority).
-					if (craft.canApply(inv))
+					if (CraftAspect.canApply(craft, inv))
 					{
 						possibleCraft = craft;
 						break;
@@ -125,7 +126,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 				{
 					// Complete the crafting operation.
 					MutableInventory inv = new MutableInventory(newBlock.getInventory());
-					craft.selectedCraft().craft(inv);
+					CraftAspect.craft(craft.selectedCraft(), inv);
 					newBlock.setInventory(inv.freeze());
 					craft = null;
 				}

@@ -1,7 +1,5 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.registries.Craft;
-
 
 /**
  * Represents an in-progress crafting operation.  It contains the selected Craft action as well as the total number of

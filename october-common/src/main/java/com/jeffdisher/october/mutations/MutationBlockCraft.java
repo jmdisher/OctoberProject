@@ -6,8 +6,9 @@ import java.util.Set;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
@@ -74,10 +75,10 @@ public class MutationBlockCraft implements IMutationBlock
 					{
 						// We are done so try to apply the craft.
 						Inventory inventory = newBlock.getInventory();
-						if (classifications.contains(currentOperation.selectedCraft().classification) && currentCraft.canApply(inventory))
+						if (classifications.contains(currentOperation.selectedCraft().classification) && CraftAspect.canApply(currentCraft, inventory))
 						{
 							MutableInventory mutable = new MutableInventory(inventory);
-							currentCraft.craft(mutable);
+							CraftAspect.craft(currentCraft, mutable);
 							newBlock.setInventory(mutable.freeze());
 							newBlock.setCrafting(null);
 						}
@@ -97,7 +98,7 @@ public class MutationBlockCraft implements IMutationBlock
 				// We are changing so see if the craft makes sense and then start it.
 				// Make sure that this crafting operation can be done within a table.
 				Inventory inventory = newBlock.getInventory();
-				if (classifications.contains(_craft.classification) && _craft.canApply(inventory))
+				if (classifications.contains(_craft.classification) && CraftAspect.canApply(_craft, inventory))
 				{
 					long millisToApply = CRAFTING_SPEED_MODIFIER * _millisToApply;
 					CraftOperation updated = new CraftOperation(_craft, millisToApply);

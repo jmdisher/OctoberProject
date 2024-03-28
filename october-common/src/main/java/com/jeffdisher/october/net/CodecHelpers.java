@@ -3,9 +3,10 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -353,7 +354,7 @@ public class CodecHelpers
 
 	private static Craft _readCraft(ByteBuffer buffer)
 	{
-		// This is an enum so just read a short as ordinal.
+		// Each craft has a numbered index.
 		short ordinal = buffer.getShort();
 		Craft craft;
 		if (-1 == ordinal)
@@ -363,7 +364,7 @@ public class CodecHelpers
 		}
 		else
 		{
-			craft = Craft.values()[ordinal];
+			craft = CraftAspect.CRAFTING_OPERATIONS[ordinal];
 		}
 		return craft;
 	}
@@ -377,8 +378,8 @@ public class CodecHelpers
 		}
 		else
 		{
-			// This is an enum so just send ordinal as a short.
-			short ordinal = (short)operation.ordinal();
+			// Each craft has a numbered index.
+			short ordinal = operation.number;
 			buffer.putShort(ordinal);
 		}
 	}

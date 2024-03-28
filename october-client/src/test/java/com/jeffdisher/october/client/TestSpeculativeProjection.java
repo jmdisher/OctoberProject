@@ -37,7 +37,7 @@ import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.registries.AspectRegistry;
-import com.jeffdisher.october.registries.Craft;
+import com.jeffdisher.october.registries.CraftAspect;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -750,7 +750,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1L, commit1);
 		
 		// We will handle this as a single crafting operation to test the simpler case.
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.LOG_TO_PLANKS, Craft.LOG_TO_PLANKS.millisPerCraft);
+		EntityChangeCraft craft = new EntityChangeCraft(CraftAspect.LOG_TO_PLANKS, CraftAspect.LOG_TO_PLANKS.millisPerCraft);
 		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		// Verify that we finished the craft (no longer in progress).
@@ -799,13 +799,13 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ItemRegistry.STONE, listener.lastEntityStates.get(0).selectedItem());
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
+		EntityChangeCraft craft = new EntityChangeCraft(CraftAspect.STONE_TO_STONE_BRICK, 1000L);
 		long commit1 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(1, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(0).localCraftOperation());
 		
-		craft = new EntityChangeCraft(Craft.STONE_TO_STONE_BRICK, 1000L);
+		craft = new EntityChangeCraft(CraftAspect.STONE_TO_STONE_BRICK, 1000L);
 		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		Assert.assertEquals(2, listener.entityChangeCount);
@@ -905,7 +905,7 @@ public class TestSpeculativeProjection
 		
 		// Now, craft against the table (it has 10x speed so we will do this in 2 shots).
 		currentTimeMillis += 100L;
-		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(location, Craft.STONE_TO_STONE_BRICK, 100L);
+		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(location, CraftAspect.STONE_TO_STONE_BRICK, 100L);
 		long commit3 = projector.applyLocalChange(craft, currentTimeMillis);
 		Assert.assertEquals(3L, commit3);
 		
@@ -968,10 +968,10 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
 		
 		// Verify that this craft should be valid for the inventory.
-		Assert.assertTrue(Craft.STONE_BRICKS_TO_FURNACE.canApply(inventory));
+		Assert.assertTrue(CraftAspect.canApply(CraftAspect.STONE_BRICKS_TO_FURNACE, inventory));
 		
 		// But verify that it fails when applied to the entity, directly (as it isn't "trivial").
-		EntityChangeCraft craft = new EntityChangeCraft(Craft.STONE_BRICKS_TO_FURNACE, 100L);
+		EntityChangeCraft craft = new EntityChangeCraft(CraftAspect.STONE_BRICKS_TO_FURNACE, 100L);
 		long commit = projector.applyLocalChange(craft, 1000L);
 		// This should fail to apply.
 		Assert.assertEquals(0, commit);
