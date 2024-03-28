@@ -134,7 +134,7 @@ public class BlockAspect
 	 * @param block The block to break.
 	 * @return The array of items (never null).
 	 */
-	public static Item[] droppedBlocksOnBread(Block block)
+	public static Item[] droppedBlocksOnBreak(Block block)
 	{
 		Item[] dropped;
 		if (LEAF == block)

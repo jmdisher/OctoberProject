@@ -87,7 +87,7 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// We want to drop this block in the inventory, if it fits.
-		for (Item dropped : BlockAspect.droppedBlocksOnBread(previousBlockType))
+		for (Item dropped : BlockAspect.droppedBlocksOnBreak(previousBlockType))
 		{
 			mutable.addItemsBestEfforts(dropped, 1);
 		}
