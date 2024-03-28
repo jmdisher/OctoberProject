@@ -43,7 +43,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getInventoryCapacity(_cachedBlock.asItem());
+			int size = InventoryAspect.getInventoryCapacity(_cachedBlock);
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();

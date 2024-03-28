@@ -23,7 +23,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public static MutationBlockOverwrite deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Block blockType = BlockAspect.getBlock(CodecHelpers.readItem(buffer));
+		Block blockType = BlockAspect.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		return new MutationBlockOverwrite(location, blockType);
 	}
 
@@ -34,7 +34,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 	public MutationBlockOverwrite(AbsoluteLocation location, Block blockType)
 	{
 		// Using this with AIR doesn't make sense.
-		Assert.assertTrue(!blockType.canBeReplaced());
+		Assert.assertTrue(!BlockAspect.canBeReplaced(blockType));
 		
 		_location = location;
 		_blockType = blockType;
@@ -51,10 +51,10 @@ public class MutationBlockOverwrite implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (newBlock.getBlock().canBeReplaced())
+		if (BlockAspect.canBeReplaced(newBlock.getBlock()))
 		{
 			// Make sure that this block can be supported by the one under it.
-			boolean blockIsSupported = _blockType.canExistOnBlock(context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
+			boolean blockIsSupported = BlockAspect.canExistOnBlock(_blockType, context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
 			
 			// Note that failing to place this means that the block will be destroyed.
 			if (blockIsSupported)
@@ -62,7 +62,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 				// Replace the block with the type we have.
 				newBlock.setBlockAndClear(_blockType);
 				
-				if (PlantRegistry.growthDivisor(_blockType.asItem()) > 0)
+				if (PlantRegistry.growthDivisor(_blockType) > 0)
 				{
 					context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}

@@ -39,12 +39,12 @@ public class TestMutableBlockProxy
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.STONE));
+		proxy.setBlockAndClear(BlockAspect.STONE);
 		
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(updated);
-		Assert.assertEquals(ItemRegistry.STONE.number(), updated.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(BlockAspect.STONE.number(), updated.getData15(AspectRegistry.BLOCK, address));
 	}
 
 	@Test
@@ -55,8 +55,8 @@ public class TestMutableBlockProxy
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ItemRegistry.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.STONE));
-		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.AIR));
+		proxy.setBlockAndClear(BlockAspect.STONE);
+		proxy.setBlockAndClear(BlockAspect.AIR);
 		
 		Assert.assertFalse(proxy.didChange());
 	}
@@ -102,7 +102,7 @@ public class TestMutableBlockProxy
 		
 		// Now, reset the block type and verify that the inventory is cleared (notably not the lighting, since it is updated later).
 		proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.STONE));
+		proxy.setBlockAndClear(BlockAspect.STONE);
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
@@ -115,7 +115,7 @@ public class TestMutableBlockProxy
 		proxy.writeBack(input);
 		buffer.clear();
 		
-		Assert.assertEquals(ItemRegistry.STONE.number(), input.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(BlockAspect.STONE.number(), input.getData15(AspectRegistry.BLOCK, address));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.INVENTORY, address));
 	}
 }

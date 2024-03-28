@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
@@ -48,11 +47,11 @@ public class MutationBlockUpdate implements IMutationBlock
 		boolean didApply = false;
 		// Check to see if this block needs to change into a different type due to water, etc.
 		Block thisBlock = newBlock.getBlock();
-		if (thisBlock.canBeReplaced())
+		if (BlockAspect.canBeReplaced(thisBlock))
 		{
 			// This is an "empty" type so see if the "empty" blocks around it should influence its type.
 			// Note that we don't change the "source" blocks.
-			Block newType = (BlockAspect.getBlock(ItemRegistry.WATER_SOURCE) == thisBlock)
+			Block newType = (BlockAspect.WATER_SOURCE == thisBlock)
 					? thisBlock
 					: CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation)
 			;
@@ -73,7 +72,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		{
 			// Make sure that this block can be supported by the one under it.
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(_blockLocation.getRelative(0, 0, -1));
-			boolean blockIsSupported = thisBlock.canExistOnBlock((null != belowBlock) ? belowBlock.getBlock() : null);
+			boolean blockIsSupported = BlockAspect.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
 			if (!blockIsSupported)
 			{
 				// We need to break this block.
@@ -82,7 +81,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		}
 		
 		// Check to see if this has an inventory which should fall.
-		if (thisBlock.permitsEntityMovement() && (newBlock.getInventory().currentEncumbrance > 0))
+		if (BlockAspect.permitsEntityMovement(thisBlock) && (newBlock.getInventory().currentEncumbrance > 0))
 		{
 			// We want to say that this did apply if anything happened, including dropping the inventory.
 			didApply = CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _blockLocation, newBlock)

@@ -1,6 +1,7 @@
 package com.jeffdisher.october.registries;
 
-import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.types.Block;
 
 
 /**
@@ -13,19 +14,19 @@ public class PlantRegistry
 	 * Returns the growth divisor to use when checking if this growth should happen.  Growth rate can be viewed as 1/x
 	 * where x is the number returned from this function.  Returns 0 if this item doesn't have a concept of growth.
 	 * 
-	 * @param item The item to check.
+	 * @param block The block to check.
 	 * @return The divisor (0 if not growable).
 	 */
-	public static int growthDivisor(Item item)
+	public static int growthDivisor(Block block)
 	{
 		int divisor;
-		if (ItemRegistry.SAPLING == item)
+		if (BlockAspect.SAPLING == block)
 		{
 			// Saplings grow 1/10th of the time.
 			divisor = 10;
 		}
-		else if ((ItemRegistry.WHEAT_SEEDLING == item)
-				|| (ItemRegistry.WHEAT_YOUNG == item)
+		else if ((BlockAspect.WHEAT_SEEDLING == block)
+				|| (BlockAspect.WHEAT_YOUNG == block)
 		)
 		{
 			// Crops grow 1/2th of the time.

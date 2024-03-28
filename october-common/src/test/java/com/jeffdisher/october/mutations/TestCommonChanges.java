@@ -483,7 +483,7 @@ public class TestCommonChanges
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ItemRegistry.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
-		proxy.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.FURNACE));
+		proxy.setBlockAndClear(BlockAspect.FURNACE);
 		proxy.writeBack(cuboid);
 		
 		IMutationBlock[] holder = new IMutationBlock[1];

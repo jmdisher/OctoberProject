@@ -4,7 +4,6 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
@@ -70,7 +69,7 @@ public class CommonBlockMutationHelpers
 		// The block is broken so replace it with the appropriate "empty" block and place the block in the inventory.
 		Inventory oldInventory = newBlock.getInventory();
 		FuelState oldFuel = newBlock.getFuel();
-		Item previousBlockType = newBlock.getBlock().asItem();
+		Block previousBlockType = newBlock.getBlock();
 		Block emptyBlock = _determineEmptyBlockType(context, location);
 		newBlock.setBlockAndClear(emptyBlock);
 		
@@ -88,26 +87,9 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// We want to drop this block in the inventory, if it fits.
-		// TODO:  Find a good way to generalize this once we move the item definitions to data files.
-		if (ItemRegistry.LEAF == previousBlockType)
+		for (Item dropped : BlockAspect.droppedBlocksOnBread(previousBlockType))
 		{
-			mutable.addItemsBestEfforts(ItemRegistry.SAPLING, 1);
-		}
-		else if ((ItemRegistry.WHEAT_SEEDLING == previousBlockType)
-				|| (ItemRegistry.WHEAT_YOUNG == previousBlockType)
-		)
-		{
-			mutable.addItemsBestEfforts(ItemRegistry.WHEAT_SEED, 1);
-		}
-		else if ((ItemRegistry.WHEAT_MATURE == previousBlockType)
-		)
-		{
-			mutable.addItemsBestEfforts(ItemRegistry.WHEAT_SEED, 2);
-			mutable.addItemsBestEfforts(ItemRegistry.WHEAT_ITEM, 2);
-		}
-		else
-		{
-			mutable.addItemsBestEfforts(previousBlockType, 1);
+			mutable.addItemsBestEfforts(dropped, 1);
 		}
 		newBlock.setInventory(mutable.freeze());
 	}
@@ -129,14 +111,14 @@ public class CommonBlockMutationHelpers
 		// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && below.getBlock().permitsEntityMovement())
+		if ((null != below) && BlockAspect.permitsEntityMovement(below.getBlock()))
 		{
 			// We want to drop this inventory into the below block.
 			for (Items items : newBlock.getInventory().items.values())
 			{
 				context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
-			newBlock.setInventory(Inventory.start(InventoryAspect.getInventoryCapacity(newBlock.getBlock().asItem())).finish());
+			newBlock.setInventory(Inventory.start(InventoryAspect.getInventoryCapacity(newBlock.getBlock())).finish());
 			didDropInventory = true;
 		}
 		return didDropInventory;
@@ -149,9 +131,9 @@ public class CommonBlockMutationHelpers
 		// Rules for the empty type:
 		// -check 4 horizontal blocks, take water-1, unless there are >=2 blocks stronger, then use that
 		// -check the block above and below, if the block below is empty, take the same as above, if not, take strong flow
-		Block source = BlockAspect.getBlock(ItemRegistry.WATER_SOURCE);
-		Block strong = BlockAspect.getBlock(ItemRegistry.WATER_STRONG);
-		Block weak = BlockAspect.getBlock(ItemRegistry.WATER_WEAK);
+		Block source = BlockAspect.WATER_SOURCE;
+		Block strong = BlockAspect.WATER_STRONG;
+		Block weak = BlockAspect.WATER_WEAK;
 		int[] types = new int[3];
 		Block east = _getBlockOrNull(context, location.getRelative(1, 0, 0));
 		Block west = _getBlockOrNull(context, location.getRelative(-1, 0, 0));
@@ -183,7 +165,7 @@ public class CommonBlockMutationHelpers
 		{
 			aboveStrength = 0;
 		}
-		if ((null != down) && down.canBeReplaced())
+		if ((null != down) && BlockAspect.canBeReplaced(down))
 		{
 			// Empty.
 			strength = Math.max(strength, aboveStrength);
@@ -210,7 +192,7 @@ public class CommonBlockMutationHelpers
 			type = weak;
 			break;
 		case 0:
-			type = BlockAspect.getBlock(ItemRegistry.AIR);
+			type = BlockAspect.AIR;
 			break;
 			default:
 				throw Assert.unreachable();

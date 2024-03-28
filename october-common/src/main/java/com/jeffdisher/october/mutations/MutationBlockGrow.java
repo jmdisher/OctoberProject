@@ -8,11 +8,9 @@ import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.registries.PlantRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -63,8 +61,8 @@ public class MutationBlockGrow implements IMutationBlock
 	{
 		boolean didApply = false;
 		// Make sure that this is a block which can grow.
-		Item item = newBlock.getBlock().asItem();
-		int growthDivisor = PlantRegistry.growthDivisor(item);
+		Block block = newBlock.getBlock();
+		int growthDivisor = PlantRegistry.growthDivisor(block);
 		if (growthDivisor > 0)
 		{
 			boolean shouldReschedule;
@@ -72,7 +70,7 @@ public class MutationBlockGrow implements IMutationBlock
 			int randomBits = RANDOM_PROVIDER.getAsInt();
 			if (1 == (randomBits % growthDivisor))
 			{
-				if (ItemRegistry.SAPLING == item)
+				if (BlockAspect.SAPLING == block)
 				{
 					_growTree(context, newBlock);
 					shouldReschedule = false;
@@ -80,7 +78,7 @@ public class MutationBlockGrow implements IMutationBlock
 				else
 				{
 					// In other cases, just advance to the next stage.
-					shouldReschedule = _growCrop(context, newBlock, item);
+					shouldReschedule = _growCrop(context, newBlock, block);
 				}
 			}
 			else
@@ -115,7 +113,7 @@ public class MutationBlockGrow implements IMutationBlock
 	{
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
-		newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.LOG));
+		newBlock.setBlockAndClear(BlockAspect.LOG);
 		_tryScheduleLeaf(context, -1,  0,  0);
 		_tryScheduleLeaf(context,  1,  0,  0);
 		_tryScheduleLeaf(context,  0, -1,  0);
@@ -130,24 +128,24 @@ public class MutationBlockGrow implements IMutationBlock
 		if (null != proxy)
 		{
 			Block block = proxy.getBlock();
-			if (block.canBeReplaced())
+			if (BlockAspect.canBeReplaced(block))
 			{
-				context.newMutationSink.accept(new MutationBlockOverwrite(location, BlockAspect.getBlock(ItemRegistry.LEAF)));
+				context.newMutationSink.accept(new MutationBlockOverwrite(location, BlockAspect.LEAF));
 			}
 		}
 	}
 
-	private boolean _growCrop(TickProcessingContext context, IMutableBlockProxy newBlock, Item item)
+	private boolean _growCrop(TickProcessingContext context, IMutableBlockProxy newBlock, Block block)
 	{
 		boolean shouldReschedule;
-		if (ItemRegistry.WHEAT_SEEDLING == item)
+		if (BlockAspect.WHEAT_SEEDLING == block)
 		{
-			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.WHEAT_YOUNG));
+			newBlock.setBlockAndClear(BlockAspect.WHEAT_YOUNG);
 			shouldReschedule = true;
 		}
-		else if (ItemRegistry.WHEAT_YOUNG == item)
+		else if (BlockAspect.WHEAT_YOUNG == block)
 		{
-			newBlock.setBlockAndClear(BlockAspect.getBlock(ItemRegistry.WHEAT_MATURE));
+			newBlock.setBlockAndClear(BlockAspect.WHEAT_MATURE);
 			shouldReschedule = false;
 		}
 		else

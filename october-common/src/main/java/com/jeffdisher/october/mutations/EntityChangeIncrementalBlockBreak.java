@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -57,7 +58,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isAir = (null == proxy) || proxy.getBlock().canBeReplaced();
+		boolean isAir = (null == proxy) || BlockAspect.canBeReplaced(proxy.getBlock());
 		
 		boolean didApply = false;
 		if (isLocationClose && !isAir)

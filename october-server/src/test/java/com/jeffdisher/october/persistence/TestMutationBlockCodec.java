@@ -16,7 +16,6 @@ import com.jeffdisher.october.registries.Craft;
 import com.jeffdisher.october.registries.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 
 
@@ -26,8 +25,7 @@ public class TestMutationBlockCodec
 	public void overwrite() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Item type = ItemRegistry.STONE;
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, BlockAspect.getBlock(type));
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, BlockAspect.STONE);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

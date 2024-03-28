@@ -1,6 +1,7 @@
 package com.jeffdisher.october.aspects;
 
 import com.jeffdisher.october.registries.ItemRegistry;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 
 
@@ -81,17 +82,17 @@ public class InventoryAspect
 		}
 	}
 
-	public static int getInventoryCapacity(Item item)
+	public static int getInventoryCapacity(Block block)
 	{
 		// Here, we will opt-in to specific item types, only returning 0 if the block type has no inventory.
 		int size;
 		// We will treat any block where the entity can walk as an "air inventory".
-		if (BlockAspect.getBlock(item).permitsEntityMovement())
+		if (BlockAspect.permitsEntityMovement(block))
 		{
 			size = CAPACITY_AIR;
 		}
-		else if ((ItemRegistry.CRAFTING_TABLE == item)
-				|| (ItemRegistry.FURNACE == item)
+		else if ((BlockAspect.CRAFTING_TABLE == block)
+				|| (BlockAspect.FURNACE == block)
 		)
 		{
 			size = CAPACITY_CRAFTING_TABLE;
