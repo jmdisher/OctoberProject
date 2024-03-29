@@ -35,7 +35,7 @@ public class TestTabListReader
 		List<String> names = new ArrayList<>();
 		TabListReader.IParseCallbacks callbacks = new _FailingCallbacks() {
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name, String[] parameters)
 			{
 				names.add(name);
 			}
@@ -57,7 +57,7 @@ public class TestTabListReader
 		List<String> names = new ArrayList<>();
 		TabListReader.IParseCallbacks callbacks = new _FailingCallbacks() {
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name, String[] parameters)
 			{
 				names.add(name);
 			}
@@ -79,7 +79,7 @@ public class TestTabListReader
 		List<String> names = new ArrayList<>();
 		TabListReader.IParseCallbacks callbacks = new _FailingCallbacks() {
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name, String[] parameters)
 			{
 				names.add(name);
 			}
@@ -100,25 +100,16 @@ public class TestTabListReader
 	{
 		Map<String, String> names = new HashMap<>();
 		TabListReader.IParseCallbacks callbacks = new _FailingCallbacks() {
-			private String _id;
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name, String[] parameters)
 			{
-				Assert.assertNull(_id);
-				_id = name;
-			}
-			@Override
-			public void handleParameter(String value)
-			{
-				Assert.assertNotNull(_id);
-				Assert.assertFalse(names.containsKey(_id));
-				names.put(_id, value);
+				Assert.assertFalse(names.containsKey(name));
+				Assert.assertEquals(1, parameters.length);
+				names.put(name, parameters[0]);
 			}
 			@Override
 			public void endRecord()
 			{
-				Assert.assertNotNull(_id);
-				_id = null;
 			}
 		};
 		_readFile(callbacks, "one\tnumber one\ntwo\tanother number\n\nthree\tfinal number\n");
@@ -134,56 +125,27 @@ public class TestTabListReader
 		Map<String, Map<String, List<String>>> fields = new HashMap<>();
 		TabListReader.IParseCallbacks callbacks = new _FailingCallbacks() {
 			private String _id;
-			private String _field;
-			private List<String> _subRecord;
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name, String[] parameters)
 			{
 				Assert.assertNull(_id);
-				Assert.assertNull(_field);
-				Assert.assertNull(_subRecord);
 				Assert.assertFalse(fields.containsKey(_id));
 				_id = name;
 				fields.put(_id, new HashMap<>());
 			}
 			@Override
-			public void handleParameter(String value)
-			{
-				// We will assume that this is only for our sub-record.
-				Assert.assertNotNull(_id);
-				Assert.assertNotNull(_field);
-				Assert.assertNotNull(_subRecord);
-				_subRecord.add(value);
-			}
-			@Override
 			public void endRecord()
 			{
 				Assert.assertNotNull(_id);
-				Assert.assertNull(_field);
-				Assert.assertNull(_subRecord);
 				_id = null;
 			}
 			@Override
-			public void startSubRecord(String name) throws TabListException
+			public void processSubRecord(String name, String[] parameters) throws TabListException
 			{
 				Assert.assertNotNull(_id);
-				Assert.assertNull(_field);
-				Assert.assertNull(_subRecord);
 				Assert.assertTrue(fields.containsKey(_id));
-				_field = name;
-				_subRecord = new ArrayList<>();
-				fields.get(_id).put(_field, _subRecord);
+				fields.get(_id).put(name, List.of(parameters));
 			}
-			@Override
-			public void endSubRecord() throws TabListException
-			{
-				Assert.assertNotNull(_id);
-				Assert.assertNotNull(_field);
-				Assert.assertNotNull(_subRecord);
-				_field = null;
-				_subRecord = null;
-			}
-			
 		};
 		_readFile(callbacks, "# Testing multi-level record\n"
 				+ "one\n"
@@ -210,12 +172,7 @@ public class TestTabListReader
 	{
 		// We just use this as a default implementation so we can fail on unexpected calls.
 		@Override
-		public void startNewRecord(String name)
-		{
-			Assert.fail();
-		}
-		@Override
-		public void handleParameter(String value)
+		public void startNewRecord(String name, String[] parameters)
 		{
 			Assert.fail();
 		}
@@ -225,12 +182,7 @@ public class TestTabListReader
 			Assert.fail();
 		}
 		@Override
-		public void startSubRecord(String name) throws TabListException
-		{
-			Assert.fail();
-		}
-		@Override
-		public void endSubRecord() throws TabListException
+		public void processSubRecord(String name, String[] parameters) throws TabListException
 		{
 			Assert.fail();
 		}

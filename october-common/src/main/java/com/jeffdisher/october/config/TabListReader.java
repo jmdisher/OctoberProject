@@ -74,13 +74,9 @@ public class TabListReader
 				{
 					throw new TabListException("Sub-record missing outer record");
 				}
-				// Make sure that we
-				_callbacks.startSubRecord(identifier);
-				for (int i = (startIndex + 1); i < parts.length; ++i)
-				{
-					_callbacks.handleParameter(parts[i]);
-				}
-				_callbacks.endSubRecord();
+				String[] parameters = new String[parts.length - startIndex - 1];
+				System.arraycopy(parts, startIndex + 1, parameters, 0, parameters.length);
+				_callbacks.processSubRecord(identifier, parameters);
 			}
 			else
 			{
@@ -88,11 +84,9 @@ public class TabListReader
 				{
 					_callbacks.endRecord();
 				}
-				_callbacks.startNewRecord(identifier);
-				for (int i = (startIndex + 1); i < parts.length; ++i)
-				{
-					_callbacks.handleParameter(parts[i]);
-				}
+				String[] parameters = new String[parts.length - startIndex - 1];
+				System.arraycopy(parts, startIndex + 1, parameters, 0, parameters.length);
+				_callbacks.startNewRecord(identifier, parameters);
 				_isInRecord = true;
 			}
 		}
@@ -117,16 +111,10 @@ public class TabListReader
 		 * Called when a new record is encountered.
 		 * 
 		 * @param name The name of the record.
+		 * @param parameters The tab-delimited inline parameters to the record.
 		 * @throws TabListException This callback was unexpected at this time or data was invalid.
 		 */
-		void startNewRecord(String name) throws TabListException;
-		/**
-		 * Called when a new parameter is encountered within a record or sub-record.
-		 * 
-		 * @param value The new value.
-		 * @throws TabListException This callback was unexpected at this time or data was invalid.
-		 */
-		void handleParameter(String value) throws TabListException;
+		void startNewRecord(String name, String[] parameters) throws TabListException;
 		/**
 		 * Called when a record ends.
 		 * 
@@ -137,15 +125,10 @@ public class TabListReader
 		 * Called when a new sub-record is encountered within an existing record.
 		 * 
 		 * @param name The name of the sub-record.
+		 * @param parameters The tab-delimited inline parameters to the record.
 		 * @throws TabListException This callback was unexpected at this time or data was invalid.
 		 */
-		void startSubRecord(String name) throws TabListException;
-		/**
-		 * Called when a sub-record ends.
-		 * 
-		 * @throws TabListException This callback was unexpected at this time or data was invalid.
-		 */
-		void endSubRecord() throws TabListException;
+		void processSubRecord(String name, String[] parameters) throws TabListException;
 	}
 
 	/**

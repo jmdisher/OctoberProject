@@ -41,14 +41,14 @@ public class ItemRegistry
 		List<String> names = new ArrayList<>();
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			@Override
-			public void startNewRecord(String name) throws TabListReader.TabListException
+			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				ids.add(name);
-			}
-			@Override
-			public void handleParameter(String value) throws TabListReader.TabListException
-			{
-				names.add(value);
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("ItemRegistry tablist malformed");
+				}
+				names.add(parameters[0]);
 			}
 			@Override
 			public void endRecord() throws TabListReader.TabListException
@@ -59,13 +59,7 @@ public class ItemRegistry
 				}
 			}
 			@Override
-			public void startSubRecord(String name) throws TabListReader.TabListException
-			{
-				// Not expected in this list type.
-				throw new TabListReader.TabListException("ItemRegistry has no sub-records");
-			}
-			@Override
-			public void endSubRecord() throws TabListReader.TabListException
+			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				// Not expected in this list type.
 				throw new TabListReader.TabListException("ItemRegistry has no sub-records");

@@ -50,45 +50,16 @@ public class BlockAspect
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private Item _currentItem;
 			private Block _currentBlock;
-			private Set<Item> _placedFromHolder;
-			private Set<Block> _requiresSupportHolder;
-			// List since this can have duplicates.
-			private List<Item> _specialDropHolder;
 			@Override
-			public void startNewRecord(String name) throws TabListReader.TabListException
+			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				Assert.assertTrue(null == _currentBlock);
 				_currentItem = _getItem(name);
 				_currentBlock = new Block(_currentItem);
-			}
-			@Override
-			public void handleParameter(String value) throws TabListReader.TabListException
-			{
-				Assert.assertTrue(null != _currentBlock);
-				// See if this is a sub-record.
-				if (null != _placedFromHolder)
+				
+				// Read the flag list.
+				for (String value : parameters)
 				{
-					Item item = _getItem(value);
-					_placedFromHolder.add(item);
-				}
-				else if (null != _requiresSupportHolder)
-				{
-					Item item = _getItem(value);
-					Block block = blocksByItemType.get(item);
-					if (null == block)
-					{
-						throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
-					}
-					_requiresSupportHolder.add(block);
-				}
-				else if (null != _specialDropHolder)
-				{
-					Item item = _getItem(value);
-					_specialDropHolder.add(item);
-				}
-				else
-				{
-					// This is the flag list.
 					if ("can_be_replaced".equals(value))
 					{
 						canBeReplaced.add(_currentBlock);
@@ -113,69 +84,59 @@ public class BlockAspect
 				_currentBlock = null;
 			}
 			@Override
-			public void startSubRecord(String name) throws TabListReader.TabListException
+			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
 				Assert.assertTrue(null != _currentBlock);
 				// See which of the sublists this is an enter the correct state.
 				if ("placed_from".equals(name))
 				{
-					_placedFromHolder = new HashSet<>();
-				}
-				else if ("requires_support".equals(name))
-				{
-					_requiresSupportHolder = new HashSet<>();
-				}
-				else if ("special_drop".equals(name))
-				{
-					_specialDropHolder = new ArrayList<>();
-				}
-				else
-				{
-					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
-				}
-			}
-			@Override
-			public void endSubRecord() throws TabListReader.TabListException
-			{
-				Assert.assertTrue(null != _currentBlock);
-				// Figure out the sub-record type and finalize it.
-				if (null != _placedFromHolder)
-				{
-					if (_placedFromHolder.isEmpty())
+					if (0 == parameters.length)
 					{
 						throw new TabListReader.TabListException("Missing placed_from value");
 					}
-					for (Item from : _placedFromHolder)
+					for (String value : parameters)
 					{
+						Item from = _getItem(value);
 						Block previous = specialBlockPlacement.put(from, _currentBlock);
 						if (null != previous)
 						{
 							throw new TabListReader.TabListException("Duplicated placed_from mapping: \"" + from + "\"");
 						}
 					}
-					_placedFromHolder= null;
 				}
-				if (null != _requiresSupportHolder)
+				else if ("requires_support".equals(name))
 				{
 					// TODO: We probably want to support multiple values here.
-					if (1 != _requiresSupportHolder.size())
+					if (1 != parameters.length)
 					{
 						throw new TabListReader.TabListException("Exactly one value required for requires_support");
 					}
-					for (Block support : _requiresSupportHolder)
+					for (String value : parameters)
 					{
+						Item item = _getItem(value);
+						Block support = blocksByItemType.get(item);
+						if (null == support)
+						{
+							throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
+						}
 						Block previous = specialBlockSupport.put(_currentBlock, support);
 						// We already checked this in size, above.
 						Assert.assertTrue(null == previous);
 					}
-					_requiresSupportHolder= null;
 				}
-				if (null != _specialDropHolder)
+				else if ("special_drop".equals(name))
 				{
-					// Note that special drop can be used to show something drops nothing.
-					Item[] drops = _specialDropHolder.toArray((int size) -> new Item[size]);
+					// Note that duplicates are expected in this parameter list (empty also makes sense).
+					Item[] drops = new Item[parameters.length];
+					for (int i = 0; i < parameters.length; ++i)
+					{
+						drops[i] = _getItem(parameters[i]);
+					}
 					specialBlockBreak.put(_currentBlock, drops);
-					_specialDropHolder= null;
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
 				}
 			}
 			private Item _getItem(String id) throws TabListReader.TabListException
