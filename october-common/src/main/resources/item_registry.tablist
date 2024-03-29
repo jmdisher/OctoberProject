@@ -1,0 +1,24 @@
+op.air	Air
+op.stone	Stone
+op.log	Log
+op.plank	Plank
+op.stone_brick	Stone Brick
+op.crafting_table	Crafting Table
+op.furnace	Furnace
+op.charcoal	Charcoal
+op.coal_ore	Coal Ore
+op.iron_ore	Iron Ore
+op.dirt	Dirt
+op.water_source	Water Source
+op.water_strong	Water (Strong Flow)
+op.water_weak	Water (Weak Flow)
+op.lantern	Lantern
+op.iron_ingot	Iron Ingot
+op.sapling	Sapling
+op.leaf	Leaf
+op.wheat_seed	Wheat Seed
+op.wheat_item	Wheat Item
+op.wheat_seedling	Wheat Seedling
+op.wheat_young	Young Wheat
+op.wheat_mature	Mature Wheat
+

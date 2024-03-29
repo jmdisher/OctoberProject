@@ -1,5 +1,8 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -34,7 +37,15 @@ public class Environment
 	public static Environment createSharedInstance()
 	{
 		Assert.assertTrue(null == INSTANCE);
-		INSTANCE = new Environment();
+		try
+		{
+			INSTANCE = new Environment();
+		}
+		catch (IOException | TabListException e)
+		{
+			// TODO:  Determine a better way to handle this.
+			throw Assert.unexpected(e);
+		}
 		return INSTANCE;
 	}
 
@@ -58,10 +69,11 @@ public class Environment
 	public final LightAspect lighting;
 	public final PlantRegistry plants;
 
-	private Environment()
+	private Environment() throws IOException, TabListException
 	{
 		// Local instantiation only.
-		this.items = new ItemRegistry();
+		ClassLoader loader = getClass().getClassLoader();
+		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
 		this.blocks = new BlockAspect(this.items);
 		this.inventory = new InventoryAspect(this.items, this.blocks);
 		this.crafting = new CraftAspect(this.items, this.inventory);
