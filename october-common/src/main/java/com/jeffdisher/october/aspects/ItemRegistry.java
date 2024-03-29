@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.config.TabListReader;
-import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
@@ -32,7 +31,7 @@ public class ItemRegistry
 	 * @throws IOException There was a problem with the stream.
 	 * @throws TabListException The tablist was malformed.
 	 */
-	public static ItemRegistry loadRegistry(InputStream stream) throws IOException, TabListException
+	public static ItemRegistry loadRegistry(InputStream stream) throws IOException, TabListReader.TabListException
 	{
 		if (null == stream)
 		{
@@ -40,32 +39,41 @@ public class ItemRegistry
 		}
 		List<String> ids = new ArrayList<>();
 		List<String> names = new ArrayList<>();
-		boolean[] isValid = new boolean[] { true };
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			@Override
-			public void startNewRecord(String name)
+			public void startNewRecord(String name) throws TabListReader.TabListException
 			{
 				ids.add(name);
 			}
 			@Override
-			public void handleParameter(String value)
+			public void handleParameter(String value) throws TabListReader.TabListException
 			{
 				names.add(value);
 			}
 			@Override
-			public void endRecord()
+			public void endRecord() throws TabListReader.TabListException
 			{
 				if (ids.size() != names.size())
 				{
-					isValid[0] = false;
+					throw new TabListReader.TabListException("ItemRegistry tablist malformed");
 				}
+			}
+			@Override
+			public void startSubRecord(String name) throws TabListReader.TabListException
+			{
+				// Not expected in this list type.
+				throw new TabListReader.TabListException("ItemRegistry has no sub-records");
+			}
+			@Override
+			public void endSubRecord() throws TabListReader.TabListException
+			{
+				// Not expected in this list type.
+				throw new TabListReader.TabListException("ItemRegistry has no sub-records");
 			}
 		}, stream);
 		
-		if (!isValid[0] || (ids.size() != names.size()))
-		{
-			throw new TabListException("ItemRegistry tablist malformed");
-		}
+		// We would have noticed this earlier in parsing.
+		Assert.assertTrue(ids.size() == names.size());
 		return new ItemRegistry(ids, names);
 	}
 

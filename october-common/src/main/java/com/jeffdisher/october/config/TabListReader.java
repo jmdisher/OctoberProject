@@ -34,11 +34,13 @@ public class TabListReader
 			String line = reader.readLine();
 			parser.handleLine(line);
 		}
+		parser.finish();
 		reader.close();
 	}
 
 
 	private final IParseCallbacks _callbacks;
+	private boolean _isInRecord;
 
 	private TabListReader(IParseCallbacks callbacks)
 	{
@@ -48,35 +50,107 @@ public class TabListReader
 
 	public void handleLine(String line) throws TabListException
 	{
-		// Skip empty lines.
-		if (line.length() > 0)
+		// Skip empty lines or lines which start with '#' (comments).
+		if ((line.length() > 0) && ('#' != line.charAt(0)))
 		{
 			String[] parts = line.split("\t");
 			// There must be at least one part to this since it is non-empty.
 			Assert.assertTrue(parts.length > 0);
+			
+			// If this starts with a tab, it is a sub-record.
+			boolean isSubRecord = (0 == parts[0].length());
+			int startIndex = isSubRecord ? 1 : 0;
+			
 			// Note that the first part is not allowed to begin/end in whitespace (just for sanity reasons).
-			String identifier = parts[0];
+			String identifier = parts[startIndex];
 			if (identifier.trim().length() < identifier.length())
 			{
 				throw new TabListException("Identifier edges cannot be whitespace");
 			}
-			_callbacks.startNewRecord(identifier);
-			for (int i = 1; i < parts.length; ++i)
+			
+			if (isSubRecord)
 			{
-				_callbacks.handleParameter(parts[i]);
+				if (!_isInRecord)
+				{
+					throw new TabListException("Sub-record missing outer record");
+				}
+				// Make sure that we
+				_callbacks.startSubRecord(identifier);
+				for (int i = (startIndex + 1); i < parts.length; ++i)
+				{
+					_callbacks.handleParameter(parts[i]);
+				}
+				_callbacks.endSubRecord();
 			}
+			else
+			{
+				if (_isInRecord)
+				{
+					_callbacks.endRecord();
+				}
+				_callbacks.startNewRecord(identifier);
+				for (int i = (startIndex + 1); i < parts.length; ++i)
+				{
+					_callbacks.handleParameter(parts[i]);
+				}
+				_isInRecord = true;
+			}
+		}
+	}
+
+	public void finish() throws TabListException
+	{
+		if (_isInRecord)
+		{
 			_callbacks.endRecord();
+			_isInRecord = false;
 		}
 	}
 
 
+	/**
+	 * The interface which receives callbacks from the parse operation.
+	 */
 	public interface IParseCallbacks
 	{
-		void startNewRecord(String name);
-		void handleParameter(String value);
-		void endRecord();
+		/**
+		 * Called when a new record is encountered.
+		 * 
+		 * @param name The name of the record.
+		 * @throws TabListException This callback was unexpected at this time or data was invalid.
+		 */
+		void startNewRecord(String name) throws TabListException;
+		/**
+		 * Called when a new parameter is encountered within a record or sub-record.
+		 * 
+		 * @param value The new value.
+		 * @throws TabListException This callback was unexpected at this time or data was invalid.
+		 */
+		void handleParameter(String value) throws TabListException;
+		/**
+		 * Called when a record ends.
+		 * 
+		 * @throws TabListException This callback was unexpected at this time or data was invalid.
+		 */
+		void endRecord() throws TabListException;
+		/**
+		 * Called when a new sub-record is encountered within an existing record.
+		 * 
+		 * @param name The name of the sub-record.
+		 * @throws TabListException This callback was unexpected at this time or data was invalid.
+		 */
+		void startSubRecord(String name) throws TabListException;
+		/**
+		 * Called when a sub-record ends.
+		 * 
+		 * @throws TabListException This callback was unexpected at this time or data was invalid.
+		 */
+		void endSubRecord() throws TabListException;
 	}
 
+	/**
+	 * Used for logical errors within the tablist file.
+	 */
 	public static class TabListException extends Exception
 	{
 		private static final long serialVersionUID = 1L;

@@ -1,3 +1,7 @@
+# Entries here have the form:
+# ID<TAB>NAME
+# Note that the ID is referenced by other tablists.
+
 op.air	Air
 op.stone	Stone
 op.log	Log
