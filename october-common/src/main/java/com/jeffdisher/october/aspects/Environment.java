@@ -74,7 +74,7 @@ public class Environment
 		// Local instantiation only.
 		ClassLoader loader = getClass().getClassLoader();
 		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
-		this.blocks = new BlockAspect(this.items);
+		this.blocks = BlockAspect.loadRegistry(this.items, loader.getResourceAsStream("block_aspect.tablist"));
 		this.inventory = new InventoryAspect(this.items, this.blocks);
 		this.crafting = new CraftAspect(this.items, this.inventory);
 		this.damage = new DamageAspect(this.blocks);

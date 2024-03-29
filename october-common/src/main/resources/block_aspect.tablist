@@ -1,0 +1,49 @@
+# Entries here have the form:
+# ID<TAB>flag_list
+# [<TAB>placed_from<TAB>ID]
+# [<TAB>requires_support<TAB>ID]
+# [<TAB>special_drop<TAB>ID]
+#
+# flag_list includes:
+# -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
+# -permits_entity_movement (entities and items can exist in the block)
+# placed_from means that this block is generated, instead of the normal block, when the given item is placed.
+# requires_support means that this block requires the given block under it.
+# special_drop means that the block drops as the given item, instead of itself, when broken.
+#
+# Anything not referenced here is an item which cannot be placed at all.
+# Note that the ID references are against item_registry.tablist.
+
+op.air	can_be_replaced	permits_entity_movement
+op.stone
+op.log
+op.plank
+op.stone_brick
+op.crafting_table
+op.furnace
+# op.charcoal
+op.coal_ore
+op.iron_ore
+op.dirt
+op.water_source	can_be_replaced	permits_entity_movement
+op.water_strong	can_be_replaced	permits_entity_movement
+op.water_weak	can_be_replaced	permits_entity_movement
+op.lantern
+# op.iron_ingot
+op.sapling	permits_entity_movement
+	requires_support	op.dirt
+op.leaf
+	special_drop	op.sapling
+# op.wheat_seed
+# op.wheat_item
+op.wheat_seedling	permits_entity_movement
+	placed_from	op.wheat_seed
+	requires_support	op.dirt
+	special_drop	op.wheat_seed
+op.wheat_young	permits_entity_movement
+	requires_support	op.dirt
+	special_drop	op.wheat_seed
+op.wheat_mature	permits_entity_movement
+	requires_support	op.dirt
+	special_drop	op.wheat_seed	op.wheat_seed	op.wheat_item	op.wheat_item
+

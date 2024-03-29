@@ -3,6 +3,15 @@ package com.jeffdisher.october.aspects;
 import java.util.Map;
 import java.util.Set;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
@@ -14,6 +23,188 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BlockAspect
 {
+	/**
+	 * Loads the block aspect from the tablist in the given stream, sourcing Items from the given items registry.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param stream The stream containing the tablist.
+	 * @return The registry (never null).
+	 * @throws IOException There was a problem with the stream.
+	 * @throws TabListReader.TabListException The tablist was malformed.
+	 */
+	public static BlockAspect loadRegistry(ItemRegistry items, InputStream stream) throws IOException, TabListReader.TabListException
+	{
+		if (null == stream)
+		{
+			throw new IOException("Resource missing");
+		}
+		List<Block> blocks = new ArrayList<>();
+		Map<Item, Block> blocksByItemType = new HashMap<>();
+		
+		Set<Block> canBeReplaced = new HashSet<>();
+		Set<Block> permitsEntityMovement = new HashSet<>();
+		Map<Block, Block> specialBlockSupport = new HashMap<>();
+		Map<Item, Block> specialBlockPlacement = new HashMap<>();
+		Map<Block, Item[]> specialBlockBreak = new HashMap<>();
+		
+		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
+			private Item _currentItem;
+			private Block _currentBlock;
+			private Set<Item> _placedFromHolder;
+			private Set<Block> _requiresSupportHolder;
+			// List since this can have duplicates.
+			private List<Item> _specialDropHolder;
+			@Override
+			public void startNewRecord(String name) throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null == _currentBlock);
+				_currentItem = _getItem(name);
+				_currentBlock = new Block(_currentItem);
+			}
+			@Override
+			public void handleParameter(String value) throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentBlock);
+				// See if this is a sub-record.
+				if (null != _placedFromHolder)
+				{
+					Item item = _getItem(value);
+					_placedFromHolder.add(item);
+				}
+				else if (null != _requiresSupportHolder)
+				{
+					Item item = _getItem(value);
+					Block block = blocksByItemType.get(item);
+					if (null == block)
+					{
+						throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
+					}
+					_requiresSupportHolder.add(block);
+				}
+				else if (null != _specialDropHolder)
+				{
+					Item item = _getItem(value);
+					_specialDropHolder.add(item);
+				}
+				else
+				{
+					// This is the flag list.
+					if ("can_be_replaced".equals(value))
+					{
+						canBeReplaced.add(_currentBlock);
+					}
+					else if ("permits_entity_movement".equals(value))
+					{
+						permitsEntityMovement.add(_currentBlock);
+					}
+					else
+					{
+						throw new TabListReader.TabListException("Unknown flag: \"" + value + "\"");
+					}
+				}
+			}
+			@Override
+			public void endRecord() throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentBlock);
+				blocks.add(_currentBlock);
+				blocksByItemType.put(_currentItem, _currentBlock);
+				_currentItem = null;
+				_currentBlock = null;
+			}
+			@Override
+			public void startSubRecord(String name) throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentBlock);
+				// See which of the sublists this is an enter the correct state.
+				if ("placed_from".equals(name))
+				{
+					_placedFromHolder = new HashSet<>();
+				}
+				else if ("requires_support".equals(name))
+				{
+					_requiresSupportHolder = new HashSet<>();
+				}
+				else if ("special_drop".equals(name))
+				{
+					_specialDropHolder = new ArrayList<>();
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
+				}
+			}
+			@Override
+			public void endSubRecord() throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentBlock);
+				// Figure out the sub-record type and finalize it.
+				if (null != _placedFromHolder)
+				{
+					if (_placedFromHolder.isEmpty())
+					{
+						throw new TabListReader.TabListException("Missing placed_from value");
+					}
+					for (Item from : _placedFromHolder)
+					{
+						Block previous = specialBlockPlacement.put(from, _currentBlock);
+						if (null != previous)
+						{
+							throw new TabListReader.TabListException("Duplicated placed_from mapping: \"" + from + "\"");
+						}
+					}
+					_placedFromHolder= null;
+				}
+				if (null != _requiresSupportHolder)
+				{
+					// TODO: We probably want to support multiple values here.
+					if (1 != _requiresSupportHolder.size())
+					{
+						throw new TabListReader.TabListException("Exactly one value required for requires_support");
+					}
+					for (Block support : _requiresSupportHolder)
+					{
+						Block previous = specialBlockSupport.put(_currentBlock, support);
+						// We already checked this in size, above.
+						Assert.assertTrue(null == previous);
+					}
+					_requiresSupportHolder= null;
+				}
+				if (null != _specialDropHolder)
+				{
+					// Note that special drop can be used to show something drops nothing.
+					Item[] drops = _specialDropHolder.toArray((int size) -> new Item[size]);
+					specialBlockBreak.put(_currentBlock, drops);
+					_specialDropHolder= null;
+				}
+			}
+			private Item _getItem(String id) throws TabListReader.TabListException
+			{
+				Item item = items.getItemById(id);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
+				}
+				return item;
+			}
+		}, stream);
+		
+		Block[] blocksByType = new Block[items.ITEMS_BY_TYPE.length];
+		for (int i = 0; i < blocksByType.length; ++i)
+		{
+			Block block = blocksByItemType.get(items.ITEMS_BY_TYPE[i]);
+			blocksByType[i] = block;
+		}
+		return new BlockAspect(items
+				, blocksByType
+				, canBeReplaced
+				, permitsEntityMovement
+				, specialBlockSupport
+				, specialBlockPlacement
+				, specialBlockBreak
+		);
+	}
+
 	public final Block[] BLOCKS_BY_TYPE;
 
 	public final Block AIR;
@@ -42,51 +233,48 @@ public class BlockAspect
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, Item[]> _specialBlockBreak;
 
-	private static Block _register(Block[] array, Item item)
+	private static Block _bind(Block[] array, Item item)
 	{
 		short number = item.number();
-		Block block = new Block(item);
-		array[number] = block;
-		return block;
+		return array[number];
 	}
 
-	public BlockAspect(ItemRegistry items)
+	private BlockAspect(ItemRegistry items
+			, Block[] blocksByType
+			, Set<Block> canBeReplaced
+			, Set<Block> permitsEntityMovement
+			, Map<Block, Block> specialBlockSupport
+			, Map<Item, Block> specialBlockPlacement
+			, Map<Block, Item[]> specialBlockBreak
+	)
 	{
-		this.BLOCKS_BY_TYPE = new Block[items.ITEMS_BY_TYPE.length];
+		this.BLOCKS_BY_TYPE = blocksByType;
 
-		this.AIR = _register(this.BLOCKS_BY_TYPE, items.AIR);
-		this.STONE = _register(this.BLOCKS_BY_TYPE, items.STONE);
-		this.LOG = _register(this.BLOCKS_BY_TYPE, items.LOG);
-		this.PLANK = _register(this.BLOCKS_BY_TYPE, items.PLANK);
-		this.STONE_BRICK = _register(this.BLOCKS_BY_TYPE, items.STONE_BRICK);
-		this.CRAFTING_TABLE = _register(this.BLOCKS_BY_TYPE, items.CRAFTING_TABLE);
-		this.FURNACE = _register(this.BLOCKS_BY_TYPE, items.FURNACE);
-		this.COAL_ORE = _register(this.BLOCKS_BY_TYPE, items.COAL_ORE);
-		this.IRON_ORE = _register(this.BLOCKS_BY_TYPE, items.IRON_ORE);
-		this.DIRT = _register(this.BLOCKS_BY_TYPE, items.DIRT);
-		this.WATER_SOURCE = _register(this.BLOCKS_BY_TYPE, items.WATER_SOURCE);
-		this.WATER_STRONG = _register(this.BLOCKS_BY_TYPE, items.WATER_STRONG);
-		this.WATER_WEAK = _register(this.BLOCKS_BY_TYPE, items.WATER_WEAK);
-		this.LANTERN = _register(this.BLOCKS_BY_TYPE, items.LANTERN);
-		this.SAPLING = _register(this.BLOCKS_BY_TYPE, items.SAPLING);
-		this.LEAF = _register(this.BLOCKS_BY_TYPE, items.LEAF);
-		this.WHEAT_SEEDLING = _register(this.BLOCKS_BY_TYPE, items.WHEAT_SEEDLING);
-		this.WHEAT_YOUNG = _register(this.BLOCKS_BY_TYPE, items.WHEAT_YOUNG);
-		this.WHEAT_MATURE = _register(this.BLOCKS_BY_TYPE, items.WHEAT_MATURE);
+		this.AIR = _bind(this.BLOCKS_BY_TYPE, items.AIR);
+		this.STONE = _bind(this.BLOCKS_BY_TYPE, items.STONE);
+		this.LOG = _bind(this.BLOCKS_BY_TYPE, items.LOG);
+		this.PLANK = _bind(this.BLOCKS_BY_TYPE, items.PLANK);
+		this.STONE_BRICK = _bind(this.BLOCKS_BY_TYPE, items.STONE_BRICK);
+		this.CRAFTING_TABLE = _bind(this.BLOCKS_BY_TYPE, items.CRAFTING_TABLE);
+		this.FURNACE = _bind(this.BLOCKS_BY_TYPE, items.FURNACE);
+		this.COAL_ORE = _bind(this.BLOCKS_BY_TYPE, items.COAL_ORE);
+		this.IRON_ORE = _bind(this.BLOCKS_BY_TYPE, items.IRON_ORE);
+		this.DIRT = _bind(this.BLOCKS_BY_TYPE, items.DIRT);
+		this.WATER_SOURCE = _bind(this.BLOCKS_BY_TYPE, items.WATER_SOURCE);
+		this.WATER_STRONG = _bind(this.BLOCKS_BY_TYPE, items.WATER_STRONG);
+		this.WATER_WEAK = _bind(this.BLOCKS_BY_TYPE, items.WATER_WEAK);
+		this.LANTERN = _bind(this.BLOCKS_BY_TYPE, items.LANTERN);
+		this.SAPLING = _bind(this.BLOCKS_BY_TYPE, items.SAPLING);
+		this.LEAF = _bind(this.BLOCKS_BY_TYPE, items.LEAF);
+		this.WHEAT_SEEDLING = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_SEEDLING);
+		this.WHEAT_YOUNG = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_YOUNG);
+		this.WHEAT_MATURE = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_MATURE);
 		
-		_canBeReplaced = Set.of(AIR, WATER_SOURCE, WATER_STRONG, WATER_WEAK);
-		_permitsEntityMovement = Set.of(AIR, WATER_SOURCE, WATER_STRONG, WATER_WEAK, SAPLING, WHEAT_SEEDLING, WHEAT_YOUNG, WHEAT_MATURE);
-		_specialBlockSupport = Map.of(SAPLING, DIRT
-				, WHEAT_SEEDLING, DIRT
-				, WHEAT_YOUNG, DIRT
-				, WHEAT_MATURE, DIRT
-		);
-		_specialBlockPlacement = Map.of(items.WHEAT_SEED, WHEAT_SEEDLING);
-		_specialBlockBreak = Map.of(LEAF, new Item[] { items.SAPLING }
-				, WHEAT_SEEDLING, new Item[] { items.WHEAT_SEED }
-				, WHEAT_YOUNG, new Item[] { items.WHEAT_SEED }
-				, WHEAT_MATURE, new Item[] { items.WHEAT_SEED, items.WHEAT_SEED, items.WHEAT_ITEM, items.WHEAT_ITEM }
-		);
+		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
+		_permitsEntityMovement = Collections.unmodifiableSet(permitsEntityMovement);
+		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
+		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
+		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
 	}
 
 	/**

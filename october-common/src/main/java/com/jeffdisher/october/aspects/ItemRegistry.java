@@ -148,4 +148,15 @@ public class ItemRegistry
 		this.WHEAT_YOUNG = _idsMap.get("op.wheat_young");
 		this.WHEAT_MATURE = _idsMap.get("op.wheat_mature");
 	}
+
+	/**
+	 * Looks up an item object by its named ID.
+	 * 
+	 * @param id The ID of an Item.
+	 * @return The item or null if not known.
+	 */
+	public Item getItemById(String id)
+	{
+		return _idsMap.get(id);
+	}
 }
