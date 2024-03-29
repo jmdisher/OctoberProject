@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -28,8 +28,9 @@ public class DropItemMutation implements IMutationBlock
 
 	public DropItemMutation(AbsoluteLocation location, Item type, int count)
 	{
+		Environment env = Environment.getShared();
 		// We don't allow creation of this mutation if the items can't possibly fit.
-		Assert.assertTrue((InventoryAspect.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
+		Assert.assertTrue((env.inventory.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
 		_location = location;
 		_type = type;
 		_count = count;
@@ -50,9 +51,10 @@ public class DropItemMutation implements IMutationBlock
 
 	private boolean _common(IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		// We can only drop an item into air.
 		boolean didApply = false;
-		if (BlockAspect.AIR == newBlock.getBlock())
+		if (env.blocks.AIR == newBlock.getBlock())
 		{
 			// Disect existing inventory into mutable copies or create defaults.
 			Inventory oldInventory = newBlock.getInventory();

@@ -5,14 +5,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
@@ -28,6 +29,17 @@ public class TestResourceLoader
 {
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
 
 	@Test
 	public void empty() throws Throwable
@@ -47,7 +59,7 @@ public class TestResourceLoader
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
 		loader.preload(cuboid);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -87,8 +99,8 @@ public class TestResourceLoader
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		short test0 = loaded.get(0).getData15(AspectRegistry.BLOCK, block);
 		short test1 = loaded.get(1).getData15(AspectRegistry.BLOCK, block);
-		Assert.assertTrue((ItemRegistry.AIR.number() == test0) || (ItemRegistry.AIR.number() == test1));
-		Assert.assertTrue((ItemRegistry.STONE.number() == test0) || (ItemRegistry.STONE.number() == test1));
+		Assert.assertTrue((ENV.items.AIR.number() == test0) || (ENV.items.AIR.number() == test1));
+		Assert.assertTrue((ENV.items.STONE.number() == test0) || (ENV.items.STONE.number() == test1));
 		loader.shutdown();
 	}
 
@@ -105,7 +117,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		// Modify a block and write this back.
-		loaded.setData15(AspectRegistry.BLOCK, block, ItemRegistry.STONE.number());
+		loaded.setData15(AspectRegistry.BLOCK, block, ENV.items.STONE.number());
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -119,7 +131,7 @@ public class TestResourceLoader
 		results = _loadCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		loaded = _waitForOne(loader);
-		Assert.assertEquals(ItemRegistry.STONE.number(), loaded.getData15(AspectRegistry.BLOCK, block));
+		Assert.assertEquals(ENV.items.STONE.number(), loaded.getData15(AspectRegistry.BLOCK, block));
 		loader.shutdown();
 	}
 
@@ -189,7 +201,7 @@ public class TestResourceLoader
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ENV.blocks.STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -219,7 +231,7 @@ public class TestResourceLoader
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), BlockAspect.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ENV.blocks.STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();

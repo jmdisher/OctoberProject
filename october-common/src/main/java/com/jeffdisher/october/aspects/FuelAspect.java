@@ -25,34 +25,41 @@ public class FuelAspect
 	public static final int BURN_MILLIS_CHARCOAL = 20000;
 	public static final int BURN_MILLIS_SAPLING = 500;
 
-	public static final int[] BURN_MILLIS_BY_TYPE = new int[ItemRegistry.ITEMS_BY_TYPE.length];
+	private final BlockAspect _blocks;
+	private final int[] _burnMillisByItemType;
 
 	static {
+	}
+
+	public FuelAspect(ItemRegistry items, BlockAspect blocks)
+	{
+		_blocks = blocks;
+		_burnMillisByItemType = new int[items.ITEMS_BY_TYPE.length];
 		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < BURN_MILLIS_BY_TYPE.length; ++i)
+		for (int i = 0; i < _burnMillisByItemType.length; ++i)
 		{
-			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
+			Item item = items.ITEMS_BY_TYPE[i];
 			int millis;
 			// For now, we just store these constants inline and they will likely change and eventually become data.
-			if (ItemRegistry.CRAFTING_TABLE == item)
+			if (items.CRAFTING_TABLE == item)
 			{
 				millis = BURN_MILLIS_TABLE;
 			}
-			else if (ItemRegistry.PLANK == item)
+			else if (items.PLANK == item)
 			{
 				millis = BURN_MILLIS_PLANK;
 			}
-			else if (ItemRegistry.LOG == item)
+			else if (items.LOG == item)
 			{
 				millis = BURN_MILLIS_LOG;
 			}
-			else if ((ItemRegistry.CHARCOAL == item)
-					|| (ItemRegistry.COAL_ORE == item)
+			else if ((items.CHARCOAL == item)
+					|| (items.COAL_ORE == item)
 			)
 			{
 				millis = BURN_MILLIS_CHARCOAL;
 			}
-			else if (ItemRegistry.SAPLING == item)
+			else if (items.SAPLING == item)
 			{
 				millis = BURN_MILLIS_SAPLING;
 			}
@@ -61,7 +68,7 @@ public class FuelAspect
 				// We assume other things don't burn.
 				millis = 0;
 			}
-			BURN_MILLIS_BY_TYPE[i] = millis;
+			_burnMillisByItemType[i] = millis;
 		}
 	}
 
@@ -71,7 +78,7 @@ public class FuelAspect
 	 * @param block The block type to check.
 	 * @return True if the given block type has a fuel inventory (fuel aspect).
 	 */
-	public static boolean doesHaveFuelInventory(Block block)
+	public boolean doesHaveFuelInventory(Block block)
 	{
 		return _doesHaveFuelInventory(block);
 	}
@@ -83,7 +90,7 @@ public class FuelAspect
 	 * @param item The item type to check.
 	 * @return The milliseconds of fuel produced by consuming this item or 0 if it isn't a fuel type.
 	 */
-	public static int millisOfFuel(Item item)
+	public int millisOfFuel(Item item)
 	{
 		return _millisOfFuel(item);
 	}
@@ -97,7 +104,7 @@ public class FuelAspect
 	 * @param fuelType The item type to check as a valid fuel for this block.
 	 * @return True if this block type has a fuel aspect and can use the given fuel type.
 	 */
-	public static boolean hasFuelInventoryForType(Block blockType, Item fuelType)
+	public boolean hasFuelInventoryForType(Block blockType, Item fuelType)
 	{
 		return _doesHaveFuelInventory(blockType)
 				&& (_millisOfFuel(fuelType) > 0)
@@ -105,14 +112,14 @@ public class FuelAspect
 	}
 
 
-	private static boolean _doesHaveFuelInventory(Block block)
+	private boolean _doesHaveFuelInventory(Block block)
 	{
 		// We just inline this case since it is only one but will be generalized later.
-		return (BlockAspect.FURNACE == block);
+		return (_blocks.FURNACE == block);
 	}
 
-	private static int _millisOfFuel(Item item)
+	private int _millisOfFuel(Item item)
 	{
-		return BURN_MILLIS_BY_TYPE[item.number()];
+		return _burnMillisByItemType[item.number()];
 	}
 }

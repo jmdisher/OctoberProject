@@ -21,53 +21,58 @@ public class InventoryAspect
 	// Note that every item has a number and encumbrance, 0 is used for any item which cannot exist in an inventory.
 	public static final int ENCUMBRANCE_NON_INVENTORY = 0;
 
-	public static final int[] ENCUMBRANCE_BY_TYPE = new int[ItemRegistry.ITEMS_BY_TYPE.length];
+	private final BlockAspect _blocks;
+	private final int[] _encumbranceByItemType;
 
-	static {
+	public InventoryAspect(ItemRegistry items, BlockAspect blocks)
+	{
+		_blocks = blocks;
+		_encumbranceByItemType = new int[items.ITEMS_BY_TYPE.length];
+		
 		// We construct the encumbrance by looking at items.
 		// This purely exists to demonstrate the shape of the Item data once it is fully external data:  All aspects are
 		// out-of-line and their meaning for a specific Item type is answered through aspect-specific helpers, like this.
 		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < ENCUMBRANCE_BY_TYPE.length; ++i)
+		for (int i = 0; i < _encumbranceByItemType.length; ++i)
 		{
-			Item item = ItemRegistry.ITEMS_BY_TYPE[i];
+			Item item = items.ITEMS_BY_TYPE[i];
 			int encumbrance;
-			if ((ItemRegistry.AIR == item)
-					|| (ItemRegistry.WATER_SOURCE == item)
-					|| (ItemRegistry.WATER_STRONG == item)
-					|| (ItemRegistry.WATER_WEAK == item)
-					|| (ItemRegistry.LEAF == item)
-					|| (ItemRegistry.WHEAT_SEEDLING == item)
-					|| (ItemRegistry.WHEAT_YOUNG == item)
-					|| (ItemRegistry.WHEAT_MATURE == item)
+			if ((items.AIR == item)
+					|| (items.WATER_SOURCE == item)
+					|| (items.WATER_STRONG == item)
+					|| (items.WATER_WEAK == item)
+					|| (items.LEAF == item)
+					|| (items.WHEAT_SEEDLING == item)
+					|| (items.WHEAT_YOUNG == item)
+					|| (items.WHEAT_MATURE == item)
 			)
 			{
 				encumbrance = ENCUMBRANCE_NON_INVENTORY;
 			}
-			else if ((ItemRegistry.PLANK == item)
-					|| (ItemRegistry.CHARCOAL == item)
-					|| (ItemRegistry.DIRT == item)
-					|| (ItemRegistry.LANTERN == item)
-					|| (ItemRegistry.SAPLING == item)
-					|| (ItemRegistry.WHEAT_SEED == item)
-					|| (ItemRegistry.WHEAT_ITEM == item)
+			else if ((items.PLANK == item)
+					|| (items.CHARCOAL == item)
+					|| (items.DIRT == item)
+					|| (items.LANTERN == item)
+					|| (items.SAPLING == item)
+					|| (items.WHEAT_SEED == item)
+					|| (items.WHEAT_ITEM == item)
 			)
 			{
 				encumbrance = 1;
 			}
-			else if ((ItemRegistry.STONE == item)
-					|| (ItemRegistry.STONE_BRICK == item)
-					|| (ItemRegistry.LOG == item)
-					|| (ItemRegistry.CRAFTING_TABLE == item)
-					|| (ItemRegistry.COAL_ORE == item)
-					|| (ItemRegistry.LANTERN == item)
-					|| (ItemRegistry.IRON_INGOT == item)
+			else if ((items.STONE == item)
+					|| (items.STONE_BRICK == item)
+					|| (items.LOG == item)
+					|| (items.CRAFTING_TABLE == item)
+					|| (items.COAL_ORE == item)
+					|| (items.LANTERN == item)
+					|| (items.IRON_INGOT == item)
 			)
 			{
 				encumbrance = 2;
 			}
-			else if ((ItemRegistry.FURNACE == item)
-					|| (ItemRegistry.IRON_ORE == item)
+			else if ((items.FURNACE == item)
+					|| (items.IRON_ORE == item)
 			)
 			{
 				encumbrance = 4;
@@ -77,21 +82,21 @@ public class InventoryAspect
 				// We need to add this entry.
 				encumbrance = ENCUMBRANCE_UNKNOWN;
 			}
-			ENCUMBRANCE_BY_TYPE[i] = encumbrance;
+			_encumbranceByItemType[i] = encumbrance;
 		}
 	}
 
-	public static int getInventoryCapacity(Block block)
+	public int getInventoryCapacity(Block block)
 	{
 		// Here, we will opt-in to specific item types, only returning 0 if the block type has no inventory.
 		int size;
 		// We will treat any block where the entity can walk as an "air inventory".
-		if (BlockAspect.permitsEntityMovement(block))
+		if (_blocks.permitsEntityMovement(block))
 		{
 			size = CAPACITY_AIR;
 		}
-		else if ((BlockAspect.CRAFTING_TABLE == block)
-				|| (BlockAspect.FURNACE == block)
+		else if ((_blocks.CRAFTING_TABLE == block)
+				|| (_blocks.FURNACE == block)
 		)
 		{
 			size = CAPACITY_CRAFTING_TABLE;
@@ -104,8 +109,8 @@ public class InventoryAspect
 		return size;
 	}
 
-	public static int getEncumbrance(Item item)
+	public int getEncumbrance(Item item)
 	{
-		return ENCUMBRANCE_BY_TYPE[item.number()];
+		return _encumbranceByItemType[item.number()];
 	}
 }

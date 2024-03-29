@@ -2,39 +2,53 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.BlockAddress;
 
 
 public class TestOctreeBlock
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void filled()
 	{
-		OctreeShort test = OctreeShort.create(ItemRegistry.AIR.number());
-		Assert.assertEquals(ItemRegistry.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(ItemRegistry.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		OctreeShort test = OctreeShort.create(ENV.items.AIR.number());
+		Assert.assertEquals(ENV.items.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(ENV.items.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 	}
 
 	@Test
 	public void update()
 	{
-		OctreeShort test = OctreeShort.create(ItemRegistry.AIR.number());
+		OctreeShort test = OctreeShort.create(ENV.items.AIR.number());
 		
 		// Write a value into each subtree.
-		_setAllSubtrees(test, (byte)0, ItemRegistry.STONE.number());
+		_setAllSubtrees(test, (byte)0, ENV.items.STONE.number());
 		// Check that it changed, but not adjacent blocks.
-		_checkAllSubtrees(test, (byte)0, ItemRegistry.STONE.number());
-		_checkAllSubtrees(test, (byte)1, ItemRegistry.AIR.number());
+		_checkAllSubtrees(test, (byte)0, ENV.items.STONE.number());
+		_checkAllSubtrees(test, (byte)1, ENV.items.AIR.number());
 		
 		// Change it back, causing it to coalesce.
-		_setAllSubtrees(test, (byte)0, ItemRegistry.AIR.number());
-		_checkAllSubtrees(test, (byte)0, ItemRegistry.AIR.number());
-		_checkAllSubtrees(test, (byte)1, ItemRegistry.AIR.number());
+		_setAllSubtrees(test, (byte)0, ENV.items.AIR.number());
+		_checkAllSubtrees(test, (byte)0, ENV.items.AIR.number());
+		_checkAllSubtrees(test, (byte)1, ENV.items.AIR.number());
 	}
 
 	@Test

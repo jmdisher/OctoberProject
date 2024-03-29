@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -49,6 +49,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
+		Environment env = Environment.getShared();
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
@@ -58,7 +59,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isAir = (null == proxy) || BlockAspect.canBeReplaced(proxy.getBlock());
+		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
 		
 		boolean didApply = false;
 		if (isLocationClose && !isAir)

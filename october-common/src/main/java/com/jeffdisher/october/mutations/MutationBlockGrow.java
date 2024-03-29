@@ -4,8 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.function.IntSupplier;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.PlantRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -59,10 +58,11 @@ public class MutationBlockGrow implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		// Make sure that this is a block which can grow.
 		Block block = newBlock.getBlock();
-		int growthDivisor = PlantRegistry.growthDivisor(block);
+		int growthDivisor = env.plants.growthDivisor(block);
 		if (growthDivisor > 0)
 		{
 			boolean shouldReschedule;
@@ -70,7 +70,7 @@ public class MutationBlockGrow implements IMutationBlock
 			int randomBits = RANDOM_PROVIDER.getAsInt();
 			if (1 == (randomBits % growthDivisor))
 			{
-				if (BlockAspect.SAPLING == block)
+				if (env.blocks.SAPLING == block)
 				{
 					_growTree(context, newBlock);
 					shouldReschedule = false;
@@ -111,9 +111,10 @@ public class MutationBlockGrow implements IMutationBlock
 
 	private void _growTree(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
-		newBlock.setBlockAndClear(BlockAspect.LOG);
+		newBlock.setBlockAndClear(env.blocks.LOG);
 		_tryScheduleLeaf(context, -1,  0,  0);
 		_tryScheduleLeaf(context,  1,  0,  0);
 		_tryScheduleLeaf(context,  0, -1,  0);
@@ -123,29 +124,31 @@ public class MutationBlockGrow implements IMutationBlock
 
 	private void _tryScheduleLeaf(TickProcessingContext context, int x, int y, int z)
 	{
+		Environment env = Environment.getShared();
 		AbsoluteLocation location = _location.getRelative(x, y, z);
 		BlockProxy proxy = context.previousBlockLookUp.apply(location);
 		if (null != proxy)
 		{
 			Block block = proxy.getBlock();
-			if (BlockAspect.canBeReplaced(block))
+			if (env.blocks.canBeReplaced(block))
 			{
-				context.newMutationSink.accept(new MutationBlockOverwrite(location, BlockAspect.LEAF));
+				context.newMutationSink.accept(new MutationBlockOverwrite(location, env.blocks.LEAF));
 			}
 		}
 	}
 
 	private boolean _growCrop(TickProcessingContext context, IMutableBlockProxy newBlock, Block block)
 	{
+		Environment env = Environment.getShared();
 		boolean shouldReschedule;
-		if (BlockAspect.WHEAT_SEEDLING == block)
+		if (env.blocks.WHEAT_SEEDLING == block)
 		{
-			newBlock.setBlockAndClear(BlockAspect.WHEAT_YOUNG);
+			newBlock.setBlockAndClear(env.blocks.WHEAT_YOUNG);
 			shouldReschedule = true;
 		}
-		else if (BlockAspect.WHEAT_YOUNG == block)
+		else if (env.blocks.WHEAT_YOUNG == block)
 		{
-			newBlock.setBlockAndClear(BlockAspect.WHEAT_MATURE);
+			newBlock.setBlockAndClear(env.blocks.WHEAT_MATURE);
 			shouldReschedule = false;
 		}
 		else

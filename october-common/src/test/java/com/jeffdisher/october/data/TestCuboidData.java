@@ -2,12 +2,13 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
@@ -16,11 +17,23 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestCuboidData
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void serializeEmpty()
 	{
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Object resume = input.serializeResumable(null, buffer);
@@ -40,9 +53,9 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Object resume = input.serializeResumable(null, buffer);
@@ -57,7 +70,7 @@ public class TestCuboidData
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(2, inv.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(2, inv.items.get(ENV.items.STONE).count());
 	}
 
 	@Test(expected = AssertionError.class)
@@ -65,9 +78,9 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
 		
 		// 4-bytes is the smallest buffer we can use to serialize or deserialize but it won't be enough to make progress through Inventory aspect.
 		ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -89,9 +102,9 @@ public class TestCuboidData
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
 		
 		// Make the smallest buffer which can contain the single inventory element and its key (smaller than this and we will fail due to making no progress).
 		// "13" was determined experimentally but is a single inventory item:  4 (max_encumbrance) + 1 (items_in_inventory) + 2 (key) + 2 (item_type) + 4 (item_count).
@@ -114,6 +127,6 @@ public class TestCuboidData
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(2, inv.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(2, inv.items.get(ENV.items.STONE).count());
 	}
 }

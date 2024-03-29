@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -48,6 +48,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
 		// There are a few things to check here:
@@ -55,11 +56,11 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is there a selected item?
 		// -is this target location close by?
 		// -is the target location not colliding with the entity, itself?
-		boolean isTargetAir = BlockAspect.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
+		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
 		
 		Item itemType = newEntity.newSelectedItem;
 		// Note that we will get a null from the asBlock if this can't be placed.
-		Block blockType = BlockAspect.getAsPlaceableBlock(itemType);
+		Block blockType = env.blocks.getAsPlaceableBlock(itemType);
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
@@ -72,7 +73,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		boolean isLocationNotColliding = false;
 		if (null != blockType)
 		{
-			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), BlockAspect.AIR);
+			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.blocks.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
 			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), newEntity.newLocation, newEntity.original.volume());
 		}
@@ -81,7 +82,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		boolean blockIsSupported = false;
 		if (null != blockType)
 		{
-			blockIsSupported = BlockAspect.canExistOnBlock(blockType, context.previousBlockLookUp.apply(_targetBlock.getRelative(0, 0, -1)).getBlock());
+			blockIsSupported = env.blocks.canExistOnBlock(blockType, context.previousBlockLookUp.apply(_targetBlock.getRelative(0, 0, -1)).getBlock());
 		}
 		
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)

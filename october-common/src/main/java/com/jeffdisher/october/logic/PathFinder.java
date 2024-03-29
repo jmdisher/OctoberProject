@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -26,6 +25,8 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class PathFinder
 {
+	// TODO:  Properly plumb in the environment value when we start using this instead of this hard-coded constant.
+	public static final short AIR_NUMBER = 0;
 	/**
 	 * Falling 1 block will still be considered as cost, but a very small one.
 	 */
@@ -131,7 +132,7 @@ public class PathFinder
 				// If we are standing on an air block AND the previous step was only XY movement, that means that we
 				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
 				// over a gap).
-				boolean isStandingOnAir = (ItemRegistry.AIR.number() == blockTypeReader.apply(down));
+				boolean isStandingOnAir = (AIR_NUMBER == blockTypeReader.apply(down));
 				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
 				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
 				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
@@ -196,7 +197,7 @@ public class PathFinder
 		for (int i = 0; canFit && (i < entityHeight); ++i)
 		{
 			AbsoluteLocation check = space.getRelative(0, 0, i);
-			canFit = (ItemRegistry.AIR.number() == blockTypeReader.apply(check));
+			canFit = (AIR_NUMBER == blockTypeReader.apply(check));
 		}
 		return canFit;
 	}

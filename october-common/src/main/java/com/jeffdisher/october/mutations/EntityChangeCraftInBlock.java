@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -53,6 +53,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
+		Environment env = Environment.getShared();
 		// Make sure that the block is within range and is a crafting table.
 		int absX = Math.abs(_targetBlock.x() - Math.round(newEntity.newLocation.x()));
 		int absY = Math.abs(_targetBlock.y() - Math.round(newEntity.newLocation.y()));
@@ -60,7 +61,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isCraftingTable = (null != proxy) && (BlockAspect.CRAFTING_TABLE == proxy.getBlock());
+		boolean isCraftingTable = (null != proxy) && (env.blocks.CRAFTING_TABLE == proxy.getBlock());
 		
 		boolean didApply = false;
 		if (isLocationClose && isCraftingTable)

@@ -3,8 +3,7 @@ package com.jeffdisher.october.net;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import com.jeffdisher.october.aspects.CraftAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -208,18 +207,20 @@ public class CodecHelpers
 
 	private static Item _readItemNoAir(ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		// We look these up by number - we treat 0 "air" as null.
 		short number = buffer.getShort();
 		return (0 != number)
-				? ItemRegistry.ITEMS_BY_TYPE[number]
+				? env.items.ITEMS_BY_TYPE[number]
 				: null
 		;
 	}
 
 	private static void _writeItemNoAir(ByteBuffer buffer, Item item)
 	{
+		Environment env = Environment.getShared();
 		// We look these up by number so just send that - 0 is "null" since we can't send air as an item.
-		Assert.assertTrue(ItemRegistry.AIR != item);
+		Assert.assertTrue(env.items.AIR != item);
 		short number = (null != item)
 				? item.number()
 				: 0
@@ -354,6 +355,7 @@ public class CodecHelpers
 
 	private static Craft _readCraft(ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		// Each craft has a numbered index.
 		short ordinal = buffer.getShort();
 		Craft craft;
@@ -364,7 +366,7 @@ public class CodecHelpers
 		}
 		else
 		{
-			craft = CraftAspect.CRAFTING_OPERATIONS[ordinal];
+			craft = env.crafting.CRAFTING_OPERATIONS[ordinal];
 		}
 		return craft;
 	}

@@ -4,9 +4,8 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FuelAspect;
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -22,6 +21,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableBlockProxy implements IMutableBlockProxy
 {
+	private final Environment _env;
 	public final AbsoluteLocation absoluteLocation;
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
@@ -37,6 +37,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 
 	public MutableBlockProxy(AbsoluteLocation absoluteLocation, IReadOnlyCuboidData data)
 	{
+		_env = Environment.getShared();
 		this.absoluteLocation = absoluteLocation;
 		_address = absoluteLocation.getBlockAddress();
 		_data = data;
@@ -47,7 +48,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_writes = new Object[AspectRegistry.ALL_ASPECTS.length];
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedBlock = BlockAspect.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = _env.blocks.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
 	}
 
 	@Override
@@ -80,7 +81,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getInventoryCapacity(_cachedBlock);
+			int size = _env.inventory.getInventoryCapacity(_cachedBlock);
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();
@@ -132,7 +133,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
 		// We can't return null if this block can support fuel.
-		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedBlock))
+		if ((null == fuel) && _env.fuel.doesHaveFuelInventory(_cachedBlock))
 		{
 			fuel = new FuelState(0, null, Inventory.start(FuelAspect.CAPACITY).finish());
 		}
@@ -338,11 +339,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		if (null != _writes[AspectRegistry.BLOCK.index()])
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
-			Block originalBlock = BlockAspect.BLOCKS_BY_TYPE[original];
-			byte originalEmission = LightAspect.getLightEmission(originalBlock);
-			byte updatedEmission = LightAspect.getLightEmission(_cachedBlock);
-			byte originalOpacity = LightAspect.getOpacity(originalBlock);
-			byte updatedOpacity = LightAspect.getOpacity(_cachedBlock);
+			Block originalBlock = _env.blocks.BLOCKS_BY_TYPE[original];
+			byte originalEmission = _env.lighting.getLightEmission(originalBlock);
+			byte updatedEmission = _env.lighting.getLightEmission(_cachedBlock);
+			byte originalOpacity = _env.lighting.getOpacity(originalBlock);
+			byte updatedOpacity = _env.lighting.getOpacity(_cachedBlock);
 			lightMayChange = (originalEmission != updatedEmission) || (originalOpacity != updatedOpacity);
 		}
 		return lightMayChange;

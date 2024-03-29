@@ -10,36 +10,63 @@ import com.jeffdisher.october.types.Item;
  */
 public class BlockAspect
 {
-	public static final Block[] BLOCKS_BY_TYPE = new Block[ItemRegistry.ITEMS_BY_TYPE.length];
+	private final ItemRegistry _items;
 
-	public static final Block AIR = _register(ItemRegistry.AIR);
-	public static final Block STONE = _register(ItemRegistry.STONE);
-	public static final Block LOG = _register(ItemRegistry.LOG);
-	public static final Block PLANK = _register(ItemRegistry.PLANK);
-	public static final Block STONE_BRICK = _register(ItemRegistry.STONE_BRICK);
-	public static final Block CRAFTING_TABLE = _register(ItemRegistry.CRAFTING_TABLE);
-	public static final Block FURNACE = _register(ItemRegistry.FURNACE);
-	public static final Block COAL_ORE = _register(ItemRegistry.COAL_ORE);
-	public static final Block IRON_ORE = _register(ItemRegistry.IRON_ORE);
-	public static final Block DIRT = _register(ItemRegistry.DIRT);
-	public static final Block WATER_SOURCE = _register(ItemRegistry.WATER_SOURCE);
-	public static final Block WATER_STRONG = _register(ItemRegistry.WATER_STRONG);
-	public static final Block WATER_WEAK = _register(ItemRegistry.WATER_WEAK);
-	public static final Block LANTERN = _register(ItemRegistry.LANTERN);
-	public static final Block SAPLING = _register(ItemRegistry.SAPLING);
-	public static final Block LEAF = _register(ItemRegistry.LEAF);
-	public static final Block WHEAT_SEEDLING = _register(ItemRegistry.WHEAT_SEEDLING);
-	public static final Block WHEAT_YOUNG = _register(ItemRegistry.WHEAT_YOUNG);
-	public static final Block WHEAT_MATURE = _register(ItemRegistry.WHEAT_MATURE);
+	public final Block[] BLOCKS_BY_TYPE;
 
-	private static Block _register(Item item)
+	public final Block AIR;
+	public final Block STONE;
+	public final Block LOG;
+	public final Block PLANK;
+	public final Block STONE_BRICK;
+	public final Block CRAFTING_TABLE;
+	public final Block FURNACE;
+	public final Block COAL_ORE;
+	public final Block IRON_ORE;
+	public final Block DIRT;
+	public final Block WATER_SOURCE;
+	public final Block WATER_STRONG;
+	public final Block WATER_WEAK;
+	public final Block LANTERN;
+	public final Block SAPLING;
+	public final Block LEAF;
+	public final Block WHEAT_SEEDLING;
+	public final Block WHEAT_YOUNG;
+	public final Block WHEAT_MATURE;
+
+	private static Block _register(Block[] array, Item item)
 	{
 		short number = item.number();
 		Block block = new Block(item);
-		BLOCKS_BY_TYPE[number] = block;
+		array[number] = block;
 		return block;
 	}
 
+	public BlockAspect(ItemRegistry items)
+	{
+		_items = items;
+		this.BLOCKS_BY_TYPE = new Block[items.ITEMS_BY_TYPE.length];
+
+		this.AIR = _register(this.BLOCKS_BY_TYPE, items.AIR);
+		this.STONE = _register(this.BLOCKS_BY_TYPE, items.STONE);
+		this.LOG = _register(this.BLOCKS_BY_TYPE, items.LOG);
+		this.PLANK = _register(this.BLOCKS_BY_TYPE, items.PLANK);
+		this.STONE_BRICK = _register(this.BLOCKS_BY_TYPE, items.STONE_BRICK);
+		this.CRAFTING_TABLE = _register(this.BLOCKS_BY_TYPE, items.CRAFTING_TABLE);
+		this.FURNACE = _register(this.BLOCKS_BY_TYPE, items.FURNACE);
+		this.COAL_ORE = _register(this.BLOCKS_BY_TYPE, items.COAL_ORE);
+		this.IRON_ORE = _register(this.BLOCKS_BY_TYPE, items.IRON_ORE);
+		this.DIRT = _register(this.BLOCKS_BY_TYPE, items.DIRT);
+		this.WATER_SOURCE = _register(this.BLOCKS_BY_TYPE, items.WATER_SOURCE);
+		this.WATER_STRONG = _register(this.BLOCKS_BY_TYPE, items.WATER_STRONG);
+		this.WATER_WEAK = _register(this.BLOCKS_BY_TYPE, items.WATER_WEAK);
+		this.LANTERN = _register(this.BLOCKS_BY_TYPE, items.LANTERN);
+		this.SAPLING = _register(this.BLOCKS_BY_TYPE, items.SAPLING);
+		this.LEAF = _register(this.BLOCKS_BY_TYPE, items.LEAF);
+		this.WHEAT_SEEDLING = _register(this.BLOCKS_BY_TYPE, items.WHEAT_SEEDLING);
+		this.WHEAT_YOUNG = _register(this.BLOCKS_BY_TYPE, items.WHEAT_YOUNG);
+		this.WHEAT_MATURE = _register(this.BLOCKS_BY_TYPE, items.WHEAT_MATURE);
+	}
 
 	/**
 	 * Used to determine if the given block is something like air/water/etc which can just be overwritten by another
@@ -49,7 +76,7 @@ public class BlockAspect
 	 * @param block The block to check.
 	 * @return True if block can be directly overwritten by another.
 	 */
-	public static boolean canBeReplaced(Block block)
+	public boolean canBeReplaced(Block block)
 	{
 		return (AIR == block)
 				|| (WATER_SOURCE == block)
@@ -66,7 +93,7 @@ public class BlockAspect
 	 * @param block The block to check.
 	 * @return True if block allows an entity to pass through.
 	 */
-	public static boolean permitsEntityMovement(Block block)
+	public boolean permitsEntityMovement(Block block)
 	{
 		return (AIR == block)
 				|| (WATER_SOURCE == block)
@@ -87,7 +114,7 @@ public class BlockAspect
 	 * @param bottomBlock The block underneath.
 	 * @return True if topBlock can exist on top of bottomBlock.
 	 */
-	public static boolean canExistOnBlock(Block topBlock, Block bottomBlock)
+	public boolean canExistOnBlock(Block topBlock, Block bottomBlock)
 	{
 		boolean canExist = true;
 		if ((SAPLING == topBlock)
@@ -108,7 +135,7 @@ public class BlockAspect
 	 * @param itemType The item to place.
 	 * @return The block type to place in the world, null if it can't be placed.
 	 */
-	public static Block getAsPlaceableBlock(Item itemType)
+	public Block getAsPlaceableBlock(Item itemType)
 	{
 		// Most items just become the corresponding block, but some are special.
 		Block block = null;
@@ -118,9 +145,9 @@ public class BlockAspect
 			if (null == block)
 			{
 				// Check the special-cases.
-				if (ItemRegistry.WHEAT_SEED == itemType)
+				if (_items.WHEAT_SEED == itemType)
 				{
-					block = BlockAspect.WHEAT_SEEDLING;
+					block = this.WHEAT_SEEDLING;
 				}
 			}
 		}
@@ -133,27 +160,27 @@ public class BlockAspect
 	 * @param block The block to break.
 	 * @return The array of items (never null).
 	 */
-	public static Item[] droppedBlocksOnBreak(Block block)
+	public Item[] droppedBlocksOnBreak(Block block)
 	{
 		Item[] dropped;
 		if (LEAF == block)
 		{
-			dropped = new Item[] { ItemRegistry.SAPLING };
+			dropped = new Item[] { _items.SAPLING };
 		}
 		else if ((WHEAT_SEEDLING == block)
 				|| (WHEAT_YOUNG == block)
 		)
 		{
-			dropped = new Item[] { ItemRegistry.WHEAT_SEED };
+			dropped = new Item[] { _items.WHEAT_SEED };
 		}
 		else if ((WHEAT_MATURE == block)
 		)
 		{
 			dropped = new Item[] {
-					ItemRegistry.WHEAT_SEED,
-					ItemRegistry.WHEAT_SEED,
-					ItemRegistry.WHEAT_ITEM,
-					ItemRegistry.WHEAT_ITEM,
+					_items.WHEAT_SEED,
+					_items.WHEAT_SEED,
+					_items.WHEAT_ITEM,
+					_items.WHEAT_ITEM,
 			};
 		}
 		else

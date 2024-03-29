@@ -2,9 +2,8 @@ package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FuelAspect;
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
@@ -17,17 +16,19 @@ import com.jeffdisher.october.types.Inventory;
  */
 public class BlockProxy implements IBlockProxy
 {
+	private final Environment _env;
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
 	private final Block _cachedBlock;
 
 	public BlockProxy(BlockAddress address, IReadOnlyCuboidData data)
 	{
+		_env = Environment.getShared();
 		_address = address;
 		_data = data;
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedBlock = BlockAspect.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = _env.blocks.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
 	}
 
 	@Override
@@ -43,7 +44,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = InventoryAspect.getInventoryCapacity(_cachedBlock);
+			int size = _env.inventory.getInventoryCapacity(_cachedBlock);
 			if (size > 0)
 			{
 				inv = Inventory.start(size).finish();
@@ -69,7 +70,7 @@ public class BlockProxy implements IBlockProxy
 	{
 		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
 		// We can't return null if this block can support fuel.
-		if ((null == fuel) && FuelAspect.doesHaveFuelInventory(_cachedBlock))
+		if ((null == fuel) && _env.fuel.doesHaveFuelInventory(_cachedBlock))
 		{
 			fuel = new FuelState(0, null, Inventory.start(FuelAspect.CAPACITY).finish());
 		}

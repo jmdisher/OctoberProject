@@ -3,6 +3,7 @@ package com.jeffdisher.october.process;
 import java.io.File;
 import java.io.IOException;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.ServerRunner;
@@ -26,6 +27,7 @@ public class ServerMain
 				{
 					Assert.assertTrue(worldDirectory.mkdirs());
 				}
+				Environment.createSharedInstance();
 				// We will just use the flat world generator since it should be populated with what we need for testing.
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
 				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
@@ -34,6 +36,7 @@ public class ServerMain
 				System.out.println("Shutting down...");
 				process.stop();
 				System.out.println("Exiting normally");
+				Environment.clearSharedInstance();
 			}
 			catch (IOException e)
 			{

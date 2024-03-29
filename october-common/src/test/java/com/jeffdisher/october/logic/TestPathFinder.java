@@ -3,10 +3,12 @@ package com.jeffdisher.october.logic;
 import java.util.List;
 import java.util.function.Function;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -15,6 +17,18 @@ import com.jeffdisher.october.types.EntityVolume;
 public class TestPathFinder
 {
 	private static final EntityVolume VOLUME = new EntityVolume(1.8f, 0.5f);
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 
 	@Test
 	public void flatPlane()
@@ -23,7 +37,7 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ItemRegistry.STONE.number() : ItemRegistry.AIR.number();
+		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
 		// We expect to see 29 steps, since the source counts as a step.
@@ -38,7 +52,7 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? ItemRegistry.STONE.number() : ItemRegistry.AIR.number();
+		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
 		
 		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
@@ -57,8 +71,8 @@ public class TestPathFinder
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
 			return ((floor == l.z()) || (0 == l.y()))
-					? ItemRegistry.STONE.number()
-					: ItemRegistry.AIR.number()
+					? ENV.items.STONE.number()
+					: ENV.items.AIR.number()
 			;
 		};
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
@@ -74,8 +88,8 @@ public class TestPathFinder
 		int floor = 4;
 		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
 			return ((floor == l.z()) && (0 == l.y()))
-					? ItemRegistry.STONE.number()
-					: ItemRegistry.AIR.number()
+					? ENV.items.STONE.number()
+					: ENV.items.AIR.number()
 			;
 		};
 		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
@@ -194,10 +208,10 @@ public class TestPathFinder
 		@Override
 		public Short apply(AbsoluteLocation l)
 		{
-			short value = ItemRegistry.AIR.number();
+			short value = ENV.items.AIR.number();
 			if (this.floorZ == l.z())
 			{
-				value = ItemRegistry.STONE.number();
+				value = ENV.items.STONE.number();
 			}
 			else
 			{
@@ -209,12 +223,12 @@ public class TestPathFinder
 					char c = this.map[l.y()].charAt(l.x());
 					if ('S' == c)
 					{
-						value = ItemRegistry.STONE.number();
+						value = ENV.items.STONE.number();
 					}
 				}
 				else
 				{
-					value = ItemRegistry.STONE.number();
+					value = ENV.items.STONE.number();
 				}
 			}
 			return value;
@@ -235,8 +249,8 @@ public class TestPathFinder
 			);
 			char c = layer[l.y()].charAt(l.x());
 			return ('S' == c)
-					? ItemRegistry.STONE.number()
-					: ItemRegistry.AIR.number()
+					? ENV.items.STONE.number()
+					: ENV.items.AIR.number()
 			;
 		}
 	}

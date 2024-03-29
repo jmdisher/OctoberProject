@@ -3,14 +3,14 @@ package com.jeffdisher.october.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.CraftAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -31,6 +31,18 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestClientRunner
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void testInitialConnection() throws Throwable
 	{
@@ -93,7 +105,7 @@ public class TestClientRunner
 	public void multiPhase() throws Throwable
 	{
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
 		
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
@@ -114,7 +126,7 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
-		Assert.assertEquals(ItemRegistry.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.items.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 100 ms each time.
@@ -137,7 +149,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
-		Assert.assertEquals(ItemRegistry.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.items.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
@@ -155,7 +167,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify the final state of the projection.
-		Assert.assertEquals(ItemRegistry.AIR.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.items.AIR.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
@@ -183,19 +195,19 @@ public class TestClientRunner
 				, 0.0f
 				, EntityActionValidator.DEFAULT_VOLUME
 				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(20).add(ItemRegistry.LOG, 2).finish()
+				, Inventory.start(20).add(ENV.items.LOG, 2).finish()
 				, null
 				, null
 		);
 		network.client.receivedEntity(startEntity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 500L;
-		runner.craft(CraftAspect.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craft(ENV.crafting.LOG_TO_PLANKS, currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.loadedEnties.get(clientId).localCraftOperation());
 		
@@ -203,7 +215,7 @@ public class TestClientRunner
 		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.loadedEnties.get(clientId).localCraftOperation());
-		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().items.get(ItemRegistry.LOG).count());
+		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().items.get(ENV.items.LOG).count());
 		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), projection.loadedEnties.get(clientId).location());
 	}
 
@@ -224,10 +236,10 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), BlockAspect.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), BlockAspect.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ENV.blocks.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.blocks.STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -267,8 +279,8 @@ public class TestClientRunner
 				, null
 		);
 		network.client.receivedEntity(entity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -312,26 +324,26 @@ public class TestClientRunner
 				, 0.0f
 				, EntityActionValidator.DEFAULT_VOLUME
 				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(20).add(ItemRegistry.LOG, 2).finish()
+				, Inventory.start(20).add(ENV.items.LOG, 2).finish()
 				, null
 				, null
 		);
 		network.client.receivedEntity(startEntity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
 		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.CRAFTING_TABLE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.CRAFTING_TABLE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
-		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ItemRegistry.LOG, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ENV.items.LOG, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.craftInBlock(table, CraftAspect.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craftInBlock(table, ENV.crafting.LOG_TO_PLANKS, currentTimeMillis);
 		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
 		Assert.assertEquals(500L, proxy.getCrafting().completedMillis());
@@ -341,7 +353,7 @@ public class TestClientRunner
 		runner.craftInBlock(table, null, currentTimeMillis);
 		proxy = projection.readBlock(table);
 		Assert.assertNull(proxy.getCrafting());
-		Assert.assertEquals(2, proxy.getInventory().getCount(ItemRegistry.PLANK));
+		Assert.assertEquals(2, proxy.getInventory().getCount(ENV.items.PLANK));
 	}
 
 

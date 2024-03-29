@@ -1,6 +1,6 @@
 package com.jeffdisher.october.mutations;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -66,6 +66,7 @@ public class CommonBlockMutationHelpers
 
 	private static void _breakBlockAndCoalesceInventory(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		// The block is broken so replace it with the appropriate "empty" block and place the block in the inventory.
 		Inventory oldInventory = newBlock.getInventory();
 		FuelState oldFuel = newBlock.getFuel();
@@ -87,7 +88,7 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// We want to drop this block in the inventory, if it fits.
-		for (Item dropped : BlockAspect.droppedBlocksOnBreak(previousBlockType))
+		for (Item dropped : env.blocks.droppedBlocksOnBreak(previousBlockType))
 		{
 			mutable.addItemsBestEfforts(dropped, 1);
 		}
@@ -107,18 +108,19 @@ public class CommonBlockMutationHelpers
 
 	private static boolean _dropInventoryIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didDropInventory = false;
 		// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && BlockAspect.permitsEntityMovement(below.getBlock()))
+		if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 		{
 			// We want to drop this inventory into the below block.
 			for (Items items : newBlock.getInventory().items.values())
 			{
 				context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
-			newBlock.setInventory(Inventory.start(InventoryAspect.getInventoryCapacity(newBlock.getBlock())).finish());
+			newBlock.setInventory(Inventory.start(env.inventory.getInventoryCapacity(newBlock.getBlock())).finish());
 			didDropInventory = true;
 		}
 		return didDropInventory;
@@ -126,14 +128,15 @@ public class CommonBlockMutationHelpers
 
 	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location)
 	{
+		Environment env = Environment.getShared();
 		// An "empty" block is one which is left over after breaking a block.
 		// It is usually air but can be a water type.
 		// Rules for the empty type:
 		// -check 4 horizontal blocks, take water-1, unless there are >=2 blocks stronger, then use that
 		// -check the block above and below, if the block below is empty, take the same as above, if not, take strong flow
-		Block source = BlockAspect.WATER_SOURCE;
-		Block strong = BlockAspect.WATER_STRONG;
-		Block weak = BlockAspect.WATER_WEAK;
+		Block source = env.blocks.WATER_SOURCE;
+		Block strong = env.blocks.WATER_STRONG;
+		Block weak = env.blocks.WATER_WEAK;
 		int[] types = new int[3];
 		Block east = _getBlockOrNull(context, location.getRelative(1, 0, 0));
 		Block west = _getBlockOrNull(context, location.getRelative(-1, 0, 0));
@@ -165,7 +168,7 @@ public class CommonBlockMutationHelpers
 		{
 			aboveStrength = 0;
 		}
-		if ((null != down) && BlockAspect.canBeReplaced(down))
+		if ((null != down) && env.blocks.canBeReplaced(down))
 		{
 			// Empty.
 			strength = Math.max(strength, aboveStrength);
@@ -192,7 +195,7 @@ public class CommonBlockMutationHelpers
 			type = weak;
 			break;
 		case 0:
-			type = BlockAspect.AIR;
+			type = env.blocks.AIR;
 			break;
 			default:
 				throw Assert.unreachable();

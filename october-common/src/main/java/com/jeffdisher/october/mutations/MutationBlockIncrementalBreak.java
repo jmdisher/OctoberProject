@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.DamageAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -44,17 +45,18 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
 		// We want to see if this is a kind of block which can be broken.
 		Block block = newBlock.getBlock();
-		if (DamageAspect.UNBREAKABLE != DamageAspect.getToughness(block))
+		if (DamageAspect.UNBREAKABLE != env.damage.getToughness(block))
 		{
 			// Apply the damage.
 			short damage = (short)(newBlock.getDamage() + _damageToApply);
 			
 			// See if this is broken (note that this could overflow.
-			if ((damage >= DamageAspect.getToughness(block)) || (damage < 0))
+			if ((damage >= env.damage.getToughness(block)) || (damage < 0))
 			{
 				CommonBlockMutationHelpers.breakBlockAndCoalesceInventory(context, _location, newBlock);
 				CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);

@@ -12,30 +12,35 @@ public class LightAspect
 	public static final byte MAX_LIGHT = 15;
 	public static final byte OPAQUE = MAX_LIGHT;
 
-	public static final byte[] OPACITY_BY_TYPE = new byte[BlockAspect.BLOCKS_BY_TYPE.length];
+	private final BlockAspect _blocks;
+	private final byte[] _opacityByBlockType;
 
-	static {
+	public LightAspect(BlockAspect blocks)
+	{
+		_blocks = blocks;
+		_opacityByBlockType = new byte[blocks.BLOCKS_BY_TYPE.length];
+		
 		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < OPACITY_BY_TYPE.length; ++i)
+		for (int i = 0; i < _opacityByBlockType.length; ++i)
 		{
-			Block block = BlockAspect.BLOCKS_BY_TYPE[i];
+			Block block = blocks.BLOCKS_BY_TYPE[i];
 			byte opacity;
-			if (BlockAspect.AIR == block)
+			if (blocks.AIR == block)
 			{
 				opacity = 1;
 			}
-			else if ((BlockAspect.WATER_SOURCE == block)
-					|| (BlockAspect.WATER_STRONG == block)
-					|| (BlockAspect.WATER_WEAK == block)
-					|| (BlockAspect.SAPLING == block)
-					|| (BlockAspect.WHEAT_SEEDLING == block)
-					|| (BlockAspect.WHEAT_YOUNG == block)
+			else if ((blocks.WATER_SOURCE == block)
+					|| (blocks.WATER_STRONG == block)
+					|| (blocks.WATER_WEAK == block)
+					|| (blocks.SAPLING == block)
+					|| (blocks.WHEAT_SEEDLING == block)
+					|| (blocks.WHEAT_YOUNG == block)
 			)
 			{
 				opacity = 2;
 			}
-			else if ((BlockAspect.LEAF == block)
-					|| (BlockAspect.WHEAT_MATURE == block)
+			else if ((blocks.LEAF == block)
+					|| (blocks.WHEAT_MATURE == block)
 			)
 			{
 				opacity = 4;
@@ -44,7 +49,7 @@ public class LightAspect
 			{
 				opacity = OPAQUE;
 			}
-			OPACITY_BY_TYPE[i] = opacity;
+			_opacityByBlockType[i] = opacity;
 		}
 	}
 
@@ -55,9 +60,9 @@ public class LightAspect
 	 * @param block The block type.
 	 * @return The opacity value ([1..15]).
 	 */
-	public static byte getOpacity(Block block)
+	public byte getOpacity(Block block)
 	{
-		return OPACITY_BY_TYPE[block.item().number()];
+		return _opacityByBlockType[block.item().number()];
 	}
 
 	/**
@@ -66,10 +71,10 @@ public class LightAspect
 	 * @param block The block type.
 	 * @return The light level from this block ([0..15]).
 	 */
-	public static byte getLightEmission(Block block)
+	public byte getLightEmission(Block block)
 	{
 		// Only the lantern currently emits light.
-		return (BlockAspect.LANTERN == block)
+		return (_blocks.LANTERN == block)
 				? MAX_LIGHT
 				: 0
 		;

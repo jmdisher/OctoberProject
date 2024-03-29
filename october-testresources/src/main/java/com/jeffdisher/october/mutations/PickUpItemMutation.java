@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -27,8 +27,9 @@ public class PickUpItemMutation implements IMutationBlock
 
 	public PickUpItemMutation(AbsoluteLocation location, Item type, int count)
 	{
+		Environment env = Environment.getShared();
 		// We don't allow creation of this mutation if the items couldn't possibly be on the ground.
-		Assert.assertTrue((InventoryAspect.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
+		Assert.assertTrue((env.inventory.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
 		_location = location;
 		_type = type;
 		_count = count;
@@ -49,9 +50,10 @@ public class PickUpItemMutation implements IMutationBlock
 
 	private boolean _common(IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		// We can only operator on air.
 		boolean didApply = false;
-		if (BlockAspect.AIR == newBlock.getBlock())
+		if (env.blocks.AIR == newBlock.getBlock())
 		{
 			Inventory oldInventory = newBlock.getInventory();
 			MutableInventory mutable = new MutableInventory(oldInventory);

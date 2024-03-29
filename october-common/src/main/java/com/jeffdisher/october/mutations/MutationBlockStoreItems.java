@@ -2,8 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.FuelAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -55,16 +54,17 @@ public class MutationBlockStoreItems implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		// First, we want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
 		if (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect)
 		{
-			if (BlockAspect.permitsEntityMovement(newBlock.getBlock()))
+			if (env.blocks.permitsEntityMovement(newBlock.getBlock()))
 			{
 				// This is an air block but see what is below it.
 				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && BlockAspect.permitsEntityMovement(below.getBlock()))
+				if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 				{
 					// We want to drop this into the below block.
 					context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
@@ -111,6 +111,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 
 	private Inventory _getInventory(IMutableBlockProxy block)
 	{
+		Environment env = Environment.getShared();
 		Inventory inv;
 		switch (_inventoryAspect)
 		{
@@ -118,7 +119,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 			inv = block.getInventory();
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
-			inv = FuelAspect.hasFuelInventoryForType(block.getBlock(), _offered.type())
+			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), _offered.type())
 				? block.getFuel().fuelInventory()
 				: null
 			;

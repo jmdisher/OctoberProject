@@ -3,7 +3,7 @@ package com.jeffdisher.october.types;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -52,7 +52,8 @@ public class MutableInventory
 	 */
 	public boolean addAllItems(Item type, int count)
 	{
-		int requiredEncumbrance = InventoryAspect.getEncumbrance(type) * count;
+		Environment env = Environment.getShared();
+		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		boolean didApply = false;
@@ -73,8 +74,9 @@ public class MutableInventory
 	 */
 	public int addItemsBestEfforts(Item type, int count)
 	{
+		Environment env = Environment.getShared();
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / InventoryAspect.getEncumbrance(type);
+		int maxToAdd = availableEncumbrance / env.inventory.getEncumbrance(type);
 		int countToAdd = Math.min(maxToAdd, count);
 		
 		_addItems(type, countToAdd);
@@ -89,8 +91,9 @@ public class MutableInventory
 	 */
 	public int maxVacancyForItem(Item type)
 	{
+		Environment env = Environment.getShared();
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / InventoryAspect.getEncumbrance(type);
+		int maxToAdd = availableEncumbrance / env.inventory.getEncumbrance(type);
 		return maxToAdd;
 	}
 
@@ -103,6 +106,7 @@ public class MutableInventory
 	 */
 	public void removeItems(Item type, int count)
 	{
+		Environment env = Environment.getShared();
 		// We assume that someone checked before calling this in order to make a decision.
 		Items existing = _items.get(type);
 		int startCount = existing.count();
@@ -117,7 +121,7 @@ public class MutableInventory
 		{
 			_items.remove(type);
 		}
-		int removedEncumbrance = InventoryAspect.getEncumbrance(type) * count;
+		int removedEncumbrance = env.inventory.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
 	}
 
@@ -173,7 +177,8 @@ public class MutableInventory
 
 	private void _addItems(Item type, int count)
 	{
-		int requiredEncumbrance = InventoryAspect.getEncumbrance(type) * count;
+		Environment env = Environment.getShared();
+		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		Items existing = _items.get(type);

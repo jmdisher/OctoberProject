@@ -9,6 +9,13 @@ import com.jeffdisher.october.types.Block;
  */
 public class PlantRegistry
 {
+	private final BlockAspect _blocks;
+
+	public PlantRegistry(BlockAspect blocks)
+	{
+		_blocks = blocks;
+	}
+
 	/**
 	 * Returns the growth divisor to use when checking if this growth should happen.  Growth rate can be viewed as 1/x
 	 * where x is the number returned from this function.  Returns 0 if this item doesn't have a concept of growth.
@@ -16,16 +23,16 @@ public class PlantRegistry
 	 * @param block The block to check.
 	 * @return The divisor (0 if not growable).
 	 */
-	public static int growthDivisor(Block block)
+	public int growthDivisor(Block block)
 	{
 		int divisor;
-		if (BlockAspect.SAPLING == block)
+		if (_blocks.SAPLING == block)
 		{
 			// Saplings grow 1/10th of the time.
 			divisor = 10;
 		}
-		else if ((BlockAspect.WHEAT_SEEDLING == block)
-				|| (BlockAspect.WHEAT_YOUNG == block)
+		else if ((_blocks.WHEAT_SEEDLING == block)
+				|| (_blocks.WHEAT_YOUNG == block)
 		)
 		{
 			// Crops grow 1/2th of the time.

@@ -49,54 +49,56 @@ public class DamageAspect
 	 */
 	public static final short STRONG = 20000;
 
-	public static final short[] TOUGHNESS_BY_TYPE = new short[BlockAspect.BLOCKS_BY_TYPE.length];
+	private final short[] _toughnessByBlockType;
 
-	static {
+	public DamageAspect(BlockAspect blocks)
+	{
+		_toughnessByBlockType = new short[blocks.BLOCKS_BY_TYPE.length];
 		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < TOUGHNESS_BY_TYPE.length; ++i)
+		for (int i = 0; i < _toughnessByBlockType.length; ++i)
 		{
-			Block block = BlockAspect.BLOCKS_BY_TYPE[i];
+			Block block = blocks.BLOCKS_BY_TYPE[i];
 			short toughness;
 			if (null == block)
 			{
 				// This is NOT a block which can exist in the world.
 				toughness = NOT_BLOCK;
 			}
-			else if ((BlockAspect.AIR == block)
-					|| (BlockAspect.WATER_SOURCE == block)
-					|| (BlockAspect.WATER_STRONG == block)
-					|| (BlockAspect.WATER_WEAK == block)
+			else if ((blocks.AIR == block)
+					|| (blocks.WATER_SOURCE == block)
+					|| (blocks.WATER_STRONG == block)
+					|| (blocks.WATER_WEAK == block)
 			)
 			{
 				toughness = UNBREAKABLE;
 			}
-			else if ((BlockAspect.SAPLING == block)
-					|| (BlockAspect.LEAF == block)
-					|| (BlockAspect.WHEAT_SEEDLING == block)
-					|| (BlockAspect.WHEAT_YOUNG == block)
-					|| (BlockAspect.WHEAT_MATURE == block)
+			else if ((blocks.SAPLING == block)
+					|| (blocks.LEAF == block)
+					|| (blocks.WHEAT_SEEDLING == block)
+					|| (blocks.WHEAT_YOUNG == block)
+					|| (blocks.WHEAT_MATURE == block)
 			)
 			{
 				toughness = TRIVIAL;
 			}
-			else if ((BlockAspect.LOG == block)
-					|| (BlockAspect.PLANK == block)
-					|| (BlockAspect.CRAFTING_TABLE == block)
-					|| (BlockAspect.DIRT == block)
-					|| (BlockAspect.LANTERN == block)
+			else if ((blocks.LOG == block)
+					|| (blocks.PLANK == block)
+					|| (blocks.CRAFTING_TABLE == block)
+					|| (blocks.DIRT == block)
+					|| (blocks.LANTERN == block)
 			)
 			{
 				toughness = WEAK;
 			}
-			else if ((BlockAspect.STONE == block)
-					|| (BlockAspect.STONE_BRICK == block)
-					|| (BlockAspect.FURNACE == block)
-					|| (BlockAspect.COAL_ORE == block)
+			else if ((blocks.STONE == block)
+					|| (blocks.STONE_BRICK == block)
+					|| (blocks.FURNACE == block)
+					|| (blocks.COAL_ORE == block)
 			)
 			{
 				toughness = MEDIUM;
 			}
-			else if (BlockAspect.IRON_ORE == block)
+			else if (blocks.IRON_ORE == block)
 			{
 				toughness = HARD;
 			}
@@ -106,12 +108,12 @@ public class DamageAspect
 				// For now, just default them to medium.
 				toughness = MEDIUM;
 			}
-			TOUGHNESS_BY_TYPE[i] = toughness;
+			_toughnessByBlockType[i] = toughness;
 		}
 	}
 
-	public static short getToughness(Block block)
+	public short getToughness(Block block)
 	{
-		return TOUGHNESS_BY_TYPE[block.item().number()];
+		return _toughnessByBlockType[block.item().number()];
 	}
 }

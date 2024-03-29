@@ -1,6 +1,5 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -50,14 +49,6 @@ public class Craft
 	{
 		Assert.assertTrue(number >= 0);
 		Assert.assertTrue(Classification.ERROR != classification);
-		// We never want to allow encumbrance to increase through crafting.
-		int inputEncumbrance = 0;
-		for (Items oneInput : input)
-		{
-			inputEncumbrance += InventoryAspect.getEncumbrance(oneInput.type()) * oneInput.count();
-		}
-		int outputEncumbrance = InventoryAspect.getEncumbrance(output.type()) * output.count();
-		Assert.assertTrue(inputEncumbrance >= outputEncumbrance);
 		
 		this.number = number;
 		this.name = name;

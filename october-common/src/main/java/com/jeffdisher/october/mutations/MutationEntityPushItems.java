@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.FuelAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -107,6 +107,7 @@ public class MutationEntityPushItems implements IMutationEntity
 
 	private Inventory _getInventory(BlockProxy block)
 	{
+		Environment env = Environment.getShared();
 		Inventory inv;
 		switch (_inventoryAspect)
 		{
@@ -114,7 +115,7 @@ public class MutationEntityPushItems implements IMutationEntity
 			inv = block.getInventory();
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
-			inv = FuelAspect.hasFuelInventoryForType(block.getBlock(), _offered.type())
+			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), _offered.type())
 				? block.getFuel().fuelInventory()
 				: null
 			;

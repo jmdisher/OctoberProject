@@ -2,12 +2,12 @@ package com.jeffdisher.october.persistence;
 
 import java.nio.ByteBuffer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.CraftAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -22,11 +22,23 @@ import com.jeffdisher.october.types.Items;
 
 public class TestMutationBlockCodec
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void overwrite() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, BlockAspect.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, ENV.blocks.STONE);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
@@ -40,7 +52,7 @@ public class TestMutationBlockCodec
 	public void extractItems() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Items items = new Items(ItemRegistry.STONE, 2);
+		Items items = new Items(ENV.items.STONE, 2);
 		int returnEntityId = 1;
 		MutationBlockExtractItems mutation = new MutationBlockExtractItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY, returnEntityId);
 		
@@ -56,7 +68,7 @@ public class TestMutationBlockCodec
 	public void storeItems() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Items items = new Items(ItemRegistry.STONE, 2);
+		Items items = new Items(ENV.items.STONE, 2);
 		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -86,7 +98,7 @@ public class TestMutationBlockCodec
 	public void blockCraft() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Craft craft = CraftAspect.LOG_TO_PLANKS;
+		Craft craft = ENV.crafting.LOG_TO_PLANKS;
 		long millis = 100L;
 		MutationBlockCraft mutation = new MutationBlockCraft(location, craft, millis);
 		

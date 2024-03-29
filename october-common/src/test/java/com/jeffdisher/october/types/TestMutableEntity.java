@@ -1,13 +1,27 @@
 package com.jeffdisher.october.types;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 
 
 public class TestMutableEntity
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void noChange() throws Throwable
 	{
@@ -47,8 +61,8 @@ public class TestMutableEntity
 	{
 		Entity input = _buildTestEntity();
 		MutableEntity mutable = new MutableEntity(input);
-		mutable.newInventory.addAllItems(ItemRegistry.STONE, 1);
-		mutable.newInventory.removeItems(ItemRegistry.STONE, 1);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
+		mutable.newInventory.removeItems(ENV.items.STONE, 1);
 		Entity output = mutable.freeze();
 		
 		Assert.assertTrue(input == output);

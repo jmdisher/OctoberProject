@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -374,6 +375,7 @@ public class WorldProcessor
 		}
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
+			Environment env = Environment.getShared();
 			LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) ->
 			{
 				Byte overlayValue = lightValueOverlay.get(location);
@@ -396,7 +398,7 @@ public class WorldProcessor
 			{
 				BlockProxy proxy = local.apply(location);
 				return (null != proxy)
-						? LightAspect.getOpacity(proxy.getBlock())
+						? env.lighting.getOpacity(proxy.getBlock())
 						: LightBringer.IByteLookup.NOT_FOUND
 				;
 			};
@@ -404,7 +406,7 @@ public class WorldProcessor
 			{
 				BlockProxy proxy = local.apply(location);
 				return (null != proxy)
-						? LightAspect.getLightEmission(proxy.getBlock())
+						? env.lighting.getLightEmission(proxy.getBlock())
 						: LightBringer.IByteLookup.NOT_FOUND
 				;
 			};
@@ -454,12 +456,13 @@ public class WorldProcessor
 			, AbsoluteLocation location
 	)
 	{
+		Environment env = Environment.getShared();
 		// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
 		BlockProxy proxy = proxyLookup.apply(location);
 		Block block = proxy.getBlock();
 		byte currentLight = proxy.getLight();
 		// Check if this is a light source.
-		byte emission = LightAspect.getLightEmission(block);
+		byte emission = env.lighting.getLightEmission(block);
 		if (emission > currentLight)
 		{
 			// We need to add this light source.
@@ -469,7 +472,7 @@ public class WorldProcessor
 		else
 		{
 			// See if this was an opaque block placed on top of something with light.
-			byte opacity = LightAspect.getOpacity(block);
+			byte opacity = env.lighting.getOpacity(block);
 			if ((LightAspect.MAX_LIGHT == opacity) && (currentLight > 0))
 			{
 				// We need to set this to zero and cast the shadow.

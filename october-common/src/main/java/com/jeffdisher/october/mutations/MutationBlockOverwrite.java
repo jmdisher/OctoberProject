@@ -2,8 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.PlantRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -22,8 +21,9 @@ public class MutationBlockOverwrite implements IMutationBlock
 
 	public static MutationBlockOverwrite deserializeFromBuffer(ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Block blockType = BlockAspect.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
+		Block blockType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
 		return new MutationBlockOverwrite(location, blockType);
 	}
 
@@ -33,8 +33,9 @@ public class MutationBlockOverwrite implements IMutationBlock
 
 	public MutationBlockOverwrite(AbsoluteLocation location, Block blockType)
 	{
+		Environment env = Environment.getShared();
 		// Using this with AIR doesn't make sense.
-		Assert.assertTrue(!BlockAspect.canBeReplaced(blockType));
+		Assert.assertTrue(!env.blocks.canBeReplaced(blockType));
 		
 		_location = location;
 		_blockType = blockType;
@@ -49,12 +50,13 @@ public class MutationBlockOverwrite implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (BlockAspect.canBeReplaced(newBlock.getBlock()))
+		if (env.blocks.canBeReplaced(newBlock.getBlock()))
 		{
 			// Make sure that this block can be supported by the one under it.
-			boolean blockIsSupported = BlockAspect.canExistOnBlock(_blockType, context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
+			boolean blockIsSupported = env.blocks.canExistOnBlock(_blockType, context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
 			
 			// Note that failing to place this means that the block will be destroyed.
 			if (blockIsSupported)
@@ -62,7 +64,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 				// Replace the block with the type we have.
 				newBlock.setBlockAndClear(_blockType);
 				
-				if (PlantRegistry.growthDivisor(_blockType) > 0)
+				if (env.plants.growthDivisor(_blockType) > 0)
 				{
 					context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}

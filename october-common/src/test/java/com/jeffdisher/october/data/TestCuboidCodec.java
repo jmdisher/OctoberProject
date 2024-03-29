@@ -3,12 +3,13 @@ package com.jeffdisher.october.data;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
@@ -20,12 +21,24 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestCuboidCodec
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void empty()
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		
 		CuboidData output = _codec(input);
 		Assert.assertEquals((short) 0, output.getData15(AspectRegistry.BLOCK, testAddress));
@@ -37,9 +50,9 @@ public class TestCuboidCodec
 	{
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, BlockAspect.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ItemRegistry.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
 		
 		CuboidData output = _codec(input);
 		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress));
@@ -47,7 +60,7 @@ public class TestCuboidCodec
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(2, inv.items.get(ItemRegistry.STONE).count());
+		Assert.assertEquals(2, inv.items.get(ENV.items.STONE).count());
 	}
 
 

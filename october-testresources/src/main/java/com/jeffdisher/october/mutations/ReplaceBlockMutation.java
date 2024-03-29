@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -40,7 +40,8 @@ public class ReplaceBlockMutation implements IMutationBlock
 		boolean didApply = false;
 		if (_oldType == newBlock.getBlock().item().number())
 		{
-			newBlock.setBlockAndClear(BlockAspect.BLOCKS_BY_TYPE[_newType]);
+			Environment env = Environment.getShared();
+			newBlock.setBlockAndClear(env.blocks.BLOCKS_BY_TYPE[_newType]);
 			didApply = true;
 		}
 		return didApply;

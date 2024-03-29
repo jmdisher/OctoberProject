@@ -3,8 +3,8 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.CraftAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -55,10 +55,11 @@ public class MutationBlockCraft implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
-		if (BlockAspect.CRAFTING_TABLE == newBlock.getBlock())
+		if (env.blocks.CRAFTING_TABLE == newBlock.getBlock())
 		{
 			// See if this is something new or if we are continuing.
 			CraftOperation currentOperation = newBlock.getCrafting();

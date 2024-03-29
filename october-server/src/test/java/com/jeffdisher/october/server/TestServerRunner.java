@@ -5,13 +5,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.jeffdisher.october.aspects.BlockAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -35,6 +36,17 @@ public class TestServerRunner
 {
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
 
 	@Test
 	public void startStop() throws Throwable
@@ -128,7 +140,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity);
 		
 		// Trickle in a few items to observe them showing up.
-		server.changeReceived(clientId, new EntityChangeTrickleInventory(new Items(ItemRegistry.STONE, 3)), 1L);
+		server.changeReceived(clientId, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 3)), 1L);
 		
 		Object change0 = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -146,8 +158,8 @@ public class TestServerRunner
 		// Send some empty move changes to see that the entity is falling over time.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), BlockAspect.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.AIR));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -163,7 +175,7 @@ public class TestServerRunner
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
 		EntityChangeMove move1 = new EntityChangeMove(entity.location(), 100L, 0.0f, 0.0f);
 		MutableEntity fake = new MutableEntity(entity);
-		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), BlockAspect.AIR);
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.blocks.AIR);
 		move1.applyChange(new TickProcessingContext(1L
 				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)
 				, null
@@ -221,14 +233,14 @@ public class TestServerRunner
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), BlockAspect.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), BlockAspect.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), BlockAspect.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), BlockAspect.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), BlockAspect.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), BlockAspect.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), BlockAspect.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), BlockAspect.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), ENV.blocks.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ENV.blocks.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), ENV.blocks.STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.blocks.AIR));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -270,7 +282,7 @@ public class TestServerRunner
 		Assert.assertEquals(0, entity1.inventory().items.size());
 		
 		// Change something - we will add items to the inventory.
-		server.changeReceived(clientId1, new EntityChangeTrickleInventory(new Items(ItemRegistry.STONE, 1)), 1L);
+		server.changeReceived(clientId1, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
@@ -295,7 +307,7 @@ public class TestServerRunner
 	{
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, BlockAspect.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
 		cuboidLoader.preload(cuboid);
 	}
 

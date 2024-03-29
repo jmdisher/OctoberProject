@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -63,6 +63,7 @@ public class SpatialHelpers
 		float headTop = location.z() + volume.height();
 		if (_isBlockAligned(headTop))
 		{
+			Environment env = Environment.getShared();
 			// Our head is right against the block layer above us so we will conclude we are touching the ceiling if any of them are non-air.
 			// In this case, we want to check that ALL of the blocks in the next layer are air and then revert the returned value to see if ANY were non-air (solid ceiling).
 			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
@@ -71,7 +72,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = BlockAspect.permitsEntityMovement(block.getBlock());
+					isAir = env.blocks.permitsEntityMovement(block.getBlock());
 				}
 				else
 				{
@@ -296,6 +297,7 @@ public class SpatialHelpers
 
 	private static boolean _canExistInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
 	{
+		Environment env = Environment.getShared();
 		// We will just check that the blocks in the target location occupied by the volume are all air (this will need to be generalized to non-colliding, later).
 		Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
 			boolean canExist;
@@ -303,7 +305,7 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = BlockAspect.permitsEntityMovement(block.getBlock());
+				canExist = env.blocks.permitsEntityMovement(block.getBlock());
 			}
 			else
 			{
@@ -320,6 +322,7 @@ public class SpatialHelpers
 		boolean isOnGround;
 		if (_isBlockAligned(location.z()))
 		{
+			Environment env = Environment.getShared();
 			// This is on a block so check it.
 			// In this case, we want to check that ALL of the blocks in the ground are air and then revert the returned value to see if ANY were non-air (ground).
 			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
@@ -328,7 +331,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = BlockAspect.permitsEntityMovement(block.getBlock());
+					isAir = env.blocks.permitsEntityMovement(block.getBlock());
 				}
 				else
 				{

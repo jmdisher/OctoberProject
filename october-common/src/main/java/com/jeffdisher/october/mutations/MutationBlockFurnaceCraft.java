@@ -3,9 +3,8 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.CraftAspect;
-import com.jeffdisher.october.aspects.FuelAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -36,9 +35,10 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 
 	public static CraftOperation canCraft(IMutableBlockProxy proxy)
 	{
+		Environment env = Environment.getShared();
 		CraftOperation canCraft = null;
 		// Check that this block is a furnace (could have been changed).
-		if (BlockAspect.FURNACE == proxy.getBlock())
+		if (env.blocks.FURNACE == proxy.getBlock())
 		{
 			// See if there is an active crafting operation.
 			CraftOperation runningCraft = proxy.getCrafting();
@@ -48,7 +48,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 			if (null == runningCraft)
 			{
 				Inventory inv = proxy.getInventory();
-				for (Craft craft : CraftAspect.craftsForClassifications(Set.of(Craft.Classification.SPECIAL_FURNACE)))
+				for (Craft craft : env.crafting.craftsForClassifications(Set.of(Craft.Classification.SPECIAL_FURNACE)))
 				{
 					// Just take the first match (we don't currently have a priority).
 					if (CraftAspect.canApply(craft, inv))
@@ -106,11 +106,12 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 				int fuelAvailable = fuel.millisFueled();
 				if (0 == fuelAvailable)
 				{
+					Environment env = Environment.getShared();
 					// Consume fuel - we will just get the first one as there is no sort rule, here.
 					Inventory inv = fuel.fuelInventory();
 					MutableInventory fuelInventory = new MutableInventory(inv);
 					Item fuelType = inv.items.keySet().iterator().next();
-					fuelAvailable = FuelAspect.millisOfFuel(fuelType);
+					fuelAvailable = env.fuel.millisOfFuel(fuelType);
 					fuelInventory.removeItems(fuelType, 1);
 					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());
 				}

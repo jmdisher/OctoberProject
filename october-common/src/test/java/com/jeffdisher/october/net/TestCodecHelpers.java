@@ -2,12 +2,13 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CraftAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
@@ -23,6 +24,18 @@ import com.jeffdisher.october.types.Items;
 
 public class TestCodecHelpers
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void string() throws Throwable
 	{
@@ -50,8 +63,8 @@ public class TestCodecHelpers
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Inventory test = Inventory.start(50)
-				.add(ItemRegistry.STONE, 2)
-				.add(ItemRegistry.PLANK, 4)
+				.add(ENV.items.STONE, 2)
+				.add(ENV.items.PLANK, 4)
 				.finish()
 		;
 		CodecHelpers.writeInventory(buffer, test);
@@ -60,8 +73,8 @@ public class TestCodecHelpers
 		// Inventory has not .equals so check some internal data.
 		Assert.assertEquals(50, output.maxEncumbrance);
 		Assert.assertEquals(2, output.items.size());
-		Assert.assertEquals(2, output.getCount(ItemRegistry.STONE));
-		Assert.assertEquals(4, output.getCount(ItemRegistry.PLANK));
+		Assert.assertEquals(2, output.getCount(ENV.items.STONE));
+		Assert.assertEquals(4, output.getCount(ENV.items.PLANK));
 	}
 
 	@Test
@@ -101,7 +114,7 @@ public class TestCodecHelpers
 	public void item() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Item test = ItemRegistry.STONE;
+		Item test = ENV.items.STONE;
 		CodecHelpers.writeItem(buffer, test);
 		buffer.flip();
 		Item output = CodecHelpers.readItem(buffer);
@@ -112,7 +125,7 @@ public class TestCodecHelpers
 	public void items() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Items test = new Items(ItemRegistry.STONE, 2);
+		Items test = new Items(ENV.items.STONE, 2);
 		CodecHelpers.writeItems(buffer, test);
 		buffer.flip();
 		Items output = CodecHelpers.readItems(buffer);
@@ -123,7 +136,7 @@ public class TestCodecHelpers
 	public void craft() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Craft test = CraftAspect.LOG_TO_PLANKS;
+		Craft test = ENV.crafting.LOG_TO_PLANKS;
 		CodecHelpers.writeCraft(buffer, test);
 		buffer.flip();
 		Craft output = CodecHelpers.readCraft(buffer);
@@ -159,7 +172,7 @@ public class TestCodecHelpers
 				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, null
-				, new CraftOperation(CraftAspect.STONE_TO_STONE_BRICK, 50L)
+				, new CraftOperation(ENV.crafting.STONE_TO_STONE_BRICK, 50L)
 		);
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
@@ -184,13 +197,13 @@ public class TestCodecHelpers
 	public void fuelState() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		FuelState test = new FuelState(0, null, Inventory.start(10).add(ItemRegistry.STONE, 1).finish());
+		FuelState test = new FuelState(0, null, Inventory.start(10).add(ENV.items.STONE, 1).finish());
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
 		FuelState output = CodecHelpers.readFuelState(buffer);
 		Assert.assertEquals(test.millisFueled(), output.millisFueled());
 		Assert.assertEquals(test.currentFuel(), output.currentFuel());
-		Assert.assertEquals(test.fuelInventory().getCount(ItemRegistry.STONE), output.fuelInventory().getCount(ItemRegistry.STONE));
+		Assert.assertEquals(test.fuelInventory().getCount(ENV.items.STONE), output.fuelInventory().getCount(ENV.items.STONE));
 		
 		// Verify the null.
 		buffer.clear();
