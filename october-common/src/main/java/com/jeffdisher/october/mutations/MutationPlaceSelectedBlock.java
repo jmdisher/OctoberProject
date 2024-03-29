@@ -60,7 +60,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		
 		Item itemType = newEntity.newSelectedItem;
 		// Note that we will get a null from the asBlock if this can't be placed.
-		Block blockType = env.blocks.getAsPlaceableBlock(itemType);
+		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.

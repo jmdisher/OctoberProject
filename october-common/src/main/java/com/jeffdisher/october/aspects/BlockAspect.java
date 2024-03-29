@@ -1,7 +1,11 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.Map;
+import java.util.Set;
+
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -10,8 +14,6 @@ import com.jeffdisher.october.types.Item;
  */
 public class BlockAspect
 {
-	private final ItemRegistry _items;
-
 	public final Block[] BLOCKS_BY_TYPE;
 
 	public final Block AIR;
@@ -34,6 +36,12 @@ public class BlockAspect
 	public final Block WHEAT_YOUNG;
 	public final Block WHEAT_MATURE;
 
+	private final Set<Block> _canBeReplaced;
+	private final Set<Block> _permitsEntityMovement;
+	private final Map<Block, Block> _specialBlockSupport;
+	private final Map<Item, Block> _specialBlockPlacement;
+	private final Map<Block, Item[]> _specialBlockBreak;
+
 	private static Block _register(Block[] array, Item item)
 	{
 		short number = item.number();
@@ -44,7 +52,6 @@ public class BlockAspect
 
 	public BlockAspect(ItemRegistry items)
 	{
-		_items = items;
 		this.BLOCKS_BY_TYPE = new Block[items.ITEMS_BY_TYPE.length];
 
 		this.AIR = _register(this.BLOCKS_BY_TYPE, items.AIR);
@@ -66,6 +73,20 @@ public class BlockAspect
 		this.WHEAT_SEEDLING = _register(this.BLOCKS_BY_TYPE, items.WHEAT_SEEDLING);
 		this.WHEAT_YOUNG = _register(this.BLOCKS_BY_TYPE, items.WHEAT_YOUNG);
 		this.WHEAT_MATURE = _register(this.BLOCKS_BY_TYPE, items.WHEAT_MATURE);
+		
+		_canBeReplaced = Set.of(AIR, WATER_SOURCE, WATER_STRONG, WATER_WEAK);
+		_permitsEntityMovement = Set.of(AIR, WATER_SOURCE, WATER_STRONG, WATER_WEAK, SAPLING, WHEAT_SEEDLING, WHEAT_YOUNG, WHEAT_MATURE);
+		_specialBlockSupport = Map.of(SAPLING, DIRT
+				, WHEAT_SEEDLING, DIRT
+				, WHEAT_YOUNG, DIRT
+				, WHEAT_MATURE, DIRT
+		);
+		_specialBlockPlacement = Map.of(items.WHEAT_SEED, WHEAT_SEEDLING);
+		_specialBlockBreak = Map.of(LEAF, new Item[] { items.SAPLING }
+				, WHEAT_SEEDLING, new Item[] { items.WHEAT_SEED }
+				, WHEAT_YOUNG, new Item[] { items.WHEAT_SEED }
+				, WHEAT_MATURE, new Item[] { items.WHEAT_SEED, items.WHEAT_SEED, items.WHEAT_ITEM, items.WHEAT_ITEM }
+		);
 	}
 
 	/**
@@ -78,11 +99,7 @@ public class BlockAspect
 	 */
 	public boolean canBeReplaced(Block block)
 	{
-		return (AIR == block)
-				|| (WATER_SOURCE == block)
-				|| (WATER_STRONG == block)
-				|| (WATER_WEAK == block)
-		;
+		return _canBeReplaced.contains(block);
 	}
 
 	/**
@@ -95,15 +112,7 @@ public class BlockAspect
 	 */
 	public boolean permitsEntityMovement(Block block)
 	{
-		return (AIR == block)
-				|| (WATER_SOURCE == block)
-				|| (WATER_STRONG == block)
-				|| (WATER_WEAK == block)
-				|| (SAPLING == block)
-				|| (WHEAT_SEEDLING == block)
-				|| (WHEAT_YOUNG == block)
-				|| (WHEAT_MATURE == block)
-		;
+		return _permitsEntityMovement.contains(block);
 	}
 
 	/**
@@ -116,15 +125,14 @@ public class BlockAspect
 	 */
 	public boolean canExistOnBlock(Block topBlock, Block bottomBlock)
 	{
+		// By default, we want to assume that this is ok for all block types.
 		boolean canExist = true;
-		if ((SAPLING == topBlock)
-				|| (WHEAT_SEEDLING == topBlock)
-				|| (WHEAT_YOUNG == topBlock)
-				|| (WHEAT_MATURE == topBlock)
-		)
+		// Only check the special types if the bottom block is loaded (otherwise, assume it is supported - later update event will fix this).
+		if (null != bottomBlock)
 		{
-			// These growing blocks can only exist on dirt (unloaded shouldn't really happen but we will say no).
-			canExist = (null != bottomBlock) && (DIRT == bottomBlock);
+			// See if this is one of our special-cases.
+			Block specialBottom = _specialBlockSupport.get(topBlock);
+			canExist = (null == specialBottom) || (bottomBlock == specialBottom);
 		}
 		return canExist;
 	}
@@ -137,19 +145,14 @@ public class BlockAspect
 	 */
 	public Block getAsPlaceableBlock(Item itemType)
 	{
+		// This should not be called with null.
+		Assert.assertTrue(null != itemType);
+		
 		// Most items just become the corresponding block, but some are special.
-		Block block = null;
-		if (null != itemType)
+		Block block = BLOCKS_BY_TYPE[itemType.number()];
+		if (null == block)
 		{
-			block = BLOCKS_BY_TYPE[itemType.number()];
-			if (null == block)
-			{
-				// Check the special-cases.
-				if (_items.WHEAT_SEED == itemType)
-				{
-					block = this.WHEAT_SEEDLING;
-				}
-			}
+			block = _specialBlockPlacement.get(itemType);
 		}
 		return block;
 	}
@@ -162,28 +165,9 @@ public class BlockAspect
 	 */
 	public Item[] droppedBlocksOnBreak(Block block)
 	{
-		Item[] dropped;
-		if (LEAF == block)
-		{
-			dropped = new Item[] { _items.SAPLING };
-		}
-		else if ((WHEAT_SEEDLING == block)
-				|| (WHEAT_YOUNG == block)
-		)
-		{
-			dropped = new Item[] { _items.WHEAT_SEED };
-		}
-		else if ((WHEAT_MATURE == block)
-		)
-		{
-			dropped = new Item[] {
-					_items.WHEAT_SEED,
-					_items.WHEAT_SEED,
-					_items.WHEAT_ITEM,
-					_items.WHEAT_ITEM,
-			};
-		}
-		else
+		// See if this is a special-case.
+		Item[] dropped = _specialBlockBreak.get(block);
+		if (null == dropped)
 		{
 			// By default, all other blocks just drop as their item type.
 			dropped = new Item[] { block.item() };
