@@ -1,0 +1,29 @@
+# Entries here have the form:
+# ID<TAB>encumbrance
+#
+# Values with 0 cannot exist in an inventory.
+# Note that the ID references are against item_registry.tablist.
+
+op.air	0
+op.stone	2
+op.log	2
+op.plank	1
+op.stone_brick	2
+op.crafting_table	2
+op.furnace	4
+op.charcoal	1
+op.coal_ore	2
+op.iron_ore	4
+op.dirt	1
+op.water_source	0
+op.water_strong	0
+op.water_weak	0
+op.lantern	1
+op.iron_ingot	2
+op.sapling	1
+op.leaf	0
+op.wheat_seed	1
+op.wheat_item	1
+op.wheat_seedling	0
+op.wheat_young	0
+op.wheat_mature	0

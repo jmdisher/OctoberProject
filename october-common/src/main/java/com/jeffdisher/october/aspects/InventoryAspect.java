@@ -1,5 +1,9 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 
@@ -10,80 +14,88 @@ import com.jeffdisher.october.types.Item;
 public class InventoryAspect
 {
 	/**
+	 * Loads the block aspect from the tablist in the given stream, sourcing Items from the given items registry.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param blocks The existing BlockAspect.
+	 * @param encumbranceStream The stream containing the tablist describing per-item encumbrance.
+	 * @return The aspect (never null).
+	 * @throws IOException There was a problem with a stream.
+	 * @throws TabListReader.TabListException A tablist was malformed.
+	 */
+	public static InventoryAspect load(ItemRegistry items, BlockAspect blocks, InputStream encumbranceStream) throws IOException, TabListReader.TabListException
+	{
+		int[] encumbranceByItemType = new int[items.ITEMS_BY_TYPE.length];
+		for (int i = 0; i < encumbranceByItemType.length; ++i)
+		{
+			encumbranceByItemType[i] = -1;
+		}
+		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				Item item = items.getItemById(name);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Uknown item: \"" + name + "\"");
+				}
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("A single encumbrance must be provided");
+				}
+				int encumbrance;
+				try
+				{
+					encumbrance = Integer.parseInt(parameters[0]);
+				}
+				catch (NumberFormatException e)
+				{
+					throw new TabListReader.TabListException("Not a valid encumbrance: \"" + parameters[0] + "\"");
+				}
+				if (-1 != encumbranceByItemType[item.number()])
+				{
+					throw new TabListReader.TabListException("Duplicate encumbrance: \"" + name + "\"");
+				}
+				encumbranceByItemType[item.number()] = encumbrance;
+			}
+			@Override
+			public void endRecord() throws TabListReader.TabListException
+			{
+				// Do nothing.
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				// Not expected in this list type.
+				throw new TabListReader.TabListException("Inventory encumbrance tablist has no sub-records");
+			}
+		}, encumbranceStream);
+		
+		// We expect an entry for every item.
+		for (int i = 0; i < encumbranceByItemType.length; ++i)
+		{
+			if (-1 == encumbranceByItemType[i])
+			{
+				throw new TabListReader.TabListException("Missing encumbrance: \"" + items.ITEMS_BY_TYPE[i].name() + "\"");
+			}
+		}
+		return new InventoryAspect(blocks, encumbranceByItemType);
+	}
+
+	/**
 	 * The capacity of an air block is small since it is just "on the ground" and we want containers to be used.
 	 */
 	public static final int CAPACITY_AIR = 10;
 	public static final int CAPACITY_PLAYER = 20;
 	public static final int CAPACITY_CRAFTING_TABLE = CAPACITY_AIR;
 
-	// We will default to an encumbrance of "4" for undefined types (since it is big but not overwhelming.
-	public static final int ENCUMBRANCE_UNKNOWN = 4;
-	// Note that every item has a number and encumbrance, 0 is used for any item which cannot exist in an inventory.
-	public static final int ENCUMBRANCE_NON_INVENTORY = 0;
-
 	private final BlockAspect _blocks;
 	private final int[] _encumbranceByItemType;
 
-	public InventoryAspect(ItemRegistry items, BlockAspect blocks)
+	private InventoryAspect(BlockAspect blocks, int[] encumbranceByItemType)
 	{
 		_blocks = blocks;
-		_encumbranceByItemType = new int[items.ITEMS_BY_TYPE.length];
-		
-		// We construct the encumbrance by looking at items.
-		// This purely exists to demonstrate the shape of the Item data once it is fully external data:  All aspects are
-		// out-of-line and their meaning for a specific Item type is answered through aspect-specific helpers, like this.
-		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < _encumbranceByItemType.length; ++i)
-		{
-			Item item = items.ITEMS_BY_TYPE[i];
-			int encumbrance;
-			if ((items.AIR == item)
-					|| (items.WATER_SOURCE == item)
-					|| (items.WATER_STRONG == item)
-					|| (items.WATER_WEAK == item)
-					|| (items.LEAF == item)
-					|| (items.WHEAT_SEEDLING == item)
-					|| (items.WHEAT_YOUNG == item)
-					|| (items.WHEAT_MATURE == item)
-			)
-			{
-				encumbrance = ENCUMBRANCE_NON_INVENTORY;
-			}
-			else if ((items.PLANK == item)
-					|| (items.CHARCOAL == item)
-					|| (items.DIRT == item)
-					|| (items.LANTERN == item)
-					|| (items.SAPLING == item)
-					|| (items.WHEAT_SEED == item)
-					|| (items.WHEAT_ITEM == item)
-			)
-			{
-				encumbrance = 1;
-			}
-			else if ((items.STONE == item)
-					|| (items.STONE_BRICK == item)
-					|| (items.LOG == item)
-					|| (items.CRAFTING_TABLE == item)
-					|| (items.COAL_ORE == item)
-					|| (items.LANTERN == item)
-					|| (items.IRON_INGOT == item)
-			)
-			{
-				encumbrance = 2;
-			}
-			else if ((items.FURNACE == item)
-					|| (items.IRON_ORE == item)
-			)
-			{
-				encumbrance = 4;
-			}
-			else
-			{
-				// We need to add this entry.
-				encumbrance = ENCUMBRANCE_UNKNOWN;
-			}
-			_encumbranceByItemType[i] = encumbrance;
-		}
+		_encumbranceByItemType = encumbranceByItemType;
 	}
 
 	public int getInventoryCapacity(Block block)
