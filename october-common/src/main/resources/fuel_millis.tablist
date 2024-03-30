@@ -1,0 +1,30 @@
+# Entries here have the form:
+# ID<TAB>toughness
+#
+# The value here is for the number of milliseconds the item can fuel a furnace, 0 if it cannot fuel it.  Missing entries
+# are assumed to be 0.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+# op.air
+# op.stone
+op.log	4000
+op.plank	2000
+# op.stone_brick
+op.crafting_table	8000
+# op.furnace
+op.charcoal	20000
+op.coal_ore	20000
+# op.iron_ore
+# op.dirt
+# op.water_source
+# op.water_strong
+# op.water_weak
+# op.lantern
+# op.iron_ingot
+op.sapling	500
+# op.leaf
+# op.wheat_seed
+# op.wheat_item
+# op.wheat_seedling
+# op.wheat_young
+# op.wheat_mature

@@ -1,7 +1,14 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
+import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -12,12 +19,45 @@ import com.jeffdisher.october.types.Item;
 public class FuelAspect
 {
 	/**
+	 * Loads the item burn time from the tablist in the given stream, sourcing Items from the given items registry.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param blocks The existing BlockAspect.
+	 * @param stream The stream containing the tablist describing item burn time.
+	 * @return The aspect (never null).
+	 * @throws IOException There was a problem with a stream.
+	 * @throws TabListReader.TabListException A tablist was malformed.
+	 */
+	public static FuelAspect load(ItemRegistry items, BlockAspect blocks
+			, InputStream stream
+	) throws IOException, TabListReader.TabListException
+	{
+		FlatTabListCallbacks<Item, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.ItemTransformer(items), new FlatTabListCallbacks.IntegerTransformer("fuel"));
+		TabListReader.readEntireFile(callbacks, stream);
+		
+		int[] burnMillisByItemType = new int[items.ITEMS_BY_TYPE.length];
+		for (int i = 0; i < burnMillisByItemType.length; ++i)
+		{
+			burnMillisByItemType[i] = 0;
+		}
+		
+		// Now, over-write with the values from the file.
+		for (Map.Entry<Item, Integer> elt : callbacks.data.entrySet())
+		{
+			int value = elt.getValue();
+			Assert.assertTrue(value >= 0);
+			burnMillisByItemType[elt.getKey().number()] = value;
+		}
+		return new FuelAspect(blocks, burnMillisByItemType);
+	}
+
+	/**
 	 * We just use this constant for the fuel capacity.
 	 */
 	public static final int CAPACITY = 10;
 
 	/**
-	 * The time length of various burns.
+	 * The time length of various burns - used in tests.
 	 */
 	public static final int BURN_MILLIS_TABLE = 8000;
 	public static final int BURN_MILLIS_PLANK = 2000;
@@ -28,48 +68,10 @@ public class FuelAspect
 	private final BlockAspect _blocks;
 	private final int[] _burnMillisByItemType;
 
-	static {
-	}
-
-	public FuelAspect(ItemRegistry items, BlockAspect blocks)
+	private FuelAspect(BlockAspect blocks, int[] burnMillisByItemType)
 	{
 		_blocks = blocks;
-		_burnMillisByItemType = new int[items.ITEMS_BY_TYPE.length];
-		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < _burnMillisByItemType.length; ++i)
-		{
-			Item item = items.ITEMS_BY_TYPE[i];
-			int millis;
-			// For now, we just store these constants inline and they will likely change and eventually become data.
-			if (items.CRAFTING_TABLE == item)
-			{
-				millis = BURN_MILLIS_TABLE;
-			}
-			else if (items.PLANK == item)
-			{
-				millis = BURN_MILLIS_PLANK;
-			}
-			else if (items.LOG == item)
-			{
-				millis = BURN_MILLIS_LOG;
-			}
-			else if ((items.CHARCOAL == item)
-					|| (items.COAL_ORE == item)
-			)
-			{
-				millis = BURN_MILLIS_CHARCOAL;
-			}
-			else if (items.SAPLING == item)
-			{
-				millis = BURN_MILLIS_SAPLING;
-			}
-			else
-			{
-				// We assume other things don't burn.
-				millis = 0;
-			}
-			_burnMillisByItemType[i] = millis;
-		}
+		_burnMillisByItemType = burnMillisByItemType;
 	}
 
 	/**
