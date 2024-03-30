@@ -1,0 +1,31 @@
+# Entries here have the form:
+# ID<TAB>toughness
+#
+# The values here are for the opacity of given blocks.
+# The minimum value is 1.
+# The maximum value is 15 and all missing blocks are set to this value.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.air	1
+# op.stone
+# op.log
+# op.plank
+# op.stone_brick
+# op.crafting_table
+# op.furnace
+# op.charcoal
+# op.coal_ore
+# op.iron_ore
+# op.dirt
+op.water_source	2
+op.water_strong	2
+op.water_weak	2
+# op.lantern
+# op.iron_ingot
+op.sapling	2
+op.leaf	4
+# op.wheat_seed
+# op.wheat_item
+op.wheat_seedling	2
+op.wheat_young	2
+op.wheat_mature	4

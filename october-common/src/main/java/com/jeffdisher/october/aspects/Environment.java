@@ -82,7 +82,7 @@ public class Environment
 		this.crafting = CraftAspect.load(this.items, this.inventory, loader.getResourceAsStream("crafting_recipes.tablist"));
 		this.damage = DamageAspect.load(this.items, this.blocks, loader.getResourceAsStream("toughness.tablist"));
 		this.fuel = FuelAspect.load(this.items, this.blocks, loader.getResourceAsStream("fuel_millis.tablist"));
-		this.lighting = new LightAspect(this.blocks);
+		this.lighting = LightAspect.load(this.items, this.blocks, loader.getResourceAsStream("light_opacity.tablist"));
 		this.plants = new PlantRegistry(this.blocks);
 	}
 }
