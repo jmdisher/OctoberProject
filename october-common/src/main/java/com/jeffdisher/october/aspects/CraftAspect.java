@@ -1,14 +1,19 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.Craft.Classification;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -18,8 +23,147 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CraftAspect
 {
-	// Variables used when initially populating the table.
-	private List<Craft> _crafts = new ArrayList<>();
+
+	/**
+	 * Loads the craft aspect from the tablist in the given stream, sourcing Items from the given items registry and
+	 * relying on the given inventory.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param inventory The existing inventory aspect.
+	 * @param stream The stream containing the tablist.
+	 * @return The aspect (never null).
+	 * @throws IOException There was a problem with the stream.
+	 * @throws TabListReader.TabListException The tablist was malformed.
+	 */
+	public static CraftAspect load(ItemRegistry items, InventoryAspect inventory, InputStream stream) throws IOException, TabListReader.TabListException
+	{
+		if (null == stream)
+		{
+			throw new IOException("Resource missing");
+		}
+		
+		List<Craft> crafts = new ArrayList<>();
+		Map<String, Craft> craftByName = new HashMap<>();
+		
+		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
+			private String _name;
+			private Craft.Classification _classification;
+			private Map<Item, Integer> _input;
+			// NOTE:  We only support a single output item type (for now).
+			private Map<Item, Integer> _output;
+			private long _millis = -1L;
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				// These must have 1 classification.
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("One classification required: \"" + name + "\"");
+				}
+				_name = name;
+				_classification = Craft.Classification.valueOf(parameters[0].toUpperCase());
+				if (null == _classification)
+				{
+					throw new TabListReader.TabListException("Invalid classification: \"" + parameters[0] + "\"");
+				}
+				_input = new HashMap<>();
+				_output = new HashMap<>();
+				_millis = 0L;
+			}
+			@Override
+			public void endRecord() throws TabListReader.TabListException
+			{
+				if (_input.isEmpty() || (1 != _output.size()) || (_millis <= 0L))
+				{
+					throw new TabListReader.TabListException("Recipe requires a valid classification, at least 1 input, a single output type, and a positive time cost: \"" + _name + "\"");
+				}
+				
+				Items[] inputs = new Items[_input.size()];
+				int index = 0;
+				for (Map.Entry<Item, Integer> elt : _input.entrySet())
+				{
+					inputs[index] = new Items(elt.getKey(), elt.getValue());
+					index += 1;
+				}
+				Items output = null;
+				for (Map.Entry<Item, Integer> elt : _output.entrySet())
+				{
+					output = new Items(elt.getKey(), elt.getValue());
+				}
+				Craft craft = new Craft((short)crafts.size(), _name, _classification, inputs, output, _millis);
+				crafts.add(craft);
+				craftByName.put(_name, craft);
+				
+				_name = null;
+				_input = null;
+				_output = null;
+				_millis = -1L;
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				if ("input".equals(name))
+				{
+					if (0 == parameters.length)
+					{
+						throw new TabListReader.TabListException("Missing input value");
+					}
+					for (String value : parameters)
+					{
+						Item item = _getItem(value);
+						_modifyItemMap(_input, item);
+					}
+				}
+				else if ("output".equals(name))
+				{
+					if (0 == parameters.length)
+					{
+						throw new TabListReader.TabListException("Missing output value");
+					}
+					for (String value : parameters)
+					{
+						Item item = _getItem(value);
+						_modifyItemMap(_output, item);
+					}
+				}
+				else if ("millis".equals(name))
+				{
+					if (1 != parameters.length)
+					{
+						throw new TabListReader.TabListException("Single time cost value required");
+					}
+					try
+					{
+						_millis = Long.parseLong(parameters[0]);
+					}
+					catch (NumberFormatException e)
+					{
+						throw new TabListReader.TabListException("Invalid number: \"" + parameters[0] + "\"");
+					}
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
+				}
+			}
+			private Item _getItem(String id) throws TabListReader.TabListException
+			{
+				Item item = items.getItemById(id);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
+				}
+				return item;
+			}
+			private void _modifyItemMap(Map<Item, Integer> map, Item item)
+			{
+				int count = map.containsKey(item) ? map.get(item) : 0;
+				map.put(item, count + 1);
+			}
+		}, stream);
+		
+		return new CraftAspect(inventory, crafts, craftByName);
+	}
 
 	// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
 	// negative number are for items which cannot be placed.
@@ -31,23 +175,11 @@ public class CraftAspect
 	public final Craft FURNACE_LOGS_TO_CHARCOAL;
 	public final Craft FURNACE_SMELT_IRON;
 
-	private Craft _register(String name
-			, Classification classification
-			, Items[] input
-			, Items output
-			, long millisPerCraft
-	)
+	private static Craft _bind(Map<String, Craft> craftByName, String name)
 	{
-		int number = _crafts.size();
-		Assert.assertTrue(number <= Short.MAX_VALUE);
-		Craft craft = new Craft((short)number
-				, name
-				, classification
-				, input
-				, output
-				, millisPerCraft
-		);
-		_crafts.add(craft);
+		Craft craft = craftByName.get(name);
+		// If this is null, there is broken data configuration.
+		Assert.assertTrue(null != craft);
 		return craft;
 	}
 
@@ -56,70 +188,19 @@ public class CraftAspect
 	 */
 	public final Craft[] CRAFTING_OPERATIONS;
 
-	public CraftAspect(ItemRegistry items, InventoryAspect inventory)
+	private CraftAspect(InventoryAspect inventory, List<Craft> crafts, Map<String, Craft> craftByName)
 	{
-		// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
-		// negative number are for items which cannot be placed.
-		this.LOG_TO_PLANKS = _register("Convert log to planks"
-				, Craft.Classification.TRIVIAL
-				, new Items[] {
-					new Items(items.LOG, 1),
-				}
-				, new Items(items.PLANK, 2)
-				, 1000L
-		);
-		this.STONE_TO_STONE_BRICK = _register("Convert stone to stone brick"
-				, Craft.Classification.TRIVIAL
-				, new Items[] {
-					new Items(items.STONE, 1),
-				}
-				, new Items(items.STONE_BRICK, 1)
-				, 2000L
-		);
-		this.PLANKS_TO_CRAFTING_TABLE = _register("Convert wood planks into a crafting table"
-				, Craft.Classification.TRIVIAL
-				, new Items[] {
-					new Items(items.PLANK, 4),
-				}
-				, new Items(items.CRAFTING_TABLE, 1)
-				, 4000L
-		);
-		this.STONE_BRICKS_TO_FURNACE = _register("Convert stone bricks into a furnace"
-				, Craft.Classification.COMMON
-				, new Items[] {
-					new Items(items.STONE_BRICK, 4),
-				}
-				, new Items(items.FURNACE, 1)
-				, 8000L
-		);
-		this.CRAFT_LANTERN = _register("Craft a lantern"
-				, Craft.Classification.COMMON
-				, new Items[] {
-					new Items(items.IRON_INGOT, 2),
-					new Items(items.CHARCOAL, 1),
-				}
-				, new Items(items.LANTERN, 1)
-				, 4000L
-		);
-		this.FURNACE_LOGS_TO_CHARCOAL = _register("Converts logs to charcoal in a furnace"
-				, Craft.Classification.SPECIAL_FURNACE
-				, new Items[] {
-					new Items(items.LOG, 1),
-				}
-				, new Items(items.CHARCOAL, 1)
-				, 1000L
-		);
-		this.FURNACE_SMELT_IRON = _register("Converts iron ore to ingot in a furnace"
-				, Craft.Classification.SPECIAL_FURNACE
-				, new Items[] {
-					new Items(items.IRON_ORE, 1),
-				}
-				, new Items(items.IRON_INGOT, 1)
-				, 2000L
-		);
+		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
+		this.LOG_TO_PLANKS = _bind(craftByName, "op.log_to_planks");
+		this.STONE_TO_STONE_BRICK = _bind(craftByName, "op.stone_to_stone_brick");
+		this.PLANKS_TO_CRAFTING_TABLE = _bind(craftByName, "op.planks_to_crafting_table");
+		this.STONE_BRICKS_TO_FURNACE = _bind(craftByName, "op.stone_bricks_to_furnace");
+		this.CRAFT_LANTERN = _bind(craftByName, "op.lantern");
+		this.FURNACE_LOGS_TO_CHARCOAL = _bind(craftByName, "op.furnace_logs_to_charcoal");
+		this.FURNACE_SMELT_IRON = _bind(craftByName, "op.furnace_smelt_iron");
 		
 		// We never want to allow encumbrance to increase through crafting.
-		for (Craft craft : _crafts)
+		for (Craft craft : crafts)
 		{
 			int inputEncumbrance = 0;
 			for (Items oneInput : craft.input)
@@ -129,10 +210,6 @@ public class CraftAspect
 			int outputEncumbrance = inventory.getEncumbrance(craft.output.type()) * craft.output.count();
 			Assert.assertTrue(inputEncumbrance >= outputEncumbrance);
 		}
-		
-		// Convert the items into the array as it is now fixed (since the static fields are initialized before this is called).
-		CRAFTING_OPERATIONS = _crafts.toArray((int size) -> new Craft[size]);
-		_crafts = null;
 	}
 
 

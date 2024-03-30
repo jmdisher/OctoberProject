@@ -1,0 +1,41 @@
+# Entries here have the form:
+# ID<TAB>classification
+# <TAB>input<TAB>item_list
+# <TAB>output<TAB>one_item
+# <TAB>millis<TAB>long_value
+#
+# ID is just a crafting recipe ID.
+# classification is a special string used to determine the crafting station.
+# item_list is a non-empty list of item ID references.
+# one_item is a single item ID reference.
+#
+# Note that the item ID references are against item_registry.tablist.
+
+op.log_to_planks	trivial
+	input	op.log
+	output	op.plank	op.plank
+	millis	1000
+op.stone_to_stone_brick	trivial
+	input	op.stone
+	output	op.stone_brick
+	millis	2000
+op.planks_to_crafting_table	trivial
+	input	op.plank	op.plank	op.plank	op.plank
+	output	op.crafting_table
+	millis	4000
+op.stone_bricks_to_furnace	common
+	input	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
+	output	op.furnace
+	millis	8000
+op.lantern	common
+	input	op.iron_ingot	op.iron_ingot	op.charcoal
+	output	op.lantern
+	millis	4000
+op.furnace_logs_to_charcoal	special_furnace
+	input	op.log
+	output	op.charcoal
+	millis	1000
+op.furnace_smelt_iron	special_furnace
+	input	op.iron_ore
+	output	op.iron_ingot
+	millis	2000
