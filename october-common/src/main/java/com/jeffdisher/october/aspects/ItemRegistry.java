@@ -2,11 +2,11 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
@@ -37,38 +37,9 @@ public class ItemRegistry
 		{
 			throw new IOException("Resource missing");
 		}
-		List<String> ids = new ArrayList<>();
-		List<String> names = new ArrayList<>();
-		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
-			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				ids.add(name);
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("ItemRegistry tablist malformed");
-				}
-				names.add(parameters[0]);
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				if (ids.size() != names.size())
-				{
-					throw new TabListReader.TabListException("ItemRegistry tablist malformed");
-				}
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				// Not expected in this list type.
-				throw new TabListReader.TabListException("ItemRegistry has no sub-records");
-			}
-		}, stream);
-		
-		// We would have noticed this earlier in parsing.
-		Assert.assertTrue(ids.size() == names.size());
-		return new ItemRegistry(ids, names);
+		FlatTabListCallbacks<String, String> callbacks = new FlatTabListCallbacks<>((String value) -> value, (String value) -> value);
+		TabListReader.readEntireFile(callbacks, stream);
+		return new ItemRegistry(callbacks.keyOrder, callbacks.data);
 	}
 
 
@@ -104,18 +75,19 @@ public class ItemRegistry
 	public final Item[] ITEMS_BY_TYPE;
 	private final Map<String, Item> _idsMap;
 
-	private ItemRegistry(List<String> ids, List<String> names)
+	private ItemRegistry(List<String> keyList, Map<String, String> map)
 	{
-		// Local instantiation only.
-		int size = ids.size();
+		int size = keyList.size();
 		Assert.assertTrue(size <= Short.MAX_VALUE);
 		this.ITEMS_BY_TYPE = new Item[size];
 		_idsMap = new HashMap<>();
-		for (int i = 0; i < size; ++i)
+		short index = 0;
+		for (String key : keyList)
 		{
-			Item item = new Item(names.get(i), (short)i);
-			this.ITEMS_BY_TYPE[i] = item;
-			_idsMap.put(ids.get(i), item);
+			Item item = new Item(map.get(key), index);
+			this.ITEMS_BY_TYPE[index] = item;
+			index += 1;
+			_idsMap.put(key, item);
 		}
 		
 		this.AIR = _idsMap.get("op.air");

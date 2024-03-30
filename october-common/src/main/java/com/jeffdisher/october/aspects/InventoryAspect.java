@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
@@ -31,51 +32,18 @@ public class InventoryAspect
 			, InputStream capacityStream
 	) throws IOException, TabListReader.TabListException
 	{
+		FlatTabListCallbacks<Item, Integer> encumbranceCallbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.ItemTransformer(items), new FlatTabListCallbacks.IntegerTransformer("encumbrance"));
 		int[] encumbranceByItemType = new int[items.ITEMS_BY_TYPE.length];
 		for (int i = 0; i < encumbranceByItemType.length; ++i)
 		{
 			encumbranceByItemType[i] = -1;
 		}
-		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
-			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				Item item = items.getItemById(name);
-				if (null == item)
-				{
-					throw new TabListReader.TabListException("Uknown item: \"" + name + "\"");
-				}
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("A single encumbrance must be provided");
-				}
-				int encumbrance;
-				try
-				{
-					encumbrance = Integer.parseInt(parameters[0]);
-				}
-				catch (NumberFormatException e)
-				{
-					throw new TabListReader.TabListException("Not a valid encumbrance: \"" + parameters[0] + "\"");
-				}
-				if (-1 != encumbranceByItemType[item.number()])
-				{
-					throw new TabListReader.TabListException("Duplicate encumbrance: \"" + name + "\"");
-				}
-				encumbranceByItemType[item.number()] = encumbrance;
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				// Do nothing.
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				// Not expected in this list type.
-				throw new TabListReader.TabListException("Inventory encumbrance tablist has no sub-records");
-			}
-		}, encumbranceStream);
+		TabListReader.readEntireFile(encumbranceCallbacks, encumbranceStream);
+		for (Map.Entry<Item, Integer> elt : encumbranceCallbacks.data.entrySet())
+		{
+			Item item = elt.getKey();
+			encumbranceByItemType[item.number()] = elt.getValue();
+		}
 		
 		// We expect an entry for every item.
 		for (int i = 0; i < encumbranceByItemType.length; ++i)
@@ -95,43 +63,13 @@ public class InventoryAspect
 				blockCapacities.put(block, CAPACITY_AIR);
 			}
 		}
-		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
-			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				Item item = items.getItemById(name);
-				Block block = (null != item) ? blocks.BLOCKS_BY_TYPE[item.number()] : null;
-				if (null == block)
-				{
-					throw new TabListReader.TabListException("Not a block: \"" + name + "\"");
-				}
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("A single capacity must be provided");
-				}
-				int capacity;
-				try
-				{
-					capacity = Integer.parseInt(parameters[0]);
-				}
-				catch (NumberFormatException e)
-				{
-					throw new TabListReader.TabListException("Not a valid capacity: \"" + parameters[0] + "\"");
-				}
-				blockCapacities.put(block, capacity);
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				// Do nothing.
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				// Not expected in this list type.
-				throw new TabListReader.TabListException("Inventory encumbrance tablist has no sub-records");
-			}
-		}, capacityStream);
+		FlatTabListCallbacks<Block, Integer> capacityCallbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("capacity"));
+		TabListReader.readEntireFile(capacityCallbacks, capacityStream);
+		for (Map.Entry<Block, Integer> elt : capacityCallbacks.data.entrySet())
+		{
+			Block block = elt.getKey();
+			blockCapacities.put(block, elt.getValue());
+		}
 		
 		return new InventoryAspect(encumbranceByItemType, blockCapacities);
 	}
