@@ -1,6 +1,13 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
+import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -9,6 +16,42 @@ import com.jeffdisher.october.types.Block;
  */
 public class DamageAspect
 {
+	/**
+	 * Loads the block aspect from the tablist in the given stream, sourcing Items from the given items registry.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param blocks The existing BlockAspect.
+	 * @param stream The stream containing the tablist describing block toughness.
+	 * @param capacityStream The stream containing the tablist describing block inventory capacities.
+	 * @return The aspect (never null).
+	 * @throws IOException There was a problem with a stream.
+	 * @throws TabListReader.TabListException A tablist was malformed.
+	 */
+	public static DamageAspect load(ItemRegistry items, BlockAspect blocks
+			, InputStream stream
+	) throws IOException, TabListReader.TabListException
+	{
+		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("toughness"));
+		TabListReader.readEntireFile(callbacks, stream);
+		
+		short[] toughnessByBlockType = new short[blocks.BLOCKS_BY_TYPE.length];
+		// Set defaults:  Blocks get MEDIUM, non-blocks get NOT_BLOCK.
+		for (int i = 0; i < toughnessByBlockType.length; ++i)
+		{
+			boolean isBlock = (null != blocks.BLOCKS_BY_TYPE[i]);
+			toughnessByBlockType[i] = isBlock ? MEDIUM : NOT_BLOCK;
+		}
+		
+		// Now, over-write with the values from the file.
+		for (Map.Entry<Block, Integer> elt : callbacks.data.entrySet())
+		{
+			int value = elt.getValue();
+			Assert.assertTrue(value <= MAX_DAMAGE);
+			toughnessByBlockType[elt.getKey().item().number()] = (short)value;
+		}
+		return new DamageAspect(toughnessByBlockType);
+	}
+
 	/**
 	 * We are limited to 15 bits to store the damage so we just fix the maximum at a round 32000.
 	 */
@@ -51,65 +94,9 @@ public class DamageAspect
 
 	private final short[] _toughnessByBlockType;
 
-	public DamageAspect(BlockAspect blocks)
+	private DamageAspect(short[] toughnessByBlockType)
 	{
-		_toughnessByBlockType = new short[blocks.BLOCKS_BY_TYPE.length];
-		// TODO:  Replace this with a data file later on.
-		for (int i = 0; i < _toughnessByBlockType.length; ++i)
-		{
-			Block block = blocks.BLOCKS_BY_TYPE[i];
-			short toughness;
-			if (null == block)
-			{
-				// This is NOT a block which can exist in the world.
-				toughness = NOT_BLOCK;
-			}
-			else if ((blocks.AIR == block)
-					|| (blocks.WATER_SOURCE == block)
-					|| (blocks.WATER_STRONG == block)
-					|| (blocks.WATER_WEAK == block)
-			)
-			{
-				toughness = UNBREAKABLE;
-			}
-			else if ((blocks.SAPLING == block)
-					|| (blocks.LEAF == block)
-					|| (blocks.WHEAT_SEEDLING == block)
-					|| (blocks.WHEAT_YOUNG == block)
-					|| (blocks.WHEAT_MATURE == block)
-			)
-			{
-				toughness = TRIVIAL;
-			}
-			else if ((blocks.LOG == block)
-					|| (blocks.PLANK == block)
-					|| (blocks.CRAFTING_TABLE == block)
-					|| (blocks.DIRT == block)
-					|| (blocks.LANTERN == block)
-			)
-			{
-				toughness = WEAK;
-			}
-			else if ((blocks.STONE == block)
-					|| (blocks.STONE_BRICK == block)
-					|| (blocks.FURNACE == block)
-					|| (blocks.COAL_ORE == block)
-			)
-			{
-				toughness = MEDIUM;
-			}
-			else if (blocks.IRON_ORE == block)
-			{
-				toughness = HARD;
-			}
-			else
-			{
-				// We need to add this entry.
-				// For now, just default them to medium.
-				toughness = MEDIUM;
-			}
-			_toughnessByBlockType[i] = toughness;
-		}
+		_toughnessByBlockType = toughnessByBlockType;
 	}
 
 	public short getToughness(Block block)

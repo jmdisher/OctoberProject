@@ -1,0 +1,34 @@
+# Entries here have the form:
+# ID<TAB>toughness
+#
+# Note that we assume only blocks are valid for consideration here, as the implementation will map any items which can't
+# have block forms to a "not a block" value.
+# Toughness is generally considered "number of milliseconds to break with no bonuses".
+# Missing values are otherwise assumed to have a default "medium toughness" of 2000.
+# To make a block unbreakable, set its toughness to 0.
+# The maximum toughness value a block can have is 32000.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.air	0
+op.stone	2000
+op.log	200
+op.plank	200
+op.stone_brick	2000
+op.crafting_table	200
+op.furnace	2000
+# op.charcoal
+op.coal_ore	2000
+op.iron_ore	8000
+op.dirt	200
+op.water_source	0
+op.water_strong	0
+op.water_weak	0
+op.lantern	200
+# op.iron_ingot
+op.sapling	20
+op.leaf	20
+# op.wheat_seed
+# op.wheat_item
+op.wheat_seedling	20
+op.wheat_young	20
+op.wheat_mature	20
