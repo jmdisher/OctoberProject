@@ -1,5 +1,11 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+
+import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 
 
@@ -9,11 +15,31 @@ import com.jeffdisher.october.types.Block;
  */
 public class PlantRegistry
 {
-	private final BlockAspect _blocks;
-
-	public PlantRegistry(BlockAspect blocks)
+	/**
+	 * Loads the plant growth config from the tablist in the given stream, sourcing Items from the given items registry.
+	 * 
+	 * @param items The existing ItemRegistry.
+	 * @param blocks The existing BlockAspect.
+	 * @param stream The stream containing the tablist describing growth divisors.
+	 * @return The aspect (never null).
+	 * @throws IOException There was a problem with a stream.
+	 * @throws TabListReader.TabListException A tablist was malformed.
+	 */
+	public static PlantRegistry load(ItemRegistry items, BlockAspect blocks
+			, InputStream stream
+	) throws IOException, TabListReader.TabListException
 	{
-		_blocks = blocks;
+		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("opacity"));
+		TabListReader.readEntireFile(callbacks, stream);
+		
+		// We can just pass these in, directly.
+		return new PlantRegistry(callbacks.data);
+	}
+	private final Map<Block, Integer> _growthDivisors;
+
+	private PlantRegistry(Map<Block, Integer> growthDivisors)
+	{
+		_growthDivisors = growthDivisors;
 	}
 
 	/**
@@ -25,24 +51,9 @@ public class PlantRegistry
 	 */
 	public int growthDivisor(Block block)
 	{
-		int divisor;
-		if (_blocks.SAPLING == block)
-		{
-			// Saplings grow 1/10th of the time.
-			divisor = 10;
-		}
-		else if ((_blocks.WHEAT_SEEDLING == block)
-				|| (_blocks.WHEAT_YOUNG == block)
-		)
-		{
-			// Crops grow 1/2th of the time.
-			divisor = 2;
-		}
-		else
-		{
-			// Return 0 if this can't grow.
-			divisor = 0;
-		}
-		return divisor;
+		return _growthDivisors.containsKey(block)
+				? _growthDivisors.get(block)
+				: 0
+		;
 	}
 }

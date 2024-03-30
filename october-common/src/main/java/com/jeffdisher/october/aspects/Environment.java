@@ -83,6 +83,6 @@ public class Environment
 		this.damage = DamageAspect.load(this.items, this.blocks, loader.getResourceAsStream("toughness.tablist"));
 		this.fuel = FuelAspect.load(this.items, this.blocks, loader.getResourceAsStream("fuel_millis.tablist"));
 		this.lighting = LightAspect.load(this.items, this.blocks, loader.getResourceAsStream("light_opacity.tablist"));
-		this.plants = new PlantRegistry(this.blocks);
+		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("growth_divisor.tablist"));
 	}
 }

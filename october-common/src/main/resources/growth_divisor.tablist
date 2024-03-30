@@ -1,0 +1,31 @@
+# Entries here have the form:
+# ID<TAB>divisor
+#
+# The values here are for the divisor used to calculate whether a plant should grow during a growth tick.  A value of 0
+# means that the block doesn't grow and is the default for anything not listed.
+# This value is used to randomly decide to grow in "1/divisor" growth ticks.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+# op.air
+# op.stone
+# op.log
+# op.plank
+# op.stone_brick
+# op.crafting_table
+# op.furnace
+# op.charcoal
+# op.coal_ore
+# op.iron_ore
+# op.dirt
+# op.water_source
+# op.water_strong
+# op.water_weak
+# op.lantern
+# op.iron_ingot
+op.sapling	10
+# op.leaf
+# op.wheat_seed
+# op.wheat_item
+op.wheat_seedling	2
+op.wheat_young	2
+# op.wheat_mature
