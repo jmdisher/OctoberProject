@@ -77,6 +77,7 @@ public class Environment
 		this.blocks = BlockAspect.loadRegistry(this.items, loader.getResourceAsStream("block_aspect.tablist"));
 		this.inventory = InventoryAspect.load(this.items, this.blocks
 				, loader.getResourceAsStream("inventory_encumbrance.tablist")
+				, loader.getResourceAsStream("inventory_capacity.tablist")
 		);
 		this.crafting = new CraftAspect(this.items, this.inventory);
 		this.damage = new DamageAspect(this.blocks);

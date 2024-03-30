@@ -1,0 +1,9 @@
+# Entries here have the form:
+# ID<TAB>capacity
+#
+# Missing values are assumed to be 0 or defaulted via some other logic internal to the implementation.
+# (currently, this means they are given an "air" capacity if entities can collide with them)
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.crafting_table	10
+op.furnace	10
