@@ -8,8 +8,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.InventoryAspect;
-import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -20,6 +18,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
 
 
 public class TestCodecHelpers
@@ -147,7 +146,7 @@ public class TestCodecHelpers
 	public void entity() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Entity test = EntityActionValidator.buildDefaultEntity(1);
+		Entity test = MutableEntity.create(1).freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
 		Entity output = CodecHelpers.readEntity(buffer);
@@ -164,16 +163,9 @@ public class TestCodecHelpers
 	public void entityWithCraft() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
-		Entity test = new Entity(1
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, null
-				, new CraftOperation(ENV.crafting.STONE_TO_STONE_BRICK, 50L)
-		);
+		MutableEntity mutable = MutableEntity.create(1);
+		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.STONE_TO_STONE_BRICK, 50L);
+		Entity test = mutable.freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
 		Entity output = CodecHelpers.readEntity(buffer);

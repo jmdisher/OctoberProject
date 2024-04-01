@@ -93,7 +93,7 @@ public class CrowdProcessor
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
-				MutableEntity mutable = new MutableEntity(entity);
+				MutableEntity mutable = MutableEntity.existing(entity);
 				for (IMutationEntity change : changes)
 				{
 					processor.changeCount += 1;

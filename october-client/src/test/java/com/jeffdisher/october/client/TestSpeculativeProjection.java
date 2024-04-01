@@ -19,7 +19,6 @@ import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeReceiveItem;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ShockwaveMutation;
@@ -48,6 +47,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -72,7 +72,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -187,7 +187,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -266,7 +266,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -361,7 +361,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -451,7 +451,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -552,10 +552,11 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		
 		// We need 2 entities for this but we will give one some items.
-		Inventory startInventory = Inventory.start(10).add(ENV.items.STONE, 2).finish();
+		MutableEntity mutable = MutableEntity.create(0);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
 		projector.applyChangesForServerTick(0L
-				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null)
-						, EntityActionValidator.buildDefaultEntity(1))
+				, List.of(mutable.freeze()
+						, MutableEntity.create(1).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -620,7 +621,7 @@ public class TestSpeculativeProjection
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, List.of(cuboid)
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -696,7 +697,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -746,7 +747,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(0))
+				, List.of(MutableEntity.create(0).freeze())
 				, Collections.emptyList()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -794,8 +795,10 @@ public class TestSpeculativeProjection
 		// Test the in-inventory crafting operation.
 		CountingListener listener = new CountingListener();
 		// Start the entity with some stone and with them selected.
-		Inventory start = Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 1).finish();
-		Entity entity = new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, start, ENV.items.STONE, null);
+		MutableEntity mutable = MutableEntity.create(0);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
+		mutable.newSelectedItem = ENV.items.STONE;
+		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -837,17 +840,11 @@ public class TestSpeculativeProjection
 		// Make sure that the speculative projection will prevent us from placing the same block down twice.
 		CountingListener listener = new CountingListener();
 		SpeculativeProjection projector = new SpeculativeProjection(0, listener);
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.STONE, 2).finish();
 		int entityId = 0;
-		Entity entity = new Entity(entityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, ENV.items.STONE
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newSelectedItem = ENV.items.STONE;
+		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR))
@@ -880,15 +877,11 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int localEntityId = 0;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		Entity entity = new Entity(localEntityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.CRAFTING_TABLE, 1).add(ENV.items.STONE, 2).finish()
-				, ENV.items.CRAFTING_TABLE
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(localEntityId);
+		mutable.newInventory.addAllItems(ENV.items.CRAFTING_TABLE, 1);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newSelectedItem = ENV.items.CRAFTING_TABLE;
+		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR)
@@ -958,16 +951,10 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newInventory.addAllItems(ENV.items.STONE_BRICK, 4);
 		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.STONE_BRICK, 4).finish();
-		Entity entity = new Entity(entityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, null
-				, null
-		);
+		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
 				, Collections.emptyList()
@@ -1005,7 +992,7 @@ public class TestSpeculativeProjection
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, Inventory.start(10).add(ENV.items.STONE, 1).finish());
 		projector.applyChangesForServerTick(0L
-				, List.of(EntityActionValidator.buildDefaultEntity(localEntityId))
+				, List.of(MutableEntity.create(localEntityId).freeze())
 				, List.of(cuboid)
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -1100,15 +1087,12 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int localEntityId = 0;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		Entity entity = new Entity(localEntityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.FURNACE, 1).add(ENV.items.PLANK, 1).add(ENV.items.STONE, 1).finish()
-				, ENV.items.FURNACE
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(localEntityId);
+		mutable.newInventory.addAllItems(ENV.items.FURNACE, 1);
+		mutable.newInventory.addAllItems(ENV.items.PLANK, 1);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
+		mutable.newSelectedItem = ENV.items.FURNACE;
+		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR)

@@ -174,7 +174,7 @@ public class TestServerRunner
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
 		EntityChangeMove move1 = new EntityChangeMove(entity.location(), 100L, 0.0f, 0.0f);
-		MutableEntity fake = new MutableEntity(entity);
+		MutableEntity fake = MutableEntity.existing(entity);
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.blocks.AIR);
 		move1.applyChange(new TickProcessingContext(1L
 				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)

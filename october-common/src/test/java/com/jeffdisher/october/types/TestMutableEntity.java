@@ -26,7 +26,7 @@ public class TestMutableEntity
 	public void noChange() throws Throwable
 	{
 		Entity input = _buildTestEntity();
-		MutableEntity mutable = new MutableEntity(input);
+		MutableEntity mutable = MutableEntity.existing(input);
 		Entity output = mutable.freeze();
 		
 		Assert.assertTrue(input == output);
@@ -36,7 +36,7 @@ public class TestMutableEntity
 	public void simpleChange()
 	{
 		Entity input = _buildTestEntity();
-		MutableEntity mutable = new MutableEntity(input);
+		MutableEntity mutable = MutableEntity.existing(input);
 		mutable.newLocation = new EntityLocation(1.0f, 0.0f, 0.0f);
 		Entity output = mutable.freeze();
 		
@@ -48,7 +48,7 @@ public class TestMutableEntity
 	public void revertedChange()
 	{
 		Entity input = _buildTestEntity();
-		MutableEntity mutable = new MutableEntity(input);
+		MutableEntity mutable = MutableEntity.existing(input);
 		mutable.newLocation = new EntityLocation(1.0f, 0.0f, 0.0f);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Entity output = mutable.freeze();
@@ -60,7 +60,7 @@ public class TestMutableEntity
 	public void revertedInventoryChange()
 	{
 		Entity input = _buildTestEntity();
-		MutableEntity mutable = new MutableEntity(input);
+		MutableEntity mutable = MutableEntity.existing(input);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
 		mutable.newInventory.removeItems(ENV.items.STONE, 1);
 		Entity output = mutable.freeze();

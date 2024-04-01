@@ -10,11 +10,9 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -26,6 +24,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -58,7 +57,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity.
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		network.client.receivedEntity(MutableEntity.create(clientId).freeze());
 		runner.runPendingCalls(System.currentTimeMillis());
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
@@ -86,8 +85,8 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them their own entity and another one.
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(2));
+		network.client.receivedEntity(MutableEntity.create(clientId).freeze());
+		network.client.receivedEntity(MutableEntity.create(2).freeze());
 		runner.runPendingCalls(System.currentTimeMillis());
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
@@ -121,7 +120,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity and a cuboid.
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		network.client.receivedEntity(MutableEntity.create(clientId).freeze());
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
@@ -190,15 +189,9 @@ public class TestClientRunner
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		Entity startEntity = new Entity(clientId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(20).add(ENV.items.LOG, 2).finish()
-				, null
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(clientId);
+		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
+		Entity startEntity = mutable.freeze();
 		network.client.receivedEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
@@ -234,7 +227,7 @@ public class TestClientRunner
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		network.client.receivedEntity(EntityActionValidator.buildDefaultEntity(clientId));
+		network.client.receivedEntity(MutableEntity.create(clientId).freeze());
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ENV.blocks.STONE));
@@ -271,15 +264,9 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		// We want to position ourselves above the ground and drop onto the ground and observe that we no longer move.
-		Entity entity = new Entity(clientId
-				, new EntityLocation(0.0f, 0.0f, 2.0f)
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish()
-				, null
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(clientId);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 2.0f);
+		Entity entity = mutable.freeze();
 		network.client.receivedEntity(entity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
@@ -321,15 +308,9 @@ public class TestClientRunner
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		Entity startEntity = new Entity(clientId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, Inventory.start(20).add(ENV.items.LOG, 2).finish()
-				, null
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(clientId);
+		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
+		Entity startEntity = mutable.freeze();
 		network.client.receivedEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
 		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.

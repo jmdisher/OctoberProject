@@ -53,7 +53,7 @@ public class TestCommonChanges
 				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
@@ -73,7 +73,7 @@ public class TestCommonChanges
 				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
@@ -92,7 +92,7 @@ public class TestCommonChanges
 				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
@@ -113,7 +113,7 @@ public class TestCommonChanges
 		);
 		// We start with a zero z-vector since we should start falling.
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
@@ -138,7 +138,7 @@ public class TestCommonChanges
 				, null
 		);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		EntityChangeJump jump = new EntityChangeJump();
 		boolean didApply = jump.applyChange(context, newEntity);
@@ -178,7 +178,7 @@ public class TestCommonChanges
 	{
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.STONE);
@@ -229,7 +229,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
 		Assert.assertTrue(place.applyChange(context, newEntity));
@@ -274,7 +274,7 @@ public class TestCommonChanges
 		);
 		
 		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		
@@ -338,7 +338,7 @@ public class TestCommonChanges
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
@@ -389,7 +389,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Try too close (colliding).
 		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
@@ -437,7 +437,7 @@ public class TestCommonChanges
 				, null
 				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
 		);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Try too far.
 		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar, (short)100);
@@ -465,7 +465,7 @@ public class TestCommonChanges
 				, ENV.items.LOG
 				, null
 		);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
@@ -506,7 +506,7 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Fail to place the charcoal item on the ground.
 		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);

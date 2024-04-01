@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -153,15 +154,9 @@ public class TestResourceLoader
 		// Modify an entity and write these  back.
 		Entity original = results.get(0);
 		Entity other = results.get(1);
-		Entity modified = new Entity(original.id()
-				, new EntityLocation(1.0f, 2.0f, 3.0f)
-				, original.zVelocityPerSecond()
-				, original.volume()
-				, original.blocksPerTickSpeed()
-				, original.inventory()
-				, original.selectedItem()
-				, null
-		);
+		MutableEntity mutable = MutableEntity.existing(original);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 3.0f);
+		Entity modified = mutable.freeze();
 		loader.writeBackToDisk(List.of(), List.of(modified, other));
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();

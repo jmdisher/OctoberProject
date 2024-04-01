@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -8,6 +9,43 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableEntity
 {
+	public static final EntityVolume DEFAULT_VOLUME = new EntityVolume(1.8f, 0.5f);
+	public static final EntityLocation DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
+	public static final float DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
+
+	/**
+	 * Create a mutable entity from the elements of an existing entity.
+	 * 
+	 * @param entity An existing entity.
+	 * @return A mutable entity.
+	 */
+	public static MutableEntity existing(Entity entity)
+	{
+		return new MutableEntity(entity);
+	}
+
+	/**
+	 * Creates a mutable entity based on the default values for a new entity.
+	 * 
+	 * @param id The entity ID.
+	 * @return A mutable entity.
+	 */
+	public static MutableEntity create(int id)
+	{
+		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
+		Entity entity = new Entity(id
+				, DEFAULT_LOCATION
+				, 0.0f
+				, DEFAULT_VOLUME
+				, DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, null
+				, null
+		);
+		return new MutableEntity(entity);
+	}
+
+
 	// Some data elements are actually immutable (id, for example) so they are just left in the original, along with the original data.
 	public final Entity original;
 	public final MutableInventory newInventory;
@@ -18,7 +56,7 @@ public class MutableEntity
 	public Item newSelectedItem;
 	public CraftOperation newLocalCraftOperation;
 
-	public MutableEntity(Entity original)
+	private MutableEntity(Entity original)
 	{
 		this.original = original;
 		this.newInventory = new MutableInventory(original.inventory());

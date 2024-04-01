@@ -61,7 +61,7 @@ public class TestFallingBehaviour
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutableEntity newEntity = new MutableEntity(original);
+		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		

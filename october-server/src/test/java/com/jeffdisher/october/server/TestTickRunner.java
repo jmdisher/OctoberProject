@@ -18,7 +18,6 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.EntityActionValidator;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
@@ -46,6 +45,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -72,7 +72,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -97,7 +97,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -140,7 +140,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ENV.blocks.AIR), List.of())
 				)
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -173,7 +173,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -216,7 +216,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -270,7 +270,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(null
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.startNextTick();
@@ -306,11 +306,12 @@ public class TestTickRunner
 		
 		// We need 2 entities for this but we will give one some items.
 		int entityId = 1;
-		Inventory startInventory = Inventory.start(10).add(ENV.items.STONE, 2).finish();
+		MutableEntity mutable = MutableEntity.create(0);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
 		runner.setupChangesForTick(null
 				, null
-				, List.of(new Entity(0, EntityActionValidator.DEFAULT_LOCATION, 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null)
-						, EntityActionValidator.buildDefaultEntity(entityId)
+				, List.of(mutable.freeze()
+						, MutableEntity.create(entityId).freeze()
 				)
 				, null
 		);
@@ -357,7 +358,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		
@@ -428,7 +429,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(constantAddress, ENV.blocks.AIR), List.of())
 				)
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		
@@ -491,7 +492,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(null
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.startNextTick();
@@ -529,7 +530,7 @@ public class TestTickRunner
 					new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.STONE), List.of())
 				)
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.startNextTick();
@@ -559,7 +560,7 @@ public class TestTickRunner
 				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE), List.of(new ScheduledMutation(mutation, 0L)))
 			)
 			, null
-			, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+			, List.of(MutableEntity.create(entityId).freeze())
 			, null
 		);
 		runner.startNextTick();
@@ -583,7 +584,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -629,16 +630,10 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.FURNACE);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.LOG, 3).add(ENV.items.PLANK, 2).finish();
-		Entity entity = new Entity(entityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, null
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newInventory.addAllItems(ENV.items.LOG, 3);
+		mutable.newInventory.addAllItems(ENV.items.PLANK, 2);
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(entity)
@@ -813,16 +808,10 @@ public class TestTickRunner
 		
 		// We need an entity to generate the change which will trigger the update.
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.STONE_BRICK, 3).finish();
-		Entity entity = new Entity(entityId
-				, EntityActionValidator.DEFAULT_LOCATION
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, ENV.items.STONE_BRICK
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newInventory.addAllItems(ENV.items.STONE_BRICK, 3);
+		mutable.newSelectedItem = ENV.items.STONE_BRICK;
+		Entity entity = mutable.freeze();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
 		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
@@ -1033,10 +1022,13 @@ public class TestTickRunner
 		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ENV.items.WATER_SOURCE.number());
 		
 		int entityId = 1;
-		Inventory startInventory = Inventory.start(10).add(ENV.items.STONE, 2).finish();
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newSelectedItem = ENV.items.STONE;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of()))
 				, null
-				, List.of(new Entity(entityId, new EntityLocation(plug.x(), plug.y(), plug.z() + 1), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, ENV.items.STONE, null))
+				, List.of(mutable.freeze())
 				, null
 		);
 		runner.startNextTick();
@@ -1079,7 +1071,10 @@ public class TestTickRunner
 		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ENV.items.WATER_SOURCE.number());
 		
 		int entityId = 1;
-		Inventory startInventory = Inventory.start(10).add(ENV.items.STONE, 2).finish();
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newSelectedItem = ENV.items.STONE;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(topNorthEast, List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, 0, -1)), List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, 0)), List.of())
@@ -1090,7 +1085,7 @@ public class TestTickRunner
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, -1, -1)), List.of())
 		)
 				, null
-				, List.of(new Entity(entityId, new EntityLocation(plug.x(), plug.y(), plug.z() + 1), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, ENV.items.STONE, null))
+				, List.of(mutable.freeze())
 				, null
 		);
 		runner.startNextTick();
@@ -1135,8 +1130,9 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
 		
 		int entityId = 1;
-		Inventory startInventory = Inventory.start(10).finish();
-		Entity entity = new Entity(entityId, new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z()), 0.0f, EntityActionValidator.DEFAULT_VOLUME, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED, startInventory, null, null);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z());
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(entity)
@@ -1215,7 +1211,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(otherCuboid1, List.of())
 				)
 				, null
-				, List.of(EntityActionValidator.buildDefaultEntity(entityId))
+				, List.of(MutableEntity.create(entityId).freeze())
 				, null
 		);
 		runner.start();
@@ -1268,16 +1264,11 @@ public class TestTickRunner
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.SAPLING, 1).finish();
-		Entity entity = new Entity(entityId
-				, new EntityLocation(location.x() + 1, location.y(), location.z())
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, ENV.items.SAPLING
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
+		mutable.newInventory.addAllItems(ENV.items.SAPLING, 1);
+		mutable.newSelectedItem = ENV.items.SAPLING;
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null
@@ -1338,16 +1329,11 @@ public class TestTickRunner
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.WHEAT_SEED, 1).finish();
-		Entity entity = new Entity(entityId
-				, new EntityLocation(location.x() + 1, location.y(), location.z())
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, ENV.items.WHEAT_SEED
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
+		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
+		mutable.newSelectedItem = ENV.items.WHEAT_SEED;
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null
@@ -1431,16 +1417,11 @@ public class TestTickRunner
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).add(ENV.items.WHEAT_SEED, 1).finish();
-		Entity entity = new Entity(entityId
-				, new EntityLocation(location.x() + 1, location.y(), location.z())
-				, 0.0f
-				, EntityActionValidator.DEFAULT_VOLUME
-				, EntityActionValidator.DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, ENV.items.WHEAT_SEED
-				, null
-		);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
+		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
+		mutable.newSelectedItem = ENV.items.WHEAT_SEED;
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null

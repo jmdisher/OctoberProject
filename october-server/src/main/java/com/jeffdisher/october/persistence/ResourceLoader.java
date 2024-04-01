@@ -26,6 +26,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
 
@@ -419,16 +420,6 @@ public class ResourceLoader
 
 	private static Entity _buildDefaultEntity(int id)
 	{
-		// We start by giving the user an empty inventory.
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
-		return new Entity(id
-				, ENTITY_DEFAULT_LOCATION
-				, 0.0f
-				, ENTITY_DEFAULT_VOLUME
-				, ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED
-				, inventory
-				, null
-				, null
-		);
+		return MutableEntity.create(id).freeze();
 	}
 }
