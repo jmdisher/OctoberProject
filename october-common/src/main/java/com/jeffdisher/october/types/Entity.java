@@ -18,5 +18,9 @@ public record Entity(int id
 		, Item selectedItem
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		, CraftOperation localCraftOperation
+		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
+		, byte health
+		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
+		, byte food
 ) {
 }

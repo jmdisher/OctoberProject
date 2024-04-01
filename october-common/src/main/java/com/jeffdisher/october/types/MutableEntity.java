@@ -12,6 +12,8 @@ public class MutableEntity
 	public static final EntityVolume DEFAULT_VOLUME = new EntityVolume(1.8f, 0.5f);
 	public static final EntityLocation DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
 	public static final float DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
+	public static final byte DEFAULT_HEALTH = 100;
+	public static final byte DEFAULT_FOOD = 100;
 
 	/**
 	 * Create a mutable entity from the elements of an existing entity.
@@ -41,6 +43,8 @@ public class MutableEntity
 				, inventory
 				, null
 				, null
+				, DEFAULT_HEALTH
+				, DEFAULT_FOOD
 		);
 		return new MutableEntity(entity);
 	}
@@ -87,6 +91,8 @@ public class MutableEntity
 				, this.newInventory.freeze()
 				, this.newSelectedItem
 				, this.newLocalCraftOperation
+				, this.original.health()
+				, this.original.food()
 		);
 		// See if these are identical.
 		return this.original.equals(newInstance)

@@ -127,6 +127,8 @@ public class CodecHelpers
 		Inventory inventory = _readInventory(buffer);
 		Item selectedItem = _readItemNoAir(buffer);
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
+		byte health = buffer.get();
+		byte food = buffer.get();
 		
 		return new Entity(id
 				, location
@@ -136,6 +138,8 @@ public class CodecHelpers
 				, inventory
 				, selectedItem
 				, localCraftOperation
+				, health
+				, food
 		);
 	}
 
@@ -158,6 +162,8 @@ public class CodecHelpers
 		_writeInventory(buffer, inventory);
 		_writeItemNoAir(buffer, selectedItem);
 		_writeCraftOperation(buffer, localCraftOperation);
+		buffer.put(entity.health());
+		buffer.put(entity.food());
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)
