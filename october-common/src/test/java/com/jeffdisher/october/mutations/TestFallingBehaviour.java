@@ -13,9 +13,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -41,9 +39,11 @@ public class TestFallingBehaviour
 	public void dropItemsFalling() throws Throwable
 	{
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block and observe that they fall through.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
-		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ENV.items.STONE, 2).finish(), ENV.items.STONE, null);
+		MutableEntity newEntity = MutableEntity.create(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.STONE, 2);
+		newEntity.newSelectedItem = ENV.items.STONE;
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
@@ -61,7 +61,6 @@ public class TestFallingBehaviour
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		

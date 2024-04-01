@@ -15,7 +15,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -52,8 +51,8 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
@@ -72,8 +71,8 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
@@ -91,8 +90,8 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertFalse(didApply);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
@@ -112,8 +111,8 @@ public class TestCommonChanges
 				, null
 		);
 		// We start with a zero z-vector since we should start falling.
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
@@ -137,8 +136,8 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
 		
 		EntityChangeJump jump = new EntityChangeJump();
 		boolean didApply = jump.applyChange(context, newEntity);
@@ -176,9 +175,8 @@ public class TestCommonChanges
 	@Test
 	public void selection() throws Throwable
 	{
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.STONE);
@@ -219,8 +217,10 @@ public class TestCommonChanges
 	public void placeBlock() throws Throwable
 	{
 		// Create the entity in an air block so we can place this (give us a starter inventory).
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ENV.items.LOG, 1).finish(), ENV.items.LOG, null);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
+		newEntity.newSelectedItem = ENV.items.LOG;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -229,7 +229,6 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = MutableEntity.existing(original);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
 		Assert.assertTrue(place.applyChange(context, newEntity));
@@ -251,9 +250,9 @@ public class TestCommonChanges
 	public void pickUpItems() throws Throwable
 	{
 		// Create an air cuboid with items in an inventory slot and then pick it up.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
-		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
+		MutableEntity newEntity = MutableEntity.create(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
@@ -274,7 +273,6 @@ public class TestCommonChanges
 		);
 		
 		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
-		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		
@@ -319,9 +317,12 @@ public class TestCommonChanges
 	public void dropItems() throws Throwable
 	{
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int entityId = 1;
-		Entity original = new Entity(entityId, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ENV.items.STONE, 2).finish(), ENV.items.STONE, null);
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newSelectedItem = ENV.items.STONE;
+		Entity original = mutable.freeze();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
@@ -379,8 +380,10 @@ public class TestCommonChanges
 	public void invalidPlacements() throws Throwable
 	{
 		// We will try to place a block colliding with the entity or too far from them to verify that this fails.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).add(ENV.items.LOG, 1).finish(), ENV.items.LOG, null);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
+		newEntity.newSelectedItem = ENV.items.LOG;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -389,7 +392,6 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Try too close (colliding).
 		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
@@ -417,8 +419,8 @@ public class TestCommonChanges
 	public void invalidBreak() throws Throwable
 	{
 		// We will try to place a breaking a block of the wrong type or too far away.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10).finish(), null, null);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		
 		AbsoluteLocation tooFar = new AbsoluteLocation(3, 0, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(0, 0, 10);
@@ -437,7 +439,6 @@ public class TestCommonChanges
 				, null
 				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
 		);
-		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Try too far.
 		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar, (short)100);
@@ -455,17 +456,10 @@ public class TestCommonChanges
 	{
 		// We want to run a basic craft operation and observe that we start falling when it completes.
 		// (this will need to be adapted when the crafting system changes, later)
-		EntityLocation oldLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
-		Entity original = new Entity(1
-				, oldLocation
-				, 0.0f
-				, new EntityVolume(1.2f, 0.5f)
-				, 0.4f
-				, Inventory.start(10).add(ENV.items.LOG, 1).finish()
-				, ENV.items.LOG
-				, null
-		);
-		MutableEntity newEntity = MutableEntity.existing(original);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
+		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
+		newEntity.newSelectedItem = ENV.items.LOG;
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
@@ -487,12 +481,11 @@ public class TestCommonChanges
 	public void nonBlockUsage() throws Throwable
 	{
 		// Show that a non-block item cannot be placed in the world, but can be placed in inventories.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		Entity original = new Entity(1, oldLocation, 0.0f, new EntityVolume(1.2f, 0.5f), 0.4f, Inventory.start(10)
-				.add(ENV.items.LOG, 1)
-				.add(ENV.items.CHARCOAL, 2)
-				.finish(), ENV.items.CHARCOAL, null);
-		
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
+		newEntity.newInventory.addAllItems(ENV.items.CHARCOAL, 2);
+		newEntity.newSelectedItem = ENV.items.CHARCOAL;
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
@@ -506,7 +499,6 @@ public class TestCommonChanges
 				, null
 				, null
 		);
-		MutableEntity newEntity = MutableEntity.existing(original);
 		
 		// Fail to place the charcoal item on the ground.
 		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);

@@ -71,6 +71,7 @@ public class TestMutableEntity
 
 	private static Entity _buildTestEntity()
 	{
-		return new Entity(1, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, new EntityVolume(1.8f, 0.5f), 0.1f, Inventory.start(10).finish(), null, null);
+		MutableEntity mutable = MutableEntity.create(1);
+		return mutable.freeze();
 	}
 }
