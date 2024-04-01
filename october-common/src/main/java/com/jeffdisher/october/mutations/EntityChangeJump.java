@@ -15,9 +15,10 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeJump implements IMutationEntity
 {
 	/**
-	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block (1.47)).
+	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
+	 * and has a relatively "quick" feel in play testing).
 	 */
-	public static final float JUMP_FORCE = -0.6f * EntityChangeMove.GRAVITY_CHANGE_PER_SECOND;
+	public static final float JUMP_FORCE = -0.5f * EntityChangeMove.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
 
 	public static EntityChangeJump deserializeFromBuffer(ByteBuffer buffer)

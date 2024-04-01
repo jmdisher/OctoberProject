@@ -145,18 +145,19 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		
 		// The jump doesn't move, just sets the vector.
-		Assert.assertEquals(5.88f, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(EntityChangeJump.JUMP_FORCE, newEntity.newZVelocityPerSecond, 0.01f);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		
 		// Try a few falling steps to see how we sink back to the ground.
-		for (int i = 0; i < 10; ++i)
+		// (we will use 50ms updates to see the more detailed arc)
+		for (int i = 0; i < 18; ++i)
 		{
-			EntityChangeMove fall = new EntityChangeMove(newEntity.newLocation, 100L, 0.0f, 0.0f);
+			EntityChangeMove fall = new EntityChangeMove(newEntity.newLocation, 50L, 0.0f, 0.0f);
 			didApply = fall.applyChange(context, newEntity);
 			Assert.assertTrue(didApply);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
-		// The 11th step puts us back on the ground.
+		// The next step puts us back on the ground.
 		EntityChangeMove fall = new EntityChangeMove(newEntity.newLocation, 100L, 0.0f, 0.0f);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
