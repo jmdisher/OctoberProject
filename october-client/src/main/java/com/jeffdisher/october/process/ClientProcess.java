@@ -21,7 +21,7 @@ import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
-import com.jeffdisher.october.net.Packet_MutationEntityFromServer;
+import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -367,10 +367,10 @@ public class ClientProcess
 				// The client never receives this type.
 				throw Assert.unreachable();
 			}
-			else if (packet instanceof Packet_MutationEntityFromServer)
+			else if (packet instanceof Packet_EntityUpdateFromServer)
 			{
-				Packet_MutationEntityFromServer safe = (Packet_MutationEntityFromServer) packet;
-				_messagesToClientRunner.receivedChange(safe.entityId, safe.mutation);
+				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
+				_messagesToClientRunner.receivedEntityUpdate(safe.entityId, safe.update);
 			}
 			else if (packet instanceof Packet_BlockStateUpdate)
 			{

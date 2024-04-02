@@ -10,14 +10,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Only sent server->client in order to immediately set an entity to an authoritative state.
- * TODO:  In the future, this needs to be parameterized or carved up to only do partial updates.
+ * Updates the entity by setting its whole state.
  */
-public class MutationEntitySetEntity implements IMutationEntity
+public class MutationEntitySetEntity implements IEntityUpdate
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SET_ENTITY;
+	public static final EntityUpdateType TYPE = EntityUpdateType.WHOLE_ENTITY;
 
-	public static MutationEntitySetEntity deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationEntitySetEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
 		Entity entity = CodecHelpers.readEntity(buffer);
 		return new MutationEntitySetEntity(entity);
@@ -32,13 +31,7 @@ public class MutationEntitySetEntity implements IMutationEntity
 	}
 
 	@Override
-	public long getTimeCostMillis()
-	{
-		return 0L;
-	}
-
-	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
 	{
 		newEntity.newInventory.clearInventory();
 		for (Items items : _entity.inventory().items.values())
@@ -49,17 +42,16 @@ public class MutationEntitySetEntity implements IMutationEntity
 		newEntity.newSelectedItem = _entity.selectedItem();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
 		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
-		return true;
 	}
 
 	@Override
-	public MutationEntityType getType()
+	public EntityUpdateType getType()
 	{
 		return TYPE;
 	}
 
 	@Override
-	public void serializeToBuffer(ByteBuffer buffer)
+	public void serializeToNetworkBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeEntity(buffer, _entity);
 	}

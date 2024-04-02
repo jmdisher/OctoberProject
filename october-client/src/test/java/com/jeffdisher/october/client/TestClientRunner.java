@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
+import com.jeffdisher.october.mutations.EntityMutationWrapper;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -140,7 +141,7 @@ public class TestClientRunner
 		Assert.assertTrue(1L == network.commitLevel);
 		
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
-		network.client.receivedChange(clientId, network.toSend);
+		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
@@ -158,7 +159,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
 		Assert.assertTrue(2L == network.commitLevel);
-		network.client.receivedChange(clientId, network.toSend);
+		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));

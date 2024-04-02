@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
@@ -80,7 +81,7 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, delayedMutationSink, newChangeSink);
 		
-		Map<Integer, List<IMutationEntity>> resultantMutationsById = new HashMap<>();
+		Map<Integer, List<IEntityUpdate>> resultantMutationsById = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<Integer, List<IMutationEntity>> elt : changesToRun.entrySet())
 		{
@@ -129,8 +130,7 @@ public class CrowdProcessor
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedChanges
-			// Note that the resultantMutationsById may not be the input mutations, but will have an equivalent impact on the crowd.
-			, Map<Integer, List<IMutationEntity>> resultantMutationsById
+			, Map<Integer, List<IEntityUpdate>> entityUpdatesById
 			, int committedMutationCount
 	) {}
 }

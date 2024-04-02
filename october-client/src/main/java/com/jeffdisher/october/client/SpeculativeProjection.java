@@ -18,6 +18,7 @@ import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
+import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -110,7 +111,7 @@ public class SpeculativeProjection
 	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
 	 * @param addedEntities The list of entities which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
-	 * @param entityChanges The map of per-entity change queues which committed in this tick.
+	 * @param entityUpdates The map of per-entity state update lists which committed in this tick.
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
@@ -123,7 +124,7 @@ public class SpeculativeProjection
 			, List<Entity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, Map<Integer, List<IMutationEntity>> entityChanges
+			, Map<Integer, List<IEntityUpdate>> entityUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
@@ -138,8 +139,15 @@ public class SpeculativeProjection
 		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityChange BEFORE IMutation.
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, entityChanges);
+		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
+		Map<Integer, List<IMutationEntity>> convertedUpdates = new HashMap<>();
+		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
+		{
+			convertedUpdates.put(elt.getKey(), elt.getValue().stream().map(
+					(IEntityUpdate update) -> (IMutationEntity)new EntityUpdateWrapper(update)).toList()
+			);
+		}
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, convertedUpdates);
 		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
@@ -378,7 +386,7 @@ public class SpeculativeProjection
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
-		Set<Integer> locallyModifiedIds = new HashSet<>(group.resultantMutationsById().keySet());
+		Set<Integer> locallyModifiedIds = new HashSet<>(group.entityUpdatesById().keySet());
 		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
 		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty()); ++i)
 		{
@@ -482,7 +490,7 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, entityMutations);
 		_projectedCrowd.putAll(innerGroup.groupFragment());
-		modifiedEntityIds.addAll(innerGroup.resultantMutationsById().keySet());
+		modifiedEntityIds.addAll(innerGroup.entityUpdatesById().keySet());
 		return innerGroup;
 	}
 

@@ -19,7 +19,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -360,10 +360,10 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendChange(int clientId, int entityId, IMutationEntity change)
+		public synchronized void sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
-			updates.add(change);
+			updates.add(update);
 			this.notifyAll();
 		}
 		@Override

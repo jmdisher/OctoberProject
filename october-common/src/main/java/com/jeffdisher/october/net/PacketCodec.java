@@ -28,7 +28,7 @@ public class PacketCodec
 		Packet_CuboidFragment.register(_CODEC_TABLE);
 		Packet_Entity.register(_CODEC_TABLE);
 		Packet_MutationEntityFromClient.register(_CODEC_TABLE);
-		Packet_MutationEntityFromServer.register(_CODEC_TABLE);
+		Packet_EntityUpdateFromServer.register(_CODEC_TABLE);
 		Packet_EndOfTick.register(_CODEC_TABLE);
 		Packet_RemoveEntity.register(_CODEC_TABLE);
 		Packet_RemoveCuboid.register(_CODEC_TABLE);

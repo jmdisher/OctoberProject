@@ -12,7 +12,6 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
-import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -35,7 +34,6 @@ public class MutationEntityCodec
 		_CODEC_TABLE[MutationEntityPushItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityPushItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationEntityRequestItemPickUp.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityRequestItemPickUp.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationEntityStoreToInventory.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntityStoreToInventory.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationEntitySetEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySetEntity.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeIncrementalBlockBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeIncrementalBlockBreak.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeCraftInBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeCraftInBlock.deserializeFromBuffer(buffer);
 		

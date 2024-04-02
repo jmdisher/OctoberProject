@@ -39,10 +39,10 @@ public enum PacketType
 	 */
 	MUTATION_ENTITY_FROM_CLIENT,
 	/**
-	 * A mutation targeting an entity when sent from the server to a client.  This will include an entity ID which will
-	 * identify which entity is changing.
+	 * An entity update sent from the server to a client.  This will include an entity ID which will identify which
+	 * entity is being updated.
 	 */
-	MUTATION_ENTITY_FROM_SERVER,
+	ENTITY_UPDATE_FROM_SERVER,
 	/**
 	 * The packet sent by the server at the end of each logic game tick.  It includes the tick number but also the last
 	 * incorporated commit number from the target client.

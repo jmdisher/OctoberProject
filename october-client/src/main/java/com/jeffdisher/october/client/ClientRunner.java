@@ -13,6 +13,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -298,7 +299,7 @@ public class ClientRunner
 		private List<Entity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private Map<Integer, List<IMutationEntity>> _entityChanges = new HashMap<>();
+		private Map<Integer, List<IEntityUpdate>> _entityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
@@ -346,15 +347,15 @@ public class ClientRunner
 			_removedCuboids.add(address);
 		}
 		@Override
-		public void receivedChange(int entityId, IMutationEntity change)
+		public void receivedEntityUpdate(int entityId, IEntityUpdate update)
 		{
-			List<IMutationEntity> oneQueue = _entityChanges.get(entityId);
+			List<IEntityUpdate> oneQueue = _entityUpdates.get(entityId);
 			if (null == oneQueue)
 			{
 				oneQueue = new LinkedList<>();
-				_entityChanges.put(entityId, oneQueue);
+				_entityUpdates.put(entityId, oneQueue);
 			}
-			oneQueue.add(change);
+			oneQueue.add(update);
 		}
 		@Override
 		public void receivedBlockUpdate(MutationBlockSetBlock stateUpdate)
@@ -369,8 +370,8 @@ public class ClientRunner
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			Map<Integer, List<IMutationEntity>> entityChanges = new HashMap<>(_entityChanges);
-			_entityChanges.clear();
+			Map<Integer, List<IEntityUpdate>> entityChanges = new HashMap<>(_entityUpdates);
+			_entityUpdates.clear();
 			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
 			_cuboidUpdates.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);

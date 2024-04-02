@@ -17,6 +17,7 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -411,12 +412,12 @@ public class ServerRunner
 				if (state.knownEntities.contains(entityId))
 				{
 					// We know this entity so send any updated mutations.
-					List<IMutationEntity> mutations = snapshot.resultantMutationsById().get(entityId);
-					if (null != mutations)
+					List<IEntityUpdate> updates = snapshot.entityUpdatesById().get(entityId);
+					if (null != updates)
 					{
-						for (IMutationEntity mutation : mutations)
+						for (IEntityUpdate update : updates)
 						{
-							_network.sendChange(clientId, entityId, mutation);
+							_network.sendEntityUpdate(clientId, entityId, update);
 						}
 					}
 				}
