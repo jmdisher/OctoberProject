@@ -8,6 +8,7 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -33,6 +34,9 @@ public class EntityChangeCraft implements IMutationEntity
 
 	public EntityChangeCraft(Craft operation, long millisToApply)
 	{
+		Assert.assertTrue(null != operation);
+		Assert.assertTrue(millisToApply > 0L);
+		
 		_operation = operation;
 		_millisToApply = millisToApply;
 	}

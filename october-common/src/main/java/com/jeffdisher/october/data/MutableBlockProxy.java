@@ -125,6 +125,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	@Override
 	public void setCrafting(CraftOperation crafting)
 	{
+		// If this is non-null, we MUST have done at least some work.
+		if (null != crafting)
+		{
+			Assert.assertTrue(crafting.completedMillis() > 0L);
+		}
 		_setDataSpecial(AspectRegistry.CRAFTING, crafting);
 	}
 

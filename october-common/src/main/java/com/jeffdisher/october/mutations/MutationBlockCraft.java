@@ -13,6 +13,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -41,6 +42,10 @@ public class MutationBlockCraft implements IMutationBlock
 
 	public MutationBlockCraft(AbsoluteLocation location, Craft craft, long millisToApply)
 	{
+		Assert.assertTrue(null != location);
+		// Note that the crafting operation can be null to "continue what is already happening".
+		Assert.assertTrue(millisToApply > 0L);
+		
 		_location = location;
 		_craft = craft;
 		_millisToApply = millisToApply;
