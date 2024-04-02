@@ -17,6 +17,7 @@ import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
@@ -25,6 +26,7 @@ import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -192,9 +194,15 @@ public class ServerProcess
 			_serverReady(listener);
 		}
 		@Override
-		public void sendEntity(int clientId, Entity entity)
+		public void sendFullEntity(int clientId, Entity entity)
 		{
 			Packet_Entity packet = new Packet_Entity(entity);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendPartialEntity(int clientId, PartialEntity entity)
+		{
+			Packet_PartialEntity packet = new Packet_PartialEntity(entity);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

@@ -30,9 +30,15 @@ public enum PacketType
 	 */
 	CUBOID_FRAGMENT,
 	/**
-	 * A complete entity in the system.  This includes all details such as volume and inventory, as well.
+	 * A complete entity in the system.  This includes all details such as volume and inventory, as well.  This is
+	 * currently only used to tell the client about themselves.
 	 */
 	ENTITY,
+	/**
+	 * A partial entity in the system.  This is currently used for all the other entities on the server, other than this
+	 * client.
+	 */
+	PARTIAL_ENTITY,
 	/**
 	 * A mutation targeting an entity when sent from the client to the server.  Note that the server will always
 	 * interpret these mutations as targeting the client's own entity.

@@ -6,6 +6,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.PartialEntity;
 
 
 /**
@@ -58,7 +59,13 @@ public interface IClientAdapter
 		 * 
 		 * @param entity The entity.
 		 */
-		void receivedEntity(Entity entity);
+		void receivedFullEntity(Entity entity);
+		/**
+		 * Called when a partial entity is received from the server.
+		 * 
+		 * @param entity The entity.
+		 */
+		void receivedPartialEntity(PartialEntity entity);
 		/**
 		 * Called when an entity should be removed.
 		 * 

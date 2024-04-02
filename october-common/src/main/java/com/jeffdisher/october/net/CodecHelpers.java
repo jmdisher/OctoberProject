@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -164,6 +165,32 @@ public class CodecHelpers
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
+	}
+
+	public static PartialEntity readPartialEntity(ByteBuffer buffer)
+	{
+		int id = buffer.getInt();
+		EntityLocation location = _readEntityLocation(buffer);
+		float zVelocityPerSecond = buffer.getFloat();
+		EntityVolume volume = _readEntityVolume(buffer);
+		return new PartialEntity(id
+				, location
+				, zVelocityPerSecond
+				, volume
+		);
+	}
+
+	public static void writePartialEntity(ByteBuffer buffer, PartialEntity entity)
+	{
+		int id = entity.id();
+		EntityLocation location = entity.location();
+		float zVelocityPerSecond = entity.zVelocityPerSecond();
+		EntityVolume volume = entity.volume();
+		
+		buffer.putInt(id);
+		_writeEntityLocation(buffer, location);
+		buffer.putFloat(zVelocityPerSecond);
+		_writeEntityVolume(buffer, volume);
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)

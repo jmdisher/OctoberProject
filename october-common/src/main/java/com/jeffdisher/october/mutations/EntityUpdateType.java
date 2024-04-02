@@ -9,6 +9,7 @@ public enum EntityUpdateType
 	ERROR,
 	
 	WHOLE_ENTITY,
+	PARTIAL_ENTITY,
 	
 	END_OF_LIST,
 }

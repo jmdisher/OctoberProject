@@ -6,6 +6,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.PartialEntity;
 
 
 /**
@@ -29,7 +30,14 @@ public interface IServerAdapter
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
 	 * @param entity The entity to send.
 	 */
-	void sendEntity(int clientId, Entity entity);
+	void sendFullEntity(int clientId, Entity entity);
+	/**
+	 * Sends a partial entity to a given client.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param entity The entity to send.
+	 */
+	void sendPartialEntity(int clientId, PartialEntity entity);
 	/**
 	 * Tells the given client that an entity should be discarded.
 	 * 

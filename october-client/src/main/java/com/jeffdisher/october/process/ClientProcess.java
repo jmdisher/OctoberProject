@@ -21,6 +21,7 @@ import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
@@ -359,7 +360,13 @@ public class ClientProcess
 			else if (packet instanceof Packet_Entity)
 			{
 				Packet_Entity safe = (Packet_Entity)packet;
-				_messagesToClientRunner.receivedEntity(safe.entity);
+				_messagesToClientRunner.receivedFullEntity(safe.entity);
+				_background_entityLoaded(safe.entity.id());
+			}
+			else if (packet instanceof Packet_PartialEntity)
+			{
+				Packet_PartialEntity safe = (Packet_PartialEntity)packet;
+				_messagesToClientRunner.receivedPartialEntity(safe.entity);
 				_background_entityLoaded(safe.entity.id());
 			}
 			else if (packet instanceof Packet_MutationEntityFromClient)

@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -78,13 +79,13 @@ public class TestServerRunner
 		network.prepareForClient(clientId2);
 		server.clientConnected(clientId1);
 		server.clientConnected(clientId2);
-		Entity entity1_1 = network.waitForEntity(clientId1, clientId1);
+		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
-		Entity entity1_2 = network.waitForEntity(clientId1, clientId2);
+		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
 		Assert.assertNotNull(entity1_2);
-		Entity entity2_1 = network.waitForEntity(clientId2, clientId1);
+		PartialEntity entity2_1 = network.waitForPeerEntity(clientId2, clientId1);
 		Assert.assertNotNull(entity2_1);
-		Entity entity2_2 = network.waitForEntity(clientId2, clientId2);
+		Entity entity2_2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2_2);
 		server.clientDisconnected(1);
 		server.clientDisconnected(2);
@@ -102,7 +103,7 @@ public class TestServerRunner
 		int clientId = 1;
 		network.prepareForClient(clientId);
 		server.clientConnected(clientId);
-		Entity entity = network.waitForEntity(clientId, clientId);
+		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		// (we also want to wait until the server has loaded the cuboid, since this change reads them)
 		network.waitForCuboidAddedCount(clientId, 1);
@@ -136,7 +137,7 @@ public class TestServerRunner
 		int clientId = 1;
 		network.prepareForClient(clientId);
 		server.clientConnected(clientId);
-		Entity entity = network.waitForEntity(clientId, clientId);
+		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		
 		// Trickle in a few items to observe them showing up.
@@ -165,7 +166,7 @@ public class TestServerRunner
 		int clientId = 1;
 		network.prepareForClient(clientId);
 		server.clientConnected(clientId);
-		Entity entity = network.waitForEntity(clientId, clientId);
+		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		// We also want to wait for the world to load before we start moving (we run the local mutation against a fake
 		// cuboid so we will need the server to have loaded something to get the same answer).
@@ -210,13 +211,13 @@ public class TestServerRunner
 		network.prepareForClient(clientId2);
 		server.clientConnected(clientId1);
 		server.clientConnected(clientId2);
-		Entity entity1_1 = network.waitForEntity(clientId1, clientId1);
+		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
-		Entity entity1_2 = network.waitForEntity(clientId1, clientId2);
+		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
 		Assert.assertNotNull(entity1_2);
-		Entity entity2_1 = network.waitForEntity(clientId2, clientId1);
+		PartialEntity entity2_1 = network.waitForPeerEntity(clientId2, clientId1);
 		Assert.assertNotNull(entity2_1);
-		Entity entity2_2 = network.waitForEntity(clientId2, clientId2);
+		Entity entity2_2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2_2);
 		server.clientDisconnected(1);
 		
@@ -246,7 +247,7 @@ public class TestServerRunner
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
 		server.clientConnected(clientId1);
-		Entity entity1 = network.waitForEntity(clientId1, clientId1);
+		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
 		// We expect to see 6 cuboids loaded (not the -2).
@@ -277,7 +278,7 @@ public class TestServerRunner
 		// Connect.
 		network.prepareForClient(clientId1);
 		server.clientConnected(clientId1);
-		Entity entity1 = network.waitForEntity(clientId1, clientId1);
+		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(0, entity1.inventory().items.size());
 		
@@ -294,7 +295,7 @@ public class TestServerRunner
 		// Reconnect and verify that the change is visible.
 		network.prepareForClient(clientId1);
 		server.clientConnected(clientId1);
-		entity1 = network.waitForEntity(clientId1, clientId1);
+		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(1, entity1.inventory().items.size());
 		
@@ -315,7 +316,9 @@ public class TestServerRunner
 	private static class TestAdapter implements IServerAdapter
 	{
 		public IServerAdapter.IListener server;
-		public final Map<Integer, Map<Integer, Entity>> clientEntities = new HashMap<>();
+		// Currently, each client only sees a single full entity - itself.
+		public final Map<Integer, Entity> clientFullEntities = new HashMap<>();
+		public final Map<Integer, Map<Integer, PartialEntity>> clientPartialEntities = new HashMap<>();
 		public final Map<Integer, List<Object>> clientUpdates = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
@@ -329,10 +332,17 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized void sendEntity(int clientId, Entity entity)
+		public synchronized void sendFullEntity(int clientId, Entity entity)
+		{
+			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
+			this.clientFullEntities.put(clientId, entity);
+			this.notifyAll();
+		}
+		@Override
+		public synchronized void sendPartialEntity(int clientId, PartialEntity entity)
 		{
 			int entityId = entity.id();
-			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
 			Assert.assertFalse(clientMap.containsKey(entityId));
 			clientMap.put(entityId, entity);
 			this.notifyAll();
@@ -340,7 +350,8 @@ public class TestServerRunner
 		@Override
 		public synchronized void removeEntity(int clientId, int entityId)
 		{
-			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			// This should only ever apply to partials.
+			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
 			Assert.assertTrue(clientMap.containsKey(entityId));
 			clientMap.remove(entityId);
 			this.notifyAll();
@@ -399,18 +410,27 @@ public class TestServerRunner
 		}
 		public synchronized void prepareForClient(int clientId)
 		{
-			Assert.assertFalse(this.clientEntities.containsKey(clientId));
+			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
+			Assert.assertFalse(this.clientPartialEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidAddedCount.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidRemovedCount.containsKey(clientId));
-			this.clientEntities.put(clientId, new HashMap<>());
+			this.clientPartialEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
 			this.clientCuboidAddedCount.put(clientId, 0);
 			this.clientCuboidRemovedCount.put(clientId, 0);
 		}
-		public synchronized Entity waitForEntity(int clientId, int entityId) throws InterruptedException
+		public synchronized Entity waitForThisEntity(int clientId) throws InterruptedException
 		{
-			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			while (!this.clientFullEntities.containsKey(clientId))
+			{
+				this.wait();
+			}
+			return this.clientFullEntities.get(clientId);
+		}
+		public synchronized PartialEntity waitForPeerEntity(int clientId, int entityId) throws InterruptedException
+		{
+			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
 			while (!clientMap.containsKey(entityId))
 			{
 				this.wait();
@@ -419,7 +439,8 @@ public class TestServerRunner
 		}
 		public synchronized void waitForEntityRemoval(int clientId, int entityId) throws InterruptedException
 		{
-			Map<Integer, Entity> clientMap = this.clientEntities.get(clientId);
+			// This only makes sense for partials.
+			Map<Integer, PartialEntity> clientMap = this.clientPartialEntities.get(clientId);
 			while (clientMap.containsKey(entityId))
 			{
 				this.wait();
@@ -450,7 +471,8 @@ public class TestServerRunner
 		}
 		public synchronized void resetClient(int clientId)
 		{
-			this.clientEntities.remove(clientId);
+			this.clientFullEntities.remove(clientId);
+			this.clientPartialEntities.remove(clientId);
 			this.clientUpdates.remove(clientId);
 			this.clientCuboidAddedCount.remove(clientId);
 			this.clientCuboidRemovedCount.remove(clientId);

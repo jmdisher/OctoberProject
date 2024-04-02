@@ -21,12 +21,14 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
+import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
 
@@ -417,14 +419,34 @@ public class ServerRunner
 					if (null != newEntity)
 					{
 						// TODO:  This should only send the changed data AND only what is visible to this client.
-						IEntityUpdate update = new MutationEntitySetEntity(newEntity);
+						IEntityUpdate update;
+						if (clientId == entityId)
+						{
+							// The client has the full entity so send it.
+							update = new MutationEntitySetEntity(newEntity);
+						}
+						else
+						{
+							// The client will have a partial so just send that.
+							update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(newEntity));
+						}
 						_network.sendEntityUpdate(clientId, entityId, update);
 					}
 				}
 				else
 				{
 					// We don't know this entity so send them.
-					_network.sendEntity(clientId, entry.getValue());
+					// See if this is "them" or someone else.
+					Entity entity = entry.getValue();
+					if (clientId == entityId)
+					{
+						_network.sendFullEntity(clientId, entity);
+					}
+					else
+					{
+						PartialEntity partial = PartialEntity.fromEntity(entity);
+						_network.sendPartialEntity(clientId, partial);
+					}
 					state.knownEntities.add(entityId);
 				}
 			}

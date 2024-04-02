@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -296,7 +297,8 @@ public class ClientRunner
 	{
 		// Since we get lots of small callbacks, we buffer them here, in the network thread, before passing back the
 		// finished tick data (just avoids a lot of tiny calls between threads to perform the same trivial action).
-		private List<Entity> _addedEntities = new ArrayList<>();
+		private Entity _thisEntity = null;
+		private List<PartialEntity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
 		private Map<Integer, List<IEntityUpdate>> _entityUpdates = new HashMap<>();
@@ -326,7 +328,14 @@ public class ClientRunner
 			});
 		}
 		@Override
-		public void receivedEntity(Entity entity)
+		public void receivedFullEntity(Entity entity)
+		{
+			// We currently assume that this is only this client, directly.
+			Assert.assertTrue(null == _thisEntity);
+			_thisEntity = entity;
+		}
+		@Override
+		public void receivedPartialEntity(PartialEntity entity)
 		{
 			// Just add this to our local collection.
 			_addedEntities.add(entity);
@@ -366,7 +375,15 @@ public class ClientRunner
 		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded)
 		{
 			// Package up copies of everything we put together here and reset out network-side buffers.
-			List<Entity> addedEntities = new ArrayList<>(_addedEntities);
+			// Note that we put all the entities together since the client just plumb this into the
+			// SpeculativeProjection, which generalizes them into CrowdProcessor.
+			List<Entity> addedEntities = new ArrayList<>();
+			if (null != _thisEntity)
+			{
+				addedEntities.add(_thisEntity);
+				_thisEntity = null;
+			}
+			addedEntities.addAll(_addedEntities.stream().map((PartialEntity partial) -> Entity.fromPartial(partial)).toList());
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();

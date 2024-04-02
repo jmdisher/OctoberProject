@@ -22,5 +22,20 @@ public record Entity(int id
 		, byte health
 		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
 		, byte food
-) {
+)
+{
+	public static Entity fromPartial(PartialEntity entity)
+	{
+		return new Entity(entity.id()
+				, entity.location()
+				, entity.zVelocityPerSecond()
+				, entity.volume()
+				, 0.0f
+				, Inventory.start(0).finish()
+				, null
+				, null
+				, (byte)0
+				, (byte)0
+		);
+	}
 }
