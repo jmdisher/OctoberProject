@@ -23,7 +23,6 @@ import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -357,8 +356,7 @@ public class TickRunner
 		{
 			// Rebuild the immutable snapshot of the state.
 			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
-			// Stitch together the maps of completed mutations within this tick.
-			Map<Integer, List<IEntityUpdate>> entityUpdatesById = new HashMap<>();
+			Map<Integer, Entity> updatedEntities = new HashMap<>();
 			int committedEntityMutationCount = 0;
 			Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 			int committedCuboidMutationCount = 0;
@@ -377,8 +375,7 @@ public class TickRunner
 				mutableCrowdState.putAll(fragment.crowd.groupFragment());
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
-				// Collect the mutations.
-				entityUpdatesById.putAll(fragment.crowd.entityUpdatesById());
+				updatedEntities.putAll(fragment.crowd.updatedEntities());
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
 				committedCuboidMutationCount += fragment.world.committedMutationCount();
@@ -422,7 +419,7 @@ public class TickRunner
 					, Collections.unmodifiableMap(mutableCrowdState)
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					, Collections.unmodifiableMap(mutableWorldState)
-					, Collections.unmodifiableMap(entityUpdatesById)
+					, Collections.unmodifiableMap(updatedEntities)
 					, committedEntityMutationCount
 					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
 					, committedCuboidMutationCount
@@ -780,7 +777,7 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
-			, Map<Integer, List<IEntityUpdate>> entityUpdatesById
+			, Map<Integer, Entity> updatedEntities
 			, int committedEntityMutationCount
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
 			, int committedCuboidMutationCount

@@ -20,6 +20,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
@@ -411,14 +412,13 @@ public class ServerRunner
 				int entityId = entry.getKey();
 				if (state.knownEntities.contains(entityId))
 				{
-					// We know this entity so send any updated mutations.
-					List<IEntityUpdate> updates = snapshot.entityUpdatesById().get(entityId);
-					if (null != updates)
+					// We know this entity so generate the update for this client.
+					Entity newEntity = snapshot.updatedEntities().get(entityId);
+					if (null != newEntity)
 					{
-						for (IEntityUpdate update : updates)
-						{
-							_network.sendEntityUpdate(clientId, entityId, update);
-						}
+						// TODO:  This should only send the changed data AND only what is visible to this client.
+						IEntityUpdate update = new MutationEntitySetEntity(newEntity);
+						_network.sendEntityUpdate(clientId, entityId, update);
 					}
 				}
 				else

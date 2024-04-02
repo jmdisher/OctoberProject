@@ -386,7 +386,7 @@ public class SpeculativeProjection
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
-		Set<Integer> locallyModifiedIds = new HashSet<>(group.entityUpdatesById().keySet());
+		Set<Integer> locallyModifiedIds = new HashSet<>(group.updatedEntities().keySet());
 		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
 		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty()); ++i)
 		{
@@ -490,7 +490,7 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, entityMutations);
 		_projectedCrowd.putAll(innerGroup.groupFragment());
-		modifiedEntityIds.addAll(innerGroup.entityUpdatesById().keySet());
+		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
 		return innerGroup;
 	}
 

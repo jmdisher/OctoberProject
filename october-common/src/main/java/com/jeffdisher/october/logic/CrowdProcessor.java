@@ -10,10 +10,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -81,7 +79,7 @@ public class CrowdProcessor
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, delayedMutationSink, newChangeSink);
 		
-		Map<Integer, List<IEntityUpdate>> resultantMutationsById = new HashMap<>();
+		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<Integer, List<IMutationEntity>> elt : changesToRun.entrySet())
 		{
@@ -110,18 +108,17 @@ public class CrowdProcessor
 				Entity newEntity = mutable.freeze();
 				fragment.put(id, newEntity);
 				
-				// If there was a change, we want to send the entity as the mutation.
+				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 				if (newEntity != entity)
 				{
-					MutationEntitySetEntity setEntity = new MutationEntitySetEntity(newEntity);
-					resultantMutationsById.put(id, List.of(setEntity));
+					updatedEntities.put(id, newEntity);
 				}
 			}
 		}
 		return new ProcessedGroup(fragment
 				, exportedMutations
 				, exportedChanges
-				, resultantMutationsById
+				, updatedEntities
 				, committedMutationCount
 		);
 	}
@@ -130,7 +127,8 @@ public class CrowdProcessor
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<IMutationBlock> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedChanges
-			, Map<Integer, List<IEntityUpdate>> entityUpdatesById
+			// Note that we will only pass back a new Entity object if it changed.
+			, Map<Integer, Entity> updatedEntities
 			, int committedMutationCount
 	) {}
 }
