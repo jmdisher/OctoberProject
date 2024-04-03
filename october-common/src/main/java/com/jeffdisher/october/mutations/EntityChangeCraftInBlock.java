@@ -9,6 +9,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -39,6 +40,10 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 
 	public EntityChangeCraftInBlock(AbsoluteLocation targetBlock, Craft craft, long millisToApply)
 	{
+		Assert.assertTrue(null != targetBlock);
+		// Note that craft can be null if it just means "continue".
+		Assert.assertTrue(millisToApply > 0L);
+		
 		_targetBlock = targetBlock;
 		_craft = craft;
 		_millisToApply = millisToApply;

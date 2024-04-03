@@ -37,6 +37,12 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ClientRunner
 {
+	/**
+	 * Most operations will only pass if at least this much time has passed.  This avoids corner-cases where some events
+	 * might meaninglessly happen at the same time or the time interval is so small the packet would be a waste.
+	 */
+	public static final long TIME_GATE_MILLIS = 10L;
+
 	private final IClientAdapter _network;
 	private final SpeculativeProjection.IProjectionListener _projectionListener;
 	private final IListener _clientListener;
@@ -78,6 +84,7 @@ public class ClientRunner
 	 */
 	public void commonApplyEntityAction(IMutationEntity change, long currentTimeMillis)
 	{
+		// Some of these events take no real time so we just pass them through, no matter how much time has passed.
 		_applyLocalChange(change, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
@@ -90,8 +97,13 @@ public class ClientRunner
 	 */
 	public void runPendingCalls(long currentTimeMillis)
 	{
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Only apply this if it has been running for a while.
+		if (millisToApply > TIME_GATE_MILLIS)
+		{
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
 	}
 
 	/**
@@ -105,7 +117,7 @@ public class ClientRunner
 	{
 		long millisToApply = (currentTimeMillis - _lastCallMillis);
 		// Only apply this if it has been running for a while.
-		if (millisToApply > 10L)
+		if (millisToApply > TIME_GATE_MILLIS)
 		{
 			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
 			_applyLocalChange(hit, currentTimeMillis);
@@ -127,45 +139,25 @@ public class ClientRunner
 	 */
 	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
 	{
-		// See if the horizontal movement is even feasible.
-		EntityLocation previous = _localEntityProjection.location();
-		EntityVolume volume = _localEntityProjection.volume();
-		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
-		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.projectionBlockLoader, validated, volume))
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Make sure that at least some time has passed.
+		if (millisToApply > 0L)
 		{
-			// Adjust the coordinates.
-			if (xDistance > 0.0f)
+			// See if the horizontal movement is even feasible.
+			EntityLocation previous = _localEntityProjection.location();
+			EntityLocation validated = _findMovementTarget(xDistance, yDistance, previous);
+			
+			// Now, apply the move with validated the location.
+			float thisX = 0.0f;
+			float thisY = 0.0f;
+			if (null != validated)
 			{
-				validated = SpatialHelpers.locationTouchingEastWall(_projection.projectionBlockLoader, validated, volume, previous.x());
+				thisX = validated.x() - previous.x();
+				thisY = validated.y() - previous.y();
 			}
-			else if (xDistance < 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingWestWall(_projection.projectionBlockLoader, validated, volume, previous.x());
-			}
-			else if (yDistance > 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingNorthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
-			}
-			else if (yDistance < 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingSouthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
-			}
-			else
-			{
-				validated = null;
-			}
+			_commonMove(thisX, thisY, currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
 		}
-		
-		// Now, apply the move with validated the location.
-		float thisX = 0.0f;
-		float thisY = 0.0f;
-		if (null != validated)
-		{
-			thisX = validated.x() - previous.x();
-			thisY = validated.y() - previous.y();
-		}
-		_commonMove(thisX, thisY, currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -177,8 +169,13 @@ public class ClientRunner
 	 */
 	public void craft(Craft operation, long currentTimeMillis)
 	{
-		_commonCraft(operation, currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Only apply this if it has been running for a while.
+		if (millisToApply > TIME_GATE_MILLIS)
+		{
+			_commonCraft(operation, currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
 	}
 
 	/**
@@ -192,12 +189,16 @@ public class ClientRunner
 	 */
 	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
 	{
-		// We will account for how much time we have waited since the last action.
 		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		EntityChangeCraftInBlock craftOperation = new EntityChangeCraftInBlock(block, operation, millisToApply);
-		_applyLocalChange(craftOperation, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
-		_lastCallMillis = currentTimeMillis;
+		// Only apply this if it has been running for a while.
+		if (millisToApply > TIME_GATE_MILLIS)
+		{
+			// We will account for how much time we have waited since the last action.
+			EntityChangeCraftInBlock craftOperation = new EntityChangeCraftInBlock(block, operation, millisToApply);
+			_applyLocalChange(craftOperation, currentTimeMillis);
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
 	}
 
 	/**
@@ -207,17 +208,22 @@ public class ClientRunner
 	 */
 	public void doNothing(long currentTimeMillis)
 	{
-		if (null != _localEntityProjection.localCraftOperation())
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Only apply this if it has been running for a while.
+		if (millisToApply > TIME_GATE_MILLIS)
 		{
-			// We are crafting something, so continue with that.
-			_commonCraft(_localEntityProjection.localCraftOperation().selectedCraft(), currentTimeMillis);
+			if (null != _localEntityProjection.localCraftOperation())
+			{
+				// We are crafting something, so continue with that.
+				_commonCraft(_localEntityProjection.localCraftOperation().selectedCraft(), currentTimeMillis);
+			}
+			else
+			{
+				// Nothing is happening so just account for passive movement.
+				_commonMove(0.0f, 0.0f, currentTimeMillis);
+			}
+			_lastCallMillis = currentTimeMillis;
 		}
-		else
-		{
-			// Nothing is happening so just account for passive movement.
-			_commonMove(0.0f, 0.0f, currentTimeMillis);
-		}
-		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -290,6 +296,37 @@ public class ClientRunner
 		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
 		_applyLocalChange(craftOperation, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	private EntityLocation _findMovementTarget(float xDistance, float yDistance, EntityLocation previous)
+	{
+		EntityVolume volume = _localEntityProjection.volume();
+		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
+		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.projectionBlockLoader, validated, volume))
+		{
+			// Adjust the coordinates.
+			if (xDistance > 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingEastWall(_projection.projectionBlockLoader, validated, volume, previous.x());
+			}
+			else if (xDistance < 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingWestWall(_projection.projectionBlockLoader, validated, volume, previous.x());
+			}
+			else if (yDistance > 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingNorthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
+			}
+			else if (yDistance < 0.0f)
+			{
+				validated = SpatialHelpers.locationTouchingSouthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
+			}
+			else
+			{
+				validated = null;
+			}
+		}
+		return validated;
 	}
 
 

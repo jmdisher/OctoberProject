@@ -47,6 +47,7 @@ public class TestClientRunner
 	@Test
 	public void testInitialConnection() throws Throwable
 	{
+		long currentTimeMillis = 100L;
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
 		ClientListener clientListener = new ClientListener();
@@ -55,20 +56,24 @@ public class TestClientRunner
 		// Connect them.
 		int clientId = 1;
 		network.client.adapterConnected(clientId);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity.
 		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 	}
 
@@ -81,24 +86,29 @@ public class TestClientRunner
 		ClientRunner runner = new ClientRunner(network, projection, clientListener);
 		
 		// Connect them.
+		long currentTimeMillis = 100L;
 		int clientId = 1;
 		network.client.adapterConnected(clientId);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them their own entity and another one.
 		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
 		network.client.receivedPartialEntity(PartialEntity.fromEntity(MutableEntity.create(2).freeze()));
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
 		network.client.receivedEndOfTick(1L, 0L);
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
 		Assert.assertEquals(2, projection.loadedEnties.get(2).id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
-		runner.runPendingCalls(System.currentTimeMillis());
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 	}
 
@@ -119,6 +129,7 @@ public class TestClientRunner
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity and a cuboid.
@@ -133,6 +144,7 @@ public class TestClientRunner
 		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 100 ms each time.
 		currentTimeMillis += 100L;
 		runner.hitBlock(changeLocation, currentTimeMillis);
+		currentTimeMillis += 100L;
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
@@ -187,9 +199,10 @@ public class TestClientRunner
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
-		long currentTimeMillis = 1L;
+		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.create(clientId);
 		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
@@ -225,9 +238,10 @@ public class TestClientRunner
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
-		long currentTimeMillis = 1L;
+		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
@@ -237,12 +251,14 @@ public class TestClientRunner
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.blocks.STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Jump and then try to move to the West and observe the updated location.
 		EntityChangeJump jumpChange = new EntityChangeJump();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.moveHorizontal(-0.2f, 0.0f, currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// See where they are - we expect them to have jumped slightly, despite hitting the wall.
 		EntityLocation location = projection.loadedEnties.get(clientId).location();
@@ -261,9 +277,10 @@ public class TestClientRunner
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
-		long currentTimeMillis = 1L;
+		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		// We want to position ourselves above the ground and drop onto the ground and observe that we no longer move.
 		MutableEntity mutable = MutableEntity.create(clientId);
@@ -306,9 +323,10 @@ public class TestClientRunner
 		
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
-		long currentTimeMillis = 1L;
+		long currentTimeMillis = 100L;
 		network.client.adapterConnected(clientId);
 		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.create(clientId);
 		mutable.newInventory.addAllItems(ENV.items.LOG, 2);

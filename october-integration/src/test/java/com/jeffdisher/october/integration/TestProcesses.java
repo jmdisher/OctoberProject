@@ -172,16 +172,19 @@ public class TestProcesses
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
 		cuboidLoader.preload(cuboid);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> 100L);
 		
 		// Connect a client and wait to receive their entity.
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		long tick = client.waitForLocalEntity(currentTimeMillis);
+		currentTimeMillis += 100L;
 		// Wait until we have received the entity and cuboid.
 		client.waitForTick(tick + 3L, currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		client.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertNotNull(listener.entities.get("test".hashCode()));
 		Assert.assertNotNull(listener.cuboids.get(cuboid.getCuboidAddress()));
 		
@@ -286,6 +289,7 @@ public class TestProcesses
 	public void floodMovementCommands() throws Throwable
 	{
 		// Send lots of movement commands since the client should be disconnected.
+		long currentTimeMillis = 100L;
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		
 		// Load a cuboid.
@@ -296,21 +300,25 @@ public class TestProcesses
 		// We will connect a client just to watch what happens to the noisy one.
 		_ClientListener passiveListener = new _ClientListener();
 		ClientProcess passiveClient = new ClientProcess(passiveListener, InetAddress.getLocalHost(), PORT, "passive");
-		passiveClient.waitForLocalEntity(System.currentTimeMillis());
+		passiveClient.waitForLocalEntity(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
 		// Let some time pass and verify the data is loaded.
-		long startTick = client.waitForLocalEntity(System.currentTimeMillis());
+		long startTick = client.waitForLocalEntity(currentTimeMillis);
+		currentTimeMillis += 100L;
 		// Wait until we have received the entity and cuboid.
-		client.waitForTick(startTick + 3L, System.currentTimeMillis());
+		client.waitForTick(startTick + 3L, currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertEquals(1, listener.cuboids.size());
 		
 		// Verify that the passive sees the noisy client.
-		passiveClient.runPendingCalls(System.currentTimeMillis());
+		passiveClient.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(2, passiveListener.entities.size());
 		
 		// Send 30 move commands (since the limit is 20, there is little chance that we will observe the flakiness of this approach).
@@ -320,22 +328,26 @@ public class TestProcesses
 		{
 			// Note that we need to send using the low-level sendAction to bypass the ClientRunner checks and internal back-pressure in order to see how the server handles this.
 			EntityChangeMove change = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-			client.sendAction(change, System.currentTimeMillis());
+			client.sendAction(change, currentTimeMillis);
+			currentTimeMillis += 100L;
 			oldLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z());
 		}
 		// Note that the client will only flush these calls when it receives end of tick so wait for some ticks to happen so that we should see and end reach the client.
 		server.waitForTicksToPass(2L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Wait for the server to process.
 		server.waitForTicksToPass(10L);
-		client.runPendingCalls(System.currentTimeMillis());
+		client.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// Make sure that the client connection was dropped.
 		Assert.assertEquals(1, listener.connectionClosedCount);
 		
 		// We should see the client no longer present on the passive.
-		passiveClient.runPendingCalls(System.currentTimeMillis());
+		passiveClient.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
 		Assert.assertEquals(1, passiveListener.entities.size());
 		
 		// Disconnect the client (should be redundant).
