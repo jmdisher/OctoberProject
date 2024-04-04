@@ -9,8 +9,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -72,6 +75,8 @@ public class NetworkLayer
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
 	private IdentityHashMap<PeerToken, Packet> _shared_outgoingPackets;
+	private final IdentityHashMap<PeerToken, List<Packet>> _shared_incomingPackets;
+	private Set<PeerToken> _shared_resumeReads;
 	private Queue<PeerToken> _shared_disconnectRequests;
 	
 	// Server mode details.
@@ -95,6 +100,8 @@ public class NetworkLayer
 		// Initialize shared data.
 		_keepRunning = true;
 		_shared_outgoingPackets = null;
+		_shared_incomingPackets = new IdentityHashMap<>();
+		_shared_resumeReads = null;
 		_shared_disconnectRequests = null;
 		
 		// Do any server-specific or client-specific start-up.
@@ -193,6 +200,28 @@ public class NetworkLayer
 	}
 
 	/**
+	 * Retrieves the messages received from the given peer.  Calling this will drain all the buffered packets and allow
+	 * the network layer to resume receiving data from the peer.
+	 * 
+	 * @param peer The target of the message.
+	 */
+	public synchronized List<Packet> receiveMessages(PeerToken peer)
+	{
+		// This should only be called if there are packets to receive.
+		List<Packet> packets = _shared_incomingPackets.remove(peer);
+		Assert.assertTrue(packets.size() > 0);
+		
+		// We need to record that this peer should start reading again.
+		if (null == _shared_resumeReads)
+		{
+			_shared_resumeReads = new HashSet<>();
+		}
+		_shared_resumeReads.add(peer);
+		_selector.wakeup();
+		return packets;
+	}
+
+	/**
 	 * Forcibly disconnects the referenced peer.
 	 * 
 	 * @param token The peer to disconnect.
@@ -220,18 +249,46 @@ public class NetworkLayer
 				throw Assert.unexpected(e);
 			}
 			// We are often just woken up to update the set of interested operations so this may be empty.
+			Map<PeerToken, List<Packet>> peersAwaitingRead = null;
 			if (selectedKeyCount > 0) {
-				_backgroundProcessSelectedKeys();
+				peersAwaitingRead = _backgroundProcessSelectedKeys();
 			}
 			// Check the handoff map.
-			IdentityHashMap<PeerToken, Packet> packetsToSerialize = null;
-			Queue<PeerToken> peersToDisconnect = null;
+			IdentityHashMap<PeerToken, Packet> packetsToSerialize;
+			Queue<PeerToken> peersToDisconnect;
+			Set<PeerToken> readsToResume;
 			synchronized (this)
 			{
 				packetsToSerialize = _shared_outgoingPackets;
 				_shared_outgoingPackets = null;
 				peersToDisconnect = _shared_disconnectRequests;
 				_shared_disconnectRequests = null;
+				readsToResume = _shared_resumeReads;
+				_shared_resumeReads = null;
+				
+				if (null != peersAwaitingRead)
+				{
+					// We want to pass back the packets we read, but we also want to prove that we didn't read from something already awaiting read.
+					for (Map.Entry<PeerToken, List<Packet>> elt : peersAwaitingRead.entrySet())
+					{
+						PeerToken peer = elt.getKey();
+						Assert.assertTrue(!_shared_incomingPackets.containsKey(peer));
+						_shared_incomingPackets.put(peer, elt.getValue());
+						// We also want to notify that they have data to read.
+						// (we could walk this outside of the monitor but avoiding the redundant walk is probably better)
+						_listener.peerReadyForRead(peer);
+					}
+				}
+			}
+			// Re-enable reads.
+			if (null != readsToResume)
+			{
+				for (PeerToken peer : readsToResume)
+				{
+					_PeerState client = _connectedPeers.get(peer);
+					Assert.assertTrue(0 == (client.key.interestOps() & SelectionKey.OP_READ));
+					client.key.interestOps(client.key.interestOps() | SelectionKey.OP_READ);
+				}
 			}
 			// First, disconnect anyone we can.
 			if (null != peersToDisconnect)
@@ -276,8 +333,9 @@ public class NetworkLayer
 		_connectedPeers.clear();
 	}
 
-	private void _backgroundProcessSelectedKeys()
+	private Map<PeerToken, List<Packet>> _backgroundProcessSelectedKeys()
 	{
+		Map<PeerToken, List<Packet>> peersWaitingOnPacketRead = new IdentityHashMap<>();
 		Set<SelectionKey> keys = _selector.selectedKeys();
 		for (SelectionKey key : keys)
 		{
@@ -294,8 +352,14 @@ public class NetworkLayer
 				// See what operation we wanted to perform.
 				boolean shouldClose = false;
 				if (key.isReadable()) {
-					boolean didRead = _backgroundProcessReadableKey(key, state);
-					shouldClose = !didRead;
+					List<Packet> parsedPacketsFromRead = _backgroundProcessReadableKey(key, state);
+					// This list is often empty but null means a failure.
+					shouldClose = (null == parsedPacketsFromRead);
+					// See if this should be communicated back as waiting for packet read.
+					if ((null != parsedPacketsFromRead) && !parsedPacketsFromRead.isEmpty())
+					{
+						peersWaitingOnPacketRead.put(state, parsedPacketsFromRead);
+					}
 				}
 				if (key.isWritable()) {
 					boolean didWrite = _backgroundProcessWritableKey(key, state);
@@ -308,6 +372,7 @@ public class NetworkLayer
 			}
 		}
 		keys.clear();
+		return peersWaitingOnPacketRead;
 	}
 
 	private void _backgroundProcessAcceptorKey(SelectionKey key)
@@ -348,7 +413,7 @@ public class NetworkLayer
 		_listener.peerConnected(newClient);
 	}
 
-	private boolean _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
+	private List<Packet> _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
 	{
 		// Read the available bytes into our local buffer.
 		boolean didRead = false;
@@ -370,22 +435,32 @@ public class NetworkLayer
 			didRead = false;
 		}
 		
+		// We will return non-null if we succeeded in the read and it will contain packets if we should stop reading until consumed.
+		List<Packet> packets = null;
 		if (didRead)
 		{
 			// See if we can parse the data in the buffer.
 			state.incoming.flip();
+			
+			packets = new ArrayList<>();
 			Packet packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
 			while (null != packet)
 			{
-				_listener.packetReceived(state, packet);
+				packets.add(packet);
 				packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
 			}
 			state.incoming.compact();
 			
 			// We never want to stop reading since the buffer should never fill (we should process the opcode before).
 			Assert.assertTrue(state.incoming.hasRemaining());
+			
+			// If we parsed any packets, stop reading until they are consumed.
+			if (!packets.isEmpty())
+			{
+				state.key.interestOps(state.key.interestOps() & ~SelectionKey.OP_READ);
+			}
 		}
-		return didRead;
+		return packets;
 	}
 
 	private boolean _backgroundProcessWritableKey(SelectionKey key, _PeerState state)
@@ -479,12 +554,11 @@ public class NetworkLayer
 		 */
 		void peerReadyForWrite(PeerToken token);
 		/**
-		 * Called when a new message has arrived from a peer.
+		 * Called when the connection to a peer has messages to read.
 		 * 
 		 * @param token The peer's opaque token.
-		 * @param packet The packet from the peer.
 		 */
-		void packetReceived(PeerToken token, Packet packet);
+		void peerReadyForRead(PeerToken token);
 	}
 
 	/**

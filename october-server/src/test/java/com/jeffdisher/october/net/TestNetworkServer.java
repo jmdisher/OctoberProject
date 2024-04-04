@@ -40,13 +40,13 @@ public class TestNetworkServer
 				return id;
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void networkReadReady(int id)
 			{
 				// Should not happen in this test.
 				Assert.fail();
 			}
 			@Override
-			public void networkReady(int id)
+			public void networkWriteReady(int id)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -85,16 +85,20 @@ public class TestNetworkServer
 				return name.hashCode();
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void networkReadReady(int id)
 			{
-				// We only expect chat messages.
-				Packet_Chat chat = (Packet_Chat) packet;
-				Assert.assertEquals("Client 2".hashCode(), id);
-				_messagesFor1.add(chat.message);
-				_handle();
+				List<Packet> packets = holder[0].readBufferedPackets(id);
+				for (Packet packet : packets)
+				{
+					// We only expect chat messages.
+					Packet_Chat chat = (Packet_Chat) packet;
+					Assert.assertEquals("Client 2".hashCode(), id);
+					_messagesFor1.add(chat.message);
+					_handle();
+				}
 			}
 			@Override
-			public void networkReady(int id)
+			public void networkWriteReady(int id)
 			{
 				_isReady1 = true;
 				_handle();

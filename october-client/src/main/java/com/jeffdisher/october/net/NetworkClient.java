@@ -2,6 +2,7 @@ package com.jeffdisher.october.net;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.List;
 
 import com.jeffdisher.october.utils.Assert;
 
@@ -60,28 +61,33 @@ public class NetworkClient
 				}
 			}
 			@Override
-			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
+			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				if (_token.didFinishHandshake())
+				List<Packet> packets = _network.receiveMessages(token);
+				Assert.assertTrue(!packets.isEmpty());
+				for (Packet packet : packets)
 				{
-					// Pass this on to the listener.
-					_listener.packetReceived(packet);
-				}
-				else
-				{
-					// We are expected to consume this as the completion of the handshake.
-					// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
-					Assert.assertTrue(PacketType.SERVER_SEND_CONFIGURATION == packet.type);
-					Packet_ServerSendConfiguration safe = (Packet_ServerSendConfiguration) packet;
-					int assignedId = safe.clientId;
-					_token.setHandshakeCompleted(assignedId);
-					// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.
-					_listener.handshakeCompleted(assignedId);
-					
-					// See if the network is ready yet (since there was likely a race here).
-					if (_token.networkIsReady)
+					if (_token.didFinishHandshake())
 					{
-						_listener.networkReady();
+						// Pass this on to the listener.
+						_listener.packetReceived(packet);
+					}
+					else
+					{
+						// We are expected to consume this as the completion of the handshake.
+						// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
+						Assert.assertTrue(PacketType.SERVER_SEND_CONFIGURATION == packet.type);
+						Packet_ServerSendConfiguration safe = (Packet_ServerSendConfiguration) packet;
+						int assignedId = safe.clientId;
+						_token.setHandshakeCompleted(assignedId);
+						// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.
+						_listener.handshakeCompleted(assignedId);
+						
+						// See if the network is ready yet (since there was likely a race here).
+						if (_token.networkIsReady)
+						{
+							_listener.networkReady();
+						}
 					}
 				}
 			}

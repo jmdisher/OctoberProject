@@ -3,6 +3,7 @@ package com.jeffdisher.october.process;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.LongSupplier;
@@ -126,24 +127,24 @@ public class ServerProcess
 		_ClientBuffer buffer = _clients.get(clientId);
 		if (buffer.outgoing.isEmpty())
 		{
-			Assert.assertTrue(!buffer.isNetworkReady);
-			buffer.isNetworkReady = true;
+			Assert.assertTrue(!buffer.isNetworkWriteable);
+			buffer.isNetworkWriteable = true;
 		}
 		else
 		{
 			Packet next = buffer.outgoing.poll();
 			_network.sendMessage(clientId, next);
-			buffer.isNetworkReady = false;
+			buffer.isNetworkWriteable = false;
 		}
 	}
 
 	private synchronized void _bufferPacket(int clientId, Packet packet)
 	{
 		_ClientBuffer buffer = _clients.get(clientId);
-		if (buffer.isNetworkReady)
+		if (buffer.isNetworkWriteable)
 		{
 			_network.sendMessage(clientId, packet);
-			buffer.isNetworkReady = false;
+			buffer.isNetworkWriteable = false;
 		}
 		else
 		{
@@ -155,6 +156,52 @@ public class ServerProcess
 	{
 		_latestTickNumber = tickNumber;
 		this.notifyAll();
+	}
+
+	private synchronized void _setClientReadable(int clientId)
+	{
+		_ClientBuffer buffer = _clients.get(clientId);
+		// This can only be called if we aren't already readable.
+		Assert.assertTrue(!buffer.isNetworkReadable);
+		buffer.isNetworkReadable = true;
+		
+		// We need to notify the listener if there isn't already some readable content buffered here.
+		if (buffer.incoming.isEmpty())
+		{
+			_serverListener.clientReadReady(clientId);
+		}
+	}
+
+	private synchronized Packet _peekOrRemoveNextMutationFromClient(int clientId, Packet toRemove)
+	{
+		_ClientBuffer buffer = _clients.get(clientId);
+		// This check is unusually specific but a null toRemove is only passed if this is the first call, meaning this must be readable.
+		if (null == toRemove)
+		{
+			Assert.assertTrue(buffer.isNetworkReadable || !buffer.incoming.isEmpty());
+		}
+		
+		// See if we need to pull more from the lower level.
+		if (buffer.incoming.isEmpty() && buffer.isNetworkReadable)
+		{
+			List<Packet> list = _network.readBufferedPackets(clientId);
+			// This can't be empty if we were told that this was readable.
+			Assert.assertTrue(!list.isEmpty());
+			buffer.incoming.addAll(list);
+			buffer.isNetworkReadable = false;
+		}
+		
+		// Now, handle this operation.
+		if (!buffer.incoming.isEmpty())
+		{
+			if (null != toRemove)
+			{
+				Packet removed = buffer.incoming.poll();
+				// These must match since this is the point of toRemove.
+				Assert.assertTrue(toRemove == removed);
+			}
+		}
+		return buffer.incoming.peek();
 	}
 
 
@@ -172,16 +219,14 @@ public class ServerProcess
 			_destroyClient(id);
 		}
 		@Override
-		public void networkReady(int id)
+		public void networkWriteReady(int id)
 		{
 			_sendNextPacket(id);
 		}
 		@Override
-		public void packetReceived(int id, Packet packet)
+		public void networkReadReady(int id)
 		{
-			// The only packets which are currently sent after the handshake are entity mutations.
-			Packet_MutationEntityFromClient safe = (Packet_MutationEntityFromClient) packet;
-			_serverListener.changeReceived(id, safe.mutation, safe.commitLevel);
+			_setClientReadable(id);
 		}
 	}
 
@@ -192,6 +237,13 @@ public class ServerProcess
 		{
 			// We can store this and use it to plumb calls into the server.
 			_serverReady(listener);
+		}
+		@Override
+		public Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		{
+			// The only packets which are currently sent after the handshake are entity mutations.
+			return (Packet_MutationEntityFromClient) _peekOrRemoveNextMutationFromClient(clientId, toRemove);
+			
 		}
 		@Override
 		public void sendFullEntity(int clientId, Entity entity)
@@ -267,6 +319,8 @@ public class ServerProcess
 	private static class _ClientBuffer
 	{
 		public final Queue<Packet> outgoing = new LinkedList<>();
-		public boolean isNetworkReady = false;
+		public boolean isNetworkWriteable = false;
+		public final Queue<Packet> incoming = new LinkedList<>();
+		public boolean isNetworkReadable = false;
 	}
 }

@@ -2,8 +2,10 @@ package com.jeffdisher.october.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -20,8 +22,10 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IEntityUpdate;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
+import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -111,13 +115,13 @@ public class TestServerRunner
 		// Break a block in 2 steps, observing the changes coming out.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
-		server.changeReceived(clientId, break1, 1L);
+		network.receiveFromClient(clientId, break1, 1L);
 		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
 		Object mutation = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		// Send it again and see the block break.
-		server.changeReceived(clientId, break1, 2L);
+		network.receiveFromClient(clientId, break1, 2L);
 		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
 		mutation = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
@@ -141,7 +145,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity);
 		
 		// Trickle in a few items to observe them showing up.
-		server.changeReceived(clientId, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 3)), 1L);
+		network.receiveFromClient(clientId, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 3)), 1L);
 		
 		Object change0 = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -184,8 +188,8 @@ public class TestServerRunner
 				, null
 		), fake);
 		EntityChangeMove move2 = new EntityChangeMove(fake.newLocation, 100L, 0.0f, 0.0f);
-		server.changeReceived(clientId, move1, 1L);
-		server.changeReceived(clientId, move2, 2L);
+		network.receiveFromClient(clientId, move1, 1L);
+		network.receiveFromClient(clientId, move2, 2L);
 		
 		// Watch the entity fall as a result of implicit changes.
 		Object change0 = network.waitForUpdate(clientId, 0);
@@ -255,7 +259,7 @@ public class TestServerRunner
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		EntityChangeMove move = new EntityChangeMove(entity1.location(), 0L, -0.4f, 0.0f);
-		server.changeReceived(clientId1, move, 1L);
+		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);
 		network.waitForCuboidAddedCount(clientId1, 8);
@@ -283,7 +287,7 @@ public class TestServerRunner
 		Assert.assertEquals(0, entity1.inventory().items.size());
 		
 		// Change something - we will add items to the inventory.
-		server.changeReceived(clientId1, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 1)), 1L);
+		network.receiveFromClient(clientId1, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
@@ -316,6 +320,7 @@ public class TestServerRunner
 	private static class TestAdapter implements IServerAdapter
 	{
 		public IServerAdapter.IListener server;
+		public final Map<Integer, Queue<Packet_MutationEntityFromClient>> packets = new HashMap<>();
 		// Currently, each client only sees a single full entity - itself.
 		public final Map<Integer, Entity> clientFullEntities = new HashMap<>();
 		public final Map<Integer, Map<Integer, PartialEntity>> clientPartialEntities = new HashMap<>();
@@ -330,6 +335,16 @@ public class TestServerRunner
 			Assert.assertNull(this.server);
 			this.server = listener;
 			this.notifyAll();
+		}
+		@Override
+		public synchronized Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		{
+			Queue<Packet_MutationEntityFromClient> queue = this.packets.get(clientId);
+			if (null != toRemove)
+			{
+				Assert.assertEquals(toRemove, queue.poll());
+			}
+			return queue.peek();
 		}
 		@Override
 		public synchronized void sendFullEntity(int clientId, Entity entity)
@@ -410,11 +425,13 @@ public class TestServerRunner
 		}
 		public synchronized void prepareForClient(int clientId)
 		{
+			Assert.assertFalse(this.packets.containsKey(clientId));
 			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientPartialEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidAddedCount.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidRemovedCount.containsKey(clientId));
+			this.packets.put(clientId, new LinkedList<>());
 			this.clientPartialEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
 			this.clientCuboidAddedCount.put(clientId, 0);
@@ -469,8 +486,22 @@ public class TestServerRunner
 				this.wait();
 			}
 		}
+		public void receiveFromClient(int clientId, IMutationEntity mutation, long commitLevel)
+		{
+			boolean wasEmpty;
+			synchronized (this)
+			{
+				wasEmpty = this.packets.get(clientId).isEmpty();
+				this.packets.get(clientId).add(new Packet_MutationEntityFromClient(mutation, commitLevel));
+			}
+			if (wasEmpty)
+			{
+				this.server.clientReadReady(clientId);
+			}
+		}
 		public synchronized void resetClient(int clientId)
 		{
+			this.packets.remove(clientId);
 			this.clientFullEntities.remove(clientId);
 			this.clientPartialEntities.remove(clientId);
 			this.clientUpdates.remove(clientId);

@@ -2,8 +2,8 @@ package com.jeffdisher.october.server;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -24,6 +24,18 @@ public interface IServerAdapter
 	 * @param listener The listener which will receive the client changes.
 	 */
 	void readyAndStartListening(IListener listener);
+	/**
+	 * Called after receiving clientReadReady in order to fetch the actual packets from the network layer.  If toRemove
+	 * is not null, the next packet will be removed and discarded (after being checked that it instance-matches).
+	 * Returns the next packet but doesn't discard it (meaning successive calls with null toRemove will return the
+	 * same instance).
+	 * If this returns null, due to being empty, the clientReadReady callback will arrive when more data is available.
+	 * 
+	 * @param clientId The client.
+	 * @param toRemove If non-null, removes the next packet, checks that it matches, and discards it.
+	 * @return The next packet in the list (null if empty).
+	 */
+	Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove);
 	/**
 	 * Sends a full entity to a given client.
 	 * 
@@ -110,13 +122,11 @@ public interface IServerAdapter
 		 */
 		void clientDisconnected(int clientId);
 		/**
-		 * Called when a new changes comes in from the given client.  Note that the change is assumed to apply to the
-		 * entity associated with the client.
+		 * Called when a new changes comes in from the given client.  This means that the next call to
+		 * peekOrRemoveNextMutationFromClient will return non-null.
 		 * 
 		 * @param clientId The ID of the client (as assigned by the adapter implementation).
-		 * @param change The change.
-		 * @param commitLevel The client's local commit level represented by this change.
 		 */
-		void changeReceived(int clientId, IMutationEntity change, long commitLevel);
+		void clientReadReady(int clientId);
 	}
 }

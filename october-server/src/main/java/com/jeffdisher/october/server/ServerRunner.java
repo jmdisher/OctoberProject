@@ -18,10 +18,10 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
+import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
@@ -71,6 +71,7 @@ public class ServerRunner
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Queue<Integer> _newClients;
 	private final Queue<Integer> _removedClients;
+	private final Set<Integer> _clientsToRead;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
 	private _TickAdvancer _scheduledAdvancer;
@@ -110,6 +111,7 @@ public class ServerRunner
 		_connectedClients = new HashMap<>();
 		_newClients = new LinkedList<>();
 		_removedClients = new LinkedList<>();
+		_clientsToRead = new HashSet<>();
 		_tickAdvancer = new _TickAdvancer();
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
@@ -193,6 +195,29 @@ public class ServerRunner
 		}
 	}
 
+	private boolean _drainPacketsIntoRunner(int clientId)
+	{
+		// Consume as many of these mutations as we can fit into the TickRunner.
+		Packet_MutationEntityFromClient mutation = _network.peekOrRemoveNextMutationFromClient(clientId, null);
+		Assert.assertTrue(null != mutation);
+		// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
+		boolean didAdd = _tickRunner.enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
+		while (didAdd)
+		{
+			mutation = _network.peekOrRemoveNextMutationFromClient(clientId, mutation);
+			if (null != mutation)
+			{
+				didAdd = _tickRunner.enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
+			}
+			else
+			{
+				didAdd = false;
+			}
+		}
+		// If we didn't consume everything, there is still more to read.
+		return (null != mutation);
+	}
+
 
 	private class NetworkListener implements IServerAdapter.IListener
 	{
@@ -217,16 +242,15 @@ public class ServerRunner
 			});
 		}
 		@Override
-		public void changeReceived(int clientId, IMutationEntity change, long commitLevel)
+		public void clientReadReady(int clientId)
 		{
 			_messages.enqueue(() -> {
-				// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
-				boolean didAdd = _tickRunner.enqueueEntityChange(clientId, change, commitLevel);
-				if (!didAdd)
+				// We shouldn't already think that this is readable.
+				Assert.assertTrue(!_clientsToRead.contains(clientId));
+				boolean isReadable = _drainPacketsIntoRunner(clientId);
+				if (isReadable)
 				{
-					// There is something wrong with this client so disconnect them.
-					System.out.println("Disconnecting client due to overflow: " + clientId);
-					_network.disconnectClient(clientId);
+					_clientsToRead.add(clientId);
 				}
 			});
 		}
@@ -376,6 +400,17 @@ public class ServerRunner
 					(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.mutations())
 			).toList();
 			_tickRunner.setupChangesForTick(readOnlyCuboids, orphanedCuboids, newEntities, removedClients);
+			
+			// Feed in any new data from the network.
+			Iterator<Integer> readableClientIterator = _clientsToRead.iterator();
+			while (readableClientIterator.hasNext())
+			{
+				boolean isStillReadable = _drainPacketsIntoRunner(readableClientIterator.next());
+				if (!isStillReadable)
+				{
+					readableClientIterator.remove();
+				}
+			}
 			
 			// Determine when the next tick should run (we increment the previous time to not slide).
 			_nextTickMillis += _millisPerTick;

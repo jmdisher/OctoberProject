@@ -55,12 +55,12 @@ public class TestIntegratedNetwork
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkReady(int id)
+			public void networkWriteReady(int id)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void networkReadReady(int id)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -98,16 +98,20 @@ public class TestIntegratedNetwork
 				return name.hashCode();
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void networkReadReady(int id)
 			{
-				// We only expect chat messages.
-				Packet_Chat chat = (Packet_Chat) packet;
-				Assert.assertEquals("Client 2".hashCode(), id);
-				_messagesFor1.add(chat.message);
-				_handle();
+				List<Packet> packets = holder[0].readBufferedPackets(id);
+				for (Packet packet : packets)
+				{
+					// We only expect chat messages.
+					Packet_Chat chat = (Packet_Chat) packet;
+					Assert.assertEquals("Client 2".hashCode(), id);
+					_messagesFor1.add(chat.message);
+					_handle();
+				}
 			}
 			@Override
-			public void networkReady(int id)
+			public void networkWriteReady(int id)
 			{
 				_isReady1 = true;
 				_handle();
@@ -256,13 +260,13 @@ public class TestIntegratedNetwork
 				return name.hashCode();
 			}
 			@Override
-			public void packetReceived(int id, Packet packet)
+			public void networkReadReady(int id)
 			{
 				// We don't expect this in these tests.
 				Assert.fail();
 			}
 			@Override
-			public void networkReady(int id)
+			public void networkWriteReady(int id)
 			{
 				if (_nextIndex < outgoing.length)
 				{

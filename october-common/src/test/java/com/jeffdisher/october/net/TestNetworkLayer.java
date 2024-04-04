@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Assert;
@@ -24,6 +25,7 @@ public class TestNetworkLayer
 		Packet[] holder = new Packet[1];
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
+		NetworkLayer[] internal = new NetworkLayer[1];
 		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
@@ -44,13 +46,16 @@ public class TestNetworkLayer
 				// We ignore this in this test.
 			}
 			@Override
-			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
+			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
+				List<Packet> packets = internal[0].receiveMessages(token);
+				Assert.assertEquals(1, packets.size());
 				Assert.assertNull(holder[0]);
-				holder[0] = packet;
+				holder[0] = packets.get(0);
 				receiveLatch.countDown();
 			}
 		}, port);
+		internal[0] = server;
 		
 		// Connect a client and observe that we see a connected peer.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -93,6 +98,7 @@ public class TestNetworkLayer
 		Packet[] holder = new Packet[1];
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
+		NetworkLayer[] internal = new NetworkLayer[1];
 		NetworkLayer client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
@@ -112,13 +118,16 @@ public class TestNetworkLayer
 				// We ignore this in this test.
 			}
 			@Override
-			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
+			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
+				List<Packet> packets = internal[0].receiveMessages(token);
+				Assert.assertEquals(1, packets.size());
 				Assert.assertNull(holder[0]);
-				holder[0] = packet;
+				holder[0] = packets.get(0);
 				receiveLatch.countDown();
 			}
 		}, InetAddress.getLocalHost(), port);
+		internal[0] = client;
 		SocketChannel server = socket.accept();
 		
 		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).

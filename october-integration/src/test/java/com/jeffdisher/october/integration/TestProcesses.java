@@ -285,84 +285,12 @@ public class TestProcesses
 		server.stop();
 	}
 
-	@Test
-	public void floodMovementCommands() throws Throwable
-	{
-		// Send lots of movement commands since the client should be disconnected.
-		long currentTimeMillis = 100L;
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		
-		// Load a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
-		cuboidLoader.preload(cuboid);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
-		
-		// We will connect a client just to watch what happens to the noisy one.
-		_ClientListener passiveListener = new _ClientListener();
-		ClientProcess passiveClient = new ClientProcess(passiveListener, InetAddress.getLocalHost(), PORT, "passive");
-		passiveClient.waitForLocalEntity(currentTimeMillis);
-		currentTimeMillis += 100L;
-		
-		// Connect the client.
-		_ClientListener listener = new _ClientListener();
-		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
-		
-		// Let some time pass and verify the data is loaded.
-		long startTick = client.waitForLocalEntity(currentTimeMillis);
-		currentTimeMillis += 100L;
-		// Wait until we have received the entity and cuboid.
-		client.waitForTick(startTick + 3L, currentTimeMillis);
-		currentTimeMillis += 100L;
-		Assert.assertNotNull(listener.getLocalEntity());
-		Assert.assertEquals(1, listener.cuboids.size());
-		
-		// Verify that the passive sees the noisy client.
-		passiveClient.runPendingCalls(currentTimeMillis);
-		currentTimeMillis += 100L;
-		Assert.assertEquals(2, passiveListener.entities.size());
-		
-		// Send 30 move commands (since the limit is 20, there is little chance that we will observe the flakiness of this approach).
-		// (we will just use the counter as the commit number since these aren't in a speculative projection but the server still expects them).
-		EntityLocation oldLocation = listener.getLocalEntity().location();
-		for (long i = 1L; i <= 30L; ++i)
-		{
-			// Note that we need to send using the low-level sendAction to bypass the ClientRunner checks and internal back-pressure in order to see how the server handles this.
-			EntityChangeMove change = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
-			client.sendAction(change, currentTimeMillis);
-			currentTimeMillis += 100L;
-			oldLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z());
-		}
-		// Note that the client will only flush these calls when it receives end of tick so wait for some ticks to happen so that we should see and end reach the client.
-		server.waitForTicksToPass(2L);
-		client.runPendingCalls(currentTimeMillis);
-		currentTimeMillis += 100L;
-		
-		// Wait for the server to process.
-		server.waitForTicksToPass(10L);
-		client.runPendingCalls(currentTimeMillis);
-		currentTimeMillis += 100L;
-		
-		// Make sure that the client connection was dropped.
-		Assert.assertEquals(1, listener.connectionClosedCount);
-		
-		// We should see the client no longer present on the passive.
-		passiveClient.runPendingCalls(currentTimeMillis);
-		currentTimeMillis += 100L;
-		Assert.assertEquals(1, passiveListener.entities.size());
-		
-		// Disconnect the client (should be redundant).
-		client.disconnect();
-		passiveClient.disconnect();
-		server.stop();
-	}
-
 
 	private static class _ClientListener implements ClientProcess.IListener
 	{
 		public final Map<CuboidAddress, IReadOnlyCuboidData> cuboids = new HashMap<>();
 		public final Map<Integer, Entity> entities = new HashMap<>();
 		public int assignedEntityId;
-		public int connectionClosedCount;
 		
 		public Entity getLocalEntity()
 		{
@@ -379,7 +307,6 @@ public class TestProcesses
 		@Override
 		public void connectionClosed()
 		{
-			this.connectionClosedCount += 1;
 		}
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)

@@ -2,6 +2,7 @@ package com.jeffdisher.october.net;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.utils.Assert;
@@ -72,10 +73,10 @@ public class NetworkServer
 				}
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
 				Assert.assertTrue(state.didHandshake);
-				_listener.networkReady(state.clientId);
+				_listener.networkWriteReady(state.clientId);
 			}
 			@Override
-			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
+			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
 				_ClientState state;
 				synchronized(NetworkServer.this)
@@ -85,12 +86,14 @@ public class NetworkServer
 				
 				if (state.didHandshake)
 				{
-					_listener.packetReceived(state.clientId, packet);
+					_listener.networkReadReady(state.clientId);
 				}
 				else
 				{
-					// This MUST be the client's introduction.
-					if (PacketType.CLIENT_SEND_DESCRIPTION == packet.type)
+					// This MUST be the client's introduction (and nothing else).
+					List<Packet> messages = _network.receiveMessages(token);
+					Packet packet = messages.get(0);
+					if ((1 == messages.size()) && (PacketType.CLIENT_SEND_DESCRIPTION == packet.type))
 					{
 						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
 						if (0 == safe.version)
@@ -163,6 +166,24 @@ public class NetworkServer
 	}
 
 	/**
+	 * Reads all of the buffered packets associated with the given clientId.  Note that calling this will also allow
+	 * reads from this client to resume in the background.
+	 * 
+	 * @param clientId The ID of a specific attached client.
+	 * @return The list of packets buffered from them.
+	 */
+	public List<Packet> readBufferedPackets(int clientId)
+	{
+		_ClientState client;
+		synchronized(this)
+		{
+			client = _channelsById.get(clientId);
+			Assert.assertTrue(null != client);
+		}
+		return _network.receiveMessages(client.token);
+	}
+
+	/**
 	 * Disconnects the client with the given ID.
 	 * 
 	 * @param clientId The ID of a specific attached client.
@@ -207,14 +228,13 @@ public class NetworkServer
 		 * 
 		 * @param id The ID of the client.
 		 */
-		void networkReady(int id);
+		void networkWriteReady(int id);
 		/**
-		 * Called when a new message has arrived from this client.
+		 * Called when the network is waiting for messages to be read from this client.
 		 * 
 		 * @param id The ID of the client.
-		 * @param packet The new message received.
 		 */
-		void packetReceived(int id, Packet packet);
+		void networkReadReady(int id);
 	}
 
 
