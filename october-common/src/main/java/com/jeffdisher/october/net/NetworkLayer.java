@@ -24,7 +24,7 @@ import com.jeffdisher.october.utils.Assert;
  * It internally runs on a background thread and all callbacks issued through the IListener interface are issued on that
  * thread so they are expected to return quickly.
  */
-public class NetworkLayer<T>
+public class NetworkLayer
 {
 	// The buffer must be large enough to hold precisely 1 packet.
 	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
@@ -33,52 +33,52 @@ public class NetworkLayer<T>
 	 * Creates a layer which is listening as a server.  Returns once the requested port has been bound and the internal
 	 * thread has started.
 	 * 
-	 * @param <T> The type used as a token to describe connections.
+	 * @param  The type used as a token to describe connections.
 	 * @param listener The callback interface (which will be called on the internal thread).
 	 * @param port The port on which to listen for connections.
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static <T> NetworkLayer<T> startListening(IListener<T> listener, int port) throws IOException
+	public static  NetworkLayer startListening(IListener listener, int port) throws IOException
 	{
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
 		socket.bind(address);
-		return new NetworkLayer<T>(listener, socket, null);
+		return new NetworkLayer(listener, socket, null);
 	}
 
 	/**
 	 * Creates a layer which contains a single connection to a server.
 	 * 
-	 * @param <T> The type used as a token to describe connections.
+	 * @param  The type used as a token to describe connections.
 	 * @param listener The callback interface (which will be called on the internal thread).
 	 * @param host The remote host to contact.
 	 * @param port The port to use when connecting to the remote host.
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static <T> NetworkLayer<T> connectToServer(IListener<T> listener, InetAddress host, int port) throws IOException
+	public static  NetworkLayer connectToServer(IListener listener, InetAddress host, int port) throws IOException
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port));
-		return new NetworkLayer<T>(listener, null, client);
+		return new NetworkLayer(listener, null, client);
 	}
 
 
 	private final Thread _internalThread;
-	private final IListener<T> _listener;
+	private final IListener _listener;
 	private final Selector _selector;
-	private final IdentityHashMap<T, _PeerState<T>> _connectedPeers;
+	private final IdentityHashMap<PeerToken, _PeerState> _connectedPeers;
 
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
-	private IdentityHashMap<T, Packet> _shared_outgoingPackets;
-	private Queue<T> _shared_disconnectRequests;
+	private IdentityHashMap<PeerToken, Packet> _shared_outgoingPackets;
+	private Queue<PeerToken> _shared_disconnectRequests;
 	
 	// Server mode details.
 	private final ServerSocketChannel _acceptorSocket;
 	private final SelectionKey _acceptorKey;
 
-	private NetworkLayer(IListener<T> listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
+	private NetworkLayer(IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
 	{
 		// We can only be running in server mode OR client mode.
 		Assert.assertTrue((null != serverSocket) != (null != clientSocket));
@@ -112,13 +112,15 @@ public class NetworkLayer<T>
 		{
 			clientSocket.configureBlocking(false);
 			SelectionKey newKey = clientSocket.register(_selector, SelectionKey.OP_READ, null);
-			T token = _listener.buildToken();
-			_PeerState<T> state = new _PeerState<T>(clientSocket, newKey, token);
+			_PeerState state = new _PeerState(clientSocket, newKey);
 			newKey.attach(state);
-			_connectedPeers.put(token, state);
+			_connectedPeers.put(state, state);
 			
 			_acceptorSocket = null;
 			_acceptorKey = null;
+			
+			// Notify the listener that this is connected, so they see the token.
+			listener.peerConnected(state);
 		}
 		
 		// Start the internal thread since we are now initialized.
@@ -178,7 +180,7 @@ public class NetworkLayer<T>
 	 * @param peer The target of the message.
 	 * @param packet The message to serialize and send.
 	 */
-	public synchronized void sendMessage(T peer, Packet packet)
+	public synchronized void sendMessage(PeerToken peer, Packet packet)
 	{
 		// This should only be enqueued if we there was nothing there and we notified them.
 		if (null == _shared_outgoingPackets)
@@ -195,7 +197,7 @@ public class NetworkLayer<T>
 	 * 
 	 * @param token The peer to disconnect.
 	 */
-	public synchronized void disconnectPeer(T token)
+	public synchronized void disconnectPeer(PeerToken token)
 	{
 		if (null == _shared_disconnectRequests)
 		{
@@ -222,8 +224,8 @@ public class NetworkLayer<T>
 				_backgroundProcessSelectedKeys();
 			}
 			// Check the handoff map.
-			IdentityHashMap<T, Packet> packetsToSerialize = null;
-			Queue<T> peersToDisconnect = null;
+			IdentityHashMap<PeerToken, Packet> packetsToSerialize = null;
+			Queue<PeerToken> peersToDisconnect = null;
 			synchronized (this)
 			{
 				packetsToSerialize = _shared_outgoingPackets;
@@ -234,9 +236,9 @@ public class NetworkLayer<T>
 			// First, disconnect anyone we can.
 			if (null != peersToDisconnect)
 			{
-				for (T peer : peersToDisconnect)
+				for (PeerToken peer : peersToDisconnect)
 				{
-					_PeerState<T> client = _connectedPeers.get(peer);
+					_PeerState client = _connectedPeers.get(peer);
 					// This may have already disconnected elsewhere.
 					if (null != client)
 					{
@@ -247,9 +249,9 @@ public class NetworkLayer<T>
 			// Now, send any outgoing packets.
 			if (null != packetsToSerialize)
 			{
-				for (Map.Entry<T, Packet> elt : packetsToSerialize.entrySet())
+				for (Map.Entry<PeerToken, Packet> elt : packetsToSerialize.entrySet())
 				{
-					_PeerState<T> client = _connectedPeers.get(elt.getKey());
+					_PeerState client = _connectedPeers.get(elt.getKey());
 					// The peer may have disconnected.
 					if (null != client)
 					{
@@ -263,7 +265,7 @@ public class NetworkLayer<T>
 		}
 		
 		// We are shutting down so close all clients.
-		for (_PeerState<?> elt : _connectedPeers.values()) {
+		for (_PeerState elt : _connectedPeers.values()) {
 			try {
 				elt.channel.close();
 			} catch (IOException e) {
@@ -274,8 +276,6 @@ public class NetworkLayer<T>
 		_connectedPeers.clear();
 	}
 
-	// We suppress the unchecked warning since we made the attachment so extracting it should be what we initially stored (we are down-casting from Object, anyway).
-	@SuppressWarnings("unchecked")
 	private void _backgroundProcessSelectedKeys()
 	{
 		Set<SelectionKey> keys = _selector.selectedKeys();
@@ -287,7 +287,7 @@ public class NetworkLayer<T>
 				_backgroundProcessAcceptorKey(key);
 			} else {
 				// This is normal data movement so get the state out of the attachment.
-				_PeerState<T> state = (_PeerState<T>)key.attachment();
+				_PeerState state = (_PeerState)key.attachment();
 				// We can't fail to find this since we put it in the collection.
 				Assert.assertTrue(null != state);
 				
@@ -342,14 +342,13 @@ public class NetworkLayer<T>
 			// We just created this channel so this can't happen.
 			throw Assert.unexpected(e);
 		}
-		T token = _listener.buildToken();
-		_PeerState<T> newClient = new _PeerState<T>(newNode, newKey, token);
+		_PeerState newClient = new _PeerState(newNode, newKey);
 		newKey.attach(newClient);
-		_connectedPeers.put(token, newClient);
-		_listener.peerConnected(token);
+		_connectedPeers.put(newClient, newClient);
+		_listener.peerConnected(newClient);
 	}
 
-	private boolean _backgroundProcessReadableKey(SelectionKey key, _PeerState<T> state)
+	private boolean _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
 	{
 		// Read the available bytes into our local buffer.
 		boolean didRead = false;
@@ -378,7 +377,7 @@ public class NetworkLayer<T>
 			Packet packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
 			while (null != packet)
 			{
-				_listener.packetReceived(state.token, packet);
+				_listener.packetReceived(state, packet);
 				packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
 			}
 			state.incoming.compact();
@@ -389,7 +388,7 @@ public class NetworkLayer<T>
 		return didRead;
 	}
 
-	private boolean _backgroundProcessWritableKey(SelectionKey key, _PeerState<T> state)
+	private boolean _backgroundProcessWritableKey(SelectionKey key, _PeerState state)
 	{
 		boolean didWrite = false;
 		// The buffer must have something in it if we got here.
@@ -421,13 +420,13 @@ public class NetworkLayer<T>
 				state.key.interestOps(state.key.interestOps() & ~SelectionKey.OP_WRITE);
 				
 				// We can also notify the listener that they are ready to write something to the buffer.
-				_listener.peerReadyForWrite(state.token);
+				_listener.peerReadyForWrite(state);
 			}
 		}
 		return didWrite;
 	}
 
-	private void _backgroundSerializePacket(_PeerState<?> client, Packet packet)
+	private void _backgroundSerializePacket(_PeerState client, Packet packet)
 	{
 		PacketCodec.serializeToBuffer(client.outgoing, packet);
 		client.key.interestOps(client.key.interestOps() | SelectionKey.OP_WRITE);
@@ -435,10 +434,10 @@ public class NetworkLayer<T>
 		client.outgoing.flip();
 	}
 
-	private void _backgroundDisconnectClient(_PeerState<T> state)
+	private void _backgroundDisconnectClient(_PeerState state)
 	{
 		// Remove this from our set and send the callback.
-		_PeerState<T> removed = _connectedPeers.remove(state.token);
+		_PeerState removed = _connectedPeers.remove(state);
 		Assert.assertTrue(removed == state);
 		try
 		{
@@ -449,7 +448,7 @@ public class NetworkLayer<T>
 			// We are dropping this so we don't care.
 		}
 		state.key.cancel();
-		_listener.peerDisconnected(state.token);
+		_listener.peerDisconnected(state);
 	}
 
 
@@ -457,57 +456,53 @@ public class NetworkLayer<T>
 	 * The interface for listening to events from inside the layer.  Note that all calls will be issued on the internal
 	 * thread so they must return soon in order to avoid slowing the system.
 	 * 
-	 * @param <T> The peer token type.
+	 * The instances of PeerToken are managed by the NetworkLayer and are deliberately opaque.
 	 */
-	public static interface IListener<T>
+	public static interface IListener
 	{
-		/**
-		 * Called when a new connection is being established in order to request the new token used to reference the
-		 * connection.
-		 * 
-		 * @return An opaque token.
-		 */
-		T buildToken();
 		/**
 		 * Called when a peer has connected.
 		 * 
 		 * @param token The peer's opaque token.
 		 */
-		void peerConnected(T token);
+		void peerConnected(PeerToken token);
 		/**
 		 * Called when a peer has disconnected.
 		 * 
 		 * @param token The peer's opaque token.
 		 */
-		void peerDisconnected(T token);
+		void peerDisconnected(PeerToken token);
 		/**
 		 * Called when the connection to a peer is ready to receive new messages to send.
 		 * 
 		 * @param token The peer's opaque token.
 		 */
-		void peerReadyForWrite(T token);
+		void peerReadyForWrite(PeerToken token);
 		/**
 		 * Called when a new message has arrived from a peer.
 		 * 
 		 * @param token The peer's opaque token.
 		 * @param packet The packet from the peer.
 		 */
-		void packetReceived(T token, Packet packet);
+		void packetReceived(PeerToken token, Packet packet);
 	}
 
-	private static class _PeerState<T>
+	/**
+	 * This only exists to be an opaque token for the public interface token.
+	 */
+	public static interface PeerToken {}
+
+	private static class _PeerState implements PeerToken
 	{
 		public final SocketChannel channel;
 		public final SelectionKey key;
-		public final T token;
 		public final ByteBuffer incoming;
 		public final ByteBuffer outgoing;
 		
-		public _PeerState(SocketChannel channel, SelectionKey key, T token)
+		public _PeerState(SocketChannel channel, SelectionKey key)
 		{
 			this.channel = channel;
 			this.key = key;
-			this.token = token;
 			this.incoming = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
 			this.outgoing = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
 		}

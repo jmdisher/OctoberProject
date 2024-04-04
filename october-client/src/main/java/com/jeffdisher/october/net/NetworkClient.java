@@ -13,8 +13,8 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkClient
 {
 	private final IListener _listener;
-	private final NetworkLayer<_State> _network;
-	private final _State _token;
+	private final NetworkLayer _network;
+	private _State _token;
 
 	/**
 	 * Creates a new client, returning once the connection has been established, but before the handshake is complete.
@@ -28,28 +28,22 @@ public class NetworkClient
 	public NetworkClient(IListener listener, InetAddress host, int port, String clientName) throws IOException
 	{
 		_listener = listener;
-		_token = new _State();
-		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener<_State>()
+		_network = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
-			public _State buildToken()
+			public void peerConnected(NetworkLayer.PeerToken token)
 			{
-				// We only have the one connection in client mode.
-				return _token;
+				// Since this is client mode, this is called before the connectToServer returns.
+				Assert.assertTrue(null == _token);
+				_token = new _State(token);
 			}
 			@Override
-			public void peerConnected(_State token)
-			{
-				// Not called in client mode.
-				throw Assert.unreachable();
-			}
-			@Override
-			public void peerDisconnected(_State token)
+			public void peerDisconnected(NetworkLayer.PeerToken token)
 			{
 				_listener.serverDisconnected();
 			}
 			@Override
-			public void peerReadyForWrite(_State token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token)
 			{
 				if (_token.didFinishHandshake())
 				{
@@ -66,7 +60,7 @@ public class NetworkClient
 				}
 			}
 			@Override
-			public void packetReceived(_State token, Packet packet)
+			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
 			{
 				if (_token.didFinishHandshake())
 				{
@@ -80,12 +74,12 @@ public class NetworkClient
 					Assert.assertTrue(PacketType.SERVER_SEND_CONFIGURATION == packet.type);
 					Packet_ServerSendConfiguration safe = (Packet_ServerSendConfiguration) packet;
 					int assignedId = safe.clientId;
-					token.setHandshakeCompleted(assignedId);
+					_token.setHandshakeCompleted(assignedId);
 					// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.
 					_listener.handshakeCompleted(assignedId);
 					
 					// See if the network is ready yet (since there was likely a race here).
-					if (token.networkIsReady)
+					if (_token.networkIsReady)
 					{
 						_listener.networkReady();
 					}
@@ -93,8 +87,11 @@ public class NetworkClient
 			}
 		}, host, port);
 		
+		// We expect that the token will be set before connectToServer returns.
+		Assert.assertTrue(null != _token);
+		
 		// The connection starts writable so kick-off the handshake.
-		_network.sendMessage(_token, new Packet_ClientSendDescription(0, clientName));
+		_network.sendMessage(_token.token, new Packet_ClientSendDescription(0, clientName));
 	}
 
 	/**
@@ -117,7 +114,7 @@ public class NetworkClient
 		Assert.assertTrue(_token.networkIsReady);
 		// NOTE:  We need to clear the ready flag BEFORE sending the message since the NEXT ready callback could come in between the lines of code.
 		_token.networkIsReady = false;
-		_network.sendMessage(_token, packet);
+		_network.sendMessage(_token.token, packet);
 	}
 
 	/**
@@ -164,11 +161,16 @@ public class NetworkClient
 
 	private static class _State
 	{
+		public final NetworkLayer.PeerToken token;
 		public boolean networkIsReady;
 		
 		private boolean _didFinishHandshake;
 		private int _clientId;
 		
+		public _State(NetworkLayer.PeerToken token)
+		{
+			this.token = token;
+		}
 		public synchronized void setHandshakeCompleted(int clientId)
 		{
 			Assert.assertTrue(!_didFinishHandshake);

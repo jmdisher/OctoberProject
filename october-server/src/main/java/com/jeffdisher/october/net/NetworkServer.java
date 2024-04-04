@@ -15,7 +15,8 @@ public class NetworkServer
 {
 	private final IListener _listener;
 	private final Map<Integer, _ClientState> _channelsById;
-	private final NetworkLayer<_ClientState> _network;
+	private final Map<NetworkLayer.PeerToken, _ClientState> _channelsByToken;
+	private final NetworkLayer _network;
 
 	/**
 	 * Creates a new server, returning once the port is bound.
@@ -28,45 +29,63 @@ public class NetworkServer
 	{
 		_listener = listener;
 		_channelsById = new HashMap<>();
+		_channelsByToken = new HashMap<>();
 		
-		_network = NetworkLayer.startListening(new NetworkLayer.IListener<_ClientState>()
+		_network = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
-			public _ClientState buildToken()
+			public void peerConnected(NetworkLayer.PeerToken token)
 			{
-				return new _ClientState();
-			}
-			@Override
-			public void peerConnected(_ClientState token)
-			{
-				// We don't do anything until they introduce themselves.
+				// Create the empty state.
+				synchronized(NetworkServer.this)
+				{
+					_channelsByToken.put(token, new _ClientState(token));
+				}
 				// TODO:  We probably want to consider setting some timeout here.
 			}
 			@Override
-			public void peerDisconnected(_ClientState token)
+			public void peerDisconnected(NetworkLayer.PeerToken token)
 			{
-				int clientId = token.clientId;
-				// Note that we still see this disconnect if we failed the handshake and we disconnect them.
+				int clientId;
+				synchronized(NetworkServer.this)
+				{
+					clientId = _channelsByToken.remove(token).clientId;
+					// Note that we still see this disconnect if we failed the handshake and we disconnect them.
+					if (clientId > 0)
+					{
+						_ClientState channel = _channelsById.remove(clientId);
+						Assert.assertTrue(null != channel);
+					}
+				}
 				if (clientId > 0)
 				{
-					_ClientState channel = _channelsById.remove(clientId);
-					Assert.assertTrue(null != channel);
 					_listener.userLeft(clientId);
 				}
 			}
 			@Override
-			public void peerReadyForWrite(_ClientState token)
+			public void peerReadyForWrite(NetworkLayer.PeerToken token)
 			{
+				_ClientState state;
+				synchronized(NetworkServer.this)
+				{
+					state = _channelsByToken.get(token);
+				}
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
-				Assert.assertTrue(token.didHandshake);
-				_listener.networkReady(token.clientId);
+				Assert.assertTrue(state.didHandshake);
+				_listener.networkReady(state.clientId);
 			}
 			@Override
-			public void packetReceived(_ClientState token, Packet packet)
+			public void packetReceived(NetworkLayer.PeerToken token, Packet packet)
 			{
-				if (token.didHandshake)
+				_ClientState state;
+				synchronized(NetworkServer.this)
 				{
-					_listener.packetReceived(token.clientId, packet);
+					state = _channelsByToken.get(token);
+				}
+				
+				if (state.didHandshake)
+				{
+					_listener.packetReceived(state.clientId, packet);
 				}
 				else
 				{
@@ -80,17 +99,17 @@ public class NetworkServer
 							int clientId  = _listener.userJoined(safe.name);
 							if (clientId > 0)
 							{
-								token.clientId = clientId;
-								token.didHandshake = true;
+								state.clientId = clientId;
+								state.didHandshake = true;
 								synchronized(NetworkServer.this)
 								{
-									_channelsById.put(clientId, token);
+									_channelsById.put(clientId, state);
 								}
 								
 								// Send out description and consider the handshake completed.
 								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
 								long millisPerTick = 100L;
-								_network.sendMessage(token, new Packet_ServerSendConfiguration(token.clientId, millisPerTick));
+								_network.sendMessage(token, new Packet_ServerSendConfiguration(state.clientId, millisPerTick));
 							}
 							else
 							{
@@ -102,14 +121,14 @@ public class NetworkServer
 						else
 						{
 							// Unknown version so just disconnect them.
-							System.err.println("Client " + token.clientId + ": Requested unknown protocol version: " + safe.version);
+							System.err.println("Client " + state.clientId + ": Requested unknown protocol version: " + safe.version);
 							_network.disconnectPeer(token);
 						}
 					}
 					else
 					{
 						// This is bogus so disconnect them.
-						System.err.println("Client " + token.clientId + ": Failed handshake with type: " + packet.type.name());
+						System.err.println("Client " + state.clientId + ": Failed handshake with type: " + packet.type.name());
 						_network.disconnectPeer(token);
 					}
 				}
@@ -140,7 +159,7 @@ public class NetworkServer
 			Assert.assertTrue(null != client);
 			// TODO:  Buffer this if needed.
 		}
-		_network.sendMessage(client, packet);
+		_network.sendMessage(client.token, packet);
 	}
 
 	/**
@@ -159,7 +178,7 @@ public class NetworkServer
 		// This could be racy or already gone.
 		if (null != client)
 		{
-			_network.disconnectPeer(client);
+			_network.disconnectPeer(client.token);
 		}
 	}
 
@@ -201,7 +220,12 @@ public class NetworkServer
 
 	private static class _ClientState
 	{
+		public final NetworkLayer.PeerToken token;
 		public int clientId;
 		public boolean didHandshake;
+		public _ClientState(NetworkLayer.PeerToken token)
+		{
+			this.token = token;
+		}
 	}
 }
