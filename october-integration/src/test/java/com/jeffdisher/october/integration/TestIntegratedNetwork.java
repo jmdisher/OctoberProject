@@ -50,18 +50,18 @@ public class TestIntegratedNetwork
 				return id;
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token, int id)
+			public void userLeft(NetworkLayer.PeerToken token)
 			{
 				// We don't always see that the user has left if we shut down first.
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			public void networkWriteReady(NetworkLayer.PeerToken token)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			public void networkReadReady(NetworkLayer.PeerToken token)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -101,24 +101,23 @@ public class TestIntegratedNetwork
 				return name.hashCode();
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token, int id)
+			public void userLeft(NetworkLayer.PeerToken token)
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			public void networkWriteReady(NetworkLayer.PeerToken token)
 			{
 				_isReady1 = true;
 				_handle();
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			public void networkReadReady(NetworkLayer.PeerToken token)
 			{
 				List<Packet> packets = holder[0].readBufferedPackets(token);
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.
 					Packet_Chat chat = (Packet_Chat) packet;
-					Assert.assertEquals("Client 2".hashCode(), id);
 					_messagesFor1.add(chat.message);
 					_handle();
 				}
@@ -263,11 +262,11 @@ public class TestIntegratedNetwork
 				return name.hashCode();
 			}
 			@Override
-			public void userLeft(NetworkLayer.PeerToken token, int id)
+			public void userLeft(NetworkLayer.PeerToken token)
 			{
 			}
 			@Override
-			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			public void networkWriteReady(NetworkLayer.PeerToken token)
 			{
 				if (_nextIndex < outgoing.length)
 				{
@@ -276,7 +275,7 @@ public class TestIntegratedNetwork
 				}
 			}
 			@Override
-			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			public void networkReadReady(NetworkLayer.PeerToken token)
 			{
 				// We don't expect this in these tests.
 				Assert.fail();

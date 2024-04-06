@@ -37,12 +37,7 @@ public class NetworkServer
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
 			{
-				int clientId = ((_ClientState)token.getData()).clientId;
-				// Note that we still see this disconnect if we failed the handshake and we disconnect them.
-				if (clientId > 0)
-				{
-					_listener.userLeft(token, clientId);
-				}
+				_listener.userLeft(token);
 			}
 			@Override
 			public void peerReadyForWrite(NetworkLayer.PeerToken token)
@@ -50,7 +45,7 @@ public class NetworkServer
 				_ClientState state = (_ClientState) token.getData();
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
 				Assert.assertTrue(state.didHandshake);
-				_listener.networkWriteReady(token, state.clientId);
+				_listener.networkWriteReady(token);
 			}
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
@@ -58,7 +53,7 @@ public class NetworkServer
 				_ClientState state = (_ClientState) token.getData();
 				if (state.didHandshake)
 				{
-					_listener.networkReadReady(token, state.clientId);
+					_listener.networkReadReady(token);
 				}
 				else
 				{
@@ -74,13 +69,12 @@ public class NetworkServer
 							int clientId  = _listener.userJoined(token, safe.name);
 							if (clientId > 0)
 							{
-								state.clientId = clientId;
 								state.didHandshake = true;
 								
 								// Send out description and consider the handshake completed.
 								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
 								long millisPerTick = 100L;
-								_network.sendMessage(token, new Packet_ServerSendConfiguration(state.clientId, millisPerTick));
+								_network.sendMessage(token, new Packet_ServerSendConfiguration(clientId, millisPerTick));
 							}
 							else
 							{
@@ -92,14 +86,14 @@ public class NetworkServer
 						else
 						{
 							// Unknown version so just disconnect them.
-							System.err.println("Client " + state.clientId + ": Requested unknown protocol version: " + safe.version);
+							System.err.println("Client requested unknown protocol version: " + safe.version);
 							_network.disconnectPeer(token);
 						}
 					}
 					else
 					{
 						// This is bogus so disconnect them.
-						System.err.println("Client " + state.clientId + ": Failed handshake with type: " + packet.type.name());
+						System.err.println("Client failed handshake with type: " + packet.type.name());
 						_network.disconnectPeer(token);
 					}
 				}
@@ -156,7 +150,7 @@ public class NetworkServer
 	{
 		/**
 		 * Called when a user joins, in order to complete its handshake.  Note that the network is still not ready until
-		 * networkReady(token, int) is received.
+		 * networkReady(token) is received.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 * @param name The client's human name.
@@ -167,29 +161,25 @@ public class NetworkServer
 		 * Called when a user has disconnected.
 		 * 
 		 * @param token The token to use when interacting with the network.
-		 * @param id The ID of the client.
 		 */
-		void userLeft(NetworkLayer.PeerToken token, int id);
+		void userLeft(NetworkLayer.PeerToken token);
 		/**
 		 * Called when the network is free to send more messages to this client.
 		 * 
 		 * @param token The token to use when interacting with the network.
-		 * @param id The ID of the client.
 		 */
-		void networkWriteReady(NetworkLayer.PeerToken token, int id);
+		void networkWriteReady(NetworkLayer.PeerToken token);
 		/**
 		 * Called when the network is waiting for messages to be read from this client.
 		 * 
 		 * @param token The token to use when interacting with the network.
-		 * @param id The ID of the client.
 		 */
-		void networkReadReady(NetworkLayer.PeerToken token, int id);
+		void networkReadReady(NetworkLayer.PeerToken token);
 	}
 
 
 	private static class _ClientState
 	{
-		public int clientId;
 		public boolean didHandshake;
 	}
 }

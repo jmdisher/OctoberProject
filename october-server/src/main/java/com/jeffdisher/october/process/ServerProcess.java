@@ -113,7 +113,7 @@ public class ServerProcess
 		else
 		{
 			// This is valid so install it.
-			_ClientBuffer buffer = new _ClientBuffer(token);
+			_ClientBuffer buffer = new _ClientBuffer(token, hash);
 			_clients.put(token, buffer);
 			_clientsById.put(hash, buffer);
 			_serverListener.clientConnected(hash);
@@ -121,11 +121,11 @@ public class ServerProcess
 		return hash;
 	}
 
-	private synchronized void _destroyClient(NetworkLayer.PeerToken token, int clientId)
+	private synchronized void _destroyClient(NetworkLayer.PeerToken token)
 	{
-		_serverListener.clientDisconnected(clientId);
-		_clients.remove(token);
-		_clientsById.remove(clientId);
+		_ClientBuffer buffer = _clients.remove(token);
+		_serverListener.clientDisconnected(buffer.clientId);
+		_clientsById.remove(buffer.clientId);
 	}
 
 	private synchronized void _sendNextPacket(NetworkLayer.PeerToken token)
@@ -170,7 +170,7 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized void _setClientReadable(NetworkLayer.PeerToken token, int clientId)
+	private synchronized void _setClientReadable(NetworkLayer.PeerToken token)
 	{
 		_ClientBuffer buffer = _clients.get(token);
 		// This can only be called if we aren't already readable.
@@ -180,7 +180,7 @@ public class ServerProcess
 		// We need to notify the listener if there isn't already some readable content buffered here.
 		if (buffer.incoming.isEmpty())
 		{
-			_serverListener.clientReadReady(clientId);
+			_serverListener.clientReadReady(buffer.clientId);
 		}
 	}
 
@@ -226,19 +226,19 @@ public class ServerProcess
 			return _createClient(token, name);
 		}
 		@Override
-		public void userLeft(NetworkLayer.PeerToken token, int id)
+		public void userLeft(NetworkLayer.PeerToken token)
 		{
-			_destroyClient(token, id);
+			_destroyClient(token);
 		}
 		@Override
-		public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+		public void networkWriteReady(NetworkLayer.PeerToken token)
 		{
 			_sendNextPacket(token);
 		}
 		@Override
-		public void networkReadReady(NetworkLayer.PeerToken token, int id)
+		public void networkReadReady(NetworkLayer.PeerToken token)
 		{
-			_setClientReadable(token, id);
+			_setClientReadable(token);
 		}
 	}
 
@@ -331,14 +331,16 @@ public class ServerProcess
 	private static class _ClientBuffer
 	{
 		public final NetworkLayer.PeerToken token;
+		public final int clientId;
 		public final Queue<Packet> outgoing;
 		public boolean isNetworkWriteable;
 		public final Queue<Packet> incoming;
 		public boolean isNetworkReadable;
 		
-		public _ClientBuffer(NetworkLayer.PeerToken token)
+		public _ClientBuffer(NetworkLayer.PeerToken token, int clientId)
 		{
 			this.token = token;
+			this.clientId = clientId;
 			this.outgoing = new LinkedList<>();
 			this.isNetworkWriteable = false;
 			this.incoming = new LinkedList<>();
