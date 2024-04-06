@@ -1,9 +1,7 @@
 package com.jeffdisher.october.net;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.jeffdisher.october.utils.Assert;
 
@@ -15,7 +13,6 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkServer
 {
 	private final IListener _listener;
-	private final Map<Integer, _ClientState> _channelsById;
 	private final NetworkLayer _network;
 
 	/**
@@ -28,7 +25,6 @@ public class NetworkServer
 	public NetworkServer(IListener listener, int port) throws IOException
 	{
 		_listener = listener;
-		_channelsById = new HashMap<>();
 		
 		_network = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
@@ -36,7 +32,7 @@ public class NetworkServer
 			public void peerConnected(NetworkLayer.PeerToken token)
 			{
 				// Create the empty state.
-				token.setData(new _ClientState(token));
+				token.setData(new _ClientState());
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
@@ -45,12 +41,7 @@ public class NetworkServer
 				// Note that we still see this disconnect if we failed the handshake and we disconnect them.
 				if (clientId > 0)
 				{
-					synchronized(NetworkServer.this)
-					{
-						_ClientState channel = _channelsById.remove(clientId);
-						Assert.assertTrue(null != channel);
-					}
-					_listener.userLeft(clientId);
+					_listener.userLeft(token, clientId);
 				}
 			}
 			@Override
@@ -59,7 +50,7 @@ public class NetworkServer
 				_ClientState state = (_ClientState) token.getData();
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
 				Assert.assertTrue(state.didHandshake);
-				_listener.networkWriteReady(state.clientId);
+				_listener.networkWriteReady(token, state.clientId);
 			}
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
@@ -67,7 +58,7 @@ public class NetworkServer
 				_ClientState state = (_ClientState) token.getData();
 				if (state.didHandshake)
 				{
-					_listener.networkReadReady(state.clientId);
+					_listener.networkReadReady(token, state.clientId);
 				}
 				else
 				{
@@ -80,15 +71,11 @@ public class NetworkServer
 						if (0 == safe.version)
 						{
 							// Make sure that we can resolve this user (and that they aren't already here).
-							int clientId  = _listener.userJoined(safe.name);
+							int clientId  = _listener.userJoined(token, safe.name);
 							if (clientId > 0)
 							{
 								state.clientId = clientId;
 								state.didHandshake = true;
-								synchronized(NetworkServer.this)
-								{
-									_channelsById.put(clientId, state);
-								}
 								
 								// Send out description and consider the handshake completed.
 								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
@@ -131,57 +118,34 @@ public class NetworkServer
 	/**
 	 * Sends a message to the client with the given ID.
 	 * 
-	 * @param clientId The ID of a specific attached client.
+	 * @param token The token of a specific attached client.
 	 * @param packet The message to send.
 	 */
-	public void sendMessage(int clientId, Packet packet)
+	public void sendMessage(NetworkLayer.PeerToken token, Packet packet)
 	{
-		_ClientState client;
-		synchronized(this)
-		{
-			client = _channelsById.get(clientId);
-			Assert.assertTrue(null != client);
-			// TODO:  Buffer this if needed.
-		}
-		_network.sendMessage(client.token, packet);
+		_network.sendMessage(token, packet);
 	}
 
 	/**
 	 * Reads all of the buffered packets associated with the given clientId.  Note that calling this will also allow
 	 * reads from this client to resume in the background.
 	 * 
-	 * @param clientId The ID of a specific attached client.
+	 * @param token The token of a specific attached client.
 	 * @return The list of packets buffered from them.
 	 */
-	public List<Packet> readBufferedPackets(int clientId)
+	public List<Packet> readBufferedPackets(NetworkLayer.PeerToken token)
 	{
-		_ClientState client;
-		synchronized(this)
-		{
-			client = _channelsById.get(clientId);
-			Assert.assertTrue(null != client);
-		}
-		return _network.receiveMessages(client.token);
+		return _network.receiveMessages(token);
 	}
 
 	/**
 	 * Disconnects the client with the given ID.
 	 * 
-	 * @param clientId The ID of a specific attached client.
+	 * @param token The token of a specific attached client.
 	 */
-	public void disconnectClient(int clientId)
+	public void disconnectClient(NetworkLayer.PeerToken token)
 	{
-		_ClientState client;
-		synchronized(this)
-		{
-			// We will not remove this until we get the callback from the other side, so we don't have multiple paths causing races.
-			client = _channelsById.get(clientId);
-		}
-		// This could be racy or already gone.
-		if (null != client)
-		{
-			_network.disconnectPeer(client.token);
-		}
+		_network.disconnectPeer(token);
 	}
 
 	/**
@@ -192,41 +156,40 @@ public class NetworkServer
 	{
 		/**
 		 * Called when a user joins, in order to complete its handshake.  Note that the network is still not ready until
-		 * networkReady(int) is received.
+		 * networkReady(token, int) is received.
 		 * 
+		 * @param token The token to use when interacting with the network.
 		 * @param name The client's human name.
 		 * @return The ID to use for this user (<=0 implies the client should be rejected).
 		 */
-		int userJoined(String name);
+		int userJoined(NetworkLayer.PeerToken token, String name);
 		/**
 		 * Called when a user has disconnected.
 		 * 
+		 * @param token The token to use when interacting with the network.
 		 * @param id The ID of the client.
 		 */
-		void userLeft(int id);
+		void userLeft(NetworkLayer.PeerToken token, int id);
 		/**
 		 * Called when the network is free to send more messages to this client.
 		 * 
+		 * @param token The token to use when interacting with the network.
 		 * @param id The ID of the client.
 		 */
-		void networkWriteReady(int id);
+		void networkWriteReady(NetworkLayer.PeerToken token, int id);
 		/**
 		 * Called when the network is waiting for messages to be read from this client.
 		 * 
+		 * @param token The token to use when interacting with the network.
 		 * @param id The ID of the client.
 		 */
-		void networkReadReady(int id);
+		void networkReadReady(NetworkLayer.PeerToken token, int id);
 	}
 
 
 	private static class _ClientState
 	{
-		public final NetworkLayer.PeerToken token;
 		public int clientId;
 		public boolean didHandshake;
-		public _ClientState(NetworkLayer.PeerToken token)
-		{
-			this.token = token;
-		}
 	}
 }

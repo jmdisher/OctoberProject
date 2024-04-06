@@ -20,6 +20,7 @@ import com.jeffdisher.october.data.OctreeByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.net.NetworkClient;
+import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_Chat;
@@ -40,7 +41,7 @@ public class TestIntegratedNetwork
 		{
 			Map<Integer, String> _joinNames = new HashMap<>();
 			@Override
-			public int userJoined(String name)
+			public int userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// We might not see these if we connect/disconnect too quickly but we shouldn't see duplication.
 				int id = name.hashCode();
@@ -49,18 +50,18 @@ public class TestIntegratedNetwork
 				return id;
 			}
 			@Override
-			public void userLeft(int id)
+			public void userLeft(NetworkLayer.PeerToken token, int id)
 			{
 				// We don't always see that the user has left if we shut down first.
 				leftCount[0] += 1;
 			}
 			@Override
-			public void networkWriteReady(int id)
+			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
 			{
 				// We aren't acting on this in our test.
 			}
 			@Override
-			public void networkReadReady(int id)
+			public void networkReadReady(NetworkLayer.PeerToken token, int id)
 			{
 				// Should not happen in this test.
 				Assert.fail();
@@ -85,22 +86,34 @@ public class TestIntegratedNetwork
 		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
+			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public void userLeft(int id)
+			public int userJoined(NetworkLayer.PeerToken token, String name)
 			{
-			}
-			@Override
-			public int userJoined(String name)
-			{
+				// If this is the first peer, hold on to it.
+				if (null == _firstPeer)
+				{
+					_firstPeer = token;
+				}
 				// Starts ready.
 				_isReady1 = true;
 				return name.hashCode();
 			}
 			@Override
-			public void networkReadReady(int id)
+			public void userLeft(NetworkLayer.PeerToken token, int id)
 			{
-				List<Packet> packets = holder[0].readBufferedPackets(id);
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			{
+				_isReady1 = true;
+				_handle();
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			{
+				List<Packet> packets = holder[0].readBufferedPackets(token);
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.
@@ -110,19 +123,13 @@ public class TestIntegratedNetwork
 					_handle();
 				}
 			}
-			@Override
-			public void networkWriteReady(int id)
-			{
-				_isReady1 = true;
-				_handle();
-			}
 			private void _handle()
 			{
 				if (_isReady1 && !_messagesFor1.isEmpty())
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage("Client 1".hashCode(), new Packet_Chat("Client 2".hashCode(), message));
+					holder[0].sendMessage(_firstPeer, new Packet_Chat("Client 2".hashCode(), message));
 				}
 			}
 		}, port);
@@ -250,29 +257,29 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
-			public void userLeft(int id)
-			{
-			}
-			@Override
-			public int userJoined(String name)
+			public int userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// We will sent the message once the network is ready.
 				return name.hashCode();
 			}
 			@Override
-			public void networkReadReady(int id)
+			public void userLeft(NetworkLayer.PeerToken token, int id)
 			{
-				// We don't expect this in these tests.
-				Assert.fail();
 			}
 			@Override
-			public void networkWriteReady(int id)
+			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
 			{
 				if (_nextIndex < outgoing.length)
 				{
-					holder[0].sendMessage(id, outgoing[_nextIndex]);
+					holder[0].sendMessage(token, outgoing[_nextIndex]);
 					_nextIndex += 1;
 				}
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			{
+				// We don't expect this in these tests.
+				Assert.fail();
 			}
 		}, port);
 		holder[0] = server;

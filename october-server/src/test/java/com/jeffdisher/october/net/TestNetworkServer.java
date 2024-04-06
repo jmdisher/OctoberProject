@@ -26,13 +26,7 @@ public class TestNetworkServer
 		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
 		{
 			@Override
-			public void userLeft(int id)
-			{
-				// We don't always see that the user has left if we shut down first.
-				leftCount[0] += 1;
-			}
-			@Override
-			public int userJoined(String name)
+			public int userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				int id = name.hashCode();
 				Assert.assertFalse(joinNames.containsKey(id));
@@ -40,15 +34,21 @@ public class TestNetworkServer
 				return id;
 			}
 			@Override
-			public void networkReadReady(int id)
+			public void userLeft(NetworkLayer.PeerToken token, int id)
+			{
+				// We don't always see that the user has left if we shut down first.
+				leftCount[0] += 1;
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token, int id)
 			{
 				// Should not happen in this test.
 				Assert.fail();
-			}
-			@Override
-			public void networkWriteReady(int id)
-			{
-				// We aren't acting on this in our test.
 			}
 		}, port);
 		
@@ -72,22 +72,34 @@ public class TestNetworkServer
 		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
+			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public void userLeft(int id)
+			public int userJoined(NetworkLayer.PeerToken token, String name)
 			{
-			}
-			@Override
-			public int userJoined(String name)
-			{
+				// If this is the first peer, hold on to it.
+				if (null == _firstPeer)
+				{
+					_firstPeer = token;
+				}
 				// Starts ready.
 				_isReady1 = true;
 				return name.hashCode();
 			}
 			@Override
-			public void networkReadReady(int id)
+			public void userLeft(NetworkLayer.PeerToken token, int id)
 			{
-				List<Packet> packets = holder[0].readBufferedPackets(id);
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.PeerToken token, int id)
+			{
+				_isReady1 = true;
+				_handle();
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token, int id)
+			{
+				List<Packet> packets = holder[0].readBufferedPackets(token);
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.
@@ -97,19 +109,13 @@ public class TestNetworkServer
 					_handle();
 				}
 			}
-			@Override
-			public void networkWriteReady(int id)
-			{
-				_isReady1 = true;
-				_handle();
-			}
 			private void _handle()
 			{
 				if (_isReady1 && !_messagesFor1.isEmpty())
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage("Client 1".hashCode(), new Packet_Chat(2, message));
+					holder[0].sendMessage(_firstPeer, new Packet_Chat(2, message));
 				}
 			}
 		}, port);
