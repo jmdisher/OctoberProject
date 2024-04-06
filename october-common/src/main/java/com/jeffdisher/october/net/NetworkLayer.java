@@ -562,9 +562,14 @@ public class NetworkLayer
 	}
 
 	/**
-	 * This only exists to be an opaque token for the public interface token.
+	 * Mostly just an opaque token, but does allow for get/set of user data for caller use.
+	 * NOTE:  The internal interface is expected to assert that this user data is never changed once non-null.
 	 */
-	public static interface PeerToken {}
+	public static interface PeerToken
+	{
+		Object getData();
+		void setData(Object userData);
+	}
 
 	private static class _PeerState implements PeerToken
 	{
@@ -572,6 +577,7 @@ public class NetworkLayer
 		public final SelectionKey key;
 		public final ByteBuffer incoming;
 		public final ByteBuffer outgoing;
+		private Object _userData;
 		
 		public _PeerState(SocketChannel channel, SelectionKey key)
 		{
@@ -579,6 +585,18 @@ public class NetworkLayer
 			this.key = key;
 			this.incoming = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
 			this.outgoing = ByteBuffer.allocate(BUFFER_SIZE_BYTES);
+		}
+		@Override
+		public Object getData()
+		{
+			return _userData;
+		}
+		@Override
+		public void setData(Object userData)
+		{
+			Assert.assertTrue(null != userData);
+			Assert.assertTrue(null == _userData);
+			_userData = userData;
 		}
 	}
 }

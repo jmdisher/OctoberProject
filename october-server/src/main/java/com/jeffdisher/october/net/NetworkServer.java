@@ -16,7 +16,6 @@ public class NetworkServer
 {
 	private final IListener _listener;
 	private final Map<Integer, _ClientState> _channelsById;
-	private final Map<NetworkLayer.PeerToken, _ClientState> _channelsByToken;
 	private final NetworkLayer _network;
 
 	/**
@@ -30,7 +29,6 @@ public class NetworkServer
 	{
 		_listener = listener;
 		_channelsById = new HashMap<>();
-		_channelsByToken = new HashMap<>();
 		
 		_network = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
@@ -38,39 +36,27 @@ public class NetworkServer
 			public void peerConnected(NetworkLayer.PeerToken token)
 			{
 				// Create the empty state.
-				synchronized(NetworkServer.this)
-				{
-					_channelsByToken.put(token, new _ClientState(token));
-				}
-				// TODO:  We probably want to consider setting some timeout here.
+				token.setData(new _ClientState(token));
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
 			{
-				int clientId;
-				synchronized(NetworkServer.this)
+				int clientId = ((_ClientState)token.getData()).clientId;
+				// Note that we still see this disconnect if we failed the handshake and we disconnect them.
+				if (clientId > 0)
 				{
-					clientId = _channelsByToken.remove(token).clientId;
-					// Note that we still see this disconnect if we failed the handshake and we disconnect them.
-					if (clientId > 0)
+					synchronized(NetworkServer.this)
 					{
 						_ClientState channel = _channelsById.remove(clientId);
 						Assert.assertTrue(null != channel);
 					}
-				}
-				if (clientId > 0)
-				{
 					_listener.userLeft(clientId);
 				}
 			}
 			@Override
 			public void peerReadyForWrite(NetworkLayer.PeerToken token)
 			{
-				_ClientState state;
-				synchronized(NetworkServer.this)
-				{
-					state = _channelsByToken.get(token);
-				}
+				_ClientState state = (_ClientState) token.getData();
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
 				Assert.assertTrue(state.didHandshake);
 				_listener.networkWriteReady(state.clientId);
@@ -78,12 +64,7 @@ public class NetworkServer
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				_ClientState state;
-				synchronized(NetworkServer.this)
-				{
-					state = _channelsByToken.get(token);
-				}
-				
+				_ClientState state = (_ClientState) token.getData();
 				if (state.didHandshake)
 				{
 					_listener.networkReadReady(state.clientId);
