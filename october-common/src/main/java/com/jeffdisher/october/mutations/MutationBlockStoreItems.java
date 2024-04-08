@@ -17,7 +17,8 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * Called by MutationEntityPushItems to store items into the inventory in a given block.
- * Any items which do not fit are destroyed.
+ * Note that this mutation can over-fill the inventory so users of this mutation should be sure that this is what they
+ * expect.
  */
 public class MutationBlockStoreItems implements IMutationBlock
 {
@@ -77,10 +78,10 @@ public class MutationBlockStoreItems implements IMutationBlock
 		if (!didApply)
 		{
 			Inventory existing = _getInventory(newBlock);
-			MutableInventory inv = new MutableInventory(existing);
-			int stored = inv.addItemsBestEfforts(_offered.type(), _offered.count());
-			if (stored > 0)
+			if (null != existing)
 			{
+				MutableInventory inv = new MutableInventory(existing);
+				inv.addItemsAllowingOverflow(_offered.type(), _offered.count());
 				_putInventory(newBlock, inv.freeze());
 				
 				// See if we might need to trigger an automatic crafting operation in this block.
@@ -88,8 +89,8 @@ public class MutationBlockStoreItems implements IMutationBlock
 				{
 					context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
 				}
+				didApply = true;
 			}
-			didApply =  (stored > 0);
 		}
 		return didApply;
 	}

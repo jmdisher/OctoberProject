@@ -75,12 +75,29 @@ public class MutableInventory
 	public int addItemsBestEfforts(Item type, int count)
 	{
 		Environment env = Environment.getShared();
+		int itemEncumbrance = env.inventory.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / env.inventory.getEncumbrance(type);
-		int countToAdd = Math.min(maxToAdd, count);
-		
-		_addItems(type, countToAdd);
-		return countToAdd;
+		int added = 0;
+		if ((itemEncumbrance > 0) && (availableEncumbrance > 0))
+		{
+			int maxToAdd = availableEncumbrance / itemEncumbrance;
+			int countToAdd = Math.min(maxToAdd, count);
+			
+			_addItems(type, countToAdd);
+			added = countToAdd;
+		}
+		return added;
+	}
+
+	/**
+	 * Adds all of the given items to the inventory, even if it causes it to become over-filled.
+	 * 
+	 * @param type The type of item to add.
+	 * @param count The number of items of that type.
+	 */
+	public void addItemsAllowingOverflow(Item type, int count)
+	{
+		_addItems(type, count);
 	}
 
 	/**
@@ -92,9 +109,14 @@ public class MutableInventory
 	public int maxVacancyForItem(Item type)
 	{
 		Environment env = Environment.getShared();
+		int itemEncumbrance = env.inventory.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
-		int maxToAdd = availableEncumbrance / env.inventory.getEncumbrance(type);
-		return maxToAdd;
+		int vacancy = 0;
+		if ((itemEncumbrance > 0) && (availableEncumbrance > 0))
+		{
+			vacancy = availableEncumbrance / env.inventory.getEncumbrance(type);
+		}
+		return vacancy;
 	}
 
 	/**
@@ -189,6 +211,5 @@ public class MutableInventory
 		Items updated = new Items(type, newCount);
 		_items.put(type, updated);
 		_currentEncumbrance = updatedEncumbrance;
-		Assert.assertTrue(_currentEncumbrance <= _original.maxEncumbrance);
 	}
 }

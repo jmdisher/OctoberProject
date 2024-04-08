@@ -1,5 +1,8 @@
 package com.jeffdisher.october.mutations;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -18,6 +21,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -520,5 +524,113 @@ public class TestCommonChanges
 		
 		// Verify that their inventory is now empty.
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
+	}
+
+	@Test
+	public void duplicateItemOverfill() throws Throwable
+	{
+		// Fill a block to only have space for 1 item left, then show that 2 entities storing the item in the same tick still cause the block to become over-full.
+		int entityId1 = 1;
+		MutableEntity mutable1 = MutableEntity.create(entityId1);
+		mutable1.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		mutable1.newInventory.addAllItems(ENV.items.STONE, 1);
+		mutable1.newSelectedItem = ENV.items.STONE;
+		int entityId2 = 2;
+		MutableEntity mutable2 = MutableEntity.create(entityId2);
+		mutable2.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		mutable2.newInventory.addAllItems(ENV.items.STONE, 1);
+		mutable2.newSelectedItem = ENV.items.STONE;
+		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
+		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
+		// Fill the inventory.
+		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
+		MutableInventory mutInv = new MutableInventory(proxy.getInventory());
+		int added = mutInv.addItemsBestEfforts(ENV.items.STONE, 50);
+		Assert.assertTrue(added < 50);
+		mutInv.removeItems(ENV.items.STONE, 1);
+		proxy.setInventory(mutInv.freeze());
+		proxy.writeBack(cuboid);
+		
+		List<IMutationBlock> blockHolder = new ArrayList<>();
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> {
+					blockHolder.add(newMutation);
+				}
+				, null
+				, null
+		);
+		
+		// This is a multi-step process which starts by asking the entity to start the drop.
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(push.applyChange(context, mutable1));
+		Assert.assertTrue(push.applyChange(context, mutable2));
+		Assert.assertEquals(added - 1, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		
+		// Apply the secondary mutations.
+		Assert.assertEquals(2, blockHolder.size());
+		for (IMutationBlock mutation : blockHolder)
+		{
+			Assert.assertTrue(mutation instanceof MutationBlockStoreItems);
+			AbsoluteLocation location = mutation.getAbsoluteLocation();
+			MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, newBlock));
+			newBlock.writeBack(cuboid);
+		}
+		
+		// Verify that this is over-full.
+		Inventory inventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertEquals(added + 1, inventory.getCount(ENV.items.STONE));
+		Assert.assertTrue(inventory.currentEncumbrance > inventory.maxEncumbrance);
+	}
+
+	@Test
+	public void itemDropOverfill() throws Throwable
+	{
+		// Fill 2 blocks in the column and show that the top falls into the bottom, even making it over-full.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
+		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
+		// Fill the inventory.
+		MutableBlockProxy proxy = new MutableBlockProxy(targetLocation, cuboid);
+		MutableInventory mutInv = new MutableInventory(proxy.getInventory());
+		int added = mutInv.addItemsBestEfforts(ENV.items.STONE, 50);
+		Assert.assertTrue(added < 50);
+		proxy.setInventory(mutInv.freeze());
+		proxy.writeBack(cuboid);
+		
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+				, null
+		);
+		
+		// Just directly create the mutation to push items into the block above this one.
+		AbsoluteLocation dropLocation = targetLocation.getRelative(0, 0, 1);
+		MutationBlockStoreItems mutations = new MutationBlockStoreItems(dropLocation, new Items(ENV.items.STONE, added), Inventory.INVENTORY_ASPECT_INVENTORY);
+		proxy = new MutableBlockProxy(dropLocation, cuboid);
+		Assert.assertTrue(mutations.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// This should cause a follow-up so run that.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		AbsoluteLocation mutationTarget = blockHolder[0].getAbsoluteLocation();
+		Assert.assertEquals(targetLocation, mutationTarget);
+		proxy = new MutableBlockProxy(mutationTarget, cuboid);
+		Assert.assertTrue(blockHolder[0].applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Verify we see only the one inventory, and over-filled.
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, dropLocation.getBlockAddress()));
+		Assert.assertEquals(2 * added, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ENV.items.STONE));
 	}
 }

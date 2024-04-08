@@ -51,8 +51,17 @@ public class Inventory
 	private Inventory(int maxEncumbrance, Map<Item, Items> items, int currentEncumbrance)
 	{
 		this.maxEncumbrance = maxEncumbrance;
-		this.items = Collections.unmodifiableMap(items);
-		this.currentEncumbrance = currentEncumbrance;
+		// We will create this as empty if there is an overflow in encumbrance.
+		if (currentEncumbrance >= 0)
+		{
+			this.items = Collections.unmodifiableMap(items);
+			this.currentEncumbrance = currentEncumbrance;
+		}
+		else
+		{
+			this.items = Collections.emptyMap();
+			this.currentEncumbrance = 0;
+		}
 	}
 
 	/**
@@ -94,7 +103,6 @@ public class Inventory
 			current += count;
 			_items.put(type, current);
 			_currentEncumbrance += env.inventory.getEncumbrance(type) * count;
-			Assert.assertTrue(_currentEncumbrance <= _maxEncumbrance);
 			return this;
 		}
 		public Inventory finish()

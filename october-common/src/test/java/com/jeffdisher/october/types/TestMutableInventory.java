@@ -106,4 +106,22 @@ public class TestMutableInventory
 		Assert.assertEquals(1, frozen.items.get(ENV.items.LOG).count());
 		Assert.assertEquals(2, frozen.currentEncumbrance);
 	}
+
+	@Test
+	public void integerOverflow() throws Throwable
+	{
+		// Normally, we can over-fill inventories but verify that this is cleared if the current encumbrance overflows.
+		Inventory original = Inventory.start(10).finish();
+		MutableInventory inv = new MutableInventory(original);
+		int itemEncumbrance = ENV.inventory.getEncumbrance(ENV.items.LOG);
+		int countToOverflow = (Integer.MAX_VALUE / itemEncumbrance) + 1;
+		inv.addItemsAllowingOverflow(ENV.items.LOG, countToOverflow);
+		Assert.assertEquals(countToOverflow, inv.getCount(ENV.items.LOG));
+		
+		// This should empty when freezing.
+		Inventory frozen = inv.freeze();
+		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
+		Assert.assertEquals(0, frozen.items.size());
+		Assert.assertEquals(0, frozen.currentEncumbrance);
+	}
 }
