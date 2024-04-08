@@ -420,16 +420,18 @@ public class TestCommonChanges
 	{
 		// We will try to place a breaking a block of the wrong type or too far away.
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
 		
-		AbsoluteLocation tooFar = new AbsoluteLocation(3, 0, 10);
-		AbsoluteLocation wrongType = new AbsoluteLocation(0, 0, 10);
-		AbsoluteLocation reasonable = new AbsoluteLocation(1, 0, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(7, 0, 10);
+		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
+		AbsoluteLocation reasonable = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), ENV.items.STONE.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wrongType.getBlockAddress(), ENV.items.PLANK.number());
 		Assert.assertEquals(ENV.items.PLANK.number(), cuboid.getData15(AspectRegistry.BLOCK, wrongType.getBlockAddress()));
 		cuboid.setData15(AspectRegistry.BLOCK, reasonable.getBlockAddress(), ENV.items.STONE.number());
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), ENV.items.PLANK.number());
 		
 		IMutationEntity[] holder = new IMutationEntity[1];
 		boolean[] didSchedule = new boolean[1];

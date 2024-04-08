@@ -6,6 +6,8 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -19,6 +21,7 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 {
 	public static final MutationEntityType TYPE = MutationEntityType.INCREMENTAL_BREAK_BLOCK;
+	public static final float MAX_REACH = 1.5f;
 
 	public static EntityChangeIncrementalBlockBreak deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -53,10 +56,12 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
-		int absX = Math.abs(_targetBlock.x() - Math.round(newEntity.newLocation.x()));
-		int absY = Math.abs(_targetBlock.y() - Math.round(newEntity.newLocation.y()));
-		int absZ = Math.abs(_targetBlock.z() - Math.round(newEntity.newLocation.z()));
-		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
+		EntityLocation entityCentre = _entityCentre(newEntity.newLocation, newEntity.original.volume());
+		EntityLocation blockCentre = _blockCentre(_targetBlock);
+		float absX = Math.abs(blockCentre.x() - entityCentre.x());
+		float absY = Math.abs(blockCentre.y() - entityCentre.y());
+		float absZ = Math.abs(blockCentre.z() - entityCentre.z());
+		boolean isLocationClose = ((absX <= MAX_REACH) && (absY <= MAX_REACH) && (absZ <= MAX_REACH));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
@@ -93,5 +98,25 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 		buffer.putShort(_millisToApply);
+	}
+
+
+	private EntityLocation _entityCentre(EntityLocation base, EntityVolume volume)
+	{
+		float halfWidth = volume.width() / 2.0f;
+		return new EntityLocation(
+				base.x() + halfWidth,
+				base.y() + halfWidth,
+				base.z() + (volume.height() / 2.0f)
+		);
+	}
+
+	private EntityLocation _blockCentre(AbsoluteLocation block)
+	{
+		return new EntityLocation(
+				block.x() + 0.5f,
+				block.y() + 0.5f,
+				block.z() + 0.5f
+		);
 	}
 }
