@@ -37,10 +37,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ServerProcess
 {
-	private final Map<NetworkLayer.PeerToken, _ClientBuffer> _clients;
 	private final Map<Integer, _ClientBuffer> _clientsById;
 	private final ServerRunner _server;
-	private final NetworkServer _network;
+	private final NetworkServer<_ClientBuffer> _network;
 
 	private IServerAdapter.IListener _serverListener;
 
@@ -64,13 +63,12 @@ public class ServerProcess
 			, LongSupplier currentTimeMillisProvider
 	) throws IOException
 	{
-		_clients = new HashMap<>();
 		_clientsById = new HashMap<>();
 		// We will assume that ServerRunner will shut down the cuboidLoader for us.
 		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
-		_network = new NetworkServer(new _NetworkListener(), port);
+		_network = new NetworkServer<_ClientBuffer>(new _NetworkListener(), port);
 	}
 
 	public synchronized long waitForTicksToPass(long ticksToAdvance) throws InterruptedException
@@ -100,37 +98,36 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized int _createClient(NetworkLayer.PeerToken token, String name)
+	private synchronized NetworkServer.ConnectingClientDescription<_ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name)
 	{
 		// For now, we will just hash the string and use that as the ID (Java's string hash is reasonable).  We still want the number to be positive, though.
 		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
+		NetworkServer.ConnectingClientDescription<_ClientBuffer> result;
 		int hash = Math.abs(name.hashCode());
 		if (_clientsById.containsKey(hash))
 		{
 			// Already present, so fail.
-			hash = 0;
+			result = null;
 		}
 		else
 		{
 			// This is valid so install it.
 			_ClientBuffer buffer = new _ClientBuffer(token, hash);
-			_clients.put(token, buffer);
 			_clientsById.put(hash, buffer);
 			_serverListener.clientConnected(hash);
+			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
 		}
-		return hash;
+		return result;
 	}
 
-	private synchronized void _destroyClient(NetworkLayer.PeerToken token)
+	private synchronized void _destroyClient(_ClientBuffer buffer)
 	{
-		_ClientBuffer buffer = _clients.remove(token);
 		_serverListener.clientDisconnected(buffer.clientId);
 		_clientsById.remove(buffer.clientId);
 	}
 
-	private synchronized void _sendNextPacket(NetworkLayer.PeerToken token)
+	private synchronized void _sendNextPacket(_ClientBuffer buffer)
 	{
-		_ClientBuffer buffer = _clients.get(token);
 		if (buffer.outgoing.isEmpty())
 		{
 			Assert.assertTrue(!buffer.isNetworkWriteable);
@@ -139,7 +136,7 @@ public class ServerProcess
 		else
 		{
 			Packet next = buffer.outgoing.poll();
-			_network.sendMessage(token, next);
+			_network.sendMessage(buffer.token, next);
 			buffer.isNetworkWriteable = false;
 		}
 	}
@@ -147,7 +144,12 @@ public class ServerProcess
 	private synchronized void _bufferPacket(int clientId, Packet packet)
 	{
 		_ClientBuffer buffer = _clientsById.get(clientId);
-		if (buffer.isNetworkWriteable)
+		if (null == buffer)
+		{
+			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			System.out.println("Warning: Ignoring buffer packet to client " + clientId);
+		}
+		else if (buffer.isNetworkWriteable)
 		{
 			_network.sendMessage(buffer.token, packet);
 			buffer.isNetworkWriteable = false;
@@ -161,7 +163,15 @@ public class ServerProcess
 	private synchronized void _sendDisconnectRequest(int clientId)
 	{
 		_ClientBuffer buffer = _clientsById.get(clientId);
-		_network.disconnectClient(buffer.token);
+		if (null == buffer)
+		{
+			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			System.out.println("Warning: Ignoring disconnect request to client " + clientId);
+		}
+		else
+		{
+			_network.disconnectClient(buffer.token);
+		}
 	}
 
 	public synchronized void _updateTickNumber(long tickNumber)
@@ -170,9 +180,8 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized void _setClientReadable(NetworkLayer.PeerToken token)
+	private synchronized void _setClientReadable(_ClientBuffer buffer)
 	{
-		_ClientBuffer buffer = _clients.get(token);
 		// This can only be called if we aren't already readable.
 		Assert.assertTrue(!buffer.isNetworkReadable);
 		buffer.isNetworkReadable = true;
@@ -186,59 +195,70 @@ public class ServerProcess
 
 	private synchronized Packet _peekOrRemoveNextMutationFromClient(int clientId, Packet toRemove)
 	{
+		Packet packet;
 		_ClientBuffer buffer = _clientsById.get(clientId);
-		// This check is unusually specific but a null toRemove is only passed if this is the first call, meaning this must be readable.
-		if (null == toRemove)
+		if (null == buffer)
 		{
-			Assert.assertTrue(buffer.isNetworkReadable || !buffer.incoming.isEmpty());
+			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			System.out.println("Warning: Ignoring peek next mutation from client " + clientId);
+			packet = null;
 		}
-		
-		// See if we need to pull more from the lower level.
-		if (buffer.incoming.isEmpty() && buffer.isNetworkReadable)
+		else
 		{
-			List<Packet> list = _network.readBufferedPackets(buffer.token);
-			// This can't be empty if we were told that this was readable.
-			Assert.assertTrue(!list.isEmpty());
-			buffer.incoming.addAll(list);
-			buffer.isNetworkReadable = false;
-		}
-		
-		// Now, handle this operation.
-		if (!buffer.incoming.isEmpty())
-		{
-			if (null != toRemove)
+			// This check is unusually specific but a null toRemove is only passed if this is the first call, meaning this must be readable.
+			if (null == toRemove)
 			{
-				Packet removed = buffer.incoming.poll();
-				// These must match since this is the point of toRemove.
-				Assert.assertTrue(toRemove == removed);
+				Assert.assertTrue(buffer.isNetworkReadable || !buffer.incoming.isEmpty());
 			}
+			
+			// See if we need to pull more from the lower level.
+			if (buffer.incoming.isEmpty() && buffer.isNetworkReadable)
+			{
+				List<Packet> list = _network.readBufferedPackets(buffer.token);
+				// This can't be empty if we were told that this was readable.
+				Assert.assertTrue(!list.isEmpty());
+				buffer.incoming.addAll(list);
+				buffer.isNetworkReadable = false;
+			}
+			
+			// Now, handle this operation.
+			if (!buffer.incoming.isEmpty())
+			{
+				if (null != toRemove)
+				{
+					Packet removed = buffer.incoming.poll();
+					// These must match since this is the point of toRemove.
+					Assert.assertTrue(toRemove == removed);
+				}
+			}
+			packet = buffer.incoming.peek();
 		}
-		return buffer.incoming.peek();
+		return packet;
 	}
 
 
 	// Note that all callbacks are issued on the NetworkServer's thread.
-	private class _NetworkListener implements NetworkServer.IListener
+	private class _NetworkListener implements NetworkServer.IListener<_ClientBuffer>
 	{
 		@Override
-		public int userJoined(NetworkLayer.PeerToken token, String name)
+		public NetworkServer.ConnectingClientDescription<_ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name)
 		{
 			return _createClient(token, name);
 		}
 		@Override
-		public void userLeft(NetworkLayer.PeerToken token)
+		public void userLeft(_ClientBuffer buffer)
 		{
-			_destroyClient(token);
+			_destroyClient(buffer);
 		}
 		@Override
-		public void networkWriteReady(NetworkLayer.PeerToken token)
+		public void networkWriteReady(_ClientBuffer buffer)
 		{
-			_sendNextPacket(token);
+			_sendNextPacket(buffer);
 		}
 		@Override
-		public void networkReadReady(NetworkLayer.PeerToken token)
+		public void networkReadReady(_ClientBuffer buffer)
 		{
-			_setClientReadable(token);
+			_setClientReadable(buffer);
 		}
 	}
 

@@ -37,17 +37,17 @@ public class TestIntegratedNetwork
 	{
 		int[] leftCount = new int[1];
 		int port = 3000;
-		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			Map<Integer, String> _joinNames = new HashMap<>();
 			@Override
-			public int userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// We might not see these if we connect/disconnect too quickly but we shouldn't see duplication.
 				int id = name.hashCode();
 				Assert.assertFalse(_joinNames.containsKey(id));
 				_joinNames.put(id, name);
-				return id;
+				return new NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken>(id, token);
 			}
 			@Override
 			public void userLeft(NetworkLayer.PeerToken token)
@@ -82,14 +82,15 @@ public class TestIntegratedNetwork
 	public void chat() throws Throwable
 	{
 		int port = 3000;
-		NetworkServer[] holder = new NetworkServer[1];
-		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
 			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public int userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -98,7 +99,7 @@ public class TestIntegratedNetwork
 				}
 				// Starts ready.
 				_isReady1 = true;
-				return name.hashCode();
+				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
 			public void userLeft(NetworkLayer.PeerToken token)
@@ -251,15 +252,16 @@ public class TestIntegratedNetwork
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
-		NetworkServer[] holder = new NetworkServer[1];
-		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			int _nextIndex = 0;
 			@Override
-			public int userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// We will sent the message once the network is ready.
-				return name.hashCode();
+				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
 			public void userLeft(NetworkLayer.PeerToken token)

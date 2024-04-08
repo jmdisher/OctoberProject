@@ -23,15 +23,15 @@ public class TestNetworkServer
 		int[] leftCount = new int[1];
 		Map<Integer, String> joinNames = new HashMap<>();
 		int port = 3000;
-		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			@Override
-			public int userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				int id = name.hashCode();
 				Assert.assertFalse(joinNames.containsKey(id));
 				joinNames.put(id, name);
-				return id;
+				return new NetworkServer.ConnectingClientDescription<>(id, token);
 			}
 			@Override
 			public void userLeft(NetworkLayer.PeerToken token)
@@ -68,14 +68,15 @@ public class TestNetworkServer
 	public void chat() throws IOException
 	{
 		int port = 3000;
-		NetworkServer[] holder = new NetworkServer[1];
-		NetworkServer server = new NetworkServer(new NetworkServer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
 		{
 			private List<String> _messagesFor1 = new ArrayList<>();
 			NetworkLayer.PeerToken _firstPeer = null;
 			private boolean _isReady1 = false;
 			@Override
-			public int userJoined(NetworkLayer.PeerToken token, String name)
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
 			{
 				// If this is the first peer, hold on to it.
 				if (null == _firstPeer)
@@ -84,7 +85,7 @@ public class TestNetworkServer
 				}
 				// Starts ready.
 				_isReady1 = true;
-				return name.hashCode();
+				return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
 			}
 			@Override
 			public void userLeft(NetworkLayer.PeerToken token)

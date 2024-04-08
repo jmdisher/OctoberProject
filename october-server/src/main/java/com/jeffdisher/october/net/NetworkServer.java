@@ -10,9 +10,9 @@ import com.jeffdisher.october.utils.Assert;
  * A wrapper over NetworkLayer which adapts its interface for server-specific use-cases.
  * Note that all calls issued on the IListener interface are run on the internal network thread and must return quickly.
  */
-public class NetworkServer
+public class NetworkServer<L>
 {
-	private final IListener _listener;
+	private final IListener<L> _listener;
 	private final NetworkLayer _network;
 
 	/**
@@ -22,7 +22,7 @@ public class NetworkServer
 	 * @param port The port which should be bound for accepting incoming connections.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkServer(IListener listener, int port) throws IOException
+	public NetworkServer(IListener<L> listener, int port) throws IOException
 	{
 		_listener = listener;
 		
@@ -32,28 +32,32 @@ public class NetworkServer
 			public void peerConnected(NetworkLayer.PeerToken token)
 			{
 				// Create the empty state.
-				token.setData(new _ClientState());
+				token.setData(new _ClientState<L>());
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
 			{
-				_listener.userLeft(token);
+				_ClientState<L> state = _downcastData(token);
+				if (null != state.data)
+				{
+					_listener.userLeft(state.data);
+				}
 			}
 			@Override
 			public void peerReadyForWrite(NetworkLayer.PeerToken token)
 			{
-				_ClientState state = (_ClientState) token.getData();
+				_ClientState<L> state = _downcastData(token);
 				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
-				Assert.assertTrue(state.didHandshake);
-				_listener.networkWriteReady(token);
+				Assert.assertTrue(null != state.data);
+				_listener.networkWriteReady(state.data);
 			}
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				_ClientState state = (_ClientState) token.getData();
-				if (state.didHandshake)
+				_ClientState<L> state = _downcastData(token);
+				if (null != state.data)
 				{
-					_listener.networkReadReady(token);
+					_listener.networkReadReady(state.data);
 				}
 				else
 				{
@@ -66,15 +70,15 @@ public class NetworkServer
 						if (0 == safe.version)
 						{
 							// Make sure that we can resolve this user (and that they aren't already here).
-							int clientId  = _listener.userJoined(token, safe.name);
-							if (clientId > 0)
+							ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name);
+							if (null != description)
 							{
-								state.didHandshake = true;
+								state.data = description.data;
 								
 								// Send out description and consider the handshake completed.
 								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
 								long millisPerTick = 100L;
-								_network.sendMessage(token, new Packet_ServerSendConfiguration(clientId, millisPerTick));
+								_network.sendMessage(token, new Packet_ServerSendConfiguration(description.clientId, millisPerTick));
 							}
 							else
 							{
@@ -97,6 +101,11 @@ public class NetworkServer
 						_network.disconnectPeer(token);
 					}
 				}
+			}
+			@SuppressWarnings("unchecked")
+			private _ClientState<L> _downcastData(NetworkLayer.PeerToken token)
+			{
+				return (_ClientState<L>) token.getData();
 			}
 		}, port);
 	}
@@ -146,40 +155,44 @@ public class NetworkServer
 	 * The interface for listening to events from inside the server.  Note that all calls will be issued on the internal
 	 * thread so they must return soon in order to avoid slowing the system.
 	 */
-	public static interface IListener
+	public static interface IListener<T>
 	{
 		/**
-		 * Called when a user joins, in order to complete its handshake.  Note that the network is still not ready until
-		 * networkReady(token) is received.
+		 * Called when a user joins, in order to complete its handshake.  Note that the network is neither readable nor
+		 * writable when first called.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 * @param name The client's human name.
-		 * @return The ID to use for this user (<=0 implies the client should be rejected).
+		 * @return The description of the client, null if the connection should be rejected.
 		 */
-		int userJoined(NetworkLayer.PeerToken token, String name);
+		ConnectingClientDescription<T> userJoined(NetworkLayer.PeerToken token, String name);
 		/**
 		 * Called when a user has disconnected.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 */
-		void userLeft(NetworkLayer.PeerToken token);
+		void userLeft(T data);
 		/**
 		 * Called when the network is free to send more messages to this client.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 */
-		void networkWriteReady(NetworkLayer.PeerToken token);
+		void networkWriteReady(T data);
 		/**
 		 * Called when the network is waiting for messages to be read from this client.
 		 * 
 		 * @param token The token to use when interacting with the network.
 		 */
-		void networkReadReady(NetworkLayer.PeerToken token);
+		void networkReadReady(T data);
 	}
 
+	public static record ConnectingClientDescription<T>(int clientId
+			, T data
+	) {}
 
-	private static class _ClientState
+	private static class _ClientState<T>
 	{
-		public boolean didHandshake;
+		// This value is set non-null after a successful handshake and joining.
+		public T data;
 	}
 }
