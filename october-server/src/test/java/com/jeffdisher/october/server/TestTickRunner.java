@@ -37,6 +37,7 @@ import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.mutations.SaturatingDamage;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -72,7 +73,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -97,7 +98,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -140,7 +141,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1), ENV.blocks.AIR), List.of())
 				)
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -173,7 +174,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -216,7 +217,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -270,7 +271,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(null
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.startNextTick();
@@ -310,8 +311,8 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
 		runner.setupChangesForTick(null
 				, null
-				, List.of(mutable.freeze()
-						, MutableEntity.create(entityId).freeze()
+				, List.of(new SuspendedEntity(mutable.freeze(), List.of())
+						, _createFreshEntity(entityId)
 				)
 				, null
 		);
@@ -358,7 +359,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		
@@ -429,7 +430,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(constantAddress, ENV.blocks.AIR), List.of())
 				)
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		
@@ -492,7 +493,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(null
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.startNextTick();
@@ -530,7 +531,7 @@ public class TestTickRunner
 					new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.STONE), List.of())
 				)
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.startNextTick();
@@ -560,7 +561,7 @@ public class TestTickRunner
 				new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE), List.of(new ScheduledMutation(mutation, 0L)))
 			)
 			, null
-			, List.of(MutableEntity.create(entityId).freeze())
+			, List.of(_createFreshEntity(entityId))
 			, null
 		);
 		runner.startNextTick();
@@ -584,7 +585,7 @@ public class TestTickRunner
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -636,7 +637,7 @@ public class TestTickRunner
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		
@@ -820,7 +821,7 @@ public class TestTickRunner
 		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1028,7 +1029,7 @@ public class TestTickRunner
 		mutable.newSelectedItem = ENV.items.STONE;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of()))
 				, null
-				, List.of(mutable.freeze())
+				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1085,7 +1086,7 @@ public class TestTickRunner
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(-1, -1, -1)), List.of())
 		)
 				, null
-				, List.of(mutable.freeze())
+				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1135,7 +1136,7 @@ public class TestTickRunner
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1211,7 +1212,7 @@ public class TestTickRunner
 					, new SuspendedCuboid<IReadOnlyCuboidData>(otherCuboid1, List.of())
 				)
 				, null
-				, List.of(MutableEntity.create(entityId).freeze())
+				, List.of(_createFreshEntity(entityId))
 				, null
 		);
 		runner.start();
@@ -1272,7 +1273,7 @@ public class TestTickRunner
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.start();
@@ -1337,7 +1338,7 @@ public class TestTickRunner
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.start();
@@ -1425,7 +1426,7 @@ public class TestTickRunner
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
 				, null
-				, List.of(entity)
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.start();
@@ -1537,5 +1538,10 @@ public class TestTickRunner
 			}
 		}
 		return cuboid;
+	}
+
+	private SuspendedEntity _createFreshEntity(int entityId)
+	{
+		return new SuspendedEntity(MutableEntity.create(entityId).freeze(), List.of());
 	}
 }

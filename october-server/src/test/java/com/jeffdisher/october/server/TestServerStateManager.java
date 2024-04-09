@@ -22,6 +22,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -86,7 +87,7 @@ public class TestServerStateManager
 		callouts.requestedEntityIds.clear();
 		
 		// Load this entity.
-		callouts.loadedEntities.add(MutableEntity.create(clientId).freeze());
+		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.create(clientId).freeze(), List.of()));
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
@@ -198,16 +199,19 @@ public class TestServerStateManager
 		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
+			Assert.assertTrue(suspended.mutations().isEmpty());
 			completedCuboids.put(cuboid.getCuboidAddress(), cuboid);
 		}
 		return completedCuboids;
 	}
 
-	private Map<Integer, Entity> _convertToEntityMap(Collection<Entity> entities)
+	private Map<Integer, Entity> _convertToEntityMap(Collection<SuspendedEntity> entities)
 	{
 		Map<Integer, Entity> completedEntities = new HashMap<>();
-		for (Entity entity : entities)
+		for (SuspendedEntity suspended : entities)
 		{
+			Entity entity = suspended.entity();
+			Assert.assertTrue(suspended.mutations().isEmpty());
 			completedEntities.put(entity.id(), entity);
 		}
 		return completedEntities;
@@ -218,15 +222,15 @@ public class TestServerStateManager
 	{
 		public Set<Integer> requestedEntityIds = new HashSet<>();
 		public Set<CuboidAddress> requestedCuboidAddresses = new HashSet<>();
-		public List<Entity> loadedEntities = new ArrayList<>();
+		public List<SuspendedEntity> loadedEntities = new ArrayList<>();
 		public List<SuspendedCuboid<CuboidData>> loadedCuboids = new ArrayList<>();
 		public Map<Integer, Long> lastFinishedCommitPerClient = new HashMap<>();
 		public Set<SuspendedCuboid<IReadOnlyCuboidData>> cuboidsToWrite = new HashSet<>();
-		public Set<Entity> entitiesToWrite = new HashSet<>();
+		public Set<SuspendedEntity> entitiesToWrite = new HashSet<>();
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
 		
 		@Override
-		public void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<Entity> entities)
+		public void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities)
 		{
 			Assert.assertFalse(this.cuboidsToWrite.removeAll(cuboids));
 			this.cuboidsToWrite.addAll(cuboids);
@@ -235,7 +239,7 @@ public class TestServerStateManager
 		}
 		@Override
 		public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
-				, Collection<Entity> out_loadedEntities
+				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
 		)

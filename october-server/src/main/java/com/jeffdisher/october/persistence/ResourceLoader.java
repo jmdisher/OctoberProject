@@ -15,17 +15,17 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.net.MutationEntityCodec;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -54,7 +54,7 @@ public class ResourceLoader
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
 	private Collection<SuspendedCuboid<CuboidData>> _shared_resolvedCuboids;
-	private Collection<Entity> _shared_resolvedEntities;
+	private Collection<SuspendedEntity> _shared_resolvedEntities;
 
 	public ResourceLoader(File saveDirectory
 			, Function<CuboidAddress, CuboidData> cuboidGenerator
@@ -113,14 +113,14 @@ public class ResourceLoader
 	 * loaded/generated in the background via their corresponding out parameters.
 	 * 
 	 * @param out_loadedCuboids Will be filled with previously-requested cuboids which have been satisfied in the
-	 * background (null or non-empty).
+	 * background.
 	 * @param out_loadedEntities Will be filled with previously-requested entities which have been satisfied in the
 	 * background.
 	 * @param requestedCuboids The collection of cuboids to load/generate, by address.
 	 * @param requestedEntityIds The collection of entities to load/generate, by ID.
 	 */
 	public void getResultsAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
-			, Collection<Entity> out_loadedEntities
+			, Collection<SuspendedEntity> out_loadedEntities
 			, Collection<CuboidAddress> requestedCuboids
 			, Collection<Integer> requestedEntityIds
 	)
@@ -167,7 +167,7 @@ public class ResourceLoader
 					// 2) The generator
 					
 					// See if we can load this from disk.
-					Entity data = _background_readEntityFromDisk(id);
+					SuspendedEntity data = _background_readEntityFromDisk(id);
 					if (null == data)
 					{
 						// Note that the entity generator is always present.
@@ -208,9 +208,9 @@ public class ResourceLoader
 	 * Note that at least one of these collections must contain something.
 	 * 
 	 * @param cuboids The cuboids (and any suspended mutations) to write.
-	 * @param entities The entities to write.
+	 * @param entities The entities (and any suspended mutations) to write.
 	 */
-	public void writeBackToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<Entity> entities)
+	public void writeBackToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
@@ -219,7 +219,7 @@ public class ResourceLoader
 			{
 				_background_writeCuboidToDisk(cuboid);
 			}
-			for (Entity entity : entities)
+			for (SuspendedEntity entity : entities)
 			{
 				_background_writeEntityToDisk(entity);
 			}
@@ -254,7 +254,7 @@ public class ResourceLoader
 		}
 	}
 
-	private void _background_returnEntity(Entity loaded)
+	private void _background_returnEntity(SuspendedEntity loaded)
 	{
 		_sharedDataLock.lock();
 		try
@@ -359,10 +359,10 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private Entity _background_readEntityFromDisk(int id)
+	private SuspendedEntity _background_readEntityFromDisk(int id)
 	{
 		// These data files are relatively small so we can just read this in, completely.
-		Entity entity;
+		SuspendedEntity result;
 		try (
 				RandomAccessFile aFile = new RandomAccessFile(_getEntityFile(id), "r");
 				FileChannel inChannel = aFile.getChannel();
@@ -370,25 +370,42 @@ public class ResourceLoader
 		{
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
-			entity = CodecHelpers.readEntity(buffer);
+			Entity entity = CodecHelpers.readEntity(buffer);
+			
+			// Now, load any suspended mutations.
+			List<IMutationEntity> suspended = new ArrayList<>();
+			while (buffer.hasRemaining())
+			{
+				IMutationEntity mutation = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+				suspended.add(mutation);
+			}
+			result = new SuspendedEntity(entity, suspended);
 		}
 		catch (FileNotFoundException e)
 		{
 			// This is ok and means we should return null.
-			entity = null;
+			result = null;
 		}
 		catch (IOException e)
 		{
 			throw Assert.unexpected(e);
 		}
-		return entity;
+		return result;
 	}
 
-	private void _background_writeEntityToDisk(Entity entity)
+	private void _background_writeEntityToDisk(SuspendedEntity suspended)
 	{
 		// Serialize the entire entity into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		Entity entity = suspended.entity();
+		List<IMutationEntity> mutations = suspended.mutations();
 		CodecHelpers.writeEntity(_backround_serializationBuffer, entity);
+		
+		// We now write any suspended mutations.
+		for (IMutationEntity scheduled : mutations)
+		{
+			MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled);
+		}
 		_backround_serializationBuffer.flip();
 		
 		try (
@@ -418,8 +435,8 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private static Entity _buildDefaultEntity(int id)
+	private static SuspendedEntity _buildDefaultEntity(int id)
 	{
-		return MutableEntity.create(id).freeze();
+		return new SuspendedEntity(MutableEntity.create(id).freeze(), List.of());
 	}
 }

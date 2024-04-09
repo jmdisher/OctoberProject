@@ -17,11 +17,13 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -144,7 +146,7 @@ public class TestResourceLoader
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Assert.assertNull(_loadEntities(loader, List.of(1, 2)));
-		List<Entity> results = new ArrayList<>();
+		List<SuspendedEntity> results = new ArrayList<>();
 		for (int i = 0; (results.size() < 2) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
@@ -152,12 +154,12 @@ public class TestResourceLoader
 		}
 		
 		// Modify an entity and write these  back.
-		Entity original = results.get(0);
-		Entity other = results.get(1);
+		Entity original = results.get(0).entity();
+		Entity other = results.get(1).entity();
 		MutableEntity mutable = MutableEntity.existing(original);
 		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 3.0f);
 		Entity modified = mutable.freeze();
-		loader.writeBackToDisk(List.of(), List.of(modified, other));
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(modified, List.of()), new SuspendedEntity(other, List.of())));
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -176,16 +178,16 @@ public class TestResourceLoader
 			Thread.sleep(10L);
 			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
 		}
-		Entity resolved = (original.id() == results.get(0).id())
-				? results.get(0)
-				: results.get(1)
+		Entity resolved = (original.id() == results.get(0).entity().id())
+				? results.get(0).entity()
+				: results.get(1).entity()
 		;
 		Assert.assertEquals(modified.location(), resolved.location());
 		loader.shutdown();
 	}
 
 	@Test
-	public void writeAndReadSuspended() throws Throwable
+	public void writeAndReadSuspendedCuboid() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
@@ -211,6 +213,58 @@ public class TestResourceLoader
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.mutations().size());
 		Assert.assertTrue(suspended.mutations().get(0).mutation() instanceof MutationBlockOverwrite);
+		loader.shutdown();
+	}
+
+	@Test
+	public void writeAndReadSuspendedEntity() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null);
+		int entityId = 1;
+		
+		List<SuspendedEntity> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId));
+		Assert.assertTrue(results.isEmpty());
+		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+		}
+		
+		// Verify that this is the default.
+		Assert.assertTrue(results.get(0).mutations().isEmpty());
+		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, results.get(0).entity().location());
+		
+		// Modify the entity and create a mutation to store with it.
+		MutableEntity mutable = MutableEntity.existing(results.get(0).entity());
+		EntityLocation location = mutable.newLocation;
+		EntityLocation newLocation = new EntityLocation(2.0f * location.x(), 3.0f * location.y(), 4.0f * location.z());
+		mutable.newLocation = newLocation;
+		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(ENV.blocks.STONE.item(), 2));
+		
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(mutation))));
+		// (the shutdown will wait for the queue to drain)
+		loader.shutdown();
+		
+		// Make sure that we see this written back.
+		String fileName = "entity_" + entityId + ".entity";
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, create a new loader to verify that we can read this.
+		loader = new ResourceLoader(worldDirectory, null);
+		results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(entityId));
+		Assert.assertTrue(results.isEmpty());
+		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+		}
+		SuspendedEntity suspended = results.get(0);
+		Assert.assertEquals(newLocation, suspended.entity().location());
+		Assert.assertEquals(1, suspended.mutations().size());
+		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationEntityStoreToInventory);
 		loader.shutdown();
 	}
 
@@ -298,11 +352,11 @@ public class TestResourceLoader
 
 	private static Collection<Entity> _loadEntities(ResourceLoader loader, Collection<Integer> ids)
 	{
-		Collection<Entity> results = new ArrayList<>();
+		Collection<SuspendedEntity> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), ids);
 		return results.isEmpty()
 				? null
-				: results
+				: results.stream().map((SuspendedEntity suspended) -> suspended.entity()).toList()
 		;
 	}
 

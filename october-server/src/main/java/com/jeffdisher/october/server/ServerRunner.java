@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -236,13 +237,13 @@ public class ServerRunner
 	private final class _Callouts implements ServerStateManager.ICallouts
 	{
 		@Override
-		public void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids,Collection<Entity> entities)
+		public void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids,Collection<SuspendedEntity> entities)
 		{
 			_loader.writeBackToDisk(cuboids, entities);
 		}
 		@Override
 		public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
-				, Collection<Entity> out_loadedEntities
+				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
 		)

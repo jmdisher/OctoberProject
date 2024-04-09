@@ -22,6 +22,7 @@ import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -46,6 +47,7 @@ public class ServerStateManager
 	// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
 	private Collection<IReadOnlyCuboidData> _completedCuboids = Collections.emptySet();
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations = Collections.emptyMap();
+	private Map<Integer, List<IMutationEntity>> _scheduledEntityMutations = Collections.emptyMap();
 	// Same thing with entities.
 	private Collection<Entity> _completedEntities = Collections.emptySet();
 
@@ -60,6 +62,7 @@ public class ServerStateManager
 		_requestedCuboids = new HashSet<>();
 		_completedCuboids = Collections.emptySet();
 		_scheduledBlockMutations = Collections.emptyMap();
+		_scheduledEntityMutations = Collections.emptyMap();
 		_completedEntities = Collections.emptySet();
 	}
 
@@ -95,6 +98,7 @@ public class ServerStateManager
 		_completedCuboids = snapshot.completedCuboids().values();
 		_completedEntities = snapshot.completedEntities().values();
 		_scheduledBlockMutations = snapshot.scheduledBlockMutations();
+		_scheduledEntityMutations = snapshot.scheduledEntityMutations();
 		
 		// Remove any of the cuboids in the snapshot from any that we had requested.
 		_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
@@ -145,34 +149,31 @@ public class ServerStateManager
 		// (this is most important in the corner-case where the same entity left and rejoined in the same tick)
 		if (!orphanedCuboids.isEmpty() || !removedClients.isEmpty())
 		{
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = orphanedCuboids.stream().map((CuboidAddress address) -> {
-				IReadOnlyCuboidData cuboid = snapshot.completedCuboids().get(address);
-				List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
-				if (null == suspended)
-				{
-					suspended = List.of();
-				}
-				return new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended);
-			}).toList();
-			Collection<Entity> saveEntities = removedClients.stream().map(
+			List<IReadOnlyCuboidData> cuboidsToPackage = orphanedCuboids.stream().map(
+					(CuboidAddress address) -> snapshot.completedCuboids().get(address)
+			).toList();
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage);
+			List<Entity> entitiesToPackage = removedClients.stream().map(
 					(Integer id) -> snapshot.completedEntities().get(id)
 			).toList();
+			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
 			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
 		}
 		
 		// Request any missing cuboids or new entities and see what we got back from last time.
 		Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
-		Collection<Entity> newEntities = new ArrayList<>();
+		Collection<SuspendedEntity> newEntities = new ArrayList<>();
 		_callouts.resources_getAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients);
 		_requestedCuboids.addAll(cuboidsToLoad);
 		// We have requested the clients so drop this, now.
 		_newClients.clear();
 		
 		// Walk through any new clients, adding them to the world.
-		for (Entity newEntity : newEntities)
+		for (SuspendedEntity suspended : newEntities)
 		{
 			// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
 			// This client is now connected and can receive events.
+			Entity newEntity = suspended.entity();
 			_connectedClients.put(newEntity.id(), new ClientState(newEntity.location()));
 		}
 		
@@ -199,21 +200,12 @@ public class ServerStateManager
 	public void shutdown()
 	{
 		// Finish any remaining write-back.
-		if (!_completedCuboids.isEmpty())
+		if (!_completedCuboids.isEmpty() || !_completedEntities.isEmpty())
 		{
 			// We need to package up the cuboids with any suspended operations.
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = new ArrayList<>();
-			for (IReadOnlyCuboidData cuboid : _completedCuboids)
-			{
-				CuboidAddress address = cuboid.getCuboidAddress();
-				List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
-				if (null == suspended)
-				{
-					suspended = List.of();
-				}
-				cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended));
-			}
-			_callouts.resources_writeToDisk(cuboidResources, _completedEntities);
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = _packageCuboidsForUnloading(_completedCuboids);
+			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities);
+			_callouts.resources_writeToDisk(cuboidResources, entityResources);
 		}
 	}
 
@@ -389,13 +381,45 @@ public class ServerStateManager
 		}
 	}
 
+	private Collection<SuspendedCuboid<IReadOnlyCuboidData>> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage)
+	{
+		Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = new ArrayList<>();
+		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
+		{
+			CuboidAddress address = cuboid.getCuboidAddress();
+			List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
+			if (null == suspended)
+			{
+				suspended = List.of();
+			}
+			cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended));
+		}
+		return cuboidResources;
+	}
+
+	private Collection<SuspendedEntity> _packageEntitiesForUnloading(Collection<Entity> entitiesToPackage)
+	{
+		Collection<SuspendedEntity> entityResources = new ArrayList<>();
+		for (Entity entity : entitiesToPackage)
+		{
+			int id = entity.id();
+			List<IMutationEntity> suspended = _scheduledEntityMutations.get(id);
+			if (null == suspended)
+			{
+				suspended = List.of();
+			}
+			entityResources.add(new SuspendedEntity(entity, suspended));
+		}
+		return entityResources;
+	}
+
 
 	public static interface ICallouts
 	{
 		// ResourceLoader.
-		void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<Entity> entities);
+		void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities);
 		void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
-				, Collection<Entity> out_loadedEntities
+				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids
 				, Collection<Integer> requestedEntityIds
 		);
@@ -417,7 +441,7 @@ public class ServerStateManager
 
 	public static record TickChanges(Collection<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids
 			, Collection<CuboidAddress> cuboidsToUnload
-			, Collection<Entity> newEntities
+			, Collection<SuspendedEntity> newEntities
 			, Collection<Integer> entitiesToUnload
 	) {}
 

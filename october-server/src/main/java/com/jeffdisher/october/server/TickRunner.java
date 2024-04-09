@@ -27,6 +27,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
+import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -58,7 +59,7 @@ public class TickRunner
 	private List<SuspendedCuboid<IReadOnlyCuboidData>> _newCuboids;
 	private Set<CuboidAddress> _cuboidsToDrop;
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
-	private List<Entity> _newEntities;
+	private List<SuspendedEntity> _newEntities;
 	private List<Integer> _departedEntityIds;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
@@ -176,7 +177,7 @@ public class TickRunner
 	 */
 	public void setupChangesForTick(Collection<SuspendedCuboid<IReadOnlyCuboidData>> loadedCuboids
 			, Collection<CuboidAddress> cuboidsToUnload
-			, Collection<Entity> loadedEntities
+			, Collection<SuspendedEntity> loadedEntities
 			, Collection<Integer> entitiesToUnload
 	)
 	{
@@ -194,8 +195,9 @@ public class TickRunner
 			_cuboidsToDrop = (null != cuboidsToUnload) ? new HashSet<>(cuboidsToUnload) : null;
 			if (null != loadedEntities)
 			{
-				for (Entity entity : loadedEntities)
+				for (SuspendedEntity suspended : loadedEntities)
 				{
+					Entity entity = suspended.entity();
 					Assert.assertTrue(!_entitySharedAccess.containsKey(entity.id()));
 					_entitySharedAccess.put(entity.id(), new PerEntitySharedAccess());
 				}
@@ -438,7 +440,7 @@ public class TickRunner
 				// Load other cuboids and apply other mutations enqueued since the last tick.
 				List<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids;
 				Set<CuboidAddress> cuboidsToDrop;
-				List<Entity> newEntities;
+				List<SuspendedEntity> newEntities;
 				List<Integer> removedEntityIds;
 				Map<Integer, List<IMutationEntity>> newEntityChanges = new HashMap<>();
 				Map<Integer, Long> newCommitLevels = new HashMap<>();
@@ -490,6 +492,7 @@ public class TickRunner
 				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
 				Map<Integer, Entity> nextCrowdState = new HashMap<>();
 				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
+				Map<Integer, List<IMutationEntity>> nextTickChanges = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
 				nextWorldState.putAll(_snapshot.completedCuboids);
@@ -520,11 +523,22 @@ public class TickRunner
 				}
 				if (null != newEntities)
 				{
-					for (Entity entity : newEntities)
+					for (SuspendedEntity suspended : newEntities)
 					{
-						Entity old = nextCrowdState.put(entity.id(), entity);
+						Entity entity = suspended.entity();
+						int id = entity.id();
+						Object old = nextCrowdState.put(id, entity);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
+						
+						// Add any suspended mutations which came with the entity.
+						List<IMutationEntity> mutations = suspended.mutations();
+						if (!mutations.isEmpty())
+						{
+							old = nextTickChanges.put(id, new ArrayList<>(mutations));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
 					}
 				}
 				
@@ -560,13 +574,11 @@ public class TickRunner
 						Assert.assertTrue(null != old);
 					}
 				}
-				Map<Integer, List<IMutationEntity>> nextTickChanges = new HashMap<>();
 				for (Map.Entry<Integer, List<IMutationEntity>> entry : snapshotEntityMutations.entrySet())
 				{
 					// We can't modify the original so use a new container.
-					Object prev = nextTickChanges.put(entry.getKey(), new LinkedList<>(entry.getValue()));
-					// This is the first time constructing this so it must be empty.
-					Assert.assertTrue(null == prev);
+					int id = entry.getKey();
+					_scheduleChangesForEntity(nextTickChanges, id, new LinkedList<>(entry.getValue()));
 				}
 				snapshotEntityMutations = null;
 				for (Map.Entry<Integer, List<IMutationEntity>> container : newEntityChanges.entrySet())
