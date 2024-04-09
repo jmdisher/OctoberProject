@@ -162,6 +162,9 @@ public class ResourceLoader
 				}
 				for (int id : copiedEntityIds)
 				{
+					// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
+					Assert.assertTrue(id > 0);
+					
 					// Priority of loads:
 					// 1) Disk (since that is always considered authoritative)
 					// 2) The generator

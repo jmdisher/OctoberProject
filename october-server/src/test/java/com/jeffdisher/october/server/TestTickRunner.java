@@ -306,13 +306,14 @@ public class TestTickRunner
 		runner.start();
 		
 		// We need 2 entities for this but we will give one some items.
-		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(0);
+		int entityId1 = 1;
+		int entityId2 = 2;
+		MutableEntity mutable = MutableEntity.create(entityId1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
 		runner.setupChangesForTick(null
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of())
-						, _createFreshEntity(entityId)
+						, _createFreshEntity(entityId2)
 				)
 				, null
 		);
@@ -321,16 +322,16 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
-		IMutationEntity send = new EntityChangeSendItem(entityId, ENV.items.STONE);
+		IMutationEntity send = new EntityChangeSendItem(entityId2, ENV.items.STONE);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(0, send, commit1);
+		runner.enqueueEntityChange(entityId1, send, commit1);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit1, snapshot.commitLevels().get(0).longValue());
-		Assert.assertNotNull(snapshot.updatedEntities().get(0));
+		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId1).longValue());
+		Assert.assertNotNull(snapshot.updatedEntities().get(entityId1));
 		Assert.assertEquals(1, snapshot.scheduledEntityMutations().size());
-		Assert.assertEquals(1, snapshot.scheduledEntityMutations().get(entityId).size());
+		Assert.assertEquals(1, snapshot.scheduledEntityMutations().get(entityId2).size());
 		// (run a tick to run the final change)
 		runner.startNextTick();
 		TickRunner.Snapshot finalSnapshot = runner.waitForPreviousTick();
@@ -338,9 +339,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// Now, check for results.
-		Assert.assertNotNull(finalSnapshot.updatedEntities().get(entityId));
-		Entity sender = finalSnapshot.completedEntities().get(0);
-		Entity receiver = finalSnapshot.completedEntities().get(1);
+		Assert.assertNotNull(finalSnapshot.updatedEntities().get(entityId2));
+		Entity sender = finalSnapshot.completedEntities().get(entityId1);
+		Entity receiver = finalSnapshot.completedEntities().get(entityId2);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
 		Assert.assertEquals(1, receiver.inventory().items.size());
 		Items update = receiver.inventory().items.get(ENV.items.STONE);

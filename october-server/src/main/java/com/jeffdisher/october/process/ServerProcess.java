@@ -104,6 +104,11 @@ public class ServerProcess
 		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
 		NetworkServer.ConnectingClientDescription<_ClientBuffer> result;
 		int hash = Math.abs(name.hashCode());
+		if (0 == hash)
+		{
+			// This is a corner-case but we never want a non-negative value so we work around 0 here.
+			hash = 1;
+		}
 		if (_clientsById.containsKey(hash))
 		{
 			// Already present, so fail.

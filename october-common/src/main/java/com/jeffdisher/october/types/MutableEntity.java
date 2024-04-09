@@ -30,11 +30,13 @@ public class MutableEntity
 	/**
 	 * Creates a mutable entity based on the default values for a new entity.
 	 * 
-	 * @param id The entity ID.
+	 * @param id The entity ID (must be positive).
 	 * @return A mutable entity.
 	 */
 	public static MutableEntity create(int id)
 	{
+		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
+		Assert.assertTrue(id > 0);
 		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
 				, DEFAULT_LOCATION

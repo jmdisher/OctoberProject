@@ -92,7 +92,8 @@ public class TestCommonMutations
 		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)200);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
-		Entity entity = MutableEntity.create(0).freeze();
+		int clientId = 1;
+		Entity entity = MutableEntity.create(clientId).freeze();
 		
 		// Check that once we run this change, it requests the appropriate mutation.
 		boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));

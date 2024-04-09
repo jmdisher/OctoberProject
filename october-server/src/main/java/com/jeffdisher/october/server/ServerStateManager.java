@@ -68,6 +68,9 @@ public class ServerStateManager
 
 	public void clientConnected(int clientId)
 	{
+		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
+		Assert.assertTrue(clientId > 0);
+		
 		// Add this to the list of new clients (we will send them the snapshot and inject them after the the current tick is done tick).
 		_newClients.add(clientId);
 		System.out.println("Client connected: " + clientId);
