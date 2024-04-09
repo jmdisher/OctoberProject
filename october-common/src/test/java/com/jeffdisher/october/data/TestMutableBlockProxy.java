@@ -84,7 +84,7 @@ public class TestMutableBlockProxy
 		
 		// Store into the block's inventory and see how that serializes.
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setInventory(Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 1).finish());
+		proxy.setInventory(Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 1).finish());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);

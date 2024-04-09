@@ -60,7 +60,7 @@ public class InventoryAspect
 		{
 			if ((null != block) && blocks.permitsEntityMovement(block))
 			{
-				blockCapacities.put(block, CAPACITY_AIR);
+				blockCapacities.put(block, CAPACITY_BLOCK_EMPTY);
 			}
 		}
 		FlatTabListCallbacks<Block, Integer> capacityCallbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("capacity"));
@@ -75,9 +75,11 @@ public class InventoryAspect
 	}
 
 	/**
-	 * The capacity of an air block is small since it is just "on the ground" and we want containers to be used.
+	 * We treat air, water, and some other cases as "empty" and they have a small capacity since it is just "on the
+	 * ground" and we want containers to be used.  That said, these blocks are often over-filled to avoid destroying
+	 * items.
 	 */
-	public static final int CAPACITY_AIR = 10;
+	public static final int CAPACITY_BLOCK_EMPTY = 10;
 	public static final int CAPACITY_PLAYER = 20;
 
 	private final int[] _encumbranceByItemType;

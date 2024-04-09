@@ -225,7 +225,7 @@ public class TestFallingBehaviour
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
@@ -283,7 +283,7 @@ public class TestFallingBehaviour
 		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
 		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ENV.items.AIR.number());
 		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.items.AIR.number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null

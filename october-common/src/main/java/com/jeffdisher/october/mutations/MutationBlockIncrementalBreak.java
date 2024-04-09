@@ -8,6 +8,9 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -55,10 +58,28 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			// Apply the damage.
 			short damage = (short)(newBlock.getDamage() + _damageToApply);
 			
-			// See if this is broken (note that this could overflow.
+			// See if this is broken (note that damage could overflow).
 			if ((damage >= env.damage.getToughness(block)) || (damage < 0))
 			{
-				CommonBlockMutationHelpers.breakBlockAndCoalesceInventory(context, _location, newBlock);
+				// We have decided to break this block so determine what block it will become.
+				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
+				
+				// Create the inventory for this type.
+				int newInventoryCapacity = env.inventory.getInventoryCapacity(emptyBlock);
+				MutableInventory newInventory = new MutableInventory(Inventory.start(newInventoryCapacity).finish());
+				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
+				
+				// Add this block's drops to the inventory.
+				for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+				{
+					newInventory.addItemsAllowingOverflow(dropped, 1);
+				}
+				
+				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
+				newBlock.setBlockAndClear(emptyBlock);
+				newBlock.setInventory(newInventory.freeze());
+				
+				// See if the inventory should drop from this block.
 				CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
 			}
 			else

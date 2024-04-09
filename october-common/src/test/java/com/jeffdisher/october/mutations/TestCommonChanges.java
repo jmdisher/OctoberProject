@@ -259,7 +259,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L

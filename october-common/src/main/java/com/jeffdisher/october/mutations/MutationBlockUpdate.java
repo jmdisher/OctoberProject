@@ -9,6 +9,8 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -72,12 +74,29 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (!didApply)
 		{
 			// Make sure that this block can be supported by the one under it.
-			BlockProxy belowBlock = context.previousBlockLookUp.apply(_blockLocation.getRelative(0, 0, -1));
+			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(belowBlockLocation);
 			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
 			if (!blockIsSupported)
 			{
-				// We need to break this block.
-				CommonBlockMutationHelpers.breakBlockAndCoalesceInventory(context, _blockLocation, newBlock);
+				// We have decided to break this block so determine what block it will become.
+				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
+				
+				// Create the inventory for this type.
+				int newInventoryCapacity = env.inventory.getInventoryCapacity(emptyBlock);
+				MutableInventory newInventory = new MutableInventory(Inventory.start(newInventoryCapacity).finish());
+				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
+				
+				// Add this block's drops to the inventory.
+				for (Item dropped : env.blocks.droppedBlocksOnBreak(thisBlock))
+				{
+					newInventory.addItemsAllowingOverflow(dropped, 1);
+				}
+				
+				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
+				newBlock.setBlockAndClear(emptyBlock);
+				newBlock.setInventory(newInventory.freeze());
+				didApply = true;
 			}
 		}
 		

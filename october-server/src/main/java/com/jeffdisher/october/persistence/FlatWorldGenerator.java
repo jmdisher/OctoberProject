@@ -42,7 +42,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
 			// If this is the 0,0,0 cuboid, drop other useful testing items on the ground.
 			if ((0 == address.x()) && (0 == address.y()) && (0 == address.z()))
 			{
-				Inventory starting = Inventory.start(InventoryAspect.CAPACITY_AIR)
+				Inventory starting = Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY)
 						.add(env.items.SAPLING, 2)
 						.add(env.items.LANTERN, 2)
 						.add(env.items.WHEAT_SEED, 2)

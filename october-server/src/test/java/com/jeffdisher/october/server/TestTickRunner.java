@@ -234,7 +234,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
 		
 		// Try to drop too much to fit and verify that nothing changes.
-		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_AIR / 2));
+		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_BLOCK_EMPTY / 2));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
 		
@@ -819,7 +819,7 @@ public class TestTickRunner
 		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -930,7 +930,7 @@ public class TestTickRunner
 		AbsoluteLocation startLocation = new AbsoluteLocation(32, 32, 32);
 		CuboidAddress address0 = startLocation.getCuboidAddress();
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_AIR).add(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
 				, null
 				, null

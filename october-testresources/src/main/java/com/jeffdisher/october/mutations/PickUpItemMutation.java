@@ -29,7 +29,7 @@ public class PickUpItemMutation implements IMutationBlock
 	{
 		Environment env = Environment.getShared();
 		// We don't allow creation of this mutation if the items couldn't possibly be on the ground.
-		Assert.assertTrue((env.inventory.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_AIR);
+		Assert.assertTrue((env.inventory.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_BLOCK_EMPTY);
 		_location = location;
 		_type = type;
 		_count = count;

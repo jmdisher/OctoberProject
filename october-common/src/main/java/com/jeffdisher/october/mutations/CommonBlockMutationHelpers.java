@@ -1,14 +1,13 @@
 package com.jeffdisher.october.mutations;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -22,21 +21,9 @@ import com.jeffdisher.october.utils.Assert;
 public class CommonBlockMutationHelpers
 {
 	/**
-	 * Breaks the newBlock at location, replacing it with whatever "empty" block is appropriate, based on what is around
-	 * it, and coalescing any inventories and the block, itself, into the new empty block's inventory.
-	 * 
-	 * @param context The context.
-	 * @param location The location of newBlock.
-	 * @param newBlock The block being broken.
-	 */
-	public static void breakBlockAndCoalesceInventory(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
-	{
-		_breakBlockAndCoalesceInventory(context, location, newBlock);
-	}
-
-	/**
 	 * Checks if the inventory stored in newBlock (which is expected to be an "empty" block type) should fall into the
-	 * block below it, scheduling the appropriate mutations if required.
+	 * block below it, scheduling the appropriate mutations if required.  On return, the newBlock inventory will be
+	 * empty if the function returned true (note that it MUST be non-empty before calling).
 	 * 
 	 * @param context The context.
 	 * @param location The location of newBlock.
@@ -63,37 +50,18 @@ public class CommonBlockMutationHelpers
 		return _determineEmptyBlockType(context, location);
 	}
 
-
-	private static void _breakBlockAndCoalesceInventory(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+	/**
+	 * Fills the given inventoryToFill with all items found in any inventory of block, leaving it unchanged.  Note that
+	 * inventoryToFill may become over-filled as encumbrance limits are ignored in this path.
+	 * 
+	 * @param inventoryToFill The inventory to fill.
+	 * @param block The block to read.
+	 */
+	public static void fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
 	{
-		Environment env = Environment.getShared();
-		// The block is broken so replace it with the appropriate "empty" block and place the block in the inventory.
-		Inventory oldInventory = newBlock.getInventory();
-		FuelState oldFuel = newBlock.getFuel();
-		Block previousBlockType = newBlock.getBlock();
-		Block emptyBlock = _determineEmptyBlockType(context, location);
-		newBlock.setBlockAndClear(emptyBlock);
-		
-		// If the inventory fits, move it over to the new block.
-		// TODO:  Handle the case where the inventory can't fit when we have cases where it might be too big.
-		Assert.assertTrue((null == oldInventory) || (oldInventory.currentEncumbrance <= InventoryAspect.CAPACITY_AIR));
-		
-		// This will create the new inventory since setting the item clears.
-		Inventory newInventory = newBlock.getInventory();
-		MutableInventory mutable = new MutableInventory(newInventory);
-		_combineInventory(mutable, oldInventory);
-		if (null != oldFuel)
-		{
-			_combineInventory(mutable, oldFuel.fuelInventory());
-		}
-		
-		// We want to drop this block in the inventory, if it fits.
-		for (Item dropped : env.blocks.droppedBlocksOnBreak(previousBlockType))
-		{
-			mutable.addItemsBestEfforts(dropped, 1);
-		}
-		newBlock.setInventory(mutable.freeze());
+		_fillInventoryFromBlockWithoutLimit(inventoryToFill, block);
 	}
+
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{
@@ -109,8 +77,14 @@ public class CommonBlockMutationHelpers
 	private static boolean _dropInventoryIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
+		
+		// Note that this should ONLY be called if the existing block is "empty".
+		Assert.assertTrue(env.blocks.permitsEntityMovement(newBlock.getBlock()));
+		// This should also have a non-empty inventory (otherwise, this shouldn't be called).
+		Assert.assertTrue(newBlock.getInventory().currentEncumbrance > 0);
+		
+		// We now check if the block below this one is also "empty" and will drop the entire inventory into it via mutations.
 		boolean didDropInventory = false;
-		// Note that we need to handle the special-case where the block below this one is also empty and we should actually drop all the items.
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
 		if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
@@ -120,6 +94,8 @@ public class CommonBlockMutationHelpers
 			{
 				context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
+			
+			// Now, clear the inventory.
 			newBlock.setInventory(Inventory.start(env.inventory.getInventoryCapacity(newBlock.getBlock())).finish());
 			didDropInventory = true;
 		}
@@ -233,5 +209,19 @@ public class CommonBlockMutationHelpers
 			}
 		}
 		return index;
+	}
+
+	private static void _fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
+	{
+		Inventory oldInventory = block.getInventory();
+		if (null != oldInventory)
+		{
+			_combineInventory(inventoryToFill, oldInventory);
+		}
+		FuelState oldFuel = block.getFuel();
+		if (null != oldFuel)
+		{
+			_combineInventory(inventoryToFill, oldFuel.fuelInventory());
+		}
 	}
 }
