@@ -409,9 +409,14 @@ public class TestTickRunner
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(ENV.blocks.AIR, proxy2.getBlock());
 		Assert.assertEquals((short) 0, proxy2.getDamage());
-		Inventory inv = proxy2.getInventory();
-		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(1, inv.items.get(ENV.items.STONE).count());
+		
+		// Run another tick to see the item move to the entity inventory (the item should be in the entity inventory, not the ground).
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Inventory blockInventory = proxy2.getInventory();
+		Assert.assertEquals(0, blockInventory.items.size());
+		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
+		Assert.assertEquals(1, entityInventory.items.get(ENV.items.STONE).count());
 		
 		runner.shutdown();
 	}
@@ -1391,16 +1396,23 @@ public class TestTickRunner
 		long commit1 = 1L;
 		runner.enqueueEntityChange(entityId, break1, commit1);
 		
-		// Run a tick for the unwrap and another to break the block before checking the inventory.
+		// Run a tick for the unwrap, another to break the block, then a third to save to the entity, before checking the inventories.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		
+		// We should see these items in the entity inventory, not the ground.
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, location.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.getCount(ENV.items.WHEAT_SEED));
-		Assert.assertEquals(2, blockInventory.getCount(ENV.items.WHEAT_ITEM));
+		Assert.assertNull(blockInventory);
+		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
+		Assert.assertEquals(2, entityInventory.items.size());
+		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_SEED));
+		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_ITEM));
 		
 		runner.shutdown();
 		MutationBlockGrow.RANDOM_PROVIDER = old;
@@ -1456,25 +1468,26 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.items.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
-		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.DIRT));
 		
 		// Run another tick and see the seedling break.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
-		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.size());
+		
+		// The item should be in the entity inventory, not the ground.
+		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
+		Assert.assertNull(blockInventory);
+		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
+		Assert.assertEquals(1, entityInventory.items.size());
+		Assert.assertEquals(1, entityInventory.getCount(ENV.items.DIRT));
 		
 		// Run another tick to see the seed drop into this inventory.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.items.size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.DIRT));
+		Assert.assertEquals(1, blockInventory.items.size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
 		
 		// Now, just run for another hundred ticks to make sure nothing goes wrong.
@@ -1484,8 +1497,7 @@ public class TestTickRunner
 			snapshot = runner.waitForPreviousTick();
 		}
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.items.size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.DIRT));
+		Assert.assertEquals(1, blockInventory.items.size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
 		
 		runner.shutdown();

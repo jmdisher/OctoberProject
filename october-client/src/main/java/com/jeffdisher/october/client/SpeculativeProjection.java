@@ -52,7 +52,7 @@ public class SpeculativeProjection
 	 * When pruning a change from the list of speculative changes, we will store this many follow-up ticks' worth of
 	 * changes for application on future ticks.
 	 */
-	public static final int MAX_FOLLOW_UP_TICKS = 2;
+	public static final int MAX_FOLLOW_UP_TICKS = 3;
 
 	private final int _localEntityId;
 	private final ProcessorElement _singleThreadElement;

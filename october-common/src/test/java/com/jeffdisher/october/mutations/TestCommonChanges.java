@@ -633,4 +633,39 @@ public class TestCommonChanges
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, dropLocation.getBlockAddress()));
 		Assert.assertEquals(2 * added, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ENV.items.STONE));
 	}
+
+	@Test
+	public void storeItemInFullInventory() throws Throwable
+	{
+		// Normally, we won't try to store an item if the inventory is already full but something like breaking a block bypasses that check so see what happens when the inventory is full.
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.create(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		int stored = newEntity.newInventory.addItemsBestEfforts(ENV.items.STONE, 100);
+		Assert.assertTrue(stored < 100);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		IMutationEntity[] entityHolder = new IMutationEntity[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+				, (int targetEntityId, IMutationEntity change) -> {
+					Assert.assertEquals(entityId, targetEntityId);
+					Assert.assertNull(entityHolder[0]);
+					entityHolder[0] = change;
+				}
+		);
+		
+		// Create the change.
+		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1));
+		Assert.assertTrue(store.applyChange(context, newEntity));
+		
+		// We should see the attempt to drop this item onto the ground since it won't fit.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertNull(entityHolder[0]);
+	}
 }

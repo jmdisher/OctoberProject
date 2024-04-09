@@ -84,7 +84,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		short damage = 10;
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(location, damage);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(location, damage, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

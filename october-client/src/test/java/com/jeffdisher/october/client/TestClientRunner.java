@@ -157,7 +157,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
+		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -175,7 +175,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000)));
+		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		

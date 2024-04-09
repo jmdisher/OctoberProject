@@ -660,7 +660,9 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
-		Assert.assertNotNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		// We should see no inventory in the block but the item should be in the entity's inventory.
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
@@ -668,7 +670,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(new EntityMutationWrapper(blockBreak))))
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
+				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -678,7 +680,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
-		Assert.assertNotNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
 		
 		// Commit the second part and make sure the change is still there.
 		currentTimeMillis += 100L;
@@ -686,7 +689,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Map.of(entityId, new LinkedList<>(List.of(new EntityMutationWrapper(blockBreak))))
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000)))
+				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -696,7 +699,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(4, listener.changeCount);
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
-		Assert.assertNotNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
 	}
 
 	@Test
@@ -945,15 +949,20 @@ public class TestSpeculativeProjection
 		Assert.assertNull(proxy.getCrafting());
 		
 		// Now, break the table and verify that the final inventory state makes sense.
+		// We expect the table inventory to spill into the block but the table to end up in the entity's inventory.
 		currentTimeMillis += 200L;
 		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)20);
 		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(2, proxy.getInventory().items.size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE_BRICK));
-		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.CRAFTING_TABLE));
+		
+		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
+		Assert.assertEquals(1, entityInventory.items.size());
+		Assert.assertEquals(1, entityInventory.getCount(ENV.items.CRAFTING_TABLE));
 	}
 
 	@Test
@@ -1151,15 +1160,62 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
 		
 		// Now, break the furnace and verify that the final inventory state makes sense.
+		// We expect the table inventory to spill into the block but the table to end up in the entity's inventory.
 		currentTimeMillis += 2000L;
 		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)200);
 		long commit4 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(2, proxy.getInventory().items.size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.PLANK));
-		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.FURNACE));
+		
+		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
+		Assert.assertEquals(1, entityInventory.items.size());
+		Assert.assertEquals(1, entityInventory.getCount(ENV.items.FURNACE));
+	}
+
+	@Test
+	public void breakBlockFullInventory()
+	{
+		// Break a simple block with a full inventory and verify that it drops at your feet.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		int stored = mutable.newInventory.addItemsBestEfforts(ENV.blocks.DIRT.item(), 100);
+		Assert.assertTrue(stored < 100);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		
+		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 1, 1);
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), ENV.blocks.DIRT.item().number());
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(0L
+				, List.of(mutable.freeze())
+				, List.of(cuboid)
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// Break the block and verify it drops at the feet of the entity, not where the block is.
+		currentTimeMillis += 100L;
+		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation, (short) 100);
+		long commit1 = projector.applyLocalChange(blockBreak, currentTimeMillis);
+		Assert.assertEquals(1, commit1);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
+		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
+		Assert.assertEquals(1, feetInventory.items.size());
+		Assert.assertEquals(1, feetInventory.getCount(ENV.blocks.DIRT.item()));
 	}
 
 

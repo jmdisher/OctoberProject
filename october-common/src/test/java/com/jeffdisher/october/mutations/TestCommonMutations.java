@@ -44,7 +44,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidAddress cuboidAddress = target.getCuboidAddress();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> {
@@ -72,7 +72,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
@@ -108,9 +108,11 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
 		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(1, inv.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(0, inv.items.size());
+		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
+		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
 	}
 
 	@Test
@@ -118,7 +120,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
@@ -148,7 +150,7 @@ public class TestCommonMutations
 				, null
 		);
 		
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
@@ -172,6 +174,8 @@ public class TestCommonMutations
 	private static class ProcessingSinks
 	{
 		public IMutationBlock nextMutation;
+		public int nextTargetEntityId;
+		public IMutationEntity nextChange;
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
@@ -183,7 +187,17 @@ public class TestCommonMutations
 						ProcessingSinks.this.nextMutation = mutation;
 					}
 					, null
-					, null
+					, new TickProcessingContext.IChangeSink()
+					{
+						@Override
+						public void accept(int targetEntityId, IMutationEntity change)
+						{
+							Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
+							Assert.assertNull(ProcessingSinks.this.nextChange);
+							ProcessingSinks.this.nextTargetEntityId = targetEntityId;
+							ProcessingSinks.this.nextChange = change;
+						}
+					}
 			);
 		}
 	}

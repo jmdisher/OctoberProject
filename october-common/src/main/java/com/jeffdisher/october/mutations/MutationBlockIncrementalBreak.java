@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -21,22 +22,29 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class MutationBlockIncrementalBreak implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.INCREMENTAL_BREAK_BLOCK;
+	/**
+	 * A constant we provide in case the block shouldn't be stored back into the inventory of a breking entity.
+	 */
+	public static final int NO_STORAGE_ENTITY = 0;
 
 	public static MutationBlockIncrementalBreak deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		short damageToApply = buffer.getShort();
-		return new MutationBlockIncrementalBreak(location, damageToApply);
+		int optionalEntityForStorage = buffer.getInt();
+		return new MutationBlockIncrementalBreak(location, damageToApply, optionalEntityForStorage);
 	}
 
 
 	private final AbsoluteLocation _location;
 	private final short _damageToApply;
+	private final int _optionalEntityForStorage;
 
-	public MutationBlockIncrementalBreak(AbsoluteLocation location, short damageToApply)
+	public MutationBlockIncrementalBreak(AbsoluteLocation location, short damageToApply, int optionalEntityForStorage)
 	{
 		_location = location;
 		_damageToApply = damageToApply;
+		_optionalEntityForStorage = optionalEntityForStorage;
 	}
 
 	@Override
@@ -69,18 +77,37 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				MutableInventory newInventory = new MutableInventory(Inventory.start(newInventoryCapacity).finish());
 				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 				
-				// Add this block's drops to the inventory.
-				for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+				// We are going to break this block so see if we should send it back to an entity.
+				// (note that we drop the existing inventory on the ground, either way).
+				if (_optionalEntityForStorage > 0)
 				{
-					newInventory.addItemsAllowingOverflow(dropped, 1);
+					// Schedule a mutation to send it back to them (will drop at their feet on failure).
+					// This is usually just 1 element so send 1 mutation per item.
+					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+					{
+						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1));
+						context.newChangeSink.accept(_optionalEntityForStorage, store);
+					}
+				}
+				else
+				{
+					// Just drop this in the target location.
+					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+					{
+						newInventory.addItemsAllowingOverflow(dropped, 1);
+					}
 				}
 				
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
 				newBlock.setBlockAndClear(emptyBlock);
-				newBlock.setInventory(newInventory.freeze());
+				Inventory inventory = newInventory.freeze();
+				newBlock.setInventory(inventory);
 				
 				// See if the inventory should drop from this block.
-				CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
+				if (inventory.currentEncumbrance > 0)
+				{
+					CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
+				}
 			}
 			else
 			{
@@ -103,5 +130,6 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 		buffer.putShort(_damageToApply);
+		buffer.putInt(_optionalEntityForStorage);
 	}
 }

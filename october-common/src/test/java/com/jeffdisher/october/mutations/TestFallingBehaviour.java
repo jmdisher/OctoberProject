@@ -124,7 +124,7 @@ public class TestFallingBehaviour
 		
 		// Break the bottom block.
 		MutableBlockProxy bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
-		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(bottomLocation, (short) 2000);
+		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(bottomLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, bottomBlock));
 		bottomBlock.writeBack(cuboid);
 		
@@ -136,7 +136,7 @@ public class TestFallingBehaviour
 		// Now, break the top block.
 		AbsoluteLocation topLocation = bottomLocation.getRelative(0, 0, 1);
 		MutableBlockProxy topBlock = new MutableBlockProxy(topLocation, cuboid);
-		breaking = new MutationBlockIncrementalBreak(topLocation, (short) 2000);
+		breaking = new MutationBlockIncrementalBreak(topLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, topBlock));
 		topBlock.writeBack(cuboid);
 		
@@ -176,7 +176,7 @@ public class TestFallingBehaviour
 		
 		// Break the top block.
 		MutableBlockProxy topBlock = new MutableBlockProxy(topLocation, cuboid);
-		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(topLocation, (short) 2000);
+		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(topLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, topBlock));
 		topBlock.writeBack(cuboid);
 		
@@ -188,7 +188,7 @@ public class TestFallingBehaviour
 		// Now, break the bottom block.
 		AbsoluteLocation bottomLocation = topLocation.getRelative(0, 0, -1);
 		MutableBlockProxy bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
-		breaking = new MutationBlockIncrementalBreak(bottomLocation, (short) 2000);
+		breaking = new MutationBlockIncrementalBreak(bottomLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, bottomBlock));
 		bottomBlock.writeBack(cuboid);
 		
@@ -297,7 +297,7 @@ public class TestFallingBehaviour
 		
 		// Break the target block and observe the change.
 		MutableBlockProxy targetBlock = new MutableBlockProxy(targetLocation, cuboid);
-		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(targetLocation, (short) 2000);
+		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(targetLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, targetBlock));
 		targetBlock.writeBack(cuboid);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
