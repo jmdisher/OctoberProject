@@ -2,8 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -48,7 +48,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	{
 		// Send the damage to the other entity, saying it originated from our source.
 		// Note that we will likely move the range check here, later on.
-		EntityLocation entityCentre = _entityCentre(newEntity.newLocation, newEntity.original.volume());
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
 		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(entityCentre, DAMAGE_PER_ATTACK);
 		context.newChangeSink.accept(_targetEntityId, takeDamage);
 		return true;
@@ -64,16 +64,5 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		buffer.putInt(_targetEntityId);
-	}
-
-
-	private EntityLocation _entityCentre(EntityLocation base, EntityVolume volume)
-	{
-		float halfWidth = volume.width() / 2.0f;
-		return new EntityLocation(
-				base.x() + halfWidth,
-				base.y() + halfWidth,
-				base.z() + (volume.height() / 2.0f)
-		);
 	}
 }

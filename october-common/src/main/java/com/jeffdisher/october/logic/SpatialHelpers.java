@@ -288,6 +288,38 @@ public class SpatialHelpers
 		return match;
 	}
 
+	/**
+	 * Returns the centre of an entity, since the base location is actually the bottom-south-west corner.
+	 * 
+	 * @param base The bottom-south-west corner of the entity.
+	 * @param volume The volume of the entity.
+	 * @return The location of the centre of this entity, in 3 dimensions.
+	 */
+	public static EntityLocation getEntityCentre(EntityLocation base, EntityVolume volume)
+	{
+		float halfWidth = volume.width() / 2.0f;
+		return new EntityLocation(
+				base.x() + halfWidth,
+				base.y() + halfWidth,
+				base.z() + (volume.height() / 2.0f)
+		);
+	}
+
+	/**
+	 * A basic helper to find the 3-dimensional centre of a block in the world.
+	 * 
+	 * @param block The location of the block.
+	 * @return The entity location of the centre of this block.
+	 */
+	public static EntityLocation getBlockCentre(AbsoluteLocation block)
+	{
+		return new EntityLocation(
+				block.x() + 0.5f,
+				block.y() + 0.5f,
+				block.z() + 0.5f
+		);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{

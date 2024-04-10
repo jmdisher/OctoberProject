@@ -2,9 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -54,7 +54,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		// Check that we are in range of the source (will likely move to sender, later).  We will use block breaking distance.
-		EntityLocation entityCentre = _entityCentre(newEntity.newLocation, newEntity.original.volume());
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
 		float absX = Math.abs(_source.x() - entityCentre.x());
 		float absY = Math.abs(_source.y() - entityCentre.y());
 		float absZ = Math.abs(_source.z() - entityCentre.z());
@@ -98,16 +98,5 @@ public class EntityChangeTakeDamage implements IMutationEntity
 	{
 		CodecHelpers.writeEntityLocation(buffer, _source);
 		buffer.put(_damage);
-	}
-
-
-	private EntityLocation _entityCentre(EntityLocation base, EntityVolume volume)
-	{
-		float halfWidth = volume.width() / 2.0f;
-		return new EntityLocation(
-				base.x() + halfWidth,
-				base.y() + halfWidth,
-				base.z() + (volume.height() / 2.0f)
-		);
 	}
 }
