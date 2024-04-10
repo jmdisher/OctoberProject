@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -667,5 +668,107 @@ public class TestCommonChanges
 		// We should see the attempt to drop this item onto the ground since it won't fit.
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 		Assert.assertNull(entityHolder[0]);
+	}
+
+	@Test
+	public void attackEntity() throws Throwable
+	{
+		// Just create an entity and run the attack change so we can verify the scheduled follow-up.
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		int[] targetHolder = new int[1];
+		IMutationEntity[] changeHolder = new IMutationEntity[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, null
+				, null
+				, new TickProcessingContext.IChangeSink()
+				{
+					@Override
+					public void accept(int targetEntityId, IMutationEntity change)
+					{
+						Assert.assertNull(changeHolder[0]);
+						targetHolder[0] = targetEntityId;
+						changeHolder[0] = change;
+					}
+				}
+		);
+		
+		int targetId = 2;
+		EntityChangeAttackEntity attack = new EntityChangeAttackEntity(targetId);
+		Assert.assertTrue(attack.applyChange(context, mutable));
+		
+		// Verify that we see the follow-up scheduled.
+		Assert.assertEquals(targetId, targetHolder[0]);
+		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamage);
+	}
+
+	@Test
+	public void takeDamage() throws Throwable
+	{
+		// Verify that damage is correctly applied, as well as the "respawn" mechanic.
+		int attackerId = 1;
+		int targetId = 2;
+		int missId = 3;
+		MutableEntity attacker = MutableEntity.create(attackerId);
+		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		MutableEntity target = MutableEntity.create(targetId);
+		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
+		target.newInventory.addAllItems(ENV.items.STONE, 2);
+		target.newSelectedItem = ENV.items.STONE;
+		MutableEntity miss = MutableEntity.create(missId);
+		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
+		
+		// We need to make sure that there is a solid block under the entities so nothing falls.
+		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.blocks.AIR);
+		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, ENV.blocks.STONE);
+		
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) ->
+				{
+					CuboidAddress address = location.getCuboidAddress();
+					BlockAddress block = location.getBlockAddress();
+					BlockProxy proxy;
+					if (address.equals(airAddress))
+					{
+						proxy = new BlockProxy(block, airCuboid);
+					}
+					else
+					{
+						Assert.assertTrue(address.equals(stoneAddress));
+						proxy = new BlockProxy(block, stoneCuboid);
+					}
+					return proxy;
+				}
+				, (IMutationBlock newMutation) -> {
+					Assert.assertNull(blockHolder[0]);
+					blockHolder[0] = newMutation;
+				}
+				, null
+				, null
+		);
+		
+		// First, verify the miss.
+		EntityChangeTakeDamage missDamage = new EntityChangeTakeDamage(attacker.newLocation, (byte) 60);
+		Assert.assertFalse(missDamage.applyChange(context, miss));
+		Assert.assertEquals((byte)100, miss.newHealth);
+		Assert.assertNull(blockHolder[0]);
+		
+		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
+		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(attacker.newLocation, (byte) 60);
+		Assert.assertTrue(takeDamage.applyChange(context, target));
+		Assert.assertEquals((byte)40, target.newHealth);
+		Assert.assertNull(blockHolder[0]);
+		
+		Assert.assertTrue(takeDamage.applyChange(context, target));
+		Assert.assertEquals(MutableEntity.DEFAULT_HEALTH, target.newHealth);
+		Assert.assertEquals(0, target.newInventory.freeze().items.size());
+		Assert.assertEquals(null, target.newSelectedItem);
+		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, target.newLocation);
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 	}
 }

@@ -62,6 +62,7 @@ public class MutableEntity
 	public float newZVelocityPerSecond;
 	public Item newSelectedItem;
 	public CraftOperation newLocalCraftOperation;
+	public byte newHealth;
 
 	private MutableEntity(Entity original)
 	{
@@ -71,6 +72,7 @@ public class MutableEntity
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
 		this.newSelectedItem = original.selectedItem();
 		this.newLocalCraftOperation = original.localCraftOperation();
+		this.newHealth = original.health();
 	}
 
 	/**
@@ -94,7 +96,7 @@ public class MutableEntity
 				, this.newInventory.freeze()
 				, this.newSelectedItem
 				, this.newLocalCraftOperation
-				, this.original.health()
+				, this.newHealth
 				, this.original.food()
 		);
 		// See if these are identical.
