@@ -63,6 +63,7 @@ public class MutableEntity
 	public Item newSelectedItem;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
+	public byte newFood;
 
 	private MutableEntity(Entity original)
 	{
@@ -73,6 +74,7 @@ public class MutableEntity
 		this.newSelectedItem = original.selectedItem();
 		this.newLocalCraftOperation = original.localCraftOperation();
 		this.newHealth = original.health();
+		this.newFood = original.food();
 	}
 
 	/**
@@ -97,7 +99,7 @@ public class MutableEntity
 				, this.newSelectedItem
 				, this.newLocalCraftOperation
 				, this.newHealth
-				, this.original.food()
+				, this.newFood
 		);
 		// See if these are identical.
 		return this.original.equals(newInstance)

@@ -42,6 +42,8 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newSelectedItem = _entity.selectedItem();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
 		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
+		newEntity.newHealth = _entity.health();
+		newEntity.newFood = _entity.food();
 	}
 
 	@Override
