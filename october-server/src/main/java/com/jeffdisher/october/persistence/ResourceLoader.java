@@ -45,7 +45,7 @@ public class ResourceLoader
 	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 
 	private final File _saveDirectory;
-	private final Function<CuboidAddress, CuboidData> _cuboidGenerator;
+	private final Function<CuboidAddress, SuspendedCuboid<CuboidData>> _cuboidGenerator;
 	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
 	private final Thread _background;
@@ -57,7 +57,7 @@ public class ResourceLoader
 	private Collection<SuspendedEntity> _shared_resolvedEntities;
 
 	public ResourceLoader(File saveDirectory
-			, Function<CuboidAddress, CuboidData> cuboidGenerator
+			, Function<CuboidAddress, SuspendedCuboid<CuboidData>> cuboidGenerator
 	)
 	{
 		// The save directory must exist as a directory before we get here.
@@ -151,7 +151,7 @@ public class ResourceLoader
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = new SuspendedCuboid<>(_cuboidGenerator.apply(address), List.of());
+							data = _cuboidGenerator.apply(address);
 						}
 					}
 					// If we found anything, return it.

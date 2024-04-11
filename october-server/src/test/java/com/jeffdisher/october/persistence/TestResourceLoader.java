@@ -48,12 +48,12 @@ public class TestResourceLoader
 	public void empty() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see nothing come back, not matter how many times we issue the request.
-		Assert.assertNull(_loadCuboids(loader, List.of(address)));
-		Assert.assertNull(_loadCuboids(loader, List.of(address)));
-		Assert.assertNull(_loadCuboids(loader, List.of(address)));
+		Assert.assertNull(_loadSimpleCuboids(loader, List.of(address)));
+		Assert.assertNull(_loadSimpleCuboids(loader, List.of(address)));
+		Assert.assertNull(_loadSimpleCuboids(loader, List.of(address)));
 		loader.shutdown();
 	}
 
@@ -61,17 +61,17 @@ public class TestResourceLoader
 	public void basic() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = new CuboidAddress((short)1, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
 		loader.preload(cuboid);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
-		Collection<CuboidData> results = _loadCuboids(loader, List.of(address));
+		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(address));
 		Assert.assertNull(results);
 		for (int i = 0; (null == results) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			results = _loadCuboids(loader, List.of(address));
+			results = _loadSimpleCuboids(loader, List.of(address));
 		}
 		Assert.assertEquals(1, results.size());
 		loader.shutdown();
@@ -81,18 +81,18 @@ public class TestResourceLoader
 	public void flatWorld() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator());
-		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress stoneAddress = new CuboidAddress((short)1, (short)0, (short)-1);
+		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
-		Collection<CuboidData> results = _loadCuboids(loader, List.of(stoneAddress, airAddress));
+		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(stoneAddress, airAddress));
 		Assert.assertNull(results);
 		List<CuboidData> loaded = new ArrayList<>();
 		// Note that this way of checking time is bound to be flaky but we give it a whole second to generate 2 cuboids.
 		for (int i = 0; (2 != loaded.size()) && (i < 100); ++i)
 		{
 			Thread.sleep(10L);
-			results = _loadCuboids(loader, List.of());
+			results = _loadSimpleCuboids(loader, List.of());
 			if (null != results)
 			{
 				loaded.addAll(results);
@@ -112,10 +112,10 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
-		Collection<CuboidData> results = _loadCuboids(loader, List.of(airAddress));
+		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
@@ -131,7 +131,7 @@ public class TestResourceLoader
 		
 		// Now, create a new loader to verify that we can read this.
 		loader = new ResourceLoader(worldDirectory, null);
-		results = _loadCuboids(loader, List.of(airAddress));
+		results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		loaded = _waitForOne(loader);
 		Assert.assertEquals(ENV.items.STONE.number(), loaded.getData15(AspectRegistry.BLOCK, block));
@@ -191,14 +191,14 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
-		Collection<CuboidData> results = _loadCuboids(loader, List.of(airAddress));
+		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ENV.blocks.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), ENV.blocks.STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -273,14 +273,14 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
-		Collection<CuboidData> results = _loadCuboids(loader, List.of(airAddress));
+		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(0, 0, 0), ENV.blocks.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), ENV.blocks.STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -288,8 +288,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 66 bytes.
-		Assert.assertEquals(66L, cuboidFile.length());
+		// Experimentally, we know that this is 41 bytes.
+		Assert.assertEquals(41L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null);
@@ -302,14 +302,40 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 43 bytes.
-		Assert.assertEquals(43L, cuboidFile.length());
+		// Experimentally, we know that this is 18 bytes.
+		Assert.assertEquals(18L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null);
 		suspended = _loadOneSuspended(loader, airAddress);
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(0, suspended.mutations().size());
+		loader.shutdown();
+	}
+
+	@Test
+	public void verifyMutationsFromGeneration() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		MutationBlockOverwrite test = new MutationBlockOverwrite(new AbsoluteLocation(1, 2, 3), ENV.blocks.STONE);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, (CuboidAddress address) -> {
+			return new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR), List.of(
+					new ScheduledMutation(test, 100L)
+			));
+		});
+		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(new CuboidAddress((short)1, (short)2, (short)3)), List.of());
+		Assert.assertTrue(out_loadedCuboids.isEmpty());
+		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, out_loadedCuboids.size());
+		SuspendedCuboid<CuboidData> result = out_loadedCuboids.get(0);
+		List<ScheduledMutation> mutations = result.mutations();
+		Assert.assertEquals(1, mutations.size());
+		Assert.assertTrue(test == mutations.get(0).mutation());
 		loader.shutdown();
 	}
 
@@ -320,7 +346,7 @@ public class TestResourceLoader
 		for (int i = 0; (null == loaded) && (i < 10); ++i)
 		{
 			Thread.sleep(10L);
-			Collection<CuboidData> results = _loadCuboids(loader, List.of());
+			Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of());
 			if (null != results)
 			{
 				Assert.assertTrue(1 == results.size());
@@ -332,7 +358,7 @@ public class TestResourceLoader
 		return loaded;
 	}
 
-	private static Collection<CuboidData> _loadCuboids(ResourceLoader loader, Collection<CuboidAddress> addresses)
+	private static Collection<CuboidData> _loadSimpleCuboids(ResourceLoader loader, Collection<CuboidAddress> addresses)
 	{
 		Collection<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), addresses, List.of());

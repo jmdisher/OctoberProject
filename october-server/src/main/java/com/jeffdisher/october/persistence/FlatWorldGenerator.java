@@ -1,5 +1,6 @@
 package com.jeffdisher.october.persistence;
 
+import java.util.List;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -17,10 +18,10 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
  * A relatively simple world generator, designed to include the basic block types supported.
  * We also drop other miscellaneous items to make testing easier in the 0,0,0 cuboid.
  */
-public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
+public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCuboid<CuboidData>>
 {
 	@Override
-	public CuboidData apply(CuboidAddress address)
+	public SuspendedCuboid<CuboidData> apply(CuboidAddress address)
 	{
 		Environment env = Environment.getShared();
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
@@ -50,7 +51,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, CuboidData>
 				data.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)0), starting);
 			}
 		}
-		return data;
+		return new SuspendedCuboid<>(data, List.of());
 	}
 
 	private static void _fillPlane(CuboidData data, byte z, Block block)
