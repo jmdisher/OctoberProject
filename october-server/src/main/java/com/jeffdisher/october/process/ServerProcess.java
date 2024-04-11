@@ -2,10 +2,7 @@ package com.jeffdisher.october.process;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidCodec;
@@ -37,9 +34,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ServerProcess
 {
-	private final Map<Integer, _ClientBuffer> _clientsById;
+	private final Map<Integer, ClientBuffer> _clientsById;
 	private final ServerRunner _server;
-	private final NetworkServer<_ClientBuffer> _network;
+	private final NetworkServer<ClientBuffer> _network;
 
 	private IServerAdapter.IListener _serverListener;
 
@@ -68,7 +65,7 @@ public class ServerProcess
 		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
-		_network = new NetworkServer<_ClientBuffer>(new _NetworkListener(), port);
+		_network = new NetworkServer<ClientBuffer>(new _NetworkListener(), port);
 	}
 
 	public synchronized long waitForTicksToPass(long ticksToAdvance) throws InterruptedException
@@ -98,11 +95,11 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized NetworkServer.ConnectingClientDescription<_ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name)
+	private synchronized NetworkServer.ConnectingClientDescription<ClientBuffer> _createClient(NetworkLayer.PeerToken token, String name)
 	{
 		// For now, we will just hash the string and use that as the ID (Java's string hash is reasonable).  We still want the number to be positive, though.
 		// In the future, we probably want an in-memory whitelist so this can remain synchronous.
-		NetworkServer.ConnectingClientDescription<_ClientBuffer> result;
+		NetworkServer.ConnectingClientDescription<ClientBuffer> result;
 		int hash = Math.abs(name.hashCode());
 		if (0 == hash)
 		{
@@ -117,7 +114,7 @@ public class ServerProcess
 		else
 		{
 			// This is valid so install it.
-			_ClientBuffer buffer = new _ClientBuffer(token, hash);
+			ClientBuffer buffer = new ClientBuffer(token, hash);
 			_clientsById.put(hash, buffer);
 			_serverListener.clientConnected(hash);
 			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
@@ -125,49 +122,41 @@ public class ServerProcess
 		return result;
 	}
 
-	private synchronized void _destroyClient(_ClientBuffer buffer)
+	private synchronized void _destroyClient(ClientBuffer buffer)
 	{
 		_serverListener.clientDisconnected(buffer.clientId);
 		_clientsById.remove(buffer.clientId);
 	}
 
-	private synchronized void _sendNextPacket(_ClientBuffer buffer)
+	private synchronized void _sendNextPacket(ClientBuffer buffer)
 	{
-		if (buffer.outgoing.isEmpty())
+		Packet next = buffer.removeOutgoingPacketForWriteableClient();
+		if (null != next)
 		{
-			Assert.assertTrue(!buffer.isNetworkWriteable);
-			buffer.isNetworkWriteable = true;
-		}
-		else
-		{
-			Packet next = buffer.outgoing.poll();
 			_network.sendMessage(buffer.token, next);
-			buffer.isNetworkWriteable = false;
 		}
 	}
 
 	private synchronized void _bufferPacket(int clientId, Packet packet)
 	{
-		_ClientBuffer buffer = _clientsById.get(clientId);
+		ClientBuffer buffer = _clientsById.get(clientId);
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
 			System.out.println("Warning: Ignoring buffer packet to client " + clientId);
 		}
-		else if (buffer.isNetworkWriteable)
-		{
-			_network.sendMessage(buffer.token, packet);
-			buffer.isNetworkWriteable = false;
-		}
 		else
 		{
-			buffer.outgoing.add(packet);
+			if (buffer.shouldImmediatelySendPacket(packet))
+			{
+				_network.sendMessage(buffer.token, packet);
+			}
 		}
 	}
 
 	private synchronized void _sendDisconnectRequest(int clientId)
 	{
-		_ClientBuffer buffer = _clientsById.get(clientId);
+		ClientBuffer buffer = _clientsById.get(clientId);
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
@@ -185,14 +174,10 @@ public class ServerProcess
 		this.notifyAll();
 	}
 
-	private synchronized void _setClientReadable(_ClientBuffer buffer)
+	private synchronized void _setClientReadable(ClientBuffer buffer)
 	{
-		// This can only be called if we aren't already readable.
-		Assert.assertTrue(!buffer.isNetworkReadable);
-		buffer.isNetworkReadable = true;
-		
-		// We need to notify the listener if there isn't already some readable content buffered here.
-		if (buffer.incoming.isEmpty())
+		boolean shouldNotify = buffer.becameReadableAfterNetworkReady();
+		if (shouldNotify)
 		{
 			_serverListener.clientReadReady(buffer.clientId);
 		}
@@ -201,7 +186,7 @@ public class ServerProcess
 	private synchronized Packet _peekOrRemoveNextMutationFromClient(int clientId, Packet toRemove)
 	{
 		Packet packet;
-		_ClientBuffer buffer = _clientsById.get(clientId);
+		ClientBuffer buffer = _clientsById.get(clientId);
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
@@ -210,58 +195,32 @@ public class ServerProcess
 		}
 		else
 		{
-			// This check is unusually specific but a null toRemove is only passed if this is the first call, meaning this must be readable.
-			if (null == toRemove)
-			{
-				Assert.assertTrue(buffer.isNetworkReadable || !buffer.incoming.isEmpty());
-			}
-			
-			// See if we need to pull more from the lower level.
-			if (buffer.incoming.isEmpty() && buffer.isNetworkReadable)
-			{
-				List<Packet> list = _network.readBufferedPackets(buffer.token);
-				// This can't be empty if we were told that this was readable.
-				Assert.assertTrue(!list.isEmpty());
-				buffer.incoming.addAll(list);
-				buffer.isNetworkReadable = false;
-			}
-			
-			// Now, handle this operation.
-			if (!buffer.incoming.isEmpty())
-			{
-				if (null != toRemove)
-				{
-					Packet removed = buffer.incoming.poll();
-					// These must match since this is the point of toRemove.
-					Assert.assertTrue(toRemove == removed);
-				}
-			}
-			packet = buffer.incoming.peek();
+			packet = buffer.peekOrRemoveNextPacket(toRemove, () -> _network.readBufferedPackets(buffer.token));
 		}
 		return packet;
 	}
 
 
 	// Note that all callbacks are issued on the NetworkServer's thread.
-	private class _NetworkListener implements NetworkServer.IListener<_ClientBuffer>
+	private class _NetworkListener implements NetworkServer.IListener<ClientBuffer>
 	{
 		@Override
-		public NetworkServer.ConnectingClientDescription<_ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name)
+		public NetworkServer.ConnectingClientDescription<ClientBuffer> userJoined(NetworkLayer.PeerToken token, String name)
 		{
 			return _createClient(token, name);
 		}
 		@Override
-		public void userLeft(_ClientBuffer buffer)
+		public void userLeft(ClientBuffer buffer)
 		{
 			_destroyClient(buffer);
 		}
 		@Override
-		public void networkWriteReady(_ClientBuffer buffer)
+		public void networkWriteReady(ClientBuffer buffer)
 		{
 			_sendNextPacket(buffer);
 		}
 		@Override
-		public void networkReadReady(_ClientBuffer buffer)
+		public void networkReadReady(ClientBuffer buffer)
 		{
 			_setClientReadable(buffer);
 		}
@@ -349,27 +308,6 @@ public class ServerProcess
 		{
 			// We just pass this along since we will handle any state update when we see the disconnected callback (so there is only one relevant path).
 			_sendDisconnectRequest(clientId);
-		}
-	}
-
-
-	private static class _ClientBuffer
-	{
-		public final NetworkLayer.PeerToken token;
-		public final int clientId;
-		public final Queue<Packet> outgoing;
-		public boolean isNetworkWriteable;
-		public final Queue<Packet> incoming;
-		public boolean isNetworkReadable;
-		
-		public _ClientBuffer(NetworkLayer.PeerToken token, int clientId)
-		{
-			this.token = token;
-			this.clientId = clientId;
-			this.outgoing = new LinkedList<>();
-			this.isNetworkWriteable = false;
-			this.incoming = new LinkedList<>();
-			this.isNetworkReadable = false;
 		}
 	}
 }
