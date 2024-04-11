@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -56,7 +57,12 @@ public class MutationBlockOverwrite implements IMutationBlock
 		if (env.blocks.canBeReplaced(newBlock.getBlock()))
 		{
 			// Make sure that this block can be supported by the one under it.
-			boolean blockIsSupported = env.blocks.canExistOnBlock(_blockType, context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1)).getBlock());
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1));
+			// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
+			boolean blockIsSupported = (null != belowBlock)
+					? env.blocks.canExistOnBlock(_blockType, belowBlock.getBlock())
+					: true
+			;
 			
 			// Note that failing to place this means that the block will be destroyed.
 			if (blockIsSupported)

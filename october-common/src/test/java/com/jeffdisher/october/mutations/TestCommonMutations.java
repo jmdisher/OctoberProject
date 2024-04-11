@@ -170,6 +170,34 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.blocks.WATER_WEAK, proxy.getBlock());
 	}
 
+	@Test
+	public void overwriteBoundaryCheckSupport()
+	{
+		// This is verify a bug fix when planting seeds at the bottom of a cuboid, when the below is not loaded, would NPE.
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
+		
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, ENV.blocks.WHEAT_SEEDLING);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		IMutationBlock[] holder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(1L
+				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
+				, (IMutationBlock scheduled, Long delay) -> {
+					// We should see a delayed growth mutation.
+					Assert.assertEquals(10000L, delay.longValue());
+					Assert.assertNull(holder[0]);
+					holder[0] = scheduled;
+				}
+				, null
+		);
+		boolean didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(ENV.blocks.WHEAT_SEEDLING, proxy.getBlock());
+		Assert.assertTrue(holder[0] instanceof MutationBlockGrow);
+	}
+
 
 	private static class ProcessingSinks
 	{
