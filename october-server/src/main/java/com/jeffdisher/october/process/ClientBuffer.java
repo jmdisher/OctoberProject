@@ -25,6 +25,7 @@ public class ClientBuffer
 	private final Queue<Packet> _outgoing;
 	private boolean _isNetworkWriteable;
 	private final Queue<Packet> _incoming;
+	private Packet _lastPeeked;
 	private boolean _isNetworkReadable;
 	
 	public ClientBuffer(NetworkLayer.PeerToken token, int clientId)
@@ -82,17 +83,45 @@ public class ClientBuffer
 		_isNetworkReadable = true;
 		
 		// We need to notify the listener if there isn't already some readable content buffered here.
-		return _incoming.isEmpty();
+		return (null == _lastPeeked) && _incoming.isEmpty();
 	}
 
 	public Packet peekOrRemoveNextPacket(Packet toRemove, Supplier<List<Packet>> packetSource)
 	{
-		// This check is unusually specific but a null toRemove is only passed if this is the first call, meaning this must be readable.
-		if (null == toRemove)
+		// If we have a previously peeked value, we want to check that.
+		if (null != _lastPeeked)
 		{
-			Assert.assertTrue(_isNetworkReadable || !_incoming.isEmpty());
+			if (null == toRemove)
+			{
+				// This is just a re-read so change nothing.
+			}
+			else
+			{
+				// Consume this (checking match).
+				Assert.assertTrue(toRemove == _lastPeeked);
+				_lastPeeked = null;
+				
+				// Advance the state machine.
+				_advanceToNextPeek(packetSource);
+			}
 		}
-		
+		else
+		{
+			// Make sure that it is expected that there was no previous read.
+			Assert.assertTrue(null == toRemove);
+			// Make sure that we called this when there is something readable.
+			Assert.assertTrue(_isNetworkReadable || !_incoming.isEmpty());
+			// Advance the state machine.
+			_advanceToNextPeek(packetSource);
+			// In this case, we MUST now be pointing at something.
+			Assert.assertTrue(null != _lastPeeked);
+		}
+		return _lastPeeked;
+	}
+
+
+	private void _advanceToNextPeek(Supplier<List<Packet>> packetSource)
+	{
 		// See if we need to pull more from the lower level.
 		if (_incoming.isEmpty() && _isNetworkReadable)
 		{
@@ -106,13 +135,7 @@ public class ClientBuffer
 		// Now, handle this operation.
 		if (!_incoming.isEmpty())
 		{
-			if (null != toRemove)
-			{
-				Packet removed = _incoming.poll();
-				// These must match since this is the point of toRemove.
-				Assert.assertTrue(toRemove == removed);
-			}
+			_lastPeeked = _incoming.poll();
 		}
-		return _incoming.peek();
 	}
 }

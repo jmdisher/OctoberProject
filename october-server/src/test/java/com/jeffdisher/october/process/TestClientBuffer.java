@@ -39,6 +39,24 @@ public class TestClientBuffer
 		Assert.assertTrue(shouldSend);
 	}
 
+	@Test
+	public void stallBug() throws IOException
+	{
+		// Verifies the fix for the network stall bug where we may return null instead of rebuffering.
+		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
+		// -set it is readable
+		Assert.assertTrue(buffer.becameReadableAfterNetworkReady());
+		// -read the packet
+		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _Packet()));
+		Assert.assertNotNull(newPacket);
+		// -set it readable (no callout since we didn't yet consume)
+		Assert.assertFalse(buffer.becameReadableAfterNetworkReady());
+		// -try to remove and read
+		newPacket = buffer.peekOrRemoveNextPacket(newPacket, () -> List.of(new _Packet()));
+		// -verify we see a valid packet
+		Assert.assertNotNull(newPacket);
+	}
+
 
 	private static class _Token implements NetworkLayer.PeerToken
 	{
