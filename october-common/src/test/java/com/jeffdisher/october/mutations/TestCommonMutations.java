@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -215,6 +216,40 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(ENV.blocks.WHEAT_SEEDLING, proxy.getBlock());
 		Assert.assertTrue(holder[0] instanceof MutationBlockGrow);
+	}
+
+	@Test
+	public void overwriteExistingInventory()
+	{
+		// This is to verify that we don't destroy an existing inventory in this block if we replace it with something which allows entity movement (air-equivalent).
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), ENV.blocks.DIRT.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.CHARCOAL, 1).finish());
+		
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, ENV.blocks.WHEAT_SEEDLING);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		TickProcessingContext context = new TickProcessingContext(1L
+				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail("Not expected in tets");
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						// We ignore this.
+					}
+				}
+				, null
+		);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(ENV.blocks.WHEAT_SEEDLING, proxy.getBlock());
+		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.CHARCOAL));
 	}
 
 

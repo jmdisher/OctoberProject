@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -67,8 +68,18 @@ public class MutationBlockOverwrite implements IMutationBlock
 			// Note that failing to place this means that the block will be destroyed.
 			if (blockIsSupported)
 			{
+				// If we are placing a block which allows entity movement, be sure to copy over any inventory on the ground.
+				Inventory inventoryToRestore = env.blocks.permitsEntityMovement(_blockType)
+						? newBlock.getInventory()
+						: null
+				;
+				
 				// Replace the block with the type we have.
 				newBlock.setBlockAndClear(_blockType);
+				if (null != inventoryToRestore)
+				{
+					newBlock.setInventory(inventoryToRestore);
+				}
 				
 				if (env.plants.growthDivisor(_blockType) > 0)
 				{
