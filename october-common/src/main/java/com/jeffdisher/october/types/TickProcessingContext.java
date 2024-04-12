@@ -73,11 +73,25 @@ public class TickProcessingContext
 
 
 	/**
-	 * The sink for new entity changes produced while applying a mutation or change.  It will be scheduled in the
-	 * following tick.
+	 * The sink for entity changes.  Depending on the entry-point, they will be scheduled in the next tick or a later
+	 * one.
 	 */
 	public static interface IChangeSink
 	{
-		void accept(int targetEntityId, IMutationEntity change);
+		/**
+		 * Requests that an entity change be scheduled for the next tick.
+		 * 
+		 * @param targetEntityId The ID of the entity which should run the change.
+		 * @param change The change to schedule.
+		 */
+		void next(int targetEntityId, IMutationEntity change);
+		/**
+		 * Requests that an entity change be scheduled in the future.
+		 * 
+		 * @param targetEntityId The ID of the entity which should run the change.
+		 * @param change The change to schedule.
+		 * @param millisToDelay Milliseconds to delay before running the mutation.
+		 */
+		void future(int targetEntityId, IMutationEntity change, long millisToDelay);
 	}
 }

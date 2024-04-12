@@ -49,7 +49,17 @@ public class FakeBlockUpdate
 						throw Assert.unreachable();
 					}
 				}
-				, (int targetEntityId, IMutationEntity change) -> {}
+		, new TickProcessingContext.IChangeSink() {
+			@Override
+			public void next(int targetEntityId, IMutationEntity change)
+			{
+			}
+			@Override
+			public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+			{
+				throw Assert.unreachable();
+			}
+		}
 		);
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
 		boolean didApply = mutation.applyMutation(context, mutable);

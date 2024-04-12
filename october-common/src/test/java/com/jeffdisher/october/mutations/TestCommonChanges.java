@@ -282,10 +282,19 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 				}
-				, (int targetEntityId, IMutationEntity change) -> {
-					Assert.assertEquals(entityId, targetEntityId);
-					Assert.assertNull(entityHolder[0]);
-					entityHolder[0] = change;
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.assertEquals(entityId, targetEntityId);
+						Assert.assertNull(entityHolder[0]);
+						entityHolder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
 		);
 		
@@ -484,7 +493,18 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 				}
-				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						holder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 		);
 		
 		// Try too far.
@@ -727,10 +747,19 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 				}
-				, (int targetEntityId, IMutationEntity change) -> {
-					Assert.assertEquals(entityId, targetEntityId);
-					Assert.assertNull(entityHolder[0]);
-					entityHolder[0] = change;
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.assertEquals(entityId, targetEntityId);
+						Assert.assertNull(entityHolder[0]);
+						entityHolder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
 		);
 		
@@ -755,14 +784,18 @@ public class TestCommonChanges
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, null
-				, new TickProcessingContext.IChangeSink()
-				{
+				, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void accept(int targetEntityId, IMutationEntity change)
+					public void next(int targetEntityId, IMutationEntity change)
 					{
 						Assert.assertNull(changeHolder[0]);
 						targetHolder[0] = targetEntityId;
 						changeHolder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
 					}
 				}
 		);

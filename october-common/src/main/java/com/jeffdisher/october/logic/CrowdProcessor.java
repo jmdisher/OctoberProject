@@ -68,7 +68,7 @@ public class CrowdProcessor
 		};
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
-			public void accept(int targetEntityId, IMutationEntity change)
+			public void next(int targetEntityId, IMutationEntity change)
 			{
 				List<IMutationEntity> entityChanges = exportedChanges.get(targetEntityId);
 				if (null == entityChanges)
@@ -77,6 +77,12 @@ public class CrowdProcessor
 					exportedChanges.put(targetEntityId, entityChanges);
 				}
 				entityChanges.add(change);
+			}
+			@Override
+			public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+			{
+				// TODO: implement.
+				throw Assert.unreachable();
 			}
 		};
 		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);

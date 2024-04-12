@@ -57,7 +57,7 @@ public class EntityChangeSendItem implements IMutationEntity
 				newEntity.newSelectedItem = null;
 			}
 			// Send this to the other entity.
-			newChangeSink.accept(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
+			newChangeSink.next(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));
 		}
 		return foundCount;
 	}

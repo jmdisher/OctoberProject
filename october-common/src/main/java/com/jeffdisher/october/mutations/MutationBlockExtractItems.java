@@ -67,7 +67,7 @@ public class MutationBlockExtractItems implements IMutationBlock
 			{
 				mutable.removeItems(requestedType, toFetch);
 				_putInventory(newBlock, mutable.freeze());
-				context.newChangeSink.accept(_returnEntityId, new MutationEntityStoreToInventory(new Items(requestedType, toFetch)));
+				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(new Items(requestedType, toFetch)));
 				didApply = true;
 			}
 		}

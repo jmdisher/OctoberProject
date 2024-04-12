@@ -239,15 +239,19 @@ public class TestCommonMutations
 							Assert.fail("Not expected in tets");
 						}
 					}
-					, new TickProcessingContext.IChangeSink()
-					{
+					, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void accept(int targetEntityId, IMutationEntity change)
+						public void next(int targetEntityId, IMutationEntity change)
 						{
 							Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
 							Assert.assertNull(ProcessingSinks.this.nextChange);
 							ProcessingSinks.this.nextTargetEntityId = targetEntityId;
 							ProcessingSinks.this.nextChange = change;
+						}
+						@Override
+						public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
 						}
 					}
 			);

@@ -34,7 +34,7 @@ public class EntityChangeTrickleInventory implements IMutationEntity
 		newEntity.newInventory.addAllItems(_contents.type(), 1);
 		if (_contents.count() > 1)
 		{
-			context.newChangeSink.accept(newEntity.original.id(), new EntityChangeTrickleInventory(new Items(_contents.type(), _contents.count() - 1)));
+			context.newChangeSink.next(newEntity.original.id(), new EntityChangeTrickleInventory(new Items(_contents.type(), _contents.count() - 1)));
 		}
 		return true;
 	}

@@ -50,7 +50,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 		// Note that we will likely move the range check here, later on.
 		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
 		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(entityCentre, DAMAGE_PER_ATTACK);
-		context.newChangeSink.accept(_targetEntityId, takeDamage);
+		context.newChangeSink.next(_targetEntityId, takeDamage);
 		return true;
 	}
 

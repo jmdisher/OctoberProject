@@ -86,7 +86,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
 					{
 						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1));
-						context.newChangeSink.accept(_optionalEntityForStorage, store);
+						context.newChangeSink.next(_optionalEntityForStorage, store);
 					}
 				}
 				else
