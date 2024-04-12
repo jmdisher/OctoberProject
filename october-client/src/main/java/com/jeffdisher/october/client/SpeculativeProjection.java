@@ -396,7 +396,7 @@ public class SpeculativeProjection
 		);
 		_projectedCrowd.putAll(group.groupFragment());
 		Map<Integer, List<IMutationEntity>> exportedChanges = group.exportedChanges();
-		List<IMutationBlock> exportedMutations = group.exportedMutations();
+		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(group.exportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		Set<Integer> locallyModifiedIds = new HashSet<>(group.updatedEntities().keySet());
@@ -433,7 +433,7 @@ public class SpeculativeProjection
 					.map((ScheduledMutation scheduled) -> scheduled.mutation())
 					.toList()
 			);
-			exportedMutations.addAll(innerGroup.exportedMutations());
+			exportedMutations.addAll(_onlyImmediateMutations(innerGroup.exportedMutations()));
 		}
 		modifiedEntityIds.addAll(locallyModifiedIds);
 		
@@ -513,6 +513,15 @@ public class SpeculativeProjection
 		_projectedCrowd.putAll(innerGroup.groupFragment());
 		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
 		return innerGroup;
+	}
+
+	private List<IMutationBlock> _onlyImmediateMutations(List<ScheduledMutation> mutations)
+	{
+		return mutations.stream().filter(
+				(ScheduledMutation mutation) -> (0L == mutation.millisUntilReady())
+		).map(
+				(ScheduledMutation mutation) -> mutation.mutation()
+		).toList();
 	}
 
 

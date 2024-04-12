@@ -53,13 +53,13 @@ public class CrowdProcessor
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
-		List<IMutationBlock> exportedMutations = new ArrayList<>();
+		List<ScheduledMutation> exportedMutations = new ArrayList<>();
 		Map<Integer, List<IMutationEntity>> exportedChanges = new HashMap<>();
 		TickProcessingContext.IMutationSink newMutationSink = new TickProcessingContext.IMutationSink() {
 			@Override
 			public void next(IMutationBlock mutation)
 			{
-				exportedMutations.add(mutation);
+				exportedMutations.add(new ScheduledMutation(mutation, 0L));
 			}
 			@Override
 			public void future(IMutationBlock mutation, long millisToDelay)
@@ -135,7 +135,7 @@ public class CrowdProcessor
 
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
-			, List<IMutationBlock> exportedMutations
+			, List<ScheduledMutation> exportedMutations
 			, Map<Integer, List<IMutationEntity>> exportedChanges
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, Entity> updatedEntities

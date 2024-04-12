@@ -23,7 +23,6 @@ import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -399,9 +398,9 @@ public class TickRunner
 				}
 				
 				// Crowd data.
-				for (IMutationBlock mutation : fragment.crowd.exportedMutations())
+				for (ScheduledMutation scheduledMutation : fragment.crowd.exportedMutations())
 				{
-					_scheduleMutationForCuboid(snapshotBlockMutations, new ScheduledMutation(mutation, 0L));
+					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 				}
 				for (Map.Entry<Integer, List<IMutationEntity>> container : fragment.crowd.exportedChanges().entrySet())
 				{
