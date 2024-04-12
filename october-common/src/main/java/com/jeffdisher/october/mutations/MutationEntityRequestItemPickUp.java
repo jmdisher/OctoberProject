@@ -58,7 +58,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		if (toFetch > 0)
 		{
 			// Request that the items be extracted and sent back to us.
-			context.newMutationSink.accept(new MutationBlockExtractItems(_blockLocation, new Items(_requested.type(), toFetch), _inventoryAspect, newEntity.original.id()));
+			context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, new Items(_requested.type(), toFetch), _inventoryAspect, newEntity.original.id()));
 		}
 		return (toFetch > 0);
 	}

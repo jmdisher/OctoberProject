@@ -89,7 +89,7 @@ public class MutationBlockGrow implements IMutationBlock
 			
 			if (shouldReschedule)
 			{
-				context.delatedMutationSink.accept(this, MILLIS_BETWEEN_GROWTH_CALLS);
+				context.mutationSink.future(this, MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
 		}
@@ -132,7 +132,7 @@ public class MutationBlockGrow implements IMutationBlock
 			Block block = proxy.getBlock();
 			if (env.blocks.canBeReplaced(block))
 			{
-				context.newMutationSink.accept(new MutationBlockOverwrite(location, env.blocks.LEAF));
+				context.mutationSink.next(new MutationBlockOverwrite(location, env.blocks.LEAF));
 			}
 		}
 	}

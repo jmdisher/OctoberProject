@@ -55,7 +55,6 @@ public class TestCommonMutations
 				}
 				, null
 				, null
-				, null
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -145,8 +144,17 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.items.AIR.number());
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock mutation) -> {}
-				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 				, null
 		);
 		
@@ -182,12 +190,20 @@ public class TestCommonMutations
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, (IMutationBlock scheduled, Long delay) -> {
-					// We should see a delayed growth mutation.
-					Assert.assertEquals(10000L, delay.longValue());
-					Assert.assertNull(holder[0]);
-					holder[0] = scheduled;
+						, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail("Not expected in tets");
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						// We should see a delayed growth mutation.
+						Assert.assertEquals(10000L, millisToDelay);
+						Assert.assertNull(holder[0]);
+						holder[0] = mutation;
+					}
 				}
 				, null
 		);
@@ -211,10 +227,18 @@ public class TestCommonMutations
 					, (AbsoluteLocation blockLocation) -> {
 						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
 					}
-					, (IMutationBlock mutation) -> {
-						ProcessingSinks.this.nextMutation = mutation;
+					, new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							ProcessingSinks.this.nextMutation = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
 					}
-					, null
 					, new TickProcessingContext.IChangeSink()
 					{
 						@Override

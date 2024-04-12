@@ -74,7 +74,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 			// Pass the mutation into the block.
 			// (note that we verify that this is valid for the block type in MutationBlockCraft)
 			MutationBlockCraft mutation = new MutationBlockCraft(_targetBlock, _craft, _millisToApply);
-			context.newMutationSink.accept(mutation);
+			context.mutationSink.next(mutation);
 			didApply = true;
 		}
 		

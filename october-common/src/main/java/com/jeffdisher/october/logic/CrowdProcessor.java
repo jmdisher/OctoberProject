@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
@@ -55,15 +53,19 @@ public class CrowdProcessor
 		Map<Integer, Entity> fragment = new HashMap<>();
 		List<IMutationBlock> exportedMutations = new ArrayList<>();
 		Map<Integer, List<IMutationEntity>> exportedChanges = new HashMap<>();
-		Consumer<IMutationBlock> newMutationSink = new Consumer<>() {
+		TickProcessingContext.IMutationSink newMutationSink = new TickProcessingContext.IMutationSink() {
 			@Override
-			public void accept(IMutationBlock arg0)
+			public void next(IMutationBlock mutation)
 			{
-				exportedMutations.add(arg0);
+				exportedMutations.add(mutation);
+			}
+			@Override
+			public void future(IMutationBlock mutation, long millisToDelay)
+			{
+				// Note that delayed mutations are not currently supported in entity mutations.
+				Assert.unreachable();
 			}
 		};
-		// Note that delayed mutations are not currently supported in entity mutations.
-		BiConsumer<IMutationBlock, Long> delayedMutationSink = null;
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
@@ -77,7 +79,7 @@ public class CrowdProcessor
 				entityChanges.add(change);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, delayedMutationSink, newChangeSink);
+		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		int committedMutationCount = 0;

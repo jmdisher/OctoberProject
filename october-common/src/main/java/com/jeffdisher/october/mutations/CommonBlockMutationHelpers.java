@@ -92,7 +92,7 @@ public class CommonBlockMutationHelpers
 			// We want to drop this inventory into the below block.
 			for (Items items : newBlock.getInventory().items.values())
 			{
-				context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
+				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
 			
 			// Now, clear the inventory.

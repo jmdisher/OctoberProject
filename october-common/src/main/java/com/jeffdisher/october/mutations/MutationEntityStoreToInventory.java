@@ -64,7 +64,7 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 		{
 			int itemsToDrop = itemsToStore - stored;
 			MutationBlockStoreItems drop = new MutationBlockStoreItems(newEntity.newLocation.getBlockLocation(), new Items(type, itemsToDrop), Inventory.INVENTORY_ASPECT_INVENTORY);
-			context.newMutationSink.accept(drop);
+			context.mutationSink.next(drop);
 		}
 		
 		// Since we did _something_, this is always true.

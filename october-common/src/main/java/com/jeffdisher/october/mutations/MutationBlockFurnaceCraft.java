@@ -163,7 +163,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 			
 			if (shouldReschedule)
 			{
-				context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+				context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 			}
 			// Set the ephemeral state since we are done for this tick (we don't currently care what the object is).
 			newBlock.setEphemeralState(Boolean.TRUE);

@@ -31,7 +31,7 @@ public class ShockwaveMutation implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		_commonMutation(context.newMutationSink);
+		_commonMutation((IMutationBlock mutation) -> context.mutationSink.next(mutation));
 		return true;
 	}
 

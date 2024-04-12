@@ -72,7 +72,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 			// TODO:  Use a real multiplier once we have tools.  This should be 1 for "no tool" but we use 10 to speed up play testing.
 			short damageToApply = (short)(10 * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
-			context.newMutationSink.accept(mutation);
+			context.mutationSink.next(mutation);
 			didApply = true;
 			
 			// Do other state reset.

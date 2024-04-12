@@ -77,7 +77,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 				newEntity.newHealth = MutableEntity.DEFAULT_HEALTH;
 				for (Items items : newEntity.newInventory.freeze().items.values())
 				{
-					context.newMutationSink.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), items, Inventory.INVENTORY_ASPECT_INVENTORY));
+					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), items, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory();
 				newEntity.newSelectedItem = null;

@@ -68,7 +68,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 				if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 				{
 					// We want to drop this into the below block.
-					context.newMutationSink.accept(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
+					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
 					didApply = true;
 				}
 			}
@@ -87,7 +87,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 				// See if we might need to trigger an automatic crafting operation in this block.
 				if (null != MutationBlockFurnaceCraft.canCraft(newBlock))
 				{
-					context.newMutationSink.accept(new MutationBlockFurnaceCraft(_blockLocation));
+					context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 				}
 				didApply = true;
 			}

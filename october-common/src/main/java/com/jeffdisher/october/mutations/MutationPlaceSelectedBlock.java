@@ -96,7 +96,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.
 			MutationBlockOverwrite write = new MutationBlockOverwrite(_targetBlock, blockType);
-			context.newMutationSink.accept(write);
+			context.mutationSink.next(write);
 			didApply = true;
 			
 			// Do other state reset.

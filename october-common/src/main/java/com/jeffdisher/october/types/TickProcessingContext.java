@@ -1,7 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
@@ -28,16 +26,10 @@ public class TickProcessingContext
 	public final Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 
 	/**
-	 * The consumer of any new mutations produces as a side-effect of this operation (will be scheduled for the next
-	 * tick).
+	 * The consumer of any new block mutations produced as a side-effect of this operation (will be scheduled in a
+	 * future tick - never this one).
 	 */
-	public final Consumer<IMutationBlock> newMutationSink;
-
-	/**
-	 * The consumer of delayed mutations which should be scheduled in the future after a given number of milliseconds.
-	 * Note that this is not supported when running entity mutations, only block mutations.
-	 */
-	public final BiConsumer<IMutationBlock, Long> delatedMutationSink;
+	public final IMutationSink mutationSink;
 
 	/**
 	 * The consumer of any new entity changes produced as a side-effect of this operation (will be scheduled for the
@@ -47,16 +39,36 @@ public class TickProcessingContext
 
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, Consumer<IMutationBlock> newMutationSink
-			, BiConsumer<IMutationBlock, Long>  delatedMutationSink
+			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 	)
 	{
 		this.currentTick = currentTick;
 		this.previousBlockLookUp = previousBlockLookUp;
-		this.newMutationSink = newMutationSink;
-		this.delatedMutationSink = delatedMutationSink; 
+		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
+	}
+
+
+	/**
+	 * The sink for block mutations.  Depending on the entry-point, they will be scheduled in the next tick or a later
+	 * one.
+	 */
+	public static interface IMutationSink
+	{
+		/**
+		 * Requests that a block mutation be scheduled for the next tick.
+		 * 
+		 * @param mutation The mutation to schedule.
+		 */
+		void next(IMutationBlock mutation);
+		/**
+		 * Request that a block mutation be scheduled in the future.
+		 * 
+		 * @param mutation The mutation to schedule.
+		 * @param millisToDelay Milliseconds to delay before running the mutation.
+		 */
+		void future(IMutationBlock mutation, long millisToDelay);
 	}
 
 

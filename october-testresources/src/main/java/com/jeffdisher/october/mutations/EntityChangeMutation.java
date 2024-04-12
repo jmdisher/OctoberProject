@@ -32,7 +32,7 @@ public class EntityChangeMutation implements IMutationEntity
 	{
 		if (null != _contents)
 		{
-			context.newMutationSink.accept(_contents);
+			context.mutationSink.next(_contents);
 		}
 		return true;
 	}

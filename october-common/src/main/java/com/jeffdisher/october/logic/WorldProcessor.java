@@ -8,8 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -75,22 +73,20 @@ public class WorldProcessor
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		List<ScheduledMutation> exportedMutations = new ArrayList<>();
 		Map<Integer, List<IMutationEntity>> exportedEntityChanges = new HashMap<>();
-		Consumer<IMutationBlock> sink = new Consumer<IMutationBlock>() {
+		
+		TickProcessingContext.IMutationSink newMutationSink = new TickProcessingContext.IMutationSink() {
 			@Override
-			public void accept(IMutationBlock mutation)
+			public void next(IMutationBlock mutation)
 			{
 				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
 				exportedMutations.add(new ScheduledMutation(mutation, 0L));
 			}
-		};
-		BiConsumer<IMutationBlock, Long> delayedMutationSink = new BiConsumer<>() {
 			@Override
-			public void accept(IMutationBlock mutation, Long delayMillis)
+			public void future(IMutationBlock mutation, long millisToDelay)
 			{
-				exportedMutations.add(new ScheduledMutation(mutation, delayMillis));
+				exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
 			}
 		};
-		
 		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
 			@Override
 			public void accept(int targetEntityId, IMutationEntity change)
@@ -135,7 +131,7 @@ public class WorldProcessor
 					}
 					return proxy;
 				};
-				TickProcessingContext context = new TickProcessingContext(gameTick, local, sink, delayedMutationSink, newChangeSink);
+				TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
 				
 				// First, handle block updates.
 				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies

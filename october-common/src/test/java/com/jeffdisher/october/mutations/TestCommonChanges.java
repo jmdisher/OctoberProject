@@ -54,7 +54,6 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
 				, null
-				, null
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -72,7 +71,6 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
 				, null
 				, null
 		);
@@ -93,7 +91,6 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> null
 				, null
 				, null
-				, null
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -111,7 +108,6 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
 				, null
 				, null
 		);
@@ -137,7 +133,6 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
-				, null
 				, null
 				, null
 		);
@@ -189,7 +184,6 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
-				, null
 		);
 		
 		// Give the entity some items and verify that they default to selected.
@@ -230,8 +224,18 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> holder[0] = newMutation
-				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						holder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 				, null
 		);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
@@ -265,11 +269,19 @@ public class TestCommonChanges
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> {
-					Assert.assertNull(blockHolder[0]);
-					blockHolder[0] = newMutation;
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, (int targetEntityId, IMutationEntity change) -> {
 					Assert.assertEquals(entityId, targetEntityId);
 					Assert.assertNull(entityHolder[0]);
@@ -335,11 +347,19 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> {
-					Assert.assertNull(blockHolder[0]);
-					blockHolder[0] = newMutation;
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, null
 		);
 		
@@ -393,8 +413,18 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> holder[0] = newMutation
-				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						holder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 				, null
 		);
 		
@@ -442,8 +472,18 @@ public class TestCommonChanges
 		boolean[] didSchedule = new boolean[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> didSchedule[0] = true
-				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						didSchedule[0] = true;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 				, (int targetEntityId, IMutationEntity change) -> holder[0] = change
 		);
 		
@@ -474,7 +514,6 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
-				, null
 		);
 		
 		// Craft some items to use these up and verify that we also moved.
@@ -502,8 +541,18 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> holder[0] = newMutation
-				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						holder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
 				, null
 		);
 		
@@ -558,10 +607,18 @@ public class TestCommonChanges
 		List<IMutationBlock> blockHolder = new ArrayList<>();
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> {
-					blockHolder.add(newMutation);
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						blockHolder.add(mutation);
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, null
 		);
 		
@@ -607,11 +664,19 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> {
-					Assert.assertNull(blockHolder[0]);
-					blockHolder[0] = newMutation;
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, null
 		);
 		
@@ -649,11 +714,19 @@ public class TestCommonChanges
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, (IMutationBlock newMutation) -> {
-					Assert.assertNull(blockHolder[0]);
-					blockHolder[0] = newMutation;
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, (int targetEntityId, IMutationEntity change) -> {
 					Assert.assertEquals(entityId, targetEntityId);
 					Assert.assertNull(entityHolder[0]);
@@ -680,7 +753,6 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		IMutationEntity[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
-				, null
 				, null
 				, null
 				, new TickProcessingContext.IChangeSink()
@@ -744,11 +816,19 @@ public class TestCommonChanges
 					}
 					return proxy;
 				}
-				, (IMutationBlock newMutation) -> {
-					Assert.assertNull(blockHolder[0]);
-					blockHolder[0] = newMutation;
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
-				, null
 				, null
 		);
 		

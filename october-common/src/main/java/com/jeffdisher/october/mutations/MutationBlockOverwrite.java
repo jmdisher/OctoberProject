@@ -72,7 +72,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 				
 				if (env.plants.growthDivisor(_blockType) > 0)
 				{
-					context.delatedMutationSink.accept(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
+					context.mutationSink.future(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				didApply = true;
 			}
