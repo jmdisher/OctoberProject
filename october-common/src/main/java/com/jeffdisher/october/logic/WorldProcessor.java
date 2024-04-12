@@ -123,20 +123,7 @@ public class WorldProcessor
 				// We will accumulate changing blocks and determine if we need to write any back at the end.
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
 				
-				final Map<AbsoluteLocation, BlockProxy> cache = new HashMap<>();
-				Function<AbsoluteLocation, BlockProxy> local = (AbsoluteLocation location) -> {
-					BlockProxy proxy;
-					if (cache.containsKey(location))
-					{
-						proxy = cache.get(location);
-					}
-					else
-					{
-						proxy = loader.apply(location);
-						cache.put(location, proxy);
-					}
-					return proxy;
-				};
+				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
 				TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
 				
 				// First, handle block updates.
@@ -156,7 +143,7 @@ public class WorldProcessor
 					{
 						long millisUntilReady = scheduledMutations.millisUntilReady();
 						IMutationBlock mutation = scheduledMutations.mutation();
-						if (0 == millisUntilReady)
+						if (0L == millisUntilReady)
 						{
 							processor.mutationCount += 1;
 							boolean didApply = _runOneMutation(proxies, context, oldState, mutation);

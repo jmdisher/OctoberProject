@@ -87,7 +87,6 @@ public class CrowdProcessor
 				throw Assert.unreachable();
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(gameTick, loader, newMutationSink, newChangeSink);
 		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		int committedMutationCount = 0;
@@ -99,6 +98,9 @@ public class CrowdProcessor
 				Integer id = elt.getKey();
 				List<IMutationEntity> changes = elt.getValue();
 				Entity entity = entitiesById.get(id);
+				
+				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
+				TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
 				
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
