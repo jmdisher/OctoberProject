@@ -55,6 +55,7 @@ public class TestCommonMutations
 				}
 				, null
 				, null
+				, null
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -144,6 +145,7 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.items.AIR.number());
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -190,7 +192,8 @@ public class TestCommonMutations
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-						, new TickProcessingContext.IMutationSink() {
+				, null
+				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
 					{
@@ -227,6 +230,7 @@ public class TestCommonMutations
 					, (AbsoluteLocation blockLocation) -> {
 						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
 					}
+					, null
 					, new TickProcessingContext.IMutationSink() {
 						@Override
 						public void next(IMutationBlock mutation)

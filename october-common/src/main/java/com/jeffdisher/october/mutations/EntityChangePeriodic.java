@@ -55,8 +55,7 @@ public class EntityChangePeriodic implements IMutationEntity
 		else
 		{
 			// We apply damage using the TakeDamage change.
-			// TODO:  Until we can move the source location check, just pass our own location.
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(newEntity.newLocation, (byte)1);
+			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage((byte)1);
 			context.newChangeSink.next(newEntity.original.id(), takeDamage);
 		}
 		

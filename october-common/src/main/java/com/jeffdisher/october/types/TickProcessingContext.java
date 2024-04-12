@@ -26,6 +26,12 @@ public class TickProcessingContext
 	public final Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 
 	/**
+	 * The view of the entire entity crowd, as of the beginning of this tick.
+	 * Returns null if the requested entity isn' loaded.
+	 */
+	public final Function<Integer, Entity> previousEntityLookUp;
+
+	/**
 	 * The consumer of any new block mutations produced as a side-effect of this operation (will be scheduled in a
 	 * future tick - never this one).
 	 */
@@ -39,12 +45,14 @@ public class TickProcessingContext
 
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, Function<Integer, Entity> previousEntityLookUp
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 	)
 	{
 		this.currentTick = currentTick;
 		this.previousBlockLookUp = previousBlockLookUp;
+		this.previousEntityLookUp = previousEntityLookUp;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
 	}

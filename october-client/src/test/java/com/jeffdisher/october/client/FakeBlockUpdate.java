@@ -37,6 +37,7 @@ public class FakeBlockUpdate
 		// We will just fake up the tick context to be benign (since the speculative projection will drop any new mutations) and only fail when it can't know the answer.
 		TickProcessingContext context = new TickProcessingContext(0L
 				, previousBlockLookUp
+				, null
 				, new TickProcessingContext.IMutationSink()
 				{
 					@Override

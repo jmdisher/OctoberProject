@@ -324,6 +324,7 @@ public class TickRunner
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
 					, loader
+					, materials.completedEntities
 					, materials.thisGameTick
 					, _millisPerTick
 					, materials.mutationsToRun

@@ -69,7 +69,12 @@ public class CrowdProcessor
 				if (null != entity)
 				{
 					BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
-					TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
+					TickProcessingContext context = new TickProcessingContext(gameTick
+							, local
+							, (Integer entityId) -> entitiesById.get(entityId)
+							, newMutationSink
+							, newChangeSink
+					);
 					
 					MutableEntity mutable = MutableEntity.existing(entity);
 					List<ScheduledChange> changes = elt.getValue();

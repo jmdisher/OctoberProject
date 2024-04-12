@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -46,12 +47,30 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		// Send the damage to the other entity, saying it originated from our source.
-		// Note that we will likely move the range check here, later on.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
-		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(entityCentre, DAMAGE_PER_ATTACK);
-		context.newChangeSink.next(_targetEntityId, takeDamage);
-		return true;
+		// Check that the target is in range.  We will use block breaking distance.
+		boolean isInRange;
+		Entity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+		if (null != targetEntity)
+		{
+			// The target is loaded so check the distances.
+			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), targetEntity.volume());
+			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
+			float absX = Math.abs(targetCentre.x() - entityCentre.x());
+			float absY = Math.abs(targetCentre.y() - entityCentre.y());
+			float absZ = Math.abs(targetCentre.z() - entityCentre.z());
+			isInRange = ((absX <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absY <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absZ <= EntityChangeIncrementalBlockBreak.MAX_REACH));
+		}
+		else
+		{
+			// Not loaded so just say no.
+			isInRange = false;
+		}
+		if (isInRange)
+		{
+			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(DAMAGE_PER_ATTACK);
+			context.newChangeSink.next(_targetEntityId, takeDamage);
+		}
+		return isInRange;
 	}
 
 	@Override

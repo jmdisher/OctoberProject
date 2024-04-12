@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -47,6 +48,7 @@ public class WorldProcessor
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
 	 * @param loader Used to resolve read-only block data from the previous tick.
+	 * @param entitiesById Used to resolve the read-only Entity objects from the previous tick.
 	 * @param gameTick The game tick being processed.
 	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
@@ -60,6 +62,7 @@ public class WorldProcessor
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
 			, Function<AbsoluteLocation, BlockProxy> loader
+			, Map<Integer, Entity> entitiesById
 			, long gameTick
 			, long millisSinceLastTick
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
@@ -91,7 +94,12 @@ public class WorldProcessor
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
 				
 				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
-				TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
+				TickProcessingContext context = new TickProcessingContext(gameTick
+						, local
+						, (Integer entityId) -> entitiesById.get(entityId)
+						, newMutationSink
+						, newChangeSink
+				);
 				
 				// First, handle block updates.
 				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies

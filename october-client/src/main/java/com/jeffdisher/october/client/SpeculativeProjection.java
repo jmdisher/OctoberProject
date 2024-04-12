@@ -168,6 +168,7 @@ public class SpeculativeProjection
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
 				, this.projectionBlockLoader
+				, _shadowCrowd
 				, gameTick
 				, ignoredMillisBetweenTicks
 				, mutationsToRun
@@ -487,6 +488,7 @@ public class SpeculativeProjection
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedWorld
 				, this.projectionBlockLoader
+				, _projectedCrowd
 				, gameTick
 				, millisSinceLastTick
 				, innerMutations

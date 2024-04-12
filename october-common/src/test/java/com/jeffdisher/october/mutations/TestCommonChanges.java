@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -55,6 +56,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
 				, null
 				, null
+				, null
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -72,6 +74,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, null
 				, null
 		);
@@ -92,6 +95,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> null
 				, null
 				, null
+				, null
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -109,6 +113,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, null
 				, null
 		);
@@ -134,6 +139,7 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
+				, null
 				, null
 				, null
 		);
@@ -185,6 +191,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
+				, null
 		);
 		
 		// Give the entity some items and verify that they default to selected.
@@ -225,6 +232,7 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -270,6 +278,7 @@ public class TestCommonChanges
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -357,6 +366,7 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -423,6 +433,7 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -482,6 +493,7 @@ public class TestCommonChanges
 		boolean[] didSchedule = new boolean[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -535,6 +547,7 @@ public class TestCommonChanges
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
 				, null
+				, null
 		);
 		
 		// Craft some items to use these up and verify that we also moved.
@@ -562,6 +575,7 @@ public class TestCommonChanges
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -628,6 +642,7 @@ public class TestCommonChanges
 		List<IMutationBlock> blockHolder = new ArrayList<>();
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -685,6 +700,7 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -735,6 +751,7 @@ public class TestCommonChanges
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -776,14 +793,25 @@ public class TestCommonChanges
 	@Test
 	public void attackEntity() throws Throwable
 	{
-		// Just create an entity and run the attack change so we can verify the scheduled follow-up.
-		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
-		mutable.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		// Verify the range check and correct follow-up, on hit.
+		int attackerId = 1;
+		int targetId = 2;
+		int missId = 3;
+		MutableEntity attacker = MutableEntity.create(attackerId);
+		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		MutableEntity target = MutableEntity.create(targetId);
+		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
+		target.newInventory.addAllItems(ENV.items.STONE, 2);
+		target.newSelectedItem = ENV.items.STONE;
+		MutableEntity miss = MutableEntity.create(missId);
+		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
+		
+		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
 		int[] targetHolder = new int[1];
 		IMutationEntity[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
+				, (Integer thisId) -> targetsById.get(thisId)
 				, null
 				, new TickProcessingContext.IChangeSink() {
 					@Override
@@ -801,11 +829,12 @@ public class TestCommonChanges
 				}
 		);
 		
-		int targetId = 2;
-		EntityChangeAttackEntity attack = new EntityChangeAttackEntity(targetId);
-		Assert.assertTrue(attack.applyChange(context, mutable));
+		// Check the miss.
+		Assert.assertFalse(new EntityChangeAttackEntity(missId).applyChange(context, attacker));
+		Assert.assertNull(changeHolder[0]);
 		
-		// Verify that we see the follow-up scheduled.
+		// Check the hit.
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
 		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamage);
 	}
@@ -816,15 +845,12 @@ public class TestCommonChanges
 		// Verify that damage is correctly applied, as well as the "respawn" mechanic.
 		int attackerId = 1;
 		int targetId = 2;
-		int missId = 3;
 		MutableEntity attacker = MutableEntity.create(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		MutableEntity target = MutableEntity.create(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(ENV.items.STONE, 2);
 		target.newSelectedItem = ENV.items.STONE;
-		MutableEntity miss = MutableEntity.create(missId);
-		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
 		
 		// We need to make sure that there is a solid block under the entities so nothing falls.
 		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
@@ -850,6 +876,7 @@ public class TestCommonChanges
 					}
 					return proxy;
 				}
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -866,14 +893,8 @@ public class TestCommonChanges
 				, null
 		);
 		
-		// First, verify the miss.
-		EntityChangeTakeDamage missDamage = new EntityChangeTakeDamage(attacker.newLocation, (byte) 60);
-		Assert.assertFalse(missDamage.applyChange(context, miss));
-		Assert.assertEquals((byte)100, miss.newHealth);
-		Assert.assertNull(blockHolder[0]);
-		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
-		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(attacker.newLocation, (byte) 60);
+		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage((byte) 60);
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
 		Assert.assertNull(blockHolder[0]);
@@ -892,6 +913,7 @@ public class TestCommonChanges
 	{
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
+				, null
 				, null
 				, null
 				, changeSink

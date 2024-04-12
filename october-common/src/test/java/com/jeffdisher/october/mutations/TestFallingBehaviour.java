@@ -52,6 +52,7 @@ public class TestFallingBehaviour
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -122,6 +123,7 @@ public class TestFallingBehaviour
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -182,6 +184,7 @@ public class TestFallingBehaviour
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -253,6 +256,7 @@ public class TestFallingBehaviour
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
@@ -284,6 +288,7 @@ public class TestFallingBehaviour
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
 					? new BlockProxy(location.getBlockAddress(), cuboid)
 					: cuboidAddress1.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid1) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 						@Override
 						public void next(IMutationBlock mutation)
@@ -327,6 +332,7 @@ public class TestFallingBehaviour
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
 				, new TickProcessingContext.IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
