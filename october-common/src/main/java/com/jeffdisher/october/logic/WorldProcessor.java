@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,44 +70,13 @@ public class WorldProcessor
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
-		List<ScheduledMutation> exportedMutations = new ArrayList<>();
-		Map<Integer, List<IMutationEntity>> exportedEntityChanges = new HashMap<>();
 		
-		TickProcessingContext.IMutationSink newMutationSink = new TickProcessingContext.IMutationSink() {
-			@Override
-			public void next(IMutationBlock mutation)
-			{
-				// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
-				exportedMutations.add(new ScheduledMutation(mutation, 0L));
-			}
-			@Override
-			public void future(IMutationBlock mutation, long millisToDelay)
-			{
-				exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
-			}
-		};
-		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
-			@Override
-			public void next(int targetEntityId, IMutationEntity change)
-			{
-				List<IMutationEntity> entityChanges = exportedEntityChanges.get(targetEntityId);
-				if (null == entityChanges)
-				{
-					entityChanges = new LinkedList<>();
-					exportedEntityChanges.put(targetEntityId, entityChanges);
-				}
-				entityChanges.add(change);
-			}
-			@Override
-			public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-			{
-				// TODO: implement.
-				throw Assert.unreachable();
-			}
-		};
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		List<ScheduledMutation> delayedMutations = new ArrayList<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
@@ -159,7 +127,7 @@ public class WorldProcessor
 							{
 								updatedMillis = 0L;
 							}
-							exportedMutations.add(new ScheduledMutation(mutation, updatedMillis));
+							delayedMutations.add(new ScheduledMutation(mutation, updatedMillis));
 						}
 					}
 				}
@@ -196,6 +164,10 @@ public class WorldProcessor
 				}
 			}
 		}
+		
+		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
+		exportedMutations.addAll(delayedMutations);
+		Map<Integer, List<IMutationEntity>> exportedEntityChanges = newChangeSink.takeExportedChanges();
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
 				, exportedMutations

@@ -1,14 +1,11 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
@@ -53,40 +50,9 @@ public class CrowdProcessor
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
-		List<ScheduledMutation> exportedMutations = new ArrayList<>();
-		Map<Integer, List<IMutationEntity>> exportedChanges = new HashMap<>();
-		TickProcessingContext.IMutationSink newMutationSink = new TickProcessingContext.IMutationSink() {
-			@Override
-			public void next(IMutationBlock mutation)
-			{
-				exportedMutations.add(new ScheduledMutation(mutation, 0L));
-			}
-			@Override
-			public void future(IMutationBlock mutation, long millisToDelay)
-			{
-				// Note that delayed mutations are not currently supported in entity mutations.
-				Assert.unreachable();
-			}
-		};
-		TickProcessingContext.IChangeSink newChangeSink = new TickProcessingContext.IChangeSink() {
-			@Override
-			public void next(int targetEntityId, IMutationEntity change)
-			{
-				List<IMutationEntity> entityChanges = exportedChanges.get(targetEntityId);
-				if (null == entityChanges)
-				{
-					entityChanges = new LinkedList<>();
-					exportedChanges.put(targetEntityId, entityChanges);
-				}
-				entityChanges.add(change);
-			}
-			@Override
-			public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-			{
-				// TODO: implement.
-				throw Assert.unreachable();
-			}
-		};
+		
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
 		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		int committedMutationCount = 0;
@@ -127,6 +93,8 @@ public class CrowdProcessor
 				}
 			}
 		}
+		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
+		Map<Integer, List<IMutationEntity>> exportedChanges = newChangeSink.takeExportedChanges();
 		return new ProcessedGroup(fragment
 				, exportedMutations
 				, exportedChanges
