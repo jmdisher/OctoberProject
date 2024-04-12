@@ -311,7 +311,13 @@ public class TickRunner
 				;
 			};
 			// Process all entity changes first and synchronize to lock-step.
-			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread, materials.completedEntities, loader, materials.thisGameTick, materials.changesToRun);
+			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
+					, materials.completedEntities
+					, loader
+					, materials.thisGameTick
+					, _millisPerTick
+					, materials.changesToRun
+			);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.

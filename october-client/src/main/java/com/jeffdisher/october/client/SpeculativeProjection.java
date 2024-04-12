@@ -147,7 +147,15 @@ public class SpeculativeProjection
 					(IEntityUpdate update) -> (IMutationEntity)new EntityUpdateWrapper(update)).toList()
 			);
 		}
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _shadowCrowd, this.projectionBlockLoader, gameTick, convertedUpdates);
+		// The time between ticks doesn't matter when replaying from server.
+		long ignoredMillisBetweenTicks = 0L;
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
+				, _shadowCrowd
+				, this.projectionBlockLoader
+				, gameTick
+				, ignoredMillisBetweenTicks
+				, convertedUpdates
+		);
 		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
@@ -156,8 +164,6 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		// The time between ticks doesn't matter when replaying from server.
-		long ignoredMillisBetweenTicks = 0L;
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
 				, this.projectionBlockLoader
@@ -376,11 +382,18 @@ public class SpeculativeProjection
 		
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
+		long ignoredMillisBetweenTicks = 0L;
 		
 		List<IMutationEntity> queue = new LinkedList<IMutationEntity>();
 		queue.add(change);
 		Map<Integer, List<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, changesToRun);
+		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
+				, _projectedCrowd
+				, this.projectionBlockLoader
+				, gameTick
+				, ignoredMillisBetweenTicks
+				, changesToRun
+		);
 		_projectedCrowd.putAll(group.groupFragment());
 		Map<Integer, List<IMutationEntity>> exportedChanges = group.exportedChanges();
 		List<IMutationBlock> exportedMutations = group.exportedMutations();
@@ -488,7 +501,15 @@ public class SpeculativeProjection
 	private CrowdProcessor.ProcessedGroup _applyFollowUpEntityMutations(Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity>> entityMutations)
 	{
 		long gameTick = 0L;
-		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement, _projectedCrowd, this.projectionBlockLoader, gameTick, entityMutations);
+		// The time between ticks doesn't matter when replaying from server.
+		long ignoredMillisBetweenTicks = 0L;
+		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
+				, _projectedCrowd
+				, this.projectionBlockLoader
+				, gameTick
+				, ignoredMillisBetweenTicks
+				, entityMutations
+		);
 		_projectedCrowd.putAll(innerGroup.groupFragment());
 		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
 		return innerGroup;

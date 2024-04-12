@@ -39,6 +39,7 @@ public class CrowdProcessor
 	 * @param entitiesById The map of all read-only entities from the previous tick.
 	 * @param loader Used to resolve read-only block data from the previous tick.
 	 * @param gameTick The game tick being processed.
+	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
 	 * @return The subset of the changesToRun work which was completed by this thread.
@@ -47,6 +48,7 @@ public class CrowdProcessor
 			, Map<Integer, Entity> entitiesById
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
+			, long millisSinceLastTick
 			, Map<Integer, List<IMutationEntity>> changesToRun
 	)
 	{
