@@ -12,7 +12,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -64,53 +63,55 @@ public class CrowdProcessor
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				List<ScheduledChange> changes = elt.getValue();
 				Entity entity = entitiesById.get(id);
 				
-				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
-				TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
-				
-				// We can't be told to operate on something which isn't in the state.
-				Assert.assertTrue(null != entity);
-				MutableEntity mutable = MutableEntity.existing(entity);
-				for (ScheduledChange scheduled : changes)
+				// Note that the entity may have been unloaded.
+				if (null != entity)
 				{
-					long millisUntilReady = scheduled.millisUntilReady();
-					IMutationEntity change = scheduled.change();
-					if (0L == millisUntilReady)
+					BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
+					TickProcessingContext context = new TickProcessingContext(gameTick, local, newMutationSink, newChangeSink);
+					
+					MutableEntity mutable = MutableEntity.existing(entity);
+					List<ScheduledChange> changes = elt.getValue();
+					for (ScheduledChange scheduled : changes)
 					{
-						processor.changeCount += 1;
-						boolean didApply = change.applyChange(context, mutable);
-						if (didApply)
+						long millisUntilReady = scheduled.millisUntilReady();
+						IMutationEntity change = scheduled.change();
+						if (0L == millisUntilReady)
 						{
-							committedMutationCount += 1;
+							processor.changeCount += 1;
+							boolean didApply = change.applyChange(context, mutable);
+							if (didApply)
+							{
+								committedMutationCount += 1;
+							}
+						}
+						else
+						{
+							long updatedMillis = millisUntilReady - millisSinceLastTick;
+							if (updatedMillis < 0L)
+							{
+								updatedMillis = 0L;
+							}
+							if (!delayedChanges.containsKey(id))
+							{
+								delayedChanges.put(id, new ArrayList<>());
+							}
+							List<ScheduledChange> list = delayedChanges.get(id);
+							list.add(new ScheduledChange(change, updatedMillis));
 						}
 					}
-					else
+					
+					// Return the old instance if nothing changed.
+					// This freeze() call will return the original instance if it is identical.
+					Entity newEntity = mutable.freeze();
+					fragment.put(id, newEntity);
+					
+					// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
+					if (newEntity != entity)
 					{
-						long updatedMillis = millisUntilReady - millisSinceLastTick;
-						if (updatedMillis < 0L)
-						{
-							updatedMillis = 0L;
-						}
-						if (!delayedChanges.containsKey(id))
-						{
-							delayedChanges.put(id, new ArrayList<>());
-						}
-						List<ScheduledChange> list = delayedChanges.get(id);
-						list.add(new ScheduledChange(change, updatedMillis));
+						updatedEntities.put(id, newEntity);
 					}
-				}
-				
-				// Return the old instance if nothing changed.
-				// This freeze() call will return the original instance if it is identical.
-				Entity newEntity = mutable.freeze();
-				fragment.put(id, newEntity);
-				
-				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
-				if (newEntity != entity)
-				{
-					updatedEntities.put(id, newEntity);
 				}
 			}
 		}

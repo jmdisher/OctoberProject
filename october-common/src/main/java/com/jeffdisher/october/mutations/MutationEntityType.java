@@ -17,6 +17,7 @@ public enum MutationEntityType
 	CRAFT_IN_BLOCK,
 	ATTACK_ENTITY,
 	TAKE_DAMAGE,
+	PERIODIC,
 	
 	END_OF_LIST,
 }

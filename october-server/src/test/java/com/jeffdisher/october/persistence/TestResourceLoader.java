@@ -17,6 +17,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -234,7 +235,7 @@ public class TestResourceLoader
 		}
 		
 		// Verify that this is the default.
-		Assert.assertTrue(results.get(0).changes().isEmpty());
+		Assert.assertTrue(results.get(0).changes().get(0).change() instanceof EntityChangePeriodic);
 		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, results.get(0).entity().location());
 		
 		// Modify the entity and create a mutation to store with it.

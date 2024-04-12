@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -879,9 +880,38 @@ public class TestCommonChanges
 		
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals(MutableEntity.DEFAULT_HEALTH, target.newHealth);
+		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().items.size());
 		Assert.assertEquals(null, target.newSelectedItem);
 		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+	}
+
+	@Test
+	public void entityPeriodic()
+	{
+		CommonChangeSink changeSink = new CommonChangeSink();
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, null
+				, changeSink
+		);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.create(entityId);
+		EntityChangePeriodic periodic = new EntityChangePeriodic();
+		Assert.assertTrue(periodic.applyChange(context, newEntity));
+		Assert.assertEquals((byte)99, newEntity.newFood);
+		newEntity.newHealth = 99;
+		Assert.assertTrue(periodic.applyChange(context, newEntity));
+		Assert.assertEquals((byte)98, newEntity.newFood);
+		Assert.assertEquals((byte)100, newEntity.newHealth);
+		newEntity.newFood = 0;
+		Assert.assertTrue(periodic.applyChange(context, newEntity));
+		Assert.assertEquals((byte)0, newEntity.newFood);
+		// The health change will be applied by the TakeDamage change.
+		Assert.assertEquals((byte)100, newEntity.newHealth);
+		
+		// We should see one call enqueued for each call except the starving one, where we should see 2.
+		Assert.assertEquals(3 + 1, changeSink.takeExportedChanges().get(entityId).size());
 	}
 }

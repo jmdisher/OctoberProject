@@ -19,6 +19,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -445,6 +446,9 @@ public class ResourceLoader
 
 	private static SuspendedEntity _buildDefaultEntity(int id)
 	{
-		return new SuspendedEntity(MutableEntity.create(id).freeze(), List.of());
+		List<ScheduledChange> initialChanges = List.of(
+				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
+		);
+		return new SuspendedEntity(MutableEntity.create(id).freeze(), initialChanges);
 	}
 }

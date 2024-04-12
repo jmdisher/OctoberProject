@@ -75,6 +75,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 				// The entity is dead so "respawn" them by resetting fields and dropping inventory onto the ground.
 				newEntity.newLocation = MutableEntity.DEFAULT_LOCATION;
 				newEntity.newHealth = MutableEntity.DEFAULT_HEALTH;
+				newEntity.newFood = MutableEntity.DEFAULT_FOOD;
 				for (Items items : newEntity.newInventory.freeze().items.values())
 				{
 					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), items, Inventory.INVENTORY_ASPECT_INVENTORY));
