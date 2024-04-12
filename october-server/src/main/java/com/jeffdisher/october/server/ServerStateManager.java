@@ -14,6 +14,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -406,7 +407,8 @@ public class ServerStateManager
 		for (Entity entity : entitiesToPackage)
 		{
 			int id = entity.id();
-			List<IMutationEntity> suspended = _scheduledEntityMutations.get(id);
+			List<IMutationEntity> changes = _scheduledEntityMutations.get(id);
+			List<ScheduledChange> suspended = (null != changes) ? changes.stream().map((IMutationEntity change) -> new ScheduledChange(change, 0L)).toList() : null;
 			if (null == suspended)
 			{
 				suspended = List.of();

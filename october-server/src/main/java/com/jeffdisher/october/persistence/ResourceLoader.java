@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -375,12 +376,14 @@ public class ResourceLoader
 			buffer.load();
 			Entity entity = CodecHelpers.readEntity(buffer);
 			
-			// Now, load any suspended mutations.
-			List<IMutationEntity> suspended = new ArrayList<>();
+			// Now, load any suspended changes.
+			List<ScheduledChange> suspended = new ArrayList<>();
 			while (buffer.hasRemaining())
 			{
-				IMutationEntity mutation = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
-				suspended.add(mutation);
+				// Read the parts of the suspended data.
+				long millisUntilReady = buffer.getLong();
+				IMutationEntity change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+				suspended.add(new ScheduledChange(change, millisUntilReady));
 			}
 			result = new SuspendedEntity(entity, suspended);
 		}
@@ -401,13 +404,15 @@ public class ResourceLoader
 		// Serialize the entire entity into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		Entity entity = suspended.entity();
-		List<IMutationEntity> mutations = suspended.mutations();
+		List<ScheduledChange> changes = suspended.changes();
 		CodecHelpers.writeEntity(_backround_serializationBuffer, entity);
 		
-		// We now write any suspended mutations.
-		for (IMutationEntity scheduled : mutations)
+		// We now write any suspended changes.
+		for (ScheduledChange scheduled : changes)
 		{
-			MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled);
+			// Write the parts of the data.
+			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
+			MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
 		}
 		_backround_serializationBuffer.flip();
 		

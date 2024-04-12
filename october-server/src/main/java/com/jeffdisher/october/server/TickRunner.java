@@ -20,6 +20,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
@@ -537,7 +538,7 @@ public class TickRunner
 						Assert.assertTrue(null == old);
 						
 						// Add any suspended mutations which came with the entity.
-						List<IMutationEntity> mutations = suspended.mutations();
+						List<IMutationEntity> mutations = suspended.changes().stream().map((ScheduledChange scheduled) -> scheduled.change()).toList();
 						if (!mutations.isEmpty())
 						{
 							old = nextTickChanges.put(id, new ArrayList<>(mutations));

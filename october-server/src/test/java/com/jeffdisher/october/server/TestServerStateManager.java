@@ -211,7 +211,7 @@ public class TestServerStateManager
 		for (SuspendedEntity suspended : entities)
 		{
 			Entity entity = suspended.entity();
-			Assert.assertTrue(suspended.mutations().isEmpty());
+			Assert.assertTrue(suspended.changes().isEmpty());
 			completedEntities.put(entity.id(), entity);
 		}
 		return completedEntities;

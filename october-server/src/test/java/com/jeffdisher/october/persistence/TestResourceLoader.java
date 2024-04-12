@@ -15,6 +15,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
@@ -233,7 +234,7 @@ public class TestResourceLoader
 		}
 		
 		// Verify that this is the default.
-		Assert.assertTrue(results.get(0).mutations().isEmpty());
+		Assert.assertTrue(results.get(0).changes().isEmpty());
 		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, results.get(0).entity().location());
 		
 		// Modify the entity and create a mutation to store with it.
@@ -243,7 +244,7 @@ public class TestResourceLoader
 		mutable.newLocation = newLocation;
 		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(ENV.blocks.STONE.item(), 2));
 		
-		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(mutation))));
+		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))));
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -263,8 +264,8 @@ public class TestResourceLoader
 		}
 		SuspendedEntity suspended = results.get(0);
 		Assert.assertEquals(newLocation, suspended.entity().location());
-		Assert.assertEquals(1, suspended.mutations().size());
-		Assert.assertTrue(suspended.mutations().get(0) instanceof MutationEntityStoreToInventory);
+		Assert.assertEquals(1, suspended.changes().size());
+		Assert.assertTrue(suspended.changes().get(0).change() instanceof MutationEntityStoreToInventory);
 		loader.shutdown();
 	}
 
