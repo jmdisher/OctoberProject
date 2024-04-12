@@ -16,7 +16,6 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -167,7 +166,7 @@ public class WorldProcessor
 		
 		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
 		exportedMutations.addAll(delayedMutations);
-		Map<Integer, List<IMutationEntity>> exportedEntityChanges = newChangeSink.takeExportedChanges();
+		Map<Integer, List<ScheduledChange>> exportedEntityChanges = newChangeSink.takeExportedChanges();
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
 				, exportedMutations
@@ -541,7 +540,7 @@ public class WorldProcessor
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, List<ScheduledMutation> exportedMutations
-			, Map<Integer, List<IMutationEntity>> exportedEntityChanges
+			, Map<Integer, List<ScheduledChange>> exportedEntityChanges
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
 	) {}

@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class CrowdProcessor
 			, Function<AbsoluteLocation, BlockProxy> loader
 			, long gameTick
 			, long millisSinceLastTick
-			, Map<Integer, List<IMutationEntity>> changesToRun
+			, Map<Integer, List<ScheduledChange>> changesToRun
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
@@ -55,14 +56,15 @@ public class CrowdProcessor
 		CommonChangeSink newChangeSink = new CommonChangeSink();
 		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
+		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<Integer, List<IMutationEntity>> elt : changesToRun.entrySet())
+		for (Map.Entry<Integer, List<ScheduledChange>> elt : changesToRun.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				List<IMutationEntity> changes = elt.getValue();
+				List<ScheduledChange> changes = elt.getValue();
 				Entity entity = entitiesById.get(id);
 				
 				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
@@ -71,13 +73,32 @@ public class CrowdProcessor
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != entity);
 				MutableEntity mutable = MutableEntity.existing(entity);
-				for (IMutationEntity change : changes)
+				for (ScheduledChange scheduled : changes)
 				{
-					processor.changeCount += 1;
-					boolean didApply = change.applyChange(context, mutable);
-					if (didApply)
+					long millisUntilReady = scheduled.millisUntilReady();
+					IMutationEntity change = scheduled.change();
+					if (0L == millisUntilReady)
 					{
-						committedMutationCount += 1;
+						processor.changeCount += 1;
+						boolean didApply = change.applyChange(context, mutable);
+						if (didApply)
+						{
+							committedMutationCount += 1;
+						}
+					}
+					else
+					{
+						long updatedMillis = millisUntilReady - millisSinceLastTick;
+						if (updatedMillis < 0L)
+						{
+							updatedMillis = 0L;
+						}
+						if (!delayedChanges.containsKey(id))
+						{
+							delayedChanges.put(id, new ArrayList<>());
+						}
+						List<ScheduledChange> list = delayedChanges.get(id);
+						list.add(new ScheduledChange(change, updatedMillis));
 					}
 				}
 				
@@ -94,10 +115,24 @@ public class CrowdProcessor
 			}
 		}
 		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
-		Map<Integer, List<IMutationEntity>> exportedChanges = newChangeSink.takeExportedChanges();
+		Map<Integer, List<ScheduledChange>> exportedEntityChanges = newChangeSink.takeExportedChanges();
+		for (Map.Entry<Integer, List<ScheduledChange>> elt : delayedChanges.entrySet())
+		{
+			Integer id = elt.getKey();
+			List<ScheduledChange> incoming = elt.getValue();
+			List<ScheduledChange> existing = exportedEntityChanges.get(id);
+			if (null == existing)
+			{
+				exportedEntityChanges.put(id, incoming);
+			}
+			else
+			{
+				existing.addAll(incoming);
+			}
+		}
 		return new ProcessedGroup(fragment
 				, exportedMutations
-				, exportedChanges
+				, exportedEntityChanges
 				, updatedEntities
 				, committedMutationCount
 		);
@@ -106,7 +141,7 @@ public class CrowdProcessor
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
 			, List<ScheduledMutation> exportedMutations
-			, Map<Integer, List<IMutationEntity>> exportedChanges
+			, Map<Integer, List<ScheduledChange>> exportedEntityChanges
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, Entity> updatedEntities
 			, int committedMutationCount

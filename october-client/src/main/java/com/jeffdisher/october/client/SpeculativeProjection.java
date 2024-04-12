@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
@@ -140,11 +141,11 @@ public class SpeculativeProjection
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
-		Map<Integer, List<IMutationEntity>> convertedUpdates = new HashMap<>();
+		Map<Integer, List<ScheduledChange>> convertedUpdates = new HashMap<>();
 		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
 		{
 			convertedUpdates.put(elt.getKey(), elt.getValue().stream().map(
-					(IEntityUpdate update) -> (IMutationEntity)new EntityUpdateWrapper(update)).toList()
+					(IEntityUpdate update) -> new ScheduledChange((IMutationEntity)new EntityUpdateWrapper(update), 0L)).toList()
 			);
 		}
 		// The time between ticks doesn't matter when replaying from server.
@@ -384,9 +385,9 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		long ignoredMillisBetweenTicks = 0L;
 		
-		List<IMutationEntity> queue = new LinkedList<IMutationEntity>();
-		queue.add(change);
-		Map<Integer, List<IMutationEntity>> changesToRun = Map.of(_localEntityId, queue);
+		List<ScheduledChange> queue = new LinkedList<>();
+		queue.add(new ScheduledChange(change, 0L));
+		Map<Integer, List<ScheduledChange>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
 				, _projectedCrowd
 				, this.projectionBlockLoader
@@ -395,7 +396,7 @@ public class SpeculativeProjection
 				, changesToRun
 		);
 		_projectedCrowd.putAll(group.groupFragment());
-		Map<Integer, List<IMutationEntity>> exportedChanges = group.exportedChanges();
+		Map<Integer, List<IMutationEntity>> exportedChanges = _onlyImmediateChanges(group.exportedEntityChanges());
 		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(group.exportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -411,8 +412,8 @@ public class SpeculativeProjection
 			CrowdProcessor.ProcessedGroup innerGroup = _applyFollowUpEntityMutations(locallyModifiedIds, exportedChanges);
 			
 			// Coalesce the results of these.
-			exportedChanges = new HashMap<>(innerFragment.exportedEntityChanges());
-			for (Map.Entry<Integer, List<IMutationEntity>> entry : innerGroup.exportedChanges().entrySet())
+			exportedChanges = new HashMap<>(_onlyImmediateChanges(innerFragment.exportedEntityChanges()));
+			for (Map.Entry<Integer, List<IMutationEntity>> entry : _onlyImmediateChanges(innerGroup.exportedEntityChanges()).entrySet())
 			{
 				int key = entry.getKey();
 				List<IMutationEntity> value = entry.getValue();
@@ -508,11 +509,29 @@ public class SpeculativeProjection
 				, this.projectionBlockLoader
 				, gameTick
 				, ignoredMillisBetweenTicks
-				, entityMutations
+				, _wrapInScheduled(entityMutations)
 		);
 		_projectedCrowd.putAll(innerGroup.groupFragment());
 		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
 		return innerGroup;
+	}
+
+	private Map<Integer, List<IMutationEntity>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)
+	{
+		Map<Integer, List<IMutationEntity>> result = new HashMap<>();
+		for (Map.Entry<Integer, List<ScheduledChange>> elt : changes.entrySet())
+		{
+			List<IMutationEntity> list = elt.getValue().stream().filter(
+					(ScheduledChange change) -> (0L == change.millisUntilReady())
+			).map(
+					(ScheduledChange change) -> change.change()
+			).toList();
+			if (!list.isEmpty())
+			{
+				result.put(elt.getKey(), list);
+			}
+		}
+		return result;
 	}
 
 	private List<IMutationBlock> _onlyImmediateMutations(List<ScheduledMutation> mutations)
@@ -522,6 +541,19 @@ public class SpeculativeProjection
 		).map(
 				(ScheduledMutation mutation) -> mutation.mutation()
 		).toList();
+	}
+
+	private Map<Integer, List<ScheduledChange>> _wrapInScheduled(Map<Integer, List<IMutationEntity>> changes)
+	{
+		Map<Integer, List<ScheduledChange>> result = new HashMap<>();
+		for (Map.Entry<Integer, List<IMutationEntity>> elt : changes.entrySet())
+		{
+			List<ScheduledChange> list = elt.getValue().stream().map(
+					(IMutationEntity change) -> new ScheduledChange(change, 0L)
+			).toList();
+			result.put(elt.getKey(), list);
+		}
+		return result;
 	}
 
 

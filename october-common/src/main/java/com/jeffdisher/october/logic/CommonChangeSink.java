@@ -7,7 +7,6 @@ import java.util.Map;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -15,20 +14,20 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CommonChangeSink implements TickProcessingContext.IChangeSink
 {
-	private Map<Integer, List<IMutationEntity>> _exportedEntityChanges = new HashMap<>();
+	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges = new HashMap<>();
 
 	@Override
 	public void next(int targetEntityId, IMutationEntity change)
 	{
-		List<IMutationEntity> entityChanges = _getChangeList(targetEntityId);
-		entityChanges.add(change);
+		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
+		entityChanges.add(new ScheduledChange(change, 0L));
 	}
 
 	@Override
 	public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
 	{
-		// TODO: implement.
-		throw Assert.unreachable();
+		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
+		entityChanges.add(new ScheduledChange(change, millisToDelay));
 	}
 
 	/**
@@ -36,7 +35,7 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 * 
 	 * @return The mutable change map, now owned by the caller.
 	 */
-	public final Map<Integer, List<IMutationEntity>> takeExportedChanges()
+	public final Map<Integer, List<ScheduledChange>> takeExportedChanges()
 	{
 		try
 		{
@@ -49,9 +48,9 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	}
 
 
-	private List<IMutationEntity> _getChangeList(int targetEntityId)
+	private List<ScheduledChange> _getChangeList(int targetEntityId)
 	{
-		List<IMutationEntity> entityChanges = _exportedEntityChanges.get(targetEntityId);
+		List<ScheduledChange> entityChanges = _exportedEntityChanges.get(targetEntityId);
 		if (null == entityChanges)
 		{
 			entityChanges = new LinkedList<>();

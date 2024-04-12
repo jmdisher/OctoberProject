@@ -48,7 +48,7 @@ public class ServerStateManager
 	// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
 	private Collection<IReadOnlyCuboidData> _completedCuboids = Collections.emptySet();
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations = Collections.emptyMap();
-	private Map<Integer, List<IMutationEntity>> _scheduledEntityMutations = Collections.emptyMap();
+	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations = Collections.emptyMap();
 	// Same thing with entities.
 	private Collection<Entity> _completedEntities = Collections.emptySet();
 
@@ -407,8 +407,7 @@ public class ServerStateManager
 		for (Entity entity : entitiesToPackage)
 		{
 			int id = entity.id();
-			List<IMutationEntity> changes = _scheduledEntityMutations.get(id);
-			List<ScheduledChange> suspended = (null != changes) ? changes.stream().map((IMutationEntity change) -> new ScheduledChange(change, 0L)).toList() : null;
+			List<ScheduledChange> suspended = _scheduledEntityMutations.get(id);
 			if (null == suspended)
 			{
 				suspended = List.of();
