@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
@@ -935,5 +936,38 @@ public class TestCommonChanges
 		
 		// We should see one call enqueued for each call except the starving one, where we should see 2.
 		Assert.assertEquals(3 + 1, changeSink.takeExportedChanges().get(entityId).size());
+	}
+
+	@Test
+	public void eatBread() throws Throwable
+	{
+		// Show that we can eat bread, but not stone, and that the bread increases our food level.
+		Item bread = ENV.items.getItemById("op.bread");
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.STONE, 1);
+		newEntity.newInventory.addAllItems(bread, 1);
+		newEntity.newSelectedItem = ENV.items.LOG;
+		newEntity.newFood = 90;
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, null
+				, null
+				, null
+		);
+		
+		// We will fail to eat the log.
+		EntityChangeEatSelectedItem eat = new EntityChangeEatSelectedItem();
+		Assert.assertFalse(eat.applyChange(context, newEntity));
+		Assert.assertEquals(90, newEntity.newFood);
+		
+		// We should succeed in eating the bread, though.
+		newEntity.newSelectedItem = bread;
+		Assert.assertTrue(eat.applyChange(context, newEntity));
+		
+		Assert.assertNull(newEntity.newSelectedItem);
+		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(0, newEntity.newInventory.getCount(bread));
+		Assert.assertEquals(100, newEntity.newFood);
 	}
 }

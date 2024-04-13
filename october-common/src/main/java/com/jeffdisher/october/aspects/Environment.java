@@ -68,6 +68,7 @@ public class Environment
 	public final FuelAspect fuel;
 	public final LightAspect lighting;
 	public final PlantRegistry plants;
+	public final FoodRegistry foods;
 
 	private Environment() throws IOException, TabListException
 	{
@@ -84,5 +85,6 @@ public class Environment
 		this.fuel = FuelAspect.load(this.items, this.blocks, loader.getResourceAsStream("fuel_millis.tablist"));
 		this.lighting = LightAspect.load(this.items, this.blocks, loader.getResourceAsStream("light_opacity.tablist"));
 		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("growth_divisor.tablist"));
+		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));
 	}
 }

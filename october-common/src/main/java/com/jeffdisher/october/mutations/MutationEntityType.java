@@ -18,6 +18,7 @@ public enum MutationEntityType
 	ATTACK_ENTITY,
 	TAKE_DAMAGE,
 	PERIODIC,
+	EAT_ITEM,
 	
 	END_OF_LIST,
 }

@@ -1,0 +1,5 @@
+# Entries here have the form:
+# ID<TAB>food_value
+# The ID must be a reference to the item registry.
+
+op.bread	50

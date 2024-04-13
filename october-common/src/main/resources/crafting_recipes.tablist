@@ -39,3 +39,7 @@ op.furnace_smelt_iron	special_furnace
 	input	op.iron_ore
 	output	op.iron_ingot
 	millis	2000
+op.temp_bread	common
+	input	op.wheat_item
+	output	op.bread
+	millis	8000
