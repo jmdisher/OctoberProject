@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.CraftingBlockSupport;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
@@ -85,7 +86,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 				_putInventory(newBlock, inv.freeze());
 				
 				// See if we might need to trigger an automatic crafting operation in this block.
-				if (null != MutationBlockFurnaceCraft.canCraft(newBlock))
+				if (null != CraftingBlockSupport.getValidFueledCraft(env, newBlock))
 				{
 					context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 				}

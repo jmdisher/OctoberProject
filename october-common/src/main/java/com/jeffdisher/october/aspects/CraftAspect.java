@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -29,13 +30,14 @@ public class CraftAspect
 	 * relying on the given inventory.
 	 * 
 	 * @param items The existing ItemRegistry.
+	 * @param The existing BlockAspect.
 	 * @param inventory The existing inventory aspect.
 	 * @param stream The stream containing the tablist.
 	 * @return The aspect (never null).
 	 * @throws IOException There was a problem with the stream.
 	 * @throws TabListReader.TabListException The tablist was malformed.
 	 */
-	public static CraftAspect load(ItemRegistry items, InventoryAspect inventory, InputStream stream) throws IOException, TabListReader.TabListException
+	public static CraftAspect load(ItemRegistry items, BlockAspect blocks, InventoryAspect inventory, InputStream stream) throws IOException, TabListReader.TabListException
 	{
 		if (null == stream)
 		{
@@ -162,7 +164,7 @@ public class CraftAspect
 			}
 		}, stream);
 		
-		return new CraftAspect(inventory, crafts, craftByName);
+		return new CraftAspect(blocks, inventory, crafts, craftByName);
 	}
 
 	// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
@@ -174,6 +176,10 @@ public class CraftAspect
 	public final Craft CRAFT_LANTERN;
 	public final Craft FURNACE_LOGS_TO_CHARCOAL;
 	public final Craft FURNACE_SMELT_IRON;
+
+	private final Map<Block, Long> _craftingSpeedMultiplier;
+	private final Map<Block, Set<Craft.Classification>> _craftingClassifications;
+	private final Set<Block> _manualCraftingBlocks;
 
 	private static Craft _bind(Map<String, Craft> craftByName, String name)
 	{
@@ -188,7 +194,7 @@ public class CraftAspect
 	 */
 	public final Craft[] CRAFTING_OPERATIONS;
 
-	private CraftAspect(InventoryAspect inventory, List<Craft> crafts, Map<String, Craft> craftByName)
+	private CraftAspect(BlockAspect blocks, InventoryAspect inventory, List<Craft> crafts, Map<String, Craft> craftByName)
 	{
 		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
 		this.LOG_TO_PLANKS = _bind(craftByName, "op.log_to_planks");
@@ -198,6 +204,14 @@ public class CraftAspect
 		this.CRAFT_LANTERN = _bind(craftByName, "op.lantern");
 		this.FURNACE_LOGS_TO_CHARCOAL = _bind(craftByName, "op.furnace_logs_to_charcoal");
 		this.FURNACE_SMELT_IRON = _bind(craftByName, "op.furnace_smelt_iron");
+		
+		// TODO:  Replace these with a data source.
+		_craftingSpeedMultiplier = Map.of(blocks.CRAFTING_TABLE, 10L);
+		_craftingClassifications = Map.of(
+				blocks.CRAFTING_TABLE, Set.of(Craft.Classification.TRIVIAL, Craft.Classification.COMMON)
+				, blocks.FURNACE, Set.of(Craft.Classification.SPECIAL_FURNACE)
+		);
+		_manualCraftingBlocks = Set.of(blocks.CRAFTING_TABLE);
 		
 		// We never want to allow encumbrance to increase through crafting.
 		for (Craft craft : crafts)
@@ -222,6 +236,45 @@ public class CraftAspect
 	public List<Craft> craftsForClassifications(Set<Craft.Classification> classifications)
 	{
 		return List.of(CRAFTING_OPERATIONS).stream().filter((Craft craft) -> classifications.contains(craft.classification)).toList();
+	}
+
+	/**
+	 * Checks the manual crafting speed multiplier for the given block.
+	 * 
+	 * @param craftingBlock The block.
+	 * @return The crafting multiplier or 0L if this isn't a manual crafting block.
+	 */
+	public long craftingSpeedMultiplier(Block craftingBlock)
+	{
+		Long value = _craftingSpeedMultiplier.get(craftingBlock);
+		return (null != value)
+				? value.longValue()
+				: 0L
+		;
+	}
+
+	/**
+	 * Checks the set of crafting types which can be performed by the given block.
+	 * 
+	 * @param craftingBlock The block.
+	 * @return The set of crafting classifications or the empty set, if this isn't a crafting block.
+	 */
+	public Set<Craft.Classification> craftingClassifications(Block craftingBlock)
+	{
+		Set<Craft.Classification> value = _craftingClassifications.get(craftingBlock);
+		return (null != value)
+				? value
+				: Set.of()
+		;
+	}
+
+	/**
+	 * @param craftingBlock The block.
+	 * @return True if this block supports manual crafting.
+	 */
+	public boolean allowsManualCrafting(Block craftingBlock)
+	{
+		return _manualCraftingBlocks.contains(craftingBlock);
 	}
 
 	public static boolean canApply(Craft craft, Inventory inv)
