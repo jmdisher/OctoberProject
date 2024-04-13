@@ -84,7 +84,7 @@ public class ItemRegistry
 		short index = 0;
 		for (String key : keyList)
 		{
-			Item item = new Item(map.get(key), index);
+			Item item = new Item(key, map.get(key), index);
 			this.ITEMS_BY_TYPE[index] = item;
 			index += 1;
 			_idsMap.put(key, item);

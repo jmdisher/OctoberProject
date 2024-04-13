@@ -10,7 +10,8 @@ package com.jeffdisher.october.types;
  * Other aspects which need to attribute further meaning to an item are expected to use the number to look up that
  * information in some out-of-line storage or algorithm.
  */
-public record Item(String name
+public record Item(String id
+		, String name
 		, short number
 ) {
 }
