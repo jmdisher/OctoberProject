@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.utils.Assert;
@@ -29,7 +28,10 @@ public class Inventory
 	 * @param currentEncumbrance The current encumbrance represented by the items.
 	 * @return A new immutable Inventory object.
 	 */
-	public static Inventory build(int maxEncumbrance, Map<Item, Items> items, int currentEncumbrance)
+	public static Inventory build(int maxEncumbrance
+			, Map<Integer, Items> items
+			, int currentEncumbrance
+	)
 	{
 		return new Inventory(maxEncumbrance, items, currentEncumbrance);
 	}
@@ -46,10 +48,13 @@ public class Inventory
 	}
 
 	public final int maxEncumbrance;
-	private final Map<Item, Items> _items;
+	private final Map<Integer, Items> _items;
 	public final int currentEncumbrance;
 
-	private Inventory(int maxEncumbrance, Map<Item, Items> items, int currentEncumbrance)
+	private Inventory(int maxEncumbrance
+			, Map<Integer, Items> items
+			, int currentEncumbrance
+	)
 	{
 		this.maxEncumbrance = maxEncumbrance;
 		// We will create this as empty if there is an overflow in encumbrance.
@@ -66,6 +71,20 @@ public class Inventory
 	}
 
 	/**
+	 * Looks up the item stack for the given identifier key.
+	 * 
+	 * @param key The identifier key.
+	 * @return The Items object for this stack (asserts on failed look-up).
+	 */
+	public Items getStackForKey(Integer key)
+	{
+		Items val = _items.get(key);
+		// Someone calling this with an invalid key likely means that the value is stale, which is an error.
+		Assert.assertTrue(null != val);
+		return val;
+	}
+
+	/**
 	 * A basic helper to check how many items of a given type are in the inventory.
 	 * 
 	 * @param type The item type.
@@ -73,11 +92,20 @@ public class Inventory
 	 */
 	public int getCount(Item type)
 	{
-		Items existing = _items.get(type);
+		Integer id = _getKeyForType(type);
+		Items existing = _items.get(id);
 		return (null != existing)
 				? existing.count()
 				: 0
 		;
+	}
+
+	/**
+	 * @return A list of the identifier keys used in the inventory, sorted from earliest to latest.
+	 */
+	public List<Integer> sortedKeys()
+	{
+		return _items.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
 	}
 
 	/**
@@ -86,6 +114,22 @@ public class Inventory
 	public List<Items> sortedItems()
 	{
 		return _items.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
+	}
+
+
+	private Integer _getKeyForType(Item type)
+	{
+		// NOTE:  We don't currently keep a parallel look-up structure for the types since this structure is always very small but that may change in the future.
+		Integer id = null;
+		for (Map.Entry<Integer, Items> elt : _items.entrySet())
+		{
+			if (elt.getValue().type() == type)
+			{
+				id = elt.getKey();
+				break;
+			}
+		}
+		return id;
 	}
 
 
@@ -116,11 +160,17 @@ public class Inventory
 		}
 		public Inventory finish()
 		{
-			Map<Item, Items> finished = _items.entrySet().stream().collect(Collectors.toMap(
-					(Map.Entry<Item, Integer> entry) -> entry.getKey()
-					, (Map.Entry<Item, Integer> entry) -> new Items(entry.getKey(), entry.getValue())
-			));
-			return new Inventory(_maxEncumbrance, finished, _currentEncumbrance);
+			Map<Integer, Items> finished = new HashMap<>();
+			int nextAddressId = 1;
+			for (Map.Entry<Item, Integer> entry : _items.entrySet())
+			{
+				finished.put(nextAddressId, new Items(entry.getKey(), entry.getValue()));
+				nextAddressId += 1;
+			}
+			return new Inventory(_maxEncumbrance
+					, finished
+					, _currentEncumbrance
+			);
 		}
 	}
 }

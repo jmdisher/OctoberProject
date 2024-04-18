@@ -14,8 +14,9 @@ import com.jeffdisher.october.utils.Assert;
 public class MutableInventory
 {
 	private final Inventory _original;
-	private final Map<Item, Items> _items;
+	private final Map<Integer, Items> _items;
 	private int _currentEncumbrance;
+	private int _nextAddressId;
 
 	/**
 	 * Deconstructs the original inventory into a mutable version.
@@ -26,11 +27,14 @@ public class MutableInventory
 	{
 		_original = original;
 		_items = new HashMap<>();
-		for (Items items : original.sortedItems())
+		int lastId = 0;
+		for (Integer key : original.sortedKeys())
 		{
-			_items.put(items.type(), items);
+			_items.put(key, original.getStackForKey(key));
+			lastId = key;
 		}
 		_currentEncumbrance = original.currentEncumbrance;
+		_nextAddressId = lastId + 1;
 	}
 
 	/**
@@ -41,9 +45,9 @@ public class MutableInventory
 	 */
 	public int getCount(Item type)
 	{
-		Items existing = _items.get(type);
-		return (null != existing)
-				? existing.count()
+		Integer id = _getKeyForType(type);
+		return (null != id)
+				? _items.get(id).count()
 				: 0
 		;
 	}
@@ -135,18 +139,19 @@ public class MutableInventory
 	{
 		Environment env = Environment.getShared();
 		// We assume that someone checked before calling this in order to make a decision.
-		Items existing = _items.get(type);
+		Integer id = _getKeyForType(type);
+		Items existing = _items.get(id);
 		int startCount = existing.count();
 		Assert.assertTrue(startCount >= count);
 		
 		int newCount = startCount - count;
 		if (newCount > 0)
 		{
-			_items.put(type, new Items(type, newCount));
+			_items.put(id, new Items(type, newCount));
 		}
 		else
 		{
-			_items.remove(type);
+			_items.remove(id);
 		}
 		int removedEncumbrance = env.inventory.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
@@ -178,18 +183,20 @@ public class MutableInventory
 	public Inventory freeze()
 	{
 		// Compare this to the original (which is somewhat expensive).
-		List<Items> originalItemList = _original.sortedItems();
-		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == originalItemList.size());
+		List<Integer> originalKeyList = _original.sortedKeys();
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == originalKeyList.size());
 		if (doMatch)
 		{
-			for (Items items : originalItemList)
+			for (Integer key : originalKeyList)
 			{
-				Items newItems = _items.get(items.type());
+				Items newItems = _items.get(key);
 				int newCount = (null != newItems)
 						? newItems.count()
 						: 0
 				;
-				if (items.count() != newCount)
+				Items originalItems = _original.getStackForKey(key);
+				int originalCount = originalItems.count();
+				if (newCount != originalCount)
 				{
 					doMatch = false;
 					break;
@@ -209,13 +216,35 @@ public class MutableInventory
 		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
-		Items existing = _items.get(type);
-		int newCount = (null != existing)
-				? (existing.count() + count)
-				: count
-		;
+		int newCount;
+		Integer id = _getKeyForType(type);
+		if (null != id)
+		{
+			Items existing = _items.get(id);
+			newCount = existing.count() + count;
+		}
+		else
+		{
+			id = _nextAddressId;
+			_nextAddressId += 1;
+			newCount = count;
+		}
 		Items updated = new Items(type, newCount);
-		_items.put(type, updated);
+		_items.put(id, updated);
 		_currentEncumbrance = updatedEncumbrance;
+	}
+
+	private Integer _getKeyForType(Item type)
+	{
+		Integer id = null;
+		for (Map.Entry<Integer, Items> elt : _items.entrySet())
+		{
+			if (elt.getValue().type() == type)
+			{
+				id = elt.getKey();
+				break;
+			}
+		}
+		return id;
 	}
 }
