@@ -2,6 +2,7 @@ package com.jeffdisher.october.types;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -45,7 +46,7 @@ public class Inventory
 	}
 
 	public final int maxEncumbrance;
-	public final Map<Item, Items> items;
+	private final Map<Item, Items> _items;
 	public final int currentEncumbrance;
 
 	private Inventory(int maxEncumbrance, Map<Item, Items> items, int currentEncumbrance)
@@ -54,12 +55,12 @@ public class Inventory
 		// We will create this as empty if there is an overflow in encumbrance.
 		if (currentEncumbrance >= 0)
 		{
-			this.items = Collections.unmodifiableMap(items);
+			_items = Collections.unmodifiableMap(items);
 			this.currentEncumbrance = currentEncumbrance;
 		}
 		else
 		{
-			this.items = Collections.emptyMap();
+			_items = Collections.emptyMap();
 			this.currentEncumbrance = 0;
 		}
 	}
@@ -72,11 +73,19 @@ public class Inventory
 	 */
 	public int getCount(Item type)
 	{
-		Items existing = this.items.get(type);
+		Items existing = _items.get(type);
 		return (null != existing)
 				? existing.count()
 				: 0
 		;
+	}
+
+	/**
+	 * @return A list of the items within the inventory, sorted by item type.
+	 */
+	public List<Items> sortedItems()
+	{
+		return _items.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
 	}
 
 

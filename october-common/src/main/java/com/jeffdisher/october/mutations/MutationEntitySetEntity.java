@@ -34,7 +34,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
 	{
 		newEntity.newInventory.clearInventory();
-		for (Items items : _entity.inventory().items.values())
+		for (Items items : _entity.inventory().sortedItems())
 		{
 			newEntity.newInventory.addAllItems(items.type(), items.count());
 		}

@@ -67,7 +67,7 @@ public class CommonBlockMutationHelpers
 	{
 		if (null != oldInventory)
 		{
-			for (Items items : oldInventory.items.values())
+			for (Items items : oldInventory.sortedItems())
 			{
 				mutable.addAllItems(items.type(), items.count());
 			}
@@ -90,7 +90,7 @@ public class CommonBlockMutationHelpers
 		if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 		{
 			// We want to drop this inventory into the below block.
-			for (Items items : newBlock.getInventory().items.values())
+			for (Items items : newBlock.getInventory().sortedItems())
 			{
 				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}

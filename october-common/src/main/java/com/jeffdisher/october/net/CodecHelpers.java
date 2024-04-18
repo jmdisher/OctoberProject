@@ -2,6 +2,7 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -304,13 +305,14 @@ public class CodecHelpers
 		{
 			int maxEncumbrance = inventory.maxEncumbrance;
 			// We don't currently limit how many items can be serialized in one Inventory since it should never fill a packet.
-			int itemsToWrite = inventory.items.size();
+			List<Items> itemList = inventory.sortedItems();
+			int itemsToWrite = itemList.size();
 			// We only store the size as a byte.
 			Assert.assertTrue(itemsToWrite < 256);
 			
 			buffer.putInt(maxEncumbrance);
 			buffer.put((byte) itemsToWrite);
-			for (Items items : inventory.items.values())
+			for (Items items : itemList)
 			{
 				_writeItems(buffer, items);
 			}

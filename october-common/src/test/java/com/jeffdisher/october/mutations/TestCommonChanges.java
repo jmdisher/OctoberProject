@@ -261,7 +261,7 @@ public class TestCommonChanges
 		
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(ENV.items.LOG.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(0, newEntity.freeze().inventory().items.size());
+		Assert.assertEquals(0, newEntity.freeze().inventory().sortedItems().size());
 		Assert.assertNull(newEntity.freeze().selectedItem());
 	}
 
@@ -418,7 +418,7 @@ public class TestCommonChanges
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		freeze = newEntity.freeze();
 		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
-		Assert.assertEquals(0, freeze.inventory().items.size());
+		Assert.assertEquals(0, freeze.inventory().sortedItems().size());
 		Assert.assertNull(freeze.selectedItem());
 	}
 
@@ -903,7 +903,7 @@ public class TestCommonChanges
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals(MutableEntity.DEFAULT_HEALTH, target.newHealth);
 		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
-		Assert.assertEquals(0, target.newInventory.freeze().items.size());
+		Assert.assertEquals(0, target.newInventory.freeze().sortedItems().size());
 		Assert.assertEquals(null, target.newSelectedItem);
 		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);

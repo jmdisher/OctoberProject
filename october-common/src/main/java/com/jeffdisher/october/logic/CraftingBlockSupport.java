@@ -125,7 +125,7 @@ public class CraftingBlockSupport
 					// Consume fuel - we will just get the first one as there is no sort rule, here.
 					Inventory inv = fuel.fuelInventory();
 					MutableInventory fuelInventory = new MutableInventory(inv);
-					Item fuelType = inv.items.values().iterator().next().type();
+					Item fuelType = inv.sortedItems().get(0).type();
 					fuelAvailable = env.fuel.millisOfFuel(fuelType);
 					fuelInventory.removeItems(fuelType, 1);
 					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());

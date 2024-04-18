@@ -582,8 +582,8 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(send, 1L);
 		
 		// Check the values.
-		Assert.assertTrue(listener.lastEntityStates.get(entityId1).inventory().items.isEmpty());
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().items.size());
+		Assert.assertEquals(0, listener.lastEntityStates.get(entityId1).inventory().sortedItems().size());
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().sortedItems().size());
 		Assert.assertEquals(2, listener.lastEntityStates.get(entityId2).inventory().getCount(ENV.items.STONE));
 		
 		// Commit this and make sure the values are still correct.
@@ -611,8 +611,8 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		
-		Assert.assertTrue(listener.lastEntityStates.get(entityId1).inventory().items.isEmpty());
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().items.size());
+		Assert.assertEquals(0, listener.lastEntityStates.get(entityId1).inventory().sortedItems().size());
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().sortedItems().size());
 		Assert.assertEquals(2, listener.lastEntityStates.get(entityId2).inventory().getCount(ENV.items.STONE));
 	}
 
@@ -954,12 +954,12 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().items.size());
+		Assert.assertEquals(2, proxy.getInventory().sortedItems().size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE_BRICK));
 		
 		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
-		Assert.assertEquals(1, entityInventory.items.size());
+		Assert.assertEquals(1, entityInventory.sortedItems().size());
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.CRAFTING_TABLE));
 	}
 
@@ -1165,12 +1165,12 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
-		Assert.assertEquals(2, proxy.getInventory().items.size());
+		Assert.assertEquals(2, proxy.getInventory().sortedItems().size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.PLANK));
 		
 		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
-		Assert.assertEquals(1, entityInventory.items.size());
+		Assert.assertEquals(1, entityInventory.sortedItems().size());
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.FURNACE));
 	}
 
@@ -1212,7 +1212,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
-		Assert.assertEquals(1, feetInventory.items.size());
+		Assert.assertEquals(1, feetInventory.sortedItems().size());
 		Assert.assertEquals(1, feetInventory.getCount(ENV.blocks.DIRT.item()));
 	}
 
@@ -1241,11 +1241,11 @@ public class TestSpeculativeProjection
 	{
 		Inventory inventory1 = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, block1.getBlockAddress());
 		Assert.assertEquals(1 * encumbrance, inventory1.currentEncumbrance);
-		Assert.assertEquals(1, inventory1.items.size());
+		Assert.assertEquals(1, inventory1.sortedItems().size());
 		Assert.assertEquals(1, inventory1.getCount(stoneItem));
 		Inventory inventory2 = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, block2.getBlockAddress());
 		Assert.assertEquals(3 * encumbrance, inventory2.currentEncumbrance);
-		Assert.assertEquals(1, inventory1.items.size());
+		Assert.assertEquals(1, inventory1.sortedItems().size());
 		Assert.assertEquals(3, inventory2.getCount(stoneItem));
 	}
 

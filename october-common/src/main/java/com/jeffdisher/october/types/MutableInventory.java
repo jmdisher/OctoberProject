@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -24,7 +25,11 @@ public class MutableInventory
 	public MutableInventory(Inventory original)
 	{
 		_original = original;
-		_items = new HashMap<>(original.items);
+		_items = new HashMap<>();
+		for (Items items : original.sortedItems())
+		{
+			_items.put(items.type(), items);
+		}
 		_currentEncumbrance = original.currentEncumbrance;
 	}
 
@@ -173,17 +178,18 @@ public class MutableInventory
 	public Inventory freeze()
 	{
 		// Compare this to the original (which is somewhat expensive).
-		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == _original.items.size());
+		List<Items> originalItemList = _original.sortedItems();
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == originalItemList.size());
 		if (doMatch)
 		{
-			for (Items items : _items.values())
+			for (Items items : originalItemList)
 			{
-				Items originalItems = _original.items.get(items.type());
-				int originalCount = (null != originalItems)
-						? originalItems.count()
+				Items newItems = _items.get(items.type());
+				int newCount = (null != newItems)
+						? newItems.count()
 						: 0
 				;
-				if (items.count() != originalCount)
+				if (items.count() != newCount)
 				{
 					doMatch = false;
 					break;

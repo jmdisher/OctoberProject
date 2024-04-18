@@ -30,7 +30,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(original.items.size(), frozen.items.size());
+		Assert.assertEquals(original.sortedItems().size(), frozen.sortedItems().size());
 		Assert.assertEquals(original.currentEncumbrance, frozen.currentEncumbrance);
 	}
 
@@ -50,7 +50,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(1, frozen.items.size());
+		Assert.assertEquals(1, frozen.sortedItems().size());
 		Assert.assertEquals(10, frozen.currentEncumbrance);
 	}
 
@@ -70,7 +70,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(0, frozen.items.size());
+		Assert.assertEquals(0, frozen.sortedItems().size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
 
@@ -102,7 +102,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(1, frozen.items.size());
+		Assert.assertEquals(1, frozen.sortedItems().size());
 		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
 		Assert.assertEquals(2, frozen.currentEncumbrance);
 	}
@@ -121,7 +121,7 @@ public class TestMutableInventory
 		// This should empty when freezing.
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(0, frozen.items.size());
+		Assert.assertEquals(0, frozen.sortedItems().size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
 }

@@ -64,7 +64,7 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(1, inv.items.size());
+		Assert.assertEquals(1, inv.sortedItems().size());
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 	}
 
@@ -111,7 +111,7 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
 		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
 		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(0, inv.items.size());
+		Assert.assertEquals(0, inv.sortedItems().size());
 		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
 		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
 	}

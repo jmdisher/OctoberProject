@@ -71,7 +71,7 @@ public class TestCodecHelpers
 		Inventory output = CodecHelpers.readInventory(buffer);
 		// Inventory has not .equals so check some internal data.
 		Assert.assertEquals(50, output.maxEncumbrance);
-		Assert.assertEquals(2, output.items.size());
+		Assert.assertEquals(2, output.sortedItems().size());
 		Assert.assertEquals(2, output.getCount(ENV.items.STONE));
 		Assert.assertEquals(4, output.getCount(ENV.items.PLANK));
 	}
