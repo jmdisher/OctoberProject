@@ -322,7 +322,7 @@ public class TestCommonChanges
 		
 		// By this point, the entity shouldn't yet have changed.
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(ENV.items.STONE));
 		Assert.assertNull(newEntity.newSelectedItem);
 		
@@ -332,7 +332,7 @@ public class TestCommonChanges
 		
 		// We can now verify the final result of this - we should see the one item moved and selected since nothing else was.
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(ENV.items.STONE, newEntity.newSelectedItem);
 		
@@ -403,9 +403,9 @@ public class TestCommonChanges
 		
 		// By this point, we should be able to verify both the entity and the block.
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Entity freeze = newEntity.freeze();
-		Assert.assertEquals(1, freeze.inventory().items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, freeze.inventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(ENV.items.STONE, freeze.selectedItem());
 		
 		// Drop again to verify that this correctly handles dropping the last selected item.
@@ -417,7 +417,7 @@ public class TestCommonChanges
 		// By this point, we should be able to verify both the entity and the block.
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		freeze = newEntity.freeze();
-		Assert.assertEquals(2, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, freeze.inventory().items.size());
 		Assert.assertNull(freeze.selectedItem());
 	}

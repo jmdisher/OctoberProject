@@ -65,7 +65,7 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(1, inv.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 	}
 
 	@Test

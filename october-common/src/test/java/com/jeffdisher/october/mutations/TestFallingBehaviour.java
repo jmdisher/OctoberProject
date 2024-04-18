@@ -109,7 +109,7 @@ public class TestFallingBehaviour
 		Assert.assertNull(blockHolder[0]);
 		AbsoluteLocation finalLocation = targetLocation.getRelative(0, 0, -2);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, finalLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 	}
 
 	@Test
@@ -149,7 +149,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		
 		// Now, break the top block.
 		AbsoluteLocation topLocation = bottomLocation.getRelative(0, 0, 1);
@@ -169,7 +169,7 @@ public class TestFallingBehaviour
 		
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
 	}
 
 	@Test
@@ -210,7 +210,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, topLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		
 		// Now, break the bottom block.
 		AbsoluteLocation bottomLocation = topLocation.getRelative(0, 0, -1);
@@ -222,7 +222,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		
 		// Now, we will synthesize the update event which would normally be scheduled against this and see it fall.
 		topBlock = new MutableBlockProxy(topLocation, cuboid);
@@ -242,7 +242,7 @@ public class TestFallingBehaviour
 		
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
 	}
 
 	@Test

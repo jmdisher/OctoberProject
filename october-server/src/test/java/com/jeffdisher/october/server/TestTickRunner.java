@@ -231,17 +231,17 @@ public class TestTickRunner
 		// Apply the first mutation to add data.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
+		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Try to drop too much to fit and verify that nothing changes.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, InventoryAspect.CAPACITY_BLOCK_EMPTY / 2));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(1, block.getInventory().items.get(stoneItem).count());
+		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Add a little more data and make sure that it updates.
 		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
 		block = _getBlockProxy(snapshot, testBlock);
-		Assert.assertEquals(3, block.getInventory().items.get(stoneItem).count());
+		Assert.assertEquals(3, block.getInventory().getCount(stoneItem));
 		
 		// Remove everything and make sure that we end up with an empty inventory.
 		snapshot = _runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
@@ -344,8 +344,7 @@ public class TestTickRunner
 		Entity receiver = finalSnapshot.completedEntities().get(entityId2);
 		Assert.assertTrue(sender.inventory().items.isEmpty());
 		Assert.assertEquals(1, receiver.inventory().items.size());
-		Items update = receiver.inventory().items.get(ENV.items.STONE);
-		Assert.assertEquals(2, update.count());
+		Assert.assertEquals(2, receiver.inventory().getCount(ENV.items.STONE));
 	}
 
 	@Test
@@ -416,7 +415,7 @@ public class TestTickRunner
 		Inventory blockInventory = proxy2.getInventory();
 		Assert.assertEquals(0, blockInventory.items.size());
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
-		Assert.assertEquals(1, entityInventory.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(1, entityInventory.getCount(ENV.items.STONE));
 		
 		runner.shutdown();
 	}

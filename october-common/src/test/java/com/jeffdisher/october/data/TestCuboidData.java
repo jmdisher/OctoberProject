@@ -70,7 +70,7 @@ public class TestCuboidData
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(2, inv.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
 	}
 
 	@Test(expected = AssertionError.class)
@@ -127,6 +127,6 @@ public class TestCuboidData
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.items.size());
-		Assert.assertEquals(2, inv.items.get(ENV.items.STONE).count());
+		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
 	}
 }

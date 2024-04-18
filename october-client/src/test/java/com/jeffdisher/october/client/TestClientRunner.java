@@ -223,7 +223,7 @@ public class TestClientRunner
 		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.loadedEnties.get(clientId).localCraftOperation());
-		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().items.get(ENV.items.LOG).count());
+		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().getCount(ENV.items.LOG));
 		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), projection.loadedEnties.get(clientId).location());
 	}
 

@@ -103,7 +103,7 @@ public class TestMutableInventory
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
 		Assert.assertEquals(1, frozen.items.size());
-		Assert.assertEquals(1, frozen.items.get(ENV.items.LOG).count());
+		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
 		Assert.assertEquals(2, frozen.currentEncumbrance);
 	}
 
