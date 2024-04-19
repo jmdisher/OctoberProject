@@ -141,7 +141,7 @@ public class TestClientRunner
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 100 ms each time.
-		currentTimeMillis += 100L;
+		currentTimeMillis += 200L;
 		runner.hitBlock(changeLocation, currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (they only send this after the next tick).
@@ -165,7 +165,7 @@ public class TestClientRunner
 		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
-		currentTimeMillis += 100L;
+		currentTimeMillis += 200L;
 		runner.hitBlock(changeLocation, currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
 		runner.runPendingCalls(currentTimeMillis);

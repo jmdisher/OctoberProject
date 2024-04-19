@@ -8,6 +8,8 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -69,8 +71,13 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		boolean didApply = false;
 		if (isLocationClose && !isAir)
 		{
-			// TODO:  Use a real multiplier once we have tools.  This should be 1 for "no tool" but we use 10 to speed up play testing.
-			short damageToApply = (short)(10 * _millisToApply);
+			Items selectedStack = newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey);
+			Item selectedItem = (null != selectedStack)
+					? selectedStack.type()
+					: null
+			;
+			int speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+			short damageToApply = (short)(speedMultiplier * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
 			context.mutationSink.next(mutation);
 			didApply = true;

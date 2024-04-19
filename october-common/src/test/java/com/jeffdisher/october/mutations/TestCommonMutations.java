@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -96,6 +97,57 @@ public class TestCommonMutations
 		int clientId = 1;
 		Entity entity = MutableEntity.create(clientId).freeze();
 		
+		// Without a tool, this will take 2 hits.
+		MutableBlockProxy proxy = null;
+		for (int i = 0; i < 2; ++i)
+		{
+			// Check that once we run this change, it requests the appropriate mutation.
+			boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
+			Assert.assertTrue(didApply);
+			
+			// Check that the final mutation to actually break the block is as expected and then run it.
+			proxy = new MutableBlockProxy(target, cuboid);
+			Assert.assertNotNull(sinks.nextMutation);
+			didApply = sinks.nextMutation.applyMutation(context, proxy);
+			Assert.assertTrue(didApply);
+			Assert.assertTrue(proxy.didChange());
+			proxy.writeBack(cuboid);
+			
+			// Verify that we see the damage on the first hit.
+			if (0 == i)
+			{
+				Assert.assertEquals(ENV.blocks.STONE, proxy.getBlock());
+				Assert.assertEquals((short)1000, proxy.getDamage());
+			}
+		}
+		
+		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
+		Inventory inv = proxy.getInventory();
+		Assert.assertEquals(0, inv.sortedItems().size());
+		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
+		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
+	}
+
+	@Test
+	public void mineWithTool()
+	{
+		// Show that the mining damage applied to a block is higher with a pickaxe.
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
+		ProcessingSinks sinks = new ProcessingSinks();
+		TickProcessingContext context = sinks.createBoundContext(cuboid);
+		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)10);
+		
+		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
+		int clientId = 1;
+		MutableEntity mutable = MutableEntity.create(clientId);
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		mutable.newInventory.addAllItems(pickaxe, 1);
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(pickaxe);
+		Entity entity = mutable.freeze();
+		
+		// Just make 1 hit and see the damage apply.
 		// Check that once we run this change, it requests the appropriate mutation.
 		boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
 		Assert.assertTrue(didApply);
@@ -108,12 +160,9 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
-		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
-		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(0, inv.sortedItems().size());
-		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
-		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
+		// We should see the applied damage at 20x the time since we were using the pickaxe.
+		Assert.assertEquals(ENV.blocks.STONE, proxy.getBlock());
+		Assert.assertEquals((short)200, proxy.getDamage());
 	}
 
 	@Test

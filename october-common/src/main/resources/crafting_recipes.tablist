@@ -43,3 +43,12 @@ op.temp_bread	common
 	input	op.wheat_item
 	output	op.bread
 	millis	8000
+# TODO:  This should make more than 1 stick but we need to do an encumbrance rework, first.
+op.plank_to_stick	trivial
+	input	op.plank
+	output	op.stick
+	millis	1000
+op.iron_pickaxe	common
+	input	op.stick	op.iron_ingot
+	output	op.iron_pickaxe
+	millis	16000

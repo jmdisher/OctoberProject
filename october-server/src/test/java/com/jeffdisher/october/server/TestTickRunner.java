@@ -356,10 +356,15 @@ public class TestTickRunner
 		// Create a cuboid of stone.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
+		// We will load a pickaxe into the entity so that it can do this in only a few small hits.
 		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		mutable.newInventory.addAllItems(pickaxe, 1);
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(pickaxe);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
 				, null
 		);
 		
@@ -371,7 +376,7 @@ public class TestTickRunner
 		// Schedule the first step.
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 50);
 		long commit1 = 1L;
 		runner.enqueueEntityChange(entityId, break1, commit1);
 		
@@ -393,7 +398,7 @@ public class TestTickRunner
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the second hit to finish the break.
-		EntityChangeIncrementalBlockBreak break2 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
+		EntityChangeIncrementalBlockBreak break2 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 50);
 		long commit2 = 2L;
 		runner.enqueueEntityChange(entityId, break2, commit2);
 		runner.startNextTick();
@@ -574,8 +579,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
-		// Remember that there is a 10x damage multiplier until tools are added.
-		Assert.assertEquals(10 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
+		// Remember that there is a 5x damage multiplier until tools are added.
+		Assert.assertEquals(5 * damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
 		
 		runner.shutdown();
 	}
@@ -1045,7 +1050,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)20), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)40), 1L);
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		
@@ -1134,7 +1139,7 @@ public class TestTickRunner
 		AbsoluteLocation stoneLocation = address.getBase().getRelative(5, 5, 0);
 		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
 		AbsoluteLocation emptyLocation = stoneLocation.getRelative(-1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.PLANK.number());
 		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
 		
 		int entityId = 1;
@@ -1152,7 +1157,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Send an incremental update to break the stone, but only partially.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)100), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)20), 1L);
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled, but no change).
@@ -1167,10 +1172,10 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals((short)1000, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
+		Assert.assertEquals((short)100, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
 		
 		// Apply the second break attempt, which should break it.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)100), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)20), 1L);
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled, but no change).

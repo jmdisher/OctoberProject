@@ -1,0 +1,6 @@
+# Entries here have the form:
+# ID<TAB>number
+# The given number is non-negative and represents the break blocking speed modifier when using this tool.
+# Note that the ID is from item_registry.tablist.
+
+op.iron_pickaxe	20
