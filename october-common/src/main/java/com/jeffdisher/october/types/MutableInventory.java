@@ -45,8 +45,8 @@ public class MutableInventory
 	 */
 	public int getCount(Item type)
 	{
-		Integer id = _getKeyForType(type);
-		return (null != id)
+		int id = _getKeyForType(type);
+		return (id > 0)
 				? _items.get(id).count()
 				: 0
 		;
@@ -240,8 +240,8 @@ public class MutableInventory
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		int newCount;
-		Integer id = _getKeyForType(type);
-		if (null != id)
+		int id = _getKeyForType(type);
+		if (id > 0)
 		{
 			Items existing = _items.get(id);
 			newCount = existing.count() + count;
@@ -257,9 +257,9 @@ public class MutableInventory
 		_currentEncumbrance = updatedEncumbrance;
 	}
 
-	private Integer _getKeyForType(Item type)
+	private int _getKeyForType(Item type)
 	{
-		Integer id = null;
+		int id = 0;
 		for (Map.Entry<Integer, Items> elt : _items.entrySet())
 		{
 			if (elt.getValue().type() == type)

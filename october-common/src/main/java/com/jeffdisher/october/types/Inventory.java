@@ -76,7 +76,7 @@ public class Inventory
 	 * @param key The identifier key.
 	 * @return The Items object for this stack (asserts on failed look-up).
 	 */
-	public Items getStackForKey(Integer key)
+	public Items getStackForKey(int key)
 	{
 		Items val = _items.get(key);
 		// Someone calling this with an invalid key likely means that the value is stale, which is an error.
@@ -92,7 +92,7 @@ public class Inventory
 	 */
 	public int getCount(Item type)
 	{
-		Integer id = _getKeyForType(type);
+		int id = _getKeyForType(type);
 		Items existing = _items.get(id);
 		return (null != existing)
 				? existing.count()
@@ -129,10 +129,10 @@ public class Inventory
 	}
 
 
-	private Integer _getKeyForType(Item type)
+	private int _getKeyForType(Item type)
 	{
 		// NOTE:  We don't currently keep a parallel look-up structure for the types since this structure is always very small but that may change in the future.
-		Integer id = null;
+		int id = 0;
 		for (Map.Entry<Integer, Items> elt : _items.entrySet())
 		{
 			if (elt.getValue().type() == type)
