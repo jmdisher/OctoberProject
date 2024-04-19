@@ -60,7 +60,7 @@ public class MutableEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
-	public Item newSelectedItemKey;
+	public int newSelectedItemKey;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
@@ -88,7 +88,7 @@ public class MutableEntity
 		// We want to verify that the selected item is actually in the inventory (otherwise, there was a static error).
 		if (Entity.NO_SELECTION != this.newSelectedItemKey)
 		{
-			Assert.assertTrue(this.newInventory.getCount(this.newSelectedItemKey) > 0);
+			Assert.assertTrue(null != this.newInventory.getStackForKey(this.newSelectedItemKey));
 		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation

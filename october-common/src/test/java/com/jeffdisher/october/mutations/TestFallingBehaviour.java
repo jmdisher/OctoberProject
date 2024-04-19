@@ -42,7 +42,7 @@ public class TestFallingBehaviour
 		MutableEntity newEntity = MutableEntity.create(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.STONE, 2);
-		newEntity.newSelectedItemKey = ENV.items.STONE;
+		newEntity.newSelectedItemKey = newEntity.newInventory.getIdOfStackableType(ENV.items.STONE);
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
@@ -69,7 +69,7 @@ public class TestFallingBehaviour
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(ENV.items.STONE), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.

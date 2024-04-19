@@ -101,6 +101,17 @@ public class Inventory
 	}
 
 	/**
+	 * Checks the stackable items in this inventory to see if we have any of this type.
+	 * 
+	 * @param type The type to check.
+	 * @return The key this inventory uses to address the stack of this type or 0 if not known.
+	 */
+	public int getIdOfStackableType(Item type)
+	{
+		return _getKeyForType(type);
+	}
+
+	/**
 	 * @return A list of the identifier keys used in the inventory, sorted from earliest to latest.
 	 */
 	public List<Integer> sortedKeys()

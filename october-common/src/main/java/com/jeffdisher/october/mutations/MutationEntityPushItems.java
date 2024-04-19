@@ -28,26 +28,27 @@ public class MutationEntityPushItems implements IMutationEntity
 	public static MutationEntityPushItems deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		Item type = CodecHelpers.readItem(buffer);
+		int localInventoryId = buffer.getInt();
+		Assert.assertTrue(localInventoryId > 0);
 		int count = buffer.getInt();
 		Assert.assertTrue(count > 0);
 		byte inventoryAspect = buffer.get();
-		return new MutationEntityPushItems(blockLocation, type, count, inventoryAspect);
+		return new MutationEntityPushItems(blockLocation, localInventoryId, count, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
-	private final Item _type;
+	private final int _localInventoryId;
 	private final int _count;
 	private final byte _inventoryAspect;
 
-	public MutationEntityPushItems(AbsoluteLocation blockLocation, Item type, int count, byte inventoryAspect)
+	public MutationEntityPushItems(AbsoluteLocation blockLocation, int localInventoryId, int count, byte inventoryAspect)
 	{
-		Assert.assertTrue(null != type);
+		Assert.assertTrue(localInventoryId > 0);
 		Assert.assertTrue(count > 0);
 		
 		_blockLocation = blockLocation;
-		_type = type;
+		_localInventoryId = localInventoryId;
 		_count = count;
 		_inventoryAspect = inventoryAspect;
 	}
@@ -65,15 +66,16 @@ public class MutationEntityPushItems implements IMutationEntity
 		boolean didApply = false;
 		
 		// Make sure that we actually have this much of the referenced item in our inventory.
+		Items currentlyInInventory = newEntity.newInventory.getStackForKey(_localInventoryId);
 		// We want to make sure that this is a block which can accept items (currently just air).
 		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
-		Inventory inv = _getInventory(block, _type);
-		if ((newEntity.newInventory.getCount(_type) >= _count) && (null != inv))
+		Inventory inv = (null != currentlyInInventory) ? _getInventory(block, currentlyInInventory.type()) : null;
+		if ((null != currentlyInInventory) && (currentlyInInventory.count() >= _count) && (null != inv))
 		{
 			// See if there is space in the inventory.
 			MutableInventory checker = new MutableInventory(inv);
 			
-			Item offeredType = _type;
+			Item offeredType = currentlyInInventory.type();
 			int capacity = checker.maxVacancyForItem(offeredType);
 			int toDrop = Math.min(capacity, _count);
 			if (toDrop > 0)
@@ -83,7 +85,9 @@ public class MutationEntityPushItems implements IMutationEntity
 				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop), _inventoryAspect));
 				
 				// We want to deselect this if it was selected.
-				if ((offeredType == newEntity.newSelectedItemKey) && (0 == newEntity.newInventory.getCount(offeredType)))
+				if ((_localInventoryId == newEntity.newSelectedItemKey)
+						&& (0 == newEntity.newInventory.getCount(offeredType))
+				)
 				{
 					newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 				}
@@ -104,7 +108,7 @@ public class MutationEntityPushItems implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
-		CodecHelpers.writeItem(buffer, _type);
+		buffer.putInt(_localInventoryId);
 		buffer.putInt(_count);
 		buffer.put(_inventoryAspect);
 	}

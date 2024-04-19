@@ -38,6 +38,29 @@ public class MutableInventory
 	}
 
 	/**
+	 * Checks the stackable items in this inventory to see if we have any of this type.
+	 * 
+	 * @param type The type to check.
+	 * @return The key this inventory uses to address the stack of this type or 0 if not known.
+	 */
+	public int getIdOfStackableType(Item type)
+	{
+		return _getKeyForType(type);
+	}
+
+	/**
+	 * Looks up the item stack for the given identifier key.  While this is usually called when we know that the key is
+	 * here, we sometimes call it to see if a key has disappeared.
+	 * 
+	 * @param key The identifier key.
+	 * @return The Items object for this stack (null if this key is not in the inventory).
+	 */
+	public Items getStackForKey(int key)
+	{
+		return _items.get(key);
+	}
+
+	/**
 	 * Used to check how many items of a given type are in the inventory.
 	 * 
 	 * @param type The item type.

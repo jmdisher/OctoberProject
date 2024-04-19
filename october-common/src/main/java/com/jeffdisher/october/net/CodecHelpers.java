@@ -2,7 +2,9 @@ package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -127,7 +129,7 @@ public class CodecHelpers
 		EntityVolume volume = _readEntityVolume(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
-		Item selectedItemKey = _readItemNoAir(buffer);
+		int selectedItemKey = buffer.getInt();
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
@@ -153,7 +155,7 @@ public class CodecHelpers
 		EntityVolume volume = entity.volume();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
-		Item selectedItemKey = entity.selectedItemKey();
+		int selectedItemKey = entity.selectedItemKey();
 		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
@@ -162,7 +164,7 @@ public class CodecHelpers
 		_writeEntityVolume(buffer, volume);
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
-		_writeItemNoAir(buffer, selectedItemKey);
+		buffer.putInt(selectedItemKey);
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
@@ -277,18 +279,24 @@ public class CodecHelpers
 
 	private static Inventory _readInventory(ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		Inventory parsed;
 		int maxEncumbrance = buffer.getInt();
 		if (maxEncumbrance > 0)
 		{
-			Inventory.Builder builder = Inventory.start(maxEncumbrance);
+			Map<Integer, Items> map = new HashMap<>();
+			int currentEncumbrance = 0;
+			
 			int itemsToLoad = Byte.toUnsignedInt(buffer.get());
 			for (int i = 0; i < itemsToLoad; ++i)
 			{
+				int keyValue = buffer.getInt();
+				Assert.assertTrue(keyValue > 0);
 				Items items = _readItems(buffer);
-				builder.add(items.type(), items.count());
+				map.put(keyValue, items);
+				currentEncumbrance += env.inventory.getEncumbrance(items.type()) * items.count();
 			}
-			parsed = builder.finish();
+			parsed = Inventory.build(maxEncumbrance, map, currentEncumbrance);
 		}
 		else
 		{
@@ -312,8 +320,10 @@ public class CodecHelpers
 			
 			buffer.putInt(maxEncumbrance);
 			buffer.put((byte) itemsToWrite);
-			for (Items items : itemList)
+			for (Integer key : inventory.sortedKeys())
 			{
+				buffer.putInt(key.intValue());
+				Items items = inventory.getStackForKey(key);
 				_writeItems(buffer, items);
 			}
 		}

@@ -53,7 +53,7 @@ public class EntityChangeSendItem implements IMutationEntity
 			// Update the inventory.
 			inventory.removeItems(_itemType, foundCount);
 			// If we had this selected, clear it.
-			if (_itemType == newEntity.newSelectedItemKey)
+			if (newEntity.newInventory.getIdOfStackableType(_itemType) == newEntity.newSelectedItemKey)
 			{
 				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 			}

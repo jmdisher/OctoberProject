@@ -2,8 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -18,16 +16,16 @@ public class MutationEntitySelectItem implements IMutationEntity
 
 	public static MutationEntitySelectItem deserializeFromBuffer(ByteBuffer buffer)
 	{
-		Item type = CodecHelpers.readItem(buffer);
-		return new MutationEntitySelectItem(type);
+		int inventoryId = buffer.getInt();
+		return new MutationEntitySelectItem(inventoryId);
 	}
 
 
-	private final Item _itemType;
+	private final int _inventoryId;
 
-	public MutationEntitySelectItem(Item itemType)
+	public MutationEntitySelectItem(int inventoryId)
 	{
-		_itemType = itemType;
+		_inventoryId = inventoryId;
 	}
 
 	@Override
@@ -40,9 +38,10 @@ public class MutationEntitySelectItem implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean didApply = false;
-		if ((_itemType != newEntity.newSelectedItemKey) && ((null == _itemType) || (newEntity.newInventory.getCount(_itemType) > 0)))
+		if ((_inventoryId != newEntity.newSelectedItemKey)
+				&& ((0 == _inventoryId) || (null != newEntity.newInventory.getStackForKey(_inventoryId))))
 		{
-			newEntity.newSelectedItemKey = _itemType;
+			newEntity.newSelectedItemKey = _inventoryId;
 			didApply = true;
 		}
 		return didApply;
@@ -57,6 +56,6 @@ public class MutationEntitySelectItem implements IMutationEntity
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeItem(buffer, _itemType);
+		buffer.putInt(_inventoryId);
 	}
 }

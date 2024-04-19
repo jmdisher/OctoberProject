@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -59,7 +60,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is the target location not colliding with the entity, itself?
 		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
 		
-		Item itemType = newEntity.newSelectedItemKey;
+		Items stack = (Entity.NO_SELECTION != newEntity.newSelectedItemKey) ? newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey) : null;
+		Item itemType = (null != stack) ? stack.type() : null;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);

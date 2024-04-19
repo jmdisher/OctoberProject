@@ -15,7 +15,7 @@ public record Entity(int id
 		, float blocksPerTickSpeed
 		, Inventory inventory
 		// If the selected item key is 0, there is no selection.
-		, Item selectedItemKey
+		, int selectedItemKey
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		, CraftOperation localCraftOperation
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
@@ -27,7 +27,7 @@ public record Entity(int id
 	/**
 	 * The selected item key for no selection.  All actual IDs are positive integers.
 	 */
-	public static final Item NO_SELECTION = null;
+	public static final int NO_SELECTION = 0;
 
 	public static Entity fromPartial(PartialEntity entity)
 	{

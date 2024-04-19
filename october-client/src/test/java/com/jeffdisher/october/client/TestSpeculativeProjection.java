@@ -811,7 +811,8 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newSelectedItemKey = ENV.items.STONE;
+		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
+		mutable.newSelectedItemKey = stoneKey;
 		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.applyChangesForServerTick(0L
@@ -826,7 +827,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
-		Assert.assertEquals(ENV.items.STONE, listener.lastEntityStates.get(entityId).selectedItemKey());
+		Assert.assertEquals(stoneKey, listener.lastEntityStates.get(entityId).selectedItemKey());
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
 		EntityChangeCraft craft = new EntityChangeCraft(ENV.crafting.STONE_TO_STONE_BRICK, 1000L);
@@ -857,7 +858,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = ENV.items.STONE;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -894,7 +895,8 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.create(localEntityId);
 		mutable.newInventory.addAllItems(ENV.items.CRAFTING_TABLE, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = ENV.items.CRAFTING_TABLE;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.CRAFTING_TABLE);
+		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -919,7 +921,7 @@ public class TestSpeculativeProjection
 		
 		// Store the stones in the inventory.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems push = new MutationEntityPushItems(location, ENV.items.STONE, 2, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(location, stoneKey, 2, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
 		Assert.assertEquals(2L, commit2);
 		
@@ -1110,7 +1112,9 @@ public class TestSpeculativeProjection
 		mutable.newInventory.addAllItems(ENV.items.FURNACE, 1);
 		mutable.newInventory.addAllItems(ENV.items.PLANK, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newSelectedItemKey = ENV.items.FURNACE;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.FURNACE);
+		int plankKey = mutable.newInventory.getIdOfStackableType(ENV.items.PLANK);
+		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -1135,19 +1139,19 @@ public class TestSpeculativeProjection
 		
 		// Verify that storing stone in fuel inventory fails.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems pushFail = new MutationEntityPushItems(location, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_FUEL);
+		MutationEntityPushItems pushFail = new MutationEntityPushItems(location, stoneKey, 1, Inventory.INVENTORY_ASPECT_FUEL);
 		long commitFail = projector.applyLocalChange(pushFail, currentTimeMillis);
 		Assert.assertEquals(0, commitFail);
 		
 		// Storing the stone in the normal inventory should work.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems push = new MutationEntityPushItems(location, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(location, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
 		Assert.assertEquals(2L, commit2);
 		
 		// Verify that we can store the planks in the fuel inventory.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems pushFuel = new MutationEntityPushItems(location, ENV.items.PLANK, 1, Inventory.INVENTORY_ASPECT_FUEL);
+		MutationEntityPushItems pushFuel = new MutationEntityPushItems(location, plankKey, 1, Inventory.INVENTORY_ASPECT_FUEL);
 		long commit3 = projector.applyLocalChange(pushFuel, currentTimeMillis);
 		Assert.assertEquals(3L, commit3);
 		

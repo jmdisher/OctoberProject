@@ -329,6 +329,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.create(clientId);
 		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
+		int logKey = mutable.newInventory.getIdOfStackableType(ENV.items.LOG);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
@@ -339,7 +340,7 @@ public class TestClientRunner
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
-		MutationEntityPushItems push = new MutationEntityPushItems(table, ENV.items.LOG, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(table, logKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
 		

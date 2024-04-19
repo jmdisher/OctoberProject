@@ -89,7 +89,7 @@ public class TestMutableBlockProxy
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
-		Assert.assertEquals(12, buffer.position());
+		Assert.assertEquals(16, buffer.position());
 		buffer.flip();
 		proxy = new MutableBlockProxy(location, input);
 		proxy.deserializeFromBuffer(buffer);

@@ -638,7 +638,9 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.LOG, 3);
+		int logKey = mutable.newInventory.getIdOfStackableType(ENV.items.LOG);
 		mutable.newInventory.addAllItems(ENV.items.PLANK, 2);
+		int plankKey = mutable.newInventory.getIdOfStackableType(ENV.items.PLANK);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
@@ -656,8 +658,8 @@ public class TestTickRunner
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, ENV.items.LOG, 3, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, ENV.items.PLANK, 2, Inventory.INVENTORY_ASPECT_FUEL), 2L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, logKey, 3, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, plankKey, 2, Inventory.INVENTORY_ASPECT_FUEL), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.committedEntityMutationCount());
@@ -816,7 +818,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE_BRICK, 3);
-		mutable.newSelectedItemKey = ENV.items.STONE_BRICK;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE_BRICK);
 		Entity entity = mutable.freeze();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
@@ -1031,7 +1033,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = ENV.items.STONE;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
@@ -1080,7 +1082,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = ENV.items.STONE;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(topNorthEast, List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, 0, -1)), List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, 0)), List.of())
@@ -1273,7 +1275,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.SAPLING, 1);
-		mutable.newSelectedItemKey = ENV.items.SAPLING;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.SAPLING);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
@@ -1338,7 +1340,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.newSelectedItemKey = ENV.items.WHEAT_SEED;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.WHEAT_SEED);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
@@ -1433,7 +1435,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.newSelectedItemKey = ENV.items.WHEAT_SEED;
+		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.WHEAT_SEED);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
