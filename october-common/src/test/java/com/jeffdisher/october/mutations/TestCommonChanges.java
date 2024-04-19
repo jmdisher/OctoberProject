@@ -386,7 +386,7 @@ public class TestCommonChanges
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutableEntity newEntity = MutableEntity.existing(original);
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
 		// We can now verify that the entity has lost the item but the block is unchanged.
@@ -409,7 +409,7 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.items.STONE, freeze.selectedItem());
 		
 		// Drop again to verify that this correctly handles dropping the last selected item.
-		push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);
@@ -603,8 +603,8 @@ public class TestCommonChanges
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
 		// Verify that we can store the charcoal into the furnace inventory or fuel inventory.
-		MutationEntityPushItems pushInventory = new MutationEntityPushItems(furnace, new Items(ENV.items.CHARCOAL, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
-		MutationEntityPushItems pushFuel = new MutationEntityPushItems(furnace, new Items(ENV.items.CHARCOAL, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		MutationEntityPushItems pushInventory = new MutationEntityPushItems(furnace, ENV.items.CHARCOAL, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems pushFuel = new MutationEntityPushItems(furnace, ENV.items.CHARCOAL, 1, Inventory.INVENTORY_ASPECT_FUEL);
 		Assert.assertTrue(pushInventory.applyChange(context, newEntity));
 		Assert.assertTrue(pushFuel.applyChange(context, newEntity));
 		
@@ -660,7 +660,7 @@ public class TestCommonChanges
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, mutable1));
 		Assert.assertTrue(push.applyChange(context, mutable2));
 		Assert.assertEquals(added - 1, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ENV.items.STONE));

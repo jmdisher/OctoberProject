@@ -24,7 +24,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -340,7 +339,7 @@ public class TestClientRunner
 		
 		// Select a table and load an item into it.
 		AbsoluteLocation table = new AbsoluteLocation(0, 0, -1);
-		MutationEntityPushItems push = new MutationEntityPushItems(table, new Items(ENV.items.LOG, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(table, ENV.items.LOG, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
 		

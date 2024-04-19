@@ -656,8 +656,8 @@ public class TestTickRunner
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ENV.items.LOG, 3), Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, new Items(ENV.items.PLANK, 2), Inventory.INVENTORY_ASPECT_FUEL), 2L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, ENV.items.LOG, 3, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, ENV.items.PLANK, 2, Inventory.INVENTORY_ASPECT_FUEL), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.committedEntityMutationCount());

@@ -27,22 +27,27 @@ public class MutationEntityPushItems implements IMutationEntity
 	public static MutationEntityPushItems deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		Items offered = CodecHelpers.readItems(buffer);
+		Item type = CodecHelpers.readItem(buffer);
+		int count = buffer.getInt();
+		Assert.assertTrue(count > 0);
 		byte inventoryAspect = buffer.get();
-		return new MutationEntityPushItems(blockLocation, offered, inventoryAspect);
+		return new MutationEntityPushItems(blockLocation, type, count, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
-	private final Items _offered;
+	private final Item _type;
+	private final int _count;
 	private final byte _inventoryAspect;
 
-	public MutationEntityPushItems(AbsoluteLocation blockLocation, Items offered, byte inventoryAspect)
+	public MutationEntityPushItems(AbsoluteLocation blockLocation, Item type, int count, byte inventoryAspect)
 	{
-		Assert.assertTrue(offered.count() > 0);
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(count > 0);
 		
 		_blockLocation = blockLocation;
-		_offered = offered;
+		_type = type;
+		_count = count;
 		_inventoryAspect = inventoryAspect;
 	}
 
@@ -58,33 +63,31 @@ public class MutationEntityPushItems implements IMutationEntity
 	{
 		boolean didApply = false;
 		
-		// First off, we want to make sure that this is a block which can accept items (currently just air).
+		// Make sure that we actually have this much of the referenced item in our inventory.
+		// We want to make sure that this is a block which can accept items (currently just air).
 		BlockProxy block = context.previousBlockLookUp.apply(_blockLocation);
-		Inventory inv = _getInventory(block);
-		if (null != inv)
+		Inventory inv = _getInventory(block, _type);
+		if ((newEntity.newInventory.getCount(_type) >= _count) && (null != inv))
 		{
 			// See if there is space in the inventory.
 			MutableInventory checker = new MutableInventory(inv);
-			Item offeredType = _offered.type();
+			
+			Item offeredType = _type;
 			int capacity = checker.maxVacancyForItem(offeredType);
-			int toDrop = Math.min(capacity, _offered.count());
+			int toDrop = Math.min(capacity, _count);
 			if (toDrop > 0)
 			{
-				// Make sure that the inventory actually _has_ these items (this would be an error in the mutation - can happen if a mutation is based on stale state).
-				if (newEntity.newInventory.getCount(offeredType) >= toDrop)
+				// We will proceed to remove the items from our inventory and pass them to the block.
+				newEntity.newInventory.removeItems(offeredType, toDrop);
+				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop), _inventoryAspect));
+				
+				// We want to deselect this if it was selected.
+				if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
 				{
-					// We will proceed to remove the items from our inventory and pass them to the block.
-					newEntity.newInventory.removeItems(offeredType, toDrop);
-					context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop), _inventoryAspect));
-					
-					// We want to deselect this if it was selected.
-					if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
-					{
-						newEntity.newSelectedItem = null;
-					}
-					
-					didApply = true;
+					newEntity.newSelectedItem = null;
 				}
+				
+				didApply = true;
 			}
 		}
 		return didApply;
@@ -100,12 +103,13 @@ public class MutationEntityPushItems implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
-		CodecHelpers.writeItems(buffer, _offered);
+		CodecHelpers.writeItem(buffer, _type);
+		buffer.putInt(_count);
 		buffer.put(_inventoryAspect);
 	}
 
 
-	private Inventory _getInventory(BlockProxy block)
+	private Inventory _getInventory(BlockProxy block, Item type)
 	{
 		Environment env = Environment.getShared();
 		Inventory inv;
@@ -115,7 +119,7 @@ public class MutationEntityPushItems implements IMutationEntity
 			inv = block.getInventory();
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
-			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), _offered.type())
+			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), type)
 				? block.getFuel().fuelInventory()
 				: null
 			;

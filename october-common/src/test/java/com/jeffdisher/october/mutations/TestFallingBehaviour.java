@@ -15,7 +15,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -70,7 +69,7 @@ public class TestFallingBehaviour
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.

@@ -919,7 +919,7 @@ public class TestSpeculativeProjection
 		
 		// Store the stones in the inventory.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ENV.items.STONE, 2), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(location, ENV.items.STONE, 2, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
 		Assert.assertEquals(2L, commit2);
 		
@@ -1135,19 +1135,19 @@ public class TestSpeculativeProjection
 		
 		// Verify that storing stone in fuel inventory fails.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems pushFail = new MutationEntityPushItems(location, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		MutationEntityPushItems pushFail = new MutationEntityPushItems(location, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_FUEL);
 		long commitFail = projector.applyLocalChange(pushFail, currentTimeMillis);
 		Assert.assertEquals(0, commitFail);
 		
 		// Storing the stone in the normal inventory should work.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems push = new MutationEntityPushItems(location, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(location, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit2 = projector.applyLocalChange(push, currentTimeMillis);
 		Assert.assertEquals(2L, commit2);
 		
 		// Verify that we can store the planks in the fuel inventory.
 		currentTimeMillis += 1000L;
-		MutationEntityPushItems pushFuel = new MutationEntityPushItems(location, new Items(ENV.items.PLANK, 1), Inventory.INVENTORY_ASPECT_FUEL);
+		MutationEntityPushItems pushFuel = new MutationEntityPushItems(location, ENV.items.PLANK, 1, Inventory.INVENTORY_ASPECT_FUEL);
 		long commit3 = projector.applyLocalChange(pushFuel, currentTimeMillis);
 		Assert.assertEquals(3L, commit3);
 		
