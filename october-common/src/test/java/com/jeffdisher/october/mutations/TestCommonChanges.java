@@ -198,27 +198,27 @@ public class TestCommonChanges
 		// Give the entity some items and verify that they default to selected.
 		EntityChangeAcceptItems accept = new EntityChangeAcceptItems(new Items(ENV.items.LOG, 1));
 		Assert.assertTrue(accept.applyChange(context, newEntity));
-		Assert.assertEquals(ENV.items.LOG, newEntity.freeze().selectedItem());
+		Assert.assertEquals(ENV.items.LOG, newEntity.freeze().selectedItemKey());
 		
 		// Craft some items to use these up and verify that the selection is cleared.
 		EntityChangeCraft craft = new EntityChangeCraft(ENV.crafting.LOG_TO_PLANKS, ENV.crafting.LOG_TO_PLANKS.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
-		Assert.assertNull(newEntity.freeze().selectedItem());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.freeze().selectedItemKey());
 		
 		// Actively select the type and verify it is selected.
 		MutationEntitySelectItem select = new MutationEntitySelectItem(ENV.items.PLANK);
 		Assert.assertTrue(select.applyChange(context, newEntity));
-		Assert.assertEquals(ENV.items.PLANK, newEntity.freeze().selectedItem());
+		Assert.assertEquals(ENV.items.PLANK, newEntity.freeze().selectedItemKey());
 		
 		// Demonstrate that we can't select something we don't have.
 		MutationEntitySelectItem select2 = new MutationEntitySelectItem(ENV.items.LOG);
 		Assert.assertFalse(select2.applyChange(context, newEntity));
-		Assert.assertEquals(ENV.items.PLANK, newEntity.freeze().selectedItem());
+		Assert.assertEquals(ENV.items.PLANK, newEntity.freeze().selectedItemKey());
 		
 		// Show that we can unselect.
 		MutationEntitySelectItem select3 = new MutationEntitySelectItem(null);
 		Assert.assertTrue(select3.applyChange(context, newEntity));
-		Assert.assertNull(newEntity.freeze().selectedItem());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.freeze().selectedItemKey());
 	}
 
 	@Test
@@ -228,7 +228,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
-		newEntity.newSelectedItem = ENV.items.LOG;
+		newEntity.newSelectedItemKey = ENV.items.LOG;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -262,7 +262,7 @@ public class TestCommonChanges
 		// We expect that the block will be placed and our selection and inventory will be cleared.
 		Assert.assertEquals(ENV.items.LOG.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(0, newEntity.freeze().inventory().sortedItems().size());
-		Assert.assertNull(newEntity.freeze().selectedItem());
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.freeze().selectedItemKey());
 	}
 
 	@Test
@@ -324,7 +324,7 @@ public class TestCommonChanges
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(ENV.items.STONE));
-		Assert.assertNull(newEntity.newSelectedItem);
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newSelectedItemKey);
 		
 		// We should see the request to store data, now.
 		Assert.assertTrue(entityHolder[0] instanceof MutationEntityStoreToInventory);
@@ -334,7 +334,7 @@ public class TestCommonChanges
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
-		Assert.assertEquals(ENV.items.STONE, newEntity.newSelectedItem);
+		Assert.assertEquals(ENV.items.STONE, newEntity.newSelectedItemKey);
 		
 		// Run the process again to pick up the last item and verify that the inventory is now null.
 		blockHolder[0] = null;
@@ -347,7 +347,7 @@ public class TestCommonChanges
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Assert.assertEquals(2, newEntity.newInventory.getCount(ENV.items.STONE));
-		Assert.assertEquals(ENV.items.STONE, newEntity.newSelectedItem);
+		Assert.assertEquals(ENV.items.STONE, newEntity.newSelectedItemKey);
 	}
 
 	@Test
@@ -358,7 +358,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItem = ENV.items.STONE;
+		mutable.newSelectedItemKey = ENV.items.STONE;
 		Entity original = mutable.freeze();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
@@ -406,7 +406,7 @@ public class TestCommonChanges
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
 		Entity freeze = newEntity.freeze();
 		Assert.assertEquals(1, freeze.inventory().getCount(ENV.items.STONE));
-		Assert.assertEquals(ENV.items.STONE, freeze.selectedItem());
+		Assert.assertEquals(ENV.items.STONE, freeze.selectedItemKey());
 		
 		// Drop again to verify that this correctly handles dropping the last selected item.
 		push = new MutationEntityPushItems(targetLocation, ENV.items.STONE, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -419,7 +419,7 @@ public class TestCommonChanges
 		freeze = newEntity.freeze();
 		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, freeze.inventory().sortedItems().size());
-		Assert.assertNull(freeze.selectedItem());
+		Assert.assertEquals(Entity.NO_SELECTION, freeze.selectedItemKey());
 	}
 
 	@Test
@@ -429,7 +429,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
-		newEntity.newSelectedItem = ENV.items.LOG;
+		newEntity.newSelectedItemKey = ENV.items.LOG;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -468,7 +468,7 @@ public class TestCommonChanges
 		// Make sure we fail if there is no selection.
 		reasonable = new AbsoluteLocation(1, 1, 8);
 		placeReasonable = new MutationPlaceSelectedBlock(reasonable);
-		newEntity.newSelectedItem = null;
+		newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 		Assert.assertFalse(placeReasonable.applyChange(context, newEntity));
 	}
 
@@ -540,7 +540,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
-		newEntity.newSelectedItem = ENV.items.LOG;
+		newEntity.newSelectedItemKey = ENV.items.LOG;
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
@@ -566,7 +566,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
 		newEntity.newInventory.addAllItems(ENV.items.CHARCOAL, 2);
-		newEntity.newSelectedItem = ENV.items.CHARCOAL;
+		newEntity.newSelectedItemKey = ENV.items.CHARCOAL;
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
@@ -620,12 +620,12 @@ public class TestCommonChanges
 		MutableEntity mutable1 = MutableEntity.create(entityId1);
 		mutable1.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable1.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable1.newSelectedItem = ENV.items.STONE;
+		mutable1.newSelectedItemKey = ENV.items.STONE;
 		int entityId2 = 2;
 		MutableEntity mutable2 = MutableEntity.create(entityId2);
 		mutable2.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable2.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable2.newSelectedItem = ENV.items.STONE;
+		mutable2.newSelectedItemKey = ENV.items.STONE;
 		
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
@@ -803,7 +803,7 @@ public class TestCommonChanges
 		MutableEntity target = MutableEntity.create(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(ENV.items.STONE, 2);
-		target.newSelectedItem = ENV.items.STONE;
+		target.newSelectedItemKey = ENV.items.STONE;
 		MutableEntity miss = MutableEntity.create(missId);
 		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
 		
@@ -851,7 +851,7 @@ public class TestCommonChanges
 		MutableEntity target = MutableEntity.create(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(ENV.items.STONE, 2);
-		target.newSelectedItem = ENV.items.STONE;
+		target.newSelectedItemKey = ENV.items.STONE;
 		
 		// We need to make sure that there is a solid block under the entities so nothing falls.
 		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
@@ -904,7 +904,7 @@ public class TestCommonChanges
 		Assert.assertEquals(MutableEntity.DEFAULT_HEALTH, target.newHealth);
 		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedItems().size());
-		Assert.assertEquals(null, target.newSelectedItem);
+		Assert.assertEquals(Entity.NO_SELECTION, target.newSelectedItemKey);
 		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 	}
@@ -947,7 +947,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.STONE, 1);
 		newEntity.newInventory.addAllItems(bread, 1);
-		newEntity.newSelectedItem = ENV.items.LOG;
+		newEntity.newSelectedItemKey = ENV.items.LOG;
 		newEntity.newFood = 90;
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
@@ -962,10 +962,10 @@ public class TestCommonChanges
 		Assert.assertEquals(90, newEntity.newFood);
 		
 		// We should succeed in eating the bread, though.
-		newEntity.newSelectedItem = bread;
+		newEntity.newSelectedItemKey = bread;
 		Assert.assertTrue(eat.applyChange(context, newEntity));
 		
-		Assert.assertNull(newEntity.newSelectedItem);
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newSelectedItemKey);
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(bread));
 		Assert.assertEquals(100, newEntity.newFood);

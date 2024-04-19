@@ -156,7 +156,7 @@ public class TestCodecHelpers
 		Assert.assertEquals(test.zVelocityPerSecond(), output.zVelocityPerSecond(), 0.01f);
 		Assert.assertEquals(test.volume(), output.volume());
 		Assert.assertEquals(test.blocksPerTickSpeed(), output.blocksPerTickSpeed(), 0.01f);
-		Assert.assertEquals(test.selectedItem(), output.selectedItem());
+		Assert.assertEquals(test.selectedItemKey(), output.selectedItemKey());
 	}
 
 	@Test

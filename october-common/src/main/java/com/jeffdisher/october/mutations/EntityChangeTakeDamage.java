@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
@@ -69,7 +70,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), items, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory(null);
-				newEntity.newSelectedItem = null;
+				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 			}
 			didApply = true;
 		}

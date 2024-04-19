@@ -14,8 +14,8 @@ public record Entity(int id
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
 		, Inventory inventory
-		// The selected item is either null of something which MUST have some items in the inventory.
-		, Item selectedItem
+		// If the selected item key is 0, there is no selection.
+		, Item selectedItemKey
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		, CraftOperation localCraftOperation
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
@@ -24,6 +24,11 @@ public record Entity(int id
 		, byte food
 )
 {
+	/**
+	 * The selected item key for no selection.  All actual IDs are positive integers.
+	 */
+	public static final Item NO_SELECTION = null;
+
 	public static Entity fromPartial(PartialEntity entity)
 	{
 		return new Entity(entity.id()
@@ -32,7 +37,7 @@ public record Entity(int id
 				, entity.volume()
 				, 0.0f
 				, Inventory.start(0).finish()
-				, null
+				, NO_SELECTION
 				, null
 				, (byte)0
 				, (byte)0

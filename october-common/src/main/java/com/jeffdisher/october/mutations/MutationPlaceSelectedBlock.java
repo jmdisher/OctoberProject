@@ -10,6 +10,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -58,7 +59,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is the target location not colliding with the entity, itself?
 		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
 		
-		Item itemType = newEntity.newSelectedItem;
+		Item itemType = newEntity.newSelectedItemKey;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);
@@ -91,7 +92,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			newEntity.newInventory.removeItems(itemType, 1);
 			if (0 == newEntity.newInventory.getCount(itemType))
 			{
-				newEntity.newSelectedItem = null;
+				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 			}
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.

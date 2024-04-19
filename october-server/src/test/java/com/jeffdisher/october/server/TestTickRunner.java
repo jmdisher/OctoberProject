@@ -816,7 +816,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE_BRICK, 3);
-		mutable.newSelectedItem = ENV.items.STONE_BRICK;
+		mutable.newSelectedItemKey = ENV.items.STONE_BRICK;
 		Entity entity = mutable.freeze();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
@@ -1031,7 +1031,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItem = ENV.items.STONE;
+		mutable.newSelectedItemKey = ENV.items.STONE;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
@@ -1080,7 +1080,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItem = ENV.items.STONE;
+		mutable.newSelectedItemKey = ENV.items.STONE;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(topNorthEast, List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, 0, -1)), List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, 0)), List.of())
@@ -1273,7 +1273,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.SAPLING, 1);
-		mutable.newSelectedItem = ENV.items.SAPLING;
+		mutable.newSelectedItemKey = ENV.items.SAPLING;
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
@@ -1338,7 +1338,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.newSelectedItem = ENV.items.WHEAT_SEED;
+		mutable.newSelectedItemKey = ENV.items.WHEAT_SEED;
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)
@@ -1433,7 +1433,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.newSelectedItem = ENV.items.WHEAT_SEED;
+		mutable.newSelectedItemKey = ENV.items.WHEAT_SEED;
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of())
 				)

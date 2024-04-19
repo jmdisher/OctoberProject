@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -37,7 +38,7 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
-		Item selected = newEntity.newSelectedItem;
+		Item selected = newEntity.newSelectedItemKey;
 		int foodValue = (null != selected)
 				? env.foods.foodValue(selected)
 				: 0
@@ -56,7 +57,7 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 			newEntity.newInventory.removeItems(selected, 1);
 			if (0 == newEntity.newInventory.getCount(selected))
 			{
-				newEntity.newSelectedItem = null;
+				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 			}
 			didApply = true;
 			

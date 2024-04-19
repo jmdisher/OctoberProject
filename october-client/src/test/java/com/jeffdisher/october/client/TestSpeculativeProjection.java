@@ -811,7 +811,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newSelectedItem = ENV.items.STONE;
+		mutable.newSelectedItemKey = ENV.items.STONE;
 		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.applyChangesForServerTick(0L
@@ -826,7 +826,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
-		Assert.assertEquals(ENV.items.STONE, listener.lastEntityStates.get(entityId).selectedItem());
+		Assert.assertEquals(ENV.items.STONE, listener.lastEntityStates.get(entityId).selectedItemKey());
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
 		EntityChangeCraft craft = new EntityChangeCraft(ENV.crafting.STONE_TO_STONE_BRICK, 1000L);
@@ -845,7 +845,7 @@ public class TestSpeculativeProjection
 		Inventory inv = listener.lastEntityStates.get(entityId).inventory();
 		Assert.assertEquals(0, inv.getCount(ENV.items.STONE));
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE_BRICK));
-		Assert.assertNull(listener.lastEntityStates.get(entityId).selectedItem());
+		Assert.assertEquals(Entity.NO_SELECTION, listener.lastEntityStates.get(entityId).selectedItemKey());
 	}
 
 	@Test
@@ -857,7 +857,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItem = ENV.items.STONE;
+		mutable.newSelectedItemKey = ENV.items.STONE;
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -894,7 +894,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.create(localEntityId);
 		mutable.newInventory.addAllItems(ENV.items.CRAFTING_TABLE, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItem = ENV.items.CRAFTING_TABLE;
+		mutable.newSelectedItemKey = ENV.items.CRAFTING_TABLE;
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -1110,7 +1110,7 @@ public class TestSpeculativeProjection
 		mutable.newInventory.addAllItems(ENV.items.FURNACE, 1);
 		mutable.newInventory.addAllItems(ENV.items.PLANK, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newSelectedItem = ENV.items.FURNACE;
+		mutable.newSelectedItemKey = ENV.items.FURNACE;
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)

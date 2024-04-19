@@ -42,7 +42,7 @@ public class TestFallingBehaviour
 		MutableEntity newEntity = MutableEntity.create(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(ENV.items.STONE, 2);
-		newEntity.newSelectedItem = ENV.items.STONE;
+		newEntity.newSelectedItemKey = ENV.items.STONE;
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);

@@ -40,9 +40,9 @@ public class MutationEntitySelectItem implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		boolean didApply = false;
-		if ((_itemType != newEntity.newSelectedItem) && ((null == _itemType) || (newEntity.newInventory.getCount(_itemType) > 0)))
+		if ((_itemType != newEntity.newSelectedItemKey) && ((null == _itemType) || (newEntity.newInventory.getCount(_itemType) > 0)))
 		{
-			newEntity.newSelectedItem = _itemType;
+			newEntity.newSelectedItemKey = _itemType;
 			didApply = true;
 		}
 		return didApply;

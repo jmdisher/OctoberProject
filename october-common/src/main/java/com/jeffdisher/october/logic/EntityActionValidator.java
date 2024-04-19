@@ -36,7 +36,7 @@ public class EntityActionValidator
 						, entity.volume()
 						, entity.blocksPerTickSpeed()
 						, entity.inventory()
-						, entity.selectedItem()
+						, entity.selectedItemKey()
 						, entity.localCraftOperation()
 						, entity.health()
 						, entity.food()

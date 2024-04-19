@@ -44,7 +44,7 @@ public class MutableEntity
 				, DEFAULT_VOLUME
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
-				, null
+				, Entity.NO_SELECTION
 				, null
 				, DEFAULT_HEALTH
 				, DEFAULT_FOOD
@@ -60,7 +60,7 @@ public class MutableEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
-	public Item newSelectedItem;
+	public Item newSelectedItemKey;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
@@ -71,7 +71,7 @@ public class MutableEntity
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
-		this.newSelectedItem = original.selectedItem();
+		this.newSelectedItemKey = original.selectedItemKey();
 		this.newLocalCraftOperation = original.localCraftOperation();
 		this.newHealth = original.health();
 		this.newFood = original.food();
@@ -86,9 +86,9 @@ public class MutableEntity
 	public Entity freeze()
 	{
 		// We want to verify that the selected item is actually in the inventory (otherwise, there was a static error).
-		if (null != this.newSelectedItem)
+		if (Entity.NO_SELECTION != this.newSelectedItemKey)
 		{
-			Assert.assertTrue(this.newInventory.getCount(this.newSelectedItem) > 0);
+			Assert.assertTrue(this.newInventory.getCount(this.newSelectedItemKey) > 0);
 		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
@@ -96,7 +96,7 @@ public class MutableEntity
 				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
-				, this.newSelectedItem
+				, this.newSelectedItemKey
 				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood

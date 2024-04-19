@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -34,9 +35,9 @@ public class EntityChangeAcceptItems implements IMutationEntity
 		if (didAdd)
 		{
 			// If there isn't already selected item, we want to select this one.
-			if (null == newEntity.newSelectedItem)
+			if (Entity.NO_SELECTION == newEntity.newSelectedItemKey)
 			{
-				newEntity.newSelectedItem = _items.type();
+				newEntity.newSelectedItemKey = _items.type();
 			}
 		}
 		return didAdd;

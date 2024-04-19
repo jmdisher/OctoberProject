@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -53,9 +54,9 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 		if (stored > 0)
 		{
 			// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
-			if ((null == newEntity.newSelectedItem) && (0 == previousItemCount))
+			if ((Entity.NO_SELECTION == newEntity.newSelectedItemKey) && (0 == previousItemCount))
 			{
-				newEntity.newSelectedItem = type;
+				newEntity.newSelectedItemKey = type;
 			}
 		}
 		

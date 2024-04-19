@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityType;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
@@ -52,9 +53,9 @@ public class EntityChangeSendItem implements IMutationEntity
 			// Update the inventory.
 			inventory.removeItems(_itemType, foundCount);
 			// If we had this selected, clear it.
-			if (_itemType == newEntity.newSelectedItem)
+			if (_itemType == newEntity.newSelectedItemKey)
 			{
-				newEntity.newSelectedItem = null;
+				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 			}
 			// Send this to the other entity.
 			newChangeSink.next(_targetId, new EntityChangeReceiveItem(_itemType, foundCount));

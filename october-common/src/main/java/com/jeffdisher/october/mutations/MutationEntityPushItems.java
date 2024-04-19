@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -82,9 +83,9 @@ public class MutationEntityPushItems implements IMutationEntity
 				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, new Items(offeredType, toDrop), _inventoryAspect));
 				
 				// We want to deselect this if it was selected.
-				if ((offeredType == newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(offeredType)))
+				if ((offeredType == newEntity.newSelectedItemKey) && (0 == newEntity.newInventory.getCount(offeredType)))
 				{
-					newEntity.newSelectedItem = null;
+					newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 				}
 				
 				didApply = true;

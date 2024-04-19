@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -76,9 +77,9 @@ public class EntityChangeCraft implements IMutationEntity
 				if (didCraft)
 				{
 					// Make sure that this cleared the selection, if we used the last of them.
-					if ((null != newEntity.newSelectedItem) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItem)))
+					if ((Entity.NO_SELECTION != newEntity.newSelectedItemKey) && (0 == newEntity.newInventory.getCount(newEntity.newSelectedItemKey)))
 					{
-						newEntity.newSelectedItem = null;
+						newEntity.newSelectedItemKey = Entity.NO_SELECTION;
 					}
 				}
 				newEntity.newLocalCraftOperation = null;

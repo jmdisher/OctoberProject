@@ -127,7 +127,7 @@ public class CodecHelpers
 		EntityVolume volume = _readEntityVolume(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
-		Item selectedItem = _readItemNoAir(buffer);
+		Item selectedItemKey = _readItemNoAir(buffer);
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
@@ -138,7 +138,7 @@ public class CodecHelpers
 				, volume
 				, blocksPerTickSpeed
 				, inventory
-				, selectedItem
+				, selectedItemKey
 				, localCraftOperation
 				, health
 				, food
@@ -153,7 +153,7 @@ public class CodecHelpers
 		EntityVolume volume = entity.volume();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
-		Item selectedItem = entity.selectedItem();
+		Item selectedItemKey = entity.selectedItemKey();
 		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
@@ -162,7 +162,7 @@ public class CodecHelpers
 		_writeEntityVolume(buffer, volume);
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
-		_writeItemNoAir(buffer, selectedItem);
+		_writeItemNoAir(buffer, selectedItemKey);
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
