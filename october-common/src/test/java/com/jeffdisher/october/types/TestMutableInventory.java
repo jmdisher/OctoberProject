@@ -124,4 +124,17 @@ public class TestMutableInventory
 		Assert.assertEquals(0, frozen.sortedItems().size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
+
+	@Test
+	public void checkFreezeOrder() throws Throwable
+	{
+		// Verify that we correctly check the types and the count when updating after freeze.
+		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
+		MutableInventory inv = new MutableInventory(original);
+		inv.clearInventory();
+		inv.addAllItems(ENV.items.LOG, 1);
+		
+		Inventory frozen = inv.freeze();
+		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
+	}
 }

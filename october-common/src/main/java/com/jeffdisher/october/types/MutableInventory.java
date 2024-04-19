@@ -172,6 +172,7 @@ public class MutableInventory
 	{
 		_items.clear();
 		_currentEncumbrance = 0;
+		_nextAddressId = 1;
 	}
 
 	/**
@@ -190,13 +191,17 @@ public class MutableInventory
 			for (Integer key : originalKeyList)
 			{
 				Items newItems = _items.get(key);
+				Item newType = (null != newItems)
+						? newItems.type()
+						: null
+				;
 				int newCount = (null != newItems)
 						? newItems.count()
 						: 0
 				;
 				Items originalItems = _original.getStackForKey(key);
 				int originalCount = originalItems.count();
-				if (newCount != originalCount)
+				if ((newType != originalItems.type()) || (newCount != originalCount))
 				{
 					doMatch = false;
 					break;
