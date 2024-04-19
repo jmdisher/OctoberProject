@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -33,11 +32,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 	@Override
 	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
 	{
-		newEntity.newInventory.clearInventory();
-		for (Items items : _entity.inventory().sortedItems())
-		{
-			newEntity.newInventory.addAllItems(items.type(), items.count());
-		}
+		newEntity.newInventory.clearInventory(_entity.inventory());
 		newEntity.newLocation = _entity.location();
 		newEntity.newSelectedItem = _entity.selectedItem();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();

@@ -116,6 +116,18 @@ public class Inventory
 		return _items.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
 	}
 
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder();
+		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with items: " + _items.size() + "\n");
+		for (Integer key : _items.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList())
+		{
+			builder.append("\t" + key + " -> " + _items.get(key) + "\n");
+		}
+		return builder.toString();
+	}
+
 
 	private Integer _getKeyForType(Item type)
 	{

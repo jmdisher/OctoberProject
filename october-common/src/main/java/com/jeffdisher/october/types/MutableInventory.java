@@ -166,13 +166,31 @@ public class MutableInventory
 	}
 
 	/**
-	 * Removes all items from the inventory, setting its encumbrance to 0.
+	 * Removes all items from the inventory, setting its encumbrance to 0.  If the replacement is non-null, the state
+	 * will then be updated to contain whatever it provided.
+	 * 
+	 * @param replacement If non-null, the receiver will be populated with this after being cleared.
 	 */
-	public void clearInventory()
+	public void clearInventory(Inventory replacement)
 	{
 		_items.clear();
 		_currentEncumbrance = 0;
 		_nextAddressId = 1;
+		
+		if (null != replacement)
+		{
+			// This only makes sense if these have the same max encumbrance.
+			Assert.assertTrue(_original.maxEncumbrance == replacement.maxEncumbrance);
+			
+			int lastId = 0;
+			for (Integer key : replacement.sortedKeys())
+			{
+				_items.put(key, replacement.getStackForKey(key));
+				lastId = key;
+			}
+			_currentEncumbrance = replacement.currentEncumbrance;
+			_nextAddressId = lastId + 1;
+		}
 	}
 
 	/**

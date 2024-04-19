@@ -95,7 +95,7 @@ public class TestMutableInventory
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 4));
-		inv.clearInventory();
+		inv.clearInventory(null);
 		Assert.assertEquals(0, inv.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, inv.getCount(ENV.items.LOG));
 		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 1));
@@ -105,6 +105,29 @@ public class TestMutableInventory
 		Assert.assertEquals(1, frozen.sortedItems().size());
 		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
 		Assert.assertEquals(2, frozen.currentEncumbrance);
+	}
+
+	@Test
+	public void clearAndReplace() throws Throwable
+	{
+		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
+		Inventory replacement = Inventory.start(10).add(ENV.items.PLANK, 3).add(ENV.items.STONE, 2).finish();
+		MutableInventory inv = new MutableInventory(original);
+		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
+		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 4));
+		inv.clearInventory(replacement);
+		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
+		Assert.assertEquals(3, inv.getCount(ENV.items.PLANK));
+		Assert.assertEquals(0, inv.getCount(ENV.items.LOG));
+		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 1));
+		
+		Inventory frozen = inv.freeze();
+		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
+		Assert.assertEquals(3, frozen.sortedItems().size());
+		Assert.assertEquals(2, frozen.getCount(ENV.items.STONE));
+		Assert.assertEquals(3, frozen.getCount(ENV.items.PLANK));
+		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
+		Assert.assertEquals(9, frozen.currentEncumbrance);
 	}
 
 	@Test
@@ -131,7 +154,7 @@ public class TestMutableInventory
 		// Verify that we correctly check the types and the count when updating after freeze.
 		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
 		MutableInventory inv = new MutableInventory(original);
-		inv.clearInventory();
+		inv.clearInventory(null);
 		inv.addAllItems(ENV.items.LOG, 1);
 		
 		Inventory frozen = inv.freeze();
