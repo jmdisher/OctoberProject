@@ -88,7 +88,9 @@ public class MutableEntity
 		// We want to verify that the selected item is actually in the inventory (otherwise, there was a static error).
 		if (Entity.NO_SELECTION != this.newSelectedItemKey)
 		{
-			Assert.assertTrue(null != this.newInventory.getStackForKey(this.newSelectedItemKey));
+			Items stack = this.newInventory.getStackForKey(this.newSelectedItemKey);
+			NonStackableItem nonStack = this.newInventory.getNonStackableForKey(this.newSelectedItemKey);
+			Assert.assertTrue((null != stack) != (null != nonStack));
 		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation

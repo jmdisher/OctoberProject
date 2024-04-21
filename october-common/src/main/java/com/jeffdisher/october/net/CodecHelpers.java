@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
@@ -240,6 +241,16 @@ public class CodecHelpers
 		}
 	}
 
+	public static NonStackableItem readNonStackableItem(ByteBuffer buffer)
+	{
+		return _readNonStackableItem(buffer);
+	}
+
+	public static void writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)
+	{
+		_writeNonStackableItem(buffer, item);
+	}
+
 
 	private static Item _readItemNoAir(ByteBuffer buffer)
 	{
@@ -266,15 +277,31 @@ public class CodecHelpers
 
 	private static Items _readItems(ByteBuffer buffer)
 	{
+		Items result;
 		Item type = _readItemNoAir(buffer);
-		int count = buffer.getInt();
-		return new Items(type, count);
+		if (null != type)
+		{
+			int count = buffer.getInt();
+			result = new Items(type, count);
+		}
+		else
+		{
+			result = null;
+		}
+		return result;
 	}
 
 	private static void _writeItems(ByteBuffer buffer, Items items)
 	{
-		_writeItemNoAir(buffer, items.type());
-		buffer.putInt(items.count());
+		if (null != items)
+		{
+			_writeItemNoAir(buffer, items.type());
+			buffer.putInt(items.count());
+		}
+		else
+		{
+			_writeItemNoAir(buffer, null);
+		}
 	}
 
 	private static Inventory _readInventory(ByteBuffer buffer)
@@ -284,7 +311,8 @@ public class CodecHelpers
 		int maxEncumbrance = buffer.getInt();
 		if (maxEncumbrance > 0)
 		{
-			Map<Integer, Items> map = new HashMap<>();
+			Map<Integer, Items> stackableItems = new HashMap<>();
+			Map<Integer, NonStackableItem> nonStackableItems = new HashMap<>();
 			int currentEncumbrance = 0;
 			
 			int itemsToLoad = Byte.toUnsignedInt(buffer.get());
@@ -292,11 +320,12 @@ public class CodecHelpers
 			{
 				int keyValue = buffer.getInt();
 				Assert.assertTrue(keyValue > 0);
+				// TODO:  Add non-stackable support, once we have the full support for that implemented.
 				Items items = _readItems(buffer);
-				map.put(keyValue, items);
+				stackableItems.put(keyValue, items);
 				currentEncumbrance += env.inventory.getEncumbrance(items.type()) * items.count();
 			}
-			parsed = Inventory.build(maxEncumbrance, map, currentEncumbrance);
+			parsed = Inventory.build(maxEncumbrance, stackableItems, nonStackableItems, currentEncumbrance);
 		}
 		else
 		{
@@ -323,8 +352,10 @@ public class CodecHelpers
 			for (Integer key : keys)
 			{
 				buffer.putInt(key.intValue());
-				Items items = inventory.getStackForKey(key);
-				_writeItems(buffer, items);
+				Items stackable = inventory.getStackForKey(key);
+				// TODO:  Add non-stackable support, once we have the full support for that implemented.
+				Assert.assertTrue(null != stackable);
+				_writeItems(buffer, stackable);
 			}
 		}
 		else
@@ -429,5 +460,23 @@ public class CodecHelpers
 			short ordinal = operation.number;
 			buffer.putShort(ordinal);
 		}
+	}
+
+	private static NonStackableItem _readNonStackableItem(ByteBuffer buffer)
+	{
+		Item item = _readItemNoAir(buffer);
+		return (null != item)
+				? new NonStackableItem(item)
+				: null
+		;
+	}
+
+	private static void _writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)
+	{
+		Item underlying = (null != item)
+				? item.type()
+				: null
+		;
+		_writeItemNoAir(buffer, underlying);
 	}
 }

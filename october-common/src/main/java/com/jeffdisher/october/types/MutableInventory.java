@@ -15,6 +15,7 @@ public class MutableInventory
 {
 	private final Inventory _original;
 	private final Map<Integer, Items> _stackable;
+	private final Map<Integer, NonStackableItem> _nonStackable;
 	private int _currentEncumbrance;
 	private int _nextAddressId;
 
@@ -27,11 +28,19 @@ public class MutableInventory
 	{
 		_original = original;
 		_stackable = new HashMap<>();
+		_nonStackable = new HashMap<>();
 		int lastId = 0;
 		for (Integer key : original.sortedKeys())
 		{
 			Items stackable = original.getStackForKey(key);
-			_stackable.put(key, stackable);
+			if (null != stackable)
+			{
+				_stackable.put(key, stackable);
+			}
+			else
+			{
+				_nonStackable.put(key, original.getNonStackableForKey(key));
+			}
 			lastId = key;
 		}
 		_currentEncumbrance = original.currentEncumbrance;
@@ -62,7 +71,19 @@ public class MutableInventory
 	}
 
 	/**
-	 * Used to check how many items of a given type are in the inventory.
+	 * Looks up the item stack for the given identifier key.
+	 * 
+	 * @param key The identifier key.
+	 * @return The NonStackable object for this stack (null if stackable).
+	 */
+	public NonStackableItem getNonStackableForKey(int key)
+	{
+		return _nonStackable.get(key);
+	}
+
+	/**
+	 * A basic helper to check how many items of a given type are in the inventory.  This cannot be called if the item
+	 * is non-stackable.
 	 * 
 	 * @param type The item type.
 	 * @return The number of items of this type.
@@ -70,10 +91,19 @@ public class MutableInventory
 	public int getCount(Item type)
 	{
 		int id = _getKeyForStackableType(type);
-		return (id > 0)
-				? _stackable.get(id).count()
-				: 0
-		;
+		Items existing = _stackable.get(id);
+		int count;
+		if (null != existing)
+		{
+			count = existing.count();
+		}
+		else
+		{
+			// This should not be called if the item is non-stackable.
+			Assert.assertTrue(!_nonStackable.containsKey(id));
+			count = 0;
+		}
+		return count;
 	}
 
 	/**
@@ -134,6 +164,42 @@ public class MutableInventory
 	}
 
 	/**
+	 * Attempts to add the given nonStackable to the inventory but will NOT over-fill.
+	 * 
+	 * @param nonStackable The item to attempt to add.
+	 * @return True if it was added or false if it couldn't fit.
+	 */
+	public boolean addNonStackableBestEfforts(NonStackableItem nonStackable)
+	{
+		Environment env = Environment.getShared();
+		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
+		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
+		boolean didAdd = false;
+		if (itemEncumbrance <= availableEncumbrance)
+		{
+			_nonStackable.put(_nextAddressId, nonStackable);
+			_nextAddressId += 1;
+			_currentEncumbrance += itemEncumbrance;
+			didAdd = true;
+		}
+		return didAdd;
+	}
+
+	/**
+	 * Adds the given nonStackable item to the inventory, potentially causing it to become over-filled.
+	 * 
+	 * @param nonStackable The item to add.
+	 */
+	public void addNonStackableAllowingOverflow(NonStackableItem nonStackable)
+	{
+		Environment env = Environment.getShared();
+		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
+		_nonStackable.put(_nextAddressId, nonStackable);
+		_nextAddressId += 1;
+		_currentEncumbrance += itemEncumbrance;
+	}
+
+	/**
 	 * Checks how many of a given item type can be added to the inventory.
 	 * 
 	 * @param type The item type.
@@ -182,6 +248,19 @@ public class MutableInventory
 	}
 
 	/**
+	 * Removes a non-stackable from the inventory.  Note that this asserts that the item is present as a non-stackable.
+	 * 
+	 * @param key The key of the item to remove.
+	 */
+	public void removeNonStackableItems(int key)
+	{
+		Environment env = Environment.getShared();
+		NonStackableItem removed = _nonStackable.remove(key);
+		Assert.assertTrue(null != removed);
+		_currentEncumbrance -= env.inventory.getEncumbrance(removed.type());
+	}
+
+	/**
 	 * @return The current encumbrance of the inventory (0 implies no items are stored).
 	 */
 	public int getCurrentEncumbrance()
@@ -198,6 +277,7 @@ public class MutableInventory
 	public void clearInventory(Inventory replacement)
 	{
 		_stackable.clear();
+		_nonStackable.clear();
 		_currentEncumbrance = 0;
 		_nextAddressId = 1;
 		
@@ -210,7 +290,14 @@ public class MutableInventory
 			for (Integer key : replacement.sortedKeys())
 			{
 				Items stackable = replacement.getStackForKey(key);
-				_stackable.put(key, stackable);
+				if (null != stackable)
+				{
+					_stackable.put(key, stackable);
+				}
+				else
+				{
+					_nonStackable.put(key, replacement.getNonStackableForKey(key));
+				}
 				lastId = key;
 			}
 			_currentEncumbrance = replacement.currentEncumbrance;
@@ -228,32 +315,44 @@ public class MutableInventory
 	{
 		// Compare this to the original (which is somewhat expensive).
 		List<Integer> originalKeyList = _original.sortedKeys();
-		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_stackable.size() == originalKeyList.size());
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && ((_stackable.size() + _nonStackable.size()) == originalKeyList.size());
 		if (doMatch)
 		{
 			for (Integer key : originalKeyList)
 			{
 				Items newItems = _stackable.get(key);
-				Item newType = (null != newItems)
-						? newItems.type()
-						: null
-				;
-				int newCount = (null != newItems)
-						? newItems.count()
-						: 0
-				;
-				Items originalItems = _original.getStackForKey(key);
-				int originalCount = originalItems.count();
-				if ((newType != originalItems.type()) || (newCount != originalCount))
+				if (null != newItems)
 				{
-					doMatch = false;
-					break;
+					Items originalItems = _original.getStackForKey(key);
+					if ((newItems.type() != originalItems.type()) || (newItems.count() != originalItems.count()))
+					{
+						doMatch = false;
+						break;
+					}
+				}
+				else
+				{
+					NonStackableItem nonStackable = _nonStackable.get(key);
+					NonStackableItem originalNonStackable = _original.getNonStackableForKey(key);
+					if ((null != nonStackable) && (null != originalNonStackable))
+					{
+						if (!nonStackable.equals(originalNonStackable))
+						{
+							doMatch = false;
+							break;
+						}
+					}
+					else
+					{
+						doMatch = false;
+						break;
+					}
 				}
 			}
 		}
 		return doMatch
 				? _original
-				: Inventory.build(_original.maxEncumbrance, _stackable, _currentEncumbrance)
+				: Inventory.build(_original.maxEncumbrance, _stackable, _nonStackable, _currentEncumbrance)
 		;
 	}
 

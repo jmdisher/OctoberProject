@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 
 
 public class TestCodecHelpers
@@ -129,6 +130,12 @@ public class TestCodecHelpers
 		buffer.flip();
 		Items output = CodecHelpers.readItems(buffer);
 		Assert.assertEquals(test, output);
+		
+		buffer.clear();
+		CodecHelpers.writeItems(buffer, null);
+		buffer.flip();
+		output = CodecHelpers.readItems(buffer);
+		Assert.assertNull(output);
 	}
 
 	@Test
@@ -203,6 +210,23 @@ public class TestCodecHelpers
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
 		output = CodecHelpers.readFuelState(buffer);
+		Assert.assertNull(output);
+	}
+
+	@Test
+	public void nonStackable() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		NonStackableItem test = new NonStackableItem(ENV.items.STONE);
+		CodecHelpers.writeNonStackableItem(buffer, test);
+		buffer.flip();
+		NonStackableItem output = CodecHelpers.readNonStackableItem(buffer);
+		Assert.assertEquals(test, output);
+		
+		buffer.clear();
+		CodecHelpers.writeNonStackableItem(buffer, null);
+		buffer.flip();
+		output = CodecHelpers.readNonStackableItem(buffer);
 		Assert.assertNull(output);
 	}
 }
