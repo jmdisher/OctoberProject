@@ -144,7 +144,7 @@ public class TestCommonMutations
 		int clientId = 1;
 		MutableEntity mutable = MutableEntity.create(clientId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, ENV.tools.toolDurability(pickaxe)));
 		mutable.newSelectedItemKey = 1;
 		Entity entity = mutable.freeze();
 		

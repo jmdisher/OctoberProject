@@ -303,7 +303,8 @@ public class CraftAspect
 				}
 				else
 				{
-					didAdd = inv.addNonStackableBestEfforts(new NonStackableItem(item));
+					int startingDurability = env.tools.toolDurability(item);
+					didAdd = inv.addNonStackableBestEfforts(new NonStackableItem(item, startingDurability));
 				}
 				// We can't fail to add here.
 				Assert.assertTrue(didAdd);

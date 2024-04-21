@@ -17,6 +17,7 @@ import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.NonStackableItem;
 
@@ -85,7 +86,8 @@ public class TestMutationBlockCodec
 	public void storeItemsNonStack() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		NonStackableItem items = new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"));
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		NonStackableItem items = new NonStackableItem(pickItem, ENV.tools.toolDurability(pickItem));
 		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, null, items, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

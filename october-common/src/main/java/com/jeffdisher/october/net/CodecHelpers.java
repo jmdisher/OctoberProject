@@ -332,7 +332,8 @@ public class CodecHelpers
 				}
 				else
 				{
-					NonStackableItem item = new NonStackableItem(type);
+					int durability = buffer.getInt();
+					NonStackableItem item = new NonStackableItem(type, durability);
 					nonStackableItems.put(keyValue, item);
 					currentEncumbrance += env.inventory.getEncumbrance(item.type());
 				}
@@ -376,6 +377,7 @@ public class CodecHelpers
 				{
 					NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
 					_writeItemNoAir(buffer, nonStackable.type());
+					buffer.putInt(nonStackable.durability());
 				}
 			}
 		}
@@ -486,10 +488,17 @@ public class CodecHelpers
 	private static NonStackableItem _readNonStackableItem(ByteBuffer buffer)
 	{
 		Item item = _readItemNoAir(buffer);
-		return (null != item)
-				? new NonStackableItem(item)
-				: null
-		;
+		NonStackableItem nonStack;
+		if (null != item)
+		{
+			int durability = buffer.getInt();
+			nonStack = new NonStackableItem(item, durability);
+		}
+		else
+		{
+			nonStack = null;
+		}
+		return nonStack;
 	}
 
 	private static void _writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)
@@ -499,5 +508,9 @@ public class CodecHelpers
 				: null
 		;
 		_writeItemNoAir(buffer, underlying);
+		if (null != item)
+		{
+			buffer.putInt(item.durability());
+		}
 	}
 }

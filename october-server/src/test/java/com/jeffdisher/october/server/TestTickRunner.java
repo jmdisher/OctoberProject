@@ -361,7 +361,8 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe));
+		int startDurability = ENV.tools.toolDurability(pickaxe);
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		mutable.newSelectedItemKey = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
@@ -420,8 +421,13 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Inventory blockInventory = proxy2.getInventory();
 		Assert.assertEquals(0, blockInventory.sortedKeys().size());
-		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
+		Entity entity = snapshot.completedEntities().get(entityId);
+		Inventory entityInventory = entity.inventory();
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.STONE));
+		
+		// We should also see the durability loss on our tool (2 x 50ms).
+		int updatedDurability = entityInventory.getNonStackableForKey(entity.selectedItemKey()).durability();
+		Assert.assertEquals(2 * 50, (startDurability - updatedDurability));
 		
 		runner.shutdown();
 	}

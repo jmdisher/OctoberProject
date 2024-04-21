@@ -166,17 +166,17 @@ public class TestMutableInventory
 	{
 		// Show that non-stackable items are handled correctly.
 		Inventory original = Inventory.start(10)
-				.addNonStackable(new NonStackableItem(ENV.items.STONE))
+				.addNonStackable(new NonStackableItem(ENV.items.STONE, 0))
 				.addStackable(ENV.items.STONE, 1)
-				.addNonStackable(new NonStackableItem(ENV.items.PLANK))
+				.addNonStackable(new NonStackableItem(ENV.items.PLANK, 0))
 				.finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(ENV.items.STONE, 1);
-		inv.addNonStackableBestEfforts(new NonStackableItem(ENV.items.DIRT));
+		inv.addNonStackableBestEfforts(new NonStackableItem(ENV.items.DIRT, 0));
 		// The stackable items are added first, then the non-stackable in-order.
 		int firstNonStackableItem = 2;
 		inv.removeNonStackableItems(firstNonStackableItem);
-		inv.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.LOG));
+		inv.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.LOG, 0));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(0, frozen.getCount(ENV.items.LOG));

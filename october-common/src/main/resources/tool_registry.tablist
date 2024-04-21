@@ -1,6 +1,11 @@
 # Entries here have the form:
 # ID<TAB>number
+# <TAB>durability<TAB>int
+# 
 # The given number is non-negative and represents the break blocking speed modifier when using this tool.
 # Note that the ID is from item_registry.tablist.
+# Durability is a number which must be non-negative (0 means unbreakable).  Durability is the measurement of
+# milliseconds for which the tool can be used before it breaks.
 
 op.iron_pickaxe	20
+	durability	100000

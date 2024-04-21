@@ -200,6 +200,22 @@ public class MutableInventory
 	}
 
 	/**
+	 * Replaces an existing non-stackable with a new instance.
+	 * 
+	 * @param key The key used to address the item.
+	 * @param updated The new instance.
+	 */
+	public void replaceNonStackable(int key, NonStackableItem updated)
+	{
+		Assert.assertTrue(key > 0);
+		Assert.assertTrue(null != updated);
+		
+		NonStackableItem old = _nonStackable.put(key, updated);
+		// We expect it was already here.
+		Assert.assertTrue(null != old);
+	}
+
+	/**
 	 * Checks how many of a given item type can be added to the inventory.
 	 * 
 	 * @param type The item type.

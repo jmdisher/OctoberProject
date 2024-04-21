@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
@@ -81,6 +82,28 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 			short damageToApply = (short)(speedMultiplier * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
 			context.mutationSink.next(mutation);
+			
+			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
+			if (null != selected)
+			{
+				int totalDurability = env.tools.toolDurability(selected.type());
+				if (totalDurability > 0)
+				{
+					int newDurability = selected.durability() - _millisToApply;
+					if (newDurability > 0)
+					{
+						// Write this back.
+						NonStackableItem updated = new NonStackableItem(selected.type(), newDurability);
+						newEntity.newInventory.replaceNonStackable(newEntity.newSelectedItemKey, updated);
+					}
+					else
+					{
+						// Remove this and clear the selection.
+						newEntity.newInventory.removeNonStackableItems(newEntity.newSelectedItemKey);
+						newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+					}
+				}
+			}
 			didApply = true;
 			
 			// Do other state reset.

@@ -436,7 +436,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.tools.toolDurability(pickItem)));
 		int idOfPick = 1;
 		mutable.newSelectedItemKey = idOfPick;
 		Entity original = mutable.freeze();
@@ -1039,6 +1039,62 @@ public class TestCommonChanges
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, newEntity.newInventory.getCount(bread));
 		Assert.assertEquals(100, newEntity.newFood);
+	}
+
+	@Test
+	public void breakTool() throws Throwable
+	{
+		// Break a block with a tool with 1 durability to observe it break.
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
+		// We assume that this is 1.
+		newEntity.newSelectedItemKey = 1;
+		
+		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.items.STONE.number());
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), ENV.items.PLANK.number());
+		
+		IMutationEntity[] holder = new IMutationEntity[1];
+		boolean[] didSchedule = new boolean[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						didSchedule[0] = true;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						holder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+		);
+		
+		// Do the break with enough time to break the block.
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
+		Assert.assertTrue(didSchedule[0]);
+		Assert.assertEquals(0, newEntity.newSelectedItemKey);
+		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
 
 

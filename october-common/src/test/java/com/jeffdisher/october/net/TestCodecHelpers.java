@@ -217,7 +217,7 @@ public class TestCodecHelpers
 	public void nonStackable() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		NonStackableItem test = new NonStackableItem(ENV.items.STONE);
+		NonStackableItem test = new NonStackableItem(ENV.items.STONE, 10);
 		CodecHelpers.writeNonStackableItem(buffer, test);
 		buffer.flip();
 		NonStackableItem output = CodecHelpers.readNonStackableItem(buffer);
