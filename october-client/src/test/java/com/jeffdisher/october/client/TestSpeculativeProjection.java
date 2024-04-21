@@ -1048,11 +1048,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.inventory.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
-		// Now, try to apply it again (we don't check the inventory when applying it so it should eventually do nothing in a later phase).
-		long commit2 = projector.applyLocalChange(request, currentTimeMillis);
-		Assert.assertEquals(ENV.inventory.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
-		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
-		Assert.assertEquals(2, commit2);
+		// Now, try to apply it again (this should fail since it won't be able to find the slot to validate the count).
+		Assert.assertEquals(0, projector.applyLocalChange(request, currentTimeMillis));
 		
 		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
 		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
@@ -1064,7 +1061,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeBlockUpdate.applyUpdate(cuboid, extract))
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, commit2
+				, commit1
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
@@ -1080,7 +1077,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, commit2
+				, commit1
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
@@ -1095,7 +1092,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, commit2
+				, commit1
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);

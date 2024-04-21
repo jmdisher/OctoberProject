@@ -2,8 +2,10 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -54,6 +56,12 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		// We will still try a best-efforts request if the inventory has changed.
 		int maxToFetch = newEntity.newInventory.maxVacancyForItem(_requested.type());
 		int toFetch = Math.min(maxToFetch, _requested.count());
+		
+		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.
+		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
+		Inventory inv = target.getInventory();
+		int maxAvailable = inv.getCount(_requested.type());
+		toFetch = Math.min(toFetch, maxAvailable);
 		
 		if (toFetch > 0)
 		{
