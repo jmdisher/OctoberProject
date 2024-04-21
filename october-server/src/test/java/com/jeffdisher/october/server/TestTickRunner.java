@@ -342,8 +342,8 @@ public class TestTickRunner
 		Assert.assertNotNull(finalSnapshot.updatedEntities().get(entityId2));
 		Entity sender = finalSnapshot.completedEntities().get(entityId1);
 		Entity receiver = finalSnapshot.completedEntities().get(entityId2);
-		Assert.assertEquals(0, sender.inventory().sortedItems().size());
-		Assert.assertEquals(1, receiver.inventory().sortedItems().size());
+		Assert.assertEquals(0, sender.inventory().sortedKeys().size());
+		Assert.assertEquals(1, receiver.inventory().sortedKeys().size());
 		Assert.assertEquals(2, receiver.inventory().getCount(ENV.items.STONE));
 	}
 
@@ -418,7 +418,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Inventory blockInventory = proxy2.getInventory();
-		Assert.assertEquals(0, blockInventory.sortedItems().size());
+		Assert.assertEquals(0, blockInventory.sortedKeys().size());
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.STONE));
 		
@@ -830,7 +830,7 @@ public class TestTickRunner
 		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -941,7 +941,7 @@ public class TestTickRunner
 		AbsoluteLocation startLocation = new AbsoluteLocation(32, 32, 32);
 		CuboidAddress address0 = startLocation.getCuboidAddress();
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of()))
 				, null
 				, null
@@ -1416,7 +1416,7 @@ public class TestTickRunner
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, location.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
-		Assert.assertEquals(2, entityInventory.sortedItems().size());
+		Assert.assertEquals(2, entityInventory.sortedKeys().size());
 		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_SEED));
 		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_ITEM));
 		
@@ -1485,7 +1485,7 @@ public class TestTickRunner
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
-		Assert.assertEquals(1, entityInventory.sortedItems().size());
+		Assert.assertEquals(1, entityInventory.sortedKeys().size());
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.DIRT));
 		
 		// Run another tick to see the seed drop into this inventory.
@@ -1493,7 +1493,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.sortedItems().size());
+		Assert.assertEquals(1, blockInventory.sortedKeys().size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
 		
 		// Now, just run for another hundred ticks to make sure nothing goes wrong.
@@ -1503,7 +1503,7 @@ public class TestTickRunner
 			snapshot = runner.waitForPreviousTick();
 		}
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.sortedItems().size());
+		Assert.assertEquals(1, blockInventory.sortedKeys().size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
 		
 		runner.shutdown();

@@ -91,7 +91,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// We want to apply this so remove the item from the inventory and create the replace mutation.
-			newEntity.newInventory.removeItems(itemType, 1);
+			newEntity.newInventory.removeStackableItems(itemType, 1);
 			if (0 == newEntity.newInventory.getCount(itemType))
 			{
 				newEntity.newSelectedItemKey = Entity.NO_SELECTION;

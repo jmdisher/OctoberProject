@@ -62,8 +62,8 @@ public class TestCodecHelpers
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Inventory test = Inventory.start(50)
-				.add(ENV.items.STONE, 2)
-				.add(ENV.items.PLANK, 4)
+				.addStackable(ENV.items.STONE, 2)
+				.addStackable(ENV.items.PLANK, 4)
 				.finish()
 		;
 		CodecHelpers.writeInventory(buffer, test);
@@ -71,7 +71,7 @@ public class TestCodecHelpers
 		Inventory output = CodecHelpers.readInventory(buffer);
 		// Inventory has not .equals so check some internal data.
 		Assert.assertEquals(50, output.maxEncumbrance);
-		Assert.assertEquals(2, output.sortedItems().size());
+		Assert.assertEquals(2, output.sortedKeys().size());
 		Assert.assertEquals(2, output.getCount(ENV.items.STONE));
 		Assert.assertEquals(4, output.getCount(ENV.items.PLANK));
 	}
@@ -189,7 +189,7 @@ public class TestCodecHelpers
 	public void fuelState() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		FuelState test = new FuelState(0, null, Inventory.start(10).add(ENV.items.STONE, 1).finish());
+		FuelState test = new FuelState(0, null, Inventory.start(10).addStackable(ENV.items.STONE, 1).finish());
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
 		FuelState output = CodecHelpers.readFuelState(buffer);

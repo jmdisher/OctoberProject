@@ -291,7 +291,7 @@ public class CraftAspect
 			// Now, perform the craft against this inventory.
 			for (Items items : craft.input)
 			{
-				inv.removeItems(items.type(), items.count());
+				inv.removeStackableItems(items.type(), items.count());
 			}
 			boolean didAdd = inv.addAllItems(craft.output.type(), craft.output.count());
 			// We can't fail to add here.

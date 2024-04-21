@@ -67,9 +67,10 @@ public class CommonBlockMutationHelpers
 	{
 		if (null != oldInventory)
 		{
-			for (Items items : oldInventory.sortedItems())
+			for (Integer key : oldInventory.sortedKeys())
 			{
-				mutable.addAllItems(items.type(), items.count());
+				Items stackable = oldInventory.getStackForKey(key);
+				mutable.addAllItems(stackable.type(), stackable.count());
 			}
 		}
 	}
@@ -90,9 +91,11 @@ public class CommonBlockMutationHelpers
 		if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 		{
 			// We want to drop this inventory into the below block.
-			for (Items items : newBlock.getInventory().sortedItems())
+			Inventory inventory = newBlock.getInventory();
+			for (Integer key : inventory.sortedKeys())
 			{
-				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, items, Inventory.INVENTORY_ASPECT_INVENTORY));
+				Items stackable = inventory.getStackForKey(key);
+				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, stackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
 			
 			// Now, clear the inventory.

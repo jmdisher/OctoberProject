@@ -56,7 +56,7 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 			newEntity.newFood = (byte)newFood;
 			
 			// Remove the item from the inventory.
-			newEntity.newInventory.removeItems(selected, 1);
+			newEntity.newInventory.removeStackableItems(selected, 1);
 			if (0 == newEntity.newInventory.getCount(selected))
 			{
 				newEntity.newSelectedItemKey = Entity.NO_SELECTION;

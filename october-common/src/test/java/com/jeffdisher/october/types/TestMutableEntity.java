@@ -62,7 +62,7 @@ public class TestMutableEntity
 		Entity input = _buildTestEntity();
 		MutableEntity mutable = MutableEntity.existing(input);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newInventory.removeItems(ENV.items.STONE, 1);
+		mutable.newInventory.removeStackableItems(ENV.items.STONE, 1);
 		Entity output = mutable.freeze();
 		
 		Assert.assertTrue(input == output);

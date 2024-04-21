@@ -284,7 +284,7 @@ public class TestServerRunner
 		server.clientConnected(clientId1);
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
-		Assert.assertEquals(0, entity1.inventory().sortedItems().size());
+		Assert.assertEquals(0, entity1.inventory().sortedKeys().size());
 		
 		// Change something - we will add items to the inventory.
 		network.receiveFromClient(clientId1, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 1)), 1L);
@@ -301,7 +301,7 @@ public class TestServerRunner
 		server.clientConnected(clientId1);
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
-		Assert.assertEquals(1, entity1.inventory().sortedItems().size());
+		Assert.assertEquals(1, entity1.inventory().sortedKeys().size());
 		
 		server.clientDisconnected(1);
 		runner.shutdown();

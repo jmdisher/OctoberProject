@@ -65,7 +65,7 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(1, inv.sortedItems().size());
+		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 	}
 
@@ -124,7 +124,7 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
 		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
 		Inventory inv = proxy.getInventory();
-		Assert.assertEquals(0, inv.sortedItems().size());
+		Assert.assertEquals(0, inv.sortedKeys().size());
 		Assert.assertEquals(clientId, sinks.nextTargetEntityId);
 		Assert.assertTrue(sinks.nextChange instanceof MutationEntityStoreToInventory);
 	}
@@ -274,7 +274,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), ENV.blocks.DIRT.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).add(ENV.items.CHARCOAL, 1).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.CHARCOAL, 1).finish());
 		
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, ENV.blocks.WHEAT_SEEDLING);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);

@@ -30,7 +30,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(original.sortedItems().size(), frozen.sortedItems().size());
+		Assert.assertEquals(original.sortedKeys().size(), frozen.sortedKeys().size());
 		Assert.assertEquals(original.currentEncumbrance, frozen.currentEncumbrance);
 	}
 
@@ -50,38 +50,38 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(1, frozen.sortedItems().size());
+		Assert.assertEquals(1, frozen.sortedKeys().size());
 		Assert.assertEquals(10, frozen.currentEncumbrance);
 	}
 
 	@Test
 	public void basicRemoval() throws Throwable
 	{
-		Inventory original = Inventory.start(10).add(ENV.items.LOG, 2).finish();
+		Inventory original = Inventory.start(10).addStackable(ENV.items.LOG, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(2, inv.getCount(ENV.items.LOG));
 		Assert.assertEquals(3, inv.maxVacancyForItem(ENV.items.LOG));
-		inv.removeItems(ENV.items.LOG, 1);
+		inv.removeStackableItems(ENV.items.LOG, 1);
 		Assert.assertEquals(1, inv.getCount(ENV.items.LOG));
 		Assert.assertEquals(4, inv.maxVacancyForItem(ENV.items.LOG));
-		inv.removeItems(ENV.items.LOG, 1);
+		inv.removeStackableItems(ENV.items.LOG, 1);
 		Assert.assertEquals(0, inv.getCount(ENV.items.LOG));
 		Assert.assertEquals(5, inv.maxVacancyForItem(ENV.items.LOG));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(0, frozen.sortedItems().size());
+		Assert.assertEquals(0, frozen.sortedKeys().size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
 
 	@Test
 	public void addRemoveUnchanged() throws Throwable
 	{
-		Inventory original = Inventory.start(10).add(ENV.items.LOG, 2).finish();
+		Inventory original = Inventory.start(10).addStackable(ENV.items.LOG, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(ENV.items.STONE, 1);
-		inv.removeItems(ENV.items.LOG, 1);
-		inv.removeItems(ENV.items.STONE, 1);
+		inv.removeStackableItems(ENV.items.LOG, 1);
+		inv.removeStackableItems(ENV.items.STONE, 1);
 		inv.addAllItems(ENV.items.LOG, 1);
 		
 		Inventory frozen = inv.freeze();
@@ -91,7 +91,7 @@ public class TestMutableInventory
 	@Test
 	public void clearAndAdd() throws Throwable
 	{
-		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
+		Inventory original = Inventory.start(10).addStackable(ENV.items.STONE, 1).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 4));
@@ -102,7 +102,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(1, frozen.sortedItems().size());
+		Assert.assertEquals(1, frozen.sortedKeys().size());
 		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
 		Assert.assertEquals(2, frozen.currentEncumbrance);
 	}
@@ -110,8 +110,8 @@ public class TestMutableInventory
 	@Test
 	public void clearAndReplace() throws Throwable
 	{
-		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
-		Inventory replacement = Inventory.start(10).add(ENV.items.PLANK, 3).add(ENV.items.STONE, 2).finish();
+		Inventory original = Inventory.start(10).addStackable(ENV.items.STONE, 1).finish();
+		Inventory replacement = Inventory.start(10).addStackable(ENV.items.PLANK, 3).addStackable(ENV.items.STONE, 2).finish();
 		MutableInventory inv = new MutableInventory(original);
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 		Assert.assertTrue(inv.addAllItems(ENV.items.LOG, 4));
@@ -123,7 +123,7 @@ public class TestMutableInventory
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(3, frozen.sortedItems().size());
+		Assert.assertEquals(3, frozen.sortedKeys().size());
 		Assert.assertEquals(2, frozen.getCount(ENV.items.STONE));
 		Assert.assertEquals(3, frozen.getCount(ENV.items.PLANK));
 		Assert.assertEquals(1, frozen.getCount(ENV.items.LOG));
@@ -144,7 +144,7 @@ public class TestMutableInventory
 		// This should empty when freezing.
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
-		Assert.assertEquals(0, frozen.sortedItems().size());
+		Assert.assertEquals(0, frozen.sortedKeys().size());
 		Assert.assertEquals(0, frozen.currentEncumbrance);
 	}
 
@@ -152,7 +152,7 @@ public class TestMutableInventory
 	public void checkFreezeOrder() throws Throwable
 	{
 		// Verify that we correctly check the types and the count when updating after freeze.
-		Inventory original = Inventory.start(10).add(ENV.items.STONE, 1).finish();
+		Inventory original = Inventory.start(10).addStackable(ENV.items.STONE, 1).finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.clearInventory(null);
 		inv.addAllItems(ENV.items.LOG, 1);

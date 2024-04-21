@@ -59,7 +59,7 @@ public class PickUpItemMutation implements IMutationBlock
 			MutableInventory mutable = new MutableInventory(oldInventory);
 			if (mutable.getCount(_type) >= _count)
 			{
-				mutable.removeItems(_type, _count);
+				mutable.removeStackableItems(_type, _count);
 				newBlock.setInventory(mutable.freeze());
 				didApply = true;
 			}

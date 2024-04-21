@@ -65,9 +65,10 @@ public class EntityChangeTakeDamage implements IMutationEntity
 				newEntity.newLocation = MutableEntity.DEFAULT_LOCATION;
 				newEntity.newHealth = MutableEntity.DEFAULT_HEALTH;
 				newEntity.newFood = MutableEntity.DEFAULT_FOOD;
-				for (Items items : newEntity.newInventory.freeze().sortedItems())
+				for (Integer key : newEntity.newInventory.freeze().sortedKeys())
 				{
-					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), items, Inventory.INVENTORY_ASPECT_INVENTORY));
+					Items stackable = newEntity.newInventory.getStackForKey(key);
+					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory(null);
 				newEntity.newSelectedItemKey = Entity.NO_SELECTION;

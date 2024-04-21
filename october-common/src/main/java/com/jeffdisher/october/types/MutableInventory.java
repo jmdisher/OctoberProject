@@ -14,7 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 public class MutableInventory
 {
 	private final Inventory _original;
-	private final Map<Integer, Items> _items;
+	private final Map<Integer, Items> _stackable;
 	private int _currentEncumbrance;
 	private int _nextAddressId;
 
@@ -26,11 +26,12 @@ public class MutableInventory
 	public MutableInventory(Inventory original)
 	{
 		_original = original;
-		_items = new HashMap<>();
+		_stackable = new HashMap<>();
 		int lastId = 0;
 		for (Integer key : original.sortedKeys())
 		{
-			_items.put(key, original.getStackForKey(key));
+			Items stackable = original.getStackForKey(key);
+			_stackable.put(key, stackable);
 			lastId = key;
 		}
 		_currentEncumbrance = original.currentEncumbrance;
@@ -45,7 +46,7 @@ public class MutableInventory
 	 */
 	public int getIdOfStackableType(Item type)
 	{
-		return _getKeyForType(type);
+		return _getKeyForStackableType(type);
 	}
 
 	/**
@@ -57,7 +58,7 @@ public class MutableInventory
 	 */
 	public Items getStackForKey(int key)
 	{
-		return _items.get(key);
+		return _stackable.get(key);
 	}
 
 	/**
@@ -68,9 +69,9 @@ public class MutableInventory
 	 */
 	public int getCount(Item type)
 	{
-		int id = _getKeyForType(type);
+		int id = _getKeyForStackableType(type);
 		return (id > 0)
-				? _items.get(id).count()
+				? _stackable.get(id).count()
 				: 0
 		;
 	}
@@ -91,7 +92,7 @@ public class MutableInventory
 		boolean didApply = false;
 		if (updatedEncumbrance <= _original.maxEncumbrance)
 		{
-			_addItems(type, count);
+			_addStackableItems(type, count);
 			didApply = true;
 		}
 		return didApply;
@@ -115,7 +116,7 @@ public class MutableInventory
 			int maxToAdd = availableEncumbrance / itemEncumbrance;
 			int countToAdd = Math.min(maxToAdd, count);
 			
-			_addItems(type, countToAdd);
+			_addStackableItems(type, countToAdd);
 			added = countToAdd;
 		}
 		return added;
@@ -129,7 +130,7 @@ public class MutableInventory
 	 */
 	public void addItemsAllowingOverflow(Item type, int count)
 	{
-		_addItems(type, count);
+		_addStackableItems(type, count);
 	}
 
 	/**
@@ -158,23 +159,23 @@ public class MutableInventory
 	 * @param type The type of item to remove.
 	 * @param count The number of items of that type to remove.
 	 */
-	public void removeItems(Item type, int count)
+	public void removeStackableItems(Item type, int count)
 	{
 		Environment env = Environment.getShared();
 		// We assume that someone checked before calling this in order to make a decision.
-		Integer id = _getKeyForType(type);
-		Items existing = _items.get(id);
+		Integer id = _getKeyForStackableType(type);
+		Items existing = _stackable.get(id);
 		int startCount = existing.count();
 		Assert.assertTrue(startCount >= count);
 		
 		int newCount = startCount - count;
 		if (newCount > 0)
 		{
-			_items.put(id, new Items(type, newCount));
+			_stackable.put(id, new Items(type, newCount));
 		}
 		else
 		{
-			_items.remove(id);
+			_stackable.remove(id);
 		}
 		int removedEncumbrance = env.inventory.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
@@ -196,7 +197,7 @@ public class MutableInventory
 	 */
 	public void clearInventory(Inventory replacement)
 	{
-		_items.clear();
+		_stackable.clear();
 		_currentEncumbrance = 0;
 		_nextAddressId = 1;
 		
@@ -208,7 +209,8 @@ public class MutableInventory
 			int lastId = 0;
 			for (Integer key : replacement.sortedKeys())
 			{
-				_items.put(key, replacement.getStackForKey(key));
+				Items stackable = replacement.getStackForKey(key);
+				_stackable.put(key, stackable);
 				lastId = key;
 			}
 			_currentEncumbrance = replacement.currentEncumbrance;
@@ -226,12 +228,12 @@ public class MutableInventory
 	{
 		// Compare this to the original (which is somewhat expensive).
 		List<Integer> originalKeyList = _original.sortedKeys();
-		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_items.size() == originalKeyList.size());
+		boolean doMatch = (_currentEncumbrance == _original.currentEncumbrance) && (_stackable.size() == originalKeyList.size());
 		if (doMatch)
 		{
 			for (Integer key : originalKeyList)
 			{
-				Items newItems = _items.get(key);
+				Items newItems = _stackable.get(key);
 				Item newType = (null != newItems)
 						? newItems.type()
 						: null
@@ -251,22 +253,22 @@ public class MutableInventory
 		}
 		return doMatch
 				? _original
-				: Inventory.build(_original.maxEncumbrance, _items, _currentEncumbrance)
+				: Inventory.build(_original.maxEncumbrance, _stackable, _currentEncumbrance)
 		;
 	}
 
 
-	private void _addItems(Item type, int count)
+	private void _addStackableItems(Item type, int count)
 	{
 		Environment env = Environment.getShared();
 		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		int newCount;
-		int id = _getKeyForType(type);
+		int id = _getKeyForStackableType(type);
 		if (id > 0)
 		{
-			Items existing = _items.get(id);
+			Items existing = _stackable.get(id);
 			newCount = existing.count() + count;
 		}
 		else
@@ -276,14 +278,14 @@ public class MutableInventory
 			newCount = count;
 		}
 		Items updated = new Items(type, newCount);
-		_items.put(id, updated);
+		_stackable.put(id, updated);
 		_currentEncumbrance = updatedEncumbrance;
 	}
 
-	private int _getKeyForType(Item type)
+	private int _getKeyForStackableType(Item type)
 	{
 		int id = 0;
-		for (Map.Entry<Integer, Items> elt : _items.entrySet())
+		for (Map.Entry<Integer, Items> elt : _stackable.entrySet())
 		{
 			if (elt.getValue().type() == type)
 			{

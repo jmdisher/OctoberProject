@@ -65,7 +65,7 @@ public class MutationBlockExtractItems implements IMutationBlock
 			int toFetch = Math.min(maxAvailable, _requested.count());
 			if (toFetch > 0)
 			{
-				mutable.removeItems(requestedType, toFetch);
+				mutable.removeStackableItems(requestedType, toFetch);
 				_putInventory(newBlock, mutable.freeze());
 				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(new Items(requestedType, toFetch)));
 				didApply = true;

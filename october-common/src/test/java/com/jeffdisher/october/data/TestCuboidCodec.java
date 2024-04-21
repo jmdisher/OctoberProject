@@ -52,14 +52,14 @@ public class TestCuboidCodec
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(ENV.items.STONE, 2).finish());
 		
 		CuboidData output = _codec(input);
 		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress));
 		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress);
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
-		Assert.assertEquals(1, inv.sortedItems().size());
+		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
 	}
 

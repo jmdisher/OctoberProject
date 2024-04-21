@@ -55,7 +55,7 @@ public class TestCuboidData
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(ENV.items.STONE, 2).finish());
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Object resume = input.serializeResumable(null, buffer);
@@ -69,7 +69,7 @@ public class TestCuboidData
 		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress);
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
-		Assert.assertEquals(1, inv.sortedItems().size());
+		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
 	}
 
@@ -80,7 +80,7 @@ public class TestCuboidData
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(ENV.items.STONE, 2).finish());
 		
 		// 4-bytes is the smallest buffer we can use to serialize or deserialize but it won't be enough to make progress through Inventory aspect.
 		ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -104,7 +104,7 @@ public class TestCuboidData
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).add(ENV.items.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(ENV.items.STONE, 2).finish());
 		
 		// Make the smallest buffer which can contain the single inventory element and its key (smaller than this and we will fail due to making no progress).
 		// "13" was determined experimentally but is a single inventory item:  4 (max_encumbrance) + 1 (items_in_inventory) + 2 (key) + 2 (item_type) + 4 (item_count).
@@ -126,7 +126,7 @@ public class TestCuboidData
 		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress);
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
-		Assert.assertEquals(1, inv.sortedItems().size());
+		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
 	}
 }

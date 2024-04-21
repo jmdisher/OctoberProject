@@ -24,16 +24,16 @@ public class Inventory
 	 * Builds a new immutable inventory with the given state.
 	 * 
 	 * @param maxEncumbrance The encumbrance limit for this inventory.
-	 * @param items The map of items in this inventory.
+	 * @param stackable The map of stackable items in this inventory.
 	 * @param currentEncumbrance The current encumbrance represented by the items.
 	 * @return A new immutable Inventory object.
 	 */
 	public static Inventory build(int maxEncumbrance
-			, Map<Integer, Items> items
+			, Map<Integer, Items> stackable
 			, int currentEncumbrance
 	)
 	{
-		return new Inventory(maxEncumbrance, items, currentEncumbrance);
+		return new Inventory(maxEncumbrance, stackable, currentEncumbrance);
 	}
 
 	/**
@@ -48,11 +48,11 @@ public class Inventory
 	}
 
 	public final int maxEncumbrance;
-	private final Map<Integer, Items> _items;
+	private final Map<Integer, Items> _stackable;
 	public final int currentEncumbrance;
 
 	private Inventory(int maxEncumbrance
-			, Map<Integer, Items> items
+			, Map<Integer, Items> stackable
 			, int currentEncumbrance
 	)
 	{
@@ -60,12 +60,12 @@ public class Inventory
 		// We will create this as empty if there is an overflow in encumbrance.
 		if (currentEncumbrance >= 0)
 		{
-			_items = Collections.unmodifiableMap(items);
+			_stackable = Collections.unmodifiableMap(stackable);
 			this.currentEncumbrance = currentEncumbrance;
 		}
 		else
 		{
-			_items = Collections.emptyMap();
+			_stackable = Collections.emptyMap();
 			this.currentEncumbrance = 0;
 		}
 	}
@@ -78,7 +78,7 @@ public class Inventory
 	 */
 	public Items getStackForKey(int key)
 	{
-		Items val = _items.get(key);
+		Items val = _stackable.get(key);
 		// Someone calling this with an invalid key likely means that the value is stale, which is an error.
 		Assert.assertTrue(null != val);
 		return val;
@@ -92,8 +92,8 @@ public class Inventory
 	 */
 	public int getCount(Item type)
 	{
-		int id = _getKeyForType(type);
-		Items existing = _items.get(id);
+		int id = _getKeyForStackableType(type);
+		Items existing = _stackable.get(id);
 		return (null != existing)
 				? existing.count()
 				: 0
@@ -108,7 +108,7 @@ public class Inventory
 	 */
 	public int getIdOfStackableType(Item type)
 	{
-		return _getKeyForType(type);
+		return _getKeyForStackableType(type);
 	}
 
 	/**
@@ -116,35 +116,35 @@ public class Inventory
 	 */
 	public List<Integer> sortedKeys()
 	{
-		return _items.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
+		return _stackable.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
 	}
 
 	/**
-	 * @return A list of the items within the inventory, sorted by item type.
+	 * @return A list of the stackable items within the inventory, sorted by item type.
 	 */
-	public List<Items> sortedItems()
+	public List<Items> sortedStackableItems()
 	{
-		return _items.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
+		return _stackable.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
 	}
 
 	@Override
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
-		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with items: " + _items.size() + "\n");
-		for (Integer key : _items.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList())
+		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with items: " + _stackable.size() + "\n");
+		for (Integer key : _stackable.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList())
 		{
-			builder.append("\t" + key + " -> " + _items.get(key) + "\n");
+			builder.append("\t" + key + " -> " + _stackable.get(key) + "\n");
 		}
 		return builder.toString();
 	}
 
 
-	private int _getKeyForType(Item type)
+	private int _getKeyForStackableType(Item type)
 	{
 		// NOTE:  We don't currently keep a parallel look-up structure for the types since this structure is always very small but that may change in the future.
 		int id = 0;
-		for (Map.Entry<Integer, Items> elt : _items.entrySet())
+		for (Map.Entry<Integer, Items> elt : _stackable.entrySet())
 		{
 			if (elt.getValue().type() == type)
 			{
@@ -162,36 +162,36 @@ public class Inventory
 	public static class Builder
 	{
 		private final int _maxEncumbrance;
-		private final Map<Item, Integer> _items;
+		private final Map<Item, Integer> _stackable;
 		private int _currentEncumbrance;
 		
 		private Builder(int maxEncumbrance)
 		{
 			_maxEncumbrance = maxEncumbrance;
-			_items = new HashMap<>();
+			_stackable = new HashMap<>();
 		}
-		public Builder add(Item type, int count)
+		public Builder addStackable(Item type, int count)
 		{
 			Environment env = Environment.getShared();
 			Assert.assertTrue(count > 0);
 			
-			int current = _items.containsKey(type) ? _items.get(type) : 0;
+			int current = _stackable.containsKey(type) ? _stackable.get(type) : 0;
 			current += count;
-			_items.put(type, current);
+			_stackable.put(type, current);
 			_currentEncumbrance += env.inventory.getEncumbrance(type) * count;
 			return this;
 		}
 		public Inventory finish()
 		{
-			Map<Integer, Items> finished = new HashMap<>();
+			Map<Integer, Items> stackable = new HashMap<>();
 			int nextAddressId = 1;
-			for (Map.Entry<Item, Integer> entry : _items.entrySet())
+			for (Map.Entry<Item, Integer> entry : _stackable.entrySet())
 			{
-				finished.put(nextAddressId, new Items(entry.getKey(), entry.getValue()));
+				stackable.put(nextAddressId, new Items(entry.getKey(), entry.getValue()));
 				nextAddressId += 1;
 			}
 			return new Inventory(_maxEncumbrance
-					, finished
+					, stackable
 					, _currentEncumbrance
 			);
 		}
