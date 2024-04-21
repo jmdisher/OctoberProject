@@ -313,14 +313,14 @@ public class CodecHelpers
 		{
 			int maxEncumbrance = inventory.maxEncumbrance;
 			// We don't currently limit how many items can be serialized in one Inventory since it should never fill a packet.
-			List<Items> itemList = inventory.sortedStackableItems();
-			int itemsToWrite = itemList.size();
+			List<Integer> keys = inventory.sortedKeys();
+			int itemsToWrite = keys.size();
 			// We only store the size as a byte.
 			Assert.assertTrue(itemsToWrite < 256);
 			
 			buffer.putInt(maxEncumbrance);
 			buffer.put((byte) itemsToWrite);
-			for (Integer key : inventory.sortedKeys())
+			for (Integer key : keys)
 			{
 				buffer.putInt(key.intValue());
 				Items items = inventory.getStackForKey(key);

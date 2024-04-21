@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.utils.Assert;
 
@@ -125,7 +126,9 @@ public class CraftingBlockSupport
 					// Consume fuel - we will just get the first one as there is no sort rule, here.
 					Inventory inv = fuel.fuelInventory();
 					MutableInventory fuelInventory = new MutableInventory(inv);
-					Item fuelType = inv.sortedStackableItems().get(0).type();
+					int firstKey = inv.sortedKeys().get(0);
+					Items stack = inv.getStackForKey(firstKey);
+					Item fuelType = stack.type();
 					fuelAvailable = env.fuel.millisOfFuel(fuelType);
 					fuelInventory.removeStackableItems(fuelType, 1);
 					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());

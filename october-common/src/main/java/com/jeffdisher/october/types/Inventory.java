@@ -116,15 +116,7 @@ public class Inventory
 	 */
 	public List<Integer> sortedKeys()
 	{
-		return _stackable.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
-	}
-
-	/**
-	 * @return A list of the stackable items within the inventory, sorted by item type.
-	 */
-	public List<Items> sortedStackableItems()
-	{
-		return _stackable.values().stream().sorted((Items one, Items two) -> (one.type().number() > two.type().number()) ? 1 : -1).toList();
+		return _allSortedKeys();
 	}
 
 	@Override
@@ -132,7 +124,7 @@ public class Inventory
 	{
 		StringBuilder builder = new StringBuilder();
 		builder.append("Inventory: " + this.currentEncumbrance + " / " + this.maxEncumbrance + " with items: " + _stackable.size() + "\n");
-		for (Integer key : _stackable.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList())
+		for (Integer key : _allSortedKeys())
 		{
 			builder.append("\t" + key + " -> " + _stackable.get(key) + "\n");
 		}
@@ -153,6 +145,11 @@ public class Inventory
 			}
 		}
 		return id;
+	}
+
+	private List<Integer> _allSortedKeys()
+	{
+		return _stackable.keySet().stream().sorted((Integer one, Integer two) -> (one.intValue() > two.intValue()) ? 1 : -1).toList();
 	}
 
 
