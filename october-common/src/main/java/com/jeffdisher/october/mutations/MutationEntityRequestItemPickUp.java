@@ -6,6 +6,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -26,20 +27,23 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	public static MutationEntityRequestItemPickUp deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation blockLocation = CodecHelpers.readAbsoluteLocation(buffer);
-		Items requested = CodecHelpers.readItems(buffer);
+		int blockInventoryKey = buffer.getInt();
+		int countRequested = buffer.getInt();
 		byte inventoryAspect = buffer.get();
-		return new MutationEntityRequestItemPickUp(blockLocation, requested, inventoryAspect);
+		return new MutationEntityRequestItemPickUp(blockLocation, blockInventoryKey, countRequested, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
-	private final Items _requested;
+	private final int _blockInventoryKey;
+	private final int _countRequested;
 	private final byte _inventoryAspect;
 
-	public MutationEntityRequestItemPickUp(AbsoluteLocation blockLocation, Items requested, byte inventoryAspect)
+	public MutationEntityRequestItemPickUp(AbsoluteLocation blockLocation, int blockInventoryKey, int countRequested, byte inventoryAspect)
 	{
 		_blockLocation = blockLocation;
-		_requested = requested;
+		_blockInventoryKey = blockInventoryKey;
+		_countRequested = countRequested;
 		_inventoryAspect = inventoryAspect;
 	}
 
@@ -53,22 +57,30 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	@Override
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
-		// We will still try a best-efforts request if the inventory has changed.
-		int maxToFetch = newEntity.newInventory.maxVacancyForItem(_requested.type());
-		int toFetch = Math.min(maxToFetch, _requested.count());
-		
 		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.
 		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
 		Inventory inv = target.getInventory();
-		int maxAvailable = inv.getCount(_requested.type());
-		toFetch = Math.min(toFetch, maxAvailable);
 		
-		if (toFetch > 0)
+		boolean didApply = false;
+		if (null != inv)
 		{
-			// Request that the items be extracted and sent back to us.
-			context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, new Items(_requested.type(), toFetch), _inventoryAspect, newEntity.original.id()));
+			Items stack = inv.getStackForKey(_blockInventoryKey);
+			Item type = (null != stack) ? stack.type() : null;
+			if (null != type)
+			{
+				// We will still try a best-efforts request if the inventory has changed.
+				int maxToFetch = newEntity.newInventory.maxVacancyForItem(type);
+				int toFetch = Math.min(maxToFetch, _countRequested);
+				
+				if (toFetch > 0)
+				{
+					// Request that the items be extracted and sent back to us.
+					context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, _blockInventoryKey, toFetch, _inventoryAspect, newEntity.original.id()));
+					didApply = true;
+				}
+			}
 		}
-		return (toFetch > 0);
+		return didApply;
 	}
 
 	@Override
@@ -81,7 +93,8 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
-		CodecHelpers.writeItems(buffer, _requested);
+		buffer.putInt(_blockInventoryKey);
+		buffer.putInt(_countRequested);
 		buffer.put(_inventoryAspect);
 	}
 }

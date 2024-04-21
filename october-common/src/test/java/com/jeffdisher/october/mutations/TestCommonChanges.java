@@ -314,7 +314,8 @@ public class TestCommonChanges
 		);
 		
 		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		int stoneKey = blockInventory.getIdOfStackableType(ENV.items.STONE);
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.
@@ -343,7 +344,7 @@ public class TestCommonChanges
 		// Run the process again to pick up the last item and verify that the inventory is now null.
 		blockHolder[0] = null;
 		entityHolder[0] = null;
-		request = new MutationEntityRequestItemPickUp(targetLocation, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		request = new MutationEntityRequestItemPickUp(targetLocation, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(request.applyChange(context, newEntity));
 		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
 		newBlock.writeBack(cuboid);

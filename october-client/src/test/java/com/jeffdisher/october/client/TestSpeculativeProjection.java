@@ -1012,6 +1012,7 @@ public class TestSpeculativeProjection
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		Inventory inv = Inventory.start(10).addStackable(ENV.items.STONE, 1).finish();
+		int stoneKey = inv.getIdOfStackableType(ENV.items.STONE);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
 		projector.applyChangesForServerTick(0L
 				, List.of(MutableEntity.create(localEntityId).freeze())
@@ -1027,7 +1028,9 @@ public class TestSpeculativeProjection
 		
 		// Issue the command to pick up the item.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
-		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY);
+		int blockInventoryKey = stoneKey;
+		int countRequested = 1;
+		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit1 = projector.applyLocalChange(request, currentTimeMillis);
 		Assert.assertEquals(ENV.inventory.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
@@ -1052,7 +1055,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, projector.applyLocalChange(request, currentTimeMillis));
 		
 		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
-		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
+		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
 		currentTimeMillis += 100L;
 		speculative = projector.applyChangesForServerTick(2L
 				, List.of()

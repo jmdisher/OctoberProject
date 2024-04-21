@@ -52,9 +52,10 @@ public class TestMutationBlockCodec
 	public void extractItems() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Items items = new Items(ENV.items.STONE, 2);
+		int blockInventoryKey = 1;
+		int countRequested = 2;
 		int returnEntityId = 1;
-		MutationBlockExtractItems mutation = new MutationBlockExtractItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY, returnEntityId);
+		MutationBlockExtractItems mutation = new MutationBlockExtractItems(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY, returnEntityId);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

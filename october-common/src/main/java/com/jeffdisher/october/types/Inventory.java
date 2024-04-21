@@ -74,14 +74,11 @@ public class Inventory
 	 * Looks up the item stack for the given identifier key.
 	 * 
 	 * @param key The identifier key.
-	 * @return The Items object for this stack (asserts on failed look-up).
+	 * @return The Items object for this stack (null if not stackable).
 	 */
 	public Items getStackForKey(int key)
 	{
-		Items val = _stackable.get(key);
-		// Someone calling this with an invalid key likely means that the value is stale, which is an error.
-		Assert.assertTrue(null != val);
-		return val;
+		return _stackable.get(key);
 	}
 
 	/**

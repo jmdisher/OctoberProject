@@ -25,24 +25,27 @@ public class MutationBlockExtractItems implements IMutationBlock
 	public static MutationBlockExtractItems deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Items requested = CodecHelpers.readItems(buffer);
+		int blockInventoryKey = buffer.getInt();
+		int countRequested = buffer.getInt();
 		byte inventoryAspect = buffer.get();
 		int returnEntity = buffer.getInt();
-		return new MutationBlockExtractItems(location, requested, inventoryAspect, returnEntity);
+		return new MutationBlockExtractItems(location, blockInventoryKey, countRequested, inventoryAspect, returnEntity);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
-	private final Items _requested;
+	private final int _blockInventoryKey;
+	private final int _countRequested;
 	private final byte _inventoryAspect;
 	private final int _returnEntityId;
 
-	public MutationBlockExtractItems(AbsoluteLocation blockLocation, Items requested, byte inventoryAspect, int returnEntityId)
+	public MutationBlockExtractItems(AbsoluteLocation blockLocation, int blockInventoryKey, int countRequested, byte inventoryAspect, int returnEntityId)
 	{
 		_blockLocation = blockLocation;
-		_requested = requested;
-		_returnEntityId = returnEntityId;
+		_blockInventoryKey = blockInventoryKey;
+		_countRequested = countRequested;
 		_inventoryAspect = inventoryAspect;
+		_returnEntityId = returnEntityId;
 	}
 
 	@Override
@@ -59,15 +62,23 @@ public class MutationBlockExtractItems implements IMutationBlock
 		if (null != existing)
 		{
 			// We will still try a best-efforts request if the inventory has changed.
-			MutableInventory mutable = new MutableInventory(existing);
-			Item requestedType = _requested.type();
-			int maxAvailable = mutable.getCount(requestedType);
-			int toFetch = Math.min(maxAvailable, _requested.count());
+			Items stack = existing.getStackForKey(_blockInventoryKey);
+			Item requestedType = null;
+			int maxAvailable = 0;
+			if (null != stack)
+			{
+				requestedType = stack.type();
+				maxAvailable = stack.count();
+			}
+			
+			int toFetch = Math.min(maxAvailable, _countRequested);
 			if (toFetch > 0)
 			{
+				MutableInventory mutable = new MutableInventory(existing);
 				mutable.removeStackableItems(requestedType, toFetch);
+				Items stackToSend = new Items(requestedType, toFetch);
 				_putInventory(newBlock, mutable.freeze());
-				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(new Items(requestedType, toFetch)));
+				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(stackToSend));
 				didApply = true;
 			}
 		}
@@ -84,7 +95,8 @@ public class MutationBlockExtractItems implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
-		CodecHelpers.writeItems(buffer, _requested);
+		buffer.putInt(_blockInventoryKey);
+		buffer.putInt(_countRequested);
 		buffer.put(_inventoryAspect);
 		buffer.putInt(_returnEntityId);
 	}
