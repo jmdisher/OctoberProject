@@ -9,8 +9,8 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -71,9 +71,10 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		boolean didApply = false;
 		if (isLocationClose && !isAir)
 		{
-			Items selectedStack = newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey);
-			Item selectedItem = (null != selectedStack)
-					? selectedStack.type()
+			// We know that tools are non-stackable so just check for those types.
+			NonStackableItem selected = newEntity.newInventory.getNonStackableForKey(newEntity.newSelectedItemKey);
+			Item selectedItem = (null != selected)
+					? selected.type()
 					: null
 			;
 			int speedMultiplier = env.tools.toolSpeedModifier(selectedItem);

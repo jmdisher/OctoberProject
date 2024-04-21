@@ -47,6 +47,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -360,8 +361,8 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addAllItems(pickaxe, 1);
-		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(pickaxe);
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe));
+		mutable.newSelectedItemKey = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))

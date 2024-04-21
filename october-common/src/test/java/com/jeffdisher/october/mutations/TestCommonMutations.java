@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -143,8 +144,8 @@ public class TestCommonMutations
 		int clientId = 1;
 		MutableEntity mutable = MutableEntity.create(clientId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addAllItems(pickaxe, 1);
-		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(pickaxe);
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe));
+		mutable.newSelectedItemKey = 1;
 		Entity entity = mutable.freeze();
 		
 		// Just make 1 hit and see the damage apply.
