@@ -5,6 +5,7 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * Used to describe a specific crafting operation, including how it is classified, inputs, output, and time cost.
+ * Note that we currently assume that all inputs to crafting recipes are stackable but the outputs need not be.
  */
 public class Craft
 {
@@ -36,14 +37,14 @@ public class Craft
 	public final String name;
 	public final Classification classification;
 	public final Items[] input;
-	public final Items output;
+	public final Item[] output;
 	public final long millisPerCraft;
 
 	public Craft(short number
 			, String name
 			, Classification classification
 			, Items[] input
-			, Items output
+			, Item[] output
 			, long millisPerCraft
 	)
 	{

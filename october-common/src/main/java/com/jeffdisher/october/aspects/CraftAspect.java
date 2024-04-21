@@ -51,8 +51,8 @@ public class CraftAspect
 			private String _name;
 			private Craft.Classification _classification;
 			private Map<Item, Integer> _input;
-			// NOTE:  We only support a single output item type (for now).
-			private Map<Item, Integer> _output;
+			// NOTE:  Output can be stackable or not so multiple instances of an item should just be added this list multiple times.
+			private List<Item> _output;
 			private long _millis = -1L;
 			@Override
 			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -69,15 +69,15 @@ public class CraftAspect
 					throw new TabListReader.TabListException("Invalid classification: \"" + parameters[0] + "\"");
 				}
 				_input = new HashMap<>();
-				_output = new HashMap<>();
+				_output = new ArrayList<>();
 				_millis = 0L;
 			}
 			@Override
 			public void endRecord() throws TabListReader.TabListException
 			{
-				if (_input.isEmpty() || (1 != _output.size()) || (_millis <= 0L))
+				if (_input.isEmpty() || _output.isEmpty() || (_millis <= 0L))
 				{
-					throw new TabListReader.TabListException("Recipe requires a valid classification, at least 1 input, a single output type, and a positive time cost: \"" + _name + "\"");
+					throw new TabListReader.TabListException("Recipe requires a valid classification, at least 1 input, at least 1 output, and a positive time cost: \"" + _name + "\"");
 				}
 				
 				Items[] inputs = new Items[_input.size()];
@@ -87,11 +87,7 @@ public class CraftAspect
 					inputs[index] = new Items(elt.getKey(), elt.getValue());
 					index += 1;
 				}
-				Items output = null;
-				for (Map.Entry<Item, Integer> elt : _output.entrySet())
-				{
-					output = new Items(elt.getKey(), elt.getValue());
-				}
+				Item[] output = _output.toArray((int size) -> new Item[size]);
 				Craft craft = new Craft((short)crafts.size(), _name, _classification, inputs, output, _millis);
 				crafts.add(craft);
 				craftByName.put(_name, craft);
@@ -125,7 +121,7 @@ public class CraftAspect
 					for (String value : parameters)
 					{
 						Item item = _getItem(value);
-						_modifyItemMap(_output, item);
+						_output.add(item);
 					}
 				}
 				else if ("millis".equals(name))
@@ -221,7 +217,11 @@ public class CraftAspect
 			{
 				inputEncumbrance += inventory.getEncumbrance(oneInput.type()) * oneInput.count();
 			}
-			int outputEncumbrance = inventory.getEncumbrance(craft.output.type()) * craft.output.count();
+			int outputEncumbrance = 0;
+			for (Item oneOutput : craft.output)
+			{
+				outputEncumbrance += inventory.getEncumbrance(oneOutput);
+			}
 			Assert.assertTrue(inputEncumbrance >= outputEncumbrance);
 		}
 	}
@@ -293,9 +293,12 @@ public class CraftAspect
 			{
 				inv.removeStackableItems(items.type(), items.count());
 			}
-			boolean didAdd = inv.addAllItems(craft.output.type(), craft.output.count());
-			// We can't fail to add here.
-			Assert.assertTrue(didAdd);
+			for (Item item : craft.output)
+			{
+				boolean didAdd = inv.addAllItems(item, 1);
+				// We can't fail to add here.
+				Assert.assertTrue(didAdd);
+			}
 			didCraft = true;
 		}
 		return didCraft;
