@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.CraftAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -73,7 +74,8 @@ public class EntityChangeCraft implements IMutationEntity
 			if (existing.isCompleted())
 			{
 				// We can now apply this and clear it.
-				boolean didCraft = CraftAspect.craft(existing.selectedCraft(), newEntity.newInventory);
+				Environment env = Environment.getShared();
+				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), newEntity.newInventory);
 				if (didCraft)
 				{
 					// Make sure that this cleared the selection, if we used the last of them.

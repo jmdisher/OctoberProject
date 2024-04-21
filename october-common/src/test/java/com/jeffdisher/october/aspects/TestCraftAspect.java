@@ -39,11 +39,32 @@ public class TestCraftAspect
 		Inventory inv = Inventory.start(50).addStackable(ENV.items.DIRT, 4).addStackable(ENV.items.STONE, 2).finish();
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 		MutableInventory mutable = new MutableInventory(inv);
-		CraftAspect.craft(craft, mutable);
+		CraftAspect.craft(ENV, craft, mutable);
 		inv = mutable.freeze();
 		Assert.assertEquals(2, inv.getCount(ENV.items.DIRT));
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
 		Assert.assertEquals(2, inv.getCount(ENV.items.COAL_ORE));
 		Assert.assertEquals(1, inv.getCount(ENV.items.IRON_ORE));
+	}
+
+	@Test
+	public void nonStack() throws Throwable
+	{
+		Item pick = ENV.items.getItemById("op.iron_pickaxe");
+		Craft craft = new Craft((short)1
+				, "Non-stack"
+				, Craft.Classification.COMMON
+				, new Items[] { new Items(ENV.items.DIRT, 1), new Items(ENV.items.STONE, 1)  }
+				, new Item[] { pick }
+				, 1000L
+		);
+		Inventory inv = Inventory.start(50).addStackable(ENV.items.DIRT, 2).addStackable(ENV.items.STONE, 1).finish();
+		Assert.assertTrue(CraftAspect.canApply(craft, inv));
+		MutableInventory mutable = new MutableInventory(inv);
+		CraftAspect.craft(ENV, craft, mutable);
+		inv = mutable.freeze();
+		Assert.assertEquals(2, inv.sortedKeys().size());
+		Assert.assertEquals(1, inv.getCount(ENV.items.DIRT));
+		Assert.assertEquals(pick, inv.getNonStackableForKey(3).type());
 	}
 }

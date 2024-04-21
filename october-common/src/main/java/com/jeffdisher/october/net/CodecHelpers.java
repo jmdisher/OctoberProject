@@ -320,10 +320,22 @@ public class CodecHelpers
 			{
 				int keyValue = buffer.getInt();
 				Assert.assertTrue(keyValue > 0);
-				// TODO:  Add non-stackable support, once we have the full support for that implemented.
-				Items items = _readItems(buffer);
-				stackableItems.put(keyValue, items);
-				currentEncumbrance += env.inventory.getEncumbrance(items.type()) * items.count();
+				// We will need to manually read this type in order to determine if this is stackable or not.
+				Item type = _readItemNoAir(buffer);
+				// NOTE:  We will inline the rest of the data since we are overlapping with types.
+				if (env.tools.isStackable(type))
+				{
+					int count = buffer.getInt();
+					Items items = new Items(type, count);
+					stackableItems.put(keyValue, items);
+					currentEncumbrance += env.inventory.getEncumbrance(items.type()) * items.count();
+				}
+				else
+				{
+					NonStackableItem item = new NonStackableItem(type);
+					nonStackableItems.put(keyValue, item);
+					currentEncumbrance += env.inventory.getEncumbrance(item.type());
+				}
 			}
 			parsed = Inventory.build(maxEncumbrance, stackableItems, nonStackableItems, currentEncumbrance);
 		}
@@ -352,10 +364,19 @@ public class CodecHelpers
 			for (Integer key : keys)
 			{
 				buffer.putInt(key.intValue());
+				// See if this is a stackable or not.
+				// NOTE:  We will inline the rest of the data since we are overlapping with types.
 				Items stackable = inventory.getStackForKey(key);
-				// TODO:  Add non-stackable support, once we have the full support for that implemented.
-				Assert.assertTrue(null != stackable);
-				_writeItems(buffer, stackable);
+				if (null != stackable)
+				{
+					_writeItemNoAir(buffer, stackable.type());
+					buffer.putInt(stackable.count());
+				}
+				else
+				{
+					NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
+					_writeItemNoAir(buffer, nonStackable.type());
+				}
 			}
 		}
 		else

@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -56,7 +57,7 @@ public class CraftingBlockSupport
 					if (classifications.contains(currentOperation.selectedCraft().classification) && CraftAspect.canApply(currentCraft, inventory))
 					{
 						MutableInventory mutable = new MutableInventory(inventory);
-						CraftAspect.craft(currentCraft, mutable);
+						CraftAspect.craft(env, currentCraft, mutable);
 						newBlock.setInventory(mutable.freeze());
 						newBlock.setCrafting(null);
 					}
@@ -128,7 +129,16 @@ public class CraftingBlockSupport
 					MutableInventory fuelInventory = new MutableInventory(inv);
 					int firstKey = inv.sortedKeys().get(0);
 					Items stack = inv.getStackForKey(firstKey);
-					Item fuelType = stack.type();
+					Item fuelType;
+					NonStackableItem nonStack = inv.getNonStackableForKey(firstKey);
+					if (null != stack)
+					{
+						fuelType = stack.type();
+					}
+					else
+					{
+						fuelType = nonStack.type();
+					}
 					fuelAvailable = env.fuel.millisOfFuel(fuelType);
 					fuelInventory.removeStackableItems(fuelType, 1);
 					fuel = new FuelState(fuelAvailable, fuelType, fuelInventory.freeze());
@@ -145,7 +155,7 @@ public class CraftingBlockSupport
 				{
 					// Complete the crafting operation.
 					MutableInventory inv = new MutableInventory(newBlock.getInventory());
-					CraftAspect.craft(craft.selectedCraft(), inv);
+					CraftAspect.craft(env, craft.selectedCraft(), inv);
 					newBlock.setInventory(inv.freeze());
 					craft = null;
 				}

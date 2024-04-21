@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -282,7 +283,7 @@ public class CraftAspect
 		return _canApply(craft, inv);
 	}
 
-	public static boolean craft(Craft craft, MutableInventory inv)
+	public static boolean craft(Environment env, Craft craft, MutableInventory inv)
 	{
 		boolean didCraft = false;
 		// Verify that they have the input.
@@ -295,7 +296,15 @@ public class CraftAspect
 			}
 			for (Item item : craft.output)
 			{
-				boolean didAdd = inv.addAllItems(item, 1);
+				boolean didAdd;
+				if (env.tools.isStackable(item))
+				{
+					didAdd = inv.addAllItems(item, 1);
+				}
+				else
+				{
+					didAdd = inv.addNonStackableBestEfforts(new NonStackableItem(item));
+				}
 				// We can't fail to add here.
 				Assert.assertTrue(didAdd);
 			}

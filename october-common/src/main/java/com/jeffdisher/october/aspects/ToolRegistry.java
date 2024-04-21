@@ -57,4 +57,16 @@ public class ToolRegistry
 				: 5
 		;
 	}
+
+	/**
+	 * Checks if the given item is stackable, based on whether it is a tool (tools cannot be stacked).
+	 * 
+	 * @param item The item.
+	 * @return True if this item is a stackable type.
+	 */
+	public boolean isStackable(Item item)
+	{
+		// We will assume that no tools are stackable.
+		return !_speedValues.containsKey(item);
+	}
 }
