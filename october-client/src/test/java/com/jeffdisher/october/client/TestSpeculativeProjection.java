@@ -1071,7 +1071,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.inventory.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
-		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1));
+		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1), null);
 		currentTimeMillis += 100L;
 		speculative = projector.applyChangesForServerTick(3L
 				, List.of()

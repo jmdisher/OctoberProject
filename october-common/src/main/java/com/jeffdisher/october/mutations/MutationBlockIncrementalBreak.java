@@ -85,7 +85,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 					// This is usually just 1 element so send 1 mutation per item.
 					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
 					{
-						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1));
+						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
 						context.newChangeSink.next(_optionalEntityForStorage, store);
 					}
 				}

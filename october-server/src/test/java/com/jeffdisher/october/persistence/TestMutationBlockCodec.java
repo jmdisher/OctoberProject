@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.NonStackableItem;
 
 
 public class TestMutationBlockCodec
@@ -66,11 +67,26 @@ public class TestMutationBlockCodec
 	}
 
 	@Test
-	public void storeItems() throws Throwable
+	public void storeItemsStack() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Items items = new Items(ENV.items.STONE, 2);
-		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items, null, Inventory.INVENTORY_ASPECT_INVENTORY);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		MutationBlockCodec.serializeToBuffer(buffer, mutation);
+		buffer.flip();
+		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertTrue(read instanceof MutationBlockStoreItems);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void storeItemsNonStack() throws Throwable
+	{
+		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
+		NonStackableItem items = new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"));
+		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, null, items, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

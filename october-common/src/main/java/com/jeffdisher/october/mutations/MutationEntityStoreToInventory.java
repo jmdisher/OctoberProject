@@ -8,7 +8,9 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -24,16 +26,22 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 
 	public static MutationEntityStoreToInventory deserializeFromBuffer(ByteBuffer buffer)
 	{
-		Items items = CodecHelpers.readItems(buffer);
-		return new MutationEntityStoreToInventory(items);
+		Items stack = CodecHelpers.readItems(buffer);
+		NonStackableItem nonStack = CodecHelpers.readNonStackableItem(buffer);
+		return new MutationEntityStoreToInventory(stack, nonStack);
 	}
 
 
-	private final Items _items;
+	private final Items _stack;
+	private final NonStackableItem _nonStack;
 
-	public MutationEntityStoreToInventory(Items items)
+	public MutationEntityStoreToInventory(Items stack, NonStackableItem nonStack)
 	{
-		_items = items;
+		// Precisely one of these must be non-null.
+		Assert.assertTrue((null != stack) != (null != nonStack));
+		
+		_stack = stack;
+		_nonStack = nonStack;
 	}
 
 	@Override
@@ -47,24 +55,45 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		// We will still try a best-efforts request if the inventory has changed (but drop anything else).
-		Item type = _items.type();
-		int previousItemCount = newEntity.newInventory.getCount(type);
-		int itemsToStore = _items.count();
-		int stored = newEntity.newInventory.addItemsBestEfforts(type, itemsToStore);
+		Item typeToTrySelect = null;
+		int itemsToStore;
+		int stored;
+		if (null != _stack)
+		{
+			Item type = _stack.type();
+			if (0 == newEntity.newInventory.getCount(type))
+			{
+				typeToTrySelect = type;
+			}
+			itemsToStore = _stack.count();
+			stored = newEntity.newInventory.addItemsBestEfforts(type, itemsToStore);
+		}
+		else
+		{
+			itemsToStore = 1;
+			boolean didStore = newEntity.newInventory.addNonStackableBestEfforts(_nonStack);
+			stored = didStore ? 1 : 0;
+		}
+		
 		if (stored > 0)
 		{
 			// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
-			if ((Entity.NO_SELECTION == newEntity.newSelectedItemKey) && (0 == previousItemCount))
+			if ((Entity.NO_SELECTION == newEntity.newSelectedItemKey) && (null != typeToTrySelect))
 			{
-				newEntity.newSelectedItemKey = newEntity.newInventory.getIdOfStackableType(type);
+				newEntity.newSelectedItemKey = newEntity.newInventory.getIdOfStackableType(typeToTrySelect);
 			}
 		}
 		
 		// If there are items left over, drop them on the ground.
 		if (itemsToStore > stored)
 		{
-			int itemsToDrop = itemsToStore - stored;
-			MutationBlockStoreItems drop = new MutationBlockStoreItems(newEntity.newLocation.getBlockLocation(), new Items(type, itemsToDrop), Inventory.INVENTORY_ASPECT_INVENTORY);
+			Items stack = null;
+			if (null != _stack)
+			{
+				int itemsToDrop = itemsToStore - stored;
+				stack = new Items(_stack.type(), itemsToDrop);
+			}
+			MutationBlockStoreItems drop = new MutationBlockStoreItems(newEntity.newLocation.getBlockLocation(), stack, _nonStack, Inventory.INVENTORY_ASPECT_INVENTORY);
 			context.mutationSink.next(drop);
 		}
 		
@@ -81,6 +110,7 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeItems(buffer, _items);
+		CodecHelpers.writeItems(buffer, _stack);
+		CodecHelpers.writeNonStackableItem(buffer, _nonStack);
 	}
 }

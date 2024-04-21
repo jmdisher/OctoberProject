@@ -9,6 +9,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -65,7 +66,30 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		if (null != inv)
 		{
 			Items stack = inv.getStackForKey(_blockInventoryKey);
-			Item type = (null != stack) ? stack.type() : null;
+			NonStackableItem nonStack = inv.getNonStackableForKey(_blockInventoryKey);
+			Item type;
+			if (null != stack)
+			{
+				type = stack.type();
+			}
+			else if (null != nonStack)
+			{
+				// In this case, we can only request one.
+				if (1 == _countRequested)
+				{
+					type = nonStack.type();
+				}
+				else
+				{
+					// This is inconsistent so just fail.
+					type = null;
+				}
+			}
+			else
+			{
+				// This can happen if the inventory has changed.
+				type = null;
+			}
 			if (null != type)
 			{
 				// We will still try a best-efforts request if the inventory has changed.

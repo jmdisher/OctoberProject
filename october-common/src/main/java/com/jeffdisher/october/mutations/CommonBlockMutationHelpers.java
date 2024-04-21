@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -70,7 +71,15 @@ public class CommonBlockMutationHelpers
 			for (Integer key : oldInventory.sortedKeys())
 			{
 				Items stackable = oldInventory.getStackForKey(key);
-				mutable.addAllItems(stackable.type(), stackable.count());
+				if (null != stackable)
+				{
+					mutable.addAllItems(stackable.type(), stackable.count());
+				}
+				else
+				{
+					NonStackableItem nonStackable = oldInventory.getNonStackableForKey(key);
+					mutable.addNonStackableBestEfforts(nonStackable);
+				}
 			}
 		}
 	}
@@ -95,7 +104,10 @@ public class CommonBlockMutationHelpers
 			for (Integer key : inventory.sortedKeys())
 			{
 				Items stackable = inventory.getStackForKey(key);
-				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, stackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+				NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
+				// Precisely one of these must be non-null.
+				Assert.assertTrue((null != stackable) != (null != nonStackable));
+				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
 			
 			// Now, clear the inventory.

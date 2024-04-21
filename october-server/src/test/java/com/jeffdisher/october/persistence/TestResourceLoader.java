@@ -243,7 +243,7 @@ public class TestResourceLoader
 		EntityLocation location = mutable.newLocation;
 		EntityLocation newLocation = new EntityLocation(2.0f * location.x(), 3.0f * location.y(), 4.0f * location.z());
 		mutable.newLocation = newLocation;
-		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(ENV.blocks.STONE.item(), 2));
+		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(ENV.blocks.STONE.item(), 2), null);
 		
 		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))));
 		// (the shutdown will wait for the queue to drain)

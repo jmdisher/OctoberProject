@@ -10,8 +10,10 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -28,22 +30,26 @@ public class MutationBlockStoreItems implements IMutationBlock
 	public static MutationBlockStoreItems deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Items offered = CodecHelpers.readItems(buffer);
+		Items stackable = CodecHelpers.readItems(buffer);
+		NonStackableItem nonStackable = CodecHelpers.readNonStackableItem(buffer);
 		byte inventoryAspect = buffer.get();
-		return new MutationBlockStoreItems(location, offered, inventoryAspect);
+		return new MutationBlockStoreItems(location, stackable, nonStackable, inventoryAspect);
 	}
 
 
 	private final AbsoluteLocation _blockLocation;
-	private final Items _offered;
+	private final Items _stackable;
+	private final NonStackableItem _nonStackable;
 	private final byte _inventoryAspect;
 
-	public MutationBlockStoreItems(AbsoluteLocation blockLocation, Items offered, byte inventoryAspect)
+	public MutationBlockStoreItems(AbsoluteLocation blockLocation, Items stackable, NonStackableItem nonStackable, byte inventoryAspect)
 	{
-		Assert.assertTrue(offered.count() > 0);
+		// Precisely one of these must be non-null.
+		Assert.assertTrue((null != stackable) != (null != nonStackable));
 		
 		_blockLocation = blockLocation;
-		_offered = offered;
+		_stackable = stackable;
+		_nonStackable = nonStackable;
 		_inventoryAspect = inventoryAspect;
 	}
 
@@ -69,7 +75,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 				if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
 				{
 					// We want to drop this into the below block.
-					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _offered, _inventoryAspect));
+					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _stackable, _nonStackable, _inventoryAspect));
 					didApply = true;
 				}
 			}
@@ -82,7 +88,15 @@ public class MutationBlockStoreItems implements IMutationBlock
 			if (null != existing)
 			{
 				MutableInventory inv = new MutableInventory(existing);
-				inv.addItemsAllowingOverflow(_offered.type(), _offered.count());
+				if (null != _stackable)
+				{
+					inv.addItemsAllowingOverflow(_stackable.type(), _stackable.count());
+				}
+				else
+				{
+					Assert.assertTrue(null != _nonStackable);
+					inv.addNonStackableAllowingOverflow(_nonStackable);
+				}
 				_putInventory(newBlock, inv.freeze());
 				
 				// See if we might need to trigger an automatic crafting operation in this block.
@@ -106,7 +120,8 @@ public class MutationBlockStoreItems implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
-		CodecHelpers.writeItems(buffer, _offered);
+		CodecHelpers.writeItems(buffer, _stackable);
+		CodecHelpers.writeNonStackableItem(buffer, _nonStackable);
 		buffer.put(_inventoryAspect);
 	}
 
@@ -121,7 +136,11 @@ public class MutationBlockStoreItems implements IMutationBlock
 			inv = block.getInventory();
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
-			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), _offered.type())
+			Item underlying = (null != _stackable)
+				? _stackable.type()
+				: _nonStackable.type()
+			;
+			inv = env.fuel.hasFuelInventoryForType(block.getBlock(), underlying)
 				? block.getFuel().fuelInventory()
 				: null
 			;

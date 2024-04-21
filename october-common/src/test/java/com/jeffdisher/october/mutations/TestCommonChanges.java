@@ -26,6 +26,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -356,7 +357,7 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void dropItems() throws Throwable
+	public void dropStackbleItems() throws Throwable
 	{
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
 		int entityId = 1;
@@ -425,6 +426,69 @@ public class TestCommonChanges
 		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
 		Assert.assertEquals(0, freeze.inventory().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, freeze.selectedItemKey());
+	}
+
+	@Test
+	public void dropNonStackableItems() throws Throwable
+	{
+		// Create an air cuboid and an entity with an item, then try to drop it onto a block.
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem));
+		int idOfPick = 1;
+		mutable.newSelectedItemKey = idOfPick;
+		Entity original = mutable.freeze();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
+		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, null
+		);
+		
+		// This is a multi-step process which starts by asking the entity to start the drop.
+		MutableEntity newEntity = MutableEntity.existing(original);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, idOfPick, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(push.applyChange(context, newEntity));
+		
+		// We can now verify that the entity has lost the item but the block is unchanged.
+		Assert.assertNull(newEntity.newInventory.getNonStackableForKey(idOfPick));
+		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
+		Assert.assertEquals(0, newEntity.newSelectedItemKey);
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
+		
+		// We should see the mutation requested and then we can process step 2.
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
+		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		newBlock.writeBack(cuboid);
+		blockHolder[0] = null;
+		
+		// By this point, we should be able to verify both the entity and the block.
+		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		Assert.assertEquals(pickItem, blockInventory.getNonStackableForKey(idOfPick).type());
+		Entity freeze = newEntity.freeze();
+		Assert.assertEquals(0, freeze.inventory().currentEncumbrance);
+		Assert.assertEquals(0, newEntity.newSelectedItemKey);
 	}
 
 	@Test
@@ -726,7 +790,7 @@ public class TestCommonChanges
 		
 		// Just directly create the mutation to push items into the block above this one.
 		AbsoluteLocation dropLocation = targetLocation.getRelative(0, 0, 1);
-		MutationBlockStoreItems mutations = new MutationBlockStoreItems(dropLocation, new Items(ENV.items.STONE, added), Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationBlockStoreItems mutations = new MutationBlockStoreItems(dropLocation, new Items(ENV.items.STONE, added), null, Inventory.INVENTORY_ASPECT_INVENTORY);
 		proxy = new MutableBlockProxy(dropLocation, cuboid);
 		Assert.assertTrue(mutations.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
@@ -789,7 +853,7 @@ public class TestCommonChanges
 		);
 		
 		// Create the change.
-		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1));
+		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1), null);
 		Assert.assertTrue(store.applyChange(context, newEntity));
 		
 		// We should see the attempt to drop this item onto the ground since it won't fit.

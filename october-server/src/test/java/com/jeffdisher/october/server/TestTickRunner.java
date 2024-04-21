@@ -888,7 +888,7 @@ public class TestTickRunner
 		// Load in a cuboid with a suspended mutation to represent the falling.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(ENV.items.STONE, 1), Inventory.INVENTORY_ASPECT_INVENTORY), 0L))))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(ENV.items.STONE, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY), 0L))))
 				, null
 				, null
 				, null

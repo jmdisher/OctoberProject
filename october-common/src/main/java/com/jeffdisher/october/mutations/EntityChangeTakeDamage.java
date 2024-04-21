@@ -8,6 +8,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -68,7 +69,9 @@ public class EntityChangeTakeDamage implements IMutationEntity
 				for (Integer key : newEntity.newInventory.freeze().sortedKeys())
 				{
 					Items stackable = newEntity.newInventory.getStackForKey(key);
-					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+					NonStackableItem nonStackable = newEntity.newInventory.getNonStackableForKey(key);
+					Assert.assertTrue((null != stackable) != (null != nonStackable));
+					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory(null);
 				newEntity.newSelectedItemKey = Entity.NO_SELECTION;

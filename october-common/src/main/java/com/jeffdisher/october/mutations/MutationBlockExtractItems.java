@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -63,22 +64,55 @@ public class MutationBlockExtractItems implements IMutationBlock
 		{
 			// We will still try a best-efforts request if the inventory has changed.
 			Items stack = existing.getStackForKey(_blockInventoryKey);
-			Item requestedType = null;
+			NonStackableItem nonStack = existing.getNonStackableForKey(_blockInventoryKey);
+			Item requestedType;
 			int maxAvailable = 0;
 			if (null != stack)
 			{
 				requestedType = stack.type();
 				maxAvailable = stack.count();
 			}
+			else if (null != nonStack)
+			{
+				// In this case, we can only request one.
+				if (1 == _countRequested)
+				{
+					requestedType = nonStack.type();
+					maxAvailable = 1;
+				}
+				else
+				{
+					// This is inconsistent so just fail.
+					requestedType = null;
+				}
+			}
+			else
+			{
+				// This can happen if the inventory has changed.
+				requestedType = null;
+			}
+			
 			
 			int toFetch = Math.min(maxAvailable, _countRequested);
 			if (toFetch > 0)
 			{
 				MutableInventory mutable = new MutableInventory(existing);
-				mutable.removeStackableItems(requestedType, toFetch);
-				Items stackToSend = new Items(requestedType, toFetch);
+				Items stackToSend;
+				NonStackableItem nonStackToSend;
+				if (null != stack)
+				{
+					mutable.removeStackableItems(requestedType, toFetch);
+					stackToSend = new Items(requestedType, toFetch);
+					nonStackToSend = null;
+				}
+				else
+				{
+					mutable.removeNonStackableItems(_blockInventoryKey);
+					stackToSend = null;
+					nonStackToSend = nonStack;
+				}
 				_putInventory(newBlock, mutable.freeze());
-				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(stackToSend));
+				context.newChangeSink.next(_returnEntityId, new MutationEntityStoreToInventory(stackToSend, nonStackToSend));
 				didApply = true;
 			}
 		}
