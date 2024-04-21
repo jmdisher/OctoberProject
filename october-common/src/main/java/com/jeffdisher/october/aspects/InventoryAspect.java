@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
@@ -32,7 +33,7 @@ public class InventoryAspect
 			, InputStream capacityStream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Item, Integer> encumbranceCallbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.ItemTransformer(items), new FlatTabListCallbacks.IntegerTransformer("encumbrance"));
+		FlatTabListCallbacks<Item, Integer> encumbranceCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.ItemTransformer(items), new IValueTransformer.IntegerTransformer("encumbrance"));
 		int[] encumbranceByItemType = new int[items.ITEMS_BY_TYPE.length];
 		for (int i = 0; i < encumbranceByItemType.length; ++i)
 		{
@@ -63,7 +64,7 @@ public class InventoryAspect
 				blockCapacities.put(block, CAPACITY_BLOCK_EMPTY);
 			}
 		}
-		FlatTabListCallbacks<Block, Integer> capacityCallbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("capacity"));
+		FlatTabListCallbacks<Block, Integer> capacityCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("capacity"));
 		TabListReader.readEntireFile(capacityCallbacks, capacityStream);
 		for (Map.Entry<Block, Integer> elt : capacityCallbacks.data.entrySet())
 		{

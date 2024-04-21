@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
@@ -32,7 +33,7 @@ public class FuelAspect
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Item, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.ItemTransformer(items), new FlatTabListCallbacks.IntegerTransformer("fuel"));
+		FlatTabListCallbacks<Item, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.ItemTransformer(items), new IValueTransformer.IntegerTransformer("fuel"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		int[] burnMillisByItemType = new int[items.ITEMS_BY_TYPE.length];

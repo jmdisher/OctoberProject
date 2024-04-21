@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 
@@ -29,7 +30,7 @@ public class LightAspect
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("opacity"));
+		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("opacity"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		byte[] opacityByBlockType = new byte[blocks.BLOCKS_BY_TYPE.length];

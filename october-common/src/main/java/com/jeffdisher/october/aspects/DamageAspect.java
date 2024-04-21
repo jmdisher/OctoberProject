@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.utils.Assert;
@@ -31,7 +32,7 @@ public class DamageAspect
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new FlatTabListCallbacks.BlockTransformer(items, blocks), new FlatTabListCallbacks.IntegerTransformer("toughness"));
+		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("toughness"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		short[] toughnessByBlockType = new short[blocks.BLOCKS_BY_TYPE.length];
