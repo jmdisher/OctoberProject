@@ -56,7 +56,7 @@ public class MutationBlockCraft implements IMutationBlock
 		boolean didApply = false;
 		
 		// Make sure that we are a crafting table.
-		if (env.crafting.allowsManualCrafting(newBlock.getBlock()))
+		if (env.stations.getManualMultiplier(newBlock.getBlock()) > 0)
 		{
 			didApply = CraftingBlockSupport.runManual(env, newBlock, _craft, _millisToApply);
 		}

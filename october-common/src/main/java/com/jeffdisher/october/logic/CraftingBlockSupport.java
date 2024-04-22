@@ -38,8 +38,8 @@ public class CraftingBlockSupport
 	{
 		boolean didApply;
 		Block craftingBlock = newBlock.getBlock();
-		long craftingMultiplier = env.crafting.craftingSpeedMultiplier(craftingBlock);
-		Set<Craft.Classification> classifications = env.crafting.craftingClassifications(craftingBlock);
+		long craftingMultiplier = (long) env.stations.getManualMultiplier(craftingBlock);
+		Set<Craft.Classification> classifications = env.stations.getCraftingClasses(craftingBlock);
 		// See if this is something new or if we are continuing.
 		CraftOperation currentOperation = newBlock.getCrafting();
 		Craft currentCraft = (null != currentOperation) ? currentOperation.selectedCraft() : null;
@@ -230,7 +230,7 @@ public class CraftingBlockSupport
 		CraftOperation canCraft = null;
 		Block craftingBlock = proxy.getBlock();
 		// Note that we have no way to generalize this helper.
-		if (env.crafting.craftingClassifications(craftingBlock).contains(Craft.Classification.SPECIAL_FURNACE))
+		if (env.stations.getCraftingClasses(craftingBlock).contains(Craft.Classification.SPECIAL_FURNACE))
 		{
 			// We know that a block with this classification must have crafting, inventory, and fueled aspects.
 			CraftOperation runningCraft = proxy.getCrafting();

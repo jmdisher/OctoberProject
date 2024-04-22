@@ -3,7 +3,6 @@ package com.jeffdisher.october.data;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
@@ -70,9 +69,13 @@ public class BlockProxy implements IBlockProxy
 	{
 		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
 		// We can't return null if this block can support fuel.
-		if ((null == fuel) && _env.fuel.doesHaveFuelInventory(_cachedBlock))
+		if (null == fuel)
 		{
-			fuel = new FuelState(0, null, Inventory.start(FuelAspect.CAPACITY).finish());
+			int fuelInventorySize = _env.stations.getFuelInventorySize(_cachedBlock);
+			if (fuelInventorySize > 0)
+			{
+				fuel = new FuelState(0, null, Inventory.start(fuelInventorySize).finish());
+			}
 		}
 		return fuel;
 	}

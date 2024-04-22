@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -165,9 +164,6 @@ public class CraftAspect
 	}
 
 	private final Map<String, Craft> _craftByName;
-	private final Map<Block, Long> _craftingSpeedMultiplier;
-	private final Map<Block, Set<Craft.Classification>> _craftingClassifications;
-	private final Set<Block> _manualCraftingBlocks;
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -179,13 +175,6 @@ public class CraftAspect
 		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
 		
 		_craftByName = craftByName;
-		// TODO:  Replace these with a data source.
-		_craftingSpeedMultiplier = Map.of(blocks.CRAFTING_TABLE, 10L);
-		_craftingClassifications = Map.of(
-				blocks.CRAFTING_TABLE, Set.of(Craft.Classification.TRIVIAL, Craft.Classification.COMMON)
-				, blocks.FURNACE, Set.of(Craft.Classification.SPECIAL_FURNACE)
-		);
-		_manualCraftingBlocks = Set.of(blocks.CRAFTING_TABLE);
 		
 		// We never want to allow encumbrance to increase through crafting.
 		for (Craft craft : crafts)
@@ -229,44 +218,6 @@ public class CraftAspect
 		return List.of(CRAFTING_OPERATIONS).stream().filter((Craft craft) -> classifications.contains(craft.classification)).toList();
 	}
 
-	/**
-	 * Checks the manual crafting speed multiplier for the given block.
-	 * 
-	 * @param craftingBlock The block.
-	 * @return The crafting multiplier or 0L if this isn't a manual crafting block.
-	 */
-	public long craftingSpeedMultiplier(Block craftingBlock)
-	{
-		Long value = _craftingSpeedMultiplier.get(craftingBlock);
-		return (null != value)
-				? value.longValue()
-				: 0L
-		;
-	}
-
-	/**
-	 * Checks the set of crafting types which can be performed by the given block.
-	 * 
-	 * @param craftingBlock The block.
-	 * @return The set of crafting classifications or the empty set, if this isn't a crafting block.
-	 */
-	public Set<Craft.Classification> craftingClassifications(Block craftingBlock)
-	{
-		Set<Craft.Classification> value = _craftingClassifications.get(craftingBlock);
-		return (null != value)
-				? value
-				: Set.of()
-		;
-	}
-
-	/**
-	 * @param craftingBlock The block.
-	 * @return True if this block supports manual crafting.
-	 */
-	public boolean allowsManualCrafting(Block craftingBlock)
-	{
-		return _manualCraftingBlocks.contains(craftingBlock);
-	}
 
 	public static boolean canApply(Craft craft, Inventory inv)
 	{

@@ -23,13 +23,12 @@ public class FuelAspect
 	 * Loads the item burn time from the tablist in the given stream, sourcing Items from the given items registry.
 	 * 
 	 * @param items The existing ItemRegistry.
-	 * @param blocks The existing BlockAspect.
 	 * @param stream The stream containing the tablist describing item burn time.
 	 * @return The aspect (never null).
 	 * @throws IOException There was a problem with a stream.
 	 * @throws TabListReader.TabListException A tablist was malformed.
 	 */
-	public static FuelAspect load(ItemRegistry items, BlockAspect blocks
+	public static FuelAspect load(ItemRegistry items
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
@@ -49,32 +48,14 @@ public class FuelAspect
 			Assert.assertTrue(value >= 0);
 			burnMillisByItemType[elt.getKey().number()] = value;
 		}
-		return new FuelAspect(blocks, burnMillisByItemType);
+		return new FuelAspect(burnMillisByItemType);
 	}
 
-	/**
-	 * We just use this constant for the fuel capacity.
-	 */
-	public static final int CAPACITY = 10;
-
-	private final BlockAspect _blocks;
 	private final int[] _burnMillisByItemType;
 
-	private FuelAspect(BlockAspect blocks, int[] burnMillisByItemType)
+	private FuelAspect(int[] burnMillisByItemType)
 	{
-		_blocks = blocks;
 		_burnMillisByItemType = burnMillisByItemType;
-	}
-
-	/**
-	 * Used to check if the given block type has a fuel aspect.
-	 * 
-	 * @param block The block type to check.
-	 * @return True if the given block type has a fuel inventory (fuel aspect).
-	 */
-	public boolean doesHaveFuelInventory(Block block)
-	{
-		return _doesHaveFuelInventory(block);
 	}
 
 	/**
@@ -100,17 +81,13 @@ public class FuelAspect
 	 */
 	public boolean hasFuelInventoryForType(Block blockType, Item fuelType)
 	{
-		return _doesHaveFuelInventory(blockType)
+		// We want to reach into the stations to find this.
+		boolean blockHasFuelInventory = (Environment.getShared().stations.getFuelInventorySize(blockType) > 0);
+		return blockHasFuelInventory
 				&& (_millisOfFuel(fuelType) > 0)
 		;
 	}
 
-
-	private boolean _doesHaveFuelInventory(Block block)
-	{
-		// We just inline this case since it is only one but will be generalized later.
-		return (_blocks.FURNACE == block);
-	}
 
 	private int _millisOfFuel(Item item)
 	{
