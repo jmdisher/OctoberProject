@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FuelAspect;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -644,6 +643,7 @@ public class TestTickRunner
 	public void furnaceLoadAndCraft()
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
+		int burnMillisPlank = ENV.fuel.millisOfFuel(ENV.items.PLANK);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.FURNACE);
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
@@ -704,7 +704,7 @@ public class TestTickRunner
 			{
 				plankCount -= 1;
 			}
-			burnedMillis = (burnedMillis + (int)ServerRunner.DEFAULT_MILLIS_PER_TICK) % FuelAspect.BURN_MILLIS_PLANK;
+			burnedMillis = (burnedMillis + (int)ServerRunner.DEFAULT_MILLIS_PER_TICK) % burnMillisPlank;
 			craftedMillis = (craftedMillis + (int)ServerRunner.DEFAULT_MILLIS_PER_TICK) % 1000;
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
@@ -716,7 +716,7 @@ public class TestTickRunner
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
 			if (0 != (i % 20))
 			{
-				Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+				Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
 				Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
 			}
 			else
@@ -737,7 +737,7 @@ public class TestTickRunner
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(0, proxy.getInventory().getCount(ENV.items.LOG));
 		Assert.assertEquals(3, proxy.getInventory().getCount(ENV.items.CHARCOAL));
-		Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+		Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
 		Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
@@ -750,7 +750,7 @@ public class TestTickRunner
 			
 			Assert.assertEquals(1, snap.committedCuboidMutationCount());
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-			Assert.assertEquals(burnedMillis, FuelAspect.BURN_MILLIS_PLANK - proxy.getFuel().millisFueled());
+			Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
 		}
 		Assert.assertEquals(0, proxy.getFuel().millisFueled());
 		Assert.assertNull(proxy.getFuel().currentFuel());

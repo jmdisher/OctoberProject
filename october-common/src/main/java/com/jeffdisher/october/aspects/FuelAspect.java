@@ -57,15 +57,6 @@ public class FuelAspect
 	 */
 	public static final int CAPACITY = 10;
 
-	/**
-	 * The time length of various burns - used in tests.
-	 */
-	public static final int BURN_MILLIS_TABLE = 8000;
-	public static final int BURN_MILLIS_PLANK = 2000;
-	public static final int BURN_MILLIS_LOG = 4000;
-	public static final int BURN_MILLIS_CHARCOAL = 20000;
-	public static final int BURN_MILLIS_SAPLING = 500;
-
 	private final BlockAspect _blocks;
 	private final int[] _burnMillisByItemType;
 
