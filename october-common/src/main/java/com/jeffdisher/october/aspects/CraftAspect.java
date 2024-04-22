@@ -164,27 +164,10 @@ public class CraftAspect
 		return new CraftAspect(blocks, inventory, crafts, craftByName);
 	}
 
-	// The rules governing items is that non-negative short values are reserved for items which are also blocks, while
-	// negative number are for items which cannot be placed.
-	public final Craft LOG_TO_PLANKS;
-	public final Craft STONE_TO_STONE_BRICK;
-	public final Craft PLANKS_TO_CRAFTING_TABLE;
-	public final Craft STONE_BRICKS_TO_FURNACE;
-	public final Craft CRAFT_LANTERN;
-	public final Craft FURNACE_LOGS_TO_CHARCOAL;
-	public final Craft FURNACE_SMELT_IRON;
-
+	private final Map<String, Craft> _craftByName;
 	private final Map<Block, Long> _craftingSpeedMultiplier;
 	private final Map<Block, Set<Craft.Classification>> _craftingClassifications;
 	private final Set<Block> _manualCraftingBlocks;
-
-	private static Craft _bind(Map<String, Craft> craftByName, String name)
-	{
-		Craft craft = craftByName.get(name);
-		// If this is null, there is broken data configuration.
-		Assert.assertTrue(null != craft);
-		return craft;
-	}
 
 	/**
 	 * Since blocks are the non-negative item types, this helper exists to look them up by block type.
@@ -194,14 +177,8 @@ public class CraftAspect
 	private CraftAspect(BlockAspect blocks, InventoryAspect inventory, List<Craft> crafts, Map<String, Craft> craftByName)
 	{
 		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
-		this.LOG_TO_PLANKS = _bind(craftByName, "op.log_to_planks");
-		this.STONE_TO_STONE_BRICK = _bind(craftByName, "op.stone_to_stone_brick");
-		this.PLANKS_TO_CRAFTING_TABLE = _bind(craftByName, "op.planks_to_crafting_table");
-		this.STONE_BRICKS_TO_FURNACE = _bind(craftByName, "op.stone_bricks_to_furnace");
-		this.CRAFT_LANTERN = _bind(craftByName, "op.lantern");
-		this.FURNACE_LOGS_TO_CHARCOAL = _bind(craftByName, "op.furnace_logs_to_charcoal");
-		this.FURNACE_SMELT_IRON = _bind(craftByName, "op.furnace_smelt_iron");
 		
+		_craftByName = craftByName;
 		// TODO:  Replace these with a data source.
 		_craftingSpeedMultiplier = Map.of(blocks.CRAFTING_TABLE, 10L);
 		_craftingClassifications = Map.of(
@@ -227,6 +204,19 @@ public class CraftAspect
 		}
 	}
 
+	/**
+	 * Looks up a crafting recipe by the ID assigned in the tablist file.  This is generally only useful for testing.
+	 * 
+	 * @param id The crafting recipe ID.
+	 * @return The crafting recipe.
+	 */
+	public Craft getCraftById(String id)
+	{
+		Craft craft = _craftByName.get(id);
+		// We don't expect this to be called if it can fail.
+		Assert.assertTrue(null != craft);
+		return craft;
+	}
 
 	/**
 	 * Returns the list of crafting operations which are included in the given set of classifications.

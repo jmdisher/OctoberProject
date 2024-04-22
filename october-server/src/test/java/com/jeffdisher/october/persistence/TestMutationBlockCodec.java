@@ -117,7 +117,7 @@ public class TestMutationBlockCodec
 	public void blockCraft() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Craft craft = ENV.crafting.LOG_TO_PLANKS;
+		Craft craft = ENV.crafting.getCraftById("op.log_to_planks");
 		long millis = 100L;
 		MutationBlockCraft mutation = new MutationBlockCraft(location, craft, millis);
 		

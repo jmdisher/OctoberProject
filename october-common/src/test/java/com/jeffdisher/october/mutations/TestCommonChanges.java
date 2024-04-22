@@ -18,6 +18,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -184,6 +185,7 @@ public class TestCommonChanges
 	@Test
 	public void selection() throws Throwable
 	{
+		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
@@ -205,7 +207,7 @@ public class TestCommonChanges
 		int logKey = newEntity.newInventory.getIdOfStackableType(ENV.items.LOG);
 		
 		// Craft some items to use these up and verify that the selection is cleared.
-		EntityChangeCraft craft = new EntityChangeCraft(ENV.crafting.LOG_TO_PLANKS, ENV.crafting.LOG_TO_PLANKS.millisPerCraft);
+		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.freeze().selectedItemKey());
 		
@@ -606,6 +608,7 @@ public class TestCommonChanges
 	{
 		// We want to run a basic craft operation and observe that we start falling when it completes.
 		// (this will need to be adapted when the crafting system changes, later)
+		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
@@ -621,7 +624,7 @@ public class TestCommonChanges
 		);
 		
 		// Craft some items to use these up and verify that we also moved.
-		EntityChangeCraft craft = new EntityChangeCraft(ENV.crafting.LOG_TO_PLANKS, ENV.crafting.LOG_TO_PLANKS.millisPerCraft);
+		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertEquals(10.2f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);

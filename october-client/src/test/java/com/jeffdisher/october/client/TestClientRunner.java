@@ -214,7 +214,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it.
 		currentTimeMillis += 500L;
-		runner.craft(ENV.crafting.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craft(ENV.crafting.getCraftById("op.log_to_planks"), currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.loadedEnties.get(clientId).localCraftOperation());
 		
@@ -346,7 +346,7 @@ public class TestClientRunner
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.craftInBlock(table, ENV.crafting.LOG_TO_PLANKS, currentTimeMillis);
+		runner.craftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks"), currentTimeMillis);
 		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
 		Assert.assertEquals(500L, proxy.getCrafting().completedMillis());
