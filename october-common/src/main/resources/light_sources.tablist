@@ -1,0 +1,9 @@
+# Entries here have the form:
+# ID<TAB>light
+#
+# The values here show the light source values of given blocks.
+# The minimum value is 1 (anything not listed is assumed to be 0).
+# The maximum value is 15.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.lantern	15

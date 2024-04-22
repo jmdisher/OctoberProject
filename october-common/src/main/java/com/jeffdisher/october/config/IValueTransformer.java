@@ -41,6 +41,37 @@ public interface IValueTransformer<T>
 	}
 
 	/**
+	 * Decodes the given data as a positive Byte with a specific limit.
+	 */
+	public static class PositiveByteTransformer implements IValueTransformer<Byte>
+	{
+		private final String _name;
+		private final byte _limit;
+		public PositiveByteTransformer(String numberName, byte limit)
+		{
+			_name = numberName;
+			_limit = limit;
+		}
+		@Override
+		public Byte transform(String value) throws TabListException
+		{
+			try
+			{
+				byte parsed = Byte.parseByte(value);
+				if ((parsed <= 0) || (parsed > _limit))
+				{
+					throw new TabListReader.TabListException("Values for " + _name + " must be positive and not greater than " + _limit);
+				}
+				return parsed;
+			}
+			catch (NumberFormatException e)
+			{
+				throw new TabListReader.TabListException("Not a valid " + _name + ": \"" + value + "\"");
+			}
+		}
+	}
+
+	/**
 	 * Decodes the given data as an Item.
 	 */
 	public static class ItemTransformer implements IValueTransformer<Item>

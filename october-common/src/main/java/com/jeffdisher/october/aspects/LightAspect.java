@@ -21,17 +21,20 @@ public class LightAspect
 	 * 
 	 * @param items The existing ItemRegistry.
 	 * @param blocks The existing BlockAspect.
-	 * @param stream The stream containing the tablist describing block opacity.
+	 * @param opacityStream The stream containing the tablist describing block opacity.
+	 * @param sourceStream The stream containing the tablist describing block light sources.
 	 * @return The aspect (never null).
 	 * @throws IOException There was a problem with a stream.
 	 * @throws TabListReader.TabListException A tablist was malformed.
 	 */
 	public static LightAspect load(ItemRegistry items, BlockAspect blocks
-			, InputStream stream
+			, InputStream opacityStream
+			, InputStream sourceStream
 	) throws IOException, TabListReader.TabListException
 	{
-		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("opacity"));
-		TabListReader.readEntireFile(callbacks, stream);
+		// Process opacity.
+		FlatTabListCallbacks<Block, Integer> opacityCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("opacity"));
+		TabListReader.readEntireFile(opacityCallbacks, opacityStream);
 		
 		byte[] opacityByBlockType = new byte[blocks.BLOCKS_BY_TYPE.length];
 		for (int i = 0; i < opacityByBlockType.length; ++i)
@@ -40,7 +43,7 @@ public class LightAspect
 		}
 		
 		// Now, over-write with the values from the file.
-		for (Map.Entry<Block, Integer> elt : callbacks.data.entrySet())
+		for (Map.Entry<Block, Integer> elt : opacityCallbacks.data.entrySet())
 		{
 			int value = elt.getValue();
 			if ((value < 1) || (value > MAX_LIGHT))
@@ -49,19 +52,24 @@ public class LightAspect
 			}
 			opacityByBlockType[elt.getKey().item().number()] = (byte)value;
 		}
-		return new LightAspect(blocks, opacityByBlockType);
+		
+		// Now, process the sources.
+		FlatTabListCallbacks<Block, Byte> sourceCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.PositiveByteTransformer("source", MAX_LIGHT));
+		TabListReader.readEntireFile(sourceCallbacks, sourceStream);
+		
+		return new LightAspect(opacityByBlockType, sourceCallbacks.data);
 	}
 
 	public static final byte MAX_LIGHT = 15;
 	public static final byte OPAQUE = MAX_LIGHT;
 
-	private final BlockAspect _blocks;
 	private final byte[] _opacityByBlockType;
+	private final Map<Block, Byte> _sources;
 
-	private LightAspect(BlockAspect blocks, byte[] opacityByBlockType)
+	private LightAspect(byte[] opacityByBlockType, Map<Block, Byte> sources)
 	{
-		_blocks = blocks;
 		_opacityByBlockType = opacityByBlockType;
+		_sources = sources;
 	}
 
 	/**
@@ -84,9 +92,9 @@ public class LightAspect
 	 */
 	public byte getLightEmission(Block block)
 	{
-		// Only the lantern currently emits light.
-		return (_blocks.LANTERN == block)
-				? MAX_LIGHT
+		Byte known = _sources.get(block);
+		return (null != known)
+				? known.byteValue()
 				: 0
 		;
 	}
