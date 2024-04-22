@@ -52,3 +52,15 @@ op.iron_pickaxe	common
 	input	op.stick	op.iron_ingot
 	output	op.iron_pickaxe
 	millis	16000
+op.iron_shovel	common
+	input	op.stick	op.iron_ingot
+	output	op.iron_shovel
+	millis	12000
+op.iron_axe	common
+	input	op.stick	op.iron_ingot
+	output	op.iron_axe
+	millis	12000
+op.iron_sword	common
+	input	op.stick	op.iron_ingot	op.iron_ingot
+	output	op.iron_sword
+	millis	20000

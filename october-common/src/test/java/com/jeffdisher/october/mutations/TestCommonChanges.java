@@ -980,6 +980,61 @@ public class TestCommonChanges
 	}
 
 	@Test
+	public void attackWithSword() throws Throwable
+	{
+		// Verify sowrd damage and durability loss.
+		int attackerId = 1;
+		int targetId = 2;
+		MutableEntity attacker = MutableEntity.create(attackerId);
+		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		Item swordType = ENV.items.getItemById("op.iron_sword");
+		int startDurability = 100;
+		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, startDurability));
+		attacker.newSelectedItemKey = 1;
+		MutableEntity target = MutableEntity.create(targetId);
+		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
+		target.newInventory.addAllItems(ENV.items.STONE, 2);
+		target.newSelectedItemKey = target.newInventory.getIdOfStackableType(ENV.items.STONE);
+		
+		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze());
+		int[] targetHolder = new int[1];
+		IMutationEntity[] changeHolder = new IMutationEntity[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, (Integer thisId) -> targetsById.get(thisId)
+				, null
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.assertNull(changeHolder[0]);
+						targetHolder[0] = targetEntityId;
+						changeHolder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+		);
+		
+		// Check that the sword durability changed and that we scheduled the hit.
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
+		Assert.assertEquals(targetId, targetHolder[0]);
+		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamage);
+		int endDurability = attacker.newInventory.getNonStackableForKey(attacker.newSelectedItemKey).durability();
+		Assert.assertEquals(20, (startDurability - endDurability));
+		
+		// Apply the hit and verify that the target health changed.
+		EntityChangeTakeDamage change = (EntityChangeTakeDamage) changeHolder[0];
+		targetHolder[0] = 0;
+		changeHolder[0] = null;
+		Assert.assertTrue(change.applyChange(context, target));
+		Assert.assertEquals(80, target.newHealth);
+	}
+
+	@Test
 	public void entityPeriodic()
 	{
 		CommonChangeSink changeSink = new CommonChangeSink();

@@ -30,3 +30,6 @@ op.wheat_mature	0
 op.bread	1
 op.stick	1
 op.iron_pickaxe	2
+op.iron_shovel	2
+op.iron_axe	2
+op.iron_sword	2
