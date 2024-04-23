@@ -3,6 +3,7 @@ package com.jeffdisher.october.worldgen;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.utils.Assert;
 
@@ -37,16 +38,17 @@ public class StructureLoader
 	/**
 	 * Creates the structure loader.
 	 * 
+	 * @param items The items to aid in block lookup.
 	 * @param blocks The blocks to use to populate the loader mapping.
 	 */
-	public StructureLoader(BlockAspect blocks)
+	public StructureLoader(ItemRegistry items, BlockAspect blocks)
 	{
-		_lookup = Map.of(C_DIRT, blocks.DIRT
-				, C_WATER, blocks.WATER_SOURCE
-				, C_BRICK, blocks.STONE_BRICK
-				, C_LANTERN, blocks.LANTERN
-				, C_SEEDLING, blocks.WHEAT_SEEDLING
-				, C_SAPLING, blocks.SAPLING
+		_lookup = Map.of(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))
+				, C_WATER, blocks.fromItem(items.getItemById("op.water_source"))
+				, C_BRICK, blocks.fromItem(items.getItemById("op.stone_brick"))
+				, C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))
+				, C_SEEDLING, blocks.fromItem(items.getItemById("op.wheat_seedling"))
+				, C_SAPLING, blocks.fromItem(items.getItemById("op.sapling"))
 		);
 	}
 

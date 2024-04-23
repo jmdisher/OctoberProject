@@ -53,18 +53,19 @@ public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCubo
 		CuboidData data;
 		if (address.z() < (short)0)
 		{
-			data = CuboidGenerator.createFilledCuboid(address, env.blocks.STONE);
-			_fillPlane(data, (byte)31, env.blocks.DIRT);
-			_fillPlane(data, (byte)29, env.blocks.LOG);
-			_fillPlane(data, (byte)27, env.blocks.COAL_ORE);
-			_fillPlane(data, (byte)25, env.blocks.IRON_ORE);
+			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.stone")));
+			_fillPlane(data, (byte)31, env.blocks.fromItem(env.items.getItemById("op.dirt")));
+			_fillPlane(data, (byte)29, env.blocks.fromItem(env.items.getItemById("op.log")));
+			_fillPlane(data, (byte)27, env.blocks.fromItem(env.items.getItemById("op.coal_ore")));
+			_fillPlane(data, (byte)25, env.blocks.fromItem(env.items.getItemById("op.iron_ore")));
 			// We want to add a bit of water.
-			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)6, (byte)6, (byte)31), env.blocks.WATER_SOURCE.item().number());
-			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)7, (byte)7, (byte)31), env.blocks.WATER_SOURCE.item().number());
+			Block waterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
+			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)6, (byte)6, (byte)31), waterSource.item().number());
+			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)7, (byte)7, (byte)31), waterSource.item().number());
 		}
 		else
 		{
-			data = CuboidGenerator.createFilledCuboid(address, env.blocks.AIR);
+			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.air")));
 		}
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<ScheduledMutation> mutations;
@@ -73,7 +74,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCubo
 				&& ((-1 == address.z()) || (0 == address.z()))
 		)
 		{
-			StructureLoader loader = new StructureLoader(env.blocks);
+			StructureLoader loader = new StructureLoader(env.items, env.blocks);
 			Structure structure = loader.loadFromStrings(STRUCTURE);
 			AbsoluteLocation baseOffset = new AbsoluteLocation(
 					(0 == address.x()) ? BASE.x() : (32 + BASE.x()),

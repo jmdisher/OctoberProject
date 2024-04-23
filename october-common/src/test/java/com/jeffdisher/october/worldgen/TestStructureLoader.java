@@ -35,7 +35,7 @@ public class TestStructureLoader
 	@Test
 	public void singleBlock()
 	{
-		StructureLoader loader = new StructureLoader(ENV.blocks);
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {
 				"D\n",
 		};
@@ -53,7 +53,7 @@ public class TestStructureLoader
 	@Test
 	public void smallPrism()
 	{
-		StructureLoader loader = new StructureLoader(ENV.blocks);
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -84,7 +84,7 @@ public class TestStructureLoader
 	@Test
 	public void offsetPrism()
 	{
-		StructureLoader loader = new StructureLoader(ENV.blocks);
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {""
 				+ "B B B\n"
 				+ " D D \n"
@@ -120,7 +120,7 @@ public class TestStructureLoader
 	public void delayedPlacement()
 	{
 		// Make sure that things which grow or are light sources are replaced by air with mutations to place later.
-		StructureLoader loader = new StructureLoader(ENV.blocks);
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {" P B S B L \n"};
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.DIRT);
