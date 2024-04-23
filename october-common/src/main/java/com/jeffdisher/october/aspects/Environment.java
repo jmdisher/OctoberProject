@@ -89,7 +89,7 @@ public class Environment
 				, loader.getResourceAsStream("light_opacity.tablist")
 				, loader.getResourceAsStream("light_sources.tablist")
 		);
-		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("growth_divisor.tablist"));
+		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("plant_registry.tablist"));
 		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));
 		this.tools = ToolRegistry.load(this.items, loader.getResourceAsStream("tool_registry.tablist"));
 		this.stations = StationRegistry.load(this.items, this.blocks, loader.getResourceAsStream("station_registry.tablist"));

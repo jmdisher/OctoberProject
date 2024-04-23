@@ -1,0 +1,23 @@
+# Entries here have the form:
+# ID
+# <TAB>growth_divisor<TAB>int
+# [<TAB>grow_as_tree]
+# [<TAB>next_phase<TAB>id]
+#
+# The int given for growth_divisor is the divisor used to calculate whether a plant should grow during a growth tick.
+# The value must be a positive integer.  This value is used to randomly decide to grow in "1/divisor" growth ticks.
+# "grow_as_tree" is present if the tree growth logic should be applied when growing.
+# "next_phase" gives the ID of the next phase block for this plant.
+# While "grow_as_tree" and "next_phase" are both optional, exactly one of them must be specified to indicate how to
+# grow.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.sapling
+	growth_divisor	10
+	grow_as_tree
+op.wheat_seedling
+	growth_divisor	2
+	next_phase	op.wheat_young
+op.wheat_young
+	growth_divisor	2
+	next_phase	op.wheat_mature

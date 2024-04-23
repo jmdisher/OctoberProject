@@ -70,15 +70,23 @@ public class MutationBlockGrow implements IMutationBlock
 			int randomBits = RANDOM_PROVIDER.getAsInt();
 			if (1 == (randomBits % growthDivisor))
 			{
-				if (env.blocks.SAPLING == block)
+				Block nextPhase = env.plants.nextPhaseForPlant(block);
+				if (null != nextPhase)
+				{
+					// Become that next phase.
+					newBlock.setBlockAndClear(nextPhase);
+					// Reschedule if that block is also growable.
+					shouldReschedule = (env.plants.growthDivisor(nextPhase) > 0);
+				}
+				else if (env.plants.isTree(block))
 				{
 					_growTree(context, newBlock);
 					shouldReschedule = false;
 				}
 				else
 				{
-					// In other cases, just advance to the next stage.
-					shouldReschedule = _growCrop(context, newBlock, block);
+					// This shouldn't be possible since we must be growing into something.
+					throw Assert.unreachable();
 				}
 			}
 			else
@@ -112,19 +120,20 @@ public class MutationBlockGrow implements IMutationBlock
 	private void _growTree(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
+		Block log = env.blocks.fromItem(env.items.getItemById("op.log"));
+		Block leaf = env.blocks.fromItem(env.items.getItemById("op.leaf"));
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
-		newBlock.setBlockAndClear(env.blocks.LOG);
-		_tryScheduleLeaf(context, -1,  0,  0);
-		_tryScheduleLeaf(context,  1,  0,  0);
-		_tryScheduleLeaf(context,  0, -1,  0);
-		_tryScheduleLeaf(context,  0,  1,  0);
-		_tryScheduleLeaf(context,  0,  0,  1);
+		newBlock.setBlockAndClear(log);
+		_tryScheduleLeaf(context, env, leaf, -1,  0,  0);
+		_tryScheduleLeaf(context, env, leaf,  1,  0,  0);
+		_tryScheduleLeaf(context, env, leaf,  0, -1,  0);
+		_tryScheduleLeaf(context, env, leaf,  0,  1,  0);
+		_tryScheduleLeaf(context, env, leaf,  0,  0,  1);
 	}
 
-	private void _tryScheduleLeaf(TickProcessingContext context, int x, int y, int z)
+	private void _tryScheduleLeaf(TickProcessingContext context, Environment env, Block leaf, int x, int y, int z)
 	{
-		Environment env = Environment.getShared();
 		AbsoluteLocation location = _location.getRelative(x, y, z);
 		BlockProxy proxy = context.previousBlockLookUp.apply(location);
 		if (null != proxy)
@@ -132,30 +141,8 @@ public class MutationBlockGrow implements IMutationBlock
 			Block block = proxy.getBlock();
 			if (env.blocks.canBeReplaced(block))
 			{
-				context.mutationSink.next(new MutationBlockOverwrite(location, env.blocks.LEAF));
+				context.mutationSink.next(new MutationBlockOverwrite(location, leaf));
 			}
 		}
-	}
-
-	private boolean _growCrop(TickProcessingContext context, IMutableBlockProxy newBlock, Block block)
-	{
-		Environment env = Environment.getShared();
-		boolean shouldReschedule;
-		if (env.blocks.WHEAT_SEEDLING == block)
-		{
-			newBlock.setBlockAndClear(env.blocks.WHEAT_YOUNG);
-			shouldReschedule = true;
-		}
-		else if (env.blocks.WHEAT_YOUNG == block)
-		{
-			newBlock.setBlockAndClear(env.blocks.WHEAT_MATURE);
-			shouldReschedule = false;
-		}
-		else
-		{
-			// This is a missing piece of data.
-			throw Assert.unreachable();
-		}
-		return shouldReschedule;
 	}
 }
