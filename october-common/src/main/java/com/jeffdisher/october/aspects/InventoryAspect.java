@@ -57,8 +57,9 @@ public class InventoryAspect
 		
 		// We will pre-populate our default value for blocks the entity can enter (this is special logic - we don't want it in the data file).
 		Map<Block, Integer> blockCapacities = new HashMap<>();
-		for (Block block : blocks.BLOCKS_BY_TYPE)
+		for (Item item : items.ITEMS_BY_TYPE)
 		{
+			Block block = blocks.fromItem(item);
 			if ((null != block) && blocks.permitsEntityMovement(block))
 			{
 				blockCapacities.put(block, CAPACITY_BLOCK_EMPTY);

@@ -36,7 +36,8 @@ public class LightAspect
 		FlatTabListCallbacks<Block, Integer> opacityCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("opacity"));
 		TabListReader.readEntireFile(opacityCallbacks, opacityStream);
 		
-		byte[] opacityByBlockType = new byte[blocks.BLOCKS_BY_TYPE.length];
+		// Set all items to be opaque if placed as blocks (not all can).
+		byte[] opacityByBlockType = new byte[items.ITEMS_BY_TYPE.length];
 		for (int i = 0; i < opacityByBlockType.length; ++i)
 		{
 			opacityByBlockType[i] = OPAQUE;

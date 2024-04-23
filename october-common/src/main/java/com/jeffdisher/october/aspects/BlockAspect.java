@@ -166,8 +166,6 @@ public class BlockAspect
 		);
 	}
 
-	public final Block[] BLOCKS_BY_TYPE;
-
 	public final Block AIR;
 	public final Block STONE;
 	public final Block LOG;
@@ -188,6 +186,7 @@ public class BlockAspect
 	public final Block WHEAT_YOUNG;
 	public final Block WHEAT_MATURE;
 
+	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
 	private final Set<Block> _permitsEntityMovement;
 	private final Map<Block, Block> _specialBlockSupport;
@@ -209,33 +208,45 @@ public class BlockAspect
 			, Map<Block, Item[]> specialBlockBreak
 	)
 	{
-		this.BLOCKS_BY_TYPE = blocksByType;
+		_blocksByItemNumber = blocksByType;
 
-		this.AIR = _bind(this.BLOCKS_BY_TYPE, items.AIR);
-		this.STONE = _bind(this.BLOCKS_BY_TYPE, items.STONE);
-		this.LOG = _bind(this.BLOCKS_BY_TYPE, items.LOG);
-		this.PLANK = _bind(this.BLOCKS_BY_TYPE, items.PLANK);
-		this.STONE_BRICK = _bind(this.BLOCKS_BY_TYPE, items.STONE_BRICK);
-		this.CRAFTING_TABLE = _bind(this.BLOCKS_BY_TYPE, items.CRAFTING_TABLE);
-		this.FURNACE = _bind(this.BLOCKS_BY_TYPE, items.FURNACE);
-		this.COAL_ORE = _bind(this.BLOCKS_BY_TYPE, items.COAL_ORE);
-		this.IRON_ORE = _bind(this.BLOCKS_BY_TYPE, items.IRON_ORE);
-		this.DIRT = _bind(this.BLOCKS_BY_TYPE, items.DIRT);
-		this.WATER_SOURCE = _bind(this.BLOCKS_BY_TYPE, items.WATER_SOURCE);
-		this.WATER_STRONG = _bind(this.BLOCKS_BY_TYPE, items.WATER_STRONG);
-		this.WATER_WEAK = _bind(this.BLOCKS_BY_TYPE, items.WATER_WEAK);
-		this.LANTERN = _bind(this.BLOCKS_BY_TYPE, items.LANTERN);
-		this.SAPLING = _bind(this.BLOCKS_BY_TYPE, items.SAPLING);
-		this.LEAF = _bind(this.BLOCKS_BY_TYPE, items.LEAF);
-		this.WHEAT_SEEDLING = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_SEEDLING);
-		this.WHEAT_YOUNG = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_YOUNG);
-		this.WHEAT_MATURE = _bind(this.BLOCKS_BY_TYPE, items.WHEAT_MATURE);
+		this.AIR = _bind(blocksByType, items.AIR);
+		this.STONE = _bind(blocksByType, items.STONE);
+		this.LOG = _bind(blocksByType, items.LOG);
+		this.PLANK = _bind(blocksByType, items.PLANK);
+		this.STONE_BRICK = _bind(blocksByType, items.STONE_BRICK);
+		this.CRAFTING_TABLE = _bind(blocksByType, items.CRAFTING_TABLE);
+		this.FURNACE = _bind(blocksByType, items.FURNACE);
+		this.COAL_ORE = _bind(blocksByType, items.COAL_ORE);
+		this.IRON_ORE = _bind(blocksByType, items.IRON_ORE);
+		this.DIRT = _bind(blocksByType, items.DIRT);
+		this.WATER_SOURCE = _bind(blocksByType, items.WATER_SOURCE);
+		this.WATER_STRONG = _bind(blocksByType, items.WATER_STRONG);
+		this.WATER_WEAK = _bind(blocksByType, items.WATER_WEAK);
+		this.LANTERN = _bind(blocksByType, items.LANTERN);
+		this.SAPLING = _bind(blocksByType, items.SAPLING);
+		this.LEAF = _bind(blocksByType, items.LEAF);
+		this.WHEAT_SEEDLING = _bind(blocksByType, items.WHEAT_SEEDLING);
+		this.WHEAT_YOUNG = _bind(blocksByType, items.WHEAT_YOUNG);
+		this.WHEAT_MATURE = _bind(blocksByType, items.WHEAT_MATURE);
 		
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
 		_permitsEntityMovement = Collections.unmodifiableSet(permitsEntityMovement);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
+	}
+
+	/**
+	 * Returns the corresponding Block for the given Item, null if it cannot be a block.  Note that this is to check the
+	 * literal item, itself, and is not the same as "getAsPlaceableBlock(Item)".
+	 * 
+	 * @param item The Item.
+	 * @return The corresponding Block, if item can be directly represented as a block.
+	 */
+	public Block fromItem(Item item)
+	{
+		return _blocksByItemNumber[item.number()];
 	}
 
 	/**
@@ -298,7 +309,7 @@ public class BlockAspect
 		Assert.assertTrue(null != itemType);
 		
 		// Most items just become the corresponding block, but some are special.
-		Block block = BLOCKS_BY_TYPE[itemType.number()];
+		Block block = _blocksByItemNumber[itemType.number()];
 		if (null == block)
 		{
 			block = _specialBlockPlacement.get(itemType);

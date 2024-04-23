@@ -8,6 +8,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -27,7 +28,8 @@ public class BlockProxy implements IBlockProxy
 		_data = data;
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedBlock = _env.blocks.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		Item rawItem = _env.items.ITEMS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = _env.blocks.fromItem(rawItem);
 	}
 
 	@Override

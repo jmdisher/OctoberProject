@@ -6,6 +6,7 @@ import java.util.List;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.ItemRegistry;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
@@ -13,6 +14,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
 
 
 /**
@@ -121,6 +123,7 @@ public class Structure
 		// Now we can copy, bearing in mind that we need to synthesize events to run after loading.
 		AbsoluteLocation baseCuboidLocation = cuboid.getCuboidAddress().getBase();
 		Environment env = Environment.getShared();
+		ItemRegistry items = env.items;
 		BlockAspect blocks = env.blocks;
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
@@ -143,8 +146,8 @@ public class Structure
 						// are so common, they are specially optimized).  Therefore, we will just handle lighting
 						// updates and growth mutation requirements the same way:  Make the block air and return a
 						// replace block mutation.
-						
-						Block block = blocks.BLOCKS_BY_TYPE[value];
+						Item rawItem = items.ITEMS_BY_TYPE[value];
+						Block block = blocks.fromItem(rawItem);
 						boolean needsLightUpdate = (lights.getLightEmission(block) > 0);
 						boolean needsGrowth = (plants.growthDivisor(block) > 0);
 						AbsoluteLocation thisBlock = baseCuboidLocation.getRelative(writeX + a, writeY + b, writeZ + c);

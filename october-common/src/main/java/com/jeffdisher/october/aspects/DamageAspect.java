@@ -8,6 +8,7 @@ import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -35,11 +36,12 @@ public class DamageAspect
 		FlatTabListCallbacks<Block, Integer> callbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.IntegerTransformer("toughness"));
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		short[] toughnessByBlockType = new short[blocks.BLOCKS_BY_TYPE.length];
+		short[] toughnessByBlockType = new short[items.ITEMS_BY_TYPE.length];
 		// Set defaults:  Blocks get MEDIUM, non-blocks get NOT_BLOCK.
 		for (int i = 0; i < toughnessByBlockType.length; ++i)
 		{
-			boolean isBlock = (null != blocks.BLOCKS_BY_TYPE[i]);
+			Item item = items.ITEMS_BY_TYPE[i];
+			boolean isBlock = (null != blocks.fromItem(item));
 			toughnessByBlockType[i] = isBlock ? MEDIUM : NOT_BLOCK;
 		}
 		

@@ -109,7 +109,7 @@ public interface IValueTransformer<T>
 		public Block transform(String value) throws TabListException
 		{
 			Item item = _items.getItemById(value);
-			Block block = (null != item) ? _blocks.BLOCKS_BY_TYPE[item.number()] : null;
+			Block block = (null != item) ? _blocks.fromItem(item) : null;
 			if (null == block)
 			{
 				throw new TabListReader.TabListException("Not a block: \"" + value + "\"");

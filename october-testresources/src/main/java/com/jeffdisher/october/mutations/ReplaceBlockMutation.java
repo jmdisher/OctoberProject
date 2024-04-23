@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -41,7 +42,8 @@ public class ReplaceBlockMutation implements IMutationBlock
 		if (_oldType == newBlock.getBlock().item().number())
 		{
 			Environment env = Environment.getShared();
-			newBlock.setBlockAndClear(env.blocks.BLOCKS_BY_TYPE[_newType]);
+			Item rawItem = env.items.ITEMS_BY_TYPE[_newType];
+			newBlock.setBlockAndClear(env.blocks.fromItem(rawItem));
 			didApply = true;
 		}
 		return didApply;

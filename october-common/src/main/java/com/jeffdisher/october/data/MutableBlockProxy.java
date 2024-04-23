@@ -12,6 +12,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -47,7 +48,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_writes = new Object[AspectRegistry.ALL_ASPECTS.length];
 		
 		// We cache the item since we use it to make some other internal decisions.
-		_cachedBlock = _env.blocks.BLOCKS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		Item rawItem = _env.items.ITEMS_BY_TYPE[_getData15(AspectRegistry.BLOCK)];
+		_cachedBlock = _env.blocks.fromItem(rawItem);
 	}
 
 	@Override
@@ -347,7 +349,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		if (null != _writes[AspectRegistry.BLOCK.index()])
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
-			Block originalBlock = _env.blocks.BLOCKS_BY_TYPE[original];
+			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
+			Block originalBlock = _env.blocks.fromItem(rawItem);
 			byte originalEmission = _env.lighting.getLightEmission(originalBlock);
 			byte updatedEmission = _env.lighting.getLightEmission(_cachedBlock);
 			byte originalOpacity = _env.lighting.getOpacity(originalBlock);
