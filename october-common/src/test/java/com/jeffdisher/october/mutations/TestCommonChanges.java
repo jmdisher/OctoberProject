@@ -1158,6 +1158,83 @@ public class TestCommonChanges
 		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
 
+	@Test
+	public void breakBlockFullInventory() throws Throwable
+	{
+		// Break a block with a nearly full inventory and verify that it doesn't add the new item.
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		Item plank = ENV.items.getItemById("op.plank");
+		newEntity.newInventory.addItemsBestEfforts(plank, newEntity.newInventory.maxVacancyForItem(plank) - 1);
+		int initialEncumbrance = newEntity.newInventory.getCurrentEncumbrance();
+		
+		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.items.STONE.number());
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), plank.number());
+		
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		IMutationEntity[] entityHolder = new IMutationEntity[1];
+		boolean[] didSchedule = new boolean[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.assertNull(entityHolder[0]);
+						entityHolder[0] = change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+		);
+		
+		// Do the break with enough time to break the block.
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)1000);
+		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
+		Assert.assertNotNull(blockHolder[0]);
+		Assert.assertNull(entityHolder[0]);
+		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) blockHolder[0];
+		blockHolder[0] = null;
+		
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNull(blockHolder[0]);
+		Assert.assertNotNull(entityHolder[0]);
+		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) entityHolder[0];
+		entityHolder[0] = null;
+		
+		// We should see an attempt to drop the items, since they won't fit.
+		Assert.assertTrue(store.applyChange(context, newEntity));
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertNull(entityHolder[0]);
+		
+		// The block should be broken but our inventory should be the same size.
+		Assert.assertEquals(ENV.items.AIR.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(1, newEntity.newInventory.freeze().sortedKeys().size());
+		Assert.assertEquals(initialEncumbrance, newEntity.newInventory.getCurrentEncumbrance());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

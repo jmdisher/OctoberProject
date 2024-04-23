@@ -187,4 +187,25 @@ public class TestMutableInventory
 		Assert.assertEquals(ENV.items.DIRT, frozen.getNonStackableForKey(4).type());
 		Assert.assertEquals(ENV.items.LOG, frozen.getNonStackableForKey(5).type());
 	}
+
+	@Test
+	public void bestEffortsFull() throws Throwable
+	{
+		Inventory original = Inventory.start(10).finish();
+		MutableInventory inv = new MutableInventory(original);
+		int planksToAdd = inv.maxVacancyForItem(ENV.items.PLANK) - 1;
+		int added = inv.addItemsBestEfforts(ENV.items.PLANK, planksToAdd);
+		Assert.assertEquals(planksToAdd, added);
+		Assert.assertEquals(1, inv.freeze().sortedKeys().size());
+		Assert.assertEquals(9, inv.getCurrentEncumbrance());
+		
+		added = inv.addItemsBestEfforts(ENV.items.LOG, 1);
+		Assert.assertEquals(0, added);
+		Assert.assertEquals(1, inv.freeze().sortedKeys().size());
+		
+		Inventory frozen = inv.freeze();
+		Assert.assertEquals(original.maxEncumbrance, frozen.maxEncumbrance);
+		Assert.assertEquals(1, frozen.sortedKeys().size());
+		Assert.assertEquals(9, frozen.currentEncumbrance);
+	}
 }

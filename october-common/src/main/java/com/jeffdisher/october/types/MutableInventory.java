@@ -55,6 +55,7 @@ public class MutableInventory
 	 */
 	public int getIdOfStackableType(Item type)
 	{
+		Assert.assertTrue(null != type);
 		return _getKeyForStackableType(type);
 	}
 
@@ -90,6 +91,8 @@ public class MutableInventory
 	 */
 	public int getCount(Item type)
 	{
+		Assert.assertTrue(null != type);
+		
 		int id = _getKeyForStackableType(type);
 		Items existing = _stackable.get(id);
 		int count;
@@ -115,6 +118,9 @@ public class MutableInventory
 	 */
 	public boolean addAllItems(Item type, int count)
 	{
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(count > 0);
+		
 		Environment env = Environment.getShared();
 		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
@@ -137,6 +143,9 @@ public class MutableInventory
 	 */
 	public int addItemsBestEfforts(Item type, int count)
 	{
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(count > 0);
+		
 		Environment env = Environment.getShared();
 		int itemEncumbrance = env.inventory.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
@@ -146,8 +155,11 @@ public class MutableInventory
 			int maxToAdd = availableEncumbrance / itemEncumbrance;
 			int countToAdd = Math.min(maxToAdd, count);
 			
-			_addStackableItems(type, countToAdd);
-			added = countToAdd;
+			if (countToAdd > 0)
+			{
+				_addStackableItems(type, countToAdd);
+				added = countToAdd;
+			}
 		}
 		return added;
 	}
@@ -160,6 +172,9 @@ public class MutableInventory
 	 */
 	public void addItemsAllowingOverflow(Item type, int count)
 	{
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(count > 0);
+		
 		_addStackableItems(type, count);
 	}
 
@@ -171,6 +186,8 @@ public class MutableInventory
 	 */
 	public boolean addNonStackableBestEfforts(NonStackableItem nonStackable)
 	{
+		Assert.assertTrue(null != nonStackable);
+		
 		Environment env = Environment.getShared();
 		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
@@ -192,6 +209,8 @@ public class MutableInventory
 	 */
 	public void addNonStackableAllowingOverflow(NonStackableItem nonStackable)
 	{
+		Assert.assertTrue(null != nonStackable);
+		
 		Environment env = Environment.getShared();
 		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
 		_nonStackable.put(_nextAddressId, nonStackable);
@@ -223,6 +242,8 @@ public class MutableInventory
 	 */
 	public int maxVacancyForItem(Item type)
 	{
+		Assert.assertTrue(null != type);
+		
 		Environment env = Environment.getShared();
 		int itemEncumbrance = env.inventory.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
@@ -243,6 +264,9 @@ public class MutableInventory
 	 */
 	public void removeStackableItems(Item type, int count)
 	{
+		Assert.assertTrue(null != type);
+		Assert.assertTrue(count > 0);
+		
 		Environment env = Environment.getShared();
 		// We assume that someone checked before calling this in order to make a decision.
 		Integer id = _getKeyForStackableType(type);
@@ -270,6 +294,8 @@ public class MutableInventory
 	 */
 	public void removeNonStackableItems(int key)
 	{
+		Assert.assertTrue(key > 0);
+		
 		Environment env = Environment.getShared();
 		NonStackableItem removed = _nonStackable.remove(key);
 		Assert.assertTrue(null != removed);
