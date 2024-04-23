@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.Entity;
@@ -77,9 +78,18 @@ public class EntityChangeAttackEntity implements IMutationEntity
 					: null
 			;
 			Environment env = Environment.getShared();
-			int toolSpeedMultiplier = env.tools.toolSpeedModifier(toolType);
-			Assert.assertTrue(toolSpeedMultiplier <= Byte.MAX_VALUE);
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage((byte)toolSpeedMultiplier);
+			byte damageToApply;
+			if (BlockMaterial.SWORD == env.tools.toolTargetMaterial(toolType))
+			{
+				int toolSpeedMultiplier = env.tools.toolSpeedModifier(toolType);
+				Assert.assertTrue(toolSpeedMultiplier <= Byte.MAX_VALUE);
+				damageToApply = (byte) toolSpeedMultiplier;
+			}
+			else
+			{
+				damageToApply = 1;
+			}
+			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(damageToApply);
 			context.newChangeSink.next(_targetEntityId, takeDamage);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
@@ -89,7 +99,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 				if (totalDurability > 0)
 				{
 					// For now, we will just apply whatever the damage was as the durability loss, but this should change later.
-					int newDurability = nonStack.durability() - toolSpeedMultiplier;
+					int newDurability = nonStack.durability() - damageToApply;
 					if (newDurability > 0)
 					{
 						// Write this back.

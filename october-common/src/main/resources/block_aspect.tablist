@@ -1,5 +1,6 @@
 # Entries here have the form:
 # ID<TAB>flag_list
+# [<TAB>block_material<TAB>material]
 # [<TAB>placed_from<TAB>ID]
 # [<TAB>requires_support<TAB>ID]
 # [<TAB>special_drop<TAB>ID]
@@ -7,6 +8,7 @@
 # flag_list includes:
 # -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
 # -permits_entity_movement (entities and items can exist in the block)
+# block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
 # requires_support means that this block requires the given block under it.
 # special_drop means that the block drops as the given item, instead of itself, when broken.
@@ -16,15 +18,24 @@
 
 op.air	can_be_replaced	permits_entity_movement
 op.stone
+	block_material	PICKAXE
 op.log
+	block_material	AXE
 op.plank
+	block_material	AXE
 op.stone_brick
+	block_material	PICKAXE
 op.crafting_table
+	block_material	AXE
 op.furnace
+	block_material	PICKAXE
 # op.charcoal
 op.coal_ore
+	block_material	PICKAXE
 op.iron_ore
+	block_material	PICKAXE
 op.dirt
+	block_material	SHOVEL
 op.water_source	can_be_replaced	permits_entity_movement
 op.water_strong	can_be_replaced	permits_entity_movement
 op.water_weak	can_be_replaced	permits_entity_movement
@@ -33,6 +44,7 @@ op.lantern
 op.sapling	permits_entity_movement
 	requires_support	op.dirt
 op.leaf
+	block_material	AXE
 	special_drop	op.sapling
 # op.wheat_seed
 # op.wheat_item

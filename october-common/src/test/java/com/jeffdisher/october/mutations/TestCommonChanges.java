@@ -1176,7 +1176,6 @@ public class TestCommonChanges
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		IMutationEntity[] entityHolder = new IMutationEntity[1];
-		boolean[] didSchedule = new boolean[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -1233,6 +1232,82 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.items.AIR.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(1, newEntity.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(initialEncumbrance, newEntity.newInventory.getCurrentEncumbrance());
+	}
+
+	@Test
+	public void blockMaterial() throws Throwable
+	{
+		// Show what happens when we try to break different blocks with the same tool.
+		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
+		int startDurability = 100;
+		
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
+		newEntity.newSelectedItemKey = 1;
+		
+		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
+		AbsoluteLocation targetLog = new AbsoluteLocation(6, 1, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetStone.getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLog.getBlockAddress(), ENV.items.LOG.number());
+		
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.fail("Not expected in tets");
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+		);
+		
+		// Apply 10ms to the stone and observe what happens.
+		short duration = 10;
+		EntityChangeIncrementalBlockBreak breakStone = new EntityChangeIncrementalBlockBreak(targetStone, duration);
+		Assert.assertTrue(breakStone.applyChange(context, newEntity));
+		Assert.assertNotNull(blockHolder[0]);
+		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) blockHolder[0];
+		blockHolder[0] = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
+		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(startDurability - duration, newEntity.newInventory.getNonStackableForKey(1).durability());
+		Assert.assertEquals(20 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+		
+		// Now, do the same to the plank and observe the difference.
+		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog, duration);
+		Assert.assertTrue(breakLog.applyChange(context, newEntity));
+		Assert.assertNotNull(blockHolder[0]);
+		breaking = (MutationBlockIncrementalBreak) blockHolder[0];
+		blockHolder[0] = null;
+		proxy = new MutableBlockProxy(targetLog, cuboid);
+		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(startDurability - (2 * duration), newEntity.newInventory.getNonStackableForKey(1).durability());
+		// (note that there is a 5x multiplier currently hacked in, until the durability rework).
+		Assert.assertEquals(5 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
 	}
 
 

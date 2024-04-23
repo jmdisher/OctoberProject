@@ -1,18 +1,24 @@
 # Entries here have the form:
 # ID<TAB>number
+# <TAB>block_material<TAB>material
 # <TAB>durability<TAB>int
 # 
 # The given number is non-negative and represents the break blocking speed modifier when using this tool (damage
 # multiplier when used on a weapon).
+# block_material is a constant enum of BlockMaterial type (use NO_MATERIAL if the multiplier should always be ignored).
 # Note that the ID is from item_registry.tablist.
 # Durability is a number which must be non-negative (0 means unbreakable).  Durability is the measurement of
 # milliseconds for which the tool can be used before it breaks.
 
 op.iron_pickaxe	20
+	block_material	PICKAXE
 	durability	100000
 op.iron_shovel	20
+	block_material	SHOVEL
 	durability	100000
 op.iron_axe	20
+	block_material	AXE
 	durability	100000
 op.iron_sword	20
+	block_material	SWORD
 	durability	100000

@@ -46,6 +46,7 @@ public class BlockAspect
 		Map<Block, Block> specialBlockSupport = new HashMap<>();
 		Map<Item, Block> specialBlockPlacement = new HashMap<>();
 		Map<Block, Item[]> specialBlockBreak = new HashMap<>();
+		Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private Item _currentItem;
@@ -134,6 +135,19 @@ public class BlockAspect
 					}
 					specialBlockBreak.put(_currentBlock, drops);
 				}
+				else if ("block_material".equals(name))
+				{
+					if (1 != parameters.length)
+					{
+						throw new TabListReader.TabListException("Exactly one value required for block_material");
+					}
+					BlockMaterial material = BlockMaterial.valueOf(parameters[0]);
+					if (null == material)
+					{
+						throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
+					}
+					blockMaterials.put(_currentBlock, material);
+				}
 				else
 				{
 					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
@@ -163,6 +177,7 @@ public class BlockAspect
 				, specialBlockSupport
 				, specialBlockPlacement
 				, specialBlockBreak
+				, blockMaterials
 		);
 	}
 
@@ -172,6 +187,7 @@ public class BlockAspect
 	private final Map<Block, Block> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, Item[]> _specialBlockBreak;
+	private final Map<Block, BlockMaterial> _blockMaterials;
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
@@ -180,6 +196,7 @@ public class BlockAspect
 			, Map<Block, Block> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
 			, Map<Block, Item[]> specialBlockBreak
+			, Map<Block, BlockMaterial> blockMaterials
 	)
 	{
 		_blocksByItemNumber = blocksByType;
@@ -189,6 +206,7 @@ public class BlockAspect
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
+		_blockMaterials = Collections.unmodifiableMap(blockMaterials);
 	}
 
 	/**
@@ -287,5 +305,22 @@ public class BlockAspect
 			dropped = new Item[] { block.item() };
 		}
 		return dropped;
+	}
+
+	/**
+	 * Returns the material the block is made of, in terms of the tool required to break it.  Note that most blocks have
+	 * NO_TOOL.
+	 * 
+	 * @param block The block to check.
+	 * @return The block material.
+	 */
+	public BlockMaterial getBlockMaterial(Block block)
+	{
+		BlockMaterial special = _blockMaterials.get(block);
+		// We will default to NO_TOOL, if no value specified.
+		return (null != special)
+				? special
+				: BlockMaterial.NO_TOOL
+		;
 	}
 }

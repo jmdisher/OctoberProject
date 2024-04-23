@@ -17,6 +17,7 @@ import com.jeffdisher.october.utils.Assert;
 public class ToolRegistry
 {
 	public static final String FIELD_DURABILITY = "durability";
+	public static final String FIELD_BLOCK_MATERIAL = "block_material";
 
 	/**
 	 * Loads the tool registry from the tablist in the given stream, sourcing Items from the given items registry.
@@ -36,6 +37,7 @@ public class ToolRegistry
 		IValueTransformer<Integer> durabilityTransformer = new IValueTransformer.IntegerTransformer(FIELD_DURABILITY);
 		Map<Item, Integer> speeds = new HashMap<>();
 		Map<Item, Integer> durabilities = new HashMap<>();
+		Map<Item, BlockMaterial> blockMaterials = new HashMap<>();
 		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
 			private Item _currentKey;
 			@Override
@@ -58,16 +60,29 @@ public class ToolRegistry
 			@Override
 			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
 			{
-				if (!name.equals(FIELD_DURABILITY))
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Expected a single parameter value for the tool \"" + _currentKey.id() + "\"");
+				}
+				
+				if (name.equals(FIELD_DURABILITY))
+				{
+					Integer durablity = durabilityTransformer.transform(parameters[0]);
+					durabilities.put(_currentKey, durablity);
+				}
+				else if (name.equals(FIELD_BLOCK_MATERIAL))
+				{
+					BlockMaterial material = BlockMaterial.valueOf(parameters[0]);
+					if (null == material)
+					{
+						throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
+					}
+					blockMaterials.put(_currentKey, material);
+				}
+				else
 				{
 					throw new TabListReader.TabListException("Unexpected field in \"" + _currentKey.id() + "\": \"" + name + "\"");
 				}
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("Expected a single durability value for the tool \"" + _currentKey.id() + "\"");
-				}
-				Integer durablity = durabilityTransformer.transform(parameters[0]);
-				durabilities.put(_currentKey, durablity);
 			}
 		};
 		
@@ -76,17 +91,22 @@ public class ToolRegistry
 		// We expect a durability entry for each item.
 		Assert.assertTrue(speeds.size() == durabilities.size());
 		// We can just pass these in, directly.
-		return new ToolRegistry(speeds, durabilities);
+		return new ToolRegistry(speeds, durabilities, blockMaterials);
 	}
 
 
 	private final Map<Item, Integer> _speedValues;
 	private final Map<Item, Integer> _durabilityValues;
+	private final Map<Item, BlockMaterial> _blockMaterials;
 
-	private ToolRegistry(Map<Item, Integer> speedValues, Map<Item, Integer> durabilityValues)
+	private ToolRegistry(Map<Item, Integer> speedValues
+			, Map<Item, Integer> durabilityValues
+			, Map<Item, BlockMaterial> blockMaterials
+	)
 	{
 		_speedValues = speedValues;
 		_durabilityValues = durabilityValues;
+		_blockMaterials = blockMaterials;
 	}
 
 	/**
@@ -97,11 +117,10 @@ public class ToolRegistry
 	 */
 	public int toolSpeedModifier(Item item)
 	{
-		// TODO:  Change this to a default of 1 (the documented answer) once we re-work the block toughness.
 		Integer toolValue = _speedValues.get(item);
 		return (null != toolValue)
 				? toolValue.intValue()
-				: 5
+				: 1
 		;
 	}
 
@@ -129,6 +148,22 @@ public class ToolRegistry
 		return (null != value)
 				? value.intValue()
 				: 0
+		;
+	}
+
+	/**
+	 * Checks the type of blocks which receive a speed multiplier when using the given item as a tool.  NO_MATERIAL is
+	 * returned if this is no tool.
+	 * 
+	 * @param item The item which may be a tool.
+	 * @return The material type this tool can break.
+	 */
+	public BlockMaterial toolTargetMaterial(Item item)
+	{
+		BlockMaterial value = _blockMaterials.get(item);
+		return (null != value)
+				? value
+				: BlockMaterial.NO_MATERIAL
 		;
 	}
 }

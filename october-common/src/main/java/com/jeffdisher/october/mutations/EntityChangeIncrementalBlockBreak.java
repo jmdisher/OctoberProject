@@ -78,7 +78,18 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 					? selected.type()
 					: null
 			;
-			int speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+			int speedMultiplier;
+			if (env.blocks.getBlockMaterial(proxy.getBlock()) == env.tools.toolTargetMaterial(selectedItem))
+			{
+				// The tool material matches so set the multiplier.
+				speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+			}
+			else
+			{
+				// This doesn't match so use the default of 1.
+				// TODO:  Change this to a default of 1 once we re-work the block toughness.
+				speedMultiplier = 5;
+			}
 			short damageToApply = (short)(speedMultiplier * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
 			context.mutationSink.next(mutation);
