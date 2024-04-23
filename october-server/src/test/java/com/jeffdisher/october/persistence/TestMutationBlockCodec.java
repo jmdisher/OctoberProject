@@ -40,7 +40,7 @@ public class TestMutationBlockCodec
 	public void overwrite() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, ENV.blocks.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

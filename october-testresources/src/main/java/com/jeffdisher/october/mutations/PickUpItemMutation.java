@@ -53,7 +53,7 @@ public class PickUpItemMutation implements IMutationBlock
 		Environment env = Environment.getShared();
 		// We can only operator on air.
 		boolean didApply = false;
-		if (env.blocks.AIR == newBlock.getBlock())
+		if (env.special.AIR == newBlock.getBlock())
 		{
 			Inventory oldInventory = newBlock.getInventory();
 			MutableInventory mutable = new MutableInventory(oldInventory);

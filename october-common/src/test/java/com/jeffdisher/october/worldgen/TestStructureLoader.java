@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
@@ -21,10 +22,14 @@ import com.jeffdisher.october.types.CuboidAddress;
 public class TestStructureLoader
 {
 	private static Environment ENV;
+	private static Block DIRT;
+	private static Block STONE_BRICK;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		DIRT = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		STONE_BRICK = ENV.blocks.fromItem(ENV.items.getItemById("op.stone_brick"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -40,14 +45,14 @@ public class TestStructureLoader
 				"D\n",
 		};
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
 		Assert.assertTrue(changes.isEmpty());
 		
-		Assert.assertEquals(ENV.blocks.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)4, (byte)5, (byte)6)));
-		Assert.assertEquals(ENV.blocks.DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)4, (byte)5, (byte)6)));
+		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
 	}
 
 	@Test
@@ -68,7 +73,7 @@ public class TestStructureLoader
 				+ "B B B\n"
 		};
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		Assert.assertEquals(new AbsoluteLocation(5, 3, 3), structure.totalVolume());
 		
@@ -76,9 +81,9 @@ public class TestStructureLoader
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
 		Assert.assertTrue(changes.isEmpty());
 		
-		Assert.assertEquals(ENV.blocks.STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(2, 2, 2).getBlockAddress()));
+		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
+		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(2, 2, 2).getBlockAddress()));
 	}
 
 	@Test
@@ -99,21 +104,21 @@ public class TestStructureLoader
 				+ "B B B\n"
 		};
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		
 		// Offset with the positive edge.
 		AbsoluteLocation target = new AbsoluteLocation(30, 30, 30);
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
 		Assert.assertTrue(changes.isEmpty());
-		Assert.assertEquals(ENV.blocks.STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
+		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 		
 		// Offset with the negative edge.
 		AbsoluteLocation negativeTarget = target.getRelative(-32, -32, -32);
 		changes = structure.applyToCuboid(cuboid, negativeTarget);
 		Assert.assertTrue(changes.isEmpty());
-		Assert.assertEquals(ENV.blocks.STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, negativeTarget.getRelative(2, 2, 2).getBlockAddress()));
+		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, negativeTarget.getRelative(2, 2, 2).getBlockAddress()));
 	}
 
 	@Test
@@ -123,7 +128,7 @@ public class TestStructureLoader
 		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {" P B S B L \n"};
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.DIRT);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, DIRT);
 		Structure structure = loader.loadFromStrings(zLayers);
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
@@ -138,9 +143,9 @@ public class TestStructureLoader
 		locations.contains(wait2);
 		locations.contains(wait3);
 		
-		Assert.assertEquals(ENV.blocks.DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
-		Assert.assertEquals(ENV.blocks.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait3.getBlockAddress()));
+		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait3.getBlockAddress()));
 	}
 }

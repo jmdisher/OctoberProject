@@ -71,6 +71,7 @@ public class Environment
 	public final FoodRegistry foods;
 	public final ToolRegistry tools;
 	public final StationRegistry stations;
+	public final SpecialConstants special;
 
 	private Environment() throws IOException, TabListException
 	{
@@ -93,5 +94,6 @@ public class Environment
 		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));
 		this.tools = ToolRegistry.load(this.items, loader.getResourceAsStream("tool_registry.tablist"));
 		this.stations = StationRegistry.load(this.items, this.blocks, loader.getResourceAsStream("station_registry.tablist"));
+		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }

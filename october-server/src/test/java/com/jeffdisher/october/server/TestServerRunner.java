@@ -28,6 +28,7 @@ import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Items;
@@ -42,10 +43,12 @@ public class TestServerRunner
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -163,8 +166,8 @@ public class TestServerRunner
 		// Send some empty move changes to see that the entity is falling over time.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.blocks.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -180,7 +183,7 @@ public class TestServerRunner
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
 		EntityChangeMove move1 = new EntityChangeMove(entity.location(), 100L, 0.0f, 0.0f);
 		MutableEntity fake = MutableEntity.existing(entity);
-		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.blocks.AIR);
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR);
 		move1.applyChange(new TickProcessingContext(1L
 				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)
 				, null
@@ -238,14 +241,14 @@ public class TestServerRunner
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), ENV.blocks.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.blocks.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ENV.blocks.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.blocks.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), ENV.blocks.STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.blocks.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.special.AIR));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -312,7 +315,7 @@ public class TestServerRunner
 	{
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		cuboidLoader.preload(cuboid);
 	}
 

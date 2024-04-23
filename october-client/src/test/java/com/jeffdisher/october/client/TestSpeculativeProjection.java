@@ -42,6 +42,7 @@ import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -57,10 +58,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestSpeculativeProjection
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -89,7 +92,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid))
@@ -207,8 +210,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.blocks.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
@@ -286,8 +289,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.blocks.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
@@ -382,8 +385,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.blocks.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.blocks.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
@@ -474,7 +477,7 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		projector.applyChangesForServerTick(0L
 				, Collections.emptyList()
 				, List.of(cuboid)
@@ -626,7 +629,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(MutableEntity.create(entityId).freeze())
@@ -661,7 +664,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		// We should see no inventory in the block but the item should be in the entity's inventory.
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
@@ -680,7 +683,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
 		
 		// Commit the second part and make sure the change is still there.
 		currentTimeMillis += 100L;
@@ -699,7 +702,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(ENV.blocks.STONE.item()));
+		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
 	}
 
 	@Test
@@ -711,7 +714,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.applyChangesForServerTick(0L
 				, List.of(MutableEntity.create(entityId).freeze())
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -865,7 +868,7 @@ public class TestSpeculativeProjection
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -904,8 +907,8 @@ public class TestSpeculativeProjection
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR)
-						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -936,8 +939,9 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3L, commit3);
 		
 		// Check the block and all of its aspects.
+		Block craftingTable = ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"));
 		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
-		Assert.assertEquals(ENV.blocks.CRAFTING_TABLE, proxy.getBlock());
+		Assert.assertEquals(craftingTable, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
 		
@@ -947,7 +951,7 @@ public class TestSpeculativeProjection
 		long commit4 = projector.applyLocalChange(craft, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
-		Assert.assertEquals(ENV.blocks.CRAFTING_TABLE, proxy.getBlock());
+		Assert.assertEquals(craftingTable, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE_BRICK));
 		Assert.assertNull(proxy.getCrafting());
@@ -959,7 +963,7 @@ public class TestSpeculativeProjection
 		long commit5 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE_BRICK));
@@ -1014,7 +1018,7 @@ public class TestSpeculativeProjection
 		int localEntityId = 1;
 		long currentTimeMillis = 1000L;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		Inventory inv = Inventory.start(10).addStackable(ENV.items.STONE, 1).finish();
 		int stoneKey = inv.getIdOfStackableType(ENV.items.STONE);
@@ -1124,8 +1128,8 @@ public class TestSpeculativeProjection
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR)
-						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE))
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR)
+						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1162,8 +1166,9 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3L, commit3);
 		
 		// Check the block and all of its aspects.
+		Block furnace = ENV.blocks.fromItem(ENV.items.getItemById("op.furnace"));
 		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
-		Assert.assertEquals(ENV.blocks.FURNACE, proxy.getBlock());
+		Assert.assertEquals(furnace, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
 		
@@ -1174,7 +1179,7 @@ public class TestSpeculativeProjection
 		long commit4 = projector.applyLocalChange(breaking, currentTimeMillis);
 		Assert.assertEquals(4L, commit4);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.PLANK));
@@ -1188,17 +1193,18 @@ public class TestSpeculativeProjection
 	public void breakBlockFullInventory()
 	{
 		// Break a simple block with a full inventory and verify that it drops at your feet.
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
-		int stored = mutable.newInventory.addItemsBestEfforts(ENV.blocks.DIRT.item(), 100);
+		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 100);
 		Assert.assertTrue(stored < 100);
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), ENV.blocks.DIRT.item().number());
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), dirt.item().number());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(0L
 				, List.of(mutable.freeze())
@@ -1223,7 +1229,7 @@ public class TestSpeculativeProjection
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
 		Assert.assertEquals(1, feetInventory.sortedKeys().size());
-		Assert.assertEquals(1, feetInventory.getCount(ENV.blocks.DIRT.item()));
+		Assert.assertEquals(1, feetInventory.getCount(dirt.item()));
 	}
 
 

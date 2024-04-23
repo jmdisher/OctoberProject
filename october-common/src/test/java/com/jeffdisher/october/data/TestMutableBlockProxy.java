@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
@@ -20,10 +21,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestMutableBlockProxy
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -36,7 +39,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
 		
@@ -48,16 +51,16 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(ENV.blocks.STONE);
+		proxy.setBlockAndClear(STONE);
 		
 		CuboidData updated = CuboidData.mutableClone(input);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(updated);
-		Assert.assertEquals(ENV.blocks.STONE.item().number(), updated.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(STONE.item().number(), updated.getData15(AspectRegistry.BLOCK, address));
 	}
 
 	@Test
@@ -65,11 +68,11 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(ENV.blocks.STONE);
-		proxy.setBlockAndClear(ENV.blocks.AIR);
+		proxy.setBlockAndClear(STONE);
+		proxy.setBlockAndClear(ENV.special.AIR);
 		
 		Assert.assertFalse(proxy.didChange());
 	}
@@ -79,7 +82,7 @@ public class TestMutableBlockProxy
 	{
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
-		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		// Store into the block's inventory and see how that serializes.
@@ -115,7 +118,7 @@ public class TestMutableBlockProxy
 		
 		// Now, reset the block type and verify that the inventory is cleared (notably not the lighting, since it is updated later).
 		proxy = new MutableBlockProxy(location, input);
-		proxy.setBlockAndClear(ENV.blocks.STONE);
+		proxy.setBlockAndClear(STONE);
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
@@ -128,7 +131,7 @@ public class TestMutableBlockProxy
 		proxy.writeBack(input);
 		buffer.clear();
 		
-		Assert.assertEquals(ENV.blocks.STONE.item().number(), input.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(STONE.item().number(), input.getData15(AspectRegistry.BLOCK, address));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.INVENTORY, address));
 	}
 }

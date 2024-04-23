@@ -20,6 +20,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -32,10 +33,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestClientRunner
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -115,7 +118,7 @@ public class TestClientRunner
 	public void multiPhase() throws Throwable
 	{
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
@@ -207,8 +210,8 @@ public class TestClientRunner
 		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -244,10 +247,10 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), ENV.blocks.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.blocks.STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), STONE));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
@@ -286,8 +289,8 @@ public class TestClientRunner
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 2.0f);
 		Entity entity = mutable.freeze();
 		network.client.receivedFullEntity(entity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.STONE));
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -332,9 +335,9 @@ public class TestClientRunner
 		int logKey = mutable.newInventory.getIdOfStackableType(ENV.items.LOG);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.blocks.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
 		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
-		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.CRAFTING_TABLE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.blocks.fromItem(ENV.items.getItemById("op.crafting_table"))));
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		

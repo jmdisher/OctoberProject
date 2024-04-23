@@ -12,6 +12,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
@@ -30,10 +31,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestCommonMutations
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -46,7 +49,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidAddress cuboidAddress = target.getCuboidAddress();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = new TickProcessingContext(1L
@@ -64,7 +67,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
@@ -74,13 +77,13 @@ public class TestCommonMutations
 	public void breakBlockFailure()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertFalse(didApply);
 		Assert.assertFalse(proxy.didChange());
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(0, inv.currentEncumbrance);
 	}
@@ -89,7 +92,7 @@ public class TestCommonMutations
 	public void endBlockBreakSuccess()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)200);
@@ -117,12 +120,12 @@ public class TestCommonMutations
 			// Verify that we see the damage on the first hit.
 			if (0 == i)
 			{
-				Assert.assertEquals(ENV.blocks.STONE, proxy.getBlock());
+				Assert.assertEquals(STONE, proxy.getBlock());
 				Assert.assertEquals((short)1000, proxy.getDamage());
 			}
 		}
 		
-		Assert.assertEquals(ENV.blocks.AIR, proxy.getBlock());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		// There should be nothing in the block inventory but we should see a change scheduled to store the item into the entity.
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(0, inv.sortedKeys().size());
@@ -135,7 +138,7 @@ public class TestCommonMutations
 	{
 		// Show that the mining damage applied to a block is higher with a pickaxe.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)10);
@@ -162,7 +165,7 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		
 		// We should see the applied damage at 20x the time since we were using the pickaxe.
-		Assert.assertEquals(ENV.blocks.STONE, proxy.getBlock());
+		Assert.assertEquals(STONE, proxy.getBlock());
 		Assert.assertEquals((short)200, proxy.getDamage());
 	}
 
@@ -170,14 +173,14 @@ public class TestCommonMutations
 	public void breakBlockPartial()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.blocks.STONE, proxy.getBlock());
+		Assert.assertEquals(STONE, proxy.getBlock());
 		Assert.assertNull(proxy.getInventory());
 		Assert.assertEquals((short) 1000, proxy.getDamage());
 	}
@@ -187,7 +190,7 @@ public class TestCommonMutations
 	{
 		// We want to verify what happens in a situation where we expect the water to flow into some gaps after breaking a block.
 		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		AbsoluteLocation down = target.getRelative(0, 0, -1);
 		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ENV.items.WATER_STRONG.number());
@@ -217,18 +220,18 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		// If we break a block under weak flow, we expect it to be weak unless it lands on a solid block.
-		Assert.assertEquals(ENV.blocks.WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(ENV.special.WATER_WEAK, proxy.getBlock());
 		
 		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
 		proxy = new MutableBlockProxy(down, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(down).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.blocks.WATER_STRONG, proxy.getBlock());
+		Assert.assertEquals(ENV.special.WATER_STRONG, proxy.getBlock());
 		
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.blocks.WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(ENV.special.WATER_WEAK, proxy.getBlock());
 	}
 
 	@Test
@@ -236,9 +239,10 @@ public class TestCommonMutations
 	{
 		// This is verify a bug fix when planting seeds at the bottom of a cuboid, when the below is not loaded, would NPE.
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, ENV.blocks.WHEAT_SEEDLING);
+		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(1L
@@ -264,7 +268,7 @@ public class TestCommonMutations
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(ENV.blocks.WHEAT_SEEDLING, proxy.getBlock());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
 		Assert.assertTrue(holder[0] instanceof MutationBlockGrow);
 	}
 
@@ -272,12 +276,14 @@ public class TestCommonMutations
 	public void overwriteExistingInventory()
 	{
 		// This is to verify that we don't destroy an existing inventory in this block if we replace it with something which allows entity movement (air-equivalent).
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.blocks.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), ENV.blocks.DIRT.item().number());
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.CHARCOAL, 1).finish());
 		
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, ENV.blocks.WHEAT_SEEDLING);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
@@ -298,7 +304,7 @@ public class TestCommonMutations
 		);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(ENV.blocks.WHEAT_SEEDLING, proxy.getBlock());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.CHARCOAL));
 	}
 

@@ -127,7 +127,7 @@ public class Structure
 		BlockAspect blocks = env.blocks;
 		LightAspect lights = env.lighting;
 		PlantRegistry plants = env.plants;
-		short replacementBlock = blocks.AIR.item().number();
+		short replacementBlock = env.special.AIR.item().number();
 		List<IMutationBlock> mutations = new ArrayList<>();
 		for (int c = 0; c < countZ; ++c)
 		{

@@ -12,6 +12,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -23,10 +24,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestFallingBehaviour
 {
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -44,7 +47,7 @@ public class TestFallingBehaviour
 		newEntity.newInventory.addAllItems(ENV.items.STONE, 2);
 		newEntity.newSelectedItemKey = newEntity.newInventory.getIdOfStackableType(ENV.items.STONE);
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
 		// Create a solid block a little below this so we can watch it fall down.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), ENV.items.STONE.number());
@@ -117,7 +120,7 @@ public class TestFallingBehaviour
 		// Verify that breaking the bottom block first results in the top inventory falling.
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation bottomLocation = new AbsoluteLocation(0, 0, 3);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -178,7 +181,7 @@ public class TestFallingBehaviour
 		// (this requires generalized block update logic).
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation topLocation = new AbsoluteLocation(0, 0, 4);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -249,7 +252,7 @@ public class TestFallingBehaviour
 	{
 		// Create an air cuboid with some items in the bottom block, then load another air cuboid and verify that they fall.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -282,7 +285,7 @@ public class TestFallingBehaviour
 		
 		// Use a new context with a new cuboid to show that the items fall if updated now.
 		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
 					? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -315,7 +318,7 @@ public class TestFallingBehaviour
 	{
 		// Create a cuboid of stone with water sources around one block, air and inventory above it and below, then observe what happens when the block is broken.
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(15, 15, 15);
 		AbsoluteLocation eastLocation = targetLocation.getRelative(1, 0, 0);
 		AbsoluteLocation westLocation = targetLocation.getRelative(-1, 0, 0);

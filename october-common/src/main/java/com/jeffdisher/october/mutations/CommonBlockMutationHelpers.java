@@ -125,9 +125,9 @@ public class CommonBlockMutationHelpers
 		// Rules for the empty type:
 		// -check 4 horizontal blocks, take water-1, unless there are >=2 blocks stronger, then use that
 		// -check the block above and below, if the block below is empty, take the same as above, if not, take strong flow
-		Block source = env.blocks.WATER_SOURCE;
-		Block strong = env.blocks.WATER_STRONG;
-		Block weak = env.blocks.WATER_WEAK;
+		Block source = env.special.WATER_SOURCE;
+		Block strong = env.special.WATER_STRONG;
+		Block weak = env.special.WATER_WEAK;
 		int[] types = new int[3];
 		Block east = _getBlockOrNull(context, location.getRelative(1, 0, 0));
 		Block west = _getBlockOrNull(context, location.getRelative(-1, 0, 0));
@@ -186,7 +186,7 @@ public class CommonBlockMutationHelpers
 			type = weak;
 			break;
 		case 0:
-			type = env.blocks.AIR;
+			type = env.special.AIR;
 			break;
 			default:
 				throw Assert.unreachable();

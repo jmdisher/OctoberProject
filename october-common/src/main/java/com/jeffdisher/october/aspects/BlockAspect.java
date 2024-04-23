@@ -166,38 +166,12 @@ public class BlockAspect
 		);
 	}
 
-	public final Block AIR;
-	public final Block STONE;
-	public final Block LOG;
-	public final Block PLANK;
-	public final Block STONE_BRICK;
-	public final Block CRAFTING_TABLE;
-	public final Block FURNACE;
-	public final Block COAL_ORE;
-	public final Block IRON_ORE;
-	public final Block DIRT;
-	public final Block WATER_SOURCE;
-	public final Block WATER_STRONG;
-	public final Block WATER_WEAK;
-	public final Block LANTERN;
-	public final Block SAPLING;
-	public final Block LEAF;
-	public final Block WHEAT_SEEDLING;
-	public final Block WHEAT_YOUNG;
-	public final Block WHEAT_MATURE;
-
 	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
 	private final Set<Block> _permitsEntityMovement;
 	private final Map<Block, Block> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, Item[]> _specialBlockBreak;
-
-	private static Block _bind(Block[] array, Item item)
-	{
-		short number = item.number();
-		return array[number];
-	}
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
@@ -209,26 +183,6 @@ public class BlockAspect
 	)
 	{
 		_blocksByItemNumber = blocksByType;
-
-		this.AIR = _bind(blocksByType, items.AIR);
-		this.STONE = _bind(blocksByType, items.STONE);
-		this.LOG = _bind(blocksByType, items.LOG);
-		this.PLANK = _bind(blocksByType, items.PLANK);
-		this.STONE_BRICK = _bind(blocksByType, items.STONE_BRICK);
-		this.CRAFTING_TABLE = _bind(blocksByType, items.CRAFTING_TABLE);
-		this.FURNACE = _bind(blocksByType, items.FURNACE);
-		this.COAL_ORE = _bind(blocksByType, items.COAL_ORE);
-		this.IRON_ORE = _bind(blocksByType, items.IRON_ORE);
-		this.DIRT = _bind(blocksByType, items.DIRT);
-		this.WATER_SOURCE = _bind(blocksByType, items.WATER_SOURCE);
-		this.WATER_STRONG = _bind(blocksByType, items.WATER_STRONG);
-		this.WATER_WEAK = _bind(blocksByType, items.WATER_WEAK);
-		this.LANTERN = _bind(blocksByType, items.LANTERN);
-		this.SAPLING = _bind(blocksByType, items.SAPLING);
-		this.LEAF = _bind(blocksByType, items.LEAF);
-		this.WHEAT_SEEDLING = _bind(blocksByType, items.WHEAT_SEEDLING);
-		this.WHEAT_YOUNG = _bind(blocksByType, items.WHEAT_YOUNG);
-		this.WHEAT_MATURE = _bind(blocksByType, items.WHEAT_MATURE);
 		
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
 		_permitsEntityMovement = Collections.unmodifiableSet(permitsEntityMovement);

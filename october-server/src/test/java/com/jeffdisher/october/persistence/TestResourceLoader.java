@@ -21,6 +21,7 @@ import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -35,10 +36,12 @@ public class TestResourceLoader
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -64,7 +67,7 @@ public class TestResourceLoader
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		CuboidAddress address = new CuboidAddress((short)1, (short)0, (short)0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		loader.preload(cuboid);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -200,7 +203,7 @@ public class TestResourceLoader
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), ENV.blocks.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -243,7 +246,7 @@ public class TestResourceLoader
 		EntityLocation location = mutable.newLocation;
 		EntityLocation newLocation = new EntityLocation(2.0f * location.x(), 3.0f * location.y(), 4.0f * location.z());
 		mutable.newLocation = newLocation;
-		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(ENV.blocks.STONE.item(), 2), null);
+		MutationEntityStoreToInventory mutation = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
 		
 		loader.writeBackToDisk(List.of(), List.of(new SuspendedEntity(mutable.freeze(), List.of(new ScheduledChange(mutation, 0L)))));
 		// (the shutdown will wait for the queue to drain)
@@ -282,7 +285,7 @@ public class TestResourceLoader
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), ENV.blocks.STONE);
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), STONE);
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -319,9 +322,9 @@ public class TestResourceLoader
 	public void verifyMutationsFromGeneration() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		MutationBlockOverwrite test = new MutationBlockOverwrite(new AbsoluteLocation(1, 2, 3), ENV.blocks.STONE);
+		MutationBlockOverwrite test = new MutationBlockOverwrite(new AbsoluteLocation(1, 2, 3), STONE);
 		ResourceLoader loader = new ResourceLoader(worldDirectory, (CuboidAddress address) -> {
-			return new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(address, ENV.blocks.AIR), List.of(
+			return new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(address, ENV.special.AIR), List.of(
 					new ScheduledMutation(test, 100L)
 			));
 		});

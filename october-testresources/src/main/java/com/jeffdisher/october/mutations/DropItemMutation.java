@@ -54,7 +54,7 @@ public class DropItemMutation implements IMutationBlock
 		Environment env = Environment.getShared();
 		// We can only drop an item into air.
 		boolean didApply = false;
-		if (env.blocks.AIR == newBlock.getBlock())
+		if (env.special.AIR == newBlock.getBlock())
 		{
 			// Disect existing inventory into mutable copies or create defaults.
 			Inventory oldInventory = newBlock.getInventory();
