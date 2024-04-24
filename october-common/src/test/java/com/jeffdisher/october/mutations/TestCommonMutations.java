@@ -101,9 +101,9 @@ public class TestCommonMutations
 		int clientId = 1;
 		Entity entity = MutableEntity.create(clientId).freeze();
 		
-		// Without a tool, this will take 2 hits.
+		// Without a tool, this will take 5 hits.
 		MutableBlockProxy proxy = null;
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < 5; ++i)
 		{
 			// Check that once we run this change, it requests the appropriate mutation.
 			boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
@@ -121,7 +121,7 @@ public class TestCommonMutations
 			if (0 == i)
 			{
 				Assert.assertEquals(STONE, proxy.getBlock());
-				Assert.assertEquals((short)1000, proxy.getDamage());
+				Assert.assertEquals((short)200, proxy.getDamage());
 			}
 		}
 		
@@ -164,9 +164,9 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		// We should see the applied damage at 20x the time since we were using the pickaxe.
+		// We should see the applied damage at 5x the time since we were using the pickaxe.
 		Assert.assertEquals(STONE, proxy.getBlock());
-		Assert.assertEquals((short)200, proxy.getDamage());
+		Assert.assertEquals((short)50, proxy.getDamage());
 	}
 
 	@Test
@@ -174,7 +174,7 @@ public class TestCommonMutations
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
-		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
+		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		boolean didApply = mutation.applyMutation(null, proxy);
 		Assert.assertTrue(didApply);
@@ -182,7 +182,7 @@ public class TestCommonMutations
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(STONE, proxy.getBlock());
 		Assert.assertNull(proxy.getInventory());
-		Assert.assertEquals((short) 1000, proxy.getDamage());
+		Assert.assertEquals((short) 500, proxy.getDamage());
 	}
 
 	@Test

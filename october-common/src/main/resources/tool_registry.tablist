@@ -10,15 +10,15 @@
 # Durability is a number which must be non-negative (0 means unbreakable).  Durability is the measurement of
 # milliseconds for which the tool can be used before it breaks.
 
-op.iron_pickaxe	20
+op.iron_pickaxe	5
 	block_material	PICKAXE
 	durability	100000
-op.iron_shovel	20
+op.iron_shovel	5
 	block_material	SHOVEL
 	durability	100000
-op.iron_axe	20
+op.iron_axe	5
 	block_material	AXE
 	durability	100000
-op.iron_sword	20
+op.iron_sword	10
 	block_material	SWORD
 	durability	100000

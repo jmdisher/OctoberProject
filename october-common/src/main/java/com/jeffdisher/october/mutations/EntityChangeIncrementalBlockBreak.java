@@ -87,8 +87,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 			else
 			{
 				// This doesn't match so use the default of 1.
-				// TODO:  Change this to a default of 1 once we re-work the block toughness.
-				speedMultiplier = 5;
+				speedMultiplier = 1;
 			}
 			short damageToApply = (short)(speedMultiplier * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
