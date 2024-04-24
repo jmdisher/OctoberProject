@@ -85,6 +85,7 @@ public class WorldProcessor
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
+				processor.cuboidsProcessed += 1;
 				CuboidAddress key = elt.getKey();
 				IReadOnlyCuboidData oldState = elt.getValue();
 				
@@ -102,7 +103,8 @@ public class WorldProcessor
 				);
 				
 				// First, handle block updates.
-				committedMutationCount += _synthesizeAndRunBlockUpdates(proxies
+				committedMutationCount += _synthesizeAndRunBlockUpdates(processor
+						, proxies
 						, context
 						, oldState
 						, modifiedBlocksByCuboidAddress
@@ -120,7 +122,7 @@ public class WorldProcessor
 						IMutationBlock mutation = scheduledMutations.mutation();
 						if (0L == millisUntilReady)
 						{
-							processor.mutationCount += 1;
+							processor.cuboidMutationsProcessed += 1;
 							boolean didApply = _runOneMutation(proxies, context, oldState, mutation);
 							if (didApply)
 							{
@@ -201,7 +203,8 @@ public class WorldProcessor
 		return mutation.applyMutation(context, thisBlockProxy);
 	}
 
-	private static int _synthesizeAndRunBlockUpdates(Map<BlockAddress, MutableBlockProxy> inout_proxies
+	private static int _synthesizeAndRunBlockUpdates(ProcessorElement processor
+			, Map<BlockAddress, MutableBlockProxy> inout_proxies
 			, TickProcessingContext context
 			, IReadOnlyCuboidData oldState
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
@@ -227,6 +230,7 @@ public class WorldProcessor
 		for (AbsoluteLocation target : toSynthesize)
 		{
 			MutationBlockUpdate update = new MutationBlockUpdate(target);
+			processor.cuboidBlockupdatesProcessed += 1;
 			boolean didApply = _runOneMutation(inout_proxies, context, oldState, update);
 			if (didApply)
 			{

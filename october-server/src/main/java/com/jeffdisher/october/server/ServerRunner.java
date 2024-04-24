@@ -6,6 +6,7 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -13,7 +14,6 @@ import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
-import com.jeffdisher.october.server.TickRunner.Snapshot;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -192,7 +192,7 @@ public class ServerRunner
 	private class TickListener implements Consumer<TickRunner.Snapshot>
 	{
 		@Override
-		public void accept(Snapshot completedSnapshot)
+		public void accept(TickRunner.Snapshot completedSnapshot)
 		{
 			// We capture this callback to keep the message queue in-order:  This is the last thing which happens within
 			// the tick so we know that all tick callbacks are completed by the time we execute this message so we can
@@ -230,8 +230,26 @@ public class ServerRunner
 			
 			// Kick off the next tick since we are now done the setup.
 			_tickRunner.startNextTick();
+			
+			// Check if this needs to be logged.
+			long preamble = snapshot.millisTickPreamble();
+			long parallel = snapshot.millisTickParallelPhase();
+			long postamble = snapshot.millisTickPostamble();
+			long tickTime = preamble + parallel + postamble;
+			if (tickTime > _millisPerTick)
+			{
+				System.out.println("Log for slow (" + tickTime + " ms) tick " + snapshot.tickNumber());
+				System.out.println("\tPreamble: " + preamble + " ms");
+				System.out.println("\tParallel: " + parallel + " ms");
+				for (ProcessorElement.PerThreadStats thread : snapshot.threadStats())
+				{
+					System.out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
+					System.out.println("\t\tEntities processed: " + thread.entitiesProcessed() + ", changes processed " + thread.entityChangesProcessed());
+					System.out.println("\t\tCuboids processed: " + thread.cuboidsProcessed() + ", mutations processed " + thread.cuboidMutationsProcessed() + ", updates processed " + thread.cuboidBlockupdatesProcessed());
+				}
+				System.out.println("\tPostamble: " + postamble + " ms");
+			}
 		}
-		
 	}
 
 	private final class _Callouts implements ServerStateManager.ICallouts

@@ -65,6 +65,7 @@ public class TickRunner
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
 	private final _PartialHandoffData[] _partial;
+	private final ProcessorElement.PerThreadStats[] _threadStats;
 	private long _nextTick;
 	
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
@@ -89,6 +90,7 @@ public class TickRunner
 		_millisPerTick = millisPerTick;
 		_entitySharedAccess = new HashMap<>();
 		_partial = new _PartialHandoffData[threadCount];
+		_threadStats = new ProcessorElement.PerThreadStats[threadCount];
 		_nextTick = 1L;
 		_sharedDataLock = new ReentrantLock();
 		for (int i = 0; i < threadCount; ++i)
@@ -127,11 +129,17 @@ public class TickRunner
 				, Collections.emptyMap()
 				// No mutations, obviously.
 				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				
+				// Information related to tick behaviour and performance statistics.
+				, 0L
+				, 0L
+				, 0L
+				, null
 				, 0
-				, Collections.emptyMap()
 				, 0
-				, Collections.emptyMap()
-				, Collections.emptyMap()
 		);
 		for (Thread thread : _threads)
 		{
@@ -293,9 +301,12 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
-				, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
+				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
+						, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
+						, Collections.emptyMap()
+				)
+				, 0L
+				, System.currentTimeMillis()
 		);
 		while (null != materials)
 		{
@@ -311,6 +322,7 @@ public class TickRunner
 				;
 			};
 			// Process all entity changes first and synchronize to lock-step.
+			long startCrowd = System.currentTimeMillis();
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
 					, materials.completedEntities
 					, loader
@@ -321,6 +333,7 @@ public class TickRunner
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
 			// Now, process the world changes.
+			long startWorld = System.currentTimeMillis();
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
 					, loader
@@ -334,13 +347,21 @@ public class TickRunner
 			);
 			// There is always a returned fragment (even if it has no content).
 			Assert.assertTrue(null != fragment);
+			long endLoop = System.currentTimeMillis();
+			
+			// Update our thread stats before we merge.
+			thisThread.millisInCrowdProcessor = (startWorld - startCrowd);
+			thisThread.millisInWorldProcessor = (endLoop - startWorld);
 			materials = _mergeTickStateAndWaitForNext(thisThread
 					, tickCompletionListener
 					, materials.completedCuboids
 					, materials.completedEntities
-					, materials.commitLevels
-					, fragment
-					, group
+					, new _PartialHandoffData(fragment
+							, group
+							, materials.commitLevels
+					)
+					, materials.millisInTickPreamble
+					, materials.timeMillisPreambleEnd
 			);
 		}
 	}
@@ -349,13 +370,16 @@ public class TickRunner
 			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 			, Map<Integer, Entity> mutableCrowdState
-			, Map<Integer, Long> commitLevels
-			, WorldProcessor.ProcessedFragment fragmentCompleted
-			, CrowdProcessor.ProcessedGroup processedGroup
+			, _PartialHandoffData perThreadData
+			
+			// Data related to internal statistics generated at the end of the previous tick and passed back in.
+			, long millisInTickPreamble
+			, long timeMillisPreambleEnd
 	)
 	{
 		// Store whatever work we finished from the just-completed tick.
-		_partial[elt.id] = new _PartialHandoffData(fragmentCompleted, processedGroup, commitLevels);
+		_partial[elt.id] = perThreadData;
+		_threadStats[elt.id] = elt.consumeAndResetStats();
 		
 		// We synchronize threads here for a few reasons:
 		// 1) We need to collect all the data from the just-finished frame and produce the updated immutable snapshot (this is a stitching operation so we do it on one thread).
@@ -363,6 +387,7 @@ public class TickRunner
 		// 3) We need to collect all the actions required for the next frame (this requires pulling data from the interlock).
 		if (elt.synchronizeAndReleaseLast())
 		{
+			long startMillisPostamble = System.currentTimeMillis();
 			// Rebuild the immutable snapshot of the state.
 			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
 			Map<Integer, Entity> updatedEntities = new HashMap<>();
@@ -421,6 +446,9 @@ public class TickRunner
 						.toList();
 				resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
 			}
+			long endMillisPostamble = System.currentTimeMillis();
+			long millisTickParallelPhase = (startMillisPostamble - timeMillisPreambleEnd);
+			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
@@ -429,15 +457,25 @@ public class TickRunner
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					, Collections.unmodifiableMap(mutableWorldState)
 					, Collections.unmodifiableMap(updatedEntities)
-					, committedEntityMutationCount
 					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
-					, committedCuboidMutationCount
 					, Collections.unmodifiableMap(snapshotBlockMutations)
 					, Collections.unmodifiableMap(snapshotEntityMutations)
+					
+					// Stats.
+					, millisInTickPreamble
+					, millisTickParallelPhase
+					, millisTickPostamble
+					, _threadStats.clone()
+					, committedEntityMutationCount
+					, committedCuboidMutationCount
 			);
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
 			tickCompletionListener.accept(completedTick);
+			
+			// This is the point where we will block for the next tick to be requested.
 			_acknowledgeTickCompleteAndWaitForNext(completedTick);
+			
+			long startMillisPreamble = System.currentTimeMillis();
 			mutableWorldState = null;
 			mutableCrowdState = null;
 			
@@ -632,6 +670,9 @@ public class TickRunner
 				}
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
+				long endMillisPreamble = System.currentTimeMillis();
+				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
+				
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, nextWorldState
 						, nextCrowdState
@@ -643,6 +684,10 @@ public class TickRunner
 						
 						// Data only used by this method:
 						, newCommitLevels
+						
+						// Store the partial tick stats.
+						, millisInNextTickPreamble
+						, endMillisPreamble
 				);
 			}
 			else
@@ -797,13 +842,19 @@ public class TickRunner
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<Integer, Entity> updatedEntities
-			, int committedEntityMutationCount
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
-			, int committedCuboidMutationCount
 			
 			// These fields are related to what is scheduled for the NEXT (or future) tick (added here to expose them to serialization).
 			, Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations
 			, Map<Integer, List<ScheduledChange>> scheduledEntityMutations
+			
+			// Information related to tick behaviour and performance statistics.
+			, long millisTickPreamble
+			, long millisTickParallelPhase
+			, long millisTickPostamble
+			, ProcessorElement.PerThreadStats[] threadStats
+			, int committedEntityMutationCount
+			, int committedCuboidMutationCount
 	)
 	{}
 
@@ -826,6 +877,10 @@ public class TickRunner
 			// ----- TickRunner private state attached to the materials below this line -----
 			// The last commit levels of all connected clients (by ID).
 			, Map<Integer, Long> commitLevels
+			
+			// Data related to internal statistics to be passed back at the end of the tick.
+			, long millisInTickPreamble
+			, long timeMillisPreambleEnd
 	) {}
 
 	/**

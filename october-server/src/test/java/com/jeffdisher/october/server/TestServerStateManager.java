@@ -167,11 +167,17 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				
+				// Information related to tick behaviour and performance statistics.
+				, 0L
+				, 0L
+				, 0L
+				, null
 				, 0
-				, Collections.emptyMap()
 				, 0
-				, Collections.emptyMap()
-				, Collections.emptyMap()
 		);
 	}
 
@@ -185,11 +191,17 @@ public class TestServerStateManager
 				, snapshot.commitLevels()
 				, completedCuboids
 				, snapshot.updatedEntities()
-				, snapshot.committedEntityMutationCount()
 				, snapshot.resultantBlockChangesByCuboid()
-				, snapshot.committedCuboidMutationCount()
 				, snapshot.scheduledBlockMutations()
 				, snapshot.scheduledEntityMutations()
+				
+				// Information related to tick behaviour and performance statistics.
+				, snapshot.millisTickPreamble()
+				, snapshot.millisTickParallelPhase()
+				, snapshot.millisTickPostamble()
+				, snapshot.threadStats()
+				, snapshot.committedEntityMutationCount()
+				, snapshot.committedCuboidMutationCount()
 		);
 	}
 

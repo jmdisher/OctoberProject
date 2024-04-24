@@ -68,6 +68,7 @@ public class CrowdProcessor
 				// Note that the entity may have been unloaded.
 				if (null != entity)
 				{
+					processor.entitiesProcessed += 1;
 					BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
 					TickProcessingContext context = new TickProcessingContext(gameTick
 							, local
@@ -84,7 +85,7 @@ public class CrowdProcessor
 						IMutationEntity change = scheduled.change();
 						if (0L == millisUntilReady)
 						{
-							processor.changeCount += 1;
+							processor.entityChangesProcessed += 1;
 							boolean didApply = change.applyChange(context, mutable);
 							if (didApply)
 							{

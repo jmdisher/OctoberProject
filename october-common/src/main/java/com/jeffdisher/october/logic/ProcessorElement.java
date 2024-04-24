@@ -6,13 +6,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ProcessorElement
 {
 	public final int id;
-	public int mutationCount;
-	public int changeCount;
+
+	// Internal variable related to parallel executor synchronization.
 	private final SyncPoint _sync;
 	private final AtomicInteger _sharedUnitCounter;
 	private int _lastWorkUnit;
 	// The next unit is the same as last unit if we don't know our next unit.
 	private int _nextWorkUnit;
+
+	// Public variables related to per-thread tick execution statistics.
+	public int entitiesProcessed;
+	public int entityChangesProcessed;
+	public long millisInCrowdProcessor;
+	public int cuboidsProcessed;
+	public int cuboidMutationsProcessed;
+	public int cuboidBlockupdatesProcessed;
+	public long millisInWorldProcessor;
 
 	public ProcessorElement(int id, SyncPoint sync, AtomicInteger sharedUnitCounter)
 	{
@@ -59,4 +68,39 @@ public class ProcessorElement
 		_lastWorkUnit += 1;
 		return (_nextWorkUnit == _lastWorkUnit);
 	}
+
+	public PerThreadStats consumeAndResetStats()
+	{
+		PerThreadStats stats = new PerThreadStats(this.entitiesProcessed
+				, this.entityChangesProcessed
+				, this.millisInCrowdProcessor
+				, this.cuboidsProcessed
+				, this.cuboidMutationsProcessed
+				, this.cuboidBlockupdatesProcessed
+				, this.millisInWorldProcessor
+		);
+		
+		this.entitiesProcessed = 0;
+		this.entityChangesProcessed = 0;
+		this.millisInCrowdProcessor = 0L;
+		this.cuboidsProcessed = 0;
+		this.cuboidMutationsProcessed = 0;
+		this.cuboidBlockupdatesProcessed = 0;
+		this.millisInWorldProcessor = 0L;
+		
+		return stats;
+	}
+
+	/**
+	 * The statistics of what a specific thread does during the parallel tick phase.
+	 */
+	public static record PerThreadStats(int entitiesProcessed
+			, int entityChangesProcessed
+			, long millisInCrowdProcessor
+			, int cuboidsProcessed
+			, int cuboidMutationsProcessed
+			, int cuboidBlockupdatesProcessed
+			, long millisInWorldProcessor
+	)
+	{}
 }
