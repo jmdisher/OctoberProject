@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.InventoryAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -239,33 +240,16 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(ENV.items.LOG));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		IMutationBlock[] holder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						holder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
-		Assert.assertTrue(place.applyChange(context, newEntity));
+		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
-		Assert.assertTrue(holder[0] instanceof MutationBlockOverwrite);
-		AbsoluteLocation location = holder[0].getAbsoluteLocation();
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(holder[0].applyMutation(context, proxy));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		
 		// We expect that the block will be placed and our selection and inventory will be cleared.
@@ -285,50 +269,18 @@ public class TestCommonChanges
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		Inventory blockInventory = Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish();
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), blockInventory);
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		IMutationEntity[] entityHolder = new IMutationEntity[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						Assert.assertEquals(entityId, targetEntityId);
-						Assert.assertNull(entityHolder[0]);
-						entityHolder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// This is a multi-step process which starts by asking the entity to attempt the pick-up.
 		int stoneKey = blockInventory.getIdOfStackableType(ENV.items.STONE);
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(targetLocation, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
-		Assert.assertTrue(request.applyChange(context, newEntity));
+		Assert.assertTrue(request.applyChange(holder.context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockExtractItems);
-		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
+		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
 		newBlock.writeBack(cuboid);
 		
 		// By this point, the entity shouldn't yet have changed.
@@ -338,8 +290,8 @@ public class TestCommonChanges
 		Assert.assertEquals(Entity.NO_SELECTION, newEntity.getSelectedKey());
 		
 		// We should see the request to store data, now.
-		Assert.assertTrue(entityHolder[0] instanceof MutationEntityStoreToInventory);
-		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
+		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		
 		// We can now verify the final result of this - we should see the one item moved and selected since nothing else was.
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
@@ -348,13 +300,13 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.items.STONE, _selectedItemType(newEntity));
 		
 		// Run the process again to pick up the last item and verify that the inventory is now null.
-		blockHolder[0] = null;
-		entityHolder[0] = null;
+		holder.mutation = null;
+		holder.change = null;
 		request = new MutationEntityRequestItemPickUp(targetLocation, stoneKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
-		Assert.assertTrue(request.applyChange(context, newEntity));
-		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(request.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
 		newBlock.writeBack(cuboid);
-		Assert.assertTrue(entityHolder[0].applyChange(context, newEntity));
+		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Assert.assertEquals(2, newEntity.newInventory.getCount(ENV.items.STONE));
@@ -375,42 +327,24 @@ public class TestCommonChanges
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(ENV.items.STONE), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
-		Assert.assertTrue(push.applyChange(context, newEntity));
+		Assert.assertTrue(push.applyChange(holder.context, newEntity));
 		
 		// We can now verify that the entity has lost the item but the block is unchanged.
 		Assert.assertEquals(1, newEntity.newInventory.getCount(ENV.items.STONE));
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		
 		// We should see the mutation requested and then we can process step 2.
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
 		newBlock.writeBack(cuboid);
-		blockHolder[0] = null;
+		holder.mutation = null;
 		
 		// By this point, we should be able to verify both the entity and the block.
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
@@ -421,8 +355,8 @@ public class TestCommonChanges
 		
 		// Drop again to verify that this correctly handles dropping the last selected item.
 		push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(ENV.items.STONE), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
-		Assert.assertTrue(push.applyChange(context, newEntity));
-		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(push.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
 		newBlock.writeBack(cuboid);
 		
 		// By this point, we should be able to verify both the entity and the block.
@@ -449,30 +383,12 @@ public class TestCommonChanges
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, idOfPick, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
-		Assert.assertTrue(push.applyChange(context, newEntity));
+		Assert.assertTrue(push.applyChange(holder.context, newEntity));
 		
 		// We can now verify that the entity has lost the item but the block is unchanged.
 		Assert.assertNull(newEntity.newInventory.getNonStackableForKey(idOfPick));
@@ -481,12 +397,12 @@ public class TestCommonChanges
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		
 		// We should see the mutation requested and then we can process step 2.
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		AbsoluteLocation location = blockHolder[0].getAbsoluteLocation();
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
-		Assert.assertTrue(blockHolder[0].applyMutation(context, newBlock));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, newBlock));
 		newBlock.writeBack(cuboid);
-		blockHolder[0] = null;
+		holder.mutation = null;
 		
 		// By this point, we should be able to verify both the entity and the block.
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
@@ -505,45 +421,30 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(ENV.items.LOG));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		IMutationBlock[] holder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						holder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try too close (colliding).
 		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
 		MutationPlaceSelectedBlock placeTooClose = new MutationPlaceSelectedBlock(tooClose);
-		Assert.assertFalse(placeTooClose.applyChange(context, newEntity));
+		Assert.assertFalse(placeTooClose.applyChange(holder.context, newEntity));
 		
 		// Try too far.
 		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 15);
 		MutationPlaceSelectedBlock placeTooFar = new MutationPlaceSelectedBlock(tooFar);
-		Assert.assertFalse(placeTooFar.applyChange(context, newEntity));
+		Assert.assertFalse(placeTooFar.applyChange(holder.context, newEntity));
 		
 		// Try reasonable location.
 		AbsoluteLocation reasonable = new AbsoluteLocation(1, 1, 8);
 		MutationPlaceSelectedBlock placeReasonable = new MutationPlaceSelectedBlock(reasonable);
-		Assert.assertTrue(placeReasonable.applyChange(context, newEntity));
+		Assert.assertTrue(placeReasonable.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		holder.mutation = null;
 		
 		// Make sure we fail if there is no selection.
 		reasonable = new AbsoluteLocation(1, 1, 8);
 		placeReasonable = new MutationPlaceSelectedBlock(reasonable);
 		newEntity.setSelectedKey(Entity.NO_SELECTION);
-		Assert.assertFalse(placeReasonable.applyChange(context, newEntity));
+		Assert.assertFalse(placeReasonable.applyChange(holder.context, newEntity));
 	}
 
 	@Test
@@ -564,46 +465,17 @@ public class TestCommonChanges
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), ENV.items.PLANK.number());
 		
-		IMutationEntity[] holder = new IMutationEntity[1];
-		boolean[] didSchedule = new boolean[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						didSchedule[0] = true;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						holder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try too far.
 		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar, (short)100);
-		Assert.assertFalse(breakTooFar.applyChange(context, newEntity));
-		Assert.assertFalse(didSchedule[0]);
+		Assert.assertFalse(breakTooFar.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
 		
 		// Try reasonable location.
 		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(reasonable, (short)100);
-		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
-		Assert.assertTrue(didSchedule[0]);
+		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
 	}
 
 	@Test
@@ -648,40 +520,27 @@ public class TestCommonChanges
 		proxy.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		proxy.writeBack(cuboid);
 		
-		IMutationBlock[] holder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						holder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Fail to place the charcoal item on the ground.
 		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(air);
-		Assert.assertFalse(place.applyChange(context, newEntity));
+		Assert.assertFalse(place.applyChange(holder.context, newEntity));
 		
 		// Change the selection to the log and prove that this works.
 		MutationEntitySelectItem select = new MutationEntitySelectItem(newEntity.newInventory.getIdOfStackableType(ENV.items.LOG));
-		Assert.assertTrue(select.applyChange(context, newEntity));
-		Assert.assertTrue(place.applyChange(context, newEntity));
+		Assert.assertTrue(select.applyChange(holder.context, newEntity));
+		Assert.assertTrue(place.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		holder.mutation = null;
 		
 		// Verify that we can store the charcoal into the furnace inventory or fuel inventory.
 		MutationEntityPushItems pushInventory = new MutationEntityPushItems(furnace, newEntity.newInventory.getIdOfStackableType(ENV.items.CHARCOAL), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		MutationEntityPushItems pushFuel = new MutationEntityPushItems(furnace, newEntity.newInventory.getIdOfStackableType(ENV.items.CHARCOAL), 1, Inventory.INVENTORY_ASPECT_FUEL);
-		Assert.assertTrue(pushInventory.applyChange(context, newEntity));
-		Assert.assertTrue(pushFuel.applyChange(context, newEntity));
+		Assert.assertTrue(pushInventory.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		holder.mutation = null;
+		Assert.assertTrue(pushFuel.applyChange(holder.context, newEntity));
 		
 		// Verify that their inventory is now empty.
 		Assert.assertEquals(0, newEntity.newInventory.getCurrentEncumbrance());
@@ -774,39 +633,21 @@ public class TestCommonChanges
 		proxy.setInventory(mutInv.freeze());
 		proxy.writeBack(cuboid);
 		
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Just directly create the mutation to push items into the block above this one.
 		AbsoluteLocation dropLocation = targetLocation.getRelative(0, 0, 1);
 		MutationBlockStoreItems mutations = new MutationBlockStoreItems(dropLocation, new Items(ENV.items.STONE, added), null, Inventory.INVENTORY_ASPECT_INVENTORY);
 		proxy = new MutableBlockProxy(dropLocation, cuboid);
-		Assert.assertTrue(mutations.applyMutation(context, proxy));
+		Assert.assertTrue(mutations.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		
 		// This should cause a follow-up so run that.
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		AbsoluteLocation mutationTarget = blockHolder[0].getAbsoluteLocation();
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		AbsoluteLocation mutationTarget = holder.mutation.getAbsoluteLocation();
 		Assert.assertEquals(targetLocation, mutationTarget);
 		proxy = new MutableBlockProxy(mutationTarget, cuboid);
-		Assert.assertTrue(blockHolder[0].applyMutation(context, proxy));
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		
 		// Verify we see only the one inventory, and over-filled.
@@ -824,47 +665,14 @@ public class TestCommonChanges
 		int stored = newEntity.newInventory.addItemsBestEfforts(ENV.items.STONE, 100);
 		Assert.assertTrue(stored < 100);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		IMutationEntity[] entityHolder = new IMutationEntity[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						Assert.assertEquals(entityId, targetEntityId);
-						Assert.assertNull(entityHolder[0]);
-						entityHolder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Create the change.
 		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1), null);
-		Assert.assertTrue(store.applyChange(context, newEntity));
+		Assert.assertTrue(store.applyChange(holder.context, newEntity));
 		
 		// We should see the attempt to drop this item onto the ground since it won't fit.
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		Assert.assertNull(entityHolder[0]);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
 	}
 
 	@Test
@@ -1119,41 +927,12 @@ public class TestCommonChanges
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), ENV.items.PLANK.number());
 		
-		IMutationEntity[] holder = new IMutationEntity[1];
-		boolean[] didSchedule = new boolean[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						didSchedule[0] = true;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						holder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Do the break with enough time to break the block.
 		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)100);
-		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
-		Assert.assertTrue(didSchedule[0]);
+		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
 		Assert.assertEquals(0, newEntity.getSelectedKey());
 		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
@@ -1174,59 +953,28 @@ public class TestCommonChanges
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), plank.number());
 		
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		IMutationEntity[] entityHolder = new IMutationEntity[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						Assert.assertNull(entityHolder[0]);
-						entityHolder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Do the break with enough time to break the block.
 		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)1000);
-		Assert.assertTrue(breakReasonable.applyChange(context, newEntity));
-		Assert.assertNotNull(blockHolder[0]);
-		Assert.assertNull(entityHolder[0]);
-		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) blockHolder[0];
-		blockHolder[0] = null;
+		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		Assert.assertNull(holder.change);
+		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
+		holder.mutation = null;
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertNull(blockHolder[0]);
-		Assert.assertNotNull(entityHolder[0]);
-		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) entityHolder[0];
-		entityHolder[0] = null;
+		Assert.assertNull(holder.mutation);
+		Assert.assertNotNull(holder.change);
+		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) holder.change;
+		holder.change = null;
 		
 		// We should see an attempt to drop the items, since they won't fit.
-		Assert.assertTrue(store.applyChange(context, newEntity));
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		Assert.assertNull(entityHolder[0]);
+		Assert.assertTrue(store.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertNull(holder.change);
 		
 		// The block should be broken but our inventory should be the same size.
 		Assert.assertEquals(ENV.items.AIR.number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1252,58 +1000,29 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, targetStone.getBlockAddress(), ENV.items.STONE.number());
 		cuboid.setData15(AspectRegistry.BLOCK, targetLog.getBlockAddress(), ENV.items.LOG.number());
 		
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Apply 10ms to the stone and observe what happens.
 		short duration = 10;
 		EntityChangeIncrementalBlockBreak breakStone = new EntityChangeIncrementalBlockBreak(targetStone, duration);
-		Assert.assertTrue(breakStone.applyChange(context, newEntity));
-		Assert.assertNotNull(blockHolder[0]);
-		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) blockHolder[0];
-		blockHolder[0] = null;
+		Assert.assertTrue(breakStone.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
+		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(targetStone, cuboid);
-		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - duration, newEntity.newInventory.getNonStackableForKey(1).durability());
 		Assert.assertEquals(5 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
 		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog, duration);
-		Assert.assertTrue(breakLog.applyChange(context, newEntity));
-		Assert.assertNotNull(blockHolder[0]);
-		breaking = (MutationBlockIncrementalBreak) blockHolder[0];
-		blockHolder[0] = null;
+		Assert.assertTrue(breakLog.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		breaking = (MutationBlockIncrementalBreak) holder.mutation;
+		holder.mutation = null;
 		proxy = new MutableBlockProxy(targetLog, cuboid);
-		Assert.assertTrue(breaking.applyMutation(context, proxy));
+		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - (2 * duration), newEntity.newInventory.getNonStackableForKey(1).durability());
 		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
@@ -1326,56 +1045,27 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), stone);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity change)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-		);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try to pick up the water source.
 		EntityChangeExchangeLiquid exchange = new EntityChangeExchangeLiquid(target);
-		Assert.assertTrue(exchange.applyChange(context, newEntity));
-		Assert.assertNotNull(blockHolder[0]);
-		MutationBlockReplace replace = (MutationBlockReplace) blockHolder[0];
-		blockHolder[0] = null;
+		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockReplace replace = (MutationBlockReplace) holder.mutation;
+		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(context, proxy));
+		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
 		// Try to place the water source.
-		Assert.assertTrue(exchange.applyChange(context, newEntity));
-		Assert.assertNotNull(blockHolder[0]);
-		replace = (MutationBlockReplace) blockHolder[0];
-		blockHolder[0] = null;
+		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		replace = (MutationBlockReplace) holder.mutation;
+		holder.mutation = null;
 		proxy = new MutableBlockProxy(target, cuboid);
-		Assert.assertTrue(replace.applyMutation(context, proxy));
+		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -1389,5 +1079,47 @@ public class TestCommonChanges
 				? stack.type()
 				: null
 		;
+	}
+
+
+	private static class _ContextHolder
+	{
+		public final TickProcessingContext context;
+		public IMutationEntity change;
+		public IMutationBlock mutation;
+		
+		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
+		{
+			this.context = new TickProcessingContext(0L
+					, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+					, null
+					, allowBlockMutation ? new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.assertNull(_ContextHolder.this.mutation);
+							_ContextHolder.this.mutation = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					} : null
+					, allowEntityChange ? new TickProcessingContext.IChangeSink() {
+						@Override
+						public void next(int targetEntityId, IMutationEntity change)
+						{
+							Assert.assertNull(_ContextHolder.this.change);
+							_ContextHolder.this.change = change;
+						}
+						@Override
+						public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					} : null
+			);
+		}
 	}
 }
