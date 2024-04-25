@@ -1309,6 +1309,78 @@ public class TestCommonChanges
 		Assert.assertEquals(duration, cuboid.getData15(AspectRegistry.DAMAGE, targetLog.getBlockAddress()));
 	}
 
+	@Test
+	public void bucketUsage() throws Throwable
+	{
+		// Use a bucket to pick up and place water.
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
+		Item waterBucket = ENV.items.getItemById("op.bucket_water");
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(emptyBucket, 0));
+		newEntity.newSelectedItemKey = 1;
+		
+		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), stone);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		
+		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity change)
+					{
+						Assert.fail("Not expected in tets");
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+		);
+		
+		// Try to pick up the water source.
+		EntityChangeExchangeLiquid exchange = new EntityChangeExchangeLiquid(target);
+		Assert.assertTrue(exchange.applyChange(context, newEntity));
+		Assert.assertNotNull(blockHolder[0]);
+		MutationBlockReplace replace = (MutationBlockReplace) blockHolder[0];
+		blockHolder[0] = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(replace.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// Try to place the water source.
+		Assert.assertTrue(exchange.applyChange(context, newEntity));
+		Assert.assertNotNull(blockHolder[0]);
+		replace = (MutationBlockReplace) blockHolder[0];
+		blockHolder[0] = null;
+		proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(replace.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
+		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

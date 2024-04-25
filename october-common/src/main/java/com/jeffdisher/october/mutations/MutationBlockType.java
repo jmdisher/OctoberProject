@@ -13,6 +13,7 @@ public enum MutationBlockType
 	CRAFT_IN_FURNACE,
 	UPDATE,
 	GROW,
+	REPLACE_BLOCK,
 	
 	END_OF_LIST,
 }

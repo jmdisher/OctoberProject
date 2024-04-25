@@ -33,3 +33,5 @@ op.iron_pickaxe	2
 op.iron_shovel	2
 op.iron_axe	2
 op.iron_sword	2
+op.bucket_empty	2
+op.bucket_water	2

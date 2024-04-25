@@ -64,3 +64,7 @@ op.iron_sword	common
 	input	op.stick	op.iron_ingot	op.iron_ingot
 	output	op.iron_sword
 	millis	20000
+op.bucket_empty	common
+	input	op.iron_ingot
+	output	op.bucket_empty
+	millis	10000

@@ -19,6 +19,7 @@ public enum MutationEntityType
 	TAKE_DAMAGE,
 	PERIODIC,
 	EAT_ITEM,
+	EXCHANGE_LIQUID,
 	
 	END_OF_LIST,
 }
