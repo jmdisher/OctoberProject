@@ -123,7 +123,7 @@ public class CommonBlockMutationHelpers
 		// An "empty" block is one which is left over after breaking a block.
 		// It is usually air but can be a water type.
 		// Rules for the empty type:
-		// -check 4 horizontal blocks, take water-1, unless there are >=2 blocks stronger, then use that
+		// -check 4 horizontal blocks, if there are >=2 sources, create a source, otherwise take the max - 1
 		// -check the block above and below, if the block below is empty, take the same as above, if not, take strong flow
 		Block source = env.special.WATER_SOURCE;
 		Block strong = env.special.WATER_STRONG;
@@ -141,14 +141,17 @@ public class CommonBlockMutationHelpers
 		int strength = 0;
 		if (types[0] >= 2)
 		{
+			// We have at lest 2 adjacent sources, so make this a source.
 			strength = 3;
 		}
-		else if ((1 == types[0]) || (types[1] >= 2))
+		else if (types[0] >= 1)
 		{
+			// We are adjacent to at least 1 source, so we want to be strong flow.
 			strength = 2;
 		}
-		else if ((1 == types[1]) || (types[2] >= 2))
+		else if (types[1] >= 1)
 		{
+			// We are adjacent to at least 1 strong flow, so we want to be weak flow.
 			strength = 1;
 		}
 		

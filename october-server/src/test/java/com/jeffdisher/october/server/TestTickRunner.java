@@ -1064,8 +1064,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		
 		// Wait for this to trickle through the cuboid.
-		// This will take 65 ticks - roughly half of the block movements are spreading out, as opposed to down, and there are a few at the bottom to spread.
-		for (int i = 0; i < 65; ++i)
+		// This will take 37 ticks - found experimentally.
+		for (int i = 0; i < 37; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
@@ -1121,8 +1121,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		
 		// Wait for this to trickle through the cuboids.
-		// This will take 125 ticks - roughly half of the block movements are spreading out, as opposed to down, and there are a few at the bottom to spread.
-		for (int i = 0; i < 125; ++i)
+		// This will take 65 ticks - found experimentally.
+		for (int i = 0; i < 65; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
