@@ -72,7 +72,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 		{
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
 			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
-			NonStackableItem nonStack = newEntity.newInventory.getNonStackableForKey(newEntity.newSelectedItemKey);
+			NonStackableItem nonStack = newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey());
 			Item toolType = (null != nonStack)
 					? nonStack.type()
 					: null
@@ -100,17 +100,18 @@ public class EntityChangeAttackEntity implements IMutationEntity
 				{
 					// For now, we will just apply whatever the damage was as the durability loss, but this should change later.
 					int newDurability = nonStack.durability() - damageToApply;
+					int selectedKey = newEntity.getSelectedKey();
 					if (newDurability > 0)
 					{
 						// Write this back.
 						NonStackableItem updated = new NonStackableItem(toolType, newDurability);
-						newEntity.newInventory.replaceNonStackable(newEntity.newSelectedItemKey, updated);
+						newEntity.newInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else
 					{
 						// Remove this and clear the selection.
-						newEntity.newInventory.removeNonStackableItems(newEntity.newSelectedItemKey);
-						newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+						newEntity.newInventory.removeNonStackableItems(selectedKey);
+						newEntity.setSelectedKey(Entity.NO_SELECTION);
 					}
 				}
 			}

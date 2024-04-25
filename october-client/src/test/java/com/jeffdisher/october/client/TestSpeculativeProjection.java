@@ -818,7 +818,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
 		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
-		mutable.newSelectedItemKey = stoneKey;
+		mutable.setSelectedKey(stoneKey);
 		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.applyChangesForServerTick(0L
@@ -833,7 +833,8 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, listener.entityChangeCount);
 		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
-		Assert.assertEquals(stoneKey, listener.lastEntityStates.get(entityId).selectedItemKey());
+		entity = listener.lastEntityStates.get(entityId);
+		Assert.assertEquals(stoneKey, entity.hotbarItems()[entity.hotbarIndex()]);
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
 		EntityChangeCraft craft = new EntityChangeCraft(stoneToStoneBrick, 1000L);
@@ -852,7 +853,8 @@ public class TestSpeculativeProjection
 		Inventory inv = listener.lastEntityStates.get(entityId).inventory();
 		Assert.assertEquals(0, inv.getCount(ENV.items.STONE));
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE_BRICK));
-		Assert.assertEquals(Entity.NO_SELECTION, listener.lastEntityStates.get(entityId).selectedItemKey());
+		entity = listener.lastEntityStates.get(entityId);
+		Assert.assertEquals(Entity.NO_SELECTION, entity.hotbarItems()[entity.hotbarIndex()]);
 	}
 
 	@Test
@@ -864,7 +866,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.STONE));
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
 				, List.of(entity)
@@ -902,7 +904,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.create(localEntityId);
 		mutable.newInventory.addAllItems(ENV.items.CRAFTING_TABLE, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.CRAFTING_TABLE);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.CRAFTING_TABLE));
 		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		Entity entity = mutable.freeze();
 		projector.applyChangesForServerTick(0L
@@ -1122,7 +1124,7 @@ public class TestSpeculativeProjection
 		mutable.newInventory.addAllItems(ENV.items.FURNACE, 1);
 		mutable.newInventory.addAllItems(ENV.items.PLANK, 1);
 		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newSelectedItemKey = mutable.newInventory.getIdOfStackableType(ENV.items.FURNACE);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.FURNACE));
 		int plankKey = mutable.newInventory.getIdOfStackableType(ENV.items.PLANK);
 		int stoneKey = mutable.newInventory.getIdOfStackableType(ENV.items.STONE);
 		Entity entity = mutable.freeze();

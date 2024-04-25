@@ -44,7 +44,8 @@ public class MutableEntity
 				, DEFAULT_VOLUME
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
-				, Entity.NO_SELECTION
+				, new int[Entity.HOTBAR_SIZE]
+				, 0
 				, null
 				, DEFAULT_HEALTH
 				, DEFAULT_FOOD
@@ -60,7 +61,8 @@ public class MutableEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
-	public int newSelectedItemKey;
+	public int[] newHotbar;
+	public int newHotbarIndex;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
@@ -71,10 +73,29 @@ public class MutableEntity
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
-		this.newSelectedItemKey = original.selectedItemKey();
+		this.newHotbar = original.hotbarItems().clone();
+		this.newHotbarIndex = original.hotbarIndex();
 		this.newLocalCraftOperation = original.localCraftOperation();
 		this.newHealth = original.health();
 		this.newFood = original.food();
+	}
+
+	/**
+	 * @return The key in the currently selected hotbar slot.
+	 */
+	public int getSelectedKey()
+	{
+		return this.newHotbar[this.newHotbarIndex];
+	}
+
+	/**
+	 * Sets the key in the currently-selected hotbar slot.
+	 * 
+	 * @param key The key to store.
+	 */
+	public void setSelectedKey(int key)
+	{
+		this.newHotbar[this.newHotbarIndex] = key;
 	}
 
 	/**
@@ -85,12 +106,22 @@ public class MutableEntity
 	 */
 	public Entity freeze()
 	{
-		// We want to verify that the selected item is actually in the inventory (otherwise, there was a static error).
-		if (Entity.NO_SELECTION != this.newSelectedItemKey)
+		// We want to verify that the selection index is valid and that the hotbar only references valid inventory ids.
+		Assert.assertTrue((this.newHotbarIndex >= 0) && (this.newHotbarIndex < this.newHotbar.length));
+		boolean didHotbarChange = false;
+		for (int i = 0; i < this.newHotbar.length; ++i)
 		{
-			Items stack = this.newInventory.getStackForKey(this.newSelectedItemKey);
-			NonStackableItem nonStack = this.newInventory.getNonStackableForKey(this.newSelectedItemKey);
-			Assert.assertTrue((null != stack) != (null != nonStack));
+			int newKey = this.newHotbar[i];
+			if (Entity.NO_SELECTION != newKey)
+			{
+				Items stack = this.newInventory.getStackForKey(newKey);
+				NonStackableItem nonStack = this.newInventory.getNonStackableForKey(newKey);
+				Assert.assertTrue((null != stack) != (null != nonStack));
+			}
+			if (newKey != this.original.hotbarItems()[i])
+			{
+				didHotbarChange = true;
+			}
 		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
@@ -98,7 +129,8 @@ public class MutableEntity
 				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
-				, this.newSelectedItemKey
+				, didHotbarChange ? this.newHotbar : this.original.hotbarItems()
+				, this.newHotbarIndex
 				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood

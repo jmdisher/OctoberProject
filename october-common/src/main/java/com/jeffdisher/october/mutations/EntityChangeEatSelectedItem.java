@@ -39,7 +39,8 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
-		Items selectedStack = (newEntity.newSelectedItemKey > 0) ? newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey) : null;
+		int selectedKey = newEntity.getSelectedKey();
+		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getStackForKey(selectedKey) : null;
 		Item selected = (null != selectedStack) ? selectedStack.type() : null;
 		int foodValue = (null != selected)
 				? env.foods.foodValue(selected)
@@ -59,7 +60,7 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 			newEntity.newInventory.removeStackableItems(selected, 1);
 			if (0 == newEntity.newInventory.getCount(selected))
 			{
-				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
 			didApply = true;
 			

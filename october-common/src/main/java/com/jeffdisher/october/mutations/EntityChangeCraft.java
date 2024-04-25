@@ -79,9 +79,10 @@ public class EntityChangeCraft implements IMutationEntity
 				if (didCraft)
 				{
 					// Make sure that this cleared the selection, if we used the last of them.
-					if ((Entity.NO_SELECTION != newEntity.newSelectedItemKey) && (null == newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey)))
+					int selectedKey = newEntity.getSelectedKey();
+					if ((Entity.NO_SELECTION != selectedKey) && (null == newEntity.newInventory.getStackForKey(selectedKey)))
 					{
-						newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+						newEntity.setSelectedKey(Entity.NO_SELECTION);
 					}
 				}
 				newEntity.newLocalCraftOperation = null;

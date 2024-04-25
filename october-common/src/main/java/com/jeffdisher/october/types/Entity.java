@@ -14,8 +14,10 @@ public record Entity(int id
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
 		, Inventory inventory
-		// If the selected item key is 0, there is no selection.
-		, int selectedItemKey
+		// The keys in the hotbar are references to inventory.  If any are 0, they have no selection.
+		, int[] hotbarItems
+		// hotbarIndex is always [0..HOTBAR_SIZE).
+		, int hotbarIndex
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		, CraftOperation localCraftOperation
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
@@ -24,8 +26,11 @@ public record Entity(int id
 		, byte food
 )
 {
+	public static final int HOTBAR_SIZE = 9;
 	/**
 	 * The selected item key for no selection.  All actual IDs are positive integers.
+	 * Note that we assume this is 0 in various places (like int[] initialization) so this is just to add meaning to
+	 * code which would otherwise just have an inline constant 0.
 	 */
 	public static final int NO_SELECTION = 0;
 
@@ -37,7 +42,8 @@ public record Entity(int id
 				, entity.volume()
 				, 0.0f
 				, Inventory.start(0).finish()
-				, NO_SELECTION
+				, new int[HOTBAR_SIZE]
+				, 0
 				, null
 				, (byte)0
 				, (byte)0

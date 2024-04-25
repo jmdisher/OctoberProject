@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -45,7 +46,8 @@ public class EntityChangeExchangeLiquid implements IMutationEntity
 	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
 	{
 		Environment env = Environment.getShared();
-		NonStackableItem nonStack = (newEntity.newSelectedItemKey > 0) ? newEntity.newInventory.getNonStackableForKey(newEntity.newSelectedItemKey) : null;
+		int selectedKey = newEntity.getSelectedKey();
+		NonStackableItem nonStack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getNonStackableForKey(selectedKey) : null;
 		Item type = (null != nonStack) ? nonStack.type() : null;
 		Item empty = env.items.getItemById("op.bucket_empty");
 		Item water = env.items.getItemById("op.bucket_water");
@@ -61,14 +63,14 @@ public class EntityChangeExchangeLiquid implements IMutationEntity
 		if (isWaterBucket && isEmptyBlock)
 		{
 			// We can place down the bucket.
-			newEntity.newInventory.replaceNonStackable(newEntity.newSelectedItemKey, new NonStackableItem(empty, 0));
+			newEntity.newInventory.replaceNonStackable(selectedKey, new NonStackableItem(empty, 0));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.WATER_SOURCE));
 			didApply = true;
 		}
 		else if (isEmptyBucket && isWaterSource)
 		{
 			// We can pick up the source.
-			newEntity.newInventory.replaceNonStackable(newEntity.newSelectedItemKey, new NonStackableItem(water, 0));
+			newEntity.newInventory.replaceNonStackable(selectedKey, new NonStackableItem(water, 0));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.AIR));
 			didApply = true;
 		}

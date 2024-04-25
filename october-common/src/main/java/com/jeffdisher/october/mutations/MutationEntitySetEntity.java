@@ -34,7 +34,8 @@ public class MutationEntitySetEntity implements IEntityUpdate
 	{
 		newEntity.newInventory.clearInventory(_entity.inventory());
 		newEntity.newLocation = _entity.location();
-		newEntity.newSelectedItemKey = _entity.selectedItemKey();
+		newEntity.newHotbar = _entity.hotbarItems();
+		newEntity.newHotbarIndex = _entity.hotbarIndex();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
 		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
 		newEntity.newHealth = _entity.health();

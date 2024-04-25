@@ -130,7 +130,12 @@ public class CodecHelpers
 		EntityVolume volume = _readEntityVolume(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
-		int selectedItemKey = buffer.getInt();
+		int[] hotbar = new int[Entity.HOTBAR_SIZE];
+		for (int i = 0; i < hotbar.length; ++i)
+		{
+			hotbar[i] = buffer.getInt();
+		}
+		int hotbarIndex = buffer.getInt();
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
@@ -141,7 +146,8 @@ public class CodecHelpers
 				, volume
 				, blocksPerTickSpeed
 				, inventory
-				, selectedItemKey
+				, hotbar
+				, hotbarIndex
 				, localCraftOperation
 				, health
 				, food
@@ -156,7 +162,8 @@ public class CodecHelpers
 		EntityVolume volume = entity.volume();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
-		int selectedItemKey = entity.selectedItemKey();
+		int[] hotbar = entity.hotbarItems();
+		int hotbarIndex = entity.hotbarIndex();
 		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
@@ -165,7 +172,11 @@ public class CodecHelpers
 		_writeEntityVolume(buffer, volume);
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
-		buffer.putInt(selectedItemKey);
+		for (int key : hotbar)
+		{
+			buffer.putInt(key);
+		}
+		buffer.putInt(hotbarIndex);
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());

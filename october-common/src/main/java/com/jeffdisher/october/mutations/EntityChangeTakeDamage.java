@@ -74,7 +74,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory(null);
-				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
 			didApply = true;
 		}

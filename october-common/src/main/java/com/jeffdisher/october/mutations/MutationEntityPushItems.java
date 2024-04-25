@@ -116,11 +116,11 @@ public class MutationEntityPushItems implements IMutationEntity
 				
 				// We want to deselect this if it was selected.
 				boolean shouldClear = (null != nonStackable) || (0 == newEntity.newInventory.getCount(type));
-				if ((_localInventoryId == newEntity.newSelectedItemKey)
+				if ((_localInventoryId == newEntity.getSelectedKey())
 						&& shouldClear
 				)
 				{
-					newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+					newEntity.setSelectedKey(Entity.NO_SELECTION);
 				}
 				
 				didApply = true;

@@ -73,7 +73,8 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		if (isLocationClose && !isAir)
 		{
 			// We know that tools are non-stackable so just check for those types.
-			NonStackableItem selected = newEntity.newInventory.getNonStackableForKey(newEntity.newSelectedItemKey);
+			int selectedKey = newEntity.getSelectedKey();
+			NonStackableItem selected = newEntity.newInventory.getNonStackableForKey(selectedKey);
 			Item selectedItem = (null != selected)
 					? selected.type()
 					: null
@@ -104,13 +105,13 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 					{
 						// Write this back.
 						NonStackableItem updated = new NonStackableItem(selected.type(), newDurability);
-						newEntity.newInventory.replaceNonStackable(newEntity.newSelectedItemKey, updated);
+						newEntity.newInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else
 					{
 						// Remove this and clear the selection.
-						newEntity.newInventory.removeNonStackableItems(newEntity.newSelectedItemKey);
-						newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+						newEntity.newInventory.removeNonStackableItems(selectedKey);
+						newEntity.setSelectedKey(Entity.NO_SELECTION);
 					}
 				}
 			}

@@ -43,10 +43,10 @@ public class MutationEntitySelectItem implements IMutationEntity
 		Items stack = newEntity.newInventory.getStackForKey(_inventoryId);
 		NonStackableItem nonStack = newEntity.newInventory.getNonStackableForKey(_inventoryId);
 		boolean isValidId = ((null != stack) || (null != nonStack));
-		if ((_inventoryId != newEntity.newSelectedItemKey)
+		if ((_inventoryId != newEntity.getSelectedKey())
 				&& ((0 == _inventoryId) || isValidId))
 		{
-			newEntity.newSelectedItemKey = _inventoryId;
+			newEntity.setSelectedKey(_inventoryId);
 			didApply = true;
 		}
 		return didApply;

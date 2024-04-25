@@ -60,7 +60,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		// -is the target location not colliding with the entity, itself?
 		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
 		
-		Items stack = (Entity.NO_SELECTION != newEntity.newSelectedItemKey) ? newEntity.newInventory.getStackForKey(newEntity.newSelectedItemKey) : null;
+		int selectedKey = newEntity.getSelectedKey();
+		Items stack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getStackForKey(selectedKey) : null;
 		Item itemType = (null != stack) ? stack.type() : null;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
@@ -94,7 +95,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			newEntity.newInventory.removeStackableItems(itemType, 1);
 			if (0 == newEntity.newInventory.getCount(itemType))
 			{
-				newEntity.newSelectedItemKey = Entity.NO_SELECTION;
+				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.

@@ -78,9 +78,9 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 		if (stored > 0)
 		{
 			// Just as a "nice to have" behaviour, we will select this item if we have nothing selected and we didn't have any of this item.
-			if ((Entity.NO_SELECTION == newEntity.newSelectedItemKey) && (null != typeToTrySelect))
+			if ((Entity.NO_SELECTION == newEntity.getSelectedKey()) && (null != typeToTrySelect))
 			{
-				newEntity.newSelectedItemKey = newEntity.newInventory.getIdOfStackableType(typeToTrySelect);
+				newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(typeToTrySelect));
 			}
 		}
 		
