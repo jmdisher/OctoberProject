@@ -1,10 +1,12 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Item;
@@ -89,7 +91,10 @@ public class EntityChangeAttackEntity implements IMutationEntity
 			{
 				damageToApply = 1;
 			}
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(damageToApply);
+			// Choose the target body part at random - TODO:  Handle this random value differently.
+			int index = new Random().nextInt(BodyPart.values().length);
+			BodyPart target = BodyPart.values()[index];
+			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(target, damageToApply);
 			context.newChangeSink.next(_targetEntityId, takeDamage);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.

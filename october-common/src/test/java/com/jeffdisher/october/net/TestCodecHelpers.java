@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -227,6 +228,23 @@ public class TestCodecHelpers
 		CodecHelpers.writeNonStackableItem(buffer, null);
 		buffer.flip();
 		output = CodecHelpers.readNonStackableItem(buffer);
+		Assert.assertNull(output);
+	}
+
+	@Test
+	public void bodyPart() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		BodyPart test = BodyPart.FEET;
+		CodecHelpers.writeBodyPart(buffer, test);
+		buffer.flip();
+		BodyPart output = CodecHelpers.readBodyPart(buffer);
+		Assert.assertTrue(test == output);
+		
+		buffer.clear();
+		CodecHelpers.writeBodyPart(buffer, null);
+		buffer.flip();
+		output = CodecHelpers.readBodyPart(buffer);
 		Assert.assertNull(output);
 	}
 }

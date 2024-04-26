@@ -46,6 +46,7 @@ public class MutableEntity
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
+				, new NonStackableItem[BodyPart.values().length]
 				, null
 				, DEFAULT_HEALTH
 				, DEFAULT_FOOD
@@ -63,6 +64,7 @@ public class MutableEntity
 	public float newZVelocityPerSecond;
 	public int[] newHotbar;
 	public int newHotbarIndex;
+	public NonStackableItem[] newArmour;
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
@@ -75,6 +77,7 @@ public class MutableEntity
 		this.newZVelocityPerSecond = original.zVelocityPerSecond();
 		this.newHotbar = original.hotbarItems().clone();
 		this.newHotbarIndex = original.hotbarIndex();
+		this.newArmour = original.armourSlots().clone();
 		this.newLocalCraftOperation = original.localCraftOperation();
 		this.newHealth = original.health();
 		this.newFood = original.food();
@@ -134,6 +137,15 @@ public class MutableEntity
 				didHotbarChange = true;
 			}
 		}
+		boolean didArmourChange = false;
+		for (int i = 0; i < this.newArmour.length; ++i)
+		{
+			if (this.newArmour[i] != this.original.armourSlots()[i])
+			{
+				didArmourChange = true;
+				break;
+			}
+		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
 				, this.newZVelocityPerSecond
@@ -142,6 +154,7 @@ public class MutableEntity
 				, this.newInventory.freeze()
 				, didHotbarChange ? this.newHotbar : this.original.hotbarItems()
 				, this.newHotbarIndex
+				, didArmourChange ? this.newArmour : this.original.armourSlots()
 				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood

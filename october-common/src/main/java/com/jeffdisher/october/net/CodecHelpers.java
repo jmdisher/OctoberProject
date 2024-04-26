@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -136,6 +137,11 @@ public class CodecHelpers
 			hotbar[i] = buffer.getInt();
 		}
 		int hotbarIndex = buffer.getInt();
+		NonStackableItem[] armour = new NonStackableItem[BodyPart.values().length];
+		for (int i = 0; i < armour.length; ++i)
+		{
+			armour[i] = _readNonStackableItem(buffer);
+		}
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
@@ -148,6 +154,7 @@ public class CodecHelpers
 				, inventory
 				, hotbar
 				, hotbarIndex
+				, armour
 				, localCraftOperation
 				, health
 				, food
@@ -164,6 +171,7 @@ public class CodecHelpers
 		Inventory inventory = entity.inventory();
 		int[] hotbar = entity.hotbarItems();
 		int hotbarIndex = entity.hotbarIndex();
+		NonStackableItem[] armour = entity.armourSlots();
 		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
@@ -177,6 +185,10 @@ public class CodecHelpers
 			buffer.putInt(key);
 		}
 		buffer.putInt(hotbarIndex);
+		for (NonStackableItem piece : armour)
+		{
+			_writeNonStackableItem(buffer, piece);
+		}
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
@@ -260,6 +272,35 @@ public class CodecHelpers
 	public static void writeNonStackableItem(ByteBuffer buffer, NonStackableItem item)
 	{
 		_writeNonStackableItem(buffer, item);
+	}
+
+	public static BodyPart readBodyPart(ByteBuffer buffer)
+	{
+		// We will use -1 as the "null".
+		int index = buffer.getInt();
+		BodyPart result;
+		if (index >= 0)
+		{
+			result = BodyPart.values()[index];
+		}
+		else
+		{
+			result = null;
+		}
+		return result;
+	}
+
+	public static void writeBodyPart(ByteBuffer buffer, BodyPart part)
+	{
+		if (null != part)
+		{
+			buffer.putInt(part.ordinal());
+		}
+		else
+		{
+			// Write the -1.
+			buffer.putInt(-1);
+		}
 	}
 
 

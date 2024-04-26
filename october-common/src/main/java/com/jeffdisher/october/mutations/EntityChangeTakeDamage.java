@@ -2,7 +2,10 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -24,18 +27,21 @@ public class EntityChangeTakeDamage implements IMutationEntity
 
 	public static EntityChangeTakeDamage deserializeFromBuffer(ByteBuffer buffer)
 	{
+		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		byte damage = buffer.get();
-		return new EntityChangeTakeDamage(damage);
+		return new EntityChangeTakeDamage(target, damage);
 	}
 
 
+	private final BodyPart _target;
 	private final byte _damage;
 
-	public EntityChangeTakeDamage(byte damage)
+	public EntityChangeTakeDamage(BodyPart target, byte damage)
 	{
 		// Make sure that this is positive.
 		Assert.assertTrue(damage > 0);
 		
+		_target = target;
 		_damage = damage;
 	}
 
@@ -53,7 +59,44 @@ public class EntityChangeTakeDamage implements IMutationEntity
 		boolean didApply = false;
 		if (newEntity.newHealth > 0)
 		{
-			byte finalHealth = (byte)(newEntity.newHealth - _damage);
+			// Determine how much actual damage to apply by looking at target and armour.
+			byte damageToApply;
+			if (null != _target)
+			{
+				// This means an actual body part.
+				NonStackableItem armour = newEntity.newArmour[_target.ordinal()];
+				if (null != armour)
+				{
+					// We will reduce the damage by the armour amount, correcting to make sure at least 1 damage is taken, then apply this to the armour durability.
+					Environment env = Environment.getShared();
+					// (note that we consider the armour 100% effective, even if about to break).
+					int maxReduction = env.armour.getDamageReduction(armour.type());
+					int damageToAbsorb = Math.min(_damage - 1, maxReduction);
+					damageToApply = (byte)(_damage - damageToAbsorb);
+					if (damageToAbsorb > 0)
+					{
+						int durabilityRemaining = armour.durability() - damageToAbsorb;
+						if (durabilityRemaining > 0)
+						{
+							newEntity.newArmour[_target.ordinal()] = new NonStackableItem(armour.type(), durabilityRemaining);
+						}
+						else
+						{
+							newEntity.newArmour[_target.ordinal()] = null;
+						}
+					}
+				}
+				else
+				{
+					damageToApply = _damage;
+				}
+			}
+			else
+			{
+				// This means some kind of environmental damage (starvation, usually).
+				damageToApply = _damage;
+			}
+			byte finalHealth = (byte)(newEntity.newHealth - damageToApply);
 			if (finalHealth > 0)
 			{
 				// We can apply the damage.
@@ -94,6 +137,7 @@ public class EntityChangeTakeDamage implements IMutationEntity
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
+		CodecHelpers.writeBodyPart(buffer, _target);
 		buffer.put(_damage);
 	}
 }

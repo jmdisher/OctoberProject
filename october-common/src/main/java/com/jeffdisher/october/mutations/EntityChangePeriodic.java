@@ -55,7 +55,8 @@ public class EntityChangePeriodic implements IMutationEntity
 		else
 		{
 			// We apply damage using the TakeDamage change.
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage((byte)1);
+			// The damage isn't applied to a specific body part.
+			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(null, (byte)1);
 			context.newChangeSink.next(newEntity.original.id(), takeDamage);
 		}
 		

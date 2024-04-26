@@ -38,6 +38,7 @@ public class EntityActionValidator
 						, entity.inventory()
 						, entity.hotbarItems()
 						, entity.hotbarIndex()
+						, entity.armourSlots()
 						, entity.localCraftOperation()
 						, entity.health()
 						, entity.food()

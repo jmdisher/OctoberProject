@@ -20,6 +20,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -779,7 +780,7 @@ public class TestCommonChanges
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
-		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage((byte) 60);
+		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(BodyPart.HEAD, (byte) 60);
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
 		Assert.assertNull(blockHolder[0]);
@@ -1099,6 +1100,36 @@ public class TestCommonChanges
 		Assert.assertEquals(swordId, mutable.newHotbar[1]);
 		Assert.assertEquals(swordId, mutable.getSelectedKey());
 		Assert.assertEquals(stoneId, mutable.newHotbar[0]);
+	}
+
+	@Test
+	public void armourBehaviour() throws Throwable
+	{
+		// We will put some armour on the entity and see how the health is impacted by various attacks.
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		Item helmetType = ENV.items.getItemById("op.iron_helmet");
+		int startDurability = 15;
+		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
+		
+		// Hit them in a different place and see the whole damage applied.
+		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.TORSO, (byte)10).applyChange(null,  mutable));
+		Assert.assertEquals((byte)90, mutable.newHealth);
+		
+		// Hit them in the head with 1 damage and see it applied, with no durability loss.
+		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)1).applyChange(null,  mutable));
+		Assert.assertEquals((byte)89, mutable.newHealth);
+		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		
+		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
+		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertEquals((byte)88, mutable.newHealth);
+		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		
+		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
+		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertEquals((byte)87, mutable.newHealth);
+		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}
 
 

@@ -18,6 +18,8 @@ public record Entity(int id
 		, int[] hotbarItems
 		// hotbarIndex is always [0..HOTBAR_SIZE).
 		, int hotbarIndex
+		// The armour slots don't count as part of the inventory so they keep the non-stackables inline.
+		, NonStackableItem[] armourSlots
 		// This is typically null but is used in the case where the entity is currently crafting something.
 		, CraftOperation localCraftOperation
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
@@ -44,6 +46,7 @@ public record Entity(int id
 				, Inventory.start(0).finish()
 				, new int[HOTBAR_SIZE]
 				, 0
+				, new NonStackableItem[BodyPart.values().length]
 				, null
 				, (byte)0
 				, (byte)0
