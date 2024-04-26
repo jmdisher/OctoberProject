@@ -114,15 +114,12 @@ public class MutationEntityPushItems implements IMutationEntity
 				}
 				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, stackToMove, nonStackable, _inventoryAspect));
 				
-				// We want to deselect this if it was selected.
+				// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
 				boolean shouldClear = (null != nonStackable) || (0 == newEntity.newInventory.getCount(type));
-				if ((_localInventoryId == newEntity.getSelectedKey())
-						&& shouldClear
-				)
+				if (shouldClear)
 				{
-					newEntity.setSelectedKey(Entity.NO_SELECTION);
+					newEntity.clearHotBarWithKey(_localInventoryId);
 				}
-				
 				didApply = true;
 			}
 		}

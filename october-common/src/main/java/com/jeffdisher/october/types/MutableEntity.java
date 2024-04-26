@@ -98,6 +98,17 @@ public class MutableEntity
 		this.newHotbar[this.newHotbarIndex] = key;
 	}
 
+	public void clearHotBarWithKey(int key)
+	{
+		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
+		{
+			if (key == this.newHotbar[i])
+			{
+				this.newHotbar[i] = Entity.NO_SELECTION;
+			}
+		}
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.

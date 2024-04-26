@@ -37,7 +37,9 @@ public class EntityChangeAcceptItems implements IMutationEntity
 			// If there isn't already selected item, we want to select this one.
 			if (Entity.NO_SELECTION == newEntity.getSelectedKey())
 			{
-				newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(_items.type()));
+				int key = newEntity.newInventory.getIdOfStackableType(_items.type());
+				newEntity.clearHotBarWithKey(key);
+				newEntity.setSelectedKey(key);
 			}
 		}
 		return didAdd;

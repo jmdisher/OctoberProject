@@ -1071,6 +1071,36 @@ public class TestCommonChanges
 		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 	}
 
+	@Test
+	public void changeHotbar() throws Throwable
+	{
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		int stoneId = 1;
+		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		Item swordType = ENV.items.getItemById("op.iron_sword");
+		int startDurability = 100;
+		int swordId = 2;
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, startDurability));
+		
+		// We should default to slot 0.
+		Assert.assertEquals(0, mutable.newHotbarIndex);
+		MutationEntitySelectItem select = new MutationEntitySelectItem(stoneId);
+		Assert.assertTrue(select.applyChange(null,  mutable));
+		Assert.assertEquals(stoneId, mutable.newHotbar[0]);
+		Assert.assertEquals(stoneId, mutable.getSelectedKey());
+		
+		// Change to the other slot and add another reference.
+		Assert.assertFalse(new EntityChangeChangeHotbarSlot(0).applyChange(null, mutable));
+		EntityChangeChangeHotbarSlot change = new EntityChangeChangeHotbarSlot(1);
+		Assert.assertTrue(change.applyChange(null, mutable));
+		select = new MutationEntitySelectItem(swordId);
+		Assert.assertTrue(select.applyChange(null,  mutable));
+		Assert.assertEquals(swordId, mutable.newHotbar[1]);
+		Assert.assertEquals(swordId, mutable.getSelectedKey());
+		Assert.assertEquals(stoneId, mutable.newHotbar[0]);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

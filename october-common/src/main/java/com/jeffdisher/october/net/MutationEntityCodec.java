@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
+import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeEatSelectedItem;
@@ -46,6 +47,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePeriodic.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeEatSelectedItem.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeEatSelectedItem.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeExchangeLiquid.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeExchangeLiquid.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeChangeHotbarSlot.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

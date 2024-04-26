@@ -46,6 +46,8 @@ public class MutationEntitySelectItem implements IMutationEntity
 		if ((_inventoryId != newEntity.getSelectedKey())
 				&& ((0 == _inventoryId) || isValidId))
 		{
+			// Remove from any other slots and select in the current slot.
+			newEntity.clearHotBarWithKey(_inventoryId);
 			newEntity.setSelectedKey(_inventoryId);
 			didApply = true;
 		}

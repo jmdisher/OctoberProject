@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -78,11 +77,11 @@ public class EntityChangeCraft implements IMutationEntity
 				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), newEntity.newInventory);
 				if (didCraft)
 				{
-					// Make sure that this cleared the selection, if we used the last of them.
+					// Make sure that this cleared the hotbar, if we used the last of them.
 					int selectedKey = newEntity.getSelectedKey();
-					if ((Entity.NO_SELECTION != selectedKey) && (null == newEntity.newInventory.getStackForKey(selectedKey)))
+					if (null == newEntity.newInventory.getStackForKey(selectedKey))
 					{
-						newEntity.setSelectedKey(Entity.NO_SELECTION);
+						newEntity.clearHotBarWithKey(selectedKey);
 					}
 				}
 				newEntity.newLocalCraftOperation = null;

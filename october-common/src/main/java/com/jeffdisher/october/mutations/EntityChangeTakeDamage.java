@@ -74,7 +74,11 @@ public class EntityChangeTakeDamage implements IMutationEntity
 					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				newEntity.newInventory.clearInventory(null);
-				newEntity.setSelectedKey(Entity.NO_SELECTION);
+				// Wipe all the hotbar slots.
+				for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
+				{
+					newEntity.newHotbar[i] = Entity.NO_SELECTION;
+				}
 			}
 			didApply = true;
 		}

@@ -20,6 +20,7 @@ public enum MutationEntityType
 	PERIODIC,
 	EAT_ITEM,
 	EXCHANGE_LIQUID,
+	CHANGE_HOTBAR_SLOT,
 	
 	END_OF_LIST,
 }
