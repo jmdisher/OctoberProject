@@ -11,3 +11,7 @@ op.iron_axe	100000
 op.iron_sword	100000
 op.bucket_empty	0
 op.bucket_water	0
+op.iron_helmet	1000
+op.iron_chestplate	1000
+op.iron_greaves	1000
+op.iron_boots	1000

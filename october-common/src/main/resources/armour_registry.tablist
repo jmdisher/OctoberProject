@@ -1,0 +1,15 @@
+# Entries here have the form:
+# ID<TAB>armour_slot
+# <TAB>reduction<TAB>int
+# 
+# "armour_slot" must correspond to a constant name in ArmourSlot.
+# "reduction" is the maximum damage reduction this armour will protect against this body part.
+
+op.iron_helmet	HEAD
+	reduction	10
+op.iron_chestplate	TORSO
+	reduction	10
+op.iron_greaves	LEGS
+	reduction	10
+op.iron_boots	FEET
+	reduction	10

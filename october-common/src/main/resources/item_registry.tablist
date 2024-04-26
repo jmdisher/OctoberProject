@@ -33,3 +33,7 @@ op.iron_axe	Axe
 op.iron_sword	Sword
 op.bucket_empty	Bucket
 op.bucket_water	Water Bucket
+op.iron_helmet	Iron Helmet
+op.iron_chestplate	Iron Chestplate
+op.iron_greaves	Iron Greaves
+op.iron_boots	Iron Boots

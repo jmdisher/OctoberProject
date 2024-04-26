@@ -35,3 +35,7 @@ op.iron_axe	2
 op.iron_sword	2
 op.bucket_empty	2
 op.bucket_water	2
+op.iron_helmet	2
+op.iron_chestplate	4
+op.iron_greaves	3
+op.iron_boots	2

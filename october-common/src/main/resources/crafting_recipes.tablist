@@ -68,3 +68,19 @@ op.bucket_empty	common
 	input	op.iron_ingot
 	output	op.bucket_empty
 	millis	10000
+op.iron_helmet	common
+	input	op.iron_ingot	op.iron_ingot
+	output	op.iron_helmet
+	millis	20000
+op.iron_chestplate	common
+	input	op.iron_ingot	op.iron_ingot	op.iron_ingot	op.iron_ingot
+	output	op.iron_chestplate
+	millis	80000
+op.iron_greaves	common
+	input	op.iron_ingot	op.iron_ingot	op.iron_ingot
+	output	op.iron_greaves
+	millis	40000
+op.iron_boots	common
+	input	op.iron_ingot	op.iron_ingot
+	output	op.iron_boots
+	millis	20000

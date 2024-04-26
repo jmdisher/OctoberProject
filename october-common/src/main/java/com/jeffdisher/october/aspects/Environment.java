@@ -71,6 +71,7 @@ public class Environment
 	public final PlantRegistry plants;
 	public final FoodRegistry foods;
 	public final ToolRegistry tools;
+	public final ArmourRegistry armour;
 	public final StationRegistry stations;
 	public final SpecialConstants special;
 
@@ -95,6 +96,7 @@ public class Environment
 		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("plant_registry.tablist"));
 		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));
 		this.tools = ToolRegistry.load(this.items, loader.getResourceAsStream("tool_registry.tablist"));
+		this.armour = ArmourRegistry.load(this.items, loader.getResourceAsStream("armour_registry.tablist"));
 		this.stations = StationRegistry.load(this.items, this.blocks, loader.getResourceAsStream("station_registry.tablist"));
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
