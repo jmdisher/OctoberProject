@@ -238,13 +238,13 @@ public class CraftAspect
 			for (Item item : craft.output)
 			{
 				boolean didAdd;
-				if (env.tools.isStackable(item))
+				if (env.durability.isStackable(item))
 				{
 					didAdd = inv.addAllItems(item, 1);
 				}
 				else
 				{
-					int startingDurability = env.tools.toolDurability(item);
+					int startingDurability = env.durability.getDurability(item);
 					didAdd = inv.addNonStackableBestEfforts(new NonStackableItem(item, startingDurability));
 				}
 				// We can't fail to add here.

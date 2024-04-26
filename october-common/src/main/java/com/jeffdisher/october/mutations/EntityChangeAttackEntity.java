@@ -95,7 +95,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
 			if (null != nonStack)
 			{
-				int totalDurability = env.tools.toolDurability(toolType);
+				int totalDurability = env.durability.getDurability(toolType);
 				if (totalDurability > 0)
 				{
 					// For now, we will just apply whatever the damage was as the durability loss, but this should change later.

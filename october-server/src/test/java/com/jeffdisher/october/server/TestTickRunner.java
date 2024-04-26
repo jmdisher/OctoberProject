@@ -363,7 +363,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		int startDurability = ENV.tools.toolDurability(pickaxe);
+		int startDurability = ENV.durability.getDurability(pickaxe);
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		mutable.setSelectedKey(1);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of()))

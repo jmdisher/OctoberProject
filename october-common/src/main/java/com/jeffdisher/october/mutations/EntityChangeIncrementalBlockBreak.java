@@ -97,7 +97,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
 			if (null != selected)
 			{
-				int totalDurability = env.tools.toolDurability(selected.type());
+				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)
 				{
 					int newDurability = selected.durability() - _millisToApply;

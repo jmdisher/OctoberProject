@@ -1,0 +1,13 @@
+# Entries here have the form:
+# ID<TAB>number
+# 
+# The given number is non-negative and represents the durability of the item (0 means unbreakable).  Durability is
+# defined by the way the item is used, being different for things like tools, weapons, armour, etc.
+# Note that every item listed here is non-stackable (which is why 0 is sometimes used).
+
+op.iron_pickaxe	100000
+op.iron_shovel	100000
+op.iron_axe	100000
+op.iron_sword	100000
+op.bucket_empty	0
+op.bucket_water	0

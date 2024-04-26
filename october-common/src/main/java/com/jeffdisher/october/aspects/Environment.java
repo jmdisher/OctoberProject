@@ -62,6 +62,7 @@ public class Environment
 
 	public final ItemRegistry items;
 	public final BlockAspect blocks;
+	public final DurabilityAspect durability;
 	public final InventoryAspect inventory;
 	public final CraftAspect crafting;
 	public final DamageAspect damage;
@@ -79,6 +80,7 @@ public class Environment
 		ClassLoader loader = getClass().getClassLoader();
 		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
 		this.blocks = BlockAspect.loadRegistry(this.items, loader.getResourceAsStream("block_aspect.tablist"));
+		this.durability = DurabilityAspect.load(this.items, loader.getResourceAsStream("durability.tablist"));
 		this.inventory = InventoryAspect.load(this.items, this.blocks
 				, loader.getResourceAsStream("inventory_encumbrance.tablist")
 				, loader.getResourceAsStream("inventory_capacity.tablist")

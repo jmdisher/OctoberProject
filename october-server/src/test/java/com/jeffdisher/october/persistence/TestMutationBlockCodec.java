@@ -87,7 +87,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		NonStackableItem items = new NonStackableItem(pickItem, ENV.tools.toolDurability(pickItem));
+		NonStackableItem items = new NonStackableItem(pickItem, ENV.durability.getDurability(pickItem));
 		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, null, items, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

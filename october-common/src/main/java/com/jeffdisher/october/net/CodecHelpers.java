@@ -334,7 +334,7 @@ public class CodecHelpers
 				// We will need to manually read this type in order to determine if this is stackable or not.
 				Item type = _readItemNoAir(buffer);
 				// NOTE:  We will inline the rest of the data since we are overlapping with types.
-				if (env.tools.isStackable(type))
+				if (env.durability.isStackable(type))
 				{
 					int count = buffer.getInt();
 					Items items = new Items(type, count);

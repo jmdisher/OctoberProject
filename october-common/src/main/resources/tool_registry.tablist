@@ -12,19 +12,9 @@
 
 op.iron_pickaxe	5
 	block_material	PICKAXE
-	durability	100000
 op.iron_shovel	5
 	block_material	SHOVEL
-	durability	100000
 op.iron_axe	5
 	block_material	AXE
-	durability	100000
 op.iron_sword	10
 	block_material	SWORD
-	durability	100000
-op.bucket_empty	1
-	block_material	NO_MATERIAL
-	durability	0
-op.bucket_water	1
-	block_material	NO_MATERIAL
-	durability	0

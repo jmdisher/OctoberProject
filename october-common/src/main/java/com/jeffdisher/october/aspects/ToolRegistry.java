@@ -16,7 +16,6 @@ import com.jeffdisher.october.types.Item;
  */
 public class ToolRegistry
 {
-	public static final String FIELD_DURABILITY = "durability";
 	public static final String FIELD_BLOCK_MATERIAL = "block_material";
 
 	/**
@@ -34,7 +33,6 @@ public class ToolRegistry
 	{
 		IValueTransformer<Item> keyTransformer = new IValueTransformer.ItemTransformer(items);
 		IValueTransformer<Integer> valueTransformer = new IValueTransformer.IntegerTransformer("speed");
-		IValueTransformer<Integer> durabilityTransformer = new IValueTransformer.IntegerTransformer(FIELD_DURABILITY);
 		IValueTransformer<BlockMaterial> materialTransformer = new IValueTransformer<>() {
 			@Override
 			public BlockMaterial transform(String value) throws TabListException
@@ -49,27 +47,23 @@ public class ToolRegistry
 		};
 		
 		SimpleTabListCallbacks<Item, Integer> callbacks = new SimpleTabListCallbacks<>(keyTransformer, valueTransformer);
-		SimpleTabListCallbacks.SubRecordCapture<Item, Integer> durabilities = callbacks.captureSubRecord(FIELD_DURABILITY, durabilityTransformer, true);
 		SimpleTabListCallbacks.SubRecordCapture<Item, BlockMaterial> blockMaterials = callbacks.captureSubRecord(FIELD_BLOCK_MATERIAL, materialTransformer, true);
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		// We can just pass these in, directly.
-		return new ToolRegistry(callbacks.topLevel, durabilities.recordData, blockMaterials.recordData);
+		return new ToolRegistry(callbacks.topLevel, blockMaterials.recordData);
 	}
 
 
 	private final Map<Item, Integer> _speedValues;
-	private final Map<Item, Integer> _durabilityValues;
 	private final Map<Item, BlockMaterial> _blockMaterials;
 
 	private ToolRegistry(Map<Item, Integer> speedValues
-			, Map<Item, Integer> durabilityValues
 			, Map<Item, BlockMaterial> blockMaterials
 	)
 	{
 		_speedValues = speedValues;
-		_durabilityValues = durabilityValues;
 		_blockMaterials = blockMaterials;
 	}
 
@@ -85,33 +79,6 @@ public class ToolRegistry
 		return (null != toolValue)
 				? toolValue.intValue()
 				: 1
-		;
-	}
-
-	/**
-	 * Checks if the given item is stackable, based on whether it is a tool (tools cannot be stacked).
-	 * 
-	 * @param item The item.
-	 * @return True if this item is a stackable type.
-	 */
-	public boolean isStackable(Item item)
-	{
-		// We will assume that no tools are stackable.
-		return !_speedValues.containsKey(item);
-	}
-
-	/**
-	 * Looks up the durability for the given tool.  Returns 0 if not a tool or an unbreakable tool.
-	 * 
-	 * @param item The item to look up.
-	 * @return The durability value or 0 if this isn't a tool or is an unbreakable tool.
-	 */
-	public int toolDurability(Item item)
-	{
-		Integer value = _durabilityValues.get(item);
-		return (null != value)
-				? value.intValue()
-				: 0
 		;
 	}
 

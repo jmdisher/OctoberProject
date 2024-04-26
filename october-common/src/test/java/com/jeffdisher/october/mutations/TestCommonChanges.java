@@ -375,7 +375,7 @@ public class TestCommonChanges
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.tools.toolDurability(pickItem)));
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.durability.getDurability(pickItem)));
 		int idOfPick = 1;
 		mutable.setSelectedKey(idOfPick);
 		Entity original = mutable.freeze();
