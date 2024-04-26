@@ -2,12 +2,11 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import com.jeffdisher.october.config.IValueTransformer;
+import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 
@@ -40,81 +39,15 @@ public class PlantRegistry
 		IValueTransformer<Integer> divisorTransformer = new IValueTransformer.IntegerTransformer(FIELD_GROWTH_DIVISOR);
 		IValueTransformer<Block> nextPhaseTransformer = new IValueTransformer.BlockTransformer(items, blocks);
 		
-		Map<Block, Integer> growthDivisors = new HashMap<>();
-		Set<Block> treeSet = new HashSet<>();
-		Map<Block, Block> nextPhaseMap = new HashMap<>();
-		
-		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
-			private Block _currentKey;
-			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				if (0 != parameters.length)
-				{
-					throw new TabListReader.TabListException("Plant header expected to have no parameters: \"" + name + "\"");
-				}
-				_currentKey = keyTransformer.transform(name);
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				// Make sure that the arguments are consistent.
-				if (!growthDivisors.containsKey(_currentKey))
-				{
-					throw new TabListReader.TabListException("Plant requires growth_divisor: \"" + _currentKey.item().id() + "\"");
-				}
-				if (treeSet.contains(_currentKey) == nextPhaseMap.containsKey(_currentKey))
-				{
-					throw new TabListReader.TabListException("Plant must have one of grow_as_tree or next_phase: \"" + _currentKey.item().id() + "\"");
-				}
-				_currentKey = null;
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				if (name.equals(FIELD_GROWTH_DIVISOR))
-				{
-					String first = _requireOneParamter(name, parameters);
-					int divisor = divisorTransformer.transform(first);
-					if (divisor <= 0)
-					{
-						throw new TabListReader.TabListException("growth_divisor must be positive \"" + _currentKey.item().id() + "\"");
-					}
-					growthDivisors.put(_currentKey, divisor);
-				}
-				else if (name.equals(FIELD_GROW_AS_TREE))
-				{
-					if (0 != parameters.length)
-					{
-						throw new TabListReader.TabListException("grow_as_tree takes no parameters \"" + _currentKey.item().id() + "\"");
-					}
-					treeSet.add(_currentKey);
-				}
-				else if (name.equals(FIELD_NEXT_PHASE))
-				{
-					String first = _requireOneParamter(name, parameters);
-					Block block = nextPhaseTransformer.transform(first);
-					nextPhaseMap.put(_currentKey, block);
-				}
-				else
-				{
-					throw new TabListReader.TabListException("Unexpected field in \"" + _currentKey.item().id() + "\": \"" + name + "\"");
-				}
-			}
-			private String _requireOneParamter(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("Field in \"" + _currentKey.item().id() + "\" expects a single parameter: \"" + name + "\"");
-				}
-				return parameters[0];
-			}
-		};
+		SimpleTabListCallbacks<Block, Void> callbacks = new SimpleTabListCallbacks<>(keyTransformer, null);
+		SimpleTabListCallbacks.SubRecordCapture<Block, Integer> growthDivisors = callbacks.captureSubRecord(FIELD_GROWTH_DIVISOR, divisorTransformer, true);
+		SimpleTabListCallbacks.SubRecordCapture<Block, Block> treeSet = callbacks.captureSubRecord(FIELD_GROW_AS_TREE, null, false);
+		SimpleTabListCallbacks.SubRecordCapture<Block, Block> nextPhaseMap = callbacks.captureSubRecord(FIELD_NEXT_PHASE, nextPhaseTransformer, false);
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		// We can just pass these in, directly.
-		return new PlantRegistry(growthDivisors, treeSet, nextPhaseMap);
+		return new PlantRegistry(growthDivisors.recordData, treeSet.recordData.keySet(), nextPhaseMap.recordData);
 	}
 	private final Map<Block, Integer> _growthDivisors;
 	private final Set<Block> _treeSet;

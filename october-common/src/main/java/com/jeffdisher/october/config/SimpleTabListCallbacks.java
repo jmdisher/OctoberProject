@@ -13,7 +13,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * An implementation of the callbacks interface to handle the relatively common case of a mostly key-value list but with
  * some optional or required sub-records.  The only common restriction on use-case is that all of the parameter lists
- * for new records or sub-records are expected to be precisely 1 element long.
+ * for new records or sub-records are expected to be precisely 0 or 1 element long.
  * 
  * @param <K> The key type.
  * @param <V> The top-level record value type.
@@ -75,11 +75,15 @@ public class SimpleTabListCallbacks<K, V> implements TabListReader.IParseCallbac
 	public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
 	{
 		K key = _keyTransformer.transform(name);
-		if (1 != parameters.length)
+		if ((null != _valueTransformer) && (1 != parameters.length))
 		{
-			throw new TabListReader.TabListException("Exactly 1 parameter expected");
+			throw new TabListReader.TabListException("Exactly 1 parameter expected for \"" + key + "\"");
 		}
-		V value = _valueTransformer.transform(parameters[0]);
+		if ((null == _valueTransformer) && (0 != parameters.length))
+		{
+			throw new TabListReader.TabListException("No record parameter expected for \"" + key + "\"");
+		}
+		V value = (null != _valueTransformer) ? _valueTransformer.transform(parameters[0]) : null;
 		if (this.topLevel.containsKey(key))
 		{
 			throw new TabListReader.TabListException("Duplicate data element: \"" + name + "\"");
@@ -119,11 +123,8 @@ public class SimpleTabListCallbacks<K, V> implements TabListReader.IParseCallbac
 		{
 			throw new TabListReader.TabListException("Unexpected sub-record \"" + name + "\" in: " + _currentRecordKey);
 		}
-		if (1 != parameters.length)
-		{
-			throw new TabListReader.TabListException("Exactly 1 parameter expected for \"" + name + "\" in: " + _currentRecordKey);
-		}
-		capture.transformAndStore(_currentRecordKey, parameters[0]);
+		String rawParameter = (parameters.length > 0) ? parameters[0] : null;
+		capture.transformAndStore(_currentRecordKey, name, rawParameter);
 		_pendingSubRecords.remove(name);
 	}
 
@@ -143,9 +144,17 @@ public class SimpleTabListCallbacks<K, V> implements TabListReader.IParseCallbac
 			this.recordData = new HashMap<>();
 		}
 		
-		public void transformAndStore(K currentRecordKey, String string) throws TabListReader.TabListException
+		public void transformAndStore(K currentRecordKey, String subRecord, String rawParameter) throws TabListReader.TabListException
 		{
-			W value = _tranformer.transform(string);
+			if ((null != _tranformer) && (null == rawParameter))
+			{
+				throw new TabListReader.TabListException("Exactly 1 sub-record parameter expected for \"" + subRecord + "\" in: " + currentRecordKey);
+			}
+			if ((null == _tranformer) && (null != rawParameter))
+			{
+				throw new TabListReader.TabListException("No sub-record parameter expected for \"" + subRecord + "\" in: " + currentRecordKey);
+			}
+			W value = (null != _tranformer) ? _tranformer.transform(rawParameter) : null;
 			this.recordData.put(currentRecordKey, value);
 		}
 	}
