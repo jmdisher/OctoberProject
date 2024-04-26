@@ -2,13 +2,13 @@ package com.jeffdisher.october.aspects;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.config.IValueTransformer;
+import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -35,63 +35,27 @@ public class ToolRegistry
 		IValueTransformer<Item> keyTransformer = new IValueTransformer.ItemTransformer(items);
 		IValueTransformer<Integer> valueTransformer = new IValueTransformer.IntegerTransformer("speed");
 		IValueTransformer<Integer> durabilityTransformer = new IValueTransformer.IntegerTransformer(FIELD_DURABILITY);
-		Map<Item, Integer> speeds = new HashMap<>();
-		Map<Item, Integer> durabilities = new HashMap<>();
-		Map<Item, BlockMaterial> blockMaterials = new HashMap<>();
-		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
-			private Item _currentKey;
+		IValueTransformer<BlockMaterial> materialTransformer = new IValueTransformer<>() {
 			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+			public BlockMaterial transform(String value) throws TabListException
 			{
-				if (1 != parameters.length)
+				BlockMaterial material = BlockMaterial.valueOf(value);
+				if (null == material)
 				{
-					throw new TabListReader.TabListException("Expected a single speed value for the tool \"" + name + "\"");
+					throw new TabListReader.TabListException("Unknown constant for block_material: \"" + value + "\"");
 				}
-				Item key = keyTransformer.transform(name);
-				Integer speed = valueTransformer.transform(parameters[0]);
-				speeds.put(key, speed);
-				_currentKey = key;
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				_currentKey = null;
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				if (1 != parameters.length)
-				{
-					throw new TabListReader.TabListException("Expected a single parameter value for the tool \"" + _currentKey.id() + "\"");
-				}
-				
-				if (name.equals(FIELD_DURABILITY))
-				{
-					Integer durablity = durabilityTransformer.transform(parameters[0]);
-					durabilities.put(_currentKey, durablity);
-				}
-				else if (name.equals(FIELD_BLOCK_MATERIAL))
-				{
-					BlockMaterial material = BlockMaterial.valueOf(parameters[0]);
-					if (null == material)
-					{
-						throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
-					}
-					blockMaterials.put(_currentKey, material);
-				}
-				else
-				{
-					throw new TabListReader.TabListException("Unexpected field in \"" + _currentKey.id() + "\": \"" + name + "\"");
-				}
+				return material;
 			}
 		};
 		
+		SimpleTabListCallbacks<Item, Integer> callbacks = new SimpleTabListCallbacks<>(keyTransformer, valueTransformer);
+		SimpleTabListCallbacks.SubRecordCapture<Item, Integer> durabilities = callbacks.captureSubRecord(FIELD_DURABILITY, durabilityTransformer, true);
+		SimpleTabListCallbacks.SubRecordCapture<Item, BlockMaterial> blockMaterials = callbacks.captureSubRecord(FIELD_BLOCK_MATERIAL, materialTransformer, true);
+		
 		TabListReader.readEntireFile(callbacks, stream);
 		
-		// We expect a durability entry for each item.
-		Assert.assertTrue(speeds.size() == durabilities.size());
 		// We can just pass these in, directly.
-		return new ToolRegistry(speeds, durabilities, blockMaterials);
+		return new ToolRegistry(callbacks.topLevel, durabilities.recordData, blockMaterials.recordData);
 	}
 
 
