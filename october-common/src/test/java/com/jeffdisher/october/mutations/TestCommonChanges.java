@@ -1132,6 +1132,50 @@ public class TestCommonChanges
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}
 
+	@Test
+	public void swapArmour() throws Throwable
+	{
+		// Put some armour in the inventory and show that we can swap it in and out of the armour slots.
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		Item dirtType = ENV.items.getItemById("op.dirt");
+		Item helmetType = ENV.items.getItemById("op.iron_helmet");
+		int helmet1Durability = 15;
+		int helmet1Id = 1;
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, helmet1Durability));
+		int helmet2Durability = 2000;
+		int helmet2Id = 2;
+		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(helmetType, helmet2Durability));
+		int dirtId = 3;
+		mutable.newInventory.addItemsBestEfforts(dirtType, 1);
+		Assert.assertEquals(5, mutable.newInventory.getCurrentEncumbrance());
+		
+		// Show that we can't swap the dirt.
+		Assert.assertFalse(new EntityChangeSwapArmour(BodyPart.TORSO, dirtId).applyChange(null,  mutable));
+		Assert.assertNull(mutable.newArmour[BodyPart.TORSO.ordinal()]);
+		Assert.assertEquals(5, mutable.newInventory.getCurrentEncumbrance());
+		
+		// Show that we can't swap the helmet to the wrong body part.
+		Assert.assertFalse(new EntityChangeSwapArmour(BodyPart.TORSO, helmet1Id).applyChange(null,  mutable));
+		Assert.assertNull(mutable.newArmour[BodyPart.TORSO.ordinal()]);
+		Assert.assertEquals(5, mutable.newInventory.getCurrentEncumbrance());
+		
+		// Show that we can wear the helmet.
+		Assert.assertTrue(new EntityChangeSwapArmour(BodyPart.HEAD, helmet1Id).applyChange(null,  mutable));
+		Assert.assertEquals(helmet1Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(3, mutable.newInventory.getCurrentEncumbrance());
+		
+		// Show that we can swap to the other helmet.
+		Assert.assertTrue(new EntityChangeSwapArmour(BodyPart.HEAD, helmet2Id).applyChange(null,  mutable));
+		Assert.assertEquals(helmet2Durability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
+		Assert.assertEquals(3, mutable.newInventory.getCurrentEncumbrance());
+		
+		// Show that we can swap out with nothing.
+		Assert.assertTrue(new EntityChangeSwapArmour(BodyPart.HEAD, 0).applyChange(null,  mutable));
+		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
+		Assert.assertEquals(5, mutable.newInventory.getCurrentEncumbrance());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

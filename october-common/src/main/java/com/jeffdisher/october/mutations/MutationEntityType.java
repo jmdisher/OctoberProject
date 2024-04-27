@@ -21,6 +21,7 @@ public enum MutationEntityType
 	EAT_ITEM,
 	EXCHANGE_LIQUID,
 	CHANGE_HOTBAR_SLOT,
+	SWAP_ARMOUR,
 	
 	END_OF_LIST,
 }
