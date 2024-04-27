@@ -83,8 +83,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
 				
 				// Create the inventory for this type.
-				int newInventoryCapacity = env.inventory.getInventoryCapacity(emptyBlock);
-				MutableInventory newInventory = new MutableInventory(Inventory.start(newInventoryCapacity).finish());
+				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));
 				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 				
 				// Add this block's drops to the inventory.

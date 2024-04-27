@@ -380,14 +380,14 @@ public class CodecHelpers
 					int count = buffer.getInt();
 					Items items = new Items(type, count);
 					stackableItems.put(keyValue, items);
-					currentEncumbrance += env.inventory.getEncumbrance(items.type()) * items.count();
+					currentEncumbrance += env.encumbrance.getEncumbrance(items.type()) * items.count();
 				}
 				else
 				{
 					int durability = buffer.getInt();
 					NonStackableItem item = new NonStackableItem(type, durability);
 					nonStackableItems.put(keyValue, item);
-					currentEncumbrance += env.inventory.getEncumbrance(item.type());
+					currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 				}
 			}
 			parsed = Inventory.build(maxEncumbrance, stackableItems, nonStackableItems, currentEncumbrance);

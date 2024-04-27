@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -73,8 +74,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
 				
 				// Create the inventory for this type.
-				int newInventoryCapacity = env.inventory.getInventoryCapacity(emptyBlock);
-				MutableInventory newInventory = new MutableInventory(Inventory.start(newInventoryCapacity).finish());
+				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));
 				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 				
 				// We are going to break this block so see if we should send it back to an entity.

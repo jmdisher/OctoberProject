@@ -209,7 +209,7 @@ public class Inventory
 			int current = _stackable.containsKey(type) ? _stackable.get(type) : 0;
 			current += count;
 			_stackable.put(type, current);
-			_currentEncumbrance += env.inventory.getEncumbrance(type) * count;
+			_currentEncumbrance += env.encumbrance.getEncumbrance(type) * count;
 			return this;
 		}
 		public Builder addNonStackable(NonStackableItem item)
@@ -217,7 +217,7 @@ public class Inventory
 			Environment env = Environment.getShared();
 			
 			_nonStackable.add(item);
-			_currentEncumbrance += env.inventory.getEncumbrance(item.type());
+			_currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 			return this;
 		}
 		public Inventory finish()

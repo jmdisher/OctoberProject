@@ -136,7 +136,7 @@ public class TestMutableInventory
 		// Normally, we can over-fill inventories but verify that this is cleared if the current encumbrance overflows.
 		Inventory original = Inventory.start(10).finish();
 		MutableInventory inv = new MutableInventory(original);
-		int itemEncumbrance = ENV.inventory.getEncumbrance(ENV.items.LOG);
+		int itemEncumbrance = ENV.encumbrance.getEncumbrance(ENV.items.LOG);
 		int countToOverflow = (Integer.MAX_VALUE / itemEncumbrance) + 1;
 		inv.addItemsAllowingOverflow(ENV.items.LOG, countToOverflow);
 		Assert.assertEquals(countToOverflow, inv.getCount(ENV.items.LOG));

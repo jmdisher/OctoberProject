@@ -110,8 +110,8 @@ public class CommonBlockMutationHelpers
 				context.mutationSink.next(new MutationBlockStoreItems(belowLocation, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 			}
 			
-			// Now, clear the inventory.
-			newBlock.setInventory(Inventory.start(env.inventory.getInventoryCapacity(newBlock.getBlock())).finish());
+			// Now, clear the inventory by saving back whatever the default was.
+			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, newBlock.getBlock()));
 			didDropInventory = true;
 		}
 		return didDropInventory;

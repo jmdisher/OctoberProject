@@ -37,7 +37,7 @@ public class CraftAspect
 	 * @throws IOException There was a problem with the stream.
 	 * @throws TabListReader.TabListException The tablist was malformed.
 	 */
-	public static CraftAspect load(ItemRegistry items, BlockAspect blocks, InventoryAspect inventory, InputStream stream) throws IOException, TabListReader.TabListException
+	public static CraftAspect load(ItemRegistry items, BlockAspect blocks, InventoryEncumbrance inventory, InputStream stream) throws IOException, TabListReader.TabListException
 	{
 		if (null == stream)
 		{
@@ -170,7 +170,7 @@ public class CraftAspect
 	 */
 	public final Craft[] CRAFTING_OPERATIONS;
 
-	private CraftAspect(BlockAspect blocks, InventoryAspect inventory, List<Craft> crafts, Map<String, Craft> craftByName)
+	private CraftAspect(BlockAspect blocks, InventoryEncumbrance inventory, List<Craft> crafts, Map<String, Craft> craftByName)
 	{
 		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
 		

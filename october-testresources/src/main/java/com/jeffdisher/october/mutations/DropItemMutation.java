@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Inventory;
@@ -30,7 +30,7 @@ public class DropItemMutation implements IMutationBlock
 	{
 		Environment env = Environment.getShared();
 		// We don't allow creation of this mutation if the items can't possibly fit.
-		Assert.assertTrue((env.inventory.getEncumbrance(type) * count) <= InventoryAspect.CAPACITY_BLOCK_EMPTY);
+		Assert.assertTrue((env.encumbrance.getEncumbrance(type) * count) <= StationRegistry.CAPACITY_BLOCK_EMPTY);
 		_location = location;
 		_type = type;
 		_count = count;

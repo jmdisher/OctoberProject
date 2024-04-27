@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -87,7 +87,7 @@ public class TestMutableBlockProxy
 		
 		// Store into the block's inventory and see how that serializes.
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setInventory(Inventory.start(InventoryAspect.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 1).finish());
+		proxy.setInventory(Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 1).finish());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);

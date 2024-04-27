@@ -82,11 +82,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = _env.inventory.getInventoryCapacity(_cachedBlock);
-			if (size > 0)
-			{
-				inv = Inventory.start(size).finish();
-			}
+			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock);
 		}
 		return inv;
 	}

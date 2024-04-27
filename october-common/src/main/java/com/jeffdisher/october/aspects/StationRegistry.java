@@ -21,6 +21,14 @@ import com.jeffdisher.october.types.Craft;
  */
 public class StationRegistry
 {
+	/**
+	 * We treat air, water, and some other cases as "empty" and they have a small capacity since it is just "on the
+	 * ground" and we want containers to be used.  That said, these blocks are often over-filled to avoid destroying
+	 * items.
+	 */
+	public static final int CAPACITY_BLOCK_EMPTY = 10;
+	public static final int CAPACITY_PLAYER = 20;
+
 	public static final String FIELD_INVENTORY = "inventory";
 	public static final String FIELD_CRAFTING = "crafting";
 	public static final String FIELD_FUEL_INVENTORY = "fuel_inventory";

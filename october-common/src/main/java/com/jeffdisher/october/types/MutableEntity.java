@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.aspects.InventoryAspect;
+import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -37,7 +37,7 @@ public class MutableEntity
 	{
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(id > 0);
-		Inventory inventory = Inventory.start(InventoryAspect.CAPACITY_PLAYER).finish();
+		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
 				, DEFAULT_LOCATION
 				, 0.0f

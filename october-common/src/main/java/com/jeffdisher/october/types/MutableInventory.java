@@ -122,7 +122,7 @@ public class MutableInventory
 		Assert.assertTrue(count > 0);
 		
 		Environment env = Environment.getShared();
-		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
+		int requiredEncumbrance = env.encumbrance.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		boolean didApply = false;
@@ -147,7 +147,7 @@ public class MutableInventory
 		Assert.assertTrue(count > 0);
 		
 		Environment env = Environment.getShared();
-		int itemEncumbrance = env.inventory.getEncumbrance(type);
+		int itemEncumbrance = env.encumbrance.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
 		int added = 0;
 		if ((itemEncumbrance > 0) && (availableEncumbrance > 0))
@@ -189,7 +189,7 @@ public class MutableInventory
 		Assert.assertTrue(null != nonStackable);
 		
 		Environment env = Environment.getShared();
-		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
+		int itemEncumbrance = env.encumbrance.getEncumbrance(nonStackable.type());
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
 		boolean didAdd = false;
 		if (itemEncumbrance <= availableEncumbrance)
@@ -212,7 +212,7 @@ public class MutableInventory
 		Assert.assertTrue(null != nonStackable);
 		
 		Environment env = Environment.getShared();
-		int itemEncumbrance = env.inventory.getEncumbrance(nonStackable.type());
+		int itemEncumbrance = env.encumbrance.getEncumbrance(nonStackable.type());
 		_nonStackable.put(_nextAddressId, nonStackable);
 		_nextAddressId += 1;
 		_currentEncumbrance += itemEncumbrance;
@@ -245,12 +245,12 @@ public class MutableInventory
 		Assert.assertTrue(null != type);
 		
 		Environment env = Environment.getShared();
-		int itemEncumbrance = env.inventory.getEncumbrance(type);
+		int itemEncumbrance = env.encumbrance.getEncumbrance(type);
 		int availableEncumbrance = _original.maxEncumbrance - _currentEncumbrance;
 		int vacancy = 0;
 		if ((itemEncumbrance > 0) && (availableEncumbrance > 0))
 		{
-			vacancy = availableEncumbrance / env.inventory.getEncumbrance(type);
+			vacancy = availableEncumbrance / env.encumbrance.getEncumbrance(type);
 		}
 		return vacancy;
 	}
@@ -283,7 +283,7 @@ public class MutableInventory
 		{
 			_stackable.remove(id);
 		}
-		int removedEncumbrance = env.inventory.getEncumbrance(type) * count;
+		int removedEncumbrance = env.encumbrance.getEncumbrance(type) * count;
 		_currentEncumbrance = _currentEncumbrance - removedEncumbrance;
 	}
 
@@ -299,7 +299,7 @@ public class MutableInventory
 		Environment env = Environment.getShared();
 		NonStackableItem removed = _nonStackable.remove(key);
 		Assert.assertTrue(null != removed);
-		_currentEncumbrance -= env.inventory.getEncumbrance(removed.type());
+		_currentEncumbrance -= env.encumbrance.getEncumbrance(removed.type());
 	}
 
 	/**
@@ -402,7 +402,7 @@ public class MutableInventory
 	private void _addStackableItems(Item type, int count)
 	{
 		Environment env = Environment.getShared();
-		int requiredEncumbrance = env.inventory.getEncumbrance(type) * count;
+		int requiredEncumbrance = env.encumbrance.getEncumbrance(type) * count;
 		int updatedEncumbrance = _currentEncumbrance + requiredEncumbrance;
 		
 		int newCount;

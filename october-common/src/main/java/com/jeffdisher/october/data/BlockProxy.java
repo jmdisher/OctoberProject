@@ -3,6 +3,7 @@ package com.jeffdisher.october.data;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
@@ -16,6 +17,24 @@ import com.jeffdisher.october.types.Item;
  */
 public class BlockProxy implements IBlockProxy
 {
+	public static Inventory getDefaultNormalOrEmptyBlockInventory(Environment env, Block block)
+	{
+		int size = env.stations.getNormalInventorySize(block);
+		if (0 == size)
+		{
+			// If this is 0, it means that it isn't a station so we will also check if this is a block which is "empty".
+			if (env.blocks.permitsEntityMovement(block))
+			{
+				size = StationRegistry.CAPACITY_BLOCK_EMPTY;
+			}
+		}
+		return (size > 0)
+				? Inventory.start(size).finish()
+				: null
+		;
+	}
+
+
 	private final Environment _env;
 	private final BlockAddress _address;
 	private final IReadOnlyCuboidData _data;
@@ -45,11 +64,7 @@ public class BlockProxy implements IBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			int size = _env.inventory.getInventoryCapacity(_cachedBlock);
-			if (size > 0)
-			{
-				inv = Inventory.start(size).finish();
-			}
+			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock);
 		}
 		return inv;
 	}
