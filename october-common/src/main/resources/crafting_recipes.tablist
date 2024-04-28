@@ -84,3 +84,7 @@ op.iron_boots	common
 	input	op.iron_ingot	op.iron_ingot
 	output	op.iron_boots
 	millis	20000
+op.chest	common
+	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
+	output	op.chest
+	millis	8000

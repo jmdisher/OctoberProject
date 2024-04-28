@@ -58,4 +58,6 @@ op.wheat_young	permits_entity_movement
 op.wheat_mature	permits_entity_movement
 	requires_support	op.dirt
 	special_drop	op.wheat_seed	op.wheat_seed	op.wheat_item	op.wheat_item
+op.chest
+	block_material	AXE
 

@@ -14,11 +14,13 @@
 # included) where 1 is the speed of in-inventory trivia crafting.  0 denotes that this station crafts automatically.
 
 op.crafting_table
-	inventory	10
+	inventory	30
 	crafting	TRIVIAL	COMMON
 	manual_multiplier	10
 op.furnace
-	inventory	10
+	inventory	30
 	crafting	SPECIAL_FURNACE
-	fuel_inventory	10
+	fuel_inventory	20
 	manual_multiplier	0
+op.chest
+	inventory	100
