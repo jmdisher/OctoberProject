@@ -5,12 +5,14 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -60,7 +62,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	{
 		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.
 		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
-		Inventory inv = target.getInventory();
+		Inventory inv = _getInventory(target);
 		
 		boolean didApply = false;
 		if (null != inv)
@@ -120,5 +122,27 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		buffer.putInt(_blockInventoryKey);
 		buffer.putInt(_countRequested);
 		buffer.put(_inventoryAspect);
+	}
+
+
+	private Inventory _getInventory(BlockProxy block)
+	{
+		Inventory inv;
+		switch (_inventoryAspect)
+		{
+		case Inventory.INVENTORY_ASPECT_INVENTORY:
+			inv = block.getInventory();
+			break;
+		case Inventory.INVENTORY_ASPECT_FUEL:
+			FuelState fuel = block.getFuel();
+			inv = (null != fuel)
+					? fuel.fuelInventory()
+					: null
+			;
+			break;
+		default:
+			throw Assert.unreachable();
+		}
+		return inv;
 	}
 }

@@ -1176,6 +1176,73 @@ public class TestCommonChanges
 		Assert.assertEquals(5, mutable.newInventory.getCurrentEncumbrance());
 	}
 
+	@Test
+	public void loadUnloadFurnaceFuel() throws Throwable
+	{
+		// Verify that we can load and unload the furnace fuel inventory.
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(ENV.items.CHARCOAL, 2);
+		int charcoalId = newEntity.newInventory.getIdOfStackableType(ENV.items.CHARCOAL);
+		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		MutableBlockProxy mutable = new MutableBlockProxy(furnace, cuboid);
+		mutable.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
+		mutable.writeBack(cuboid);
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// Place a charcoal in the normal and fuel inventories.
+		MutationEntityPushItems pushToInventory = new MutationEntityPushItems(furnace, charcoalId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(pushToInventory.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.change);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNull(holder.change);
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+		
+		MutationEntityPushItems pushToFuel = new MutationEntityPushItems(furnace, charcoalId, 1, Inventory.INVENTORY_ASPECT_FUEL);
+		Assert.assertTrue(pushToFuel.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.change);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNull(holder.change);
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+		
+		// Now, remove the charcoal from both normal and fuel inventories.
+		// (this is the first thing in both inventories so just assume key 1).
+		int blockInventoryKey = 1;
+		MutationEntityRequestItemPickUp pullFromInventory = new MutationEntityRequestItemPickUp(furnace, blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(pullFromInventory.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.change);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation = null;
+		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
+		holder.change = null;
+		mutable.writeBack(cuboid);
+		
+		MutationEntityRequestItemPickUp pullFromFuel = new MutationEntityRequestItemPickUp(furnace, blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_FUEL);
+		Assert.assertTrue(pullFromFuel.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.change);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockExtractItems);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		holder.mutation = null;
+		Assert.assertTrue(holder.change instanceof MutationEntityStoreToInventory);
+		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
+		holder.change = null;
+		mutable.writeBack(cuboid);
+		
+		// Verify that the charcoal is now only in the entity inventory.
+		Assert.assertEquals(2, newEntity.newInventory.getCount(ENV.items.CHARCOAL));
+		BlockProxy proxy = new BlockProxy(furnace.getBlockAddress(), cuboid);
+		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
+		Assert.assertEquals(0, proxy.getFuel().fuelInventory().currentEncumbrance);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
