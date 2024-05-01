@@ -135,6 +135,13 @@ public class MutationBlockExtractItems implements IMutationBlock
 		buffer.putInt(_returnEntityId);
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// This depends on a return entity ID.
+		return false;
+	}
+
 
 	private Inventory _getInventory(IMutableBlockProxy block)
 	{

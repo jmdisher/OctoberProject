@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -139,6 +138,13 @@ public class MutationEntityPushItems implements IMutationEntity
 		buffer.putInt(_localInventoryId);
 		buffer.putInt(_count);
 		buffer.put(_inventoryAspect);
+	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// This has a block reference.
+		return false;
 	}
 
 

@@ -132,4 +132,11 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		buffer.putShort(_damageToApply);
 		buffer.putInt(_optionalEntityForStorage);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// There is an entity reference.
+		return false;
+	}
 }

@@ -88,4 +88,11 @@ public class MutationBlockReplace implements IMutationBlock
 		CodecHelpers.writeItem(buffer, _originalType.item());
 		CodecHelpers.writeItem(buffer, _newType.item());
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

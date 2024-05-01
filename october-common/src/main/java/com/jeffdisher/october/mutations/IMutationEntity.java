@@ -58,4 +58,14 @@ public interface IMutationEntity
 	 * @param buffer The buffer where the mutation should be written.
 	 */
 	void serializeToBuffer(ByteBuffer buffer);
+
+	/**
+	 * This is used in cases where an entity is being unloaded while a change is scheduled against it.  While most such
+	 * changes should be written to disk so they can be restored and applied later, some may not make sense to load at a
+	 * later time (for example, if they reference other entities which may move/unload in the interim).
+	 * 
+	 * @return True if the receiver can be written to disk for later reading or if it should be discarded when the
+	 * corresponding entity is unloaded.
+	 */
+	boolean canSaveToDisk();
 }

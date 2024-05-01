@@ -328,9 +328,13 @@ public class ResourceLoader
 		// We now write any suspended mutations.
 		for (ScheduledMutation scheduled : mutations)
 		{
-			// Write the parts of the data.
-			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
+			// Check that this kind of mutation can be stored to disk (some have ephemeral references and should be dropped).
+			if (scheduled.mutation().canSaveToDisk())
+			{
+				// Write the parts of the data.
+				_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
+				MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
+			}
 		}
 		_backround_serializationBuffer.flip();
 		
@@ -411,9 +415,13 @@ public class ResourceLoader
 		// We now write any suspended changes.
 		for (ScheduledChange scheduled : changes)
 		{
-			// Write the parts of the data.
-			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-			MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
+			// Check that this kind of change can be stored to disk (some have ephemeral references and should be dropped).
+			if (scheduled.change().canSaveToDisk())
+			{
+				// Write the parts of the data.
+				_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
+				MutationEntityCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.change());
+			}
 		}
 		_backround_serializationBuffer.flip();
 		

@@ -116,6 +116,13 @@ public class MutationBlockGrow implements IMutationBlock
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
+
 
 	private void _growTree(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{

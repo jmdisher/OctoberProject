@@ -76,4 +76,11 @@ public class MutationBlockCraft implements IMutationBlock
 		CodecHelpers.writeCraft(buffer, _craft);
 		buffer.putLong(_millisToApply);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

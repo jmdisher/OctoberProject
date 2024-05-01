@@ -99,4 +99,11 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 		CodecHelpers.writeCraft(buffer, _craft);
 		buffer.putLong(_millisToApply);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// The block may have changed so drop this.
+		return false;
+	}
 }

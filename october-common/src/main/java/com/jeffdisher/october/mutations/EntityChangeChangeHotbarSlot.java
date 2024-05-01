@@ -61,4 +61,11 @@ public class EntityChangeChangeHotbarSlot implements IMutationEntity
 	{
 		buffer.putInt(_index);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

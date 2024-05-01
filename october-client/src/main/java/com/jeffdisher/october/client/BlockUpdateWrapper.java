@@ -49,4 +49,11 @@ public class BlockUpdateWrapper implements IMutationBlock
 		// Shouldn't be called since this is only client-side.
 		throw Assert.unreachable();
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Shouldn't be called since this is only client-side.
+		throw Assert.unreachable();
+	}
 }

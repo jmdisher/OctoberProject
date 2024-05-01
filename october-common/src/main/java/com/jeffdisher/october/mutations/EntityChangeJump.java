@@ -65,4 +65,11 @@ public class EntityChangeJump implements IMutationEntity
 	{
 		// There is nothing in this type.
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

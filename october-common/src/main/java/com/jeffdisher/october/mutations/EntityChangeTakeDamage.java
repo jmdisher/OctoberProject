@@ -140,4 +140,11 @@ public class EntityChangeTakeDamage implements IMutationEntity
 		CodecHelpers.writeBodyPart(buffer, _target);
 		buffer.put(_damage);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

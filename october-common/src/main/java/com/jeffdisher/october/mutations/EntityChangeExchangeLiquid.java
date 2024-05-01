@@ -88,4 +88,11 @@ public class EntityChangeExchangeLiquid implements IMutationEntity
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _target);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// The target may have changed.
+		return false;
+	}
 }

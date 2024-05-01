@@ -65,4 +65,11 @@ public class MutationEntitySelectItem implements IMutationEntity
 	{
 		buffer.putInt(_inventoryId);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

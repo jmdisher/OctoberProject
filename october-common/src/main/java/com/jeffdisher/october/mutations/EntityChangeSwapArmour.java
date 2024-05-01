@@ -86,4 +86,11 @@ public class EntityChangeSwapArmour implements IMutationEntity
 		CodecHelpers.writeBodyPart(buffer, _slot);
 		buffer.putInt(_inventoryId);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

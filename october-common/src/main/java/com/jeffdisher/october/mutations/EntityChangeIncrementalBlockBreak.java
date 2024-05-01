@@ -141,4 +141,11 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 		buffer.putShort(_millisToApply);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// The target may have changed.
+		return false;
+	}
 }

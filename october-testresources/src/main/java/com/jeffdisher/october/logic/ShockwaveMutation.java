@@ -49,6 +49,13 @@ public class ShockwaveMutation implements IMutationBlock
 		throw Assert.unreachable();
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
+
 
 	private void _commonMutation(Consumer<IMutationBlock> newMutationSink)
 	{

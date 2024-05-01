@@ -103,4 +103,11 @@ public class MutationBlockOverwrite implements IMutationBlock
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 		CodecHelpers.writeItem(buffer, _blockType.item());
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

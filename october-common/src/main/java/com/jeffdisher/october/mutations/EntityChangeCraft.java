@@ -119,4 +119,11 @@ public class EntityChangeCraft implements IMutationEntity
 		CodecHelpers.writeCraft(buffer, _operation);
 		buffer.putLong(_millisToApply);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

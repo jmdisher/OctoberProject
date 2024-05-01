@@ -135,4 +135,11 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	{
 		buffer.putInt(_targetEntityId);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Target entity may have moved so don't save this.
+		return false;
+	}
 }

@@ -113,4 +113,11 @@ public class MutationEntityStoreToInventory implements IMutationEntity
 		CodecHelpers.writeItems(buffer, _stack);
 		CodecHelpers.writeNonStackableItem(buffer, _nonStack);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

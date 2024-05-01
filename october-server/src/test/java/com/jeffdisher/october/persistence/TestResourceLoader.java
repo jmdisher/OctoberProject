@@ -17,8 +17,11 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -341,6 +344,66 @@ public class TestResourceLoader
 		List<ScheduledMutation> mutations = result.mutations();
 		Assert.assertEquals(1, mutations.size());
 		Assert.assertTrue(test == mutations.get(0).mutation());
+		loader.shutdown();
+	}
+
+	@Test
+	public void writeAndReadSuspendedWithDroppedActions() throws Throwable
+	{
+		// We want to store a cuboid and entity with 2 suspended actions each and verify that the non-persistable one is dropped on reload.
+		File worldDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		int entityId = 1;
+		int targetId = 2;
+		
+		List<SuspendedCuboid<CuboidData>> cuboids = new ArrayList<>();
+		List<SuspendedEntity> entities = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId));
+		for (int i = 0; ((cuboids.size() < 1) || (entities.size() < 1)) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of());
+		}
+		Assert.assertEquals(1, cuboids.size());
+		Assert.assertEquals(1, entities.size());
+		
+		// Create the entity changes we want.
+		MutationEntityStoreToInventory persistentChange  = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);
+		EntityChangeAttackEntity ephemeralChange = new EntityChangeAttackEntity(targetId);
+		
+		// Create the cuboid mutations we want.
+		MutationBlockReplace persistentMutation = new MutationBlockReplace(airAddress.getBase(), ENV.special.AIR, ENV.special.WATER_SOURCE);
+		MutationBlockIncrementalBreak ephemeralMutation = new MutationBlockIncrementalBreak(airAddress.getBase(), (short)10, targetId);
+		
+		// Re-save these to disk.
+		loader.writeBackToDisk(List.of(
+				new SuspendedCuboid<>(cuboids.get(0).cuboid(), List.of(
+						new ScheduledMutation(ephemeralMutation, 0L),
+						new ScheduledMutation(persistentMutation, 0L)
+				))
+		), List.of(
+				new SuspendedEntity(entities.get(0).entity(), List.of(
+						new ScheduledChange(persistentChange, 0L),
+						new ScheduledChange(ephemeralChange, 0L)
+				))
+		));
+		
+		// Load them back.
+		cuboids = new ArrayList<>();
+		entities = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(airAddress), List.of(entityId));
+		for (int i = 0; ((cuboids.size() < 1) || (entities.size() < 1)) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(cuboids, entities, List.of(), List.of());
+		}
+		Assert.assertEquals(1, cuboids.size());
+		Assert.assertEquals(1, entities.size());
+		
+		// Verify that we only see the persistent change and mutation.
+		Assert.assertEquals(1, cuboids.get(0).mutations().size());
+		Assert.assertEquals(1, entities.get(0).changes().size());
 		loader.shutdown();
 	}
 

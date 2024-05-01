@@ -124,6 +124,13 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 		buffer.put(_inventoryAspect);
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Block reference.
+		return false;
+	}
+
 
 	private Inventory _getInventory(BlockProxy block)
 	{

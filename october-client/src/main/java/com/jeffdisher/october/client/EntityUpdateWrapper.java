@@ -50,4 +50,11 @@ public class EntityUpdateWrapper implements IMutationEntity
 		// These are local-only.
 		throw Assert.unreachable();
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// These are local-only.
+		throw Assert.unreachable();
+	}
 }

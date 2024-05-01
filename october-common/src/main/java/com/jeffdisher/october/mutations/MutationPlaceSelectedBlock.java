@@ -120,4 +120,11 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Block reference.
+		return false;
+	}
 }

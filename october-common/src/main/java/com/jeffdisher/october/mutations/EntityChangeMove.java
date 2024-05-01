@@ -158,6 +158,13 @@ public class EntityChangeMove implements IMutationEntity
 		buffer.putFloat(_yDistance);
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
+
 
 	private static boolean _isValidDistance(long millisBeforeMovement, float xDistance, float yDistance)
 	{

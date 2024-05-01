@@ -125,6 +125,13 @@ public class MutationBlockStoreItems implements IMutationBlock
 		buffer.put(_inventoryAspect);
 	}
 
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
+
 
 	private Inventory _getInventory(IMutableBlockProxy block)
 	{

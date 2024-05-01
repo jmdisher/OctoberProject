@@ -67,4 +67,11 @@ public class EntityChangeReceiveItem implements IMutationEntity
 		// Only used in tests.
 		throw Assert.unreachable();
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Only used in tests.
+		throw Assert.unreachable();
+	}
 }

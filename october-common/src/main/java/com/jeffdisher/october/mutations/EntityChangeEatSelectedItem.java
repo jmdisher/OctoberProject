@@ -80,4 +80,11 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }

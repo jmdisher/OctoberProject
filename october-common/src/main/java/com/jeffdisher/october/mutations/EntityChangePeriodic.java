@@ -75,4 +75,11 @@ public class EntityChangePeriodic implements IMutationEntity
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// This MUST be saved since it reschedules itself.
+		return true;
+	}
 }

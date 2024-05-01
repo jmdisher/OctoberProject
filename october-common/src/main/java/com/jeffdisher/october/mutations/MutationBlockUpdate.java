@@ -120,4 +120,11 @@ public class MutationBlockUpdate implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _blockLocation);
 	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
 }
