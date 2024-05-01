@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -697,7 +698,7 @@ public class TestCommonChanges
 		IMutationEntity[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
-				, (Integer thisId) -> targetsById.get(thisId)
+				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
 				, null
 				, new TickProcessingContext.IChangeSink() {
 					@Override
@@ -816,7 +817,7 @@ public class TestCommonChanges
 		IMutationEntity[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
-				, (Integer thisId) -> targetsById.get(thisId)
+				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
 				, null
 				, new TickProcessingContext.IChangeSink() {
 					@Override

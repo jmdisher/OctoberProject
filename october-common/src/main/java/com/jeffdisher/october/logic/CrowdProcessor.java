@@ -10,6 +10,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -72,7 +73,7 @@ public class CrowdProcessor
 					BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
 					TickProcessingContext context = new TickProcessingContext(gameTick
 							, local
-							, (Integer entityId) -> entitiesById.get(entityId)
+							, (Integer entityId) -> MinimalEntity.fromEntity(entitiesById.get(entityId))
 							, newMutationSink
 							, newChangeSink
 					);

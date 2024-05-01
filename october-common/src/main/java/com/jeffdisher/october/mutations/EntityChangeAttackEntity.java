@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -54,7 +55,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	{
 		// Check that the target is in range.  We will use block breaking distance.
 		boolean isInRange;
-		Entity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+		MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
 		if (null != targetEntity)
 		{
 			// The target is loaded so check the distances.

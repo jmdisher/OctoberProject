@@ -29,7 +29,7 @@ public class TickProcessingContext
 	 * The view of the entire entity crowd, as of the beginning of this tick.
 	 * Returns null if the requested entity isn' loaded.
 	 */
-	public final Function<Integer, Entity> previousEntityLookUp;
+	public final Function<Integer, MinimalEntity> previousEntityLookUp;
 
 	/**
 	 * The consumer of any new block mutations produced as a side-effect of this operation (will be scheduled in a
@@ -45,7 +45,7 @@ public class TickProcessingContext
 
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, Function<Integer, Entity> previousEntityLookUp
+			, Function<Integer, MinimalEntity> previousEntityLookUp
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 	)

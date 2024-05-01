@@ -23,6 +23,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -97,7 +98,7 @@ public class WorldProcessor
 				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
 				TickProcessingContext context = new TickProcessingContext(gameTick
 						, local
-						, (Integer entityId) -> entitiesById.get(entityId)
+						, (Integer entityId) -> MinimalEntity.fromEntity(entitiesById.get(entityId))
 						, newMutationSink
 						, newChangeSink
 				);
