@@ -95,12 +95,12 @@ public class CodecHelpers
 
 	public static Item readItem(ByteBuffer buffer)
 	{
-		return _readItemNoAir(buffer);
+		return _readItem(buffer);
 	}
 
 	public static void writeItem(ByteBuffer buffer, Item item)
 	{
-		_writeItemNoAir(buffer, item);
+		_writeItem(buffer, item);
 	}
 
 	public static Items readItems(ByteBuffer buffer)
@@ -237,7 +237,7 @@ public class CodecHelpers
 		FuelState result;
 		if (millisFueled >= 0)
 		{
-			Item currentFuel = _readItemNoAir(buffer);
+			Item currentFuel = _readItem(buffer);
 			Inventory fuelInventory = _readInventory(buffer);
 			result = new FuelState(millisFueled, currentFuel, fuelInventory);
 		}
@@ -254,7 +254,7 @@ public class CodecHelpers
 		if (null != fuel)
 		{
 			buffer.putInt(fuel.millisFueled());
-			_writeItemNoAir(buffer, fuel.currentFuel());
+			_writeItem(buffer, fuel.currentFuel());
 			_writeInventory(buffer, fuel.fuelInventory());
 		}
 		else
@@ -304,25 +304,23 @@ public class CodecHelpers
 	}
 
 
-	private static Item _readItemNoAir(ByteBuffer buffer)
+	private static Item _readItem(ByteBuffer buffer)
 	{
 		Environment env = Environment.getShared();
-		// We look these up by number - we treat 0 "air" as null.
+		// We look these up by number - we treat -1 as null.
 		short number = buffer.getShort();
-		return (0 != number)
+		return (number >= 0)
 				? env.items.ITEMS_BY_TYPE[number]
 				: null
 		;
 	}
 
-	private static void _writeItemNoAir(ByteBuffer buffer, Item item)
+	private static void _writeItem(ByteBuffer buffer, Item item)
 	{
-		Environment env = Environment.getShared();
-		// We look these up by number so just send that - 0 is "null" since we can't send air as an item.
-		Assert.assertTrue(env.items.AIR != item);
+		// We use -1 as a null since all item numbers are >= 0.
 		short number = (null != item)
 				? item.number()
-				: 0
+				: -1
 		;
 		buffer.putShort(number);
 	}
@@ -330,7 +328,7 @@ public class CodecHelpers
 	private static Items _readItems(ByteBuffer buffer)
 	{
 		Items result;
-		Item type = _readItemNoAir(buffer);
+		Item type = _readItem(buffer);
 		if (null != type)
 		{
 			int count = buffer.getInt();
@@ -347,12 +345,12 @@ public class CodecHelpers
 	{
 		if (null != items)
 		{
-			_writeItemNoAir(buffer, items.type());
+			_writeItem(buffer, items.type());
 			buffer.putInt(items.count());
 		}
 		else
 		{
-			_writeItemNoAir(buffer, null);
+			_writeItem(buffer, null);
 		}
 	}
 
@@ -373,7 +371,7 @@ public class CodecHelpers
 				int keyValue = buffer.getInt();
 				Assert.assertTrue(keyValue > 0);
 				// We will need to manually read this type in order to determine if this is stackable or not.
-				Item type = _readItemNoAir(buffer);
+				Item type = _readItem(buffer);
 				// NOTE:  We will inline the rest of the data since we are overlapping with types.
 				if (env.durability.isStackable(type))
 				{
@@ -422,13 +420,13 @@ public class CodecHelpers
 				Items stackable = inventory.getStackForKey(key);
 				if (null != stackable)
 				{
-					_writeItemNoAir(buffer, stackable.type());
+					_writeItem(buffer, stackable.type());
 					buffer.putInt(stackable.count());
 				}
 				else
 				{
 					NonStackableItem nonStackable = inventory.getNonStackableForKey(key);
-					_writeItemNoAir(buffer, nonStackable.type());
+					_writeItem(buffer, nonStackable.type());
 					buffer.putInt(nonStackable.durability());
 				}
 			}
@@ -539,7 +537,7 @@ public class CodecHelpers
 
 	private static NonStackableItem _readNonStackableItem(ByteBuffer buffer)
 	{
-		Item item = _readItemNoAir(buffer);
+		Item item = _readItem(buffer);
 		NonStackableItem nonStack;
 		if (null != item)
 		{
@@ -559,7 +557,7 @@ public class CodecHelpers
 				? item.type()
 				: null
 		;
-		_writeItemNoAir(buffer, underlying);
+		_writeItem(buffer, underlying);
 		if (null != item)
 		{
 			buffer.putInt(item.durability());

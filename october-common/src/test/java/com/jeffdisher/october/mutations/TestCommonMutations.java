@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.nio.ByteBuffer;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -306,6 +308,18 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.CHARCOAL));
+	}
+
+	@Test
+	public void replaceSerialization()
+	{
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		MutationBlockReplace replace = new MutationBlockReplace(target, ENV.special.AIR, ENV.special.WATER_SOURCE);
+		ByteBuffer buffer = ByteBuffer.allocate(64);
+		replace.serializeToBuffer(buffer);
+		buffer.flip();
+		MutationBlockReplace test = MutationBlockReplace.deserializeFromBuffer(buffer);
+		Assert.assertNotNull(test);
 	}
 
 
