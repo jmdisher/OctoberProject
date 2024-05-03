@@ -7,7 +7,8 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -56,13 +57,14 @@ public class EntityChangeCraftInBlock implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		// Make sure that the block is within range and is a crafting table.
-		int absX = Math.abs(_targetBlock.x() - Math.round(newEntity.newLocation.x()));
-		int absY = Math.abs(_targetBlock.y() - Math.round(newEntity.newLocation.y()));
-		int absZ = Math.abs(_targetBlock.z() - Math.round(newEntity.newLocation.z()));
+		EntityLocation newLocation = newEntity.getLocation();
+		int absX = Math.abs(_targetBlock.x() - Math.round(newLocation.x()));
+		int absY = Math.abs(_targetBlock.y() - Math.round(newLocation.y()));
+		int absZ = Math.abs(_targetBlock.z() - Math.round(newLocation.z()));
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);

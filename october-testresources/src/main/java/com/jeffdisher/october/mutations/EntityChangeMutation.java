@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -28,7 +28,7 @@ public class EntityChangeMutation implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		if (null != _contents)
 		{

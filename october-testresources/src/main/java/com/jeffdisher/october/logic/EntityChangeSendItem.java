@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -35,17 +35,17 @@ public class EntityChangeSendItem implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		int foundCount = _common(newEntity, context.newChangeSink);
 		return foundCount > 0;
 	}
 
 
-	private int _common(MutableEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
+	private int _common(IMutablePlayerEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
-		MutableInventory inventory = newEntity.newInventory;
+		MutableInventory inventory = newEntity.accessMutableInventory();
 		int foundCount = inventory.getCount(_itemType);
 		
 		if (foundCount > 0)
@@ -53,7 +53,7 @@ public class EntityChangeSendItem implements IMutationEntity
 			// Update the inventory.
 			inventory.removeStackableItems(_itemType, foundCount);
 			// If we had this selected, clear it.
-			if (newEntity.newInventory.getIdOfStackableType(_itemType) == newEntity.getSelectedKey())
+			if (inventory.getIdOfStackableType(_itemType) == newEntity.getSelectedKey())
 			{
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}

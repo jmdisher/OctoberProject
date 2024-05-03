@@ -7,7 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -49,10 +49,10 @@ public class EntityChangeCraft implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// See if there is an in-progress operation (replacing it or creating a new one, if none).
-		CraftOperation existing = newEntity.newLocalCraftOperation;
+		CraftOperation existing = newEntity.getCurrentCraftingOperation();
 		if ((null == existing) || (existing.selectedCraft() != _operation))
 		{
 			// We will start a new operation, here.
@@ -74,23 +74,23 @@ public class EntityChangeCraft implements IMutationEntity
 			{
 				// We can now apply this and clear it.
 				Environment env = Environment.getShared();
-				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), newEntity.newInventory);
+				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), newEntity.accessMutableInventory());
 				if (didCraft)
 				{
 					// Make sure that this cleared the hotbar, if we used the last of them.
 					int selectedKey = newEntity.getSelectedKey();
-					if (null == newEntity.newInventory.getStackForKey(selectedKey))
+					if (null == newEntity.accessMutableInventory().getStackForKey(selectedKey))
 					{
 						newEntity.clearHotBarWithKey(selectedKey);
 					}
 				}
-				newEntity.newLocalCraftOperation = null;
+				newEntity.setCurrentCraftingOperation(null);
 				isValid = didCraft;
 			}
 			else
 			{
 				// Save back the remaining state and complete it later.
-				newEntity.newLocalCraftOperation = existing;
+				newEntity.setCurrentCraftingOperation(existing);
 				isValid = true;
 			}
 		}

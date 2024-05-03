@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -37,31 +37,35 @@ public class EntityChangePeriodic implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// We apply some basic logic:
 		// -if food is >=80 and health is <100, increase health
 		// -if food is ==0, decrease health
 		// -if food is >0, decrease food
-		if ((newEntity.newFood >= FOOD_HEAL_THRESHOLD) && (newEntity.newHealth < 100))
+		byte food = newEntity.getFood();
+		byte health = newEntity.getHealth();
+		if ((food >= FOOD_HEAL_THRESHOLD) && (health < 100))
 		{
-			newEntity.newHealth += 1;
+			health += 1;
+			newEntity.setHealth(health);
 		}
 		
-		if (newEntity.newFood > 0)
+		if (food > 0)
 		{
-			newEntity.newFood -= 1;
+			food -= 1;
+			newEntity.setFood(food);
 		}
 		else
 		{
 			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
 			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(null, (byte)1);
-			context.newChangeSink.next(newEntity.original.id(), takeDamage);
+			context.newChangeSink.next(newEntity.getId(), takeDamage);
 		}
 		
 		// Reschedule, always.
-		context.newChangeSink.future(newEntity.original.id(), this, MILLIS_BETWEEN_PERIODIC_UPDATES);
+		context.newChangeSink.future(newEntity.getId(), this, MILLIS_BETWEEN_PERIODIC_UPDATES);
 		return true;
 	}
 

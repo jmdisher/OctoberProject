@@ -11,9 +11,11 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -48,7 +50,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
@@ -61,16 +63,18 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		boolean isTargetAir = env.blocks.canBeReplaced(context.previousBlockLookUp.apply(_targetBlock).getBlock());
 		
 		int selectedKey = newEntity.getSelectedKey();
-		Items stack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getStackForKey(selectedKey) : null;
+		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		Items stack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item itemType = (null != stack) ? stack.type() : null;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
-		int absX = Math.abs(_targetBlock.x() - Math.round(newEntity.newLocation.x()));
-		int absY = Math.abs(_targetBlock.y() - Math.round(newEntity.newLocation.y()));
-		int absZ = Math.abs(_targetBlock.z() - Math.round(newEntity.newLocation.z()));
+		EntityLocation entityLocation = newEntity.getLocation();
+		int absX = Math.abs(_targetBlock.x() - Math.round(entityLocation.x()));
+		int absY = Math.abs(_targetBlock.y() - Math.round(entityLocation.y()));
+		int absZ = Math.abs(_targetBlock.z() - Math.round(entityLocation.z()));
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		
 		// (to check for collision, we will ask about a world where only this block isn't air).
@@ -79,7 +83,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		{
 			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.special.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
-			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), newEntity.newLocation, newEntity.original.volume());
+			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), entityLocation, newEntity.getVolume());
 		}
 		
 		// Make sure that this block can be supported by the one under it.
@@ -92,8 +96,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 		if (isTargetAir && isItemSelected && isLocationClose && isLocationNotColliding && blockIsSupported)
 		{
 			// We want to apply this so remove the item from the inventory and create the replace mutation.
-			newEntity.newInventory.removeStackableItems(itemType, 1);
-			if (0 == newEntity.newInventory.getCount(itemType))
+			mutableInventory.removeStackableItems(itemType, 1);
+			if (0 == mutableInventory.getCount(itemType))
 			{
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
@@ -104,7 +108,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity
 			didApply = true;
 			
 			// Do other state reset.
-			newEntity.newLocalCraftOperation = null;
+			newEntity.setCurrentCraftingOperation(null);
 		}
 		return didApply;
 	}

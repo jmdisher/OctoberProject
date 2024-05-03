@@ -6,10 +6,11 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -58,7 +59,7 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// See what this is, in the block's inventory, to make sure that we aren't trying to over-fetch.
 		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
@@ -95,13 +96,14 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity
 			if (null != type)
 			{
 				// We will still try a best-efforts request if the inventory has changed.
-				int maxToFetch = newEntity.newInventory.maxVacancyForItem(type);
+				MutableInventory mutableInventory = newEntity.accessMutableInventory();
+				int maxToFetch = mutableInventory.maxVacancyForItem(type);
 				int toFetch = Math.min(maxToFetch, _countRequested);
 				
 				if (toFetch > 0)
 				{
 					// Request that the items be extracted and sent back to us.
-					context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, _blockInventoryKey, toFetch, _inventoryAspect, newEntity.original.id()));
+					context.mutationSink.next(new MutationBlockExtractItems(_blockLocation, _blockInventoryKey, toFetch, _inventoryAspect, newEntity.getId()));
 					didApply = true;
 				}
 			}

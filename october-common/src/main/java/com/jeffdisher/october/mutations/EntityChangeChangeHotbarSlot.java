@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -39,15 +39,9 @@ public class EntityChangeChangeHotbarSlot implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		boolean didApply = false;
-		if (newEntity.newHotbarIndex != _index)
-		{
-			newEntity.newHotbarIndex = _index;
-			didApply = true;
-		}
-		return didApply;
+		return newEntity.changeHotbarIndex(_index);
 	}
 
 	@Override

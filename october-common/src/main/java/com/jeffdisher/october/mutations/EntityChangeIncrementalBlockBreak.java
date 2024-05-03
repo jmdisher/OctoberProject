@@ -9,8 +9,9 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -53,13 +54,13 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), newEntity.getVolume());
 		EntityLocation blockCentre = SpatialHelpers.getBlockCentre(_targetBlock);
 		float absX = Math.abs(blockCentre.x() - entityCentre.x());
 		float absY = Math.abs(blockCentre.y() - entityCentre.y());
@@ -68,13 +69,14 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
+		MutableInventory mutableInventory = newEntity.accessMutableInventory();
 		
 		boolean didApply = false;
 		if (isLocationClose && !isAir)
 		{
 			// We know that tools are non-stackable so just check for those types.
 			int selectedKey = newEntity.getSelectedKey();
-			NonStackableItem selected = newEntity.newInventory.getNonStackableForKey(selectedKey);
+			NonStackableItem selected = mutableInventory.getNonStackableForKey(selectedKey);
 			Item selectedItem = (null != selected)
 					? selected.type()
 					: null
@@ -91,7 +93,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 				speedMultiplier = 1;
 			}
 			short damageToApply = (short)(speedMultiplier * _millisToApply);
-			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.original.id());
+			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.getId());
 			context.mutationSink.next(mutation);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
@@ -105,12 +107,12 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 					{
 						// Write this back.
 						NonStackableItem updated = new NonStackableItem(selected.type(), newDurability);
-						newEntity.newInventory.replaceNonStackable(selectedKey, updated);
+						mutableInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else
 					{
 						// Remove this and clear the selection.
-						newEntity.newInventory.removeNonStackableItems(selectedKey);
+						mutableInventory.removeNonStackableItems(selectedKey);
 						newEntity.setSelectedKey(Entity.NO_SELECTION);
 					}
 				}
@@ -118,7 +120,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity
 			didApply = true;
 			
 			// Do other state reset.
-			newEntity.newLocalCraftOperation = null;
+			newEntity.setCurrentCraftingOperation(null);
 		}
 		
 		// Account for any movement while we were busy.

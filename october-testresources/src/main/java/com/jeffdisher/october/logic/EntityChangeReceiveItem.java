@@ -4,8 +4,8 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityType;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -34,16 +34,16 @@ public class EntityChangeReceiveItem implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		return _common(newEntity);
 	}
 
 
-	private boolean _common(MutableEntity newEntity)
+	private boolean _common(IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
-		MutableInventory inventory = newEntity.newInventory;
+		MutableInventory inventory = newEntity.accessMutableInventory();
 		
 		// Make sure that we don't already have some.
 		if (0 == inventory.getCount(_itemType))

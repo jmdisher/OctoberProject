@@ -3,8 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -29,15 +30,16 @@ public class EntityChangeAcceptItems implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		boolean didAdd = newEntity.newInventory.addAllItems(_items.type(), _items.count());
+		MutableInventory entityInventory = newEntity.accessMutableInventory();
+		boolean didAdd = entityInventory.addAllItems(_items.type(), _items.count());
 		if (didAdd)
 		{
 			// If there isn't already selected item, we want to select this one.
 			if (Entity.NO_SELECTION == newEntity.getSelectedKey())
 			{
-				int key = newEntity.newInventory.getIdOfStackableType(_items.type());
+				int key = entityInventory.getIdOfStackableType(_items.type());
 				newEntity.clearHotBarWithKey(key);
 				newEntity.setSelectedKey(key);
 			}

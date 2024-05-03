@@ -7,7 +7,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * A short-lived mutable version of an entity to allow for parallel tick processing.
  */
-public class MutableEntity
+public class MutableEntity implements IMutablePlayerEntity
 {
 	// Note that we used 1.8 x 0.5 volume for initial testing, and this will be good in the future, but makes spatial understanding in OctoberPlains confusing.
 	public static final EntityVolume DEFAULT_VOLUME = new EntityVolume(0.9f, 0.4f);
@@ -83,24 +83,68 @@ public class MutableEntity
 		this.newFood = original.food();
 	}
 
-	/**
-	 * @return The key in the currently selected hotbar slot.
-	 */
+	@Override
+	public int getId()
+	{
+		return this.original.id();
+	}
+
+	@Override
+	public MutableInventory accessMutableInventory()
+	{
+		return this.newInventory;
+	}
+
+	@Override
+	public CraftOperation getCurrentCraftingOperation()
+	{
+		return this.newLocalCraftOperation;
+	}
+
+	@Override
+	public void setCurrentCraftingOperation(CraftOperation operation)
+	{
+		this.newLocalCraftOperation = operation;
+	}
+
+	@Override
 	public int getSelectedKey()
 	{
 		return this.newHotbar[this.newHotbarIndex];
 	}
 
-	/**
-	 * Sets the key in the currently-selected hotbar slot.
-	 * 
-	 * @param key The key to store.
-	 */
+	@Override
 	public void setSelectedKey(int key)
 	{
 		this.newHotbar[this.newHotbarIndex] = key;
 	}
 
+	@Override
+	public EntityLocation getLocation()
+	{
+		return this.newLocation;
+	}
+
+	@Override
+	public EntityVolume getVolume()
+	{
+		return this.original.volume();
+	}
+
+	@Override
+	public float getZVelocityPerSecond()
+	{
+		return this.newZVelocityPerSecond;
+	}
+
+	@Override
+	public void setLocationAndVelocity(EntityLocation location, float zVelocityPerSecond)
+	{
+		this.newLocation = location;
+		this.newZVelocityPerSecond = zVelocityPerSecond;
+	}
+
+	@Override
 	public void clearHotBarWithKey(int key)
 	{
 		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
@@ -110,6 +154,68 @@ public class MutableEntity
 				this.newHotbar[i] = Entity.NO_SELECTION;
 			}
 		}
+	}
+
+	@Override
+	public void clearInventoryAndRespawn()
+	{
+		this.newInventory.clearInventory(null);
+		this.newLocation = MutableEntity.DEFAULT_LOCATION;
+		this.newHealth = MutableEntity.DEFAULT_HEALTH;
+		this.newFood = MutableEntity.DEFAULT_FOOD;
+		// Wipe all the hotbar slots.
+		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
+		{
+			this.newHotbar[i] = Entity.NO_SELECTION;
+		}
+	}
+
+	@Override
+	public boolean changeHotbarIndex(int index)
+	{
+		boolean didApply = false;
+		if (this.newHotbarIndex != index)
+		{
+			this.newHotbarIndex = index;
+			didApply = true;
+		}
+		return didApply;
+	}
+
+	@Override
+	public byte getHealth()
+	{
+		return this.newHealth;
+	}
+
+	@Override
+	public void setHealth(byte health)
+	{
+		this.newHealth = health;
+	}
+
+	@Override
+	public byte getFood()
+	{
+		return this.newFood;
+	}
+
+	@Override
+	public void setFood(byte food)
+	{
+		this.newFood = food;
+	}
+
+	@Override
+	public NonStackableItem getArmour(BodyPart part)
+	{
+		return this.newArmour[part.ordinal()];
+	}
+
+	@Override
+	public void setArmour(BodyPart part, NonStackableItem item)
+	{
+		this.newArmour[part.ordinal()] = item;
 	}
 
 	/**

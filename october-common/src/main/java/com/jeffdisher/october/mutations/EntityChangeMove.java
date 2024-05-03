@@ -9,7 +9,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -92,7 +92,7 @@ public class EntityChangeMove implements IMutationEntity
 	 * @param longMillisInMotion How many milliseconds of motion to consider.
 	 * @return True if any motion change was applied, false if nothing changed or could change.
 	 */
-	public static boolean handleMotion(MutableEntity newEntity
+	public static boolean handleMotion(IMutablePlayerEntity newEntity
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, long longMillisInMotion
 	)
@@ -125,10 +125,10 @@ public class EntityChangeMove implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
-		boolean oldDoesMatch = _oldLocation.equals(newEntity.newLocation);
+		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
 		if (oldDoesMatch)
 		{
 			long millisInMotion = _millisBeforeMovement + _getTimeMostMillis(_xDistance, _yDistance);
@@ -137,7 +137,7 @@ public class EntityChangeMove implements IMutationEntity
 			if (didApply)
 			{
 				// Do other state reset now that we are moving.
-				newEntity.newLocalCraftOperation = null;
+				newEntity.setCurrentCraftingOperation(null);
 			}
 		}
 		return didApply;
@@ -182,7 +182,7 @@ public class EntityChangeMove implements IMutationEntity
 		return (long) (secondsFlat * 1000.0f);
 	}
 
-	private static boolean _handleMotion(MutableEntity newEntity
+	private static boolean _handleMotion(IMutablePlayerEntity newEntity
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, long longMillisInMotion
 			, float xDistance
@@ -193,9 +193,9 @@ public class EntityChangeMove implements IMutationEntity
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		float newZVector = newEntity.newZVelocityPerSecond;
-		EntityLocation oldLocation = newEntity.newLocation;
-		EntityVolume volume = newEntity.original.volume();
+		float newZVector = newEntity.getZVelocityPerSecond();
+		EntityLocation oldLocation = newEntity.getLocation();
+		EntityVolume volume = newEntity.getVolume();
 		float millisInMotion = (float)longMillisInMotion;
 		if ((newZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
 		{
@@ -229,7 +229,7 @@ public class EntityChangeMove implements IMutationEntity
 		EntityLocation newLocation = new EntityLocation(xLocation, yLocation, zLocation);
 		
 		boolean didMove;
-		if ((newEntity.newZVelocityPerSecond == newZVector) && oldLocation.equals(newLocation))
+		if ((newEntity.getZVelocityPerSecond() == newZVector) && oldLocation.equals(newLocation))
 		{
 			// We don't want to apply this change if the entity isn't actually moving, since that will cause redundant update events.
 			didMove = false;
@@ -237,8 +237,7 @@ public class EntityChangeMove implements IMutationEntity
 		else if (SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
 		{
 			// They can exist in the target location so update the entity.
-			newEntity.newLocation = newLocation;
-			newEntity.newZVelocityPerSecond = newZVector;
+			newEntity.setLocationAndVelocity(newLocation, newZVector);
 			didMove = true;
 		}
 		else
@@ -250,8 +249,7 @@ public class EntityChangeMove implements IMutationEntity
 				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != highestLocation)
 				{
-					newEntity.newLocation = highestLocation;
-					newEntity.newZVelocityPerSecond = newZVector;
+					newEntity.setLocationAndVelocity(highestLocation, newZVector);
 					didMove = true;
 				}
 				else
@@ -266,8 +264,7 @@ public class EntityChangeMove implements IMutationEntity
 				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != lowestLocation)
 				{
-					newEntity.newLocation = lowestLocation;
-					newEntity.newZVelocityPerSecond = newZVector;
+					newEntity.setLocationAndVelocity(lowestLocation, newZVector);
 					didMove = true;
 				}
 				else

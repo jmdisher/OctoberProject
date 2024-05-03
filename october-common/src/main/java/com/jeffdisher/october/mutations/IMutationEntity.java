@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -42,7 +42,7 @@ public interface IMutationEntity
 	 * @param newEntity The entity currently being modified by this change in the current tick.
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyChange(TickProcessingContext context, MutableEntity newEntity);
+	boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity);
 
 	/**
 	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal

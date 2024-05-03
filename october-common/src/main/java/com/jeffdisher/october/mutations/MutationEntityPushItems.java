@@ -6,10 +6,10 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -61,13 +61,14 @@ public class MutationEntityPushItems implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
 		
 		// Make sure that we actually have this much of the referenced item in our inventory.
-		Items stackable = newEntity.newInventory.getStackForKey(_localInventoryId);
-		NonStackableItem nonStackable = newEntity.newInventory.getNonStackableForKey(_localInventoryId);
+		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		Items stackable = mutableInventory.getStackForKey(_localInventoryId);
+		NonStackableItem nonStackable = mutableInventory.getNonStackableForKey(_localInventoryId);
 		// We should see precisely one of these.
 		Assert.assertTrue((null != stackable) != (null != nonStackable));
 		
@@ -103,18 +104,18 @@ public class MutationEntityPushItems implements IMutationEntity
 				Items stackToMove;
 				if (null != stackable)
 				{
-					newEntity.newInventory.removeStackableItems(type, toDrop);
+					mutableInventory.removeStackableItems(type, toDrop);
 					stackToMove = new Items(type, toDrop);
 				}
 				else
 				{
-					newEntity.newInventory.removeNonStackableItems(_localInventoryId);
+					mutableInventory.removeNonStackableItems(_localInventoryId);
 					stackToMove = null;
 				}
 				context.mutationSink.next(new MutationBlockStoreItems(_blockLocation, stackToMove, nonStackable, _inventoryAspect));
 				
 				// If this removed something from the inventory, entirely, make sure it is removed from any hotbar slots.
-				boolean shouldClear = (null != nonStackable) || (0 == newEntity.newInventory.getCount(type));
+				boolean shouldClear = (null != nonStackable) || (0 == mutableInventory.getCount(type));
 				if (shouldClear)
 				{
 					newEntity.clearHotBarWithKey(_localInventoryId);

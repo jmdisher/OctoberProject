@@ -9,9 +9,10 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -51,7 +52,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		// Check that the target is in range.  We will use block breaking distance.
 		boolean isInRange;
@@ -60,7 +61,7 @@ public class EntityChangeAttackEntity implements IMutationEntity
 		{
 			// The target is loaded so check the distances.
 			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), targetEntity.volume());
-			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.newLocation, newEntity.original.volume());
+			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), newEntity.getVolume());
 			float absX = Math.abs(targetCentre.x() - entityCentre.x());
 			float absY = Math.abs(targetCentre.y() - entityCentre.y());
 			float absZ = Math.abs(targetCentre.z() - entityCentre.z());
@@ -75,7 +76,8 @@ public class EntityChangeAttackEntity implements IMutationEntity
 		{
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
 			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
-			NonStackableItem nonStack = newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey());
+			MutableInventory mutableInventory = newEntity.accessMutableInventory();
+			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(newEntity.getSelectedKey());
 			Item toolType = (null != nonStack)
 					? nonStack.type()
 					: null
@@ -111,12 +113,12 @@ public class EntityChangeAttackEntity implements IMutationEntity
 					{
 						// Write this back.
 						NonStackableItem updated = new NonStackableItem(toolType, newDurability);
-						newEntity.newInventory.replaceNonStackable(selectedKey, updated);
+						mutableInventory.replaceNonStackable(selectedKey, updated);
 					}
 					else
 					{
 						// Remove this and clear the selection.
-						newEntity.newInventory.removeNonStackableItems(selectedKey);
+						mutableInventory.removeNonStackableItems(selectedKey);
 						newEntity.setSelectedKey(Entity.NO_SELECTION);
 					}
 				}

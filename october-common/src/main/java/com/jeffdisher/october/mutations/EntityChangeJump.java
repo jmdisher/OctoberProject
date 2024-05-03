@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -35,21 +35,21 @@ public class EntityChangeJump implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
 		
 		// If the entity is standing on the ground with no z-vector, we will make them jump.
-		EntityLocation location = newEntity.newLocation;
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, newEntity.original.volume());
-		boolean isStatic = (0.0f == newEntity.newZVelocityPerSecond);
+		EntityLocation location = newEntity.getLocation();
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, newEntity.getVolume());
+		boolean isStatic = (0.0f == newEntity.getZVelocityPerSecond());
 		if (isOnGround && isStatic)
 		{
-			newEntity.newZVelocityPerSecond = JUMP_FORCE;
+			newEntity.setLocationAndVelocity(location, JUMP_FORCE);
 			didApply = true;
 			
 			// Do other state reset.
-			newEntity.newLocalCraftOperation = null;
+			newEntity.setCurrentCraftingOperation(null);
 		}
 		return didApply;
 	}

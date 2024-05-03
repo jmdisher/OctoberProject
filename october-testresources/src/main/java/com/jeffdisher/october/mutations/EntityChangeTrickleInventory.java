@@ -2,8 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -29,12 +29,12 @@ public class EntityChangeTrickleInventory implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		newEntity.newInventory.addAllItems(_contents.type(), 1);
+		newEntity.accessMutableInventory().addAllItems(_contents.type(), 1);
 		if (_contents.count() > 1)
 		{
-			context.newChangeSink.next(newEntity.original.id(), new EntityChangeTrickleInventory(new Items(_contents.type(), _contents.count() - 1)));
+			context.newChangeSink.next(newEntity.getId(), new EntityChangeTrickleInventory(new Items(_contents.type(), _contents.count() - 1)));
 		}
 		return true;
 	}

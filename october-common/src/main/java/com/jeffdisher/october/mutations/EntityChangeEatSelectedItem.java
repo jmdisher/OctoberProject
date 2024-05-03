@@ -4,9 +4,10 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -34,13 +35,14 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
 		int selectedKey = newEntity.getSelectedKey();
-		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getStackForKey(selectedKey) : null;
+		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item selected = (null != selectedStack) ? selectedStack.type() : null;
 		int foodValue = (null != selected)
 				? env.foods.foodValue(selected)
@@ -49,23 +51,23 @@ public class EntityChangeEatSelectedItem implements IMutationEntity
 		if (foodValue > 0)
 		{
 			// Eat the food, decrementing how many we have.
-			int newFood = newEntity.newFood + foodValue;
+			int newFood = newEntity.getFood() + foodValue;
 			if (newFood > 100)
 			{
 				newFood = 100;
 			}
-			newEntity.newFood = (byte)newFood;
+			newEntity.setFood((byte)newFood);
 			
 			// Remove the item from the inventory.
-			newEntity.newInventory.removeStackableItems(selected, 1);
-			if (0 == newEntity.newInventory.getCount(selected))
+			mutableInventory.removeStackableItems(selected, 1);
+			if (0 == mutableInventory.getCount(selected))
 			{
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
 			didApply = true;
 			
 			// Do other state reset.
-			newEntity.newLocalCraftOperation = null;
+			newEntity.setCurrentCraftingOperation(null);
 		}
 		return didApply;
 	}

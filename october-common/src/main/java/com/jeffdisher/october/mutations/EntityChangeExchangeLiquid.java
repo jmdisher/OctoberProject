@@ -8,8 +8,9 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -43,11 +44,12 @@ public class EntityChangeExchangeLiquid implements IMutationEntity
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, MutableEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		int selectedKey = newEntity.getSelectedKey();
-		NonStackableItem nonStack = (Entity.NO_SELECTION != selectedKey) ? newEntity.newInventory.getNonStackableForKey(selectedKey) : null;
+		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		NonStackableItem nonStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getNonStackableForKey(selectedKey) : null;
 		Item type = (null != nonStack) ? nonStack.type() : null;
 		Item empty = env.items.getItemById("op.bucket_empty");
 		Item water = env.items.getItemById("op.bucket_water");
@@ -63,14 +65,14 @@ public class EntityChangeExchangeLiquid implements IMutationEntity
 		if (isWaterBucket && isEmptyBlock)
 		{
 			// We can place down the bucket.
-			newEntity.newInventory.replaceNonStackable(selectedKey, new NonStackableItem(empty, 0));
+			mutableInventory.replaceNonStackable(selectedKey, new NonStackableItem(empty, 0));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.WATER_SOURCE));
 			didApply = true;
 		}
 		else if (isEmptyBucket && isWaterSource)
 		{
 			// We can pick up the source.
-			newEntity.newInventory.replaceNonStackable(selectedKey, new NonStackableItem(water, 0));
+			mutableInventory.replaceNonStackable(selectedKey, new NonStackableItem(water, 0));
 			context.mutationSink.next(new MutationBlockReplace(_target, block, env.special.AIR));
 			didApply = true;
 		}
