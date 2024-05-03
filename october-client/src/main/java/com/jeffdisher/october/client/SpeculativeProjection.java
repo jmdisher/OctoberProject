@@ -13,6 +13,9 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.BasicBlockProxyCache;
+import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -26,6 +29,8 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -148,12 +153,23 @@ public class SpeculativeProjection
 					(IEntityUpdate update) -> new ScheduledChange((IMutationEntity)new EntityUpdateWrapper(update), 0L)).toList()
 			);
 		}
+		
+		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+		// TODO:  Determine if we want to apply any immediately mutations or changes (we currently capture them but do nothing with them).
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
+		TickProcessingContext context = new TickProcessingContext(gameTick
+				, cachingLoader
+				, (Integer entityId) -> MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
+				, newMutationSink
+				, newChangeSink
+		);
+		
 		// The time between ticks doesn't matter when replaying from server.
 		long ignoredMillisBetweenTicks = 0L;
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
 				, _shadowCrowd
-				, this.projectionBlockLoader
-				, gameTick
+				, context
 				, ignoredMillisBetweenTicks
 				, convertedUpdates
 		);
@@ -167,9 +183,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
-				, this.projectionBlockLoader
-				, _shadowCrowd
-				, gameTick
+				, context
 				, ignoredMillisBetweenTicks
 				, mutationsToRun
 				, modifiedBlocksByCuboidAddress
@@ -386,19 +400,28 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		long ignoredMillisBetweenTicks = 0L;
 		
+		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
+		TickProcessingContext context = new TickProcessingContext(gameTick
+				, cachingLoader
+				, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+				, newMutationSink
+				, newChangeSink
+		);
+		
 		List<ScheduledChange> queue = new LinkedList<>();
 		queue.add(new ScheduledChange(change, 0L));
 		Map<Integer, List<ScheduledChange>> changesToRun = Map.of(_localEntityId, queue);
 		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
 				, _projectedCrowd
-				, this.projectionBlockLoader
-				, gameTick
+				, context
 				, ignoredMillisBetweenTicks
 				, changesToRun
 		);
 		_projectedCrowd.putAll(group.groupFragment());
-		Map<Integer, List<IMutationEntity>> exportedChanges = _onlyImmediateChanges(group.exportedEntityChanges());
-		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(group.exportedMutations());
+		Map<Integer, List<IMutationEntity>> exportedChanges = _onlyImmediateChanges(newChangeSink.takeExportedChanges());
+		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(newMutationSink.takeExportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		Set<Integer> locallyModifiedIds = new HashSet<>(group.updatedEntities().keySet());
@@ -408,34 +431,23 @@ public class SpeculativeProjection
 			_SpeculativeConsequences consequences = new _SpeculativeConsequences(exportedChanges, exportedMutations);
 			followUpTicks.add(consequences);
 			
+			BasicBlockProxyCache innerCachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+			CommonMutationSink innerNewMutationSink = new CommonMutationSink();
+			CommonChangeSink innerNewChangeSink = new CommonChangeSink();
+			TickProcessingContext innerContext = new TickProcessingContext(gameTick
+					, innerCachingLoader
+					, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+					, innerNewMutationSink
+					, innerNewChangeSink
+			);
+			
 			// Run these changes and mutations, collecting the resultant output from them.
-			WorldProcessor.ProcessedFragment innerFragment = _applyFollowUpBlockMutations(modifiedCuboids, exportedMutations);
-			CrowdProcessor.ProcessedGroup innerGroup = _applyFollowUpEntityMutations(locallyModifiedIds, exportedChanges);
+			_applyFollowUpBlockMutations(innerContext, modifiedCuboids, exportedMutations);
+			_applyFollowUpEntityMutations(innerContext, locallyModifiedIds, exportedChanges);
 			
 			// Coalesce the results of these.
-			exportedChanges = new HashMap<>(_onlyImmediateChanges(innerFragment.exportedEntityChanges()));
-			for (Map.Entry<Integer, List<IMutationEntity>> entry : _onlyImmediateChanges(innerGroup.exportedEntityChanges()).entrySet())
-			{
-				int key = entry.getKey();
-				List<IMutationEntity> value = entry.getValue();
-				List<IMutationEntity> oneQueue = exportedChanges.get(key);
-				if (null == oneQueue)
-				{
-					exportedChanges.put(key, new ArrayList<>(value));
-				}
-				else
-				{
-					oneQueue.addAll(value);
-				}
-			}
-			exportedMutations = new ArrayList<>();
-			// Note that we will ignore any "future" block mutations when running speculative.
-			exportedMutations.addAll(innerFragment.exportedMutations().stream()
-					.filter((ScheduledMutation scheduled) -> (0L == scheduled.millisUntilReady()))
-					.map((ScheduledMutation scheduled) -> scheduled.mutation())
-					.toList()
-			);
-			exportedMutations.addAll(_onlyImmediateMutations(innerGroup.exportedMutations()));
+			exportedChanges = new HashMap<>(_onlyImmediateChanges(innerNewChangeSink.takeExportedChanges()));
+			exportedMutations = new ArrayList<>(_onlyImmediateMutations(innerNewMutationSink.takeExportedMutations()));
 		}
 		modifiedEntityIds.addAll(locallyModifiedIds);
 		
@@ -469,15 +481,25 @@ public class SpeculativeProjection
 
 	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, _SpeculativeConsequences followUp)
 	{
+		long gameTick = 0L;
+		BasicBlockProxyCache innerCachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
+		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
+		TickProcessingContext innerContext = new TickProcessingContext(gameTick
+				, innerCachingLoader
+				, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+				, innerNewMutationSink
+				, innerNewChangeSink
+		);
+		
 		// We ignore the results of these.
-		_applyFollowUpBlockMutations(modifiedCuboids, followUp.exportedMutations);
-		_applyFollowUpEntityMutations(modifiedEntityIds, followUp.exportedChanges);
+		_applyFollowUpBlockMutations(innerContext, modifiedCuboids, followUp.exportedMutations);
+		_applyFollowUpEntityMutations(innerContext, modifiedEntityIds, followUp.exportedChanges);
 	}
 
-	private WorldProcessor.ProcessedFragment _applyFollowUpBlockMutations(Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
+	private void _applyFollowUpBlockMutations(TickProcessingContext context, Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
 	{
 		// Ignored variables in speculative mode.
-		long gameTick = 0L;
 		long millisSinceLastTick = 0L;
 		
 		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
@@ -487,9 +509,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedWorld
-				, this.projectionBlockLoader
-				, _projectedCrowd
-				, gameTick
+				, context
 				, millisSinceLastTick
 				, innerMutations
 				, modifiedBlocksByCuboidAddress
@@ -498,24 +518,21 @@ public class SpeculativeProjection
 		);
 		_projectedWorld.putAll(innerFragment.stateFragment());
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
-		return innerFragment;
 	}
 
-	private CrowdProcessor.ProcessedGroup _applyFollowUpEntityMutations(Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity>> entityMutations)
+	private void _applyFollowUpEntityMutations(TickProcessingContext context, Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity>> entityMutations)
 	{
-		long gameTick = 0L;
 		// The time between ticks doesn't matter when replaying from server.
 		long ignoredMillisBetweenTicks = 0L;
+		
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
 				, _projectedCrowd
-				, this.projectionBlockLoader
-				, gameTick
+				, context
 				, ignoredMillisBetweenTicks
 				, _wrapInScheduled(entityMutations)
 		);
 		_projectedCrowd.putAll(innerGroup.groupFragment());
 		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
-		return innerGroup;
 	}
 
 	private Map<Integer, List<IMutationEntity>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)

@@ -4,13 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -35,8 +31,7 @@ public class CrowdProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param entitiesById The map of all read-only entities from the previous tick.
-	 * @param loader Used to resolve read-only block data from the previous tick.
-	 * @param gameTick The game tick being processed.
+	 * @param context The context used for running changes.
 	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
@@ -44,16 +39,12 @@ public class CrowdProcessor
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
-			, Function<AbsoluteLocation, BlockProxy> loader
-			, long gameTick
+			, TickProcessingContext context
 			, long millisSinceLastTick
 			, Map<Integer, List<ScheduledChange>> changesToRun
 	)
 	{
 		Map<Integer, Entity> fragment = new HashMap<>();
-		
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
 		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
@@ -70,13 +61,6 @@ public class CrowdProcessor
 				if (null != entity)
 				{
 					processor.entitiesProcessed += 1;
-					BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
-					TickProcessingContext context = new TickProcessingContext(gameTick
-							, local
-							, (Integer entityId) -> MinimalEntity.fromEntity(entitiesById.get(entityId))
-							, newMutationSink
-							, newChangeSink
-					);
 					
 					MutableEntity mutable = MutableEntity.existing(entity);
 					List<ScheduledChange> changes = elt.getValue();
@@ -122,16 +106,15 @@ public class CrowdProcessor
 				}
 			}
 		}
-		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
-		Map<Integer, List<ScheduledChange>> exportedEntityChanges = newChangeSink.takeExportedChanges();
+		Map<Integer, List<ScheduledChange>> notYetReadyChanges = new HashMap<>();
 		for (Map.Entry<Integer, List<ScheduledChange>> elt : delayedChanges.entrySet())
 		{
 			Integer id = elt.getKey();
 			List<ScheduledChange> incoming = elt.getValue();
-			List<ScheduledChange> existing = exportedEntityChanges.get(id);
+			List<ScheduledChange> existing = notYetReadyChanges.get(id);
 			if (null == existing)
 			{
-				exportedEntityChanges.put(id, incoming);
+				notYetReadyChanges.put(id, incoming);
 			}
 			else
 			{
@@ -139,8 +122,7 @@ public class CrowdProcessor
 			}
 		}
 		return new ProcessedGroup(fragment
-				, exportedMutations
-				, exportedEntityChanges
+				, notYetReadyChanges
 				, updatedEntities
 				, committedMutationCount
 		);
@@ -148,8 +130,7 @@ public class CrowdProcessor
 
 
 	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
-			, List<ScheduledMutation> exportedMutations
-			, Map<Integer, List<ScheduledChange>> exportedEntityChanges
+			, Map<Integer, List<ScheduledChange>> notYetReadyChanges
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, Entity> updatedEntities
 			, int committedMutationCount

@@ -22,8 +22,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -48,9 +46,7 @@ public class WorldProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
-	 * @param loader Used to resolve read-only block data from the previous tick.
-	 * @param entitiesById Used to resolve the read-only Entity objects from the previous tick.
-	 * @param gameTick The game tick being processed.
+	 * @param context The context used for running changes.
 	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
@@ -62,9 +58,7 @@ public class WorldProcessor
 	 */
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
-			, Function<AbsoluteLocation, BlockProxy> loader
-			, Map<Integer, Entity> entitiesById
-			, long gameTick
+			, TickProcessingContext context
 			, long millisSinceLastTick
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
@@ -74,12 +68,9 @@ public class WorldProcessor
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
-		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
-		List<ScheduledMutation> delayedMutations = new ArrayList<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
@@ -94,14 +85,6 @@ public class WorldProcessor
 				Assert.assertTrue(null != oldState);
 				// We will accumulate changing blocks and determine if we need to write any back at the end.
 				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
-				
-				BasicBlockProxyCache local = new BasicBlockProxyCache(loader);
-				TickProcessingContext context = new TickProcessingContext(gameTick
-						, local
-						, (Integer entityId) -> MinimalEntity.fromEntity(entitiesById.get(entityId))
-						, newMutationSink
-						, newChangeSink
-				);
 				
 				// First, handle block updates.
 				committedMutationCount += _synthesizeAndRunBlockUpdates(processor
@@ -137,13 +120,13 @@ public class WorldProcessor
 							{
 								updatedMillis = 0L;
 							}
-							delayedMutations.add(new ScheduledMutation(mutation, updatedMillis));
+							notYetReadyMutations.add(new ScheduledMutation(mutation, updatedMillis));
 						}
 					}
 				}
 				
 				// We also want to process lighting updates from the previous tick.
-				_processPreviousTickLightUpdates(key, oldState, potentialLightChangesByCuboid, proxies, local);
+				_processPreviousTickLightUpdates(key, oldState, potentialLightChangesByCuboid, proxies, context.previousBlockLookUp);
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(
@@ -175,13 +158,9 @@ public class WorldProcessor
 			}
 		}
 		
-		List<ScheduledMutation> exportedMutations = newMutationSink.takeExportedMutations();
-		exportedMutations.addAll(delayedMutations);
-		Map<Integer, List<ScheduledChange>> exportedEntityChanges = newChangeSink.takeExportedChanges();
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
-				, exportedMutations
-				, exportedEntityChanges
+				, notYetReadyMutations
 				, blockChangesByCuboid
 				, committedMutationCount
 		);
@@ -552,8 +531,7 @@ public class WorldProcessor
 
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, List<ScheduledMutation> exportedMutations
-			, Map<Integer, List<ScheduledChange>> exportedEntityChanges
+			, List<ScheduledMutation> notYetReadyMutations
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
 	) {}

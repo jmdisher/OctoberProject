@@ -17,7 +17,10 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.BlockChangeDescription;
+import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -31,6 +34,8 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -301,9 +306,11 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
-						, new CrowdProcessor.ProcessedGroup(Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 0)
-						, Collections.emptyMap()
+				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
+						, new CrowdProcessor.ProcessedGroup(Map.of(), Map.of(), Map.of(), 0)
+						, List.of()
+						, Map.of()
+						, Map.of()
 				)
 				, 0L
 				, System.currentTimeMillis()
@@ -321,12 +328,22 @@ public class TickRunner
 						: null
 				;
 			};
-			// Process all entity changes first and synchronize to lock-step.
+			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
+			BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(loader);
+			CommonMutationSink newMutationSink = new CommonMutationSink();
+			CommonChangeSink newChangeSink = new CommonChangeSink();
+			
+			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
+					, cachingLoader
+					, (Integer entityId) -> MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
+					, newMutationSink
+					, newChangeSink
+			);
+			
 			long startCrowd = System.currentTimeMillis();
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
 					, materials.completedEntities
-					, loader
-					, materials.thisGameTick
+					, context
 					, _millisPerTick
 					, materials.changesToRun
 			);
@@ -336,9 +353,7 @@ public class TickRunner
 			long startWorld = System.currentTimeMillis();
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
-					, loader
-					, materials.completedEntities
-					, materials.thisGameTick
+					, context
 					, _millisPerTick
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
@@ -358,6 +373,8 @@ public class TickRunner
 					, materials.completedEntities
 					, new _PartialHandoffData(fragment
 							, group
+							, newMutationSink.takeExportedMutations()
+							, newChangeSink.takeExportedChanges()
 							, materials.commitLevels
 					)
 					, materials.millisInTickPreamble
@@ -414,22 +431,24 @@ public class TickRunner
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
 				committedCuboidMutationCount += fragment.world.committedMutationCount();
 				
-				// World data.
-				for (ScheduledMutation scheduledMutation : fragment.world.exportedMutations())
+				// Common data given to the context.
+				for (ScheduledMutation scheduledMutation : fragment.newlyScheduledMutations)
 				{
 					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 				}
-				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.world.exportedEntityChanges().entrySet())
+				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.newlyScheduledChanges().entrySet())
 				{
 					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
 				
-				// Crowd data.
-				for (ScheduledMutation scheduledMutation : fragment.crowd.exportedMutations())
+				// World data.
+				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
 				{
 					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
 				}
-				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.crowd.exportedEntityChanges().entrySet())
+				
+				// Crowd data.
+				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.crowd.notYetReadyChanges().entrySet())
 				{
 					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
@@ -908,6 +927,8 @@ public class TickRunner
 	 */
 	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
 			, CrowdProcessor.ProcessedGroup crowd
+			, List<ScheduledMutation> newlyScheduledMutations
+			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, Long> commitLevels
 	) {}
 }
