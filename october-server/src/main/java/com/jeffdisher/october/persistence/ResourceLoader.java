@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -387,7 +388,7 @@ public class ResourceLoader
 			{
 				// Read the parts of the suspended data.
 				long millisUntilReady = buffer.getLong();
-				IMutationEntity change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+				IMutationEntity<IMutablePlayerEntity> change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
 				suspended.add(new ScheduledChange(change, millisUntilReady));
 			}
 			result = new SuspendedEntity(entity, suspended);

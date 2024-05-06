@@ -19,7 +19,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Attempts to exchange the liquid between the bucket and selected block, failing if it isn't a bucket or there is no
  * valid exchange (the block is solid, both are empty, or both are full).
  */
-public class EntityChangeExchangeLiquid implements IMutationEntity
+public class EntityChangeExchangeLiquid implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.EXCHANGE_LIQUID;
 

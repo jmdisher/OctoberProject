@@ -24,7 +24,6 @@ import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockGrow;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -325,7 +324,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
-		IMutationEntity send = new EntityChangeSendItem(entityId2, ENV.items.STONE);
+		EntityChangeSendItem send = new EntityChangeSendItem(entityId2, ENV.items.STONE);
 		long commit1 = 1L;
 		runner.enqueueEntityChange(entityId1, send, commit1);
 		// (run a tick to run the change and enqueue the next)

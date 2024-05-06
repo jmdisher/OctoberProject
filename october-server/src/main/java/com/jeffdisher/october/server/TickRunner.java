@@ -34,6 +34,7 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -240,7 +241,7 @@ public class TickRunner
 	 * @param commitLevel The client's commit level associated with this change.
 	 * @return True if this was enqueued, false if the client should be disconnected.
 	 */
-	public boolean enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
+	public boolean enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 	{
 		boolean didAdd;
 		_sharedDataLock.lock();
@@ -920,7 +921,7 @@ public class TickRunner
 	/**
 	 * A wrapper over the IMutationEntity to store commit level data.
 	 */
-	private static record _EntityMutationWrapper(IMutationEntity mutation, long commitLevel) {}
+	private static record _EntityMutationWrapper(IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel) {}
 
 	/**
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.

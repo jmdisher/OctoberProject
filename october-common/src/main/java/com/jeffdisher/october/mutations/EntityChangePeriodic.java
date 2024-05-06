@@ -12,7 +12,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * -healing
  * -digesting food
  */
-public class EntityChangePeriodic implements IMutationEntity
+public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.PERIODIC;
 

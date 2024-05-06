@@ -21,7 +21,7 @@ import com.jeffdisher.october.utils.Assert;
  * inventory.
  * Note that races here can result in items being destroyed (if the same block is over-filled in one tick).
  */
-public class MutationEntityPushItems implements IMutationEntity
+public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PUSH;
 

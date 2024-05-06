@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
 /**
@@ -17,17 +18,17 @@ public class Packet_MutationEntityFromClient extends Packet
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			IMutationEntity mutation = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+			IMutationEntity<IMutablePlayerEntity> mutation = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
 			long commitLevel = buffer.getLong();
 			return new Packet_MutationEntityFromClient(mutation, commitLevel);
 		};
 	}
 
 
-	public final IMutationEntity mutation;
+	public final IMutationEntity<IMutablePlayerEntity> mutation;
 	public final long commitLevel;
 
-	public Packet_MutationEntityFromClient(IMutationEntity mutation, long commitLevel)
+	public Packet_MutationEntityFromClient(IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel)
 	{
 		super(TYPE);
 		this.mutation = mutation;

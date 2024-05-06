@@ -14,7 +14,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 /**
  * Attempts to eat the currently selected block, incrementing food level if it is edible.
  */
-public class EntityChangeEatSelectedItem implements IMutationEntity
+public class EntityChangeEatSelectedItem implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.EAT_ITEM;
 

@@ -15,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
  * A test of IEntityChange:  This change attempts to add the given items to our inventory, but only passes if we don't
  * currently have any, failing if they won't fit or we already had some.
  */
-public class EntityChangeReceiveItem implements IMutationEntity
+public class EntityChangeReceiveItem implements IMutationEntity<IMutablePlayerEntity>
 {
 	private final Item _itemType;
 	private final int _itemCount;

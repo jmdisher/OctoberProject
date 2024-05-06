@@ -27,6 +27,7 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
@@ -440,7 +441,7 @@ public class ServerStateManager
 		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
 		
 		// TickRunner.
-		boolean runner_enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel);
+		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
 	}
 
 	public static record TickChanges(Collection<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids

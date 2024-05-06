@@ -29,6 +29,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -98,7 +99,7 @@ public class ClientProcess
 	 * @param change The change to apply.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void sendAction(IMutationEntity change, long currentTimeMillis)
+	public void sendAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
@@ -423,7 +424,7 @@ public class ClientProcess
 			_client.stop();
 		}
 		@Override
-		public void sendChange(IMutationEntity change, long commitLevel)
+		public void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
 			_background_bufferPacket(packet);

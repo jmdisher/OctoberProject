@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -695,21 +696,22 @@ public class TestCommonChanges
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
 		int[] targetHolder = new int[1];
-		IMutationEntity[] changeHolder = new IMutationEntity[1];
+		@SuppressWarnings("unchecked")
+		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
 				, null
 				, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity change)
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(changeHolder[0]);
 						targetHolder[0] = targetEntityId;
 						changeHolder[0] = change;
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail("Not expected in tets");
 					}
@@ -814,21 +816,22 @@ public class TestCommonChanges
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze());
 		int[] targetHolder = new int[1];
-		IMutationEntity[] changeHolder = new IMutationEntity[1];
+		@SuppressWarnings("unchecked")
+		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
 				, null
 				, new TickProcessingContext.IChangeSink() {
 					@Override
-					public void next(int targetEntityId, IMutationEntity change)
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(changeHolder[0]);
 						targetHolder[0] = targetEntityId;
 						changeHolder[0] = change;
 					}
 					@Override
-					public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 					{
 						Assert.fail("Not expected in tets");
 					}
@@ -1258,7 +1261,7 @@ public class TestCommonChanges
 	private static class _ContextHolder
 	{
 		public final TickProcessingContext context;
-		public IMutationEntity change;
+		public IMutationEntity<IMutablePlayerEntity> change;
 		public IMutationBlock mutation;
 		
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
@@ -1281,13 +1284,13 @@ public class TestCommonChanges
 					} : null
 					, allowEntityChange ? new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IMutationEntity change)
+						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 						{
 							Assert.assertNull(_ContextHolder.this.change);
 							_ContextHolder.this.change = change;
 						}
 						@Override
-						public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 						{
 							Assert.fail("Not expected in tets");
 						}

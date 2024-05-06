@@ -25,6 +25,7 @@ import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -314,7 +315,7 @@ public class TestServerStateManager
 			this.lastFinishedCommitPerClient.put(clientId, latestLocalCommitIncluded);
 		}
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			throw new AssertionError("runnerEnqueueEntityChange");
 		}

@@ -23,7 +23,7 @@ import com.jeffdisher.october.utils.Assert;
  * change to check the range on the sender side (here), in the future.
  * In the future, we will need this to have some time cost but this is just to get the first step working.
  */
-public class EntityChangeAttackEntity implements IMutationEntity
+public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.ATTACK_ENTITY;
 

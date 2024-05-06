@@ -32,7 +32,7 @@ import com.jeffdisher.october.utils.Assert;
  * Together, these problems are solved by making the zVelocity a property of the Entity and manipulating it in this
  * change.
  */
-public class EntityChangeMove implements IMutationEntity
+public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.MOVE;
 

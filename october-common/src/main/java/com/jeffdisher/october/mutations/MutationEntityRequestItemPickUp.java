@@ -24,7 +24,7 @@ import com.jeffdisher.october.utils.Assert;
  * -MutationBlockExtractItems - run against the block to extract the items
  * -MutationEntityStoreToInventory - run against the entity to store the extracted items
  */
-public class MutationEntityRequestItemPickUp implements IMutationEntity
+public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.ITEMS_REQUEST_PULL;
 

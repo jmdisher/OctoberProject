@@ -16,6 +16,7 @@ import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
@@ -314,7 +315,7 @@ public class ServerRunner
 			_network.sendEndOfTick(clientId, tickNumber, latestLocalCommitIncluded);
 		}
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return _tickRunner.enqueueEntityChange(entityId, change, commitLevel);
 		}

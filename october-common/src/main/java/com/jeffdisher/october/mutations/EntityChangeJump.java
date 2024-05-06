@@ -12,7 +12,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This is how the user jumps - if they are standing on the ground, this gives them an upward movement vector.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeJump implements IMutationEntity
+public class EntityChangeJump implements IMutationEntity<IMutablePlayerEntity>
 {
 	/**
 	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block

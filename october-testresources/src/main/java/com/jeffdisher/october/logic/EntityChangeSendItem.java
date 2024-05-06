@@ -16,7 +16,7 @@ import com.jeffdisher.october.utils.Assert;
  * A test of IEntityChange:  This change extracts all items of a given type from the entity's inventory and, if it is
  * more than 0, creates a new change to pass it to another entity.
  */
-public class EntityChangeSendItem implements IMutationEntity
+public class EntityChangeSendItem implements IMutationEntity<IMutablePlayerEntity>
 {
 	private final int _targetId;
 	private final Item _itemType;

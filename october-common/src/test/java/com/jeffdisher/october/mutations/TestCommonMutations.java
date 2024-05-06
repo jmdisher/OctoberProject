@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
@@ -327,7 +328,7 @@ public class TestCommonMutations
 	{
 		public IMutationBlock nextMutation;
 		public int nextTargetEntityId;
-		public IMutationEntity nextChange;
+		public IMutationEntity<IMutablePlayerEntity> nextChange;
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
@@ -350,7 +351,7 @@ public class TestCommonMutations
 					}
 					, new TickProcessingContext.IChangeSink() {
 						@Override
-						public void next(int targetEntityId, IMutationEntity change)
+						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 						{
 							Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
 							Assert.assertNull(ProcessingSinks.this.nextChange);
@@ -358,7 +359,7 @@ public class TestCommonMutations
 							ProcessingSinks.this.nextChange = change;
 						}
 						@Override
-						public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 						{
 							Assert.fail("Not expected in tets");
 						}

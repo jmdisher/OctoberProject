@@ -31,6 +31,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -489,7 +490,7 @@ public class TestServerRunner
 				this.wait();
 			}
 		}
-		public void receiveFromClient(int clientId, IMutationEntity mutation, long commitLevel)
+		public void receiveFromClient(int clientId, IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel)
 		{
 			boolean wasEmpty;
 			synchronized (this)

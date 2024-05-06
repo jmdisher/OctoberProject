@@ -6,6 +6,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 
 
@@ -35,7 +36,7 @@ public interface IClientAdapter
 	 * @param change The change to send.
 	 * @param commitLevel The client's local commit level represented by this change.
 	 */
-	void sendChange(IMutationEntity change, long commitLevel);
+	void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
 
 
 	/**

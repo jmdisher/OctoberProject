@@ -22,7 +22,7 @@ import com.jeffdisher.october.utils.Assert;
  * Note that we typically use a long to apply time values but the underlying damage being changed is a short so we use
  * that instead.
  */
-public class EntityChangeIncrementalBlockBreak implements IMutationEntity
+public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.INCREMENTAL_BREAK_BLOCK;
 	public static final float MAX_REACH = 1.5f;

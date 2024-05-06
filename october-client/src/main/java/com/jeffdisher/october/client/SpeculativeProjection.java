@@ -29,6 +29,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -150,7 +151,7 @@ public class SpeculativeProjection
 		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
 		{
 			convertedUpdates.put(elt.getKey(), elt.getValue().stream().map(
-					(IEntityUpdate update) -> new ScheduledChange((IMutationEntity)new EntityUpdateWrapper(update), 0L)).toList()
+					(IEntityUpdate update) -> new ScheduledChange((IMutationEntity<IMutablePlayerEntity>)new EntityUpdateWrapper(update), 0L)).toList()
 			);
 		}
 		
@@ -309,7 +310,7 @@ public class SpeculativeProjection
 	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IMutationEntity change, long currentTimeMillis)
+	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -392,7 +393,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity change, long commitNumber)
+	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity<IMutablePlayerEntity> change, long commitNumber)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -420,7 +421,7 @@ public class SpeculativeProjection
 				, changesToRun
 		);
 		_projectedCrowd.putAll(group.groupFragment());
-		Map<Integer, List<IMutationEntity>> exportedChanges = _onlyImmediateChanges(newChangeSink.takeExportedChanges());
+		Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> exportedChanges = _onlyImmediateChanges(newChangeSink.takeExportedChanges());
 		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(newMutationSink.takeExportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -520,7 +521,7 @@ public class SpeculativeProjection
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 	}
 
-	private void _applyFollowUpEntityMutations(TickProcessingContext context, Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity>> entityMutations)
+	private void _applyFollowUpEntityMutations(TickProcessingContext context, Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> entityMutations)
 	{
 		// The time between ticks doesn't matter when replaying from server.
 		long ignoredMillisBetweenTicks = 0L;
@@ -535,12 +536,12 @@ public class SpeculativeProjection
 		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
 	}
 
-	private Map<Integer, List<IMutationEntity>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)
+	private Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)
 	{
-		Map<Integer, List<IMutationEntity>> result = new HashMap<>();
+		Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> result = new HashMap<>();
 		for (Map.Entry<Integer, List<ScheduledChange>> elt : changes.entrySet())
 		{
-			List<IMutationEntity> list = elt.getValue().stream().filter(
+			List<IMutationEntity<IMutablePlayerEntity>> list = elt.getValue().stream().filter(
 					(ScheduledChange change) -> (0L == change.millisUntilReady())
 			).map(
 					(ScheduledChange change) -> change.change()
@@ -562,13 +563,13 @@ public class SpeculativeProjection
 		).toList();
 	}
 
-	private Map<Integer, List<ScheduledChange>> _wrapInScheduled(Map<Integer, List<IMutationEntity>> changes)
+	private Map<Integer, List<ScheduledChange>> _wrapInScheduled(Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> changes)
 	{
 		Map<Integer, List<ScheduledChange>> result = new HashMap<>();
-		for (Map.Entry<Integer, List<IMutationEntity>> elt : changes.entrySet())
+		for (Map.Entry<Integer, List<IMutationEntity<IMutablePlayerEntity>>> elt : changes.entrySet())
 		{
 			List<ScheduledChange> list = elt.getValue().stream().map(
-					(IMutationEntity change) -> new ScheduledChange(change, 0L)
+					(IMutationEntity<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
 			).toList();
 			result.put(elt.getKey(), list);
 		}
@@ -588,19 +589,19 @@ public class SpeculativeProjection
 	}
 
 	private static record _SpeculativeWrapper(long commitLevel
-			, IMutationEntity change
+			, IMutationEntity<IMutablePlayerEntity> change
 			, List<_SpeculativeConsequences> followUpTicks
 	) {}
 
-	private static record _SpeculativeConsequences(Map<Integer, List<IMutationEntity>> exportedChanges, List<IMutationBlock> exportedMutations)
+	private static record _SpeculativeConsequences(Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> exportedChanges, List<IMutationBlock> exportedMutations)
 	{
 		public void absorb(_SpeculativeConsequences followUp)
 		{
-			for (Map.Entry<Integer, List<IMutationEntity>> change : followUp.exportedChanges.entrySet())
+			for (Map.Entry<Integer, List<IMutationEntity<IMutablePlayerEntity>>> change : followUp.exportedChanges.entrySet())
 			{
 				int key = change.getKey();
-				List<IMutationEntity> value = change.getValue();
-				List<IMutationEntity> list = this.exportedChanges.get(key);
+				List<IMutationEntity<IMutablePlayerEntity>> value = change.getValue();
+				List<IMutationEntity<IMutablePlayerEntity>> list = this.exportedChanges.get(key);
 				if (null != list)
 				{
 					list.addAll(value);

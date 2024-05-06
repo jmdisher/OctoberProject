@@ -92,7 +92,7 @@ public class TickProcessingContext
 		 * @param targetEntityId The ID of the entity which should run the change.
 		 * @param change The change to schedule.
 		 */
-		void next(int targetEntityId, IMutationEntity change);
+		void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change);
 		/**
 		 * Requests that an entity change be scheduled in the future.
 		 * 
@@ -100,6 +100,6 @@ public class TickProcessingContext
 		 * @param change The change to schedule.
 		 * @param millisToDelay Milliseconds to delay before running the mutation.
 		 */
-		void future(int targetEntityId, IMutationEntity change, long millisToDelay);
+		void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay);
 	}
 }

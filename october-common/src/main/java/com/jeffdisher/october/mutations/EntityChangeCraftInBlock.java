@@ -22,7 +22,7 @@ import com.jeffdisher.october.utils.Assert;
  * entities within the same tick (since that could result in one entity completing the operation while another starts
  * another one, instead of also helping to complete it).
  */
-public class EntityChangeCraftInBlock implements IMutationEntity
+public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.CRAFT_IN_BLOCK;
 

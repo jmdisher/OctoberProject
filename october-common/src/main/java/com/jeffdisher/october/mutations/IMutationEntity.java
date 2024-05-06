@@ -15,7 +15,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * 3) New entity joins
  * 4) Changes enqueued by the external calls
  */
-public interface IMutationEntity
+public interface IMutationEntity<T extends IMutablePlayerEntity>
 {
 	/**
 	 * Determines how many milliseconds it takes to run this change.  Note that this "time" is considered more abstract
@@ -42,7 +42,7 @@ public interface IMutationEntity
 	 * @param newEntity The entity currently being modified by this change in the current tick.
 	 * @return True if the mutation was applied successfully, false if it changed nothing and should be rejected.
 	 */
-	boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity);
+	boolean applyChange(TickProcessingContext context, T newEntity);
 
 	/**
 	 * This type is just used for serialization so it should be null if the mutation is only for testing or internal

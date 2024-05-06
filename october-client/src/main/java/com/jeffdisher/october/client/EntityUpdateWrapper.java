@@ -15,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
  * An adapter so that IEntityUpdate objects from the server can be fed in to the CrowdProcessor used in
  * SpeculativeProjection.
  */
-public class EntityUpdateWrapper implements IMutationEntity
+public class EntityUpdateWrapper implements IMutationEntity<IMutablePlayerEntity>
 {
 	public final IEntityUpdate _update;
 

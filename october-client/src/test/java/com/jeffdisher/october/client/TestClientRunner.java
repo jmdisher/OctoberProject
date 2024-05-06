@@ -24,6 +24,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -366,7 +367,7 @@ public class TestClientRunner
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
-		public IMutationEntity toSend;
+		public IMutationEntity<IMutablePlayerEntity> toSend;
 		public long commitLevel;
 		@Override
 		public void connectAndStartListening(IListener listener)
@@ -379,7 +380,7 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(IMutationEntity change, long commitLevel)
+		public void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;

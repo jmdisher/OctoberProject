@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -17,14 +18,14 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges = new HashMap<>();
 
 	@Override
-	public void next(int targetEntityId, IMutationEntity change)
+	public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 	{
 		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 		entityChanges.add(new ScheduledChange(change, 0L));
 	}
 
 	@Override
-	public void future(int targetEntityId, IMutationEntity change, long millisToDelay)
+	public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 	{
 		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 		entityChanges.add(new ScheduledChange(change, millisToDelay));

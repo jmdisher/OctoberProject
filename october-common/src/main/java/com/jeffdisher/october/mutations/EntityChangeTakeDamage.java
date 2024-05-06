@@ -21,7 +21,7 @@ import com.jeffdisher.october.utils.Assert;
  * Note that the damage origin is passed in here and checked for range but that will likely be moved to the sender, in
  * the future.
  */
-public class EntityChangeTakeDamage implements IMutationEntity
+public class EntityChangeTakeDamage implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.TAKE_DAMAGE;
 

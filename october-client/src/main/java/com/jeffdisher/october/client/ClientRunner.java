@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
@@ -82,7 +83,7 @@ public class ClientRunner
 	 * @param change The change to run.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void commonApplyEntityAction(IMutationEntity change, long currentTimeMillis)
+	public void commonApplyEntityAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Some of these events take no real time so we just pass them through, no matter how much time has passed.
 		_applyLocalChange(change, currentTimeMillis);
@@ -244,7 +245,7 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IMutationEntity change, long currentTimeMillis)
+	private void _applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
 		if (localCommit > 0L)

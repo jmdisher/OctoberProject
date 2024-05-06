@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -12,9 +13,9 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class EntityMutationWrapper implements IEntityUpdate
 {
-	private final IMutationEntity _mutation;
+	private final IMutationEntity<IMutablePlayerEntity> _mutation;
 
-	public EntityMutationWrapper(IMutationEntity mutation)
+	public EntityMutationWrapper(IMutationEntity<IMutablePlayerEntity> mutation)
 	{
 		_mutation = mutation;
 	}

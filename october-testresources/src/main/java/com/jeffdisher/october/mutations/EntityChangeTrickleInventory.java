@@ -12,7 +12,7 @@ import com.jeffdisher.october.utils.Assert;
  * A testing change to verify sequences of internal changes.
  * Given Items, will pass one to the entity in each tick until there are none left.
  */
-public class EntityChangeTrickleInventory implements IMutationEntity
+public class EntityChangeTrickleInventory implements IMutationEntity<IMutablePlayerEntity>
 {
 	private final Items _contents;
 

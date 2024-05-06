@@ -13,7 +13,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Stores the given items into the entity's inventory.
  */
-public class EntityChangeAcceptItems implements IMutationEntity
+public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEntity>
 {
 	private final Items _items;
 

@@ -24,7 +24,7 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
  * Places the block currently selected in the entity's inventory into the world if it is currently air.  This emits a
  * MutationBlockOverwrite if it is consistent.
  */
-public class MutationPlaceSelectedBlock implements IMutationEntity
+public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_PLACE;
 

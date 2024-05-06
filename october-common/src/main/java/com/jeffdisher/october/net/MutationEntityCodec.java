@@ -22,13 +22,14 @@ import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
 public class MutationEntityCodec
 {
 	@SuppressWarnings("unchecked")
-	private static Function<ByteBuffer, IMutationEntity>[] _CODEC_TABLE = new Function[MutationEntityType.END_OF_LIST.ordinal()];
+	private static Function<ByteBuffer, IMutationEntity<IMutablePlayerEntity>>[] _CODEC_TABLE = new Function[MutationEntityType.END_OF_LIST.ordinal()];
 
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
@@ -59,9 +60,9 @@ public class MutationEntityCodec
 	}
 
 
-	public static IMutationEntity parseAndSeekFlippedBuffer(ByteBuffer buffer)
+	public static IMutationEntity<IMutablePlayerEntity> parseAndSeekFlippedBuffer(ByteBuffer buffer)
 	{
-		IMutationEntity parsed = null;
+		IMutationEntity<IMutablePlayerEntity> parsed = null;
 		// We only use a single byte to describe the type.
 		if (buffer.remaining() >= 1)
 		{
@@ -72,7 +73,7 @@ public class MutationEntityCodec
 		return parsed;
 	}
 
-	public static void serializeToBuffer(ByteBuffer buffer, IMutationEntity entity)
+	public static void serializeToBuffer(ByteBuffer buffer, IMutationEntity<IMutablePlayerEntity> entity)
 	{
 		// Write the type.
 		MutationEntityType type = entity.getType();
