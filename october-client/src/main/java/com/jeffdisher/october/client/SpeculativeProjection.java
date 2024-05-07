@@ -31,6 +31,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -147,13 +148,6 @@ public class SpeculativeProjection
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
-		Map<Integer, List<ScheduledChange>> convertedUpdates = new HashMap<>();
-		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
-		{
-			convertedUpdates.put(elt.getKey(), elt.getValue().stream().map(
-					(IEntityUpdate update) -> new ScheduledChange((IMutationEntity<IMutablePlayerEntity>)new EntityUpdateWrapper(update), 0L)).toList()
-			);
-		}
 		
 		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 		// TODO:  Determine if we want to apply any immediately mutations or changes (we currently capture them but do nothing with them).
@@ -166,15 +160,28 @@ public class SpeculativeProjection
 				, newChangeSink
 		);
 		
+		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
+		Map<Integer, Entity> entitiesChangedInTick = new HashMap<>();
+		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
+		{
+			int entityId = elt.getKey();
+			Entity entityToChange = _shadowCrowd.get(entityId);
+			// These must already exist if they are being updated.
+			Assert.assertTrue(null != entityToChange);
+			MutableEntity mutable = MutableEntity.existing(entityToChange);
+			for (IEntityUpdate update : elt.getValue())
+			{
+				update.applyToEntity(context, mutable);
+			}
+			Entity frozen = mutable.freeze();
+			if (entityToChange != frozen)
+			{
+				entitiesChangedInTick.put(entityId, frozen);
+			}
+		}
+
 		// The time between ticks doesn't matter when replaying from server.
 		long ignoredMillisBetweenTicks = 0L;
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
-				, _shadowCrowd
-				, context
-				, ignoredMillisBetweenTicks
-				, convertedUpdates
-		);
-		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
@@ -194,7 +201,7 @@ public class SpeculativeProjection
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
-		_shadowCrowd.putAll(group.groupFragment());
+		_shadowCrowd.putAll(entitiesChangedInTick);
 		_shadowWorld.putAll(fragment.stateFragment());
 		
 		// Remove before moving on to our projection.
