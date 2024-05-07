@@ -257,7 +257,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// Jump and then try to move to the West and observe the updated location.
-		EntityChangeJump jumpChange = new EntityChangeJump();
+		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.moveHorizontal(-0.2f, 0.0f, currentTimeMillis);

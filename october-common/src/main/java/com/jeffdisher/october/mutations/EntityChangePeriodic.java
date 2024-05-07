@@ -60,7 +60,7 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 		{
 			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(null, (byte)1);
+			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)1);
 			context.newChangeSink.next(newEntity.getId(), takeDamage);
 		}
 		

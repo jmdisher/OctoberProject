@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -12,7 +12,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * This is how the user jumps - if they are standing on the ground, this gives them an upward movement vector.
  * Note that this doesn't move them or take time, just changes the vector.
  */
-public class EntityChangeJump implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	/**
 	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
@@ -21,9 +21,9 @@ public class EntityChangeJump implements IMutationEntity<IMutablePlayerEntity>
 	public static final float JUMP_FORCE = -0.5f * EntityChangeMove.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
 
-	public static EntityChangeJump deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeJump<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
-		return new EntityChangeJump();
+		return new EntityChangeJump<>();
 	}
 
 
@@ -35,7 +35,7 @@ public class EntityChangeJump implements IMutationEntity<IMutablePlayerEntity>
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
 		
@@ -49,7 +49,7 @@ public class EntityChangeJump implements IMutationEntity<IMutablePlayerEntity>
 			didApply = true;
 			
 			// Do other state reset.
-			newEntity.setCurrentCraftingOperation(null);
+			newEntity.resetLongRunningOperations();
 		}
 		return didApply;
 	}

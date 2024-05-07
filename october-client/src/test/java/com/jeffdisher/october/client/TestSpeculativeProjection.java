@@ -47,6 +47,7 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -728,8 +729,8 @@ public class TestSpeculativeProjection
 		EntityLocation startLocation = listener.lastEntityStates.get(entityId).location();
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
-		EntityChangeMove move1 = new EntityChangeMove(startLocation, 0L, 0.4f, 0.0f);
-		EntityChangeMove move2 = new EntityChangeMove(midStep, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(startLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(midStep, 0L, 0.4f, 0.0f);
 		long commit1 = projector.applyLocalChange(move1, 1L);
 		long commit2 = projector.applyLocalChange(move2, 1001L);
 		Assert.assertEquals(1L, commit1);

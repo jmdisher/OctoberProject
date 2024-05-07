@@ -59,7 +59,7 @@ public class TestCommonChanges
 		// Check that the move works if the blocks are air.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
 		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -80,7 +80,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -100,7 +100,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the target cuboid is missing.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> null
 				, null
@@ -119,7 +119,7 @@ public class TestCommonChanges
 	{
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		EntityChangeMove move = new EntityChangeMove(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -156,7 +156,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		
-		EntityChangeJump jump = new EntityChangeJump();
+		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
 		boolean didApply = jump.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		
@@ -168,13 +168,13 @@ public class TestCommonChanges
 		// (we will use 50ms updates to see the more detailed arc)
 		for (int i = 0; i < 18; ++i)
 		{
-			EntityChangeMove fall = new EntityChangeMove(newEntity.newLocation, 50L, 0.0f, 0.0f);
+			EntityChangeMove<IMutablePlayerEntity> fall = new EntityChangeMove<>(newEntity.newLocation, 50L, 0.0f, 0.0f);
 			didApply = fall.applyChange(context, newEntity);
 			Assert.assertTrue(didApply);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
-		EntityChangeMove fall = new EntityChangeMove(newEntity.newLocation, 100L, 0.0f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> fall = new EntityChangeMove<>(newEntity.newLocation, 100L, 0.0f, 0.0f);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
@@ -182,7 +182,7 @@ public class TestCommonChanges
 		Assert.assertEquals(-4.9f, newEntity.newZVelocityPerSecond, 0.01f);
 		
 		// Fall one last time to finalize "impact".
-		fall = new EntityChangeMove(newEntity.newLocation, 100L, 0.0f, 0.0f);
+		fall = new EntityChangeMove<>(newEntity.newLocation, 100L, 0.0f, 0.0f);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
@@ -783,7 +783,7 @@ public class TestCommonChanges
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
-		EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(BodyPart.HEAD, (byte) 60);
+		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
 		Assert.assertNull(blockHolder[0]);
@@ -846,7 +846,7 @@ public class TestCommonChanges
 		Assert.assertEquals(10, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
-		EntityChangeTakeDamage change = (EntityChangeTakeDamage) changeHolder[0];
+		EntityChangeTakeDamage<IMutablePlayerEntity> change = (EntityChangeTakeDamage<IMutablePlayerEntity>) changeHolder[0];
 		targetHolder[0] = 0;
 		changeHolder[0] = null;
 		Assert.assertTrue(change.applyChange(context, target));
@@ -1117,21 +1117,21 @@ public class TestCommonChanges
 		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
 		
 		// Hit them in a different place and see the whole damage applied.
-		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.TORSO, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.TORSO, (byte)10).applyChange(null,  mutable));
 		Assert.assertEquals((byte)90, mutable.newHealth);
 		
 		// Hit them in the head with 1 damage and see it applied, with no durability loss.
-		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)1).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)1).applyChange(null,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
 		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
 		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamage(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
 		Assert.assertEquals((byte)87, mutable.newHealth);
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}

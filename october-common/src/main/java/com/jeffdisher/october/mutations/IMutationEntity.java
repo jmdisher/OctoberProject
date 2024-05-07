@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -15,7 +15,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * 3) New entity joins
  * 4) Changes enqueued by the external calls
  */
-public interface IMutationEntity<T extends IMutablePlayerEntity>
+public interface IMutationEntity<T extends IMutableMinimalEntity>
 {
 	/**
 	 * Determines how many milliseconds it takes to run this change.  Note that this "time" is considered more abstract

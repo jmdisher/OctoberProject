@@ -1,6 +1,11 @@
 package com.jeffdisher.october.types;
 
+import java.util.function.Consumer;
+
 import com.jeffdisher.october.aspects.StationRegistry;
+import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -157,8 +162,26 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public void clearInventoryAndRespawn()
+	public void resetLongRunningOperations()
 	{
+		// The only thing we worry about here is any crafting operation.
+		this.newLocalCraftOperation = null;
+	}
+
+	@Override
+	public void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer)
+	{
+		// Drop their inventory.
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, this.original.volume());
+		for (Integer key : this.newInventory.freeze().sortedKeys())
+		{
+			Items stackable = this.newInventory.getStackForKey(key);
+			NonStackableItem nonStackable = this.newInventory.getNonStackableForKey(key);
+			Assert.assertTrue((null != stackable) != (null != nonStackable));
+			mutationConsumer.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+		}
+		
+		// Respawn them.
 		this.newInventory.clearInventory(null);
 		this.newLocation = MutableEntity.DEFAULT_LOCATION;
 		this.newHealth = MutableEntity.DEFAULT_HEALTH;

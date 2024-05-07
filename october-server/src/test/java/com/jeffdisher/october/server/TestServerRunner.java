@@ -182,7 +182,7 @@ public class TestServerRunner
 		
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
 		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
-		EntityChangeMove move1 = new EntityChangeMove(entity.location(), 100L, 0.0f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(entity.location(), 100L, 0.0f, 0.0f);
 		MutableEntity fake = MutableEntity.existing(entity);
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR);
 		move1.applyChange(new TickProcessingContext(1L
@@ -191,7 +191,7 @@ public class TestServerRunner
 				, null
 				, null
 		), fake);
-		EntityChangeMove move2 = new EntityChangeMove(fake.newLocation, 100L, 0.0f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(fake.newLocation, 100L, 0.0f, 0.0f);
 		network.receiveFromClient(clientId, move1, 1L);
 		network.receiveFromClient(clientId, move2, 2L);
 		
@@ -262,7 +262,7 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId1, 6);
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
-		EntityChangeMove move = new EntityChangeMove(entity1.location(), 0L, -0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(entity1.location(), 0L, -0.4f, 0.0f);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);

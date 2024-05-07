@@ -9,7 +9,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -32,7 +32,7 @@ import com.jeffdisher.october.utils.Assert;
  * Together, these problems are solved by making the zVelocity a property of the Entity and manipulating it in this
  * change.
  */
-public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.MOVE;
 
@@ -75,13 +75,13 @@ public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 		return _getTimeMostMillis(xDistance, yDistance);
 	}
 
-	public static EntityChangeMove deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		EntityLocation oldLocation = CodecHelpers.readEntityLocation(buffer);
 		long millisBeforeMovement = buffer.getLong();
 		float xDistance = buffer.getFloat();
 		float yDistance = buffer.getFloat();
-		return new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
+		return new EntityChangeMove<>(oldLocation, millisBeforeMovement, xDistance, yDistance);
 	}
 
 	/**
@@ -92,7 +92,7 @@ public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 	 * @param longMillisInMotion How many milliseconds of motion to consider.
 	 * @return True if any motion change was applied, false if nothing changed or could change.
 	 */
-	public static boolean handleMotion(IMutablePlayerEntity newEntity
+	public static boolean handleMotion(IMutableMinimalEntity newEntity
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, long longMillisInMotion
 	)
@@ -125,7 +125,7 @@ public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
@@ -137,7 +137,7 @@ public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 			if (didApply)
 			{
 				// Do other state reset now that we are moving.
-				newEntity.setCurrentCraftingOperation(null);
+				newEntity.resetLongRunningOperations();
 			}
 		}
 		return didApply;
@@ -182,7 +182,7 @@ public class EntityChangeMove implements IMutationEntity<IMutablePlayerEntity>
 		return (long) (secondsFlat * 1000.0f);
 	}
 
-	private static boolean _handleMotion(IMutablePlayerEntity newEntity
+	private static boolean _handleMotion(IMutableMinimalEntity newEntity
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, long longMillisInMotion
 			, float xDistance

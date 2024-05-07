@@ -3,14 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
-import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -21,15 +16,15 @@ import com.jeffdisher.october.utils.Assert;
  * Note that the damage origin is passed in here and checked for range but that will likely be moved to the sender, in
  * the future.
  */
-public class EntityChangeTakeDamage implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeTakeDamage<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.TAKE_DAMAGE;
 
-	public static EntityChangeTakeDamage deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamage<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		byte damage = buffer.get();
-		return new EntityChangeTakeDamage(target, damage);
+		return new EntityChangeTakeDamage<>(target, damage);
 	}
 
 
@@ -53,7 +48,7 @@ public class EntityChangeTakeDamage implements IMutationEntity<IMutablePlayerEnt
 	}
 
 	@Override
-	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
+	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// We will move the respawn into the next tick so that they don't keep taking damage from within this tick.
 		boolean didApply = false;
@@ -106,16 +101,7 @@ public class EntityChangeTakeDamage implements IMutationEntity<IMutablePlayerEnt
 			else
 			{
 				// The entity is dead so "respawn" them by resetting fields and dropping inventory onto the ground.
-				EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), newEntity.getVolume());
-				MutableInventory mutableInventory = newEntity.accessMutableInventory();
-				for (Integer key : mutableInventory.freeze().sortedKeys())
-				{
-					Items stackable = mutableInventory.getStackForKey(key);
-					NonStackableItem nonStackable = mutableInventory.getNonStackableForKey(key);
-					Assert.assertTrue((null != stackable) != (null != nonStackable));
-					context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
-				}
-				newEntity.clearInventoryAndRespawn();
+				newEntity.handleEntityDeath((IMutationBlock mutation) -> context.mutationSink.next(mutation));
 			}
 			didApply = true;
 		}

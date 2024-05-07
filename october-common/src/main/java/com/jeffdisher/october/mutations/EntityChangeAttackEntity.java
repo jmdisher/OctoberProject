@@ -97,7 +97,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			// Choose the target body part at random - TODO:  Handle this random value differently.
 			int index = new Random().nextInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];
-			EntityChangeTakeDamage takeDamage = new EntityChangeTakeDamage(target, damageToApply);
+			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
 			context.newChangeSink.next(_targetEntityId, takeDamage);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.

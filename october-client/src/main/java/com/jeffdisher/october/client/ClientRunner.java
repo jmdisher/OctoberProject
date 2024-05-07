@@ -282,7 +282,7 @@ public class ClientRunner
 				long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
 				Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
 				
-				EntityChangeMove moveChange = new EntityChangeMove(oldLocation, millisBeforeMovement, xDistance, yDistance);
+				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(oldLocation, millisBeforeMovement, xDistance, yDistance);
 				_applyLocalChange(moveChange, currentTimeMillis);
 			}
 		}
