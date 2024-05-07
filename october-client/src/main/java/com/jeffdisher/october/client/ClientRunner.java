@@ -494,29 +494,33 @@ public class ClientRunner
 			_projectionListener.cuboidDidUnload(address);
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity entity)
 		{
-			if (_assignedEntityId == entity.id())
-			{
-				_localEntityProjection = entity;
-			}
-			_projectionListener.entityDidLoad(entity);
+			_localEntityProjection = entity;
+			_projectionListener.thisEntityDidLoad(entity);
 		}
 		@Override
-		public void entityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity entity)
 		{
-			if (_assignedEntityId == entity.id())
-			{
-				_localEntityProjection = entity;
-			}
-			_projectionListener.entityDidChange(entity);
+			_localEntityProjection = entity;
+			_projectionListener.thisEntityDidChange(entity);
 		}
 		@Override
-		public void entityDidUnload(int id)
+		public void otherEntityDidLoad(PartialEntity entity)
+		{
+			_projectionListener.otherEntityDidLoad(entity);
+		}
+		@Override
+		public void otherEntityDidChange(PartialEntity entity)
+		{
+			_projectionListener.otherEntityDidChange(entity);
+		}
+		@Override
+		public void otherEntityDidUnload(int id)
 		{
 			// Just make sure that this isn't us (since that can't happen).
 			Assert.assertTrue(_assignedEntityId != id);
-			_projectionListener.entityDidUnload(id);
+			_projectionListener.otherEntityDidUnload(id);
 		}
 	}
 

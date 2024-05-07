@@ -52,6 +52,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -88,7 +89,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -204,7 +205,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		Assert.assertEquals(0, listener.changeCount);
 		
 		// Create and add an empty cuboid.
@@ -284,7 +285,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -380,7 +381,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
@@ -471,7 +472,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		Assert.assertEquals(0, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		
@@ -578,17 +579,18 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId1));
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId2));
+		Assert.assertNotNull(listener.thisEntityState);
+		Assert.assertNotNull(listener.otherEntityStates.get(entityId2));
+		PartialEntity otherEntity = listener.otherEntityStates.get(entityId2);
 		
 		// Try to pass the items to the other entity.
 		EntityChangeSendItem send = new EntityChangeSendItem(entityId2, ENV.items.STONE);
 		long commit1 = projector.applyLocalChange(send, 1L);
 		
 		// Check the values.
-		Assert.assertEquals(0, listener.lastEntityStates.get(entityId1).inventory().sortedKeys().size());
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().sortedKeys().size());
-		Assert.assertEquals(2, listener.lastEntityStates.get(entityId2).inventory().getCount(ENV.items.STONE));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().sortedKeys().size());
+		// TODO:  This should be unchanged but the current internal types have too much detail.
+		Assert.assertTrue(otherEntity != listener.otherEntityStates.get(entityId2));
 		
 		// Commit this and make sure the values are still correct.
 		int speculativeCount = projector.applyChangesForServerTick(1L
@@ -615,9 +617,8 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		
-		Assert.assertEquals(0, listener.lastEntityStates.get(entityId1).inventory().sortedKeys().size());
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId2).inventory().sortedKeys().size());
-		Assert.assertEquals(2, listener.lastEntityStates.get(entityId2).inventory().getCount(ENV.items.STONE));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().sortedKeys().size());
+		Assert.assertTrue(otherEntity != listener.otherEntityStates.get(entityId2));
 	}
 
 	@Test
@@ -664,7 +665,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		// We should see no inventory in the block but the item should be in the entity's inventory.
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
+		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
@@ -683,7 +684,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
+		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
 		
 		// Commit the second part and make sure the change is still there.
 		currentTimeMillis += 100L;
@@ -702,7 +703,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.items.AIR.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
-		Assert.assertEquals(1, listener.lastEntityStates.get(entityId).inventory().getCount(STONE.item()));
+		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
 	}
 
 	@Test
@@ -722,11 +723,11 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Apply the 2 steps of the move, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation startLocation = listener.lastEntityStates.get(entityId).location();
+		EntityLocation startLocation = listener.thisEntityState.location();
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(startLocation, 0L, 0.4f, 0.0f);
@@ -737,7 +738,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2L, commit2);
 		
 		// We should see the entity moved to its speculative location.
-		Assert.assertEquals(lastStep, listener.lastEntityStates.get(entityId).location());
+		Assert.assertEquals(lastStep, listener.thisEntityState.location());
 		
 		// Now, absorb a change from the server where neither change is present but the first has been considered.
 		int speculativeCount = projector.applyChangesForServerTick(1L
@@ -753,7 +754,7 @@ public class TestSpeculativeProjection
 		
 		// We should now see 0 speculative commits and the entity should still be where it started.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(startLocation, listener.lastEntityStates.get(entityId).location());
+		Assert.assertEquals(startLocation, listener.thisEntityState.location());
 	}
 
 	@Test
@@ -774,7 +775,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Load some items into the inventory.
 		EntityChangeAcceptItems load = new EntityChangeAcceptItems(new Items(ENV.items.LOG, 2));
@@ -786,10 +787,10 @@ public class TestSpeculativeProjection
 		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		// Verify that we finished the craft (no longer in progress).
-		Assert.assertNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
-		Inventory inv = listener.lastEntityStates.get(entityId).inventory();
+		Inventory inv = listener.thisEntityState.inventory();
 		Assert.assertEquals(1, inv.getCount(ENV.items.LOG));
 		Assert.assertEquals(2, inv.getCount(ENV.items.PLANK));
 		
@@ -832,8 +833,8 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, listener.entityChangeCount);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
-		entity = listener.lastEntityStates.get(entityId);
+		Assert.assertNotNull(listener.thisEntityState);
+		entity = listener.thisEntityState;
 		Assert.assertEquals(stoneKey, entity.hotbarItems()[entity.hotbarIndex()]);
 		
 		// Do the craft and observe it takes multiple actions with no current activity.
@@ -841,19 +842,19 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(1, listener.entityChangeCount);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+		Assert.assertNotNull(listener.thisEntityState.localCraftOperation());
 		
 		craft = new EntityChangeCraft(stoneToStoneBrick, 1000L);
 		long commit2 = projector.applyLocalChange(craft, 1000L);
 		Assert.assertEquals(2L, commit2);
 		Assert.assertEquals(2, listener.entityChangeCount);
-		Assert.assertNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.localCraftOperation());
 		
 		// Check the inventory to see the craft completed.
-		Inventory inv = listener.lastEntityStates.get(entityId).inventory();
+		Inventory inv = listener.thisEntityState.inventory();
 		Assert.assertEquals(0, inv.getCount(ENV.items.STONE));
 		Assert.assertEquals(1, inv.getCount(ENV.items.STONE_BRICK));
-		entity = listener.lastEntityStates.get(entityId);
+		entity = listener.thisEntityState;
 		Assert.assertEquals(Entity.NO_SELECTION, entity.hotbarItems()[entity.hotbarIndex()]);
 	}
 
@@ -878,7 +879,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(0, _countBlocks(listener.lastData, ENV.items.STONE.number()));
@@ -918,7 +919,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(localEntityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Place the crafting table.
 		long currentTimeMillis = 1000L;
@@ -970,7 +971,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE_BRICK));
 		
-		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
+		Inventory entityInventory = listener.thisEntityState.inventory();
 		Assert.assertEquals(1, entityInventory.sortedKeys().size());
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.CRAFTING_TABLE));
 	}
@@ -997,7 +998,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(entityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Verify that this craft should be valid for the inventory.
 		Assert.assertTrue(CraftAspect.canApply(stoneBricksToFurnace, inventory));
@@ -1008,7 +1009,7 @@ public class TestSpeculativeProjection
 		// This should fail to apply.
 		Assert.assertEquals(0, commit);
 		// There should be no active operation.
-		Assert.assertNull(listener.lastEntityStates.get(entityId).localCraftOperation());
+		Assert.assertNull(listener.thisEntityState.localCraftOperation());
 	}
 
 	@Test
@@ -1035,7 +1036,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		Assert.assertEquals(0, listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(0, listener.thisEntityState.inventory().currentEncumbrance);
 		
 		// Issue the command to pick up the item.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
@@ -1043,7 +1044,7 @@ public class TestSpeculativeProjection
 		int countRequested = 1;
 		MutationEntityRequestItemPickUp request = new MutationEntityRequestItemPickUp(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY);
 		long commit1 = projector.applyLocalChange(request, currentTimeMillis);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
 		// Apply the commit from the server and show it still works.
@@ -1059,7 +1060,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
 		// Now, try to apply it again (this should fail since it won't be able to find the slot to validate the count).
@@ -1079,7 +1080,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
 		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(ENV.items.STONE, 1), null);
@@ -1095,7 +1096,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
 		currentTimeMillis += 100L;
@@ -1110,7 +1111,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculative);
-		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.lastEntityStates.get(localEntityId).inventory().currentEncumbrance);
+		Assert.assertEquals(ENV.encumbrance.getEncumbrance(ENV.items.STONE), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 	}
 
@@ -1139,7 +1140,7 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		Assert.assertNotNull(listener.lastEntityStates.get(localEntityId));
+		Assert.assertNotNull(listener.thisEntityState);
 		
 		// Place the furnace.
 		long currentTimeMillis = 1000L;
@@ -1186,7 +1187,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.STONE));
 		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.PLANK));
 		
-		Inventory entityInventory = listener.lastEntityStates.get(localEntityId).inventory();
+		Inventory entityInventory = listener.thisEntityState.inventory();
 		Assert.assertEquals(1, entityInventory.sortedKeys().size());
 		Assert.assertEquals(1, entityInventory.getCount(ENV.items.FURNACE));
 	}
@@ -1274,7 +1275,8 @@ public class TestSpeculativeProjection
 		public int unloadCount = 0;
 		public IReadOnlyCuboidData lastData = null;
 		public int entityChangeCount = 0;
-		public Map<Integer, Entity> lastEntityStates = new HashMap<>();
+		public Entity thisEntityState = null;
+		public Map<Integer, PartialEntity> otherEntityStates = new HashMap<>();
 		
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
@@ -1294,22 +1296,35 @@ public class TestSpeculativeProjection
 			this.unloadCount += 1;
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity entity)
 		{
-			Entity old = this.lastEntityStates.put(entity.id(), entity);
+			Assert.assertNull(this.thisEntityState);
+			this.thisEntityState = entity;
+		}
+		@Override
+		public void thisEntityDidChange(Entity entity)
+		{
+			Assert.assertNotNull(this.thisEntityState);
+			this.thisEntityState = entity;
+			this.entityChangeCount += 1;
+		}
+		@Override
+		public void otherEntityDidLoad(PartialEntity entity)
+		{
+			PartialEntity old = this.otherEntityStates.put(entity.id(), entity);
 			Assert.assertNull(old);
 		}
 		@Override
-		public void entityDidChange(Entity entity)
+		public void otherEntityDidChange(PartialEntity entity)
 		{
-			Entity old = this.lastEntityStates.put(entity.id(), entity);
+			PartialEntity old = this.otherEntityStates.put(entity.id(), entity);
 			Assert.assertNotNull(old);
 			this.entityChangeCount += 1;
 		}
 		@Override
-		public void entityDidUnload(int id)
+		public void otherEntityDidUnload(int id)
 		{
-			Entity old = this.lastEntityStates.remove(id);
+			PartialEntity old = this.otherEntityStates.remove(id);
 			Assert.assertNull(old);
 		}
 	}

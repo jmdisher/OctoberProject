@@ -32,6 +32,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -288,7 +289,14 @@ public class SpeculativeProjection
 		// Notify the listener of what changed.
 		for (Entity entity : addedEntities)
 		{
-			_listener.entityDidLoad(entity);
+			if (_localEntityId == entity.id())
+			{
+				_listener.thisEntityDidLoad(entity);
+			}
+			else
+			{
+				_listener.otherEntityDidLoad(PartialEntity.fromEntity(entity));
+			}
 		}
 		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
@@ -297,7 +305,9 @@ public class SpeculativeProjection
 		_notifyChanges(revertedCuboidAddresses, revertedEntityIds, modifiedCuboidAddresses, modifiedEntityIds);
 		for (Integer id : removedEntities)
 		{
-			_listener.entityDidUnload(id);
+			// We shouldn't see ourself unload.
+			Assert.assertTrue(_localEntityId != id);
+			_listener.otherEntityDidUnload(id);
 		}
 		for (CuboidAddress address : removedCuboids)
 		{
@@ -396,7 +406,14 @@ public class SpeculativeProjection
 		}
 		for (Entity entity : entitiesToReport.values())
 		{
-			_listener.entityDidChange(entity);
+			if (_localEntityId == entity.id())
+			{
+				_listener.thisEntityDidChange(entity);
+			}
+			else
+			{
+				_listener.otherEntityDidChange(PartialEntity.fromEntity(entity));
+			}
 		}
 	}
 
@@ -590,9 +607,12 @@ public class SpeculativeProjection
 		void cuboidDidChange(IReadOnlyCuboidData cuboid);
 		void cuboidDidUnload(CuboidAddress address);
 		
-		void entityDidLoad(Entity entity);
-		void entityDidChange(Entity entity);
-		void entityDidUnload(int id);
+		void thisEntityDidLoad(Entity entity);
+		void thisEntityDidChange(Entity entity);
+		
+		void otherEntityDidLoad(PartialEntity entity);
+		void otherEntityDidChange(PartialEntity entity);
+		void otherEntityDidUnload(int id);
 	}
 
 	private static record _SpeculativeWrapper(long commitLevel

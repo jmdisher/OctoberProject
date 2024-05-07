@@ -24,6 +24,7 @@ import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -185,7 +186,7 @@ public class TestProcesses
 		
 		client.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
-		Assert.assertNotNull(listener.entities.get("test".hashCode()));
+		Assert.assertNotNull(listener.getLocalEntity());
 		Assert.assertNotNull(listener.cuboids.get(cuboid.getCuboidAddress()));
 		
 		// We are done.
@@ -219,12 +220,12 @@ public class TestProcesses
 		
 		// Wait until both of the clients have observed both entities for the first time.
 		long serverTickNumber = server.waitForTicksToPass(1L);
-		while (2 != listener1.entities.size())
+		while (1 != listener1.otherEntities.size())
 		{
 			client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
-		while (2 != listener2.entities.size())
+		while (1 != listener2.otherEntities.size())
 		{
 			client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
@@ -232,7 +233,7 @@ public class TestProcesses
 		
 		// Both of these clients need to move and then we can verify that both sides can see the correct outcome.
 		// (we want this to be multiple steps, so we queue those up now)
-		EntityLocation startLocation = listener1.entities.get(clientId1).location();
+		EntityLocation startLocation = listener1.getLocalEntity().location();
 		EntityLocation location1 = startLocation;
 		EntityLocation location2 = startLocation;
 		for (int i = 0; i < 5; ++i)
@@ -269,15 +270,15 @@ public class TestProcesses
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
-		Assert.assertEquals(location1, listener1.entities.get(clientId1).location());
-		Assert.assertEquals(location1, listener2.entities.get(clientId1).location());
+		Assert.assertEquals(location1, listener1.getLocalEntity().location());
+		Assert.assertEquals(location1, listener2.otherEntities.get(clientId1).location());
 		
 		serverTickNumber = server.waitForTicksToPass(5L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
-		Assert.assertEquals(location2, listener1.entities.get(clientId2).location());
-		Assert.assertEquals(location2, listener2.entities.get(clientId2).location());
+		Assert.assertEquals(location2, listener1.otherEntities.get(clientId2).location());
+		Assert.assertEquals(location2, listener2.getLocalEntity().location());
 		
 		// We are done.
 		client1.disconnect();
@@ -289,12 +290,14 @@ public class TestProcesses
 	private static class _ClientListener implements ClientProcess.IListener
 	{
 		public final Map<CuboidAddress, IReadOnlyCuboidData> cuboids = new HashMap<>();
-		public final Map<Integer, Entity> entities = new HashMap<>();
+		private Entity _thisEntity = null;
+		public final Map<Integer, PartialEntity> otherEntities = new HashMap<>();
 		public int assignedEntityId;
 		
 		public Entity getLocalEntity()
 		{
-			return this.entities.get(this.assignedEntityId);
+			Assert.assertEquals(this.assignedEntityId, _thisEntity.id());
+			return _thisEntity;
 		}
 		
 		@Override
@@ -327,21 +330,33 @@ public class TestProcesses
 			Assert.assertNotNull(old);
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity entity)
 		{
-			Object old = this.entities.put(entity.id(), entity);
+			Assert.assertNull(_thisEntity);
+			_thisEntity = entity;
+		}
+		@Override
+		public void thisEntityDidChange(Entity entity)
+		{
+			Assert.assertNotNull(_thisEntity);
+			_thisEntity = entity;
+		}
+		@Override
+		public void otherEntityDidLoad(PartialEntity entity)
+		{
+			Object old = this.otherEntities.put(entity.id(), entity);
 			Assert.assertNull(old);
 		}
 		@Override
-		public void entityDidChange(Entity entity)
+		public void otherEntityDidChange(PartialEntity entity)
 		{
-			Object old = this.entities.put(entity.id(), entity);
+			Object old = this.otherEntities.put(entity.id(), entity);
 			Assert.assertNotNull(old);
 		}
 		@Override
-		public void entityDidUnload(int id)
+		public void otherEntityDidUnload(int id)
 		{
-			Object old = this.entities.remove(id);
+			Object old = this.otherEntities.remove(id);
 			Assert.assertNotNull(old);
 		}
 	}

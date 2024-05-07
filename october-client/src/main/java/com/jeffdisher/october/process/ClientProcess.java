@@ -30,6 +30,7 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -456,24 +457,38 @@ public class ClientProcess
 			});
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity entity)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.entityDidLoad(entity);
+				_listener.thisEntityDidLoad(entity);
 			});
 		}
 		@Override
-		public void entityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity entity)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.entityDidChange(entity);
+				_listener.thisEntityDidChange(entity);
 			});
 		}
 		@Override
-		public void entityDidUnload(int id)
+		public void otherEntityDidLoad(PartialEntity entity)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.entityDidUnload(id);
+				_listener.otherEntityDidLoad(entity);
+			});
+		}
+		@Override
+		public void otherEntityDidChange(PartialEntity entity)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.otherEntityDidChange(entity);
+			});
+		}
+		@Override
+		public void otherEntityDidUnload(int id)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.otherEntityDidUnload(id);
 			});
 		}
 	}
@@ -526,8 +541,11 @@ public class ClientProcess
 		void cuboidDidChange(IReadOnlyCuboidData cuboid);
 		void cuboidDidUnload(CuboidAddress address);
 		
-		void entityDidLoad(Entity entity);
-		void entityDidChange(Entity entity);
-		void entityDidUnload(int id);
+		void thisEntityDidLoad(Entity entity);
+		void thisEntityDidChange(Entity entity);
+		
+		void otherEntityDidLoad(PartialEntity entity);
+		void otherEntityDidChange(PartialEntity entity);
+		void otherEntityDidUnload(int id);
 	}
 }

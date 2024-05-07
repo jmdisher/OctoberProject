@@ -71,7 +71,7 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
-		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
+		Assert.assertEquals(clientId, projection.thisEntity.id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
@@ -105,8 +105,8 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
-		Assert.assertEquals(clientId, projection.loadedEnties.get(clientId).id());
-		Assert.assertEquals(2, projection.loadedEnties.get(2).id());
+		Assert.assertEquals(clientId, projection.thisEntity.id());
+		Assert.assertEquals(2, projection.otherEnties.get(2).id());
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
@@ -220,14 +220,14 @@ public class TestClientRunner
 		currentTimeMillis += 500L;
 		runner.craft(ENV.crafting.getCraftById("op.log_to_planks"), currentTimeMillis);
 		// Verify that we now see this in the entity.
-		Assert.assertNotNull(projection.loadedEnties.get(clientId).localCraftOperation());
+		Assert.assertNotNull(projection.thisEntity.localCraftOperation());
 		
 		currentTimeMillis += 100L;
 		runner.moveHorizontal(0.2f, 0.0f, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
-		Assert.assertNull(projection.loadedEnties.get(clientId).localCraftOperation());
-		Assert.assertEquals(2, projection.loadedEnties.get(clientId).inventory().getCount(ENV.items.LOG));
-		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), projection.loadedEnties.get(clientId).location());
+		Assert.assertNull(projection.thisEntity.localCraftOperation());
+		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(ENV.items.LOG));
+		Assert.assertEquals(new EntityLocation(0.2f, 0.0f, 0.0f), projection.thisEntity.location());
 	}
 
 	@Test
@@ -264,7 +264,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// See where they are - we expect them to have jumped slightly, despite hitting the wall.
-		EntityLocation location = projection.loadedEnties.get(clientId).location();
+		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(0.0f, location.x(), 0.001f);
 		Assert.assertEquals(0.0f, location.y(), 0.001f);
 		Assert.assertEquals(0.392f, location.z(), 0.001f);
@@ -304,7 +304,7 @@ public class TestClientRunner
 		}
 		
 		// We should no be standing on the floor.
-		EntityLocation location = projection.loadedEnties.get(clientId).location();
+		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), location);
 		
 		// Make sure we won't send another action.
@@ -389,7 +389,8 @@ public class TestClientRunner
 
 	private static class TestProjection implements SpeculativeProjection.IProjectionListener
 	{
-		public Map<Integer, Entity> loadedEnties = new HashMap<>();
+		public Entity thisEntity = null;
+		public Map<Integer, PartialEntity> otherEnties = new HashMap<>();
 		public int allEntityChangeCount = 0;
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
 		@Override
@@ -411,25 +412,42 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void entityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity entity)
 		{
 			int id = entity.id();
-			Assert.assertFalse(this.loadedEnties.containsKey(id));
-			this.loadedEnties.put(id, entity);
+			Assert.assertFalse(this.otherEnties.containsKey(id));
+			Assert.assertNull(this.thisEntity);
+			this.thisEntity = entity;
 		}
 		@Override
-		public void entityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity entity)
 		{
 			int id = entity.id();
-			Assert.assertTrue(this.loadedEnties.containsKey(id));
-			this.loadedEnties.put(id, entity);
+			Assert.assertFalse(this.otherEnties.containsKey(id));
+			Assert.assertNotNull(this.thisEntity);
+			this.thisEntity = entity;
 			this.allEntityChangeCount += 1;
 		}
 		@Override
-		public void entityDidUnload(int id)
+		public void otherEntityDidLoad(PartialEntity entity)
 		{
-			Assert.assertTrue(this.loadedEnties.containsKey(id));
-			this.loadedEnties.remove(id);
+			int id = entity.id();
+			Assert.assertFalse(this.otherEnties.containsKey(id));
+			this.otherEnties.put(id, entity);
+		}
+		@Override
+		public void otherEntityDidChange(PartialEntity entity)
+		{
+			int id = entity.id();
+			Assert.assertTrue(this.otherEnties.containsKey(id));
+			this.otherEnties.put(id, entity);
+			this.allEntityChangeCount += 1;
+		}
+		@Override
+		public void otherEntityDidUnload(int id)
+		{
+			Assert.assertTrue(this.otherEnties.containsKey(id));
+			this.otherEnties.remove(id);
 		}
 		public BlockProxy readBlock(AbsoluteLocation block)
 		{
