@@ -27,4 +27,18 @@ public record MinimalEntity(int id
 		}
 		return result;
 	}
+
+	public static MinimalEntity fromPartialEntity(PartialEntity entity)
+	{
+		MinimalEntity result = null;
+		if (null != entity)
+		{
+			result = new MinimalEntity(entity.id()
+					, entity.location()
+					, entity.zVelocityPerSecond()
+					, entity.volume()
+			);
+		}
+		return result;
+	}
 }

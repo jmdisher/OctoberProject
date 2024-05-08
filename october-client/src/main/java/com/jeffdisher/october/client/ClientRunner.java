@@ -413,15 +413,9 @@ public class ClientRunner
 		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded)
 		{
 			// Package up copies of everything we put together here and reset out network-side buffers.
-			// Note that we put all the entities together since the client just plumb this into the
-			// SpeculativeProjection, which generalizes them into CrowdProcessor.
-			List<Entity> addedEntities = new ArrayList<>();
-			if (null != _thisEntity)
-			{
-				addedEntities.add(_thisEntity);
-				_thisEntity = null;
-			}
-			addedEntities.addAll(_addedEntities.stream().map((PartialEntity partial) -> Entity.fromPartial(partial)).toList());
+			Entity thisEntity = _thisEntity;
+			_thisEntity = null;
+			List<PartialEntity> addedEntities = new ArrayList<>(_addedEntities);
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
@@ -442,6 +436,10 @@ public class ClientRunner
 				}
 				
 				// Apply the changes from the server.
+				if (null != thisEntity)
+				{
+					_projection.setThisEntity(thisEntity);
+				}
 				_projection.applyChangesForServerTick(tickNumber
 						, addedEntities
 						, addedCuboids

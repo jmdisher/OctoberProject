@@ -67,8 +67,9 @@ public class SpeculativeProjection
 	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
 	
+	private Entity _thisShadowEntity;
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
-	private final Map<Integer, Entity> _shadowCrowd;
+	private final Map<Integer, PartialEntity> _shadowCrowd;
 	
 	// Note that we don't keep a projection of the crowd since we never apply speculative operations to them.
 	// So, we keep a projected version of the local entity and just fall-back to the shadow data for any read-only operations.
@@ -113,6 +114,19 @@ public class SpeculativeProjection
 	}
 
 	/**
+	 * Sets the local entity.  Note that this can only be called once and must be called before the first end of tick is
+	 * delivered.
+	 * 
+	 * @param thisEntity The initial state to use for the local entity.
+	 */
+	public void setThisEntity(Entity thisEntity)
+	{
+		// This can only be set once.
+		Assert.assertTrue(null == _thisShadowEntity);
+		_thisShadowEntity = thisEntity;
+	}
+
+	/**
 	 * This method is called when an update from a game tick comes in from the server.  It is responsible for using
 	 * these updates to change the local shadow copy of the server state, then rebuilding the local projected state
 	 * based on this shadow state plus any remaining speculative changes which weren't pruned as a result of being
@@ -131,7 +145,7 @@ public class SpeculativeProjection
 	 */
 	public int applyChangesForServerTick(long gameTick
 			
-			, List<Entity> addedEntities
+			, List<PartialEntity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
 			, Map<Integer, List<IEntityUpdate>> entityUpdates
@@ -144,8 +158,11 @@ public class SpeculativeProjection
 			, long currentTimeMillis
 	)
 	{
+		// We assume that we must have been told about ourselves before this first tick.
+		Assert.assertTrue(null != _thisShadowEntity);
+		
 		// Before applying the updates, add the new data.
-		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((Entity entity) -> entity.id(), (Entity entity) -> entity)));
+		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((PartialEntity entity) -> entity.id(), (PartialEntity entity) -> entity)));
 		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
@@ -157,28 +174,52 @@ public class SpeculativeProjection
 		CommonChangeSink newChangeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
-				, (Integer entityId) -> MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
+				, (Integer entityId) -> (_localEntityId == entityId)
+					? MinimalEntity.fromEntity(_thisShadowEntity)
+					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
 				, newMutationSink
 				, newChangeSink
 		);
 		
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
-		Map<Integer, Entity> entitiesChangedInTick = new HashMap<>();
+		Entity updatedShadowEntity = null;
+		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
 		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
 		{
 			int entityId = elt.getKey();
-			Entity entityToChange = _shadowCrowd.get(entityId);
-			// These must already exist if they are being updated.
-			Assert.assertTrue(null != entityToChange);
-			MutableEntity mutable = MutableEntity.existing(entityToChange);
-			for (IEntityUpdate update : elt.getValue())
+			// TODO:  Remove these special-cases once IEntityUpdate is split for partial and complete entities.
+			if (_localEntityId == entityId)
 			{
-				update.applyToEntity(context, mutable);
+				Entity entityToChange = _thisShadowEntity;
+				// These must already exist if they are being updated.
+				Assert.assertTrue(null != entityToChange);
+				MutableEntity mutable = MutableEntity.existing(entityToChange);
+				for (IEntityUpdate update : elt.getValue())
+				{
+					update.applyToEntity(context, mutable);
+				}
+				Entity frozen = mutable.freeze();
+				if (entityToChange != frozen)
+				{
+					updatedShadowEntity = frozen;
+				}
 			}
-			Entity frozen = mutable.freeze();
-			if (entityToChange != frozen)
+			else
 			{
-				entitiesChangedInTick.put(entityId, frozen);
+				PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
+				// These must already exist if they are being updated.
+				Assert.assertTrue(null != partialEntityToChange);
+				Entity entityToChange = Entity.fromPartial(partialEntityToChange);
+				MutableEntity mutable = MutableEntity.existing(entityToChange);
+				for (IEntityUpdate update : elt.getValue())
+				{
+					update.applyToEntity(context, mutable);
+				}
+				Entity frozen = mutable.freeze();
+				if (entityToChange != frozen)
+				{
+					entitiesChangedInTick.put(entityId, PartialEntity.fromEntity(frozen));
+				}
 			}
 		}
 
@@ -203,6 +244,10 @@ public class SpeculativeProjection
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
+		if (null != updatedShadowEntity)
+		{
+			_thisShadowEntity = updatedShadowEntity;
+		}
 		_shadowCrowd.putAll(entitiesChangedInTick);
 		_shadowWorld.putAll(fragment.stateFragment());
 		
@@ -224,9 +269,10 @@ public class SpeculativeProjection
 		}
 		
 		// Rebuild our projection from these collections.
+		boolean isFirstRun = (null == _projectedLocalEntity);
 		_projectedWorld = new HashMap<>(_shadowWorld);
 		Entity previousLocalEntity = _projectedLocalEntity;
-		_projectedLocalEntity = _shadowCrowd.get(_localEntityId);
+		_projectedLocalEntity = _thisShadowEntity;
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -278,16 +324,15 @@ public class SpeculativeProjection
 		}
 		
 		// Notify the listener of was added.
-		for (Entity entity : addedEntities)
+		if (isFirstRun)
 		{
-			if (_localEntityId == entity.id())
-			{
-				_listener.thisEntityDidLoad(entity);
-			}
-			else
-			{
-				_listener.otherEntityDidLoad(PartialEntity.fromEntity(entity));
-			}
+			_listener.thisEntityDidLoad(_projectedLocalEntity);
+			// We won't say that this changed.
+			updatedShadowEntity = null;
+		}
+		for (PartialEntity entity : addedEntities)
+		{
+			_listener.otherEntityDidLoad(entity);
 		}
 		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
@@ -386,7 +431,7 @@ public class SpeculativeProjection
 		}
 		for (Integer entityId : otherEntityIds)
 		{
-			_listener.otherEntityDidChange(PartialEntity.fromEntity(_shadowCrowd.get(entityId)));
+			_listener.otherEntityDidChange(_shadowCrowd.get(entityId));
 		}
 	}
 
@@ -405,7 +450,7 @@ public class SpeculativeProjection
 				, cachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_projectedLocalEntity)
-					: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
+					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
 				, newMutationSink
 				, newChangeSink
 		);
@@ -433,7 +478,7 @@ public class SpeculativeProjection
 					, innerCachingLoader
 					, (Integer entityId) -> (_localEntityId == entityId)
 						? MinimalEntity.fromEntity(_projectedLocalEntity)
-						: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
+						: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
 					, innerNewMutationSink
 					, innerNewChangeSink
 			);
@@ -485,7 +530,7 @@ public class SpeculativeProjection
 				, innerCachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_projectedLocalEntity)
-					: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
+					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
 				, innerNewMutationSink
 				, innerNewChangeSink
 		);
