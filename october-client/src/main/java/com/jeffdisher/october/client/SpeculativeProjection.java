@@ -70,8 +70,10 @@ public class SpeculativeProjection
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
 	private final Map<Integer, Entity> _shadowCrowd;
 	
+	// Note that we don't keep a projection of the crowd since we never apply speculative operations to them.
+	// So, we keep a projected version of the local entity and just fall-back to the shadow data for any read-only operations.
+	private Entity _projectedLocalEntity;
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
-	private Map<Integer, Entity> _projectedCrowd;
 	public final Function<AbsoluteLocation, BlockProxy> projectionBlockLoader;
 	
 	private final List<_SpeculativeWrapper> _speculativeChanges;
@@ -96,7 +98,6 @@ public class SpeculativeProjection
 		_shadowCrowd = new HashMap<>();
 		
 		_projectedWorld = new HashMap<>();
-		_projectedCrowd = new HashMap<>();
 		this.projectionBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			IReadOnlyCuboidData cuboid = _projectedWorld.get(address);
@@ -211,16 +212,6 @@ public class SpeculativeProjection
 		
 		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (and we will add to this as we apply our local updates.
 		// Note that these are all immutable so instance comparison is sufficient.
-		Set<Integer> revertedEntityIds = new HashSet<>();
-		for (Map.Entry<Integer, Entity> elt : _shadowCrowd.entrySet())
-		{
-			Integer key = elt.getKey();
-			Entity projectedEntity = _projectedCrowd.get(key);
-			if ((null != projectedEntity) && (projectedEntity != elt.getValue()))
-			{
-				revertedEntityIds.add(key);
-			}
-		}
 		Set<CuboidAddress> revertedCuboidAddresses = new HashSet<>();
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : _shadowWorld.entrySet())
 		{
@@ -233,8 +224,9 @@ public class SpeculativeProjection
 		}
 		
 		// Rebuild our projection from these collections.
-		_projectedCrowd = new HashMap<>(_shadowCrowd);
 		_projectedWorld = new HashMap<>(_shadowWorld);
+		Entity previousLocalEntity = _projectedLocalEntity;
+		_projectedLocalEntity = _shadowCrowd.get(_localEntityId);
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -243,7 +235,6 @@ public class SpeculativeProjection
 		}
 		
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
-		Set<Integer> modifiedEntityIds = new HashSet<>();
 		List<_SpeculativeWrapper> previous = new ArrayList<>(_speculativeChanges);
 		_speculativeChanges.clear();
 		for (_SpeculativeWrapper wrapper : previous)
@@ -251,7 +242,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, wrapper.change, wrapper.commitLevel);
+				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, wrapper.change, wrapper.commitLevel);
 				// If this was applied, re-add the new wrapper.
 				if (null != appliedWrapper)
 				{
@@ -283,10 +274,10 @@ public class SpeculativeProjection
 		for (int i = 0; i < _followUpTicks.size(); ++i)
 		{
 			_SpeculativeConsequences followUp = _followUpTicks.get(i);
-			_applyFollowUp(modifiedCuboidAddresses, modifiedEntityIds, followUp);
+			_applyFollowUp(modifiedCuboidAddresses, followUp);
 		}
 		
-		// Notify the listener of what changed.
+		// Notify the listener of was added.
 		for (Entity entity : addedEntities)
 		{
 			if (_localEntityId == entity.id())
@@ -302,7 +293,14 @@ public class SpeculativeProjection
 		{
 			_listener.cuboidDidLoad(cuboid);
 		}
-		_notifyChanges(revertedCuboidAddresses, revertedEntityIds, modifiedCuboidAddresses, modifiedEntityIds);
+		
+		// Use the common path to describe what was changed.
+		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
+		Set<Integer> otherEntitiesChanges = new HashSet<>(entitiesChangedInTick.keySet());
+		otherEntitiesChanges.remove(_localEntityId);
+		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, changedLocalEntity, otherEntitiesChanges);
+		
+		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
 		{
 			// We shouldn't see ourself unload.
@@ -334,11 +332,11 @@ public class SpeculativeProjection
 		_nextLocalCommitNumber += 1;
 		
 		// Create the tracking for modifications.
-		Set<Integer> modifiedEntityIds = new HashSet<>();
+		Entity previousLocalEntity = _projectedLocalEntity;
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
 		// Attempt to apply the change.
-		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, modifiedEntityIds, change, commitNumber);
+		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, change, commitNumber);
 		if (null != appliedWrapper)
 		{
 			_speculativeChanges.add(appliedWrapper);
@@ -351,12 +349,13 @@ public class SpeculativeProjection
 		}
 		
 		// Notify the listener of what changed.
-		_notifyChanges(null, null, modifiedCuboidAddresses, modifiedEntityIds);
+		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
+		_notifyChanges(Set.of(), modifiedCuboidAddresses, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
 
-	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<Integer> revertedEntityIds, Set<CuboidAddress> changedCuboidAddresses, Set<Integer> entityIds)
+	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<CuboidAddress> changedCuboidAddresses, Entity updatedLocalEntity, Set<Integer> otherEntityIds)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		for (CuboidAddress address : changedCuboidAddresses)
@@ -369,87 +368,58 @@ public class SpeculativeProjection
 				cuboidsToReport.put(address, activeVersion);
 			}
 		}
-		if (null != revertedCuboidAddresses)
+		// Reverted addresses are reported all the time, though.
+		for (CuboidAddress address : revertedCuboidAddresses)
 		{
-			// Reverted addresses are reported all the time, though.
-			for (CuboidAddress address : revertedCuboidAddresses)
+			if (!cuboidsToReport.containsKey(address))
 			{
-				if (!cuboidsToReport.containsKey(address))
-				{
-					cuboidsToReport.put(address, _projectedWorld.get(address));
-				}
+				cuboidsToReport.put(address, _projectedWorld.get(address));
 			}
 		}
-		Map<Integer, Entity> entitiesToReport = new HashMap<>();
-		for (Integer entityId : entityIds)
-		{
-			Entity activeVersion = _projectedCrowd.get(entityId);
-			if (activeVersion != _shadowCrowd.get(entityId))
-			{
-				entitiesToReport.put(entityId, activeVersion);
-			}
-		}
-		if (null != revertedEntityIds)
-		{
-			for (Integer entityId : revertedEntityIds)
-			{
-				if (!entitiesToReport.containsKey(entityId))
-				{
-					entitiesToReport.put(entityId, _projectedCrowd.get(entityId));
-				}
-			}
-		}
-		
 		for (IReadOnlyCuboidData data : cuboidsToReport.values())
 		{
 			_listener.cuboidDidChange(data);
 		}
-		for (Entity entity : entitiesToReport.values())
+		if (null != updatedLocalEntity)
 		{
-			if (_localEntityId == entity.id())
-			{
-				_listener.thisEntityDidChange(entity);
-			}
-			else
-			{
-				_listener.otherEntityDidChange(PartialEntity.fromEntity(entity));
-			}
+			_listener.thisEntityDidChange(updatedLocalEntity);
+		}
+		for (Integer entityId : otherEntityIds)
+		{
+			_listener.otherEntityDidChange(PartialEntity.fromEntity(_shadowCrowd.get(entityId)));
 		}
 	}
 
-	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, IMutationEntity<IMutablePlayerEntity> change, long commitNumber)
+	// Note that we populate modifiedCuboids with cuboids changed by this change but only the local entity could change (others are all read-only).
+	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, IMutationEntity<IMutablePlayerEntity> change, long commitNumber)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
-		long ignoredMillisBetweenTicks = 0L;
 		
 		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
-				, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+				, (Integer entityId) -> (_localEntityId == entityId)
+					? MinimalEntity.fromEntity(_projectedLocalEntity)
+					: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
 				, newMutationSink
 				, newChangeSink
 		);
 		
-		List<ScheduledChange> queue = new LinkedList<>();
-		queue.add(new ScheduledChange(change, 0L));
-		Map<Integer, List<ScheduledChange>> changesToRun = Map.of(_localEntityId, queue);
-		CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
-				, _projectedCrowd
-				, context
-				, ignoredMillisBetweenTicks
-				, changesToRun
-		);
-		_projectedCrowd.putAll(group.groupFragment());
+		Entity[] changedProjectedEntity = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, List.of(change));
+		boolean changeDidPass = (null != changedProjectedEntity);
+		if ((null != changedProjectedEntity) && (null != changedProjectedEntity[0]))
+		{
+			_projectedLocalEntity = changedProjectedEntity[0];
+		}
 		Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> exportedChanges = _onlyImmediateChanges(newChangeSink.takeExportedChanges());
 		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(newMutationSink.takeExportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
-		Set<Integer> locallyModifiedIds = new HashSet<>(group.updatedEntities().keySet());
 		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
 		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty()); ++i)
 		{
@@ -461,23 +431,24 @@ public class SpeculativeProjection
 			CommonChangeSink innerNewChangeSink = new CommonChangeSink();
 			TickProcessingContext innerContext = new TickProcessingContext(gameTick
 					, innerCachingLoader
-					, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+					, (Integer entityId) -> (_localEntityId == entityId)
+						? MinimalEntity.fromEntity(_projectedLocalEntity)
+						: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
 					, innerNewMutationSink
 					, innerNewChangeSink
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
 			_applyFollowUpBlockMutations(innerContext, modifiedCuboids, exportedMutations);
-			_applyFollowUpEntityMutations(innerContext, locallyModifiedIds, exportedChanges);
+			_applyFollowUpEntityMutations(innerContext, exportedChanges);
 			
 			// Coalesce the results of these.
 			exportedChanges = new HashMap<>(_onlyImmediateChanges(innerNewChangeSink.takeExportedChanges()));
 			exportedMutations = new ArrayList<>(_onlyImmediateMutations(innerNewMutationSink.takeExportedMutations()));
 		}
-		modifiedEntityIds.addAll(locallyModifiedIds);
 		
-		// Since we only provided a single mutation, we will assume it applied if we see 1 commit count.
-		return (1 == group.committedMutationCount())
+		// Since we only provided a since entity change, return success if it passed.
+		return changeDidPass
 				? new _SpeculativeWrapper(commitNumber, change, followUpTicks)
 				: null
 		;
@@ -504,7 +475,7 @@ public class SpeculativeProjection
 		return mutationsToRun;
 	}
 
-	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, Set<Integer> modifiedEntityIds, _SpeculativeConsequences followUp)
+	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, _SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
 		BasicBlockProxyCache innerCachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
@@ -512,14 +483,16 @@ public class SpeculativeProjection
 		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
 		TickProcessingContext innerContext = new TickProcessingContext(gameTick
 				, innerCachingLoader
-				, (Integer entityId) -> MinimalEntity.fromEntity(_projectedCrowd.get(entityId))
+				, (Integer entityId) -> (_localEntityId == entityId)
+					? MinimalEntity.fromEntity(_projectedLocalEntity)
+					: MinimalEntity.fromEntity(_shadowCrowd.get(entityId))
 				, innerNewMutationSink
 				, innerNewChangeSink
 		);
 		
 		// We ignore the results of these.
 		_applyFollowUpBlockMutations(innerContext, modifiedCuboids, followUp.exportedMutations);
-		_applyFollowUpEntityMutations(innerContext, modifiedEntityIds, followUp.exportedChanges);
+		_applyFollowUpEntityMutations(innerContext, followUp.exportedChanges);
 	}
 
 	private void _applyFollowUpBlockMutations(TickProcessingContext context, Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
@@ -545,19 +518,17 @@ public class SpeculativeProjection
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 	}
 
-	private void _applyFollowUpEntityMutations(TickProcessingContext context, Set<Integer> modifiedEntityIds, Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> entityMutations)
+	private void _applyFollowUpEntityMutations(TickProcessingContext context, Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> entityMutations)
 	{
-		// The time between ticks doesn't matter when replaying from server.
-		long ignoredMillisBetweenTicks = 0L;
-		
-		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
-				, _projectedCrowd
-				, context
-				, ignoredMillisBetweenTicks
-				, _wrapInScheduled(entityMutations)
-		);
-		_projectedCrowd.putAll(innerGroup.groupFragment());
-		modifiedEntityIds.addAll(innerGroup.updatedEntities().keySet());
+		List<IMutationEntity<IMutablePlayerEntity>> thisEntityMutations = entityMutations.get(_localEntityId);
+		if (null != thisEntityMutations)
+		{
+			Entity[] result = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, thisEntityMutations);
+			if ((null != result) && (null != result[0]))
+			{
+				_projectedLocalEntity = result[0];
+			}
+		}
 	}
 
 	private Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)
@@ -587,17 +558,29 @@ public class SpeculativeProjection
 		).toList();
 	}
 
-	private Map<Integer, List<ScheduledChange>> _wrapInScheduled(Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> changes)
+	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IMutationEntity<IMutablePlayerEntity>> entityMutations)
 	{
-		Map<Integer, List<ScheduledChange>> result = new HashMap<>();
-		for (Map.Entry<Integer, List<IMutationEntity<IMutablePlayerEntity>>> elt : changes.entrySet())
-		{
-			List<ScheduledChange> list = elt.getValue().stream().map(
-					(IMutationEntity<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
-			).toList();
-			result.put(elt.getKey(), list);
-		}
-		return result;
+		// The time between ticks doesn't matter when replaying from server.
+		long ignoredMillisBetweenTicks = 0L;
+		
+		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
+		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
+				, (null != entity) ? Map.of(entityId, entity) : Map.of()
+				, context
+				, ignoredMillisBetweenTicks
+				, Map.of(entityId, scheduled)
+		);
+		return (innerGroup.committedMutationCount() > 0)
+				? new Entity[] { innerGroup.updatedEntities().get(entityId) }
+				: null
+		;
+	}
+
+	private static List<ScheduledChange> _scheduledChangeList(List<IMutationEntity<IMutablePlayerEntity>> changes)
+	{
+		return changes.stream().map(
+				(IMutationEntity<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
+		).toList();
 	}
 
 

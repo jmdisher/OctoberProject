@@ -589,8 +589,8 @@ public class TestSpeculativeProjection
 		
 		// Check the values.
 		Assert.assertEquals(0, listener.thisEntityState.inventory().sortedKeys().size());
-		// TODO:  This should be unchanged but the current internal types have too much detail.
-		Assert.assertTrue(otherEntity != listener.otherEntityStates.get(entityId2));
+		// Speculative projection no longer runs follow-up changes on entities, only cuboids, so this should be unchanged, even though we reference it.
+		Assert.assertTrue(otherEntity == listener.otherEntityStates.get(entityId2));
 		
 		// Commit this and make sure the values are still correct.
 		int speculativeCount = projector.applyChangesForServerTick(1L
