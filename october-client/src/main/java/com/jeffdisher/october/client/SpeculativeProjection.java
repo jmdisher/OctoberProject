@@ -33,6 +33,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -210,16 +211,15 @@ public class SpeculativeProjection
 			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
 			// These must already exist if they are being updated.
 			Assert.assertTrue(null != partialEntityToChange);
-			Entity entityToChange = Entity.fromPartial(partialEntityToChange);
-			MutableEntity mutable = MutableEntity.existing(entityToChange);
+			MutablePartialEntity mutable = MutablePartialEntity.existing(partialEntityToChange);
 			for (IPartialEntityUpdate update : elt.getValue())
 			{
 				update.applyToEntity(context, mutable);
 			}
-			Entity frozen = mutable.freeze();
-			if (entityToChange != frozen)
+			PartialEntity frozen = mutable.freeze();
+			if (partialEntityToChange != frozen)
 			{
-				entitiesChangedInTick.put(entityId, PartialEntity.fromEntity(frozen));
+				entitiesChangedInTick.put(entityId, frozen);
 			}
 		}
 

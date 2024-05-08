@@ -68,6 +68,20 @@ public class TestMutableEntity
 		Assert.assertTrue(input == output);
 	}
 
+	// Technically, this is a MutablePartialEntity test, but it is the only one worth having so we leave it here with related tests.
+	@Test
+	public void partialEntity_revertedChange()
+	{
+		EntityLocation location0 = new EntityLocation(0.0f, 0.0f, 0.0f);
+		PartialEntity input = new PartialEntity(1, location0, 0.0f, new EntityVolume(1.0f, 2.0f));
+		MutablePartialEntity mutable = MutablePartialEntity.existing(input);
+		mutable.newLocation = new EntityLocation(1.0f, 0.0f, 0.0f);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		PartialEntity output = mutable.freeze();
+		
+		Assert.assertTrue(input == output);
+	}
+
 
 	private static Entity _buildTestEntity()
 	{

@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -30,7 +30,7 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 	}
 
 	@Override
-	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
+	public void applyToEntity(TickProcessingContext context, MutablePartialEntity newEntity)
 	{
 		newEntity.newLocation = _entity.location();
 		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
