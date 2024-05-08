@@ -15,6 +15,7 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
@@ -339,7 +340,8 @@ public class ClientRunner
 		private List<PartialEntity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private Map<Integer, List<IEntityUpdate>> _entityUpdates = new HashMap<>();
+		private List<IEntityUpdate> _entityUpdates = new ArrayList<>();
+		private Map<Integer, List<IPartialEntityUpdate>> _partialEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
 		private List<Integer> _removedEntities = new ArrayList<>();
@@ -396,11 +398,18 @@ public class ClientRunner
 		@Override
 		public void receivedEntityUpdate(int entityId, IEntityUpdate update)
 		{
-			List<IEntityUpdate> oneQueue = _entityUpdates.get(entityId);
+			// Currently (and probably forever), the only full entity on the client is the user, themselves.
+			Assert.assertTrue(_assignedEntityId == entityId);
+			_entityUpdates.add(update);
+		}
+		@Override
+		public void receivedPartialEntityUpdate(int entityId, IPartialEntityUpdate update)
+		{
+			List<IPartialEntityUpdate> oneQueue = _partialEntityUpdates.get(entityId);
 			if (null == oneQueue)
 			{
 				oneQueue = new LinkedList<>();
-				_entityUpdates.put(entityId, oneQueue);
+				_partialEntityUpdates.put(entityId, oneQueue);
 			}
 			oneQueue.add(update);
 		}
@@ -419,8 +428,10 @@ public class ClientRunner
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			Map<Integer, List<IEntityUpdate>> entityChanges = new HashMap<>(_entityUpdates);
+			List<IEntityUpdate> entityChanges = new ArrayList<>(_entityUpdates);
 			_entityUpdates.clear();
+			Map<Integer, List<IPartialEntityUpdate>> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
+			_partialEntityUpdates.clear();
 			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
 			_cuboidUpdates.clear();
 			List<Integer> removedEntities = new ArrayList<>(_removedEntities);
@@ -444,6 +455,7 @@ public class ClientRunner
 						, addedEntities
 						, addedCuboids
 						, entityChanges
+						, partialEntityChanges
 						, cuboidUpdates
 						, removedEntities
 						, removedCuboids

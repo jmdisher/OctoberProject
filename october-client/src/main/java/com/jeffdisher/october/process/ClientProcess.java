@@ -22,6 +22,7 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
@@ -380,6 +381,11 @@ public class ClientProcess
 			{
 				Packet_EntityUpdateFromServer safe = (Packet_EntityUpdateFromServer) packet;
 				_messagesToClientRunner.receivedEntityUpdate(safe.entityId, safe.update);
+			}
+			else if (packet instanceof Packet_PartialEntityUpdateFromServer)
+			{
+				Packet_PartialEntityUpdateFromServer safe = (Packet_PartialEntityUpdateFromServer) packet;
+				_messagesToClientRunner.receivedPartialEntityUpdate(safe.entityId, safe.update);
 			}
 			else if (packet instanceof Packet_BlockStateUpdate)
 			{

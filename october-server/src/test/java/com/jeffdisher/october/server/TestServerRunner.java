@@ -23,6 +23,7 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
@@ -391,6 +392,13 @@ public class TestServerRunner
 		}
 		@Override
 		public synchronized void sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
+		{
+			List<Object> updates = this.clientUpdates.get(clientId);
+			updates.add(update);
+			this.notifyAll();
+		}
+		@Override
+		public synchronized void sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
 		{
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(update);

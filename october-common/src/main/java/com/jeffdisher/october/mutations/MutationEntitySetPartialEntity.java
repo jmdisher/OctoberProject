@@ -9,11 +9,11 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Updates the entity by setting its whole state.
+ * Updates the partial entity by setting its whole state.
  */
-public class MutationEntitySetPartialEntity implements IEntityUpdate
+public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 {
-	public static final EntityUpdateType TYPE = EntityUpdateType.PARTIAL_ENTITY;
+	public static final PartialEntityUpdateType TYPE = PartialEntityUpdateType.WHOLE_PARTIAL_ENTITY;
 
 	public static MutationEntitySetPartialEntity deserializeFromNetworkBuffer(ByteBuffer buffer)
 	{
@@ -37,7 +37,7 @@ public class MutationEntitySetPartialEntity implements IEntityUpdate
 	}
 
 	@Override
-	public EntityUpdateType getType()
+	public PartialEntityUpdateType getType()
 	{
 		return TYPE;
 	}

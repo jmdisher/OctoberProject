@@ -6,8 +6,6 @@ import java.util.function.Function;
 import com.jeffdisher.october.mutations.EntityUpdateType;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
-import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
-import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -23,7 +21,6 @@ public class EntityUpdateCodec
 	static
 	{
 		_CODEC_TABLE[MutationEntitySetEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySetEntity.deserializeFromNetworkBuffer(buffer);
-		_CODEC_TABLE[MutationEntitySetPartialEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySetPartialEntity.deserializeFromNetworkBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
@@ -40,7 +37,7 @@ public class EntityUpdateCodec
 		if (buffer.remaining() >= 1)
 		{
 			byte opcode = buffer.get();
-			MutationEntityType type = MutationEntityType.values()[opcode];
+			EntityUpdateType type = EntityUpdateType.values()[opcode];
 			parsed = _CODEC_TABLE[type.ordinal()].apply(buffer);
 		}
 		return parsed;

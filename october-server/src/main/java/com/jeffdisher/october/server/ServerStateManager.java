@@ -18,6 +18,7 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
@@ -270,19 +271,19 @@ public class ServerStateManager
 				Entity newEntity = snapshot.updatedEntities().get(entityId);
 				if (null != newEntity)
 				{
-					// TODO:  This should only send the changed data AND only what is visible to this client.
-					IEntityUpdate update;
+					// TODO:  This should only send the changed data, not entire entities or partials.
 					if (clientId == entityId)
 					{
 						// The client has the full entity so send it.
-						update = new MutationEntitySetEntity(newEntity);
+						IEntityUpdate update = new MutationEntitySetEntity(newEntity);
+						_callouts.network_sendEntityUpdate(clientId, entityId, update);
 					}
 					else
 					{
 						// The client will have a partial so just send that.
-						update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(newEntity));
+						IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(newEntity));
+						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 					}
-					_callouts.network_sendEntityUpdate(clientId, entityId, update);
 				}
 			}
 			else
@@ -437,6 +438,7 @@ public class ServerStateManager
 		void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid);
 		void network_removeCuboid(int clientId, CuboidAddress address);
 		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
+		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
 		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
 		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
 		

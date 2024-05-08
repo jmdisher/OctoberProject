@@ -8,6 +8,7 @@ import java.util.function.LongSupplier;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
@@ -17,6 +18,7 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
+import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
@@ -282,6 +284,12 @@ public class ServerProcess
 		public void sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
 		{
 			Packet_EntityUpdateFromServer packet = new Packet_EntityUpdateFromServer(entityId, update);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		{
+			Packet_PartialEntityUpdateFromServer packet = new Packet_PartialEntityUpdateFromServer(entityId, update);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

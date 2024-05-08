@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -303,6 +304,11 @@ public class ServerRunner
 		public void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
 		{
 			_network.sendEntityUpdate(clientId, entityId, update);
+		}
+		@Override
+		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		{
+			_network.sendPartialEntityUpdate(clientId, entityId, update);
 		}
 		@Override
 		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)

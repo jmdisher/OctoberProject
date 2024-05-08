@@ -3,6 +3,7 @@ package com.jeffdisher.october.client;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -87,13 +88,21 @@ public interface IClientAdapter
 		void removeCuboid(CuboidAddress address);
 		
 		/**
-		 * Called when an incremental entity update is received from the server.  Note that these may be for full
-		 * entity state, partial entity state over-write, or filtered entity state.
+		 * Called when an incremental entity update is received from the server.  Note that these are to update the
+		 * state of existing Entity objects on the client.
 		 * 
 		 * @param entityId The entity to which the change should be applied.
 		 * @param update The entity update.
 		 */
 		void receivedEntityUpdate(int entityId, IEntityUpdate update);
+		/**
+		 * Called when an incremental partial entity update is received from the server.  Note that these are to update
+		 * the state of existing PartialEntity objects on the client.
+		 * 
+		 * @param entityId The entity to which the change should be applied.
+		 * @param update The entity update.
+		 */
+		void receivedPartialEntityUpdate(int entityId, IPartialEntityUpdate update);
 		/**
 		 * Called when a block state update is received from the server.
 		 * 

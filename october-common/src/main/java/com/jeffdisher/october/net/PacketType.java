@@ -50,6 +50,11 @@ public enum PacketType
 	 */
 	ENTITY_UPDATE_FROM_SERVER,
 	/**
+	 * A partial entity update sent from the server to a client.  This will include an entity ID which will identify
+	 * which entity is being updated.
+	 */
+	PARTIAL_ENTITY_UPDATE_FROM_SERVER,
+	/**
 	 * The packet sent by the server at the end of each logic game tick.  It includes the tick number but also the last
 	 * incorporated commit number from the target client.
 	 */

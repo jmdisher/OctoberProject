@@ -19,6 +19,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -302,6 +303,11 @@ public class TestServerStateManager
 		public void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
 		{
 			throw new AssertionError("networkSendEntityUpdate");
+		}
+		@Override
+		public void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update)
+		{
+			throw new AssertionError("network_sendPartialEntityUpdate");
 		}
 		@Override
 		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)

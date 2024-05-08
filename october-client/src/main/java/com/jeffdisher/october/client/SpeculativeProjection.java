@@ -25,6 +25,7 @@ import com.jeffdisher.october.logic.WorldProcessor;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -135,7 +136,8 @@ public class SpeculativeProjection
 	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
 	 * @param addedEntities The list of entities which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
-	 * @param entityUpdates The map of per-entity state update lists which committed in this tick.
+	 * @param entityUpdates The list of updates made to this entity which committed in this tick.
+	 * @param partialEntityUpdates The map of per-entity state update lists which committed in this tick.
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
@@ -148,7 +150,8 @@ public class SpeculativeProjection
 			, List<PartialEntity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, Map<Integer, List<IEntityUpdate>> entityUpdates
+			, List<IEntityUpdate> entityUpdates
+			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
 			, List<Integer> removedEntities
@@ -183,43 +186,40 @@ public class SpeculativeProjection
 		
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;
+		if (!entityUpdates.isEmpty())
+		{
+			Entity entityToChange = _thisShadowEntity;
+			// These must already exist if they are being updated.
+			Assert.assertTrue(null != entityToChange);
+			MutableEntity mutable = MutableEntity.existing(entityToChange);
+			for (IEntityUpdate update : entityUpdates)
+			{
+				update.applyToEntity(context, mutable);
+			}
+			Entity frozen = mutable.freeze();
+			if (entityToChange != frozen)
+			{
+				updatedShadowEntity = frozen;
+			}
+		}
+		
 		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, List<IEntityUpdate>> elt : entityUpdates.entrySet())
+		for (Map.Entry<Integer, List<IPartialEntityUpdate>> elt : partialEntityUpdates.entrySet())
 		{
 			int entityId = elt.getKey();
-			// TODO:  Remove these special-cases once IEntityUpdate is split for partial and complete entities.
-			if (_localEntityId == entityId)
+			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
+			// These must already exist if they are being updated.
+			Assert.assertTrue(null != partialEntityToChange);
+			Entity entityToChange = Entity.fromPartial(partialEntityToChange);
+			MutableEntity mutable = MutableEntity.existing(entityToChange);
+			for (IPartialEntityUpdate update : elt.getValue())
 			{
-				Entity entityToChange = _thisShadowEntity;
-				// These must already exist if they are being updated.
-				Assert.assertTrue(null != entityToChange);
-				MutableEntity mutable = MutableEntity.existing(entityToChange);
-				for (IEntityUpdate update : elt.getValue())
-				{
-					update.applyToEntity(context, mutable);
-				}
-				Entity frozen = mutable.freeze();
-				if (entityToChange != frozen)
-				{
-					updatedShadowEntity = frozen;
-				}
+				update.applyToEntity(context, mutable);
 			}
-			else
+			Entity frozen = mutable.freeze();
+			if (entityToChange != frozen)
 			{
-				PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
-				// These must already exist if they are being updated.
-				Assert.assertTrue(null != partialEntityToChange);
-				Entity entityToChange = Entity.fromPartial(partialEntityToChange);
-				MutableEntity mutable = MutableEntity.existing(entityToChange);
-				for (IEntityUpdate update : elt.getValue())
-				{
-					update.applyToEntity(context, mutable);
-				}
-				Entity frozen = mutable.freeze();
-				if (entityToChange != frozen)
-				{
-					entitiesChangedInTick.put(entityId, PartialEntity.fromEntity(frozen));
-				}
+				entitiesChangedInTick.put(entityId, PartialEntity.fromEntity(frozen));
 			}
 		}
 
