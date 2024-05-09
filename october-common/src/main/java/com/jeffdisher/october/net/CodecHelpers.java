@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
@@ -197,10 +198,13 @@ public class CodecHelpers
 	public static PartialEntity readPartialEntity(ByteBuffer buffer)
 	{
 		int id = buffer.getInt();
+		byte ordinal = buffer.get();
+		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		float zVelocityPerSecond = buffer.getFloat();
 		EntityVolume volume = _readEntityVolume(buffer);
 		return new PartialEntity(id
+				, type
 				, location
 				, zVelocityPerSecond
 				, volume
@@ -210,11 +214,14 @@ public class CodecHelpers
 	public static void writePartialEntity(ByteBuffer buffer, PartialEntity entity)
 	{
 		int id = entity.id();
+		int ordinal = entity.type().ordinal();
+		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
 		float zVelocityPerSecond = entity.zVelocityPerSecond();
 		EntityVolume volume = entity.volume();
 		
 		buffer.putInt(id);
+		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
 		buffer.putFloat(zVelocityPerSecond);
 		_writeEntityVolume(buffer, volume);

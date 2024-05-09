@@ -41,6 +41,7 @@ public class MutablePartialEntity
 	public PartialEntity freeze()
 	{
 		PartialEntity newCopy = new PartialEntity(this.original.id()
+				, this.original.type()
 				, this.newLocation
 				, this.newZVelocityPerSecond
 				, this.original.volume()

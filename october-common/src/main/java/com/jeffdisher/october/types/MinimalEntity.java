@@ -7,6 +7,7 @@ package com.jeffdisher.october.types;
  * This type purely exists for read-only actions within IMutationEntity objects.
  */
 public record MinimalEntity(int id
+		, EntityType type
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
 		// We track the current z-velocity in blocks per second, up.
@@ -20,6 +21,7 @@ public record MinimalEntity(int id
 		if (null != entity)
 		{
 			result = new MinimalEntity(entity.id()
+					, EntityType.PLAYER
 					, entity.location()
 					, entity.zVelocityPerSecond()
 					, entity.volume()
@@ -34,6 +36,7 @@ public record MinimalEntity(int id
 		if (null != entity)
 		{
 			result = new MinimalEntity(entity.id()
+					, entity.type()
 					, entity.location()
 					, entity.zVelocityPerSecond()
 					, entity.volume()
