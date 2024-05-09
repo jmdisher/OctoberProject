@@ -25,6 +25,7 @@ import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -186,7 +187,7 @@ public class ServerStateManager
 		// Push any required data into the TickRunner before we kick-off the tick.
 		// We need to run through these to make them the read-only variants for the TickRunner.
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newCuboids.stream().map(
-				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.mutations())
+				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.creatures(), readWrite.mutations())
 		).toList();
 		
 		// Feed in any new data from the network.
@@ -393,12 +394,14 @@ public class ServerStateManager
 		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
+			// TODO:  Plumb in the creature list for this cuboid.
+			List<CreatureEntity> entities = List.of();
 			List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
 			if (null == suspended)
 			{
 				suspended = List.of();
 			}
-			cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, suspended));
+			cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, entities, suspended));
 		}
 		return cuboidResources;
 	}

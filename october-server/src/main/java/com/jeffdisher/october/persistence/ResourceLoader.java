@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -24,6 +24,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -48,11 +49,12 @@ public class ResourceLoader
 	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 
 	private final File _saveDirectory;
-	private final Function<CuboidAddress, SuspendedCuboid<CuboidData>> _cuboidGenerator;
+	private final BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> _cuboidGenerator;
 	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
+	private final CreatureIdAssigner _creatureIdAssigner;
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
@@ -60,7 +62,7 @@ public class ResourceLoader
 	private Collection<SuspendedEntity> _shared_resolvedEntities;
 
 	public ResourceLoader(File saveDirectory
-			, Function<CuboidAddress, SuspendedCuboid<CuboidData>> cuboidGenerator
+			, BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> cuboidGenerator
 	)
 	{
 		// The save directory must exist as a directory before we get here.
@@ -74,6 +76,7 @@ public class ResourceLoader
 			_background_main();
 		}, "Cuboid Loader");
 		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
+		_creatureIdAssigner = new CreatureIdAssigner();
 		
 		_sharedDataLock = new ReentrantLock();
 		
@@ -150,11 +153,14 @@ public class ResourceLoader
 						if (_preLoaded.containsKey(address))
 						{
 							// We will "consume" this since we will load from disk on the next call.
-							data = new SuspendedCuboid<>(_preLoaded.remove(address), List.of());
+							data = new SuspendedCuboid<>(_preLoaded.remove(address)
+									, List.of()
+									, List.of()
+							);
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = _cuboidGenerator.apply(address);
+							data = _cuboidGenerator.apply(_creatureIdAssigner, address);
 						}
 					}
 					// If we found anything, return it.
@@ -293,16 +299,32 @@ public class ResourceLoader
 			// There should be no resumable state since the file is complete.
 			Assert.assertTrue(null == state);
 			
+			// Load any creatures associated with the cuboid.
+			int creatureCount = buffer.getInt();
+			List<CreatureEntity> creatures = new ArrayList<>();
+			for (int i = 0; i < creatureCount; ++i)
+			{
+				CreatureEntity entity = CodecHelpers.readCreatureEntity(_creatureIdAssigner.next(), buffer);
+				creatures.add(entity);
+			}
+			
 			// Now, load any suspended mutations.
+			int mutationCount = buffer.getInt();
 			List<ScheduledMutation> suspended = new ArrayList<>();
-			while (buffer.hasRemaining())
+			for (int i = 0; i < mutationCount; ++i)
 			{
 				// Read the parts of the suspended data.
 				long millisUntilReady = buffer.getLong();
 				IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
 				suspended.add(new ScheduledMutation(mutation, millisUntilReady));
 			}
-			result = new SuspendedCuboid<>(cuboid, suspended);
+			
+			// This should be fully read.
+			Assert.assertTrue(!buffer.hasRemaining());
+			result = new SuspendedCuboid<>(cuboid
+					, creatures
+					, suspended
+			);
 		}
 		catch (FileNotFoundException e)
 		{
@@ -322,20 +344,27 @@ public class ResourceLoader
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		IReadOnlyCuboidData cuboid = data.cuboid();
 		List<ScheduledMutation> mutations = data.mutations();
+		List<CreatureEntity> entities = data.creatures();
 		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
 		// We currently assume that we just do the write in a single call.
 		Assert.assertTrue(null == state);
 		
-		// We now write any suspended mutations.
-		for (ScheduledMutation scheduled : mutations)
+		// Store any creatures in this cuboid.
+		_backround_serializationBuffer.putInt(entities.size());
+		for (CreatureEntity entity : entities)
 		{
-			// Check that this kind of mutation can be stored to disk (some have ephemeral references and should be dropped).
-			if (scheduled.mutation().canSaveToDisk())
-			{
-				// Write the parts of the data.
-				_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
-				MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
-			}
+			CodecHelpers.writeCreatureEntity(_backround_serializationBuffer, entity);
+		}
+		
+		// We now write any suspended mutations.
+		// Find out how many are going to be saved (some have ephemeral references and should be dropped).
+		List<ScheduledMutation> mutationsToWrite = mutations.stream().filter((ScheduledMutation scheduled) -> scheduled.mutation().canSaveToDisk()).toList();
+		_backround_serializationBuffer.putInt(mutationsToWrite.size());
+		for (ScheduledMutation scheduled : mutationsToWrite)
+		{
+			// Write the parts of the data.
+			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
+			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
 		}
 		_backround_serializationBuffer.flip();
 		

@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -225,6 +226,38 @@ public class CodecHelpers
 		_writeEntityLocation(buffer, location);
 		buffer.putFloat(zVelocityPerSecond);
 		_writeEntityVolume(buffer, volume);
+	}
+
+	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)
+	{
+		// The IDs for creatures are assigned late.
+		int id = idToAssign;
+		byte ordinal = buffer.get();
+		EntityType type = EntityType.values()[ordinal];
+		EntityLocation location = _readEntityLocation(buffer);
+		float zVelocityPerSecond = buffer.getFloat();
+		byte health = buffer.get();
+		return new CreatureEntity(id
+				, type
+				, location
+				, zVelocityPerSecond
+				, health
+		);
+	}
+
+	public static void writeCreatureEntity(ByteBuffer buffer, CreatureEntity entity)
+	{
+		// Note that we don't serialize the IDs for creatures.
+		int ordinal = entity.type().ordinal();
+		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
+		EntityLocation location = entity.location();
+		float zVelocityPerSecond = entity.zVelocityPerSecond();
+		byte health = entity.health();
+		
+		buffer.put((byte)ordinal);
+		_writeEntityLocation(buffer, location);
+		buffer.putFloat(zVelocityPerSecond);
+		buffer.put(health);
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)

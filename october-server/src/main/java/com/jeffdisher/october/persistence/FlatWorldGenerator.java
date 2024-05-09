@@ -1,7 +1,7 @@
 package com.jeffdisher.october.persistence;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -11,7 +11,10 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
 import com.jeffdisher.october.worldgen.StructureLoader;
@@ -21,7 +24,7 @@ import com.jeffdisher.october.worldgen.StructureLoader;
  * A relatively simple world generator, designed to include the basic block types supported.
  * We also drop other miscellaneous items to make testing easier in the 0,0,0 cuboid.
  */
-public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCuboid<CuboidData>>
+public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> 
 {
 	// We want to generate a basic starting structure around the world centre.  For now, we just build that from a static string.
 	public static final String[] STRUCTURE = new String[] {""
@@ -46,7 +49,7 @@ public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCubo
 	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
 
 	@Override
-	public SuspendedCuboid<CuboidData> apply(CuboidAddress address)
+	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		Environment env = Environment.getShared();
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
@@ -68,12 +71,16 @@ public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCubo
 			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.air")));
 		}
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
+		List<CreatureEntity> entities;
 		List<ScheduledMutation> mutations;
 		if (((-1 == address.x()) || (0 == address.x()))
 				&& ((-1 == address.y()) || (0 == address.y()))
 				&& ((-1 == address.z()) || (0 == address.z()))
 		)
 		{
+			// Our structures don't have entities.
+			entities = List.of();
+			
 			StructureLoader loader = new StructureLoader(env.items, env.blocks);
 			Structure structure = loader.loadFromStrings(STRUCTURE);
 			AbsoluteLocation baseOffset = new AbsoluteLocation(
@@ -89,9 +96,23 @@ public class FlatWorldGenerator implements Function<CuboidAddress, SuspendedCubo
 		}
 		else
 		{
+			// We will load a single entity in the base of this cuboid if it is z=0.
+			AbsoluteLocation baseOfCuboid = address.getBase();
+			entities = (0 == address.z())
+					? List.of(new CreatureEntity(creatureIdAssigner.next()
+							, EntityType.COW
+							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
+							, 0.0f
+							, (byte)100
+					))
+					: List.of()
+			;
 			mutations = List.of();
 		}
-		return new SuspendedCuboid<CuboidData>(data, mutations);
+		return new SuspendedCuboid<CuboidData>(data
+				, entities
+				, mutations
+		);
 	}
 
 	private static void _fillPlane(CuboidData data, byte z, Block block)

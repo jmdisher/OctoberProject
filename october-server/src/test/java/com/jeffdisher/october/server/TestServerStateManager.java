@@ -131,7 +131,10 @@ public class TestServerStateManager
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
-		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(callouts.requestedCuboidAddresses.iterator().next(), ENV.special.AIR), List.of()));
+		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(callouts.requestedCuboidAddresses.iterator().next(), ENV.special.AIR)
+				, List.of()
+				, List.of()
+		));
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(1, changes.newCuboids().size());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());
