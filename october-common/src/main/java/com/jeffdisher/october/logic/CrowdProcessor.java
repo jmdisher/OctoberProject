@@ -45,8 +45,6 @@ public class CrowdProcessor
 			, Map<Integer, List<ScheduledChange>> changesToRun
 	)
 	{
-		Map<Integer, Entity> fragment = new HashMap<>();
-		
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;
@@ -94,12 +92,9 @@ public class CrowdProcessor
 						}
 					}
 					
-					// Return the old instance if nothing changed.
+					// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 					// This freeze() call will return the original instance if it is identical.
 					Entity newEntity = mutable.freeze();
-					fragment.put(id, newEntity);
-					
-					// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 					if (newEntity != entity)
 					{
 						updatedEntities.put(id, newEntity);
@@ -122,18 +117,16 @@ public class CrowdProcessor
 				existing.addAll(incoming);
 			}
 		}
-		return new ProcessedGroup(fragment
+		return new ProcessedGroup(committedMutationCount
 				, notYetReadyChanges
 				, updatedEntities
-				, committedMutationCount
 		);
 	}
 
 
-	public static record ProcessedGroup(Map<Integer, Entity> groupFragment
+	public static record ProcessedGroup(int committedMutationCount
 			, Map<Integer, List<ScheduledChange>> notYetReadyChanges
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, Entity> updatedEntities
-			, int committedMutationCount
 	) {}
 }

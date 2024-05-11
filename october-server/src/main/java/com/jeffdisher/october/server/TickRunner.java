@@ -308,7 +308,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
-						, new CrowdProcessor.ProcessedGroup(Map.of(), Map.of(), Map.of(), 0)
+						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
 						, List.of()
 						, Map.of()
 						, Map.of()
@@ -424,10 +424,11 @@ public class TickRunner
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
 				mutableWorldState.putAll(fragment.world.stateFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
-				mutableCrowdState.putAll(fragment.crowd.groupFragment());
+				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
+				mutableCrowdState.putAll(entitiesChangedInFragment);
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
-				updatedEntities.putAll(fragment.crowd.updatedEntities());
+				updatedEntities.putAll(entitiesChangedInFragment);
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
 				committedCuboidMutationCount += fragment.world.committedMutationCount();

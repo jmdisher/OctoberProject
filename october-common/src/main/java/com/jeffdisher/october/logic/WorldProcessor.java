@@ -132,13 +132,9 @@ public class WorldProcessor
 				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(
 						(MutableBlockProxy proxy) -> proxy.didChange()
 				).toList();
-				if (proxiesToWrite.isEmpty())
+				if (!proxiesToWrite.isEmpty())
 				{
-					// There were no actual changes to this cuboid so just use the old state.
-					fragment.put(key, oldState);
-				}
-				else
-				{
+					// Something changed so we will write-back the updated cuboid and list of block state changes.
 					ByteBuffer scratchBuffer = ByteBuffer.allocate(PacketCodec.MAX_PACKET_BYTES - PacketCodec.HEADER_BYTES);
 					List<BlockChangeDescription> updateMutations = new ArrayList<>();
 					// At least something changed so create a new clone and write-back into it.
