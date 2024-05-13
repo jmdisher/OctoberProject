@@ -22,9 +22,11 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -1256,6 +1258,41 @@ public class TestCommonChanges
 		BlockProxy proxy = new BlockProxy(furnace.getBlockAddress(), cuboid);
 		Assert.assertEquals(0, proxy.getInventory().currentEncumbrance);
 		Assert.assertEquals(0, proxy.getFuel().fuelInventory().currentEncumbrance);
+	}
+
+	@Test
+	public void attackCreature() throws Throwable
+	{
+		// Verify that attacking a creature ends up calling the other path.
+		int attackerId = 1;
+		int targetId = -1;
+		MutableEntity attacker = MutableEntity.create(attackerId);
+		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		CreatureEntity creature = new CreatureEntity(targetId
+				, EntityType.COW
+				, new EntityLocation(9.0f, 9.0f, 0.0f)
+				, 0.0f
+				, (byte) 100
+		);
+		CommonChangeSink changeSink = new CommonChangeSink();
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, (Integer id) -> {
+					Assert.assertEquals(targetId, id.intValue());
+					return MinimalEntity.fromCreature(creature);
+				}
+				, null
+				, changeSink
+		);
+		
+		// Attack and verify that we see damage come through the creature path.
+		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Assert.assertEquals(1, creatureChanges.size());
+		List<IMutationEntity<IMutableMinimalEntity>> list = creatureChanges.get(targetId);
+		Assert.assertEquals(1, list.size());
+		IMutationEntity<IMutableMinimalEntity> change = list.get(0);
+		Assert.assertTrue(change instanceof EntityChangeTakeDamage<IMutableMinimalEntity>);
 	}
 
 

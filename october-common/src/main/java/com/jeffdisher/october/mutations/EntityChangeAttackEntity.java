@@ -9,6 +9,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -38,8 +39,8 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 
 	public EntityChangeAttackEntity(int targetEntityId)
 	{
-		// Make sure that this is positive (currently no other entity types).
-		Assert.assertTrue(targetEntityId > 0);
+		// Note that there is no entity 0 (positive are players, negatives are creatures).
+		Assert.assertTrue(0 != targetEntityId);
 		
 		_targetEntityId = targetEntityId;
 	}
@@ -97,8 +98,16 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			// Choose the target body part at random - TODO:  Handle this random value differently.
 			int index = new Random().nextInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];
-			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
-			context.newChangeSink.next(_targetEntityId, takeDamage);
+			if (_targetEntityId > 0)
+			{
+				EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
+				context.newChangeSink.next(_targetEntityId, takeDamage);
+			}
+			else
+			{
+				EntityChangeTakeDamage<IMutableMinimalEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
+				context.newChangeSink.creature(_targetEntityId, takeDamage);
+			}
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
 			if (null != nonStack)

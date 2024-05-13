@@ -18,6 +18,7 @@ import com.jeffdisher.october.utils.Assert;
 public class CommonChangeSink implements TickProcessingContext.IChangeSink
 {
 	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges = new HashMap<>();
+	private Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> _exportedCreatureChanges = new HashMap<>();
 
 	@Override
 	public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
@@ -39,12 +40,17 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
 	{
 		Assert.assertTrue(targetCreatureId < 0);
-		// TODO:  Implement.
-		throw Assert.unreachable();
+		List<IMutationEntity<IMutableMinimalEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
+		if (null == list)
+		{
+			list = new LinkedList<>();
+			_exportedCreatureChanges.put(targetCreatureId, list);
+		}
+		list.add(change);
 	}
 
 	/**
-	 * Removes the collected exported changes, invalidating the receiver as a result.
+	 * Removes the collected exported changes.  Note that the receiver can no longer listen to changes after this call.
 	 * 
 	 * @return The mutable change map, now owned by the caller.
 	 */
@@ -57,6 +63,24 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 		finally
 		{
 			_exportedEntityChanges = null;
+		}
+	}
+
+	/**
+	 * Removes the collected exported creature changes.  Note that the receiver can no longer listen to changes after
+	 * this call.
+	 * 
+	 * @return The mutable change map, now owned by the caller.
+	 */
+	public final Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> takeExportedCreatureChanges()
+	{
+		try
+		{
+			return _exportedCreatureChanges;
+		}
+		finally
+		{
+			_exportedCreatureChanges = null;
 		}
 	}
 
