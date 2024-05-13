@@ -19,7 +19,8 @@ public class Packet_PartialEntityUpdateFromServer extends Packet
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			int entityId = buffer.getInt();
-			Assert.assertTrue(entityId > 0);
+			// Positive entities are players, negative are server-generated, but 0 is invalid.
+			Assert.assertTrue(0 != entityId);
 			IPartialEntityUpdate update = PartialEntityUpdateCodec.parseAndSeekFlippedBuffer(buffer);
 			return new Packet_PartialEntityUpdateFromServer(entityId, update);
 		};
