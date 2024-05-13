@@ -172,7 +172,11 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				
 				, Collections.emptyMap()
+				, Collections.emptyMap()
+				, Collections.emptyMap()
+				
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
@@ -195,8 +199,12 @@ public class TestServerStateManager
 				, completedEntities
 				, snapshot.commitLevels()
 				, completedCuboids
+				, snapshot.completedCreatures()
+				
 				, snapshot.updatedEntities()
 				, snapshot.resultantBlockChangesByCuboid()
+				, snapshot.visiblyChangedCreatures()
+				
 				, snapshot.scheduledBlockMutations()
 				, snapshot.scheduledEntityMutations()
 				

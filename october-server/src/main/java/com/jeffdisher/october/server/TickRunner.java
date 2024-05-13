@@ -21,6 +21,7 @@ import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
+import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -32,8 +33,10 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -127,16 +130,25 @@ public class TickRunner
 		Assert.assertTrue(null == _snapshot);
 		// Initial snapshot is tick "0".
 		_snapshot = new Snapshot(0L
-				// Create an empty world - the cuboids will be asynchronously loaded.
+				// No completedEntities.
 				, Collections.emptyMap()
 				// No commit levels.
 				, Collections.emptyMap()
-				// Create it with no users.
+				// No completedCuboids.
 				, Collections.emptyMap()
-				// No mutations, obviously.
+				// No completedCreatures.
 				, Collections.emptyMap()
+				
+				// No updatedEntities
 				, Collections.emptyMap()
+				// No resultantBlockChangesByCuboid.
 				, Collections.emptyMap()
+				// // No visiblyChangedCreatures.
+				, Collections.emptyMap()
+				
+				// No scheduledBlockMutations.
+				, Collections.emptyMap()
+				// scheduledEntityMutations.
 				, Collections.emptyMap()
 				
 				// Information related to tick behaviour and performance statistics.
@@ -307,9 +319,13 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				// mutableCreatureState
+				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
+						, new CreatureProcessor.CreatureGroup(0, Map.of(), List.of())
 						, List.of()
+						, Map.of()
 						, Map.of()
 						, Map.of()
 				)
@@ -336,10 +352,17 @@ public class TickRunner
 			
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
 					, cachingLoader
-					, (Integer entityId) -> MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
+					, (Integer entityId) -> (entityId > 0)
+						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
+						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
 					, newMutationSink
 					, newChangeSink
 			);
+			
+			long startCreatures = System.currentTimeMillis();
+			CreatureProcessor.CreatureGroup creatureGroup = new CreatureProcessor.CreatureGroup(0, Map.of(), List.of());
+			// There is always a returned group (even if it has no content).
+			Assert.assertTrue(null != creatureGroup);
 			
 			long startCrowd = System.currentTimeMillis();
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
@@ -366,16 +389,20 @@ public class TickRunner
 			long endLoop = System.currentTimeMillis();
 			
 			// Update our thread stats before we merge.
+			thisThread.millisInCreatureProcessor = (startCrowd - startCreatures);
 			thisThread.millisInCrowdProcessor = (startWorld - startCrowd);
 			thisThread.millisInWorldProcessor = (endLoop - startWorld);
 			materials = _mergeTickStateAndWaitForNext(thisThread
 					, tickCompletionListener
 					, materials.completedCuboids
 					, materials.completedEntities
+					, materials.completedCreatures
 					, new _PartialHandoffData(fragment
 							, group
+							, creatureGroup
 							, newMutationSink.takeExportedMutations()
 							, newChangeSink.takeExportedChanges()
+							, Map.of()
 							, materials.commitLevels
 					)
 					, materials.millisInTickPreamble
@@ -388,6 +415,7 @@ public class TickRunner
 			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
 			, Map<Integer, Entity> mutableCrowdState
+			, Map<Integer, CreatureEntity> mutableCreatureState
 			, _PartialHandoffData perThreadData
 			
 			// Data related to internal statistics generated at the end of the previous tick and passed back in.
@@ -421,6 +449,7 @@ public class TickRunner
 			for (int i = 0; i < _partial.length; ++i)
 			{
 				_PartialHandoffData fragment = _partial[i];
+				
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
 				mutableWorldState.putAll(fragment.world.stateFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
@@ -474,12 +503,25 @@ public class TickRunner
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			Snapshot completedTick = new Snapshot(_nextTick
+					// completedEntities
 					, Collections.unmodifiableMap(mutableCrowdState)
+					// commitLevels
 					, Collections.unmodifiableMap(combinedCommitLevels)
+					// completedCuboids
 					, Collections.unmodifiableMap(mutableWorldState)
+					// completedCreatures
+					, Collections.unmodifiableMap(mutableCreatureState)
+					
+					// updatedEntities
 					, Collections.unmodifiableMap(updatedEntities)
+					// resultantBlockChangesByCuboid
 					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
+					// visiblyChangedCreatures
+					, Collections.emptyMap()
+					
+					// scheduledBlockMutations
 					, Collections.unmodifiableMap(snapshotBlockMutations)
+					// scheduledEntityMutations
 					, Collections.unmodifiableMap(snapshotEntityMutations)
 					
 					// Stats.
@@ -697,8 +739,13 @@ public class TickRunner
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, nextWorldState
 						, nextCrowdState
+						// completedCreatures
+						, Collections.emptyMap()
+						
 						, nextTickMutations
 						, nextTickChanges
+						// creatureChanges
+						, Collections.emptyMap()
 						, updatedBlockLocationsByCuboid
 						, potentialLightChangesByCuboid
 						, cuboidsLoadedThisTick
@@ -753,9 +800,9 @@ public class TickRunner
 		queue.add(mutation);
 	}
 
-	private void _scheduleChangesForEntity(Map<Integer, List<ScheduledChange>> nextTickChanges, int entityId, List<ScheduledChange> changes)
+	private <T> void _scheduleChangesForEntity(Map<Integer, List<T>> nextTickChanges, int entityId, List<T> changes)
 	{
-		List<ScheduledChange> queue = nextTickChanges.get(entityId);
+		List<T> queue = nextTickChanges.get(entityId);
 		if (null == queue)
 		{
 			nextTickChanges.put(entityId, changes);
@@ -862,12 +909,18 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<Integer, CreatureEntity> completedCreatures
+			
+			// Change-only resources.
 			, Map<Integer, Entity> updatedEntities
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
+			// Note that we only want to include the changed creatures if a MinimalEntity projection of the creature would differ (no internal-only state changes).
+			, Map<Integer, CreatureEntity> visiblyChangedCreatures
 			
 			// These fields are related to what is scheduled for the NEXT (or future) tick (added here to expose them to serialization).
 			, Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations
 			, Map<Integer, List<ScheduledChange>> scheduledEntityMutations
+			// Note that the creature changes aren't included here since they are not serialized.
 			
 			// Information related to tick behaviour and performance statistics.
 			, long millisTickPreamble
@@ -884,10 +937,13 @@ public class TickRunner
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			// Read-only versions of the Entities produced by the previous tick (by ID).
 			, Map<Integer, Entity> completedEntities
+			// Read-only versions of the creatures from the previous tick (by ID).
+			, Map<Integer, CreatureEntity> completedCreatures
 			// The block mutations to run in this tick (by cuboid address).
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<ScheduledChange>> changesToRun
+			, Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> creatureChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			// The blocks which were modified in such a way that they may require a lighting update.
@@ -929,8 +985,10 @@ public class TickRunner
 	 */
 	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
 			, CrowdProcessor.ProcessedGroup crowd
+			, CreatureProcessor.CreatureGroup creatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
+			, Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> newlyScheduledCreatureChanges
 			, Map<Integer, Long> commitLevels
 	) {}
 }
