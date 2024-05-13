@@ -245,8 +245,9 @@ public class ServerRunner
 				System.out.println("\tParallel: " + parallel + " ms");
 				for (ProcessorElement.PerThreadStats thread : snapshot.threadStats())
 				{
-					System.out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
+					System.out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, Creatures: " + thread.millisInCreatureProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
 					System.out.println("\t\tEntities processed: " + thread.entitiesProcessed() + ", changes processed " + thread.entityChangesProcessed());
+					System.out.println("\t\tCreatures processed: " + thread.creaturesProcessed() + ", changes processed " + thread.creatureChangesProcessed());
 					System.out.println("\t\tCuboids processed: " + thread.cuboidsProcessed() + ", mutations processed " + thread.cuboidMutationsProcessed() + ", updates processed " + thread.cuboidBlockupdatesProcessed());
 				}
 				System.out.println("\tPostamble: " + postamble + " ms");

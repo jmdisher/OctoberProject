@@ -18,6 +18,11 @@ public class ProcessorElement
 	public int entitiesProcessed;
 	public int entityChangesProcessed;
 	public long millisInCrowdProcessor;
+	
+	public int creaturesProcessed;
+	public int creatureChangesProcessed;
+	public long millisInCreatureProcessor;
+	
 	public int cuboidsProcessed;
 	public int cuboidMutationsProcessed;
 	public int cuboidBlockupdatesProcessed;
@@ -74,6 +79,11 @@ public class ProcessorElement
 		PerThreadStats stats = new PerThreadStats(this.entitiesProcessed
 				, this.entityChangesProcessed
 				, this.millisInCrowdProcessor
+				
+				, this.creaturesProcessed
+				, this.creatureChangesProcessed
+				, this.millisInCreatureProcessor
+				
 				, this.cuboidsProcessed
 				, this.cuboidMutationsProcessed
 				, this.cuboidBlockupdatesProcessed
@@ -83,6 +93,11 @@ public class ProcessorElement
 		this.entitiesProcessed = 0;
 		this.entityChangesProcessed = 0;
 		this.millisInCrowdProcessor = 0L;
+		
+		this.creaturesProcessed = 0;
+		this.creatureChangesProcessed = 0;
+		this.millisInCreatureProcessor = 0L;
+		
 		this.cuboidsProcessed = 0;
 		this.cuboidMutationsProcessed = 0;
 		this.cuboidBlockupdatesProcessed = 0;
@@ -97,6 +112,11 @@ public class ProcessorElement
 	public static record PerThreadStats(int entitiesProcessed
 			, int entityChangesProcessed
 			, long millisInCrowdProcessor
+			
+			, int creaturesProcessed
+			, int creatureChangesProcessed
+			, long millisInCreatureProcessor
+			
 			, int cuboidsProcessed
 			, int cuboidMutationsProcessed
 			, int cuboidBlockupdatesProcessed
