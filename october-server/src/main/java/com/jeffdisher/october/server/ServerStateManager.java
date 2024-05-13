@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -32,6 +33,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
+
 
 /**
  * Relevant state-changing calls come in here so that the state machine can make decisions.
@@ -263,59 +265,79 @@ public class ServerStateManager
 	private void _sendEntityUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
 	{
 		// Add any entities this client hasn't seen.
-		for (Map.Entry<Integer, Entity> entry : snapshot.completedEntities().entrySet())
-		{
-			int entityId = entry.getKey();
-			if (state.knownEntities.contains(entityId))
+		Consumer<Entity> seenEntityHandler = (Entity entity) -> {
+			// TODO:  This should only send the changed data, not entire entities or partials.
+			int entityId = entity.id();
+			if (clientId == entityId)
 			{
-				// We know this entity so generate the update for this client.
-				Entity newEntity = snapshot.updatedEntities().get(entityId);
-				if (null != newEntity)
-				{
-					// TODO:  This should only send the changed data, not entire entities or partials.
-					if (clientId == entityId)
-					{
-						// The client has the full entity so send it.
-						IEntityUpdate update = new MutationEntitySetEntity(newEntity);
-						_callouts.network_sendEntityUpdate(clientId, entityId, update);
-					}
-					else
-					{
-						// The client will have a partial so just send that.
-						IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(newEntity));
-						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
-					}
-				}
+				// The client has the full entity so send it.
+				IEntityUpdate update = new MutationEntitySetEntity(entity);
+				_callouts.network_sendEntityUpdate(clientId, entityId, update);
 			}
 			else
 			{
-				// We don't know this entity so send them.
-				// See if this is "them" or someone else.
-				Entity entity = entry.getValue();
-				if (clientId == entityId)
-				{
-					_callouts.network_sendFullEntity(clientId, entity);
-				}
-				else
-				{
-					PartialEntity partial = PartialEntity.fromEntity(entity);
-					_callouts.network_sendPartialEntity(clientId, partial);
-				}
-				state.knownEntities.add(entityId);
+				// The client will have a partial so just send that.
+				IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
+				_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
 			}
-		}
+		};
+		Consumer<Entity> unseenEntityHandler = (Entity entity) -> {
+			// See if this is "them" or someone else.
+			int entityId = entity.id();
+			if (clientId == entityId)
+			{
+				_callouts.network_sendFullEntity(clientId, entity);
+			}
+			else
+			{
+				PartialEntity partial = PartialEntity.fromEntity(entity);
+				_callouts.network_sendPartialEntity(clientId, partial);
+			}
+		};
+		_sendNewAndUpdatedEntities(state, seenEntityHandler, unseenEntityHandler, snapshot.completedEntities(), snapshot.updatedEntities());
+		
 		// Remove any extra entities which have since departed.
-		if (state.knownEntities.size() > snapshot.completedEntities().size())
+		Set<Integer> allEntityIds = new HashSet<>(snapshot.completedEntities().keySet());
+		if (state.knownEntities.size() > allEntityIds.size())
 		{
 			Iterator<Integer> entityIterator = state.knownEntities.iterator();
 			while (entityIterator.hasNext())
 			{
 				int entityId = entityIterator.next();
-				if (!snapshot.completedEntities().containsKey(entityId))
+				if (!allEntityIds.contains(entityId))
 				{
 					_callouts.network_removeEntity(clientId, entityId);
 					entityIterator.remove();
 				}
+			}
+		}
+	}
+
+	private <E> void _sendNewAndUpdatedEntities(ClientState state
+			, Consumer<E> seenHandler
+			, Consumer<E> unseenHandler
+			, Map<Integer, E> completed
+			, Map<Integer, E> updated
+	)
+	{
+		for (Map.Entry<Integer, E> entry : completed.entrySet())
+		{
+			int entityId = entry.getKey();
+			if (state.knownEntities.contains(entityId))
+			{
+				// We know this entity so generate the update for this client.
+				E newEntity = updated.get(entityId);
+				if (null != newEntity)
+				{
+					seenHandler.accept(newEntity);
+				}
+			}
+			else
+			{
+				// We don't know this entity so send them.
+				E entity = entry.getValue();
+				unseenHandler.accept(entity);
+				state.knownEntities.add(entityId);
 			}
 		}
 	}
