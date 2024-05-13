@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -715,6 +716,11 @@ public class TestCommonChanges
 					{
 						Assert.fail("Not expected in tets");
 					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+					{
+						Assert.fail("Not expected in tets");
+					}
 				}
 		);
 		
@@ -832,6 +838,11 @@ public class TestCommonChanges
 					}
 					@Override
 					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
 					{
 						Assert.fail("Not expected in tets");
 					}
@@ -1291,6 +1302,11 @@ public class TestCommonChanges
 						}
 						@Override
 						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
 						{
 							Assert.fail("Not expected in tets");
 						}

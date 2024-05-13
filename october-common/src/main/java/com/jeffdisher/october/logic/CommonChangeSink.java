@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -20,6 +22,7 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	@Override
 	public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 	{
+		Assert.assertTrue(targetEntityId > 0);
 		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 		entityChanges.add(new ScheduledChange(change, 0L));
 	}
@@ -27,8 +30,17 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	@Override
 	public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
 	{
+		Assert.assertTrue(targetEntityId > 0);
 		List<ScheduledChange> entityChanges = _getChangeList(targetEntityId);
 		entityChanges.add(new ScheduledChange(change, millisToDelay));
+	}
+
+	@Override
+	public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+	{
+		Assert.assertTrue(targetCreatureId < 0);
+		// TODO:  Implement.
+		throw Assert.unreachable();
 	}
 
 	/**

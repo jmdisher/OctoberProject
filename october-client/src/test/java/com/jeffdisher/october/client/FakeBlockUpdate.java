@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -58,6 +59,11 @@ public class FakeBlockUpdate
 			}
 			@Override
 			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+			{
+				throw Assert.unreachable();
+			}
+			@Override
+			public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
 			{
 				throw Assert.unreachable();
 			}

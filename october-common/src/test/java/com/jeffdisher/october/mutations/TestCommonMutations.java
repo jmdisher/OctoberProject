@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -360,6 +361,11 @@ public class TestCommonMutations
 						}
 						@Override
 						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
 						{
 							Assert.fail("Not expected in tets");
 						}

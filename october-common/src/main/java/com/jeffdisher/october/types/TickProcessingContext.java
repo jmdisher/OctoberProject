@@ -26,8 +26,9 @@ public class TickProcessingContext
 	public final Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 
 	/**
-	 * The view of the entire entity crowd, as of the beginning of this tick.
-	 * Returns null if the requested entity isn' loaded.
+	 * The view of the entire entity crowd, as of the beginning of this tick.  This will look up either entities or
+	 * creatures.
+	 * Returns null if the requested entity isn't loaded.
 	 */
 	public final Function<Integer, MinimalEntity> previousEntityLookUp;
 
@@ -101,5 +102,12 @@ public class TickProcessingContext
 		 * @param millisToDelay Milliseconds to delay before running the mutation.
 		 */
 		void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay);
+		/**
+		 * Requests that the given change be scheduled against this creature in the next tick.
+		 * 
+		 * @param targetCreatureId The ID of the creature which should run the change.
+		 * @param change The change to run.
+		 */
+		void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change);
 	}
 }
