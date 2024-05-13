@@ -89,7 +89,7 @@ public class TestResourceLoader
 	@Test
 	public void flatWorld() throws Throwable
 	{
-		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
 		CuboidAddress stoneAddress = new CuboidAddress((short)1, (short)0, (short)-1);
 		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
@@ -120,7 +120,7 @@ public class TestResourceLoader
 	public void writeThenRead() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false));
 		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -199,7 +199,7 @@ public class TestResourceLoader
 	public void writeAndReadSuspendedCuboid() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false));
 		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -281,7 +281,7 @@ public class TestResourceLoader
 	public void overwiteFile() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false));
 		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
@@ -353,7 +353,7 @@ public class TestResourceLoader
 	{
 		// We want to store a cuboid and entity with 2 suspended actions each and verify that the non-persistable one is dropped on reload.
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false));
 		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
 		int entityId = 1;
 		int targetId = 2;
@@ -412,7 +412,7 @@ public class TestResourceLoader
 	public void writeAndReadCuboidAndCreatures() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator());
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false));
 		CuboidAddress airAddress = new CuboidAddress((short)3, (short)-5, (short)0);
 		
 		// We will request that this be generated and verify that there is an entity.

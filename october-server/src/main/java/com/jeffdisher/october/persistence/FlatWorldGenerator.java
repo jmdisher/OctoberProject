@@ -48,6 +48,18 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 	};
 	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
 
+	private final boolean _shouldGenerateStructures;
+
+	/**
+	 * Creates the world generator, configured with options.
+	 * 
+	 * @param shouldGenerateStructures True if generated structures should be added, false if not.
+	 */
+	public FlatWorldGenerator(boolean shouldGenerateStructures)
+	{
+		_shouldGenerateStructures = shouldGenerateStructures;
+	}
+
 	@Override
 	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
@@ -73,7 +85,8 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
 		List<ScheduledMutation> mutations;
-		if (((-1 == address.x()) || (0 == address.x()))
+		if (_shouldGenerateStructures
+				&& ((-1 == address.x()) || (0 == address.x()))
 				&& ((-1 == address.y()) || (0 == address.y()))
 				&& ((-1 == address.z()) || (0 == address.z()))
 		)
