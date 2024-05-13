@@ -21,6 +21,7 @@ import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
+import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -39,9 +40,11 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -1519,6 +1522,69 @@ public class TestTickRunner
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void attackCreature()
+	{
+		// Load a cuboid with a creature on it and an entity.  Verify that the entity can hit the creature multiple times and that the despawn is correctly reflected.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
+		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
+		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
+		int creatureId = -1;
+		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15);
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(spawn.x() + 1, spawn.y(), spawn.z());
+		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), 1000));
+		mutable.setSelectedKey(1);
+		Entity entity = mutable.freeze();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(creature), List.of())
+				)
+				, null
+				, List.of(new SuspendedEntity(entity, List.of()))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		snapshot = runner.waitForPreviousTick();
+		
+		// We should see the creature take damage.
+		CreatureEntity updated = snapshot.visiblyChangedCreatures().get(creatureId);
+		Assert.assertEquals((byte)5, updated.health());
+		
+		// Hitting them again should cause them to de-spawn and drop items.
+		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 2L);
+		runner.startNextTick();
+		
+		// (run an extra tick to unwrap the entity change)
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		snapshot = runner.waitForPreviousTick();
+		
+		// We should see the creature is now gone.
+		updated = snapshot.completedCreatures().get(creatureId);
+		Assert.assertNull(updated);
+		
+		// Run another tick and we should see their drops.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, spawn.getBlockAddress());
+		Assert.assertEquals(1, blockInventory.sortedKeys().size());
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_ITEM));
 		
 		runner.shutdown();
 	}

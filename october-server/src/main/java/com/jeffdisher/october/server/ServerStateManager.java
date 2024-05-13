@@ -56,6 +56,7 @@ public class ServerStateManager
 	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations = Collections.emptyMap();
 	// Same thing with entities.
 	private Collection<Entity> _completedEntities = Collections.emptySet();
+	private Collection<CreatureEntity> _completedCreatures = Collections.emptySet();
 
 	public ServerStateManager(ICallouts callouts)
 	{
@@ -70,6 +71,7 @@ public class ServerStateManager
 		_scheduledBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
 		_completedEntities = Collections.emptySet();
+		_completedCreatures = Collections.emptySet();
 	}
 
 	public void clientConnected(int clientId)
@@ -106,6 +108,7 @@ public class ServerStateManager
 	{
 		_completedCuboids = snapshot.completedCuboids().values();
 		_completedEntities = snapshot.completedEntities().values();
+		_completedCreatures = snapshot.completedCreatures().values();
 		_scheduledBlockMutations = snapshot.scheduledBlockMutations();
 		_scheduledEntityMutations = snapshot.scheduledEntityMutations();
 		
@@ -161,7 +164,8 @@ public class ServerStateManager
 			List<IReadOnlyCuboidData> cuboidsToPackage = orphanedCuboids.stream().map(
 					(CuboidAddress address) -> snapshot.completedCuboids().get(address)
 			).toList();
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage);
+			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(cuboidsToPackage);
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
 			List<Entity> entitiesToPackage = removedClients.stream().map(
 					(Integer id) -> snapshot.completedEntities().get(id)
 			).toList();
@@ -212,7 +216,8 @@ public class ServerStateManager
 		if (!_completedCuboids.isEmpty() || !_completedEntities.isEmpty())
 		{
 			// We need to package up the cuboids with any suspended operations.
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = _packageCuboidsForUnloading(_completedCuboids);
+			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids);
+			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = _packageCuboidsForUnloading(_completedCuboids, creaturesToUnload);
 			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities);
 			_callouts.resources_writeToDisk(cuboidResources, entityResources);
 		}
@@ -296,8 +301,21 @@ public class ServerStateManager
 		};
 		_sendNewAndUpdatedEntities(state, seenEntityHandler, unseenEntityHandler, snapshot.completedEntities(), snapshot.updatedEntities());
 		
+		Consumer<CreatureEntity> seenCreatureHandler = (CreatureEntity entity) -> {
+			// Creatures are always partial.
+			int entityId = entity.id();
+			IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
+			_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
+		};
+		Consumer<CreatureEntity> unseenCreatureHandler = (CreatureEntity entity) -> {
+			// Creatures are always partial.
+			PartialEntity partial = PartialEntity.fromCreature(entity);
+			_callouts.network_sendPartialEntity(clientId, partial);
+		};
+		_sendNewAndUpdatedEntities(state, seenCreatureHandler, unseenCreatureHandler, snapshot.completedCreatures(), snapshot.visiblyChangedCreatures());
 		// Remove any extra entities which have since departed.
 		Set<Integer> allEntityIds = new HashSet<>(snapshot.completedEntities().keySet());
+		allEntityIds.addAll(snapshot.completedCreatures().keySet());
 		if (state.knownEntities.size() > allEntityIds.size())
 		{
 			Iterator<Integer> entityIterator = state.knownEntities.iterator();
@@ -410,14 +428,34 @@ public class ServerStateManager
 		}
 	}
 
-	private Collection<SuspendedCuboid<IReadOnlyCuboidData>> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage)
+	private Map<CuboidAddress, List<CreatureEntity>> _findCreaturesToUnload(Collection<IReadOnlyCuboidData> cuboidsToPackage)
+	{
+		Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = new HashMap<>();
+		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
+		{
+			CuboidAddress address = cuboid.getCuboidAddress();
+			creaturesToUnload.put(address, new ArrayList<>());
+		}
+		// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
+		for (CreatureEntity creature : _completedCreatures)
+		{
+			CuboidAddress address = creature.location().getBlockLocation().getCuboidAddress();
+			List<CreatureEntity> list = creaturesToUnload.get(address);
+			if (null != list)
+			{
+				list.add(creature);
+			}
+		}
+		return creaturesToUnload;
+	}
+
+	private Collection<SuspendedCuboid<IReadOnlyCuboidData>> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage, Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload)
 	{
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = new ArrayList<>();
 		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
-			// TODO:  Plumb in the creature list for this cuboid.
-			List<CreatureEntity> entities = List.of();
+			List<CreatureEntity> entities = creaturesToUnload.get(cuboid.getCuboidAddress());
 			List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
 			if (null == suspended)
 			{

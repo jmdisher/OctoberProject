@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -360,7 +362,12 @@ public class TickRunner
 			);
 			
 			long startCreatures = System.currentTimeMillis();
-			CreatureProcessor.CreatureGroup creatureGroup = new CreatureProcessor.CreatureGroup(0, Map.of(), List.of());
+			CreatureProcessor.CreatureGroup creatureGroup = CreatureProcessor.processCreatureGroupParallel(thisThread
+					, materials.completedCreatures
+					, context
+					, _millisPerTick
+					, materials.creatureChanges
+			);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != creatureGroup);
 			
@@ -402,7 +409,7 @@ public class TickRunner
 							, creatureGroup
 							, newMutationSink.takeExportedMutations()
 							, newChangeSink.takeExportedChanges()
-							, Map.of()
+							, newChangeSink.takeExportedCreatureChanges()
 							, materials.commitLevels
 					)
 					, materials.millisInTickPreamble
@@ -437,6 +444,7 @@ public class TickRunner
 			// Rebuild the immutable snapshot of the state.
 			Map<Integer, Long> combinedCommitLevels = new HashMap<>();
 			Map<Integer, Entity> updatedEntities = new HashMap<>();
+			Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 			int committedEntityMutationCount = 0;
 			Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
 			int committedCuboidMutationCount = 0;
@@ -445,6 +453,7 @@ public class TickRunner
 			// (this is in case they need to be serialized - that way they can be read back in without interrupting the enqueued operations)
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
+			Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> nextCreatureChanges = new HashMap<>();
 			
 			for (int i = 0; i < _partial.length; ++i)
 			{
@@ -454,10 +463,20 @@ public class TickRunner
 				mutableWorldState.putAll(fragment.world.stateFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
 				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
+				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
+				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
 				mutableCrowdState.putAll(entitiesChangedInFragment);
+				// Creatures are like entities, but in their own collection.
+				mutableCreatureState.putAll(creaturesChangedInFragment);
+				for (Integer creatureId : creaturesKilledInFragment)
+				{
+					mutableCreatureState.remove(creatureId);
+				}
+				
 				// We will also collect all the per-client commit levels.
 				combinedCommitLevels.putAll(fragment.commitLevels);
 				updatedEntities.putAll(entitiesChangedInFragment);
+				updatedCreatures.putAll(creaturesChangedInFragment);
 				committedEntityMutationCount += fragment.crowd.committedMutationCount();
 				blockChangesByCuboid.putAll(fragment.world.blockChangesByCuboid());
 				committedCuboidMutationCount += fragment.world.committedMutationCount();
@@ -470,6 +489,10 @@ public class TickRunner
 				for (Map.Entry<Integer, List<ScheduledChange>> container : fragment.newlyScheduledChanges().entrySet())
 				{
 					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
+				}
+				for (Map.Entry<Integer, List<IMutationEntity<IMutableMinimalEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
+				{
+					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
 				
 				// World data.
@@ -517,7 +540,7 @@ public class TickRunner
 					// resultantBlockChangesByCuboid
 					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
 					// visiblyChangedCreatures
-					, Collections.emptyMap()
+					, Collections.unmodifiableMap(updatedCreatures)
 					
 					// scheduledBlockMutations
 					, Collections.unmodifiableMap(snapshotBlockMutations)
@@ -599,12 +622,14 @@ public class TickRunner
 				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
 				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
 				Map<Integer, Entity> nextCrowdState = new HashMap<>();
+				Map<Integer, CreatureEntity> nextCreatureState = new HashMap<>();
 				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
 				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
 				
 				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
 				nextWorldState.putAll(_snapshot.completedCuboids);
 				nextCrowdState.putAll(_snapshot.completedEntities);
+				nextCreatureState.putAll(_snapshot.completedCreatures);
 				
 				// Add in anything new.
 				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
@@ -617,6 +642,12 @@ public class TickRunner
 						Object old = nextWorldState.put(address, cuboid);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
+						
+						// Load any creatures associated with this cuboid.
+						for (CreatureEntity creature : suspended.creatures())
+						{
+							nextCreatureState.put(creature.id(), creature);
+						}
 						
 						// Add any suspended mutations which came with the cuboid.
 						List<ScheduledMutation> mutations = suspended.mutations();
@@ -668,6 +699,19 @@ public class TickRunner
 						IReadOnlyCuboidData old = nextWorldState.remove(address);
 						// This must already be present.
 						Assert.assertTrue(null != old);
+						
+						// Remove any creatures in this cuboid.
+						// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
+						Iterator<Map.Entry<Integer, CreatureEntity>> expensive = nextCreatureState.entrySet().iterator();
+						while (expensive.hasNext())
+						{
+							Map.Entry<Integer, CreatureEntity> one = expensive.next();
+							EntityLocation loc = one.getValue().location();
+							if (loc.getBlockLocation().getCuboidAddress().equals(address))
+							{
+								expensive.remove();
+							}
+						}
 						
 						// Remove any of the scheduled operations for this cuboid.
 						nextTickMutations.remove(address);
@@ -740,12 +784,12 @@ public class TickRunner
 						, nextWorldState
 						, nextCrowdState
 						// completedCreatures
-						, Collections.emptyMap()
+						, nextCreatureState
 						
 						, nextTickMutations
 						, nextTickChanges
 						// creatureChanges
-						, Collections.emptyMap()
+						, nextCreatureChanges
 						, updatedBlockLocationsByCuboid
 						, potentialLightChangesByCuboid
 						, cuboidsLoadedThisTick

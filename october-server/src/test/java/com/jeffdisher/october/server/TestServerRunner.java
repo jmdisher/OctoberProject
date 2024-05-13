@@ -2,10 +2,12 @@ package com.jeffdisher.october.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -27,11 +29,15 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
@@ -307,6 +313,58 @@ public class TestServerRunner
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(1, entity1.inventory().sortedKeys().size());
+		
+		server.clientDisconnected(1);
+		runner.shutdown();
+	}
+
+	@Test
+	public void clientRejoinCreatures() throws Throwable
+	{
+		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		
+		// Connect.
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1);
+		Entity entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// Verify that we see the appropriate creatures - we expect 9 of them and they all be cows at the base of their cuboids.
+		Set<EntityLocation> creatureLocations = new HashSet<>();
+		for (int i = -1; i >= -9; --i)
+		{
+			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
+			Assert.assertEquals(new BlockAddress((byte)0, (byte)0, (byte)0), creature.location().getBlockLocation().getBlockAddress());
+			Assert.assertEquals(EntityType.COW, creature.type());
+			creatureLocations.add(creature.location());
+		}
+		
+		// Disconnect.
+		server.clientDisconnected(1);
+		// (remove this manually since we can't be there to see ourselves be removed).
+		network.resetClient(clientId1);
+		
+		// Reconnect and verify that the creatures are the same but with different IDs.
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1);
+		entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// NOTE:  In the future, this may not be a valid check since this assumes that they are renumbered since they are being reloaded.
+		for (int i = -10; i >= -18; --i)
+		{
+			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
+			Assert.assertEquals(new BlockAddress((byte)0, (byte)0, (byte)0), creature.location().getBlockLocation().getBlockAddress());
+			Assert.assertEquals(EntityType.COW, creature.type());
+			Assert.assertTrue(creatureLocations.contains(creature.location()));
+		}
+		// We shouldn't see any other entities (no duplicated creature state).
+		Assert.assertEquals(9, network.clientPartialEntities.get(clientId1).size());
 		
 		server.clientDisconnected(1);
 		runner.shutdown();
