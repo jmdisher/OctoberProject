@@ -30,6 +30,21 @@ public record MinimalEntity(int id
 		return result;
 	}
 
+	public static MinimalEntity fromCreature(CreatureEntity creature)
+	{
+		MinimalEntity result = null;
+		if (null != creature)
+		{
+			result = new MinimalEntity(creature.id()
+					, creature.type()
+					, creature.location()
+					, creature.zVelocityPerSecond()
+					, creature.getVolume()
+			);
+		}
+		return result;
+	}
+
 	public static MinimalEntity fromPartialEntity(PartialEntity entity)
 	{
 		MinimalEntity result = null;
