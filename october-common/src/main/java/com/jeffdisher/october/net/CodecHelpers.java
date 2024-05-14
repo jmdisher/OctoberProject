@@ -147,6 +147,7 @@ public class CodecHelpers
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
+		int energyDeficit = buffer.getInt();
 		
 		return new Entity(id
 				, location
@@ -160,6 +161,7 @@ public class CodecHelpers
 				, localCraftOperation
 				, health
 				, food
+				, energyDeficit
 		);
 	}
 
@@ -194,6 +196,7 @@ public class CodecHelpers
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
+		buffer.putInt(entity.energyDeficit());
 	}
 
 	public static PartialEntity readPartialEntity(ByteBuffer buffer)

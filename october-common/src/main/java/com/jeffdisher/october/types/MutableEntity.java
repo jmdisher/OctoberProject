@@ -55,6 +55,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, null
 				, DEFAULT_HEALTH
 				, DEFAULT_FOOD
+				, 0
 		);
 		return new MutableEntity(entity);
 	}
@@ -73,6 +74,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
+	public int newEnergyDeficit;
 
 	private MutableEntity(Entity original)
 	{
@@ -86,6 +88,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newLocalCraftOperation = original.localCraftOperation();
 		this.newHealth = original.health();
 		this.newFood = original.food();
+		this.newEnergyDeficit = original.energyDeficit();
 	}
 
 	@Override
@@ -241,6 +244,18 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newArmour[part.ordinal()] = item;
 	}
 
+	@Override
+	public int getEnergyDeficit()
+	{
+		return this.newEnergyDeficit;
+	}
+
+	@Override
+	public void setEnergyDeficit(int deficit)
+	{
+		this.newEnergyDeficit = deficit;
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
@@ -287,6 +302,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood
+				, this.newEnergyDeficit
 		);
 		// See if these are identical.
 		return this.original.equals(newInstance)

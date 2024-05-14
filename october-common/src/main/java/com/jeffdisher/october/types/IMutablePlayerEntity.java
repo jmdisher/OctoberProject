@@ -28,4 +28,8 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 	byte getFood();
 
 	void setFood(byte food);
+
+	int getEnergyDeficit();
+
+	void setEnergyDeficit(int deficit);
 }

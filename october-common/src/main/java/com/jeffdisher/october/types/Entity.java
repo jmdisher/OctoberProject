@@ -26,6 +26,8 @@ public record Entity(int id
 		, byte health
 		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
 		, byte food
+		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
+		, int energyDeficit
 )
 {
 	public static final int HOTBAR_SIZE = 9;
@@ -50,6 +52,7 @@ public record Entity(int id
 				, null
 				, (byte)0
 				, (byte)0
+				, 0
 		);
 	}
 }

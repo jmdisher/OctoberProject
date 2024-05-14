@@ -20,6 +20,11 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	public static final long MILLIS_BETWEEN_PERIODIC_UPDATES = 1000L;
 	public static final byte FOOD_HEAL_THRESHOLD = 80;
 
+	// Energy constants.
+	public static final int ENERGY_PER_FOOD = 1000;
+	// Means we will lose a food every 10 seconds.
+	public static final int ENERGY_COST_IDLE = 100;
+
 	public static EntityChangePeriodic deserializeFromBuffer(ByteBuffer buffer)
 	{
 		return new EntityChangePeriodic();
@@ -39,28 +44,12 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		// We apply some basic logic:
-		// -if food is >=80 and health is <100, increase health
-		// -if food is ==0, decrease health
-		// -if food is >0, decrease food
-		byte food = newEntity.getFood();
-		byte health = newEntity.getHealth();
-		if ((food >= FOOD_HEAL_THRESHOLD) && (health < 100))
-		{
-			health += 1;
-			newEntity.setHealth(health);
-		}
-		
-		if (food > 0)
-		{
-			food -= 1;
-			newEntity.setFood(food);
-		}
-		else
+		int damageToApply = _useEnergy(newEntity, ENERGY_COST_IDLE);
+		if (damageToApply > 0)
 		{
 			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
-			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)1);
+			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)damageToApply);
 			context.newChangeSink.next(newEntity.getId(), takeDamage);
 		}
 		
@@ -85,5 +74,48 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	{
 		// This MUST be saved since it reschedules itself.
 		return true;
+	}
+
+
+	private static int _useEnergy(IMutablePlayerEntity newEntity, int energy)
+	{
+		int deficit = newEntity.getEnergyDeficit() + energy;
+		byte foodToConsume = 0;
+		if (deficit >= ENERGY_PER_FOOD)
+		{
+			deficit -= ENERGY_PER_FOOD;
+			foodToConsume = 1;
+		}
+		newEntity.setEnergyDeficit(deficit);
+		
+		// We apply some basic logic:
+		// -if food is >=80 and health is <100, increase health
+		// -if food is ==0, decrease health
+		// -if food is >0, decrease food
+		byte food = newEntity.getFood();
+		byte health = newEntity.getHealth();
+		if ((food >= FOOD_HEAL_THRESHOLD) && (health < 100))
+		{
+			health += 1;
+			foodToConsume += 1;
+			newEntity.setHealth(health);
+		}
+		
+		int damageToApply;
+		if (food > 0)
+		{
+			food -= foodToConsume;
+			if (food < 0)
+			{
+				food = 0;
+			}
+			newEntity.setFood(food);
+			damageToApply = 0;
+		}
+		else
+		{
+			damageToApply = 1;
+		}
+		return damageToApply;
 	}
 }

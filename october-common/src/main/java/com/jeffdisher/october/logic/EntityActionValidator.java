@@ -42,6 +42,7 @@ public class EntityActionValidator
 						, entity.localCraftOperation()
 						, entity.health()
 						, entity.food()
+						, entity.energyDeficit()
 				)
 				: null
 		;
