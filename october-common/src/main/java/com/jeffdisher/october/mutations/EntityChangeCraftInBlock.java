@@ -79,11 +79,17 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 			context.mutationSink.next(mutation);
 			didApply = true;
 		}
+		if (didApply)
+		{
+			// Crafting expends energy.
+			int cost = (int)(_millisToApply * EntityChangePeriodic.ENERGY_COST_CRAFT_PER_SECOND / 1000);
+			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, cost);
+		}
 		
 		// Account for any movement while we were busy.
 		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
 		// This will need to be revisited when we change the crafting action.
-		boolean didMove = EntityChangeMove.handleMotion(newEntity, context.previousBlockLookUp, _millisToApply);
+		boolean didMove = EntityChangeMove.handleMotion(context, newEntity, _millisToApply);
 		
 		return didApply || didMove;
 	}

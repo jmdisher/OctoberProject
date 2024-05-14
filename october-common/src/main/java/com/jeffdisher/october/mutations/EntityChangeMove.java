@@ -1,12 +1,9 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
-import java.util.function.Function;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -87,17 +84,17 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	/**
 	 * Updates the given newEntity location to account for rising/falling motion, and updates the z-factor.
 	 * 
+	 * @param context The context.
 	 * @param newEntity The entity to update.
-	 * @param previousBlockLookUp The block look-up function.
 	 * @param longMillisInMotion How many milliseconds of motion to consider.
 	 * @return True if any motion change was applied, false if nothing changed or could change.
 	 */
-	public static boolean handleMotion(IMutableMinimalEntity newEntity
-			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	public static boolean handleMotion(TickProcessingContext context
+			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 	)
 	{
-		return _handleMotion(newEntity, previousBlockLookUp, longMillisInMotion, 0.0f, 0.0f);
+		return _handleMotion(context, newEntity, longMillisInMotion, 0.0f, 0.0f);
 	}
 
 
@@ -132,7 +129,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		if (oldDoesMatch)
 		{
 			long millisInMotion = _millisBeforeMovement + _getTimeMostMillis(_xDistance, _yDistance);
-			didApply = _handleMotion(newEntity, context.previousBlockLookUp, millisInMotion, _xDistance, _yDistance);
+			didApply = _handleMotion(context, newEntity, millisInMotion, _xDistance, _yDistance);
 			
 			if (didApply)
 			{
@@ -182,8 +179,8 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		return (long) (secondsFlat * 1000.0f);
 	}
 
-	private static boolean _handleMotion(IMutableMinimalEntity newEntity
-			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+	private static boolean _handleMotion(TickProcessingContext context
+			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 			, float xDistance
 			, float yDistance
@@ -197,12 +194,12 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		EntityLocation oldLocation = newEntity.getLocation();
 		EntityVolume volume = newEntity.getVolume();
 		float millisInMotion = (float)longMillisInMotion;
-		if ((newZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
+		if ((newZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(context.previousBlockLookUp, oldLocation, volume))
 		{
 			// We are up against the ceiling so cancel the velocity.
 			newZVector = 0.0f;
 		}
-		else if ((newZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(previousBlockLookUp, oldLocation, volume))
+		else if ((newZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, oldLocation, volume))
 		{
 			// We are on the ground so cancel the velocity.
 			newZVector = 0.0f;
@@ -234,7 +231,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 			// We don't want to apply this change if the entity isn't actually moving, since that will cause redundant update events.
 			didMove = false;
 		}
-		else if (SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
+		else if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
 		{
 			// They can exist in the target location so update the entity.
 			newEntity.setLocationAndVelocity(newLocation, newZVector);
@@ -246,7 +243,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 			if (zDistance > 0.0f)
 			{
 				// We were jumping to see if we can clamp our location under the block.
-				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(previousBlockLookUp, newLocation, volume, oldZ);
+				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != highestLocation)
 				{
 					newEntity.setLocationAndVelocity(highestLocation, newZVector);
@@ -261,7 +258,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 			else if (zDistance < 0.0f)
 			{
 				// We were falling so see if we can stop on the block(s) above where we fell.
-				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(previousBlockLookUp, newLocation, volume, oldZ);
+				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != lowestLocation)
 				{
 					newEntity.setLocationAndVelocity(lowestLocation, newZVector);
@@ -278,6 +275,17 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 				// We just hit a wall.
 				didMove = false;
 			}
+		}
+		
+		// If we ended up moving, see how much energy was expended.
+		if (didMove)
+		{
+			// We only account for the x/y movement (we assume we paid for jumping and falling is free).
+			// We also just sum these, instead of taking the diagonal, just for simplicity (most of the rest of the system also ignores diagonals).
+			EntityLocation finalLocation = newEntity.getLocation();
+			float distance = Math.abs(finalLocation.x() - oldLocation.x()) + Math.abs(finalLocation.y() - oldLocation.y());
+			int cost = (int)(distance * (float)EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK);
+			newEntity.applyEnergyCost(context, cost);
 		}
 		return didMove;
 	}

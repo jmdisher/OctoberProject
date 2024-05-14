@@ -50,6 +50,9 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 			
 			// Do other state reset.
 			newEntity.resetLongRunningOperations();
+			
+			// Jumping expends energy.
+			newEntity.applyEnergyCost(context, EntityChangePeriodic.ENERGY_COST_JUMP);
 		}
 		return didApply;
 	}

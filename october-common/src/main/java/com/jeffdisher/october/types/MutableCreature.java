@@ -117,6 +117,12 @@ public class MutableCreature implements IMutableMinimalEntity
 		throw Assert.unreachable();
 	}
 
+	@Override
+	public void applyEnergyCost(TickProcessingContext context, int cost)
+	{
+		// Creatures don't currently have energy so do nothing.
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.

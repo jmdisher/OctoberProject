@@ -127,14 +127,18 @@ public class TestServerRunner
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
 		network.receiveFromClient(clientId, break1, 1L);
-		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
+		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		Object mutation = network.waitForUpdate(clientId, 0);
+		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
+		mutation = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		// Send it again and see the block break.
 		network.receiveFromClient(clientId, break1, 2L);
-		// Note that the EntityChangeIncrementalBlockBreak doesn't modify the entity so we will only see the block damage update.
-		mutation = network.waitForUpdate(clientId, 1);
+		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
+		mutation = network.waitForUpdate(clientId, 2);
+		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
+		mutation = network.waitForUpdate(clientId, 3);
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		runner.shutdown();

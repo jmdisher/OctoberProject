@@ -121,12 +121,15 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 			
 			// Do other state reset.
 			newEntity.setCurrentCraftingOperation(null);
+			
+			// Breaking a block expends energy proportional to breaking time.
+			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, _millisToApply);
 		}
 		
 		// Account for any movement while we were busy.
 		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
 		// This will need to be revisited when we change how blocks are broken.
-		boolean didMove = EntityChangeMove.handleMotion(newEntity, context.previousBlockLookUp, _millisToApply);
+		boolean didMove = EntityChangeMove.handleMotion(context, newEntity, _millisToApply);
 		
 		return didApply || didMove;
 	}

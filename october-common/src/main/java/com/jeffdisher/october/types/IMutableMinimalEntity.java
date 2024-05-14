@@ -37,4 +37,13 @@ public interface IMutableMinimalEntity
 	 * with them.
 	 */
 	void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer);
+
+	/**
+	 * This is part of the minimal interface since players have a concept of energy but other creatures don't.
+	 * In the future, they might, but it would likely not be like players, anyway.
+	 * 
+	 * @param context The context where a change is running.
+	 * @param cost The cost associated with the change.
+	 */
+	void applyEnergyCost(TickProcessingContext context, int cost);
 }

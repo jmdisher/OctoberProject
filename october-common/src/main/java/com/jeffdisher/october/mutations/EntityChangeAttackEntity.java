@@ -132,6 +132,9 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 					}
 				}
 			}
+			
+			// Attacking expends a lot of energy.
+			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, EntityChangePeriodic.ENERGY_COST_ATTACK);
 		}
 		return isInRange;
 	}
