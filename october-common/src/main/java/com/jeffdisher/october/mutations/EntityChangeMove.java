@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
@@ -40,8 +41,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public static final float ENTITY_MOVE_FLAT_LIMIT_PER_SECOND = 4.0f;
 	public static final float ENTITY_MOVE_CLIMB_LIMIT_PER_SECOND = 2.0f;
 	public static final float ENTITY_MOVE_FALL_LIMIT_PER_SECOND = 20.0f;
-	public static final float GRAVITY_CHANGE_PER_SECOND = -9.8f;
-	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -20.0f;
 
 	/**
 	 * We limit the time cost of a single movement to 100 ms.  This is typically the setting for a single server-side
@@ -190,35 +189,35 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		float newZVector = newEntity.getZVelocityPerSecond();
+		float initialZVector = newEntity.getZVelocityPerSecond();
 		EntityLocation oldLocation = newEntity.getLocation();
 		EntityVolume volume = newEntity.getVolume();
-		float millisInMotion = (float)longMillisInMotion;
-		if ((newZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(context.previousBlockLookUp, oldLocation, volume))
+		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
+		float newZVector;
+		boolean shouldAllowFalling;
+		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(context.previousBlockLookUp, oldLocation, volume))
 		{
 			// We are up against the ceiling so cancel the velocity.
 			newZVector = 0.0f;
+			shouldAllowFalling = true;
 		}
-		else if ((newZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, oldLocation, volume))
+		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, oldLocation, volume))
 		{
 			// We are on the ground so cancel the velocity.
 			newZVector = 0.0f;
+			shouldAllowFalling = false;
 		}
 		else
 		{
-			// We are falling so update the velocity.
-			float delta = GRAVITY_CHANGE_PER_SECOND / 1000.0f * millisInMotion;
-			newZVector += delta;
-			// Verify terminal velocity (we only apply this to falling).
-			if (newZVector < FALLING_TERMINAL_VELOCITY_PER_SECOND)
-			{
-				newZVector = FALLING_TERMINAL_VELOCITY_PER_SECOND;
-			}
+			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
+			shouldAllowFalling = true;
 		}
 		
 		// Figure out where our new location is (requires calculating the z-movement in this time).
-		float risePerMilli = newZVector / 1000.0f;
-		float zDistance = risePerMilli * millisInMotion;
+		float zDistance = shouldAllowFalling
+				? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
+				: 0.0f
+		;
 		float oldZ = oldLocation.z();
 		float xLocation = oldLocation.x() + xDistance;
 		float yLocation = oldLocation.y() + yDistance;

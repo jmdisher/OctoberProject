@@ -138,7 +138,8 @@ public class TestCommonChanges
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
 		float expectedZVector = -0.98f;
 		// This movement would then be applied for 1/10 second.
-		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (expectedZVector / 10.0f));
+		// (note that we cut this in half since we apply the average over time, not just the one value).
+		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (0.5f * expectedZVector / 10.0f));
 		Assert.assertEquals(expectedZVector, newEntity.newZVelocityPerSecond, 0.01f);
 		Assert.assertEquals(expectedLocation, newEntity.newLocation);
 	}
@@ -507,7 +508,7 @@ public class TestCommonChanges
 		// Craft some items to use these up and verify that we also moved.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
-		Assert.assertEquals(10.2f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);
 	}
 

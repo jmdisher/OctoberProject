@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -18,7 +19,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
 	 * and has a relatively "quick" feel in play testing).
 	 */
-	public static final float JUMP_FORCE = -0.5f * EntityChangeMove.GRAVITY_CHANGE_PER_SECOND;
+	public static final float JUMP_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeJump<T> deserializeFromBuffer(ByteBuffer buffer)

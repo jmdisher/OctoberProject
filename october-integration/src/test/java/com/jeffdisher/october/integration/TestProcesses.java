@@ -155,7 +155,7 @@ public class TestProcesses
 		EntityLocation location = listener.getLocalEntity().location();
 		Assert.assertEquals(0.0f, location.x(), 0.01f);
 		Assert.assertEquals(0.0f, location.y(), 0.01f);
-		Assert.assertTrue(location.z() <= -0.098);
+		Assert.assertTrue(location.z() <= -0.049);
 		
 		// Disconnect the client.
 		client.disconnect();
