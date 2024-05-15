@@ -1536,7 +1536,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
 		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
 		int creatureId = -1;
-		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15);
+		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15, 0L);
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		int entityId = 1;
@@ -1598,7 +1598,7 @@ public class TestTickRunner
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
 		int creatureId = -1;
-		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15);
+		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15, 0L);
 		
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(creature), List.of())

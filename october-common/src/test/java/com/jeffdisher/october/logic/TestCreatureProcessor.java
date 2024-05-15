@@ -49,7 +49,7 @@ public class TestCreatureProcessor
 	public void singleChange()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)100);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
 		TickProcessingContext context = new TickProcessingContext(1
@@ -79,7 +79,7 @@ public class TestCreatureProcessor
 	public void killEntity()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)50);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)50, 0L);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);

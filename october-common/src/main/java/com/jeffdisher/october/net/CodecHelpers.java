@@ -240,11 +240,15 @@ public class CodecHelpers
 		EntityLocation location = _readEntityLocation(buffer);
 		float zVelocityPerSecond = buffer.getFloat();
 		byte health = buffer.get();
+		
+		// Ephemeral data is just given default values.
+		long lastActionGameTick = 0L;
 		return new CreatureEntity(id
 				, type
 				, location
 				, zVelocityPerSecond
 				, health
+				, lastActionGameTick
 		);
 	}
 

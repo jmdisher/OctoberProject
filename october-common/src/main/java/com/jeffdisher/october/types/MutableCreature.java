@@ -33,6 +33,7 @@ public class MutableCreature implements IMutableMinimalEntity
 	public EntityLocation newLocation;
 	public float newZVelocityPerSecond;
 	public byte newHealth;
+	public long newLastActionGameTick;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -40,6 +41,7 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.newLocation = creature.location();
 		this.newZVelocityPerSecond = creature.zVelocityPerSecond();
 		this.newHealth = creature.health();
+		this.newLastActionGameTick = creature.lastActionGameTick();
 	}
 
 	@Override
@@ -140,6 +142,7 @@ public class MutableCreature implements IMutableMinimalEntity
 					, this.newLocation
 					, this.newZVelocityPerSecond
 					, this.newHealth
+					, this.newLastActionGameTick
 			);
 			// See if these are identical.
 			newInstance = this.creature.equals(immutable)

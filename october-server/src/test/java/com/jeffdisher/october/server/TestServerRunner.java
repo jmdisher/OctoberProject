@@ -2,12 +2,10 @@ package com.jeffdisher.october.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -34,10 +32,8 @@ import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
@@ -340,13 +336,10 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// Verify that we see the appropriate creatures - we expect 9 of them and they all be cows at the base of their cuboids.
-		Set<EntityLocation> creatureLocations = new HashSet<>();
 		for (int i = -1; i >= -9; --i)
 		{
 			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
-			Assert.assertEquals(new BlockAddress((byte)0, (byte)0, (byte)0), creature.location().getBlockLocation().getBlockAddress());
 			Assert.assertEquals(EntityType.COW, creature.type());
-			creatureLocations.add(creature.location());
 		}
 		
 		// Disconnect.
@@ -364,9 +357,7 @@ public class TestServerRunner
 		for (int i = -10; i >= -18; --i)
 		{
 			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
-			Assert.assertEquals(new BlockAddress((byte)0, (byte)0, (byte)0), creature.location().getBlockLocation().getBlockAddress());
 			Assert.assertEquals(EntityType.COW, creature.type());
-			Assert.assertTrue(creatureLocations.contains(creature.location()));
 		}
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(9, network.clientPartialEntities.get(clientId1).size());

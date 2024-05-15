@@ -16,6 +16,8 @@ public record CreatureEntity(int id
 		, float zVelocityPerSecond
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
+		// These data elements are considered ephemeral and will NOT be persisted.
+		, long lastActionGameTick
 )
 {
 	// Volume constants for different creature types.

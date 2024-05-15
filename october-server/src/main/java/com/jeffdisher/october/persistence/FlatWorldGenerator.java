@@ -117,6 +117,7 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
 							, 0.0f
 							, (byte)100
+							, 0L
 					))
 					: List.of()
 			;

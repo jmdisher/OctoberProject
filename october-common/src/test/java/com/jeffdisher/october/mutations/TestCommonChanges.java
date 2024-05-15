@@ -1284,6 +1284,7 @@ public class TestCommonChanges
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, 0.0f
 				, (byte) 100
+				, 0L
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
