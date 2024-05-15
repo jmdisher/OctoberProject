@@ -130,24 +130,31 @@ public class ClientRunner
 
 	/**
 	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
-	 * distances.  The change will internally account for things like an existing z-vector, when falling or jumping,
-	 * when building the final target location.
+	 * fragments, multiplied by how far the entity can move since its last action.  The change will internally account
+	 * for things like an existing z-vector, when falling or jumping, when building the final target location.
 	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
 	 * existing z movement to be handled.
 	 * 
-	 * @param xDistance How far to move in the x direction.
-	 * @param yDistance How far to move in the y direction.
+	 * @param xMultiple The fraction of the movement in the x-direction (usually -1.0, 0.0, or +1.0).
+	 * @param yMultiple The fraction of the movement in the y-direction (usually -1.0, 0.0, or +1.0).
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
+	public void moveHorizontalFully(float xMultiple, float yMultiple, long currentTimeMillis)
 	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
 		// Make sure that at least some time has passed.
-		if (millisToApply > 0L)
+		if (currentTimeMillis > _lastCallMillis)
 		{
+			// Make sure that the fractions of the movement are valid.
+			Assert.assertTrue(1.0f == (Math.abs(xMultiple) + Math.abs(yMultiple)));
+			
+			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
+			float secondsFree = (float)millisFree / 1000.0f;
+			float distance = secondsFree * EntityChangeMove.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND;
+			Assert.assertTrue(EntityChangeMove.isValidDistance(0L, distance, 0.0f));
+			
 			// See if the horizontal movement is even feasible.
 			EntityLocation previous = _localEntityProjection.location();
-			EntityLocation validated = _findMovementTarget(xDistance, yDistance, previous);
+			EntityLocation validated = _findMovementTarget(xMultiple * distance, yMultiple * distance, previous);
 			
 			// Now, apply the move with validated the location.
 			float thisX = 0.0f;

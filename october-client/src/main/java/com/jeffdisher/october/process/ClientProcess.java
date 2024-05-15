@@ -193,18 +193,18 @@ public class ClientProcess
 
 	/**
 	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
-	 * distances.  The change will internally account for things like an existing z-vector, when falling or jumping,
-	 * when building the final target location.
+	 * fragments, multiplied by how far the entity can move since its last action.  The change will internally account
+	 * for things like an existing z-vector, when falling or jumping, when building the final target location.
 	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
 	 * existing z movement to be handled.
 	 * 
-	 * @param xDistance How far to move in the x direction.
-	 * @param yDistance How far to move in the y direction.
+	 * @param xMultiple The fraction of the movement in the x-direction (usually -1.0, 0.0, or +1.0).
+	 * @param yMultiple The fraction of the movement in the y-direction (usually -1.0, 0.0, or +1.0).
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontal(float xDistance, float yDistance, long currentTimeMillis)
+	public void moveHorizontalFully(float xMultiple, float yMultiple, long currentTimeMillis)
 	{
-		_clientRunner.moveHorizontal(xDistance, yDistance, currentTimeMillis);
+		_clientRunner.moveHorizontalFully(xMultiple, yMultiple, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
