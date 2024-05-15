@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -45,43 +46,57 @@ public class CreatureProcessor
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<Integer, List<IMutationEntity<IMutableMinimalEntity>>> elt : changesToRun.entrySet())
+		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				CreatureEntity creature = creaturesById.get(id);
+				CreatureEntity creature = elt.getValue();
+				processor.creaturesProcessed += 1;
 				
-				// Note that the entity may have been unloaded.
-				if (null != creature)
+				List<IMutationEntity<IMutableMinimalEntity>> changes = changesToRun.get(id);
+				if (null == changes)
 				{
-					processor.creaturesProcessed += 1;
-					
-					MutableCreature mutable = MutableCreature.existing(creature);
-					List<IMutationEntity<IMutableMinimalEntity>> changes = elt.getValue();
-					for (IMutationEntity<IMutableMinimalEntity> change : changes)
+					changes = List.of();
+				}
+				
+				long millisApplied = 0L;
+				MutableCreature mutable = MutableCreature.existing(creature);
+				for (IMutationEntity<IMutableMinimalEntity> change : changes)
+				{
+					processor.creatureChangesProcessed += 1;
+					boolean didApply = change.applyChange(context, mutable);
+					if (didApply)
 					{
-						processor.creatureChangesProcessed += 1;
-						boolean didApply = change.applyChange(context, mutable);
-						if (didApply)
-						{
-							committedMutationCount += 1;
-						}
+						committedMutationCount += 1;
 					}
-					
-					// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
-					// This freeze() call will return the original instance if it is identical.
-					// Note that the creature will become null if it died.
-					CreatureEntity newEntity = mutable.freeze();
-					if (null == newEntity)
+					millisApplied += change.getTimeCostMillis();
+				}
+				
+				// See if we need to account for doing nothing.
+				if (millisApplied < millisSinceLastTick)
+				{
+					long millisToWait = millisSinceLastTick - millisApplied;
+					EntityChangeDoNothing<IMutableMinimalEntity> doNothing = new EntityChangeDoNothing<>(mutable.newLocation, millisToWait);
+					boolean didApply = doNothing.applyChange(context, mutable);
+					if (didApply)
 					{
-						deadCreatureIds.add(id);
+						committedMutationCount += 1;
 					}
-					else if (newEntity != creature)
-					{
-						updatedCreatures.put(id, newEntity);
-					}
+				}
+				
+				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
+				// This freeze() call will return the original instance if it is identical.
+				// Note that the creature will become null if it died.
+				CreatureEntity newEntity = mutable.freeze();
+				if (null == newEntity)
+				{
+					deadCreatureIds.add(id);
+				}
+				else if (newEntity != creature)
+				{
+					updatedCreatures.put(id, newEntity);
 				}
 			}
 		}

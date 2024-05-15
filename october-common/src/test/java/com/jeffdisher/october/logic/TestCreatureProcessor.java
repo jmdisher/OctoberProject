@@ -10,25 +10,34 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestCreatureProcessor
 {
+	private static Environment ENV;
+	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
-		Environment.createSharedInstance();
+		ENV = Environment.createSharedInstance();
+		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -42,7 +51,13 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = null;
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
+		TickProcessingContext context = new TickProcessingContext(1
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid)
+				, null
+				, null
+				, null
+		);
 		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableMinimalEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)10);
 		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
@@ -67,8 +82,9 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
 		TickProcessingContext context = new TickProcessingContext(1
-				, null
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid)
 				, null
 				, new IMutationSink() {
 					@Override

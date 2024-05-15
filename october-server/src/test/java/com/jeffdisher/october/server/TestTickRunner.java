@@ -1589,6 +1589,45 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void fallingCreature()
+	{
+		// Load anair cuboid with a creature in it and verify that it falls as time passes.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
+		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
+		int creatureId = -1;
+		CreatureEntity creature = new CreatureEntity(creatureId, EntityType.COW, entityLocation, 0.0f, (byte)15);
+		
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, (TickRunner.Snapshot completed) -> {});
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(creature), List.of())
+				)
+				, null
+				, null
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		
+		// After this other tick, we should see the entity being available.
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		
+		// See where the entity is.
+		CreatureEntity updated = snapshot.completedCreatures().get(creatureId);
+		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.951f), updated.location());
+		Assert.assertEquals(-0.98f, updated.zVelocityPerSecond(), 0.01f);
+		
+		// Run another tick and see it move.
+		snapshot = runner.startNextTick();
+		updated = snapshot.completedCreatures().get(creatureId);
+		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.804f), updated.location());
+		Assert.assertEquals(-1.96f, updated.zVelocityPerSecond(), 0.01f);
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
