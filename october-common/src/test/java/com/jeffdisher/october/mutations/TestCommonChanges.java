@@ -62,7 +62,7 @@ public class TestCommonChanges
 		// Check that the move works if the blocks are air.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
 		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -83,7 +83,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -103,7 +103,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the target cuboid is missing.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> null
 				, null
@@ -122,7 +122,7 @@ public class TestCommonChanges
 	{
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0L, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
@@ -172,13 +172,13 @@ public class TestCommonChanges
 		// (we will use 50ms updates to see the more detailed arc)
 		for (int i = 0; i < 18; ++i)
 		{
-			EntityChangeMove<IMutablePlayerEntity> fall = new EntityChangeMove<>(newEntity.newLocation, 50L, 0.0f, 0.0f);
+			EntityChangeDoNothing<IMutablePlayerEntity> fall = new EntityChangeDoNothing<>(newEntity.newLocation, 50L);
 			didApply = fall.applyChange(context, newEntity);
 			Assert.assertTrue(didApply);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
-		EntityChangeMove<IMutablePlayerEntity> fall = new EntityChangeMove<>(newEntity.newLocation, 100L, 0.0f, 0.0f);
+		EntityChangeDoNothing<IMutablePlayerEntity> fall = new EntityChangeDoNothing<>(newEntity.newLocation, 100L);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
@@ -186,7 +186,7 @@ public class TestCommonChanges
 		Assert.assertEquals(-4.9f, newEntity.newZVelocityPerSecond, 0.01f);
 		
 		// Fall one last time to finalize "impact".
-		fall = new EntityChangeMove<>(newEntity.newLocation, 100L, 0.0f, 0.0f);
+		fall = new EntityChangeDoNothing<>(newEntity.newLocation, 100L);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());

@@ -54,9 +54,9 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	 * 
 	 * @return True if this is an acceptable move.
 	 */
-	public static boolean isValidDistance(long millisBeforeMovement, float xDistance, float yDistance)
+	public static boolean isValidDistance(float xDistance, float yDistance)
 	{
-		return _isValidDistance(millisBeforeMovement, xDistance, yDistance);
+		return _isValidDistance(xDistance, yDistance);
 	}
 
 	/**
@@ -74,10 +74,9 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public static <T extends IMutableMinimalEntity> EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		EntityLocation oldLocation = CodecHelpers.readEntityLocation(buffer);
-		long millisBeforeMovement = buffer.getLong();
 		float xDistance = buffer.getFloat();
 		float yDistance = buffer.getFloat();
-		return new EntityChangeMove<>(oldLocation, millisBeforeMovement, xDistance, yDistance);
+		return new EntityChangeMove<>(oldLocation, xDistance, yDistance);
 	}
 
 	/**
@@ -98,18 +97,16 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 
 
 	private final EntityLocation _oldLocation;
-	private final long _millisBeforeMovement;
 	private final float _xDistance;
 	private final float _yDistance;
 
-	public EntityChangeMove(EntityLocation oldLocation, long millisBeforeMovement, float xDistance, float yDistance)
+	public EntityChangeMove(EntityLocation oldLocation, float xDistance, float yDistance)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.
-		Assert.assertTrue(_isValidDistance(millisBeforeMovement, xDistance, yDistance));
+		Assert.assertTrue(_isValidDistance(xDistance, yDistance));
 		
 		_oldLocation = oldLocation;
-		_millisBeforeMovement = millisBeforeMovement;
 		_xDistance = xDistance;
 		_yDistance = yDistance;
 	}
@@ -117,7 +114,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	@Override
 	public long getTimeCostMillis()
 	{
-		return _millisBeforeMovement + _getTimeMostMillis(_xDistance, _yDistance);
+		return _getTimeMostMillis(_xDistance, _yDistance);
 	}
 
 	@Override
@@ -127,7 +124,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
 		if (oldDoesMatch)
 		{
-			long millisInMotion = _millisBeforeMovement + _getTimeMostMillis(_xDistance, _yDistance);
+			long millisInMotion = _getTimeMostMillis(_xDistance, _yDistance);
 			didApply = _handleMotion(context, newEntity, millisInMotion, _xDistance, _yDistance);
 			
 			if (didApply)
@@ -149,7 +146,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeEntityLocation(buffer, _oldLocation);
-		buffer.putLong(_millisBeforeMovement);
 		buffer.putFloat(_xDistance);
 		buffer.putFloat(_yDistance);
 	}
@@ -162,10 +158,10 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	}
 
 
-	private static boolean _isValidDistance(long millisBeforeMovement, float xDistance, float yDistance)
+	private static boolean _isValidDistance(float xDistance, float yDistance)
 	{
 		long costMillis = _getTimeMostMillis(xDistance, yDistance);
-		return ((millisBeforeMovement + costMillis) <= LIMIT_COST_MILLIS);
+		return (costMillis <= LIMIT_COST_MILLIS);
 	}
 
 	private static long _getTimeMostMillis(float xDistance, float yDistance)

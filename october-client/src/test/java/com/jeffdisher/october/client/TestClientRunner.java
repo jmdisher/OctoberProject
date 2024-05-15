@@ -308,13 +308,15 @@ public class TestClientRunner
 		// We should no be standing on the floor.
 		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.0f), location);
+		Assert.assertEquals(-6.86f, projection.thisEntity.zVelocityPerSecond(), 0.01f);
 		
-		// We will see one more change since this "-0.0f" will cause another update to "0.0f".
+		// We will see one more change in order to cancel the z-velocity.
 		currentTimeMillis += 100L;
 		expectedChangeCount += 1;
 		runner.doNothing(currentTimeMillis);
 		location = projection.thisEntity.location();
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), location);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.0f), location);
+		Assert.assertEquals(0.0f, projection.thisEntity.zVelocityPerSecond(), 0.01f);
 		
 		// Make sure we won't send another action.
 		long changeCount = projection.allEntityChangeCount;

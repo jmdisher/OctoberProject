@@ -11,6 +11,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
+import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IEntityUpdate;
@@ -150,22 +151,41 @@ public class ClientRunner
 			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
 			float secondsFree = (float)millisFree / 1000.0f;
 			float distance = secondsFree * EntityChangeMove.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND;
-			Assert.assertTrue(EntityChangeMove.isValidDistance(0L, distance, 0.0f));
+			Assert.assertTrue(EntityChangeMove.isValidDistance(distance, 0.0f));
 			
 			// See if the horizontal movement is even feasible.
 			EntityLocation previous = _localEntityProjection.location();
 			EntityLocation validated = _findMovementTarget(xMultiple * distance, yMultiple * distance, previous);
 			
-			// Now, apply the move with validated the location.
-			float thisX = 0.0f;
-			float thisY = 0.0f;
+			// Now, apply the move with validated the location (validated would be null if there is no way to partially reach our destination).
+			long effectiveCurrentTimeMillis = currentTimeMillis;
 			if (null != validated)
 			{
-				thisX = validated.x() - previous.x();
-				thisY = validated.y() - previous.y();
+				float thisX = validated.x() - previous.x();
+				float thisY = validated.y() - previous.y();
+				
+				// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
+				long millisToMove = EntityChangeMove.getTimeMostMillis(thisX, thisY);
+				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, thisX, thisY);
+				long missingMillis = (millisFree - millisToMove);
+				effectiveCurrentTimeMillis -= missingMillis;
+				_applyLocalChange(moveChange, effectiveCurrentTimeMillis);
 			}
-			_commonMove(thisX, thisY, currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
+			else
+			{
+				// We can't move horizontally but see if maybe we should generate a do nothing action to fall.
+				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, previous, _localEntityProjection.volume());
+				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
+					|| !isOnGround)
+				{
+					EntityChangeDoNothing<IMutablePlayerEntity> moveChange = new EntityChangeDoNothing<>(previous, millisFree);
+					_applyLocalChange(moveChange, effectiveCurrentTimeMillis);
+				}
+			}
+			
+			// Whether or not we did anything, run any pending calls while we are here.
+			_runAllPendingCalls(effectiveCurrentTimeMillis);
+			_lastCallMillis = effectiveCurrentTimeMillis;
 		}
 	}
 
@@ -228,8 +248,21 @@ public class ClientRunner
 			}
 			else
 			{
-				// Nothing is happening so just account for passive movement.
-				_commonMove(0.0f, 0.0f, currentTimeMillis);
+				// Nothing is happening so just account for passive movement, assuming there is any which makes sense.
+				EntityLocation oldLocation = _localEntityProjection.location();
+				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, _localEntityProjection.volume());
+				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
+						|| !isOnGround)
+				{
+					long doNothingTime = (millisToApply <= EntityChangeDoNothing.LIMIT_COST_MILLIS)
+							? millisToApply
+							: EntityChangeDoNothing.LIMIT_COST_MILLIS
+					;
+					EntityChangeDoNothing<IMutablePlayerEntity> moveChange = new EntityChangeDoNothing<>(oldLocation, doNothingTime);
+					_applyLocalChange(moveChange, currentTimeMillis);
+				}
+				// Whether or not we did anything, run any pending calls while we are here.
+				_runAllPendingCalls(currentTimeMillis);
 			}
 			_lastCallMillis = currentTimeMillis;
 		}
@@ -263,39 +296,6 @@ public class ClientRunner
 				_network.sendChange(change, localCommit);
 			});
 		}
-	}
-
-	private void _commonMove(float xDistance, float yDistance, long currentTimeMillis)
-	{
-		EntityLocation oldLocation = _localEntityProjection.location();
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, _localEntityProjection.volume());
-		// Make sure we have at least something to do:
-		// -if we have any horizontal component
-		// -if we have a z-vector (0.0 comparison should be ok since we assign it to that when stopped - not calculated)
-		// -if we aren't standing on the ground
-		if ((0.0f != xDistance) || (0.0f != yDistance)
-				|| (0.0f != _localEntityProjection.zVelocityPerSecond())
-				|| !isOnGround
-		)
-		{
-			// We assume that we spent time before this movement at least partially performing the move so update it.
-			long millisBeforeCall = (currentTimeMillis - _lastCallMillis);
-			long millisToMove = EntityChangeMove.getTimeMostMillis(xDistance, yDistance);
-			// We will skip any millis which don't fit (accounting for them all is ideal but the real-time nature of the client means we can miss some - especially during startup).
-			if (millisToMove <= millisBeforeCall)
-			{
-				Assert.assertTrue(millisToMove <= EntityChangeMove.LIMIT_COST_MILLIS);
-				long millisAbstractSlack = EntityChangeMove.LIMIT_COST_MILLIS - millisToMove;
-				long millisRealSlack = millisBeforeCall - millisToMove;
-				long millisBeforeMovement = (millisRealSlack > millisAbstractSlack) ? millisAbstractSlack : millisRealSlack;
-				Assert.assertTrue(EntityChangeMove.isValidDistance(millisBeforeMovement, xDistance, yDistance));
-				
-				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(oldLocation, millisBeforeMovement, xDistance, yDistance);
-				_applyLocalChange(moveChange, currentTimeMillis);
-			}
-		}
-		// Whether or not we did anything, run any pending calls while we are here.
-		_runAllPendingCalls(currentTimeMillis);
 	}
 
 	private void _commonCraft(Craft operation, long currentTimeMillis)
