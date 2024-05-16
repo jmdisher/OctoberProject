@@ -30,11 +30,11 @@ public class PathFinder
 	/**
 	 * Falling 1 block will still be considered as cost, but a very small one.
 	 */
-	public static final float COST_FALL = 0.1f;
+	public static final float COST_FALL = 0.5f;
 	/**
 	 * Climbing up a block should be considered expensive.
 	 */
-	public static final float COST_CLIMB = 1.0f;
+	public static final float COST_CLIMB = 1.5f;
 	/**
 	 * Walking on flat ground will be the baseline action.
 	 */
@@ -42,36 +42,18 @@ public class PathFinder
 
 	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, EntityLocation target)
 	{
-		// This algorithm currently only works for 1-block-wide entities..
-		Assert.assertTrue(volume.width() < 1.0f);
-		int height = Math.round(volume.height() + 0.49f);
-		
 		// We will limit algorithm by a limit of 2x the manhattan distance, so we don't walk too far around obstacles.
 		float manhattan = Math.abs(source.x() - target.x())
 				+ Math.abs(source.y() - target.y())
 				+ Math.abs(source.z() - target.z())
 		;
 		float limit = 2 * manhattan;
-		
-		// The core algorithm just looks at the block locations, so get those.
-		AbsoluteLocation start = source.getBlockLocation();
-		AbsoluteLocation end = target.getBlockLocation();
-		
-		float initialDistance = _getStartingDistance(source, target);
-		return _findPathWithLimit(blockTypeReader, start, end, height, limit, initialDistance);
+		return _findPathWithLimit(blockTypeReader, volume, source, target, limit);
 	}
 
 	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, EntityLocation target, float limitSteps)
 	{
-		// This algorithm currently only works for 1-block-wide entities..
-		Assert.assertTrue(volume.width() < 1.0f);
-		int height = Math.round(volume.height() + 0.49f);
-		
-		AbsoluteLocation start = source.getBlockLocation();
-		AbsoluteLocation end = target.getBlockLocation();
-		
-		float initialDistance = _getStartingDistance(source, target);
-		return _findPathWithLimit(blockTypeReader, start, end, height, limitSteps, initialDistance);
+		return _findPathWithLimit(blockTypeReader, volume, source, target, limitSteps);
 	}
 
 
@@ -86,8 +68,17 @@ public class PathFinder
 		;
 	}
 
-	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, AbsoluteLocation start, AbsoluteLocation target, int height, float limit, float initialDistance)
+	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
 	{
+		// This algorithm currently only works for 1-block-wide entities..
+		Assert.assertTrue(volume.width() < 1.0f);
+		int height = Math.round(volume.height() + 0.49f);
+		
+		AbsoluteLocation start = entitySource.getBlockLocation();
+		AbsoluteLocation target = entityTarget.getBlockLocation();
+		
+		float initialDistance = _getStartingDistance(entitySource, entityTarget);
+		
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> {
@@ -122,11 +113,6 @@ public class PathFinder
 				// -NEVER check anything already in our walked set, since we already reached that via a shorter path (since this is a priority queue).
 				// -don't bother checking "up" if we are standing on air since we would have nothing from which to "jump up".
 				
-				AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
-				AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
-				AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
-				AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
-				AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
 				AbsoluteLocation down = spotLocation.getRelative(0, 0, -1);
 				
 				// If we are standing on an air block AND the previous step was only XY movement, that means that we
@@ -139,6 +125,11 @@ public class PathFinder
 				
 				if (!didStepIntoHole)
 				{
+					AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
+					AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
+					AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
+					AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
+					
 					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, east, COST_STEP_FLAT);
 					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, west, COST_STEP_FLAT);
 					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, north, COST_STEP_FLAT);
@@ -146,6 +137,7 @@ public class PathFinder
 				}
 				if (!isStandingOnAir)
 				{
+					AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
 					_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, up, COST_CLIMB);
 				}
 				_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, down, COST_FALL);
