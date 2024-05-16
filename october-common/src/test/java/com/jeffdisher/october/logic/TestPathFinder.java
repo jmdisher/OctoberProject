@@ -2,7 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -197,10 +197,10 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		Set<AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 2.0f);
-		_printMap2D(10, 9, places);
+		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 2.0f);
+		_printStepMap2D(10, 9, 5, places);
 		places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 4.0f);
-		_printMap2D(10, 9, places);
+		_printStepMap2D(10, 9, 5, places);
 	}
 
 
@@ -217,6 +217,41 @@ public class TestPathFinder
 		for (AbsoluteLocation step : path)
 		{
 			map[step.y()][step.x()] = 'X';
+		}
+		for (int i = 0; i < y; ++i)
+		{
+			for (int j = 0; j < x; ++j)
+			{
+				System.out.print(map[i][j]);
+			}
+			System.out.println();
+		}
+	}
+
+	private static void _printStepMap2D(int x, int y, int fixedZ, Map<AbsoluteLocation, AbsoluteLocation> backStepPath)
+	{
+		char[][] map = new char[y][x];
+		for (int i = 0; i < y; ++i)
+		{
+			for (int j = 0; j < x; ++j)
+			{
+				map[i][j] = ' ';
+			}
+		}
+		for (AbsoluteLocation step : backStepPath.keySet())
+		{
+			if (fixedZ == step.z())
+			{
+				// Count how many steps this walks.
+				int count = 0;
+				AbsoluteLocation back = backStepPath.get(step);
+				while (null != back)
+				{
+					count += 1;
+					back = backStepPath.get(back);
+				}
+				map[step.y()][step.x()] = Integer.toString(count).charAt(0);
+			}
 		}
 		for (int i = 0; i < y; ++i)
 		{

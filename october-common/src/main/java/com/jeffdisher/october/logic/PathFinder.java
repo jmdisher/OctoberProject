@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -57,12 +56,24 @@ public class PathFinder
 		return _findPathWithLimit(blockTypeReader, volume, source, target, limitSteps);
 	}
 
-	public static Set<AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, float limitSteps)
+	/**
+	 * Finds all locations reachable within the given limitSteps movement cost, returning them as a map of backward
+	 * steps (that is, a key is the destination and the value is the step prior to it).
+	 * Note that not all target places may make sense since they only also include places like "jumping into the air" as
+	 * a final step.
+	 * 
+	 * @param blockTypeReader Resolves block types.
+	 * @param volume The volume of the entity (must be less than 1.0f width).
+	 * @param source The starting location of the entity.
+	 * @param limitSteps The movement cost limit.
+	 * @return The walk-back map.
+	 */
+	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, float limitSteps)
 	{
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map
 		_populateWalkbackMap(walkBackward, blockTypeReader, volume, source, null, limitSteps);
-		return walkBackward.keySet();
+		return walkBackward;
 	}
 
 
