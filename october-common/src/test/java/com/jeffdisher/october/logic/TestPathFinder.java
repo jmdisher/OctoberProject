@@ -1,6 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -177,8 +179,32 @@ public class TestPathFinder
 		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
 	}
 
+	@Test
+	public void reachableMaze()
+	{
+		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
+		EntityLocation source = new EntityLocation(5.5f, 5.5f, 5.0f);
+		int floor = 4;
+		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver(floor, new String[] {
+				"AAAAAAAAAA",
+				"AAAAAAAAAA",
+				"ASSSSSSSSS",
+				"AAAAAAAAAA",
+				"AAASSSSSAA",
+				"AAASAAAASA",
+				"AAASASSAAA",
+				"AAAASAAAAA",
+				"AAAAAAAAAA",
+		});
+		// We want to show what is reachable in the maze for different distances.
+		Set<AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 2.0f);
+		_printMap2D(10, 9, places);
+		places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 4.0f);
+		_printMap2D(10, 9, places);
+	}
 
-	private static void _printMap2D(int x, int y, List<AbsoluteLocation> path)
+
+	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{
 		char[][] map = new char[y][x];
 		for (int i = 0; i < y; ++i)

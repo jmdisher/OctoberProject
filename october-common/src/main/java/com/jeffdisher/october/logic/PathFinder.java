@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -56,6 +57,14 @@ public class PathFinder
 		return _findPathWithLimit(blockTypeReader, volume, source, target, limitSteps);
 	}
 
+	public static Set<AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation source, float limitSteps)
+	{
+		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
+		// This will populate the walkBackward map
+		_populateWalkbackMap(walkBackward, blockTypeReader, volume, source, null, limitSteps);
+		return walkBackward.keySet();
+	}
+
 
 	private static float _getStartingDistance(EntityLocation source, EntityLocation target)
 	{
@@ -70,17 +79,37 @@ public class PathFinder
 
 	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
 	{
+		// Key is destination.
+		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
+		// This will populate the walkBackward map and return the final spot for entityTarget, assuming it could be reached.
+		Spot targetSpot = _populateWalkbackMap(walkBackward, blockTypeReader, volume, entitySource, entityTarget, limit);
+		List<AbsoluteLocation> path = null;
+		if (null != targetSpot)
+		{
+			// We found the target so find the path.
+			path = new ArrayList<>();
+			AbsoluteLocation back = targetSpot.location;
+			while (null != back)
+			{
+				path.add(0, back);
+				back = walkBackward.get(back);
+			}
+		}
+		return path;
+	}
+
+	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, Function<AbsoluteLocation, Short> blockTypeReader, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	{
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
 		int height = Math.round(volume.height() + 0.49f);
 		
 		AbsoluteLocation start = entitySource.getBlockLocation();
-		AbsoluteLocation target = entityTarget.getBlockLocation();
+		AbsoluteLocation target = (null != entityTarget) ? entityTarget.getBlockLocation() : null;
 		
-		float initialDistance = _getStartingDistance(entitySource, entityTarget);
+		float initialDistance = (null != target) ? _getStartingDistance(entitySource, entityTarget): 0.0f;
 		
 		// Key is destination.
-		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		PriorityQueue<Spot> workQueue = new PriorityQueue<>((Spot one, Spot two) -> {
 			float difference = one.distance - two.distance;
 			int signum = 0;
@@ -100,8 +129,8 @@ public class PathFinder
 		while ((null == targetSpot) && !workQueue.isEmpty())
 		{
 			Spot spot = workQueue.remove();
-			// If this is the target, we are done.
-			if (target.equals(spot.location))
+			// If this is the target, we are done (note that target can be null if we are just building the map).
+			if (spot.location.equals(target))
 			{
 				targetSpot = spot;
 			}
@@ -143,19 +172,7 @@ public class PathFinder
 				_tryAddSpot(walkBackward, workQueue, blockTypeReader, limit, height, spot, down, COST_FALL);
 			}
 		}
-		List<AbsoluteLocation> path = null;
-		if (null != targetSpot)
-		{
-			// We found the target so find the path.
-			path = new ArrayList<>();
-			AbsoluteLocation back = targetSpot.location;
-			while (null != back)
-			{
-				path.add(0, back);
-				back = walkBackward.get(back);
-			}
-		}
-		return path;
+		return targetSpot;
 	}
 
 
