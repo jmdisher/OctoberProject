@@ -1,10 +1,12 @@
 package com.jeffdisher.october.types;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
@@ -34,6 +36,8 @@ public class MutableCreature implements IMutableMinimalEntity
 	public float newZVelocityPerSecond;
 	public byte newHealth;
 	public long newLastActionGameTick;
+	public List<IMutationEntity<IMutableMinimalEntity>> newStepsToNextMove;
+	public List<AbsoluteLocation> newMovementPlan;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -42,6 +46,8 @@ public class MutableCreature implements IMutableMinimalEntity
 		this.newZVelocityPerSecond = creature.zVelocityPerSecond();
 		this.newHealth = creature.health();
 		this.newLastActionGameTick = creature.lastActionGameTick();
+		this.newStepsToNextMove = creature.stepsToNextMove();
+		this.newMovementPlan = creature.movementPlan();
 	}
 
 	@Override
@@ -143,6 +149,8 @@ public class MutableCreature implements IMutableMinimalEntity
 					, this.newZVelocityPerSecond
 					, this.newHealth
 					, this.newLastActionGameTick
+					, this.newStepsToNextMove
+					, this.newMovementPlan
 			);
 			// See if these are identical.
 			newInstance = this.creature.equals(immutable)

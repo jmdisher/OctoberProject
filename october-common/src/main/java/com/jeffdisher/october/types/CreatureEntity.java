@@ -1,5 +1,8 @@
 package com.jeffdisher.october.types;
 
+import java.util.List;
+
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -17,7 +20,12 @@ public record CreatureEntity(int id
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
 		// These data elements are considered ephemeral and will NOT be persisted.
+		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
 		, long lastActionGameTick
+		// The next steps required to get to the next step in movementPlan.
+		, List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove
+		// The sequence of locations where this creature plans to go.
+		, List<AbsoluteLocation> movementPlan
 )
 {
 	// Volume constants for different creature types.

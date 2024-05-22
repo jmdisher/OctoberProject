@@ -1285,6 +1285,8 @@ public class TestCommonChanges
 				, 0.0f
 				, (byte) 100
 				, 0L
+				, null
+				, null
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
