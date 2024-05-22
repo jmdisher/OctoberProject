@@ -193,4 +193,14 @@ public class TestSpatialHelpers
 		// Note that we will need to treat -0.0 and 0.0 as the same in various places in the system.
 		Assert.assertEquals(new EntityLocation(0.0f, -0.0f, 0.0f), touching);
 	}
+
+	@Test
+	public void blockAlignment()
+	{
+		// Test the basics of block alignment.
+		Assert.assertTrue(SpatialHelpers.isBlockAligned(0.00f));
+		Assert.assertTrue(SpatialHelpers.isBlockAligned(-1.00f));
+		Assert.assertFalse(SpatialHelpers.isBlockAligned(0.005f));
+		Assert.assertFalse(SpatialHelpers.isBlockAligned(-0.005f));
+	}
 }

@@ -320,6 +320,18 @@ public class SpatialHelpers
 		);
 	}
 
+	/**
+	 * Returns true if the given coordinate is block-aligned.  This means that it will be close enough to a X.00f value
+	 * for us to assume that it _is_ that integer value.
+	 * 
+	 * @param coord The coordinate to check.
+	 * @return True if this is aligned.
+	 */
+	public static boolean isBlockAligned(float coord)
+	{
+		return _isBlockAligned(coord);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
