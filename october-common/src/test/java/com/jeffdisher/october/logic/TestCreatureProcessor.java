@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -32,11 +33,13 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestCreatureProcessor
 {
 	private static Environment ENV;
+	private static Block AIR;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass
@@ -116,5 +119,240 @@ public class TestCreatureProcessor
 		Assert.assertEquals(creature.id(), group.deadCreatureIds().get(0).intValue());
 		// This is a cow so we should see it drop an item.
 		Assert.assertTrue(mutationHolder[0] instanceof MutationBlockStoreItems);
+	}
+
+	@Test
+	public void decideOnMovement()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertNotNull(updated.stepsToNextMove());
+		Assert.assertNotNull(updated.movementPlan());
+	}
+
+	@Test
+	public void takeNextStep()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.4f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), 0.0f, 0.4f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), 0.0f, 0.2f)
+		);
+		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
+			, new AbsoluteLocation(0, 1, 1)
+		);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, movementPlan);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertEquals(2, updated.stepsToNextMove().size());
+		Assert.assertEquals(2, updated.movementPlan().size());
+	}
+
+	@Test
+	public void endStep()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
+		List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.2f)
+		);
+		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
+			, new AbsoluteLocation(0, 1, 1)
+		);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, movementPlan);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertNull(updated.stepsToNextMove());
+		Assert.assertEquals(2, updated.movementPlan().size());
+	}
+
+	@Test
+	public void startNextStep()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
+		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
+			, new AbsoluteLocation(0, 1, 1)
+		);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, movementPlan);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertEquals(3.92f, updated.zVelocityPerSecond(), 0.001f);
+		// We should only jump so there will be no next movement.
+		Assert.assertNull(updated.stepsToNextMove());
+		Assert.assertEquals(1, updated.movementPlan().size());
+	}
+
+	@Test
+	public void waitForJump()
+	{
+		// In this test, we should just be waiting for a jump to have an effect.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
+		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
+		);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 3.92f, (byte)100, 0L, null, movementPlan);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertEquals(2.94f, updated.zVelocityPerSecond(), 0.001f);
+		// We should only jump so there will be no next movement.
+		Assert.assertNull(updated.stepsToNextMove());
+		Assert.assertEquals(1, updated.movementPlan().size());
+	}
+
+	@Test
+	public void moveAfterJump()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
+		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
+			, new AbsoluteLocation(0, 1, 1)
+		);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, movementPlan);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return ((short)-1 == location.z())
+						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+						: new BlockProxy(location.getBlockAddress(), airCuboid)
+					;
+				}
+				, null
+				, null
+				, null
+		);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertEquals(2, updated.stepsToNextMove().size());
+		Assert.assertEquals(1, updated.movementPlan().size());
 	}
 }
