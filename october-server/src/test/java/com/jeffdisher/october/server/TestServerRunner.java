@@ -100,7 +100,9 @@ public class TestServerRunner
 		Entity entity2_2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2_2);
 		server.clientDisconnected(1);
+		network.resetClient(1);
 		server.clientDisconnected(2);
+		network.resetClient(2);
 		runner.shutdown();
 	}
 
@@ -236,11 +238,13 @@ public class TestServerRunner
 		Entity entity2_2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2_2);
 		server.clientDisconnected(1);
+		network.resetClient(1);
 		
 		// For them to disappear.
 		network.waitForEntityRemoval(clientId2, clientId1);
 		
 		server.clientDisconnected(2);
+		network.resetClient(2);
 		runner.shutdown();
 	}
 
@@ -277,6 +281,7 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId1, 8);
 		
 		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
 		runner.shutdown();
 	}
 
@@ -304,7 +309,7 @@ public class TestServerRunner
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
 		// Disconnect.
-		server.clientDisconnected(1);
+		server.clientDisconnected(clientId1);
 		// (remove this manually since we can't be there to see ourselves be removed).
 		network.resetClient(clientId1);
 		
@@ -315,7 +320,8 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(1, entity1.inventory().sortedKeys().size());
 		
-		server.clientDisconnected(1);
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
 		runner.shutdown();
 	}
 
@@ -343,7 +349,7 @@ public class TestServerRunner
 		}
 		
 		// Disconnect.
-		server.clientDisconnected(1);
+		server.clientDisconnected(clientId1);
 		// (remove this manually since we can't be there to see ourselves be removed).
 		network.resetClient(clientId1);
 		
@@ -362,7 +368,8 @@ public class TestServerRunner
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(9, network.clientPartialEntities.get(clientId1).size());
 		
-		server.clientDisconnected(1);
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
 		runner.shutdown();
 	}
 
@@ -387,6 +394,9 @@ public class TestServerRunner
 		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
 		public long lastTick = 0L;
+		
+		// Internal interlock related to disconnect acks.
+		private int _pendingDisconnect = 0;
 		
 		@Override
 		public synchronized void readyAndStartListening(IServerAdapter.IListener listener)
@@ -479,6 +489,23 @@ public class TestServerRunner
 		public synchronized void disconnectClient(int clientId)
 		{
 		}
+		@Override
+		public synchronized void acknowledgeDisconnect(int clientId)
+		{
+			while (0 != _pendingDisconnect)
+			{
+				try
+				{
+					this.wait();
+				}
+				catch (InterruptedException e)
+				{
+					throw new AssertionError(e);
+				}
+			}
+			_pendingDisconnect = clientId;
+			this.notifyAll();
+		}
 		
 		public synchronized IServerAdapter.IListener waitForServer(long ticksToAwait) throws InterruptedException
 		{
@@ -565,14 +592,20 @@ public class TestServerRunner
 				this.server.clientReadReady(clientId);
 			}
 		}
-		public synchronized void resetClient(int clientId)
+		public synchronized void resetClient(int clientId) throws InterruptedException
 		{
+			while (clientId != _pendingDisconnect)
+			{
+				this.wait();
+			}
 			this.packets.remove(clientId);
 			this.clientFullEntities.remove(clientId);
 			this.clientPartialEntities.remove(clientId);
 			this.clientUpdates.remove(clientId);
 			this.clientCuboidAddedCount.remove(clientId);
 			this.clientCuboidRemovedCount.remove(clientId);
+			_pendingDisconnect = 0;
+			this.notifyAll();
 		}
 	}
 }

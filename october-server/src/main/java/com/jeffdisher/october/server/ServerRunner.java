@@ -180,6 +180,8 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				_stateManager.clientDisconnected(clientId);
+				// This message is now in-order so we can ack the disconnect.
+				_network.acknowledgeDisconnect(clientId);
 			});
 		}
 		@Override

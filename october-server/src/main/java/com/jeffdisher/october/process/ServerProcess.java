@@ -2,7 +2,9 @@ package com.jeffdisher.october.process;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidCodec;
@@ -37,6 +39,7 @@ import com.jeffdisher.october.utils.Assert;
 public class ServerProcess
 {
 	private final Map<Integer, ClientBuffer> _clientsById;
+	private final Set<Integer> _partialDisconnectIds;
 	private final ServerRunner _server;
 	private final NetworkServer<ClientBuffer> _network;
 
@@ -63,6 +66,7 @@ public class ServerProcess
 	) throws IOException
 	{
 		_clientsById = new HashMap<>();
+		_partialDisconnectIds = new HashSet<>();
 		// We will assume that ServerRunner will shut down the cuboidLoader for us.
 		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
 		// The server passes its listener back within the constructor so we should see that, now.
@@ -108,7 +112,7 @@ public class ServerProcess
 			// This is a corner-case but we never want a non-negative value so we work around 0 here.
 			hash = 1;
 		}
-		if (_clientsById.containsKey(hash))
+		if (_clientsById.containsKey(hash) || _partialDisconnectIds.contains(hash))
 		{
 			// Already present, so fail.
 			result = null;
@@ -126,6 +130,10 @@ public class ServerProcess
 
 	private synchronized void _destroyClient(ClientBuffer buffer)
 	{
+		// We will put this in the partial disconnects so that the higher-level needs to ack it.
+		// (this avoids racy reconnects seeing old data before the high-level decides to send new data)
+		_partialDisconnectIds.add(buffer.clientId);
+		
 		_serverListener.clientDisconnected(buffer.clientId);
 		_clientsById.remove(buffer.clientId);
 	}
@@ -145,6 +153,7 @@ public class ServerProcess
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			Assert.assertTrue(_partialDisconnectIds.contains(clientId));
 			System.out.println("Warning: Ignoring buffer packet to client " + clientId);
 		}
 		else
@@ -162,12 +171,19 @@ public class ServerProcess
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			Assert.assertTrue(_partialDisconnectIds.contains(clientId));
 			System.out.println("Warning: Ignoring disconnect request to client " + clientId);
 		}
 		else
 		{
 			_network.disconnectClient(buffer.token);
 		}
+	}
+
+	private synchronized void _ackDisconnect(int clientId)
+	{
+		boolean didAck = _partialDisconnectIds.remove(clientId);
+		Assert.assertTrue(didAck);
 	}
 
 	public synchronized void _updateTickNumber(long tickNumber)
@@ -192,6 +208,7 @@ public class ServerProcess
 		if (null == buffer)
 		{
 			// This is due to a race:  Disconnects come from the network while packets come from the logic.
+			Assert.assertTrue(_partialDisconnectIds.contains(clientId));
 			System.out.println("Warning: Ignoring peek next mutation from client " + clientId);
 			packet = null;
 		}
@@ -316,6 +333,12 @@ public class ServerProcess
 		{
 			// We just pass this along since we will handle any state update when we see the disconnected callback (so there is only one relevant path).
 			_sendDisconnectRequest(clientId);
+		}
+		@Override
+		public void acknowledgeDisconnect(int clientId)
+		{
+			// This comes in from the higher-level AFTER we have told them that the network disconnected asynchronously so that the higher-level acknowledges this.
+			_ackDisconnect(clientId);
 		}
 	}
 }

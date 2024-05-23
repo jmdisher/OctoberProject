@@ -111,6 +111,13 @@ public interface IServerAdapter
 	 * @param clientId The ID of the client (as assigned by the adapter implementation).
 	 */
 	void disconnectClient(int clientId);
+	/**
+	 * MUST be called after the clientDisconnected(clientId) callback so that the network layer will know that the
+	 * higher-level is done talking about this client.
+	 * 
+	 * @param clientId The ID of the client which was disconnected.
+	 */
+	void acknowledgeDisconnect(int clientId);
 
 
 	/**
@@ -126,6 +133,7 @@ public interface IServerAdapter
 		void clientConnected(int clientId);
 		/**
 		 * Called when a client disconnects.
+		 * Note that a call receiving this MUST call acknowledgeDisconnect(clientId) once it has accounted for this.
 		 * 
 		 * @param clientId The ID of the client (as assigned by the adapter implementation).
 		 */
