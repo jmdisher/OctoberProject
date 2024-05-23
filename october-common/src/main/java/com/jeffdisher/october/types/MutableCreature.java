@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -65,7 +66,8 @@ public class MutableCreature implements IMutableMinimalEntity
 	@Override
 	public EntityVolume getVolume()
 	{
-		return this.creature.getVolume();
+		// TODO:  Change how we get this volume so we keep the package layering logical.
+		return CreatureVolumes.getVolume(this.creature);
 	}
 
 	@Override
@@ -93,7 +95,8 @@ public class MutableCreature implements IMutableMinimalEntity
 		// For now, just drop wheat item for all creatures.
 		// TODO:  Define this drop loot table in data.
 		Environment env = Environment.getShared();
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, this.creature.getVolume());
+		// TODO:  Change how we get this volume so we keep the package layering logical.
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, CreatureVolumes.getVolume(this.creature));
 		Items toDrop = new Items(env.items.getItemById("op.wheat_item"), 1);
 		mutationConsumer.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		this.newHealth = 0;

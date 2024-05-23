@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.creatures.CreatureVolumes;
 
 /**
  * A variant of "Entity" for the cases where this is something which can move in the world, but the client can't see its
@@ -31,7 +32,8 @@ public record PartialEntity(int id
 				, entity.type()
 				, entity.location()
 				, entity.zVelocityPerSecond()
-				, entity.getVolume()
+				// TODO:  Change how we get this volume so we keep the package layering logical.
+				, CreatureVolumes.getVolume(entity)
 		);
 	}
 }

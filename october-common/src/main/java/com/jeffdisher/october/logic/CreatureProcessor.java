@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
+import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -187,7 +188,7 @@ public class CreatureProcessor
 					: (short)0
 			;
 		};
-		EntityVolume volume = creature.getVolume();
+		EntityVolume volume = CreatureVolumes.getVolume(creature);
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockTypeReader, volume, source, limitSteps);

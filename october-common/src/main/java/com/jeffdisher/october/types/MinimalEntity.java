@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.creatures.CreatureVolumes;
 
 /**
  * The minimal part of an Entity which is common for all kinds of moving entities within the world (be they player,
@@ -39,7 +40,8 @@ public record MinimalEntity(int id
 					, creature.type()
 					, creature.location()
 					, creature.zVelocityPerSecond()
-					, creature.getVolume()
+					// TODO:  Change how we get this volume so we keep the package layering logical.
+					, CreatureVolumes.getVolume(creature)
 			);
 		}
 		return result;

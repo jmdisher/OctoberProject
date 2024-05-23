@@ -3,7 +3,6 @@ package com.jeffdisher.october.types;
 import java.util.List;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -28,20 +27,4 @@ public record CreatureEntity(int id
 		, List<AbsoluteLocation> movementPlan
 )
 {
-	// Volume constants for different creature types.
-	public static final EntityVolume VOLUME_COW = new EntityVolume(0.7f, 0.8f);
-
-	public EntityVolume getVolume()
-	{
-		EntityVolume volume;
-		switch (type)
-		{
-		case COW:
-			volume = VOLUME_COW;
-			break;
-		default:
-			throw Assert.unreachable();
-		}
-		return volume;
-	}
 }

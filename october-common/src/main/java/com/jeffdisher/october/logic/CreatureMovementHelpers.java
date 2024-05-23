@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -30,7 +31,7 @@ public class CreatureMovementHelpers
 	public static List<IMutationEntity<IMutableMinimalEntity>> centreOnCurrentBlock(CreatureEntity creature)
 	{
 		EntityLocation location = creature.location();
-		float width = creature.getVolume().width();
+		float width = CreatureVolumes.getVolume(creature).width();
 		int baseX = (int) Math.floor(location.x());
 		int baseY = (int) Math.floor(location.y());
 		int edgeX = (int) Math.floor(location.x() + width);
