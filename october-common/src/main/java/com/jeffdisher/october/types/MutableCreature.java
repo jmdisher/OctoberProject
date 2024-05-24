@@ -112,6 +112,10 @@ public class MutableCreature implements IMutableMinimalEntity
 	public void setHealth(byte health)
 	{
 		this.newHealth = health;
+		
+		// Whenever a creature's health changes, we will wipe its AI state.
+		this.newStepsToNextMove = null;
+		this.newMovementPlan = null;
 	}
 
 	@Override
