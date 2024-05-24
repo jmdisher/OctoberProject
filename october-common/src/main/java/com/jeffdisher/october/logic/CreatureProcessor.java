@@ -5,8 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
@@ -180,18 +181,18 @@ public class CreatureProcessor
 	private static List<AbsoluteLocation> _findPath(TickProcessingContext context, Random random, CreatureEntity creature)
 	{
 		// Our current only action is to find a block nearby and walk to it.
-		// TODO:  The PathFinder interface should work on blocks, instead of numbers, so it can see if they are colliding, on a higher level.
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation location) -> {
+		Environment environment = Environment.getShared();
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
 			BlockProxy proxy = context.previousBlockLookUp.apply(location);
 			return (null != proxy)
-					? proxy.getBlock().item().number()
-					: (short)0
+					? environment.blocks.permitsEntityMovement(proxy.getBlock())
+					: false
 			;
 		};
 		EntityVolume volume = CreatureVolumes.getVolume(creature);
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockTypeReader, volume, source, limitSteps);
+		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);
 		// Just pick one of these destinations at random, of default to standing still.
 		int size = possiblePaths.size();
 		List<AbsoluteLocation> plannedPath;

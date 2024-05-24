@@ -1,7 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
@@ -21,12 +21,12 @@ public class EntityActionValidator
 		// No instantiation.
 	}
 
-	public static Entity moveEntity(Function<AbsoluteLocation, Short> blockTypeReader, Entity entity, EntityLocation newLocation, int ticksToMove)
+	public static Entity moveEntity(Predicate<AbsoluteLocation> blockPermitsUser, Entity entity, EntityLocation newLocation, int ticksToMove)
 	{
 		// First, see how many blocks they could possibly move in this time.
 		float maxDistance = ticksToMove * entity.blocksPerTickSpeed();
 		// Check the path-finder to see if a path exists.
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockTypeReader, entity.volume(), entity.location(), newLocation, maxDistance);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, entity.volume(), entity.location(), newLocation, maxDistance);
 		// NOTE:  We currently ignore collision with other entities, but that may change in the future.
 		// TODO:  We may need to do additional checking or synthesize mutations for things like pressure-plates in the future.
 		return (null != path)

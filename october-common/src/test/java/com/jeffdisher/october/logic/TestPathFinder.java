@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -19,11 +19,10 @@ import com.jeffdisher.october.types.EntityVolume;
 public class TestPathFinder
 {
 	private static final EntityVolume VOLUME = new EntityVolume(1.8f, 0.5f);
-	private static Environment ENV;
 	@BeforeClass
 	public static void setup()
 	{
-		ENV = Environment.createSharedInstance();
+		Environment.createSharedInstance();
 	}
 	@AfterClass
 	public static void tearDown()
@@ -39,8 +38,8 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		
 		// We expect to see 29 steps, since the source counts as a step.
 		int xSteps = 4 + 11;
@@ -54,8 +53,8 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, -5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 7.0f);
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (l.y() == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (location.y() == location.z()) ? false : true;
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		
 		// This is walking directly so the path should involve as many steps as difference in each axis (+1 for the start).
 		int xSteps = 4 + 11;
@@ -71,13 +70,13 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
-			return ((floor == l.z()) || (0 == l.y()))
-					? ENV.items.STONE.number()
-					: ENV.items.AIR.number()
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
+			return ((floor == location.z()) || (0 == location.y()))
+					? false
+					: true
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -88,13 +87,13 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(-10.5f, -6.5f, 5.0f);
 		EntityLocation target = new EntityLocation(4.5f, 6.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> {
-			return ((floor == l.z()) && (0 == l.y()))
-					? ENV.items.STONE.number()
-					: ENV.items.AIR.number()
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
+			return ((floor == location.z()) || (0 == location.y()))
+					? false
+					: true
 			;
 		};
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		Assert.assertNull(path);
 	}
 
@@ -105,7 +104,7 @@ public class TestPathFinder
 		EntityLocation source = new EntityLocation(0.0f, 1.0f, 5.0f);
 		EntityLocation target = new EntityLocation(4.0f, 6.0f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver(floor, new String[] {
+		Predicate<AbsoluteLocation> blockPermitsUser = new MapResolver(floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -116,7 +115,7 @@ public class TestPathFinder
 				"AAAASAAAAA",
 				"AAAAAAAAAA",
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		_printMap2D(9, 9, path);
 	}
 
@@ -126,7 +125,7 @@ public class TestPathFinder
 		// We want to fall through a small hole, go down a few layers, and then catch the ledge.
 		EntityLocation source = new EntityLocation(1.5f, 2.5f, 4.0f);
 		EntityLocation target = new EntityLocation(3.5f, 2.5f, 1.0f);
-		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver3D(new String[][] {
+		Predicate<AbsoluteLocation> blockPermitsUser = new MapResolver3D(new String[][] {
 			new String[] {
 					"SSSSS",
 					"SSSSS",
@@ -171,7 +170,7 @@ public class TestPathFinder
 					"SSSSS",
 			}
 		});
-		List<AbsoluteLocation> path = PathFinder.findPath(blockTypeReader, VOLUME, source, target);
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
 		// This is a direct walk, with a fall in the middle, so it should just be the difference in locations +1 to start.
 		int xSteps = 2;
 		int ySteps = 0;
@@ -185,7 +184,7 @@ public class TestPathFinder
 		// The block location is the "base" of the block, much like the entity z is the base of the block where it is standing.
 		EntityLocation source = new EntityLocation(5.5f, 5.5f, 5.0f);
 		int floor = 4;
-		Function<AbsoluteLocation, Short> blockTypeReader = new MapResolver(floor, new String[] {
+		Predicate<AbsoluteLocation> blockPermitsUser = new MapResolver(floor, new String[] {
 				"AAAAAAAAAA",
 				"AAAAAAAAAA",
 				"ASSSSSSSSS",
@@ -197,9 +196,9 @@ public class TestPathFinder
 				"AAAAAAAAAA",
 		});
 		// We want to show what is reachable in the maze for different distances.
-		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 2.0f);
+		Map<AbsoluteLocation, AbsoluteLocation> places = PathFinder.findPlacesWithinLimit(blockPermitsUser, VOLUME, source, 2.0f);
 		_printStepMap2D(10, 9, 5, places);
-		places = PathFinder.findPlacesWithinLimit(blockTypeReader, VOLUME, source, 4.0f);
+		places = PathFinder.findPlacesWithinLimit(blockPermitsUser, VOLUME, source, 4.0f);
 		_printStepMap2D(10, 9, 5, places);
 	}
 
@@ -264,15 +263,15 @@ public class TestPathFinder
 	}
 
 
-	private static record MapResolver(int floorZ, String[] map) implements Function<AbsoluteLocation, Short>
+	private static record MapResolver(int floorZ, String[] map) implements Predicate<AbsoluteLocation>
 	{
 		@Override
-		public Short apply(AbsoluteLocation l)
+		public boolean test(AbsoluteLocation l)
 		{
-			short value = ENV.items.AIR.number();
+			boolean allowsMovement = true;
 			if (this.floorZ == l.z())
 			{
-				value = ENV.items.STONE.number();
+				allowsMovement = false;
 			}
 			else
 			{
@@ -284,23 +283,23 @@ public class TestPathFinder
 					char c = this.map[l.y()].charAt(l.x());
 					if ('S' == c)
 					{
-						value = ENV.items.STONE.number();
+						allowsMovement = false;
 					}
 				}
 				else
 				{
-					value = ENV.items.STONE.number();
+					allowsMovement = false;
 				}
 			}
-			return value;
+			return allowsMovement;
 		}
 	}
 
 
-	private static record MapResolver3D(String[][] map) implements Function<AbsoluteLocation, Short>
+	private static record MapResolver3D(String[][] map) implements Predicate<AbsoluteLocation>
 	{
 		@Override
-		public Short apply(AbsoluteLocation l)
+		public boolean test(AbsoluteLocation l)
 		{
 			String[] layer = this.map[l.z()];
 			int x = l.x();
@@ -310,8 +309,8 @@ public class TestPathFinder
 			);
 			char c = layer[l.y()].charAt(l.x());
 			return ('S' == c)
-					? ENV.items.STONE.number()
-					: ENV.items.AIR.number()
+					? false
+					: true
 			;
 		}
 	}

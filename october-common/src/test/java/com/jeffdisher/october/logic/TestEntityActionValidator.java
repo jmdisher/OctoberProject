@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -16,11 +16,10 @@ import com.jeffdisher.october.types.MutableEntity;
 
 public class TestEntityActionValidator
 {
-	private static Environment ENV;
 	@BeforeClass
 	public static void setup()
 	{
-		ENV = Environment.createSharedInstance();
+		Environment.createSharedInstance();
 	}
 	@AfterClass
 	public static void tearDown()
@@ -33,13 +32,13 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), so test that.
 		EntityLocation loc = start.location();
 		EntityLocation target = new EntityLocation(loc.x() + 5.0f, loc.y(), loc.z());
-		Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, target, 10);
+		Entity updated = EntityActionValidator.moveEntity(blockPermitsUser, start, target, 10);
 		Assert.assertNotNull(updated);
 		Assert.assertEquals(target, updated.location());
 	}
@@ -49,12 +48,12 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), so test that - walking half a block will fail.
 		EntityLocation loc = start.location();
-		Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, new EntityLocation(loc.x() + 5.5f, loc.y(), loc.z()), 10);
+		Entity updated = EntityActionValidator.moveEntity(blockPermitsUser, start, new EntityLocation(loc.x() + 5.5f, loc.y(), loc.z()), 10);
 		Assert.assertNull(updated);
 	}
 
@@ -63,7 +62,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Function<AbsoluteLocation, Short> blockTypeReader = (AbsoluteLocation l) -> (floor == l.z()) ? ENV.items.STONE.number() : ENV.items.AIR.number();
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), show that we can tip-toe around.
@@ -71,7 +70,7 @@ public class TestEntityActionValidator
 		{
 			EntityLocation loc = start.location();
 			EntityLocation target = new EntityLocation(loc.x() + 0.5f, loc.y(), loc.z());
-			Entity updated = EntityActionValidator.moveEntity(blockTypeReader, start, target, 1);
+			Entity updated = EntityActionValidator.moveEntity(blockPermitsUser, start, target, 1);
 			Assert.assertNotNull(updated);
 			Assert.assertEquals(target, updated.location());
 			start = updated;
