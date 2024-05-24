@@ -12,19 +12,33 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Attempts to eat the currently selected block, incrementing food level if it is edible.
+ * Handles the "right-click with selection" case for specific items.
+ * An example of this is a piece of bread being used in order to eat it.
  */
-public class EntityChangeEatSelectedItem implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.EAT_ITEM;
+	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_SELF;
 
-	public static EntityChangeEatSelectedItem deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeUseSelectedItemOnSelf deserializeFromBuffer(ByteBuffer buffer)
 	{
-		return new EntityChangeEatSelectedItem();
+		return new EntityChangeUseSelectedItemOnSelf();
+	}
+
+	/**
+	 * A helper to determine if the given item can be used on its own entity with this entity mutation.
+	 * 
+	 * @param item The item.
+	 * @return True if this mutation can be used to apply the item to its own entity.
+	 */
+	public static boolean canBeUsedOnSelf(Item item)
+	{
+		Environment env = Environment.getShared();
+		// We only use this for food, at this point.
+		return (env.foods.foodValue(item) > 0);
 	}
 
 
-	public EntityChangeEatSelectedItem()
+	public EntityChangeUseSelectedItemOnSelf()
 	{
 	}
 

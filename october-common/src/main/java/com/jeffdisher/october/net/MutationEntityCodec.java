@@ -8,8 +8,8 @@ import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
-import com.jeffdisher.october.mutations.EntityChangeEatSelectedItem;
-import com.jeffdisher.october.mutations.EntityChangeExchangeLiquid;
+import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
+import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
@@ -49,8 +49,8 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangeAttackEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeAttackEntity.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeTakeDamage.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamage.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePeriodic.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeEatSelectedItem.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeEatSelectedItem.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeExchangeLiquid.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeExchangeLiquid.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnSelf.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnSelf.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeChangeHotbarSlot.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeSwapArmour.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwapArmour.deserializeFromBuffer(buffer);
 		

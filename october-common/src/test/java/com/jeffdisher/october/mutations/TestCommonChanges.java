@@ -925,7 +925,7 @@ public class TestCommonChanges
 		);
 		
 		// We will fail to eat the log.
-		EntityChangeEatSelectedItem eat = new EntityChangeEatSelectedItem();
+		EntityChangeUseSelectedItemOnSelf eat = new EntityChangeUseSelectedItemOnSelf();
 		Assert.assertFalse(eat.applyChange(context, newEntity));
 		Assert.assertEquals(90, newEntity.newFood);
 		
@@ -1077,7 +1077,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try to pick up the water source.
-		EntityChangeExchangeLiquid exchange = new EntityChangeExchangeLiquid(target);
+		EntityChangeUseSelectedItemOnBlock exchange = new EntityChangeUseSelectedItemOnBlock(target);
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		MutationBlockReplace replace = (MutationBlockReplace) holder.mutation;
@@ -1307,6 +1307,24 @@ public class TestCommonChanges
 		Assert.assertEquals(1, list.size());
 		IMutationEntity<IMutableMinimalEntity> change = list.get(0);
 		Assert.assertTrue(change instanceof EntityChangeTakeDamage<IMutableMinimalEntity>);
+	}
+
+	@Test
+	public void staticUsageQueries() throws Throwable
+	{
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
+		Item waterBucket = ENV.items.getItemById("op.bucket_water");
+		Item breadItem = ENV.items.getItemById("op.bread");
+		Block waterSource = ENV.special.WATER_SOURCE;
+		Block waterWeak = ENV.special.WATER_WEAK;
+		
+		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterSource));
+		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(waterBucket, waterWeak));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
+		
+		Assert.assertTrue(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(breadItem));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(waterBucket));
 	}
 
 

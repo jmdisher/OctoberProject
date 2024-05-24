@@ -16,23 +16,45 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Attempts to exchange the liquid between the bucket and selected block, failing if it isn't a bucket or there is no
- * valid exchange (the block is solid, both are empty, or both are full).
+ * Handles the "right-click on block" case for specific items.
+ * An example of this is a bucket being used on a water block.
+ * Note that this is NOT the same as "hitting" a block.
  */
-public class EntityChangeExchangeLiquid implements IMutationEntity<IMutablePlayerEntity>
+public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.EXCHANGE_LIQUID;
+	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK;
+	public static final String BUCKET_EMPTY = "op.bucket_empty";
+	public static final String BUCKET_WATER = "op.bucket_water";
 
-	public static EntityChangeExchangeLiquid deserializeFromBuffer(ByteBuffer buffer)
+	public static EntityChangeUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		return new EntityChangeExchangeLiquid(target);
+		return new EntityChangeUseSelectedItemOnBlock(target);
+	}
+
+	/**
+	 * A helper to determine if the given item can be used on a specific block with this entity mutation.
+	 * 
+	 * @param item The item.
+	 * @param block The target block.
+	 * @return True if this mutation can be used to apply the item to the block.
+	 */
+	public static boolean canUseOnBlock(Item item, Block block)
+	{
+		Environment env = Environment.getShared();
+		Item empty = env.items.getItemById("op.bucket_empty");
+		Item water = env.items.getItemById("op.bucket_water");
+		boolean isEmptyBucket = (item == empty);
+		boolean isWaterBucket = (item == water);
+		boolean isWaterSource = (env.special.WATER_SOURCE == block);
+		boolean isEmptyBlock = !isWaterSource && env.blocks.canBeReplaced(block);
+		return (isWaterBucket && isEmptyBlock) || (isEmptyBucket && isWaterSource);
 	}
 
 
 	private final AbsoluteLocation _target;
 
-	public EntityChangeExchangeLiquid(AbsoluteLocation target)
+	public EntityChangeUseSelectedItemOnBlock(AbsoluteLocation target)
 	{
 		_target = target;
 	}
