@@ -33,6 +33,7 @@ import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -1325,6 +1326,53 @@ public class TestCommonChanges
 		
 		Assert.assertTrue(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(breadItem));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(waterBucket));
+	}
+
+	@Test
+	public void feedCow() throws Throwable
+	{
+		// Verify that feeding a creature ends up sending the follow-up change and that it works.
+		int entityId = 1;
+		int targetId = -1;
+		MutableEntity entity = MutableEntity.create(entityId);
+		entity.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
+		entity.newInventory.addAllItems(ENV.items.getItemById("op.wheat_item"), 1);
+		// We assume that this is key 1.
+		entity.newHotbar[0] = 1;
+		CreatureEntity creature = new CreatureEntity(targetId
+				, EntityType.COW
+				, new EntityLocation(9.0f, 9.0f, 0.0f)
+				, 0.0f
+				, (byte) 100
+				, 0L
+				, null
+				, null
+		);
+		CommonChangeSink changeSink = new CommonChangeSink();
+		TickProcessingContext context = new TickProcessingContext(0L
+				, null
+				, (Integer id) -> {
+					Assert.assertEquals(targetId, id.intValue());
+					return MinimalEntity.fromCreature(creature);
+				}
+				, null
+				, changeSink
+		);
+		
+		// Feed the creature and verify that we see the apply scheduled.
+		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(targetId).applyChange(context, entity));
+		Entity updatedEntty = entity.freeze();
+		Assert.assertEquals(0, updatedEntty.inventory().currentEncumbrance);
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Assert.assertEquals(1, creatureChanges.size());
+		List<IMutationEntity<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
+		Assert.assertEquals(1, list.size());
+		IMutationEntity<IMutableCreatureEntity> change = list.get(0);
+		Assert.assertTrue(change instanceof EntityChangeApplyItemToCreature);
+		
+		// Verify that the apply works.
+		MutableCreature mutable = MutableCreature.existing(creature);
+		Assert.assertTrue(change.applyChange(context, mutable));
 	}
 
 

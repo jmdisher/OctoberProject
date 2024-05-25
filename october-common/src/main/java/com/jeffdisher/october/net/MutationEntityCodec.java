@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnBlock;
+import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
@@ -51,6 +52,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePeriodic.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeUseSelectedItemOnSelf.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnSelf.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeUseSelectedItemOnBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnBlock.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeUseSelectedItemOnEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnEntity.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeChangeHotbarSlot.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeSwapArmour.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwapArmour.deserializeFromBuffer(buffer);
 		
