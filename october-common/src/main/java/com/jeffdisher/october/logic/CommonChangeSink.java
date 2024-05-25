@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -18,7 +18,7 @@ import com.jeffdisher.october.utils.Assert;
 public class CommonChangeSink implements TickProcessingContext.IChangeSink
 {
 	private Map<Integer, List<ScheduledChange>> _exportedEntityChanges = new HashMap<>();
-	private Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> _exportedCreatureChanges = new HashMap<>();
+	private Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> _exportedCreatureChanges = new HashMap<>();
 
 	@Override
 	public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
@@ -37,10 +37,10 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	}
 
 	@Override
-	public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+	public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
 	{
 		Assert.assertTrue(targetCreatureId < 0);
-		List<IMutationEntity<IMutableMinimalEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
+		List<IMutationEntity<IMutableCreatureEntity>> list = _exportedCreatureChanges.get(targetCreatureId);
 		if (null == list)
 		{
 			list = new LinkedList<>();
@@ -72,7 +72,7 @@ public class CommonChangeSink implements TickProcessingContext.IChangeSink
 	 * 
 	 * @return The mutable change map, now owned by the caller.
 	 */
-	public final Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> takeExportedCreatureChanges()
+	public final Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> takeExportedCreatureChanges()
 	{
 		try
 		{

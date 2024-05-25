@@ -9,7 +9,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -105,7 +105,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			}
 			else
 			{
-				EntityChangeTakeDamage<IMutableMinimalEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
+				EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
 			}
 			

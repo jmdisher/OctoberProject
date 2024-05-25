@@ -24,7 +24,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -62,8 +62,8 @@ public class TestCreatureProcessor
 				, null
 		);
 		long millisSinceLastTick = 100L;
-		EntityChangeTakeDamage<IMutableMinimalEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)10);
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)10);
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -104,8 +104,8 @@ public class TestCreatureProcessor
 				, null
 		);
 		long millisSinceLastTick = 100L;
-		EntityChangeTakeDamage<IMutableMinimalEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -142,7 +142,7 @@ public class TestCreatureProcessor
 				, null
 		);
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -161,7 +161,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.4f)
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.4f)
 			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), 0.0f, 0.4f)
 			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), 0.0f, 0.2f)
 		);
@@ -172,7 +172,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -191,7 +191,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
-		List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.2f)
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
@@ -200,7 +200,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -226,7 +226,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -254,7 +254,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -282,7 +282,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -306,7 +306,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun = Map.of();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context

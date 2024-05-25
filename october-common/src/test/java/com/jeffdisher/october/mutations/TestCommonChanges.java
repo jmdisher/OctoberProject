@@ -27,7 +27,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -720,7 +720,7 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
 					{
 						Assert.fail("Not expected in tets");
 					}
@@ -845,7 +845,7 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
 					{
 						Assert.fail("Not expected in tets");
 					}
@@ -1301,12 +1301,12 @@ public class TestCommonChanges
 		
 		// Attack and verify that we see damage come through the creature path.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
-		Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges = changeSink.takeExportedCreatureChanges();
 		Assert.assertEquals(1, creatureChanges.size());
-		List<IMutationEntity<IMutableMinimalEntity>> list = creatureChanges.get(targetId);
+		List<IMutationEntity<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
-		IMutationEntity<IMutableMinimalEntity> change = list.get(0);
-		Assert.assertTrue(change instanceof EntityChangeTakeDamage<IMutableMinimalEntity>);
+		IMutationEntity<IMutableCreatureEntity> change = list.get(0);
+		Assert.assertTrue(change instanceof EntityChangeTakeDamage<IMutableCreatureEntity>);
 	}
 
 	@Test
@@ -1375,7 +1375,7 @@ public class TestCommonChanges
 							Assert.fail("Not expected in tets");
 						}
 						@Override
-						public void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change)
+						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
 						{
 							Assert.fail("Not expected in tets");
 						}

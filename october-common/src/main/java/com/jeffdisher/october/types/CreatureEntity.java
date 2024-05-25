@@ -22,7 +22,7 @@ public record CreatureEntity(int id
 		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
 		, long lastActionGameTick
 		// The next steps required to get to the next step in movementPlan.
-		, List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove
+		, List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove
 		// The sequence of locations where this creature plans to go.
 		, List<AbsoluteLocation> movementPlan
 )

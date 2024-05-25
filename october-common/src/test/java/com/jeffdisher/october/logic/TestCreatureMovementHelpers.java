@@ -10,7 +10,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 
 public class TestCreatureMovementHelpers
@@ -20,7 +20,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(0, list.size());
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
@@ -34,7 +34,7 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(4, list.size());
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
@@ -49,7 +49,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 1);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
 	}
 
@@ -59,7 +59,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
 	}
 
@@ -69,7 +69,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(1, list.size());
 	}
 
@@ -80,7 +80,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.5f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(0, list.size());
 	}
 
@@ -90,7 +90,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.2f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 2);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
 	}
 
@@ -100,7 +100,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 0);
-		List<IMutationEntity<IMutableMinimalEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(0, list.size());
 	}
 }

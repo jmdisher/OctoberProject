@@ -10,7 +10,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 
 /**
@@ -28,7 +28,7 @@ public class CreatureMovementHelpers
 	 * @param creature The creature.
 	 * @return The list of moves to make (empty if already in a good position).
 	 */
-	public static List<IMutationEntity<IMutableMinimalEntity>> centreOnCurrentBlock(CreatureEntity creature)
+	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature)
 	{
 		EntityLocation location = creature.location();
 		float width = CreatureVolumes.getVolume(creature).width();
@@ -37,7 +37,7 @@ public class CreatureMovementHelpers
 		int edgeX = (int) Math.floor(location.x() + width);
 		int edgeY = (int) Math.floor(location.y() + width);
 		
-		List<IMutationEntity<IMutableMinimalEntity>> list = new ArrayList<>();
+		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 		if (baseX != edgeX)
 		{
 			// We need to move east/west.
@@ -62,16 +62,16 @@ public class CreatureMovementHelpers
 	 * @param targetBlock The target location.
 	 * @return The list of changes, potentially empty but never null.
 	 */
-	public static List<IMutationEntity<IMutableMinimalEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock)
+	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock)
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
-		List<IMutationEntity<IMutableMinimalEntity>> changes;
+		List<IMutationEntity<IMutableCreatureEntity>> changes;
 		EntityLocation startLocation = creature.location();
 		if ((targetBlock.z() > startLocation.z()) && SpatialHelpers.isBlockAligned(startLocation.z()))
 		{
 			// Jump.
-			EntityChangeJump<IMutableMinimalEntity> jump = new EntityChangeJump<>();
+			EntityChangeJump<IMutableCreatureEntity> jump = new EntityChangeJump<>();
 			changes = List.of(jump);
 		}
 		else
@@ -85,7 +85,7 @@ public class CreatureMovementHelpers
 			if (maxHorizontal > MAX_SINGLE_STEP)
 			{
 				// We need to move horizontally so figure out which way.
-				List<IMutationEntity<IMutableMinimalEntity>> list = new ArrayList<>();
+				List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 				if (maxHorizontal == distanceX)
 				{
 					_moveByX(list, startLocation, stepLocation.x());
@@ -106,7 +106,7 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static void _moveByX(List<IMutationEntity<IMutableMinimalEntity>> out_list, EntityLocation location, float targetX)
+	private static void _moveByX(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float targetX)
 	{
 		float moveX = targetX - location.x();
 		float sign = Math.signum(moveX);
@@ -116,14 +116,14 @@ public class CreatureMovementHelpers
 		{
 			float oneAbs = Math.min(absoluteMove, MAX_SINGLE_STEP);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableMinimalEntity> move = new EntityChangeMove<>(tempLocation, oneMove, 0.0f);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, oneMove, 0.0f);
 			out_list.add(move);
 			tempLocation = new EntityLocation(tempLocation.x() + oneMove, tempLocation.y(), tempLocation.z());
 			absoluteMove -= oneAbs;
 		}
 	}
 
-	private static void _moveByY(List<IMutationEntity<IMutableMinimalEntity>> out_list, EntityLocation location, float targetY)
+	private static void _moveByY(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float targetY)
 	{
 		float moveY = targetY - location.y();
 		float sign = Math.signum(moveY);
@@ -133,7 +133,7 @@ public class CreatureMovementHelpers
 		{
 			float oneAbs = Math.min(absoluteMove, MAX_SINGLE_STEP);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableMinimalEntity> move = new EntityChangeMove<>(tempLocation, 0.0f, oneMove);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, 0.0f, oneMove);
 			out_list.add(move);
 			tempLocation = new EntityLocation(tempLocation.x(), tempLocation.y() + oneMove, tempLocation.z());
 			absoluteMove -= oneAbs;

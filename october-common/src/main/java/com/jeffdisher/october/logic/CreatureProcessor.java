@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -52,7 +53,7 @@ public class CreatureProcessor
 			, Map<Integer, CreatureEntity> creaturesById
 			, TickProcessingContext context
 			, long millisSinceLastTick
-			, Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> changesToRun
+			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun
 	)
 	{
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
@@ -69,7 +70,7 @@ public class CreatureProcessor
 				processor.creaturesProcessed += 1;
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
-				List<IMutationEntity<IMutableMinimalEntity>> changes = changesToRun.get(id);
+				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
 				if (null == changes)
 				{
 					// We have nothing to do, and nothing is acting on us, so see if we have a plan to apply or should select one.
@@ -80,7 +81,7 @@ public class CreatureProcessor
 				
 				if (null != changes)
 				{
-					for (IMutationEntity<IMutableMinimalEntity> change : changes)
+					for (IMutationEntity<IMutableCreatureEntity> change : changes)
 					{
 						processor.creatureChangesProcessed += 1;
 						boolean didApply = change.applyChange(context, mutable);
@@ -126,9 +127,9 @@ public class CreatureProcessor
 	}
 
 
-	private static List<IMutationEntity<IMutableMinimalEntity>> _setupNextMovements(TickProcessingContext context, Random random, long millisSinceLastTick, MutableCreature mutable)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _setupNextMovements(TickProcessingContext context, Random random, long millisSinceLastTick, MutableCreature mutable)
 	{
-		List<IMutationEntity<IMutableMinimalEntity>> changes = null;
+		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
 		if (null == mutable.newMovementPlan)
 		{
 			// We have no plan so determine one.
@@ -217,14 +218,14 @@ public class CreatureProcessor
 		return plannedPath;
 	}
 
-	private static List<IMutationEntity<IMutableMinimalEntity>> _determineNextSteps(MutableCreature mutable)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(MutableCreature mutable)
 	{
 		// First, check to see if we are already in our next location.
 		AbsoluteLocation thisStep = mutable.newMovementPlan.get(0);
 		EntityLocation entityLocation = mutable.newLocation;
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		
-		List<IMutationEntity<IMutableMinimalEntity>> changes = null;
+		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
 		if (currentLocation.equals(thisStep))
 		{
 			// If we are, that means that we can remove this from the path and plan to move to the next step.
@@ -264,14 +265,14 @@ public class CreatureProcessor
 		return changes;
 	}
 
-	private static List<IMutationEntity<IMutableMinimalEntity>> _scheduleForThisTick(long millisSinceLastTick, MutableCreature mutable)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _scheduleForThisTick(long millisSinceLastTick, MutableCreature mutable)
 	{
 		// We are already on the way to the next step in our path so see what we can apply in this tick.
-		List<IMutationEntity<IMutableMinimalEntity>> changes = new ArrayList<>();
+		List<IMutationEntity<IMutableCreatureEntity>> changes = new ArrayList<>();
 		long millisRemaining = millisSinceLastTick;
-		List<IMutationEntity<IMutableMinimalEntity>> remainingSteps = new ArrayList<>();
+		List<IMutationEntity<IMutableCreatureEntity>> remainingSteps = new ArrayList<>();
 		boolean canAdd = true;
-		for (IMutationEntity<IMutableMinimalEntity> check : mutable.newStepsToNextMove)
+		for (IMutationEntity<IMutableCreatureEntity> check : mutable.newStepsToNextMove)
 		{
 			if (canAdd)
 			{

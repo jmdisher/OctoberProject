@@ -38,7 +38,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -453,7 +453,7 @@ public class TickRunner
 			// (this is in case they need to be serialized - that way they can be read back in without interrupting the enqueued operations)
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
-			Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> nextCreatureChanges = new HashMap<>();
+			Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
 			
 			for (int i = 0; i < _partial.length; ++i)
 			{
@@ -490,7 +490,7 @@ public class TickRunner
 				{
 					_scheduleChangesForEntity(snapshotEntityMutations, container.getKey(), container.getValue());
 				}
-				for (Map.Entry<Integer, List<IMutationEntity<IMutableMinimalEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
+				for (Map.Entry<Integer, List<IMutationEntity<IMutableCreatureEntity>>> container : fragment.newlyScheduledCreatureChanges().entrySet())
 				{
 					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
@@ -987,7 +987,7 @@ public class TickRunner
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<ScheduledChange>> changesToRun
-			, Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> creatureChanges
+			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges
 			// The blocks modified in the last tick, represented as a list per cuboid where they originate.
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			// The blocks which were modified in such a way that they may require a lighting update.
@@ -1032,7 +1032,7 @@ public class TickRunner
 			, CreatureProcessor.CreatureGroup creatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
-			, Map<Integer, List<IMutationEntity<IMutableMinimalEntity>>> newlyScheduledCreatureChanges
+			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
 			, Map<Integer, Long> commitLevels
 	) {}
 }

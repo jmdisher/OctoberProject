@@ -19,7 +19,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FuelState;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -245,7 +245,7 @@ public class CodecHelpers
 		
 		// Ephemeral data is just given default values.
 		long lastActionGameTick = 0L;
-		List<IMutationEntity<IMutableMinimalEntity>> stepsToNextMove = null;
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = null;
 		List<AbsoluteLocation> movementPlan = null;
 		return new CreatureEntity(id
 				, type

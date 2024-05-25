@@ -15,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * A short-lived mutable version of an creature to allow for parallel tick processing.
  */
-public class MutableCreature implements IMutableMinimalEntity
+public class MutableCreature implements IMutableCreatureEntity
 {
 	/**
 	 * Create a mutable entity from the elements of an existing creature.
@@ -37,7 +37,7 @@ public class MutableCreature implements IMutableMinimalEntity
 	public float newZVelocityPerSecond;
 	public byte newHealth;
 	public long newLastActionGameTick;
-	public List<IMutationEntity<IMutableMinimalEntity>> newStepsToNextMove;
+	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
 	public List<AbsoluteLocation> newMovementPlan;
 
 	private MutableCreature(CreatureEntity creature)

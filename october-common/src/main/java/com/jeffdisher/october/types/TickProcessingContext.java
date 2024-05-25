@@ -108,6 +108,6 @@ public class TickProcessingContext
 		 * @param targetCreatureId The ID of the creature which should run the change.
 		 * @param change The change to run.
 		 */
-		void creature(int targetCreatureId, IMutationEntity<IMutableMinimalEntity> change);
+		void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change);
 	}
 }
