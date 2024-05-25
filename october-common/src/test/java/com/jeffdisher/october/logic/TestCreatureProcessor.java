@@ -54,13 +54,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
-		TickProcessingContext context = new TickProcessingContext(1
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)10);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
@@ -128,19 +122,7 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
-		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
-				, (AbsoluteLocation location) -> {
-					return ((short)-1 == location.z())
-						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
-						: new BlockProxy(location.getBlockAddress(), airCuboid)
-					;
-				}
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread

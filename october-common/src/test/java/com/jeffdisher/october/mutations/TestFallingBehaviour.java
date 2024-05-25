@@ -52,24 +52,7 @@ public class TestFallingBehaviour
 		// Create a solid block a little below this so we can watch it fall down.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), ENV.items.STONE.number());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(ENV.items.STONE), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -123,24 +106,7 @@ public class TestFallingBehaviour
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation bottomLocation = new AbsoluteLocation(0, 0, 3);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// Break the bottom block.
 		MutableBlockProxy bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
@@ -184,24 +150,7 @@ public class TestFallingBehaviour
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation topLocation = new AbsoluteLocation(0, 0, 4);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// Break the top block.
 		MutableBlockProxy topBlock = new MutableBlockProxy(topLocation, cuboid);
@@ -256,24 +205,7 @@ public class TestFallingBehaviour
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// Send an update event and verify that nothing happens.
 		MutationBlockUpdate update = new MutationBlockUpdate(targetLocation);
@@ -332,24 +264,7 @@ public class TestFallingBehaviour
 		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.items.AIR.number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-		);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// Break the target block and observe the change.
 		MutableBlockProxy targetBlock = new MutableBlockProxy(targetLocation, cuboid);
@@ -381,5 +296,29 @@ public class TestFallingBehaviour
 		Assert.assertFalse(new MutationBlockUpdate(southLocation).applyMutation(context, new MutableBlockProxy(southLocation, cuboid)));
 		Assert.assertTrue(new MutationBlockUpdate(upLocation).applyMutation(context, new MutableBlockProxy(upLocation, cuboid)));
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+	}
+
+
+	private static TickProcessingContext _createTestContext(CuboidData cuboid, IMutationBlock[] blockHolder)
+	{
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(blockHolder[0]);
+						blockHolder[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, null
+		);
+		return context;
 	}
 }

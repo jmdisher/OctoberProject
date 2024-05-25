@@ -172,18 +172,10 @@ public class SpeculativeProjection
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
 		
-		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 		// TODO:  Determine if we want to apply any immediately mutations or changes (we currently capture them but do nothing with them).
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
-		TickProcessingContext context = new TickProcessingContext(gameTick
-				, cachingLoader
-				, (Integer entityId) -> (_localEntityId == entityId)
-					? MinimalEntity.fromEntity(_thisShadowEntity)
-					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
-				, newMutationSink
-				, newChangeSink
-		);
+		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink);
 		
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;
@@ -443,14 +435,9 @@ public class SpeculativeProjection
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
 		
-		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
-		TickProcessingContext context = new TickProcessingContext(gameTick
-				, cachingLoader
-				, (Integer entityId) -> (_localEntityId == entityId)
-					? MinimalEntity.fromEntity(_projectedLocalEntity)
-					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+		TickProcessingContext context = _createContext(gameTick
 				, newMutationSink
 				, newChangeSink
 		);
@@ -471,14 +458,9 @@ public class SpeculativeProjection
 			_SpeculativeConsequences consequences = new _SpeculativeConsequences(exportedChanges, exportedMutations);
 			followUpTicks.add(consequences);
 			
-			BasicBlockProxyCache innerCachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 			CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 			CommonChangeSink innerNewChangeSink = new CommonChangeSink();
-			TickProcessingContext innerContext = new TickProcessingContext(gameTick
-					, innerCachingLoader
-					, (Integer entityId) -> (_localEntityId == entityId)
-						? MinimalEntity.fromEntity(_projectedLocalEntity)
-						: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+			TickProcessingContext innerContext = _createContext(gameTick
 					, innerNewMutationSink
 					, innerNewChangeSink
 			);
@@ -523,14 +505,9 @@ public class SpeculativeProjection
 	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, _SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
-		BasicBlockProxyCache innerCachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
-		TickProcessingContext innerContext = new TickProcessingContext(gameTick
-				, innerCachingLoader
-				, (Integer entityId) -> (_localEntityId == entityId)
-					? MinimalEntity.fromEntity(_projectedLocalEntity)
-					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+		TickProcessingContext innerContext = _createContext(gameTick
 				, innerNewMutationSink
 				, innerNewChangeSink
 		);
@@ -626,6 +603,23 @@ public class SpeculativeProjection
 		return changes.stream().map(
 				(IMutationEntity<IMutablePlayerEntity> change) -> new ScheduledChange(change, 0L)
 		).toList();
+	}
+
+	private TickProcessingContext _createContext(long gameTick
+			, CommonMutationSink newMutationSink
+			, CommonChangeSink newChangeSink
+	)
+	{
+		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+		TickProcessingContext context = new TickProcessingContext(gameTick
+				, cachingLoader
+				, (Integer entityId) -> (_localEntityId == entityId)
+					? MinimalEntity.fromEntity(_thisShadowEntity)
+					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+				, newMutationSink
+				, newChangeSink
+		);
+		return context;
 	}
 
 

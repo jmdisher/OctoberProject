@@ -64,14 +64,7 @@ public class TestCommonChanges
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
@@ -83,15 +76,9 @@ public class TestCommonChanges
 	public void moveBarrier()
 	{
 		// Check that the move fails if the blocks are stone.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, -16.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
@@ -124,13 +111,7 @@ public class TestCommonChanges
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		// We start with a zero z-vector since we should start falling.
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -150,14 +131,7 @@ public class TestCommonChanges
 	{
 		// Jump into the air and fall back down.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		
@@ -202,13 +176,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		
 		// Give the entity some items and verify that they default to selected.
 		EntityChangeAcceptItems accept = new EntityChangeAcceptItems(new Items(ENV.items.LOG, 1));
@@ -498,13 +466,7 @@ public class TestCommonChanges
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(ENV.items.LOG));
 		
 		// We will create a bogus context which just says that they are floating in the air so they can drop.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		
 		// Craft some items to use these up and verify that we also moved.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
@@ -918,12 +880,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(bread, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(ENV.items.LOG));
 		newEntity.newFood = 90;
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, null
-				, null
-				, null
-		);
+		TickProcessingContext context = _createSimpleContext();
 		
 		// We will fail to eat the log.
 		EntityChangeUseSelectedItemOnSelf eat = new EntityChangeUseSelectedItemOnSelf();
@@ -1383,6 +1340,19 @@ public class TestCommonChanges
 				? stack.type()
 				: null
 		;
+	}
+
+	private static TickProcessingContext _createSimpleContext()
+	{
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
+				, null
+				, null
+				, null
+		);
+		return context;
 	}
 
 
