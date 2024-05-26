@@ -2,6 +2,7 @@ package com.jeffdisher.october.logic;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.AfterClass;
@@ -22,9 +23,13 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -61,6 +66,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -103,6 +109,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -128,6 +135,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -158,6 +166,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -186,6 +195,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -212,6 +222,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -240,6 +251,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -268,6 +280,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -292,6 +305,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -309,6 +323,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
+				, new EntityCollection(Set.of(), Set.of())
 				, millisSinceLastTick
 				, changesToRun
 		);
@@ -317,6 +332,37 @@ public class TestCreatureProcessor
 		Assert.assertEquals(startHealth - damage, updated.health());
 		Assert.assertNull(updated.stepsToNextMove());
 		Assert.assertNull(updated.movementPlan());
+	}
+
+	@Test
+	public void followTheWheat()
+	{
+		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+		Entity nonWheat = _createEntity(1, new EntityLocation(2.0f, 0.0f, 0.0f), null, new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
+		TickProcessingContext context = _createContext();
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertNotNull(updated.stepsToNextMove());
+		
+		// Make sure that the movement plan ends at the close wheat.
+		AbsoluteLocation endPoint = updated.movementPlan().get(updated.movementPlan().size() - 1);
+		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 	}
 
 
@@ -336,5 +382,34 @@ public class TestCreatureProcessor
 				, null
 		);
 		return context;
+	}
+
+	private Entity _createEntity(int id, EntityLocation location, Items stack, NonStackableItem nonStack)
+	{
+		Inventory.Builder builder = Inventory.start(100);
+		if (null != stack)
+		{
+			builder.addStackable(stack.type(), stack.count());
+		}
+		else if (null != nonStack)
+		{
+			builder.addNonStackable(nonStack);
+		}
+		Inventory inventory = builder.finish();
+		int key = 1;
+		return new Entity(id
+				, location
+				, 0.0f
+				, null
+				, 0.0f
+				, inventory
+				, new int[] { key }
+				, 0
+				, null
+				, null
+				, (byte)0
+				, (byte)0
+				, 0
+		);
 	}
 }

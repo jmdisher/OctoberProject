@@ -14,10 +14,13 @@ import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -32,6 +35,7 @@ public class CreatureProcessor
 {
 	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
 	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
+	public static final float DIRECT_TARGET_DISTANCE = 6.0f;
 
 	private CreatureProcessor()
 	{
@@ -44,6 +48,7 @@ public class CreatureProcessor
 	 * @param processor The current thread.
 	 * @param creaturesById The map of all read-only creatures from the previous tick.
 	 * @param context The context used for running changes.
+	 * @param entityCollection A look-up mechanism for the entities in the loaded world.
 	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the creature on which they are
 	 * scheduled.
@@ -52,6 +57,7 @@ public class CreatureProcessor
 	public static CreatureGroup processCreatureGroupParallel(ProcessorElement processor
 			, Map<Integer, CreatureEntity> creaturesById
 			, TickProcessingContext context
+			, EntityCollection entityCollection
 			, long millisSinceLastTick
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun
 	)
@@ -74,7 +80,7 @@ public class CreatureProcessor
 				if (null == changes)
 				{
 					// We have nothing to do, and nothing is acting on us, so see if we have a plan to apply or should select one.
-					changes = _setupNextMovements(context, random, millisSinceLastTick, mutable);
+					changes = _setupNextMovements(context, entityCollection, random, millisSinceLastTick, mutable);
 				}
 				
 				long millisApplied = 0L;
@@ -127,7 +133,7 @@ public class CreatureProcessor
 	}
 
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _setupNextMovements(TickProcessingContext context, Random random, long millisSinceLastTick, MutableCreature mutable)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _setupNextMovements(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
 	{
 		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
 		if (null == mutable.newMovementPlan)
@@ -138,7 +144,13 @@ public class CreatureProcessor
 			// We will only do this if we have been idle for long enough.
 			if (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION))
 			{
-				mutable.newMovementPlan = _findPath(context, random, mutable.creature);
+				// First, we want to see if we should walk toward a player.
+				mutable.newMovementPlan = _builPathToPlayer(context, entityCollection, mutable.creature);
+				if (null == mutable.newMovementPlan)
+				{
+					// We couldn't find a player so just make a random move.
+					mutable.newMovementPlan = _findPath(context, random, mutable.creature);
+				}
 				if (null == mutable.newMovementPlan)
 				{
 					// There are no possible moves so do nothing, but consider this an action so we reset the timer.
@@ -177,6 +189,50 @@ public class CreatureProcessor
 			changes = _scheduleForThisTick(millisSinceLastTick, mutable);
 		}
 		return changes;
+	}
+
+	private static List<AbsoluteLocation> _builPathToPlayer(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature)
+	{
+		// We will keep this simple:  Find the closest player holding wheat, up to our limit.
+		Environment environment = Environment.getShared();
+		Item wheat = environment.items.getItemById("op.wheat_item");
+		// We will just use arrays to pass this "by reference".
+		EntityLocation[] target = new EntityLocation[1];
+		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
+		EntityLocation start = creature.location();
+		entityCollection.walkPlayersInRange(start, DIRECT_TARGET_DISTANCE, (Entity player) -> {
+			// See if this player has wheat in their hand.
+			int itemKey = player.hotbarItems()[player.hotbarIndex()];
+			Items itemsInHand = player.inventory().getStackForKey(itemKey);
+			if ((null != itemsInHand) && (wheat == itemsInHand.type()))
+			{
+				EntityLocation end = player.location();
+				float distance = SpatialHelpers.distanceBetween(start, end);
+				if (distance < distanceToTarget[0])
+				{
+					target[0] = end;
+					distanceToTarget[0] = distance;
+				}
+			}
+		});
+		
+		List<AbsoluteLocation> path = null;
+		if (null != target[0])
+		{
+			// We have a target so try to build a path (we will use double the distance for pathing overhead).
+			Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
+				BlockProxy proxy = context.previousBlockLookUp.apply(location);
+				return (null != proxy)
+						? environment.blocks.permitsEntityMovement(proxy.getBlock())
+						: false
+				;
+			};
+			EntityVolume volume = CreatureVolumes.getVolume(creature);
+			EntityLocation source = creature.location();
+			// If this fails, it will return null which is already our failure case.
+			path = PathFinder.findPathWithLimit(blockPermitsUser, volume, source, target[0], 2 * DIRECT_TARGET_DISTANCE);
+		}
+		return path;
 	}
 
 	private static List<AbsoluteLocation> _findPath(TickProcessingContext context, Random random, CreatureEntity creature)

@@ -24,6 +24,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -365,6 +366,7 @@ public class TickRunner
 			CreatureProcessor.CreatureGroup creatureGroup = CreatureProcessor.processCreatureGroupParallel(thisThread
 					, materials.completedCreatures
 					, context
+					, new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values())
 					, _millisPerTick
 					, materials.creatureChanges
 			);
