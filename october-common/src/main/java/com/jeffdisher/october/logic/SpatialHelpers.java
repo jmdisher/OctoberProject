@@ -332,6 +332,22 @@ public class SpatialHelpers
 		return _isBlockAligned(coord);
 	}
 
+	/**
+	 * Determines the distance between the 2 locations, computed by summing the distance between in each axis.
+	 * 
+	 * @param one One location.
+	 * @param two Another location.
+	 * @return The distance between them.
+	 */
+	public static float distanceBetween(EntityLocation one, EntityLocation two)
+	{
+		// For now, we just sum the 3 axes, since we don't use diagonal straight lines anywhere.
+		return Math.abs(one.x() - two.x())
+				+ Math.abs(one.y() - two.y())
+				+ Math.abs(one.z() - two.z())
+		;
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
