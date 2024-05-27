@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -31,9 +32,8 @@ public class EntityChangeApplyItemToCreature implements IMutationEntity<IMutable
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableCreatureEntity newEntity)
 	{
-		// TODO:  Implement.  For now, we just logged that this happened.
-		System.out.println("TODO:  " + newEntity.getId() + " received " + _itemType);
-		return true;
+		// We will say that this worked if the logic helper says it applied.
+		return CreatureLogic.applyItemToCreature(_itemType, newEntity);
 	}
 
 	@Override

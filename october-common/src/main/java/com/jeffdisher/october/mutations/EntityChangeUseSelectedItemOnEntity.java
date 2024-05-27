@@ -2,7 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -21,7 +21,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY;
-	public static final String WHEAT = "op.wheat_item";
 
 	public static EntityChangeUseSelectedItemOnEntity deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -38,9 +37,8 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 	 */
 	public static boolean canUseOnEntity(Item item, EntityType entityType)
 	{
-		Environment env = Environment.getShared();
-		Item wheat = env.items.getItemById(WHEAT);
-		return (wheat == item) && (EntityType.COW == entityType);
+		// We just call the helper in the other class since it already has the appropriate constants for this logic.
+		return CreatureLogic.canUseOnEntity(item, entityType);
 	}
 
 
@@ -60,22 +58,19 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		Environment env = Environment.getShared();
-		
 		// Get the current selected item.
 		int selectedKey = newEntity.getSelectedKey();
 		MutableInventory mutableInventory = newEntity.accessMutableInventory();
 		// (we currently only handle the wheat type so just check for stackable)
 		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
-		Item wheat = env.items.getItemById(WHEAT);
 		
 		// See if the target entity exists and is of the correct type.
 		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
 		EntityType entityType = (null != target) ? target.type() : null;
 		
 		boolean didApply = false;
-		if ((wheat == itemType) && (EntityType.COW == entityType))
+		if (CreatureLogic.canUseOnEntity(itemType, entityType))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.

@@ -25,6 +25,8 @@ public record CreatureEntity(int id
 		, List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove
 		// The sequence of locations where this creature plans to go.
 		, List<AbsoluteLocation> movementPlan
+		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
+		, Object extendedData
 )
 {
 }

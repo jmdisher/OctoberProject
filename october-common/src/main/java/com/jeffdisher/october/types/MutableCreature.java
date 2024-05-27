@@ -39,6 +39,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public long newLastActionGameTick;
 	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
 	public List<AbsoluteLocation> newMovementPlan;
+	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -49,6 +50,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newLastActionGameTick = creature.lastActionGameTick();
 		this.newStepsToNextMove = creature.stepsToNextMove();
 		this.newMovementPlan = creature.movementPlan();
+		this.newExtendedData = creature.extendedData();
 	}
 
 	@Override
@@ -138,6 +140,24 @@ public class MutableCreature implements IMutableCreatureEntity
 		// Creatures don't currently have energy so do nothing.
 	}
 
+	@Override
+	public EntityType getType()
+	{
+		return this.creature.type();
+	}
+
+	@Override
+	public Object getExtendedData()
+	{
+		return this.newExtendedData;
+	}
+
+	@Override
+	public void setExtendedData(Object data)
+	{
+		this.newExtendedData = data;
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
@@ -158,6 +178,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newLastActionGameTick
 					, this.newStepsToNextMove
 					, this.newMovementPlan
+					, this.newExtendedData
 			);
 			// See if these are identical.
 			newInstance = this.creature.equals(immutable)

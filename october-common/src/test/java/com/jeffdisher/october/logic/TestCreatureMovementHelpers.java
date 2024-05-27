@@ -19,12 +19,12 @@ public class TestCreatureMovementHelpers
 	public void noMoveCentre()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(0, list.size());
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
-		creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		creature = _createCow(location);
 		list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(0, list.size());
 	}
@@ -33,12 +33,12 @@ public class TestCreatureMovementHelpers
 	public void multiMoveCentre()
 	{
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(4, list.size());
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
-		creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		creature = _createCow(location);
 		list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
 		Assert.assertEquals(4, list.size());
 	}
@@ -47,7 +47,7 @@ public class TestCreatureMovementHelpers
 	public void walkOne()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 1);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
@@ -57,7 +57,7 @@ public class TestCreatureMovementHelpers
 	public void walkMinusOne()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
@@ -67,7 +67,7 @@ public class TestCreatureMovementHelpers
 	public void jump()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(1, list.size());
@@ -78,7 +78,7 @@ public class TestCreatureMovementHelpers
 	{
 		// In this case, we will still be rising so we want to jump but can't since we aren't on the ground.
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.5f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(0, list.size());
@@ -88,7 +88,7 @@ public class TestCreatureMovementHelpers
 	public void walkAirborn()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.2f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 2);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(3, list.size());
@@ -98,9 +98,24 @@ public class TestCreatureMovementHelpers
 	public void fall()
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
-		CreatureEntity creature = new CreatureEntity(1, EntityType.COW, location, 0.0f, (byte)0, 0L, null, null);
+		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 0);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target);
 		Assert.assertEquals(0, list.size());
+	}
+
+
+	private static CreatureEntity _createCow(EntityLocation location)
+	{
+		return new CreatureEntity(-1
+				, EntityType.COW
+				, location
+				, 0.0f
+				, (byte)0
+				, 0L
+				, null
+				, null
+				, null
+		);
 	}
 }

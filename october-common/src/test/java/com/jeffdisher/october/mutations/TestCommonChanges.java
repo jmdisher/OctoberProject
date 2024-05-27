@@ -1245,6 +1245,7 @@ public class TestCommonChanges
 				, 0L
 				, null
 				, null
+				, null
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -1304,6 +1305,7 @@ public class TestCommonChanges
 				, 0L
 				, null
 				, null
+				, null
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -1330,6 +1332,10 @@ public class TestCommonChanges
 		// Verify that the apply works.
 		MutableCreature mutable = MutableCreature.existing(creature);
 		Assert.assertTrue(change.applyChange(context, mutable));
+		mutable.freeze();
+		
+		// Note that a second attempt should fail since the cow has already been fed.
+		Assert.assertFalse(change.applyChange(context, mutable));
 	}
 
 

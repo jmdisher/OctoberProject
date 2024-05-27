@@ -120,6 +120,7 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 							, 0L
 							, null
 							, null
+							, null
 					))
 					: List.of()
 			;

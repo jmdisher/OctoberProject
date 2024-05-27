@@ -247,6 +247,7 @@ public class CodecHelpers
 		long lastActionGameTick = 0L;
 		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = null;
 		List<AbsoluteLocation> movementPlan = null;
+		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
 				, location
@@ -255,6 +256,7 @@ public class CodecHelpers
 				, lastActionGameTick
 				, stepsToNextMove
 				, movementPlan
+				, extendedData
 		);
 	}
 
