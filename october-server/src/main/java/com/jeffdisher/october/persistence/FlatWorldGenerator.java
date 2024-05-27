@@ -112,15 +112,10 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 			// We will load a single entity in the base of this cuboid if it is z=0.
 			AbsoluteLocation baseOfCuboid = address.getBase();
 			entities = (0 == address.z())
-					? List.of(new CreatureEntity(creatureIdAssigner.next()
+					? List.of(CreatureEntity.create(creatureIdAssigner.next()
 							, EntityType.COW
 							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
-							, 0.0f
 							, (byte)100
-							, 0L
-							, null
-							, null
-							, null
 					))
 					: List.of()
 			;

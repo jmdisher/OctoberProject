@@ -1237,15 +1237,10 @@ public class TestCommonChanges
 		int targetId = -1;
 		MutableEntity attacker = MutableEntity.create(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
-		CreatureEntity creature = new CreatureEntity(targetId
+		CreatureEntity creature = CreatureEntity.create(targetId
 				, EntityType.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
-				, 0.0f
 				, (byte) 100
-				, 0L
-				, null
-				, null
-				, null
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L
@@ -1297,15 +1292,10 @@ public class TestCommonChanges
 		entity.newInventory.addAllItems(ENV.items.getItemById("op.wheat_item"), 1);
 		// We assume that this is key 1.
 		entity.newHotbar[0] = 1;
-		CreatureEntity creature = new CreatureEntity(targetId
+		CreatureEntity creature = CreatureEntity.create(targetId
 				, EntityType.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
-				, 0.0f
 				, (byte) 100
-				, 0L
-				, null
-				, null
-				, null
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = new TickProcessingContext(0L

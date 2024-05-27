@@ -107,15 +107,6 @@ public class TestCreatureMovementHelpers
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
-		return new CreatureEntity(-1
-				, EntityType.COW
-				, location
-				, 0.0f
-				, (byte)0
-				, 0L
-				, null
-				, null
-				, null
-		);
+		return CreatureEntity.create(-1, EntityType.COW, location, (byte)10);
 	}
 }

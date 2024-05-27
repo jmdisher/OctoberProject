@@ -40,15 +40,10 @@ public class TestMutableCreature
 
 	private static CreatureEntity _buildTestEntity()
 	{
-		return new CreatureEntity(-1
+		return CreatureEntity.create(-1
 				, EntityType.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, 0.0f
 				, (byte)50
-				, 0L
-				, null
-				, null
-				, null
 		);
 	}
 }

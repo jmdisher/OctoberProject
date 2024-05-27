@@ -9,6 +9,7 @@ import org.junit.Test;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 
 
 public class TestEntityCollection
@@ -75,15 +76,6 @@ public class TestEntityCollection
 
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
-		return new CreatureEntity(id
-				, null
-				, location
-				, 0.0f
-				, (byte)0
-				, 0L
-				, null
-				, null
-				, null
-		);
+		return CreatureEntity.create(id, EntityType.COW, location, (byte)10);
 	}
 }

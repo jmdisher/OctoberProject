@@ -60,7 +60,7 @@ public class TestCreatureProcessor
 	public void singleChange()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null, null);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -85,7 +85,7 @@ public class TestCreatureProcessor
 	public void killEntity()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), 0.0f, (byte)50, 0L, null, null, null);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
@@ -130,7 +130,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null, null);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -300,7 +300,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		byte startHealth = 100;
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, startHealth, 0L, null, null, null);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, startHealth);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -343,7 +343,7 @@ public class TestCreatureProcessor
 		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null, null);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
@@ -375,11 +375,11 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
-		MutableCreature mutable = MutableCreature.existing(new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null, null));
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity fedCow = mutable.freeze();
-		CreatureEntity otherCow = new CreatureEntity(-2, EntityType.COW, new EntityLocation(2.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null, null);
-		mutable = MutableCreature.existing(new CreatureEntity(-3, EntityType.COW, new EntityLocation(5.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null, null));
+		CreatureEntity otherCow = CreatureEntity.create(-2, EntityType.COW, new EntityLocation(2.0f, 0.0f, 0.0f),(byte)100);
+		mutable = MutableCreature.existing(CreatureEntity.create(-3, EntityType.COW, new EntityLocation(5.0f, 0.0f, 0.0f), (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity targetCow = mutable.freeze();
 		Map<Integer, CreatureEntity> creaturesById = Map.of(fedCow.id(), fedCow
