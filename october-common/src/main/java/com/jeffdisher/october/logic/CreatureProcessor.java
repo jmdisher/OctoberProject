@@ -8,19 +8,17 @@ import java.util.Random;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -35,7 +33,6 @@ public class CreatureProcessor
 {
 	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
 	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
-	public static final float DIRECT_TARGET_DISTANCE = 6.0f;
 
 	private CreatureProcessor()
 	{
@@ -193,46 +190,15 @@ public class CreatureProcessor
 
 	private static List<AbsoluteLocation> _builPathToPlayer(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature)
 	{
-		// We will keep this simple:  Find the closest player holding wheat, up to our limit.
 		Environment environment = Environment.getShared();
-		Item wheat = environment.items.getItemById("op.wheat_item");
-		// We will just use arrays to pass this "by reference".
-		EntityLocation[] target = new EntityLocation[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		EntityLocation start = creature.location();
-		entityCollection.walkPlayersInRange(start, DIRECT_TARGET_DISTANCE, (Entity player) -> {
-			// See if this player has wheat in their hand.
-			int itemKey = player.hotbarItems()[player.hotbarIndex()];
-			Items itemsInHand = player.inventory().getStackForKey(itemKey);
-			if ((null != itemsInHand) && (wheat == itemsInHand.type()))
-			{
-				EntityLocation end = player.location();
-				float distance = SpatialHelpers.distanceBetween(start, end);
-				if (distance < distanceToTarget[0])
-				{
-					target[0] = end;
-					distanceToTarget[0] = distance;
-				}
-			}
-		});
-		
-		List<AbsoluteLocation> path = null;
-		if (null != target[0])
-		{
-			// We have a target so try to build a path (we will use double the distance for pathing overhead).
-			Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
-				BlockProxy proxy = context.previousBlockLookUp.apply(location);
-				return (null != proxy)
-						? environment.blocks.permitsEntityMovement(proxy.getBlock())
-						: false
-				;
-			};
-			EntityVolume volume = CreatureVolumes.getVolume(creature);
-			EntityLocation source = creature.location();
-			// If this fails, it will return null which is already our failure case.
-			path = PathFinder.findPathWithLimit(blockPermitsUser, volume, source, target[0], 2 * DIRECT_TARGET_DISTANCE);
-		}
-		return path;
+		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
+			BlockProxy proxy = context.previousBlockLookUp.apply(location);
+			return (null != proxy)
+					? environment.blocks.permitsEntityMovement(proxy.getBlock())
+					: false
+			;
+		};
+		return CreatureLogic.buildNewPath(blockPermitsUser, entityCollection, creature);
 	}
 
 	private static List<AbsoluteLocation> _findPath(TickProcessingContext context, Random random, CreatureEntity creature)

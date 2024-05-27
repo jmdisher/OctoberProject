@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
@@ -28,7 +29,9 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
@@ -363,6 +366,45 @@ public class TestCreatureProcessor
 		// Make sure that the movement plan ends at the close wheat.
 		AbsoluteLocation endPoint = updated.movementPlan().get(updated.movementPlan().size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
+	}
+
+	@Test
+	public void cowsInLoveMode()
+	{
+		// Create 1 player holding wheat and 2 cows:  a distant one in love mode and a closer not in love mode.  Show that a cow priorizes the love cow.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		Item wheat_item = ENV.items.getItemById("op.wheat_item");
+		MutableCreature mutable = MutableCreature.existing(new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, null, null));
+		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureEntity fedCow = mutable.freeze();
+		CreatureEntity otherCow = new CreatureEntity(-2, EntityType.COW, new EntityLocation(2.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null, null);
+		mutable = MutableCreature.existing(new CreatureEntity(-3, EntityType.COW, new EntityLocation(5.0f, 0.0f, 0.0f), 0.0f, (byte)100, 0L, null, null, null));
+		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureEntity targetCow = mutable.freeze();
+		Map<Integer, CreatureEntity> creaturesById = Map.of(fedCow.id(), fedCow
+				, otherCow.id(), otherCow
+				, targetCow.id(), targetCow
+		);
+		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(wheat_item, 2), null);
+		TickProcessingContext context = _createContext();
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, Map.of(fedCow.id(), fedCow)
+				, context
+				, new EntityCollection(Set.of(closeWheat), creaturesById.values())
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(fedCow.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertNotNull(updated.stepsToNextMove());
+		
+		// Make sure that the movement plan ends at the close target cow.
+		AbsoluteLocation endPoint = updated.movementPlan().get(updated.movementPlan().size() - 1);
+		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
 	}
 
 
