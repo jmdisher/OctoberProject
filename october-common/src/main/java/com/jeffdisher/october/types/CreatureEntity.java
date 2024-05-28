@@ -22,10 +22,9 @@ public record CreatureEntity(int id
 		// These data elements are considered ephemeral and will NOT be persisted.
 		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
 		, long lastActionGameTick
-		// The next steps required to get to the next step in movementPlan.
+		// The next steps required to get to the next block.  This is normally null but may have something in it if the
+		// entity is walking slowly and requires multiple ticks to reach the next block.
 		, List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove
-		// The sequence of locations where this creature plans to go.
-		, List<AbsoluteLocation> movementPlan
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -55,7 +54,6 @@ public record CreatureEntity(int id
 				, 0.0f
 				, health
 				, 0L
-				, null
 				, null
 				, null
 		);

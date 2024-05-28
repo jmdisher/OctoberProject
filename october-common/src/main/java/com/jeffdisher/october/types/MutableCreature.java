@@ -38,7 +38,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public byte newHealth;
 	public long newLastActionGameTick;
 	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
-	public List<AbsoluteLocation> newMovementPlan;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -49,7 +48,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newHealth = creature.health();
 		this.newLastActionGameTick = creature.lastActionGameTick();
 		this.newStepsToNextMove = creature.stepsToNextMove();
-		this.newMovementPlan = creature.movementPlan();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -116,8 +114,9 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newHealth = health;
 		
 		// Whenever a creature's health changes, we will wipe its AI state.
+		// TODO:  In the future, we should make this about taking damage from a specific source.
 		this.newStepsToNextMove = null;
-		this.newMovementPlan = null;
+		this.newExtendedData = null;
 	}
 
 	@Override
@@ -177,7 +176,6 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newHealth
 					, this.newLastActionGameTick
 					, this.newStepsToNextMove
-					, this.newMovementPlan
 					, this.newExtendedData
 			);
 			// See if these are identical.

@@ -5,6 +5,8 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.creatures.CreatureLogic;
+
 
 public class TestMutableCreature
 {
@@ -21,19 +23,23 @@ public class TestMutableCreature
 	@Test
 	public void healthClearsPlan()
 	{
-		CreatureEntity input = _buildTestEntity();
-		MutableCreature mutable = MutableCreature.existing(input);
-		mutable.newMovementPlan = List.of();
-		mutable.newStepsToNextMove = List.of();
-		CreatureEntity middle = mutable.freeze();
-		Assert.assertNotNull(middle.movementPlan());
+		CreatureEntity middle = new CreatureEntity(-1
+				, EntityType.COW
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, 0.0f
+				, (byte)50
+				, 0L
+				, List.of()
+				, CreatureLogic.test_packageMovementPlanCow(List.of())
+		);
+		Assert.assertNotNull(CreatureLogic.test_unwrapMovementPlanCow(middle));
 		Assert.assertNotNull(middle.stepsToNextMove());
 		
-		mutable = MutableCreature.existing(middle);
+		MutableCreature mutable = MutableCreature.existing(middle);
 		mutable.setHealth((byte)20);
 		CreatureEntity output = mutable.freeze();
 		
-		Assert.assertNull(output.movementPlan());
+		Assert.assertNull(CreatureLogic.test_unwrapMovementPlanCow(output));
 		Assert.assertNull(output.stepsToNextMove());
 	}
 

@@ -246,7 +246,6 @@ public class CodecHelpers
 		// Ephemeral data is just given default values.
 		long lastActionGameTick = 0L;
 		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = null;
-		List<AbsoluteLocation> movementPlan = null;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -255,7 +254,6 @@ public class CodecHelpers
 				, health
 				, lastActionGameTick
 				, stepsToNextMove
-				, movementPlan
 				, extendedData
 		);
 	}

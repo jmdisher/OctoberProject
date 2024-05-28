@@ -5,18 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Predicate;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.creatures.CreatureVolumes;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
-import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
@@ -31,9 +24,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureProcessor
 {
-	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
-	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
-
 	private CreatureProcessor()
 	{
 		// This is just static logic.
@@ -132,156 +122,24 @@ public class CreatureProcessor
 
 	private static List<IMutationEntity<IMutableCreatureEntity>> _setupNextMovements(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
 	{
-		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
-		if (null == mutable.newMovementPlan)
-		{
-			// We have no plan so determine one.
-			// Note that we must also not have any other steps if we get here.
-			Assert.assertTrue(null == mutable.newStepsToNextMove);
-			// We will only do this if we have been idle for long enough.
-			if (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION))
-			{
-				// First, we want to see if we should walk toward a player.
-				mutable.newMovementPlan = _builPathToPlayer(context, entityCollection, mutable.creature);
-				if (null == mutable.newMovementPlan)
-				{
-					// We couldn't find a player so just make a random move.
-					mutable.newMovementPlan = _findPath(context, random, mutable.creature);
-				}
-				if (null == mutable.newMovementPlan)
-				{
-					// There are no possible moves so do nothing, but consider this an action so we reset the timer.
-					changes = List.of();
-				}
-				else
-				{
-					// We have a path so make sure we are centred in a block, first.
-					mutable.newStepsToNextMove = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature);
-					if (mutable.newStepsToNextMove.isEmpty())
-					{
-						// We are already in the centre so just get started.
-						mutable.newStepsToNextMove = null;
-					}
-				}
-			}
-		}
 		if (null == mutable.newStepsToNextMove)
 		{
-			// Convert our next destination into commands.
-			if (null != mutable.newMovementPlan)
-			{
-				// We shouldn't be running anything yet.
-				Assert.assertTrue(null == changes);
-				
-				changes = _determineNextSteps(mutable);
-			}
+			// Ask the per-creature logic to determine if the next steps.
+			// Note that this call could modify "newStepsToNextMove" but it may still be null if there is nothing to do.
+			CreatureLogic.populateNextSteps(context, entityCollection, random, millisSinceLastTick, mutable);
 		}
+		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
 		if (null != mutable.newStepsToNextMove)
 		{
-			// We must have something in this.
-			Assert.assertTrue(!mutable.newStepsToNextMove.isEmpty());
-			// We shouldn't have a plan yet.
-			Assert.assertTrue(null == changes);
-			
-			changes = _scheduleForThisTick(millisSinceLastTick, mutable);
-		}
-		return changes;
-	}
-
-	private static List<AbsoluteLocation> _builPathToPlayer(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature)
-	{
-		Environment environment = Environment.getShared();
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(location);
-			return (null != proxy)
-					? environment.blocks.permitsEntityMovement(proxy.getBlock())
-					: false
-			;
-		};
-		return CreatureLogic.buildNewPath(blockPermitsUser, entityCollection, creature);
-	}
-
-	private static List<AbsoluteLocation> _findPath(TickProcessingContext context, Random random, CreatureEntity creature)
-	{
-		// Our current only action is to find a block nearby and walk to it.
-		Environment environment = Environment.getShared();
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(location);
-			return (null != proxy)
-					? environment.blocks.permitsEntityMovement(proxy.getBlock())
-					: false
-			;
-		};
-		EntityVolume volume = CreatureVolumes.getVolume(creature);
-		EntityLocation source = creature.location();
-		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
-		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);
-		// Just pick one of these destinations at random, of default to standing still.
-		int size = possiblePaths.size();
-		List<AbsoluteLocation> plannedPath;
-		if (size > 0)
-		{
-			int selection = Math.abs(random.nextInt()) % size;
-			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
-			AbsoluteLocation target = possiblePaths.keySet().toArray((int arraySize) -> new AbsoluteLocation[arraySize])[selection];
-			
-			// We can now build the plan - note that we build this in reverse since the map is back-pointers.
-			plannedPath = new ArrayList<>();
-			while (null != target)
+			// It is possible that we have an empty plan (just to reset the last move timer).
+			if (mutable.newStepsToNextMove.isEmpty())
 			{
-				plannedPath.add(0, target);
-				target = possiblePaths.get(target);
-			}
-		}
-		else
-		{
-			plannedPath = null;
-		}
-		return plannedPath;
-	}
-
-	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(MutableCreature mutable)
-	{
-		// First, check to see if we are already in our next location.
-		AbsoluteLocation thisStep = mutable.newMovementPlan.get(0);
-		EntityLocation entityLocation = mutable.newLocation;
-		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
-		
-		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
-		if (currentLocation.equals(thisStep))
-		{
-			// If we are, that means that we can remove this from the path and plan to move to the next step.
-			// Make this path mutable.
-			mutable.newMovementPlan = new ArrayList<>(mutable.newMovementPlan);
-			mutable.newMovementPlan.remove(0);
-			if (mutable.newMovementPlan.isEmpty())
-			{
-				mutable.newMovementPlan = null;
-			}
-			else
-			{
-				AbsoluteLocation nextStep = mutable.newMovementPlan.get(0);
-				mutable.newStepsToNextMove = CreatureMovementHelpers.moveToNextLocation(mutable.creature, nextStep);
-				if (mutable.newStepsToNextMove.isEmpty())
-				{
-					// In this case, just allow us to do nothing and reset the timer (should only be empty if falling, for example).
-					mutable.newStepsToNextMove = null;
-					changes = List.of();
-				}
-			}
-		}
-		else
-		{
-			// Otherwise, check to see if we are currently in the air, since we might just be jumping/falling into the next location.
-			if (SpatialHelpers.isBlockAligned(entityLocation.z()))
-			{
-				// We appear to be on the surface, meaning that we were somehow blocked.  Therefore, clear the plan and we will try again after our idle timer.
-				mutable.newMovementPlan = null;
 				mutable.newStepsToNextMove = null;
+				changes = List.of();
 			}
 			else
 			{
-				// Do nothing since we are moving through the air.
+				changes = _scheduleForThisTick(millisSinceLastTick, mutable);
 			}
 		}
 		return changes;
