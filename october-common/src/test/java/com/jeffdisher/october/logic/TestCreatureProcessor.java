@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -146,7 +147,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.stepsToNextMove());
-		Assert.assertNotNull(CreatureLogic.test_unwrapMovementPlanCow(updated));
+		Assert.assertNotNull(CowStateMachine.test_unwrapMovementPlan(updated.extendedData()));
 	}
 
 	@Test
@@ -161,7 +162,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CreatureLogic.test_packageMovementPlanCow(movementPlan));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CowStateMachine.test_packageMovementPlan(movementPlan));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -177,7 +178,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(2, updated.stepsToNextMove().size());
-		Assert.assertEquals(2, CreatureLogic.test_unwrapMovementPlanCow(updated).size());
+		Assert.assertEquals(2, CowStateMachine.test_unwrapMovementPlan(updated.extendedData()).size());
 	}
 
 	@Test
@@ -190,7 +191,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CreatureLogic.test_packageMovementPlanCow(movementPlan));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CowStateMachine.test_packageMovementPlan(movementPlan));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -206,7 +207,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNull(updated.stepsToNextMove());
-		Assert.assertEquals(2, CreatureLogic.test_unwrapMovementPlanCow(updated).size());
+		Assert.assertEquals(2, CowStateMachine.test_unwrapMovementPlan(updated.extendedData()).size());
 	}
 
 	@Test
@@ -217,7 +218,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CreatureLogic.test_packageMovementPlanCow(movementPlan));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CowStateMachine.test_packageMovementPlan(movementPlan));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -235,7 +236,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(3.92f, updated.zVelocityPerSecond(), 0.001f);
 		// We should only jump so there will be no next movement.
 		Assert.assertNull(updated.stepsToNextMove());
-		Assert.assertEquals(1, CreatureLogic.test_unwrapMovementPlanCow(updated).size());
+		Assert.assertEquals(1, CowStateMachine.test_unwrapMovementPlan(updated.extendedData()).size());
 	}
 
 	@Test
@@ -246,7 +247,7 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 3.92f, (byte)100, 0L, null, CreatureLogic.test_packageMovementPlanCow(movementPlan));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 3.92f, (byte)100, 0L, null, CowStateMachine.test_packageMovementPlan(movementPlan));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -264,7 +265,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(2.94f, updated.zVelocityPerSecond(), 0.001f);
 		// We should only jump so there will be no next movement.
 		Assert.assertNull(updated.stepsToNextMove());
-		Assert.assertEquals(1, CreatureLogic.test_unwrapMovementPlanCow(updated).size());
+		Assert.assertEquals(1, CowStateMachine.test_unwrapMovementPlan(updated.extendedData()).size());
 	}
 
 	@Test
@@ -275,7 +276,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CreatureLogic.test_packageMovementPlanCow(movementPlan));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CowStateMachine.test_packageMovementPlan(movementPlan));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -291,7 +292,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(2, updated.stepsToNextMove().size());
-		Assert.assertEquals(1, CreatureLogic.test_unwrapMovementPlanCow(updated).size());
+		Assert.assertEquals(1, CowStateMachine.test_unwrapMovementPlan(updated.extendedData()).size());
 	}
 
 	@Test
@@ -317,7 +318,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertNotNull(updated.stepsToNextMove());
-		Assert.assertNotNull(CreatureLogic.test_unwrapMovementPlanCow(updated));
+		Assert.assertNotNull(CowStateMachine.test_unwrapMovementPlan(updated.extendedData()));
 		
 		// Now, hit them and see this clears their movement plan.
 		creaturesById = group.updatedCreatures();
@@ -334,7 +335,7 @@ public class TestCreatureProcessor
 		updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth - damage, updated.health());
 		Assert.assertNull(updated.stepsToNextMove());
-		Assert.assertNull(CreatureLogic.test_unwrapMovementPlanCow(updated));
+		Assert.assertNull(CowStateMachine.test_unwrapMovementPlan(updated.extendedData()));
 	}
 
 	@Test
@@ -364,7 +365,8 @@ public class TestCreatureProcessor
 		Assert.assertNotNull(updated.stepsToNextMove());
 		
 		// Make sure that the movement plan ends at the close wheat.
-		AbsoluteLocation endPoint = CreatureLogic.test_unwrapMovementPlanCow(updated).get(CreatureLogic.test_unwrapMovementPlanCow(updated).size() - 1);
+		List<AbsoluteLocation> movementPlan = CowStateMachine.test_unwrapMovementPlan(updated.extendedData());
+		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 	}
 
@@ -403,7 +405,8 @@ public class TestCreatureProcessor
 		Assert.assertNotNull(updated.stepsToNextMove());
 		
 		// Make sure that the movement plan ends at the close target cow.
-		AbsoluteLocation endPoint = CreatureLogic.test_unwrapMovementPlanCow(updated).get(CreatureLogic.test_unwrapMovementPlanCow(updated).size() - 1);
+		List<AbsoluteLocation> movementPlan = CowStateMachine.test_unwrapMovementPlan(updated.extendedData());
+		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
 	}
 

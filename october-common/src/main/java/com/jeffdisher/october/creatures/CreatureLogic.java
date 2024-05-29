@@ -1,7 +1,6 @@
 package com.jeffdisher.october.creatures;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -16,13 +15,11 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -34,8 +31,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureLogic
 {
-	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
-	public static final float COW_VIEW_DISTANCE = 6.0f;
 	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
 	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
 
@@ -48,9 +43,18 @@ public class CreatureLogic
 	 */
 	public static boolean canUseOnEntity(Item item, EntityType entityType)
 	{
-		Environment env = Environment.getShared();
-		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
-		return (wheat == item) && (EntityType.COW == entityType);
+		boolean canUse;
+		switch (entityType)
+		{
+		case COW:
+			canUse = CowStateMachine.canUseItem(item);
+			break;
+		case ERROR:
+		case PLAYER:
+		default:
+			throw Assert.unreachable();
+		}
+		return canUse;
 	}
 
 	/**
@@ -66,8 +70,11 @@ public class CreatureLogic
 		switch (creature.getType())
 		{
 		case COW:
-			_ExtendedCow updated = _didApplyToCow(itemType, (_ExtendedCow) creature.getExtendedData());
-			if (null != updated)
+			Object originalData = creature.getExtendedData();
+			CowStateMachine cow = CowStateMachine.extractFromData(originalData);
+			cow.applyItem(itemType);
+			Object updated = cow.freezeToData();
+			if (originalData != updated)
 			{
 				creature.setExtendedData(updated);
 				didApply = true;
@@ -113,133 +120,21 @@ public class CreatureLogic
 		}
 	}
 
-	/**
-	 * TESTING ONLY!
-	 * Packages the given movementPlan into the extended data object for a cow.
-	 * 
-	 * @param movementPlan The plan.
-	 * @return The packaged extended object.
-	 */
-	public static Object test_packageMovementPlanCow(List<AbsoluteLocation> movementPlan)
-	{
-		return new _ExtendedCow(false, movementPlan);
-	}
-
-	/**
-	 * TESTING ONLY!
-	 * Unpackages the movement plan from the extended data object for a cow.
-	 * 
-	 * @param creature The creature to read.
-	 * @return The movement plan, potentially null.
-	 */
-	public static List<AbsoluteLocation> test_unwrapMovementPlanCow(CreatureEntity creature)
-	{
-		_ExtendedCow extended = (_ExtendedCow) creature.extendedData();
-		return (null != extended)
-				? extended.movementPlan
-				: null
-		;
-	}
-
-
-	private static _ExtendedCow _didApplyToCow(Item itemType, _ExtendedCow extendedData)
-	{
-		Environment env = Environment.getShared();
-		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
-		_ExtendedCow updated = null;
-		if ((itemType == wheat) && ((null == extendedData) || !extendedData.inLoveMode))
-		{
-			// Even if we had a plan, we will drop it here since we are changing modes.
-			updated = new _ExtendedCow(true, null);
-		}
-		return updated;
-	}
-
-	private static List<AbsoluteLocation> _buildPathForCow(Predicate<AbsoluteLocation> blockPermitsPassage, EntityCollection entityCollection, CreatureEntity creature)
-	{
-		Environment environment = Environment.getShared();
-		EntityLocation start = creature.location();
-		_ExtendedCow extendedData = (_ExtendedCow) creature.extendedData();
-		
-		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
-		boolean isInLoveMove = (null != extendedData) && extendedData.inLoveMode;
-		EntityLocation targetLocation;
-		if (isInLoveMove)
-		{
-			// Find another cow in breeding mode.
-			// We will just use arrays to pass this "by reference".
-			EntityLocation[] target = new EntityLocation[1];
-			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-			entityCollection.walkCreaturesInRange(start, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
-				// Ignore ourselves and make sure that they are the right type.
-				if ((creature != check) && (EntityType.COW == check.type()))
-				{
-					// See if they are also in love mode.
-					_ExtendedCow other = (_ExtendedCow) check.extendedData();
-					if ((null != other) && other.inLoveMode)
-					{
-						EntityLocation end = check.location();
-						float distance = SpatialHelpers.distanceBetween(start, end);
-						if (distance < distanceToTarget[0])
-						{
-							target[0] = end;
-							distanceToTarget[0] = distance;
-						}
-					}
-				}
-			});
-			targetLocation = target[0];
-		}
-		else
-		{
-			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
-			Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
-			// We will just use arrays to pass this "by reference".
-			EntityLocation[] target = new EntityLocation[1];
-			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-			entityCollection.walkPlayersInRange(start, COW_VIEW_DISTANCE, (Entity player) -> {
-				// See if this player has wheat in their hand.
-				int itemKey = player.hotbarItems()[player.hotbarIndex()];
-				Items itemsInHand = player.inventory().getStackForKey(itemKey);
-				if ((null != itemsInHand) && (wheat == itemsInHand.type()))
-				{
-					EntityLocation end = player.location();
-					float distance = SpatialHelpers.distanceBetween(start, end);
-					if (distance < distanceToTarget[0])
-					{
-						target[0] = end;
-						distanceToTarget[0] = distance;
-					}
-				}
-			});
-			targetLocation = target[0];
-		}
-		
-		List<AbsoluteLocation> path = null;
-		if (null != targetLocation)
-		{
-			// We have a target so try to build a path (we will use double the distance for pathing overhead).
-			// If this fails, it will return null which is already our failure case.
-			EntityVolume volume = CreatureVolumes.getVolume(creature);
-			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, 2 * COW_VIEW_DISTANCE);
-		}
-		return path;
-	}
 
 	private static void _populateNextStepsForCow(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
 	{
 		// We know that this is for a cow so unwrap our extended data.
-		_ExtendedCow extended = (_ExtendedCow) mutable.newExtendedData;
-		List<AbsoluteLocation> movementPlan = null;
+		CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
+		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
 		
-		if ((null == extended) || (null == extended.movementPlan))
+		if (null == movementPlan)
 		{
 			// We have no plan so determine one.
 			// We will only do this if we have been idle for long enough.
 			if (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION))
 			{
 				// First, we want to see if we should walk toward a player.
-				movementPlan = _buildDeliberatePathCow(context, entityCollection, mutable.creature);
+				movementPlan = _buildDeliberatePathCow(context, entityCollection, mutable.creature, machine);
 				if (null == movementPlan)
 				{
 					// We couldn't find a player so just make a random move.
@@ -262,11 +157,6 @@ public class CreatureLogic
 				}
 			}
 		}
-		else
-		{
-			// Just use whatever we had.
-			movementPlan = extended.movementPlan;
-		}
 		
 		// Determine if we need to set the next steps in case we devised a plan.
 		// (the movementPlan should only be null here if we are waiting to make our next decision)
@@ -277,21 +167,16 @@ public class CreatureLogic
 			mutable.newStepsToNextMove = _determineNextSteps(mutable.creature, mutablePlan);
 			
 			// We can now update our extended data.
-			boolean inLoveMode = (null != extended) ? extended.inLoveMode : false;
-			// Since this data structure should be immutable, use an immutable list.
-			List<AbsoluteLocation> remainingPlan = mutablePlan.isEmpty() ? null : Collections.unmodifiableList(mutablePlan);
-			if (inLoveMode || (null != remainingPlan))
+			if (mutablePlan.isEmpty())
 			{
-				mutable.newExtendedData = new _ExtendedCow(inLoveMode, remainingPlan);
+				mutablePlan = null;
 			}
-			else
-			{
-				mutable.newExtendedData = null;
-			}
+			machine.setMovementPlan(mutablePlan);
+			mutable.newExtendedData = machine.freezeToData();
 		}
 	}
 
-	private static List<AbsoluteLocation> _buildDeliberatePathCow(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature)
+	private static List<AbsoluteLocation> _buildDeliberatePathCow(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, CowStateMachine machine)
 	{
 		Environment environment = Environment.getShared();
 		Predicate<AbsoluteLocation> blockPermitsPassage = (AbsoluteLocation location) -> {
@@ -301,7 +186,18 @@ public class CreatureLogic
 					: false
 			;
 		};
-		return _buildPathForCow(blockPermitsPassage, entityCollection, creature);
+		
+		EntityLocation targetLocation = machine.selectDeliberateTarget(entityCollection, creature);
+		List<AbsoluteLocation> path = null;
+		if (null != targetLocation)
+		{
+			// We have a target so try to build a path (we will use double the distance for pathing overhead).
+			// If this fails, it will return null which is already our failure case.
+			EntityVolume volume = CreatureVolumes.getVolume(creature);
+			EntityLocation start = creature.location();
+			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, 2 * CowStateMachine.COW_VIEW_DISTANCE);
+		}
+		return path;
 	}
 
 	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context, Random random, CreatureEntity creature)
@@ -384,10 +280,4 @@ public class CreatureLogic
 		}
 		return changes;
 	}
-
-
-	private static record _ExtendedCow(boolean inLoveMode
-			, List<AbsoluteLocation> movementPlan
-	)
-	{}
 }
