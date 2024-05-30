@@ -63,28 +63,39 @@ public class CowStateMachine
 
 	/**
 	 * TESTING ONLY!
-	 * Packages the given movementPlan into the extended data object for a cow.
+	 * Packages the given testing data into the extended data object for a cow.
 	 * 
-	 * @param movementPlan The plan.
+	 * @param testing The testing data.
 	 * @return The packaged extended object.
 	 */
-	public static Object test_packageMovementPlan(List<AbsoluteLocation> movementPlan)
+	public static Object encodeExtendedData(Test_ExtendedData testing)
 	{
-		return new _ExtendedData(false, movementPlan, 0, null);
+		return (null != testing)
+				? new _ExtendedData(testing.inLoveMode
+						, testing.movementPlan
+						, testing.matingPartnerId
+						, testing.offspringLocation
+				)
+				: null
+		;
 	}
 
 	/**
 	 * TESTING ONLY!
-	 * Unpackages the movement plan from the extended data object for a cow.
+	 * Unpackages the testing data from the extended data object for a cow.
 	 * 
 	 * @param creature The creature to read.
-	 * @return The movement plan, potentially null.
+	 * @return The testing data, potentially null.
 	 */
-	public static List<AbsoluteLocation> test_unwrapMovementPlan(Object data)
+	public static Test_ExtendedData decodeExtendedData(Object data)
 	{
 		_ExtendedData extended = (_ExtendedData) data;
 		return (null != extended)
-				? extended.movementPlan
+				? new Test_ExtendedData(extended.inLoveMode
+						, extended.movementPlan
+						, extended.matingPartnerId
+						, extended.offspringLocation
+				)
 				: null
 		;
 	}
@@ -337,6 +348,16 @@ public class CowStateMachine
 		return matchingData;
 	}
 
+
+	/**
+	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
+	 */
+	public static record Test_ExtendedData(boolean inLoveMode
+			, List<AbsoluteLocation> movementPlan
+			, int matingPartnerId
+			, EntityLocation offspringLocation
+	)
+	{}
 
 	private static record _ExtendedData(boolean inLoveMode
 			, List<AbsoluteLocation> movementPlan

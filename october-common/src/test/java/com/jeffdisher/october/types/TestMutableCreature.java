@@ -30,16 +30,16 @@ public class TestMutableCreature
 				, (byte)50
 				, 0L
 				, List.of()
-				, CowStateMachine.test_packageMovementPlan(List.of())
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null))
 		);
-		Assert.assertNotNull(CowStateMachine.test_unwrapMovementPlan(middle.extendedData()));
+		Assert.assertNotNull(CowStateMachine.decodeExtendedData(middle.extendedData()).movementPlan());
 		Assert.assertNotNull(middle.stepsToNextMove());
 		
 		MutableCreature mutable = MutableCreature.existing(middle);
 		mutable.setHealth((byte)20);
 		CreatureEntity output = mutable.freeze();
 		
-		Assert.assertNull(CowStateMachine.test_unwrapMovementPlan(output.extendedData()));
+		Assert.assertNull(CowStateMachine.decodeExtendedData(output.extendedData()));
 		Assert.assertNull(output.stepsToNextMove());
 	}
 
