@@ -524,7 +524,7 @@ public class TestCreatureProcessor
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
 				, (AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
 						? new BlockProxy(location.getBlockAddress(), stoneCuboid)

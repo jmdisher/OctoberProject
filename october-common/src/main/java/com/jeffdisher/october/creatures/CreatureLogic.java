@@ -32,7 +32,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureLogic
 {
-	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
 	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
 
 	/**
@@ -94,31 +93,44 @@ public class CreatureLogic
 	}
 
 	/**
-	 * Called when newStepsToNextMove is null in order to determine the next action for the entity.  This field will be
-	 * populated by this method, providing either the next actions the entity should take, an empty list to reset the
-	 * last action timer, or null to allow the timer to expire.
+	 * Called when newStepsToNextMove is null in order to determine the next action for the entity.  This is an
+	 * opportunity for the creature to either just return the next actions for newStepsToNextMove from an existing plan,
+	 * take special actions before doing that, or update/change its existing plan.
 	 * 
 	 * @param context The context of the current tick.
+	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param random A random generator.
 	 * @param millisSinceLastTick Milliseconds since the last tick was run.
 	 * @param mutable The mutable creature object currently being evaluated.
+	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
+	 * timer).
 	 */
-	public static void populateNextSteps(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
+	public static List<IMutationEntity<IMutableCreatureEntity>> planNextActions(TickProcessingContext context
+			, Consumer<CreatureEntity> creatureSpawner
+			, EntityCollection entityCollection
+			, boolean canStartNewPath
+			, Random random
+			, long millisSinceLastTick
+			, MutableCreature mutable
+	)
 	{
 		// Only called if we don't currently have a published set of next steps.
 		Assert.assertTrue(null == mutable.newStepsToNextMove);
+		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
+		
 		// The logic is per-creature type.
 		switch (mutable.creature.type())
 		{
 		case COW:
-			_populateNextStepsForCow(context, entityCollection, random, millisSinceLastTick, mutable);
+			actionsProduced = _planNextActionsForCow(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable);
 			break;
 		case ERROR:
 		case PLAYER:
 		default:
 			throw Assert.unreachable();
 		}
+		return actionsProduced;
 	}
 
 	/**
@@ -156,75 +168,61 @@ public class CreatureLogic
 		return didBecomePregnant;
 	}
 
-	/**
-	 * Allows the creature to take a special action in this tick.
-	 * 
-	 * @param context The current tick context.
-	 * @param creatureSpawner A consumer for any new entities spawned.
-	 * @param mutable The mutable creature.
-	 */
-	public static void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, MutableCreature mutable)
-	{
-		switch (mutable.creature.type())
-		{
-		case COW:{
-			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			machine.takeSpecialActions(context, creatureSpawner, mutable.creature);
-			mutable.newExtendedData = machine.freezeToData();
-			break;
-		}
-		case ERROR:
-		case PLAYER:
-		default:
-			throw Assert.unreachable();
-		}
-	}
 
-
-	private static void _populateNextStepsForCow(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActionsForCow(TickProcessingContext context
+			, Consumer<CreatureEntity> creatureSpawner
+			, EntityCollection entityCollection
+			, boolean canStartNewPath
+			, Random random
+			, MutableCreature mutable
+	)
 	{
-		// We know that this is for a cow so unwrap our extended data.
+		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
 		
-		if (null == movementPlan)
+		// We will first determine if we need to take any special actions (sending actions, spawning offspring, etc)
+		machine.takeSpecialActions(context, creatureSpawner, mutable.creature);
+		
+		// Now, determine if we have a plan or need to make one.
+		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		if ((null == movementPlan) && canStartNewPath)
 		{
-			// We have no plan so determine one.
-			// We will only do this if we have been idle for long enough.
-			if (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION))
+			// First, we want to see if we should walk toward a player.
+			movementPlan = _buildDeliberatePathCow(context, entityCollection, mutable.creature, machine);
+			if (null == movementPlan)
 			{
-				// First, we want to see if we should walk toward a player.
-				movementPlan = _buildDeliberatePathCow(context, entityCollection, mutable.creature, machine);
-				if (null == movementPlan)
+				// We couldn't find a player so just make a random move.
+				movementPlan = _findPathToRandomSpot(context, random, mutable.creature);
+			}
+			if (null == movementPlan)
+			{
+				// There are no possible moves so do nothing, but make an empty plan so we will reset the last move timer (as to not just do the same thing, again).
+				actionsProduced = List.of();
+			}
+			else
+			{
+				// We have a path so make sure we are centred in a block, first.
+				actionsProduced = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature);
+				if (actionsProduced.isEmpty())
 				{
-					// We couldn't find a player so just make a random move.
-					movementPlan = _findPathToRandomSpot(context, random, mutable.creature);
-				}
-				if (null == movementPlan)
-				{
-					// There are no possible moves so do nothing, but make an empty plan so we will reset the last move timer (as to not just do the same thing, again).
-					mutable.newStepsToNextMove = List.of();
-				}
-				else
-				{
-					// We have a path so make sure we are centred in a block, first.
-					mutable.newStepsToNextMove = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature);
-					if (mutable.newStepsToNextMove.isEmpty())
-					{
-						// We are already in the centre so just get started.
-						mutable.newStepsToNextMove = null;
-					}
+					// We are already in the centre so just get started.
+					actionsProduced = null;
 				}
 			}
+		}
+		else
+		{
+			// We start with no actions and will fall-through to the plans below.
+			actionsProduced = null;
 		}
 		
 		// Determine if we need to set the next steps in case we devised a plan.
 		// (the movementPlan should only be null here if we are waiting to make our next decision)
-		if ((null == mutable.newStepsToNextMove) && (null != movementPlan))
+		if ((null == actionsProduced) && (null != movementPlan))
 		{
 			// The only reason why this is still null at this point is if we have a plan and we are ready to use it.
 			List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-			mutable.newStepsToNextMove = _determineNextSteps(mutable.creature, mutablePlan);
+			actionsProduced = _determineNextSteps(mutable.creature, mutablePlan);
 			
 			// We can now update our extended data.
 			if (mutablePlan.isEmpty())
@@ -232,8 +230,9 @@ public class CreatureLogic
 				mutablePlan = null;
 			}
 			machine.setMovementPlan(mutablePlan);
-			mutable.newExtendedData = machine.freezeToData();
 		}
+		mutable.newExtendedData = machine.freezeToData();
+		return actionsProduced;
 	}
 
 	private static List<AbsoluteLocation> _buildDeliberatePathCow(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, CowStateMachine machine)

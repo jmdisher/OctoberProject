@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -151,7 +152,7 @@ public class TestCowStateMachine
 				messageAcceptor.accept(targetCreatureId, change);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
 				, null
 				, previousEntityLookUp
 				, null

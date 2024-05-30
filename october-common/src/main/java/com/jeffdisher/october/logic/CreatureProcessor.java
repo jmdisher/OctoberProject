@@ -25,6 +25,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureProcessor
 {
+	/**
+	 * The minimum number of ticks we will allow an entity to stay in one place before we tell them to plan a new route.
+	 */
+	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
+
 	private CreatureProcessor()
 	{
 		// This is just static logic.
@@ -69,15 +74,32 @@ public class CreatureProcessor
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
 				
-				// Before doing anything, ask the creature if it needs to do anything special (spawning offspring or siring a partner).
-				CreatureLogic.takeSpecialActions(context, creatureSpawner, mutable);
-				
 				// Determine if we need to schedule movements.
 				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
 				if (null == changes)
 				{
 					// We have nothing to do, and nothing is acting on us, so see if we have a plan to apply or should select one.
-					changes = _setupNextMovements(context, entityCollection, random, millisSinceLastTick, mutable);
+					if (null == mutable.newStepsToNextMove)
+					{
+						// We have no immediate steps planned so ask the creature if it wants to take special actions or plan the next path
+						boolean canStartNewPath = (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION));
+						// Note that this may still return a null list of next steps if there is nothing to do.
+						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, millisSinceLastTick, mutable);
+					}
+					if (null != mutable.newStepsToNextMove)
+					{
+						// It is possible that we have an empty plan (just to reset the last move timer).
+						if (mutable.newStepsToNextMove.isEmpty())
+						{
+							mutable.newStepsToNextMove = null;
+							changes = List.of();
+						}
+						else
+						{
+							changes = _scheduleForThisTick(millisSinceLastTick, mutable);
+						}
+					}
+					
 				}
 				
 				long millisApplied = 0L;
@@ -130,31 +152,6 @@ public class CreatureProcessor
 		);
 	}
 
-
-	private static List<IMutationEntity<IMutableCreatureEntity>> _setupNextMovements(TickProcessingContext context, EntityCollection entityCollection, Random random, long millisSinceLastTick, MutableCreature mutable)
-	{
-		if (null == mutable.newStepsToNextMove)
-		{
-			// Ask the per-creature logic to determine if the next steps.
-			// Note that this call could modify "newStepsToNextMove" but it may still be null if there is nothing to do.
-			CreatureLogic.populateNextSteps(context, entityCollection, random, millisSinceLastTick, mutable);
-		}
-		List<IMutationEntity<IMutableCreatureEntity>> changes = null;
-		if (null != mutable.newStepsToNextMove)
-		{
-			// It is possible that we have an empty plan (just to reset the last move timer).
-			if (mutable.newStepsToNextMove.isEmpty())
-			{
-				mutable.newStepsToNextMove = null;
-				changes = List.of();
-			}
-			else
-			{
-				changes = _scheduleForThisTick(millisSinceLastTick, mutable);
-			}
-		}
-		return changes;
-	}
 
 	private static List<IMutationEntity<IMutableCreatureEntity>> _scheduleForThisTick(long millisSinceLastTick, MutableCreature mutable)
 	{
