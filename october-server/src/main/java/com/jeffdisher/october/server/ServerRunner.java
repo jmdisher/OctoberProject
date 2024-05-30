@@ -76,7 +76,7 @@ public class ServerRunner
 		_network = network;
 		_loader = loader;
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, tickListener);
+		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, loader.creatureIdAssigner, tickListener);
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {

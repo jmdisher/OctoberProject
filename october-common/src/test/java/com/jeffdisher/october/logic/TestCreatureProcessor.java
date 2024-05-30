@@ -106,6 +106,7 @@ public class TestCreatureProcessor
 						Assert.fail();
 					}}
 				, null
+				, null
 		);
 		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
@@ -422,6 +423,7 @@ public class TestCreatureProcessor
 						: new BlockProxy(location.getBlockAddress(), airCuboid)
 					;
 				}
+				, null
 				, null
 				, null
 				, null

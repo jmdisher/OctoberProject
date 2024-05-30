@@ -237,6 +237,7 @@ public class TestFallingBehaviour
 						}
 					}
 				, null
+				, null
 		);
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
 		Assert.assertTrue(update.applyMutation(context, proxy));
@@ -317,6 +318,7 @@ public class TestFallingBehaviour
 						Assert.fail("Not expected in tets");
 					}
 				}
+				, null
 				, null
 		);
 		return context;

@@ -3,6 +3,7 @@ package com.jeffdisher.october.types;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 
@@ -44,11 +45,14 @@ public class TickProcessingContext
 	 */
 	public final IChangeSink newChangeSink;
 
+	public final CreatureIdAssigner idAssigner;
+
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
+			, CreatureIdAssigner idAssigner
 	)
 	{
 		this.currentTick = currentTick;
@@ -56,6 +60,7 @@ public class TickProcessingContext
 		this.previousEntityLookUp = previousEntityLookUp;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
+		this.idAssigner = idAssigner;
 	}
 
 

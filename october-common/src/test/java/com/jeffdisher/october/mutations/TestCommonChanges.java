@@ -97,6 +97,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, null
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -561,6 +562,7 @@ public class TestCommonChanges
 					}
 				}
 				, null
+				, null
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -688,6 +690,7 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 				}
+				, null
 		);
 		
 		// Check the miss.
@@ -752,6 +755,7 @@ public class TestCommonChanges
 					}
 				}
 				, null
+				, null
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
@@ -813,6 +817,7 @@ public class TestCommonChanges
 						Assert.fail("Not expected in tets");
 					}
 				}
+				, null
 		);
 		
 		// Check that the sword durability changed and that we scheduled the hit.
@@ -839,6 +844,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, changeSink
+				, null
 		);
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.create(entityId);
@@ -1251,6 +1257,7 @@ public class TestCommonChanges
 				}
 				, null
 				, changeSink
+				, null
 		);
 		
 		// Attack and verify that we see damage come through the creature path.
@@ -1306,6 +1313,7 @@ public class TestCommonChanges
 				}
 				, null
 				, changeSink
+				, null
 		);
 		
 		// Feed the creature and verify that we see the apply scheduled.
@@ -1344,6 +1352,7 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
+				, null
 				, null
 				, null
 				, null
@@ -1394,6 +1403,7 @@ public class TestCommonChanges
 							Assert.fail("Not expected in tets");
 						}
 					} : null
+					, null
 			);
 		}
 	}

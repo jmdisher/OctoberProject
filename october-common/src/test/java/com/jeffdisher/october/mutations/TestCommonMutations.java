@@ -66,6 +66,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
+				, null
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -216,6 +217,7 @@ public class TestCommonMutations
 					}
 				}
 				, null
+				, null
 		);
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
@@ -268,6 +270,7 @@ public class TestCommonMutations
 					}
 				}
 				, null
+				, null
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -304,6 +307,7 @@ public class TestCommonMutations
 						// We ignore this.
 					}
 				}
+				, null
 				, null
 		);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
@@ -370,6 +374,7 @@ public class TestCommonMutations
 							Assert.fail("Not expected in tets");
 						}
 					}
+					, null
 			);
 		}
 	}

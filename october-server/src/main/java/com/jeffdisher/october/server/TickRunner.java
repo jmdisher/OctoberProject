@@ -22,6 +22,7 @@ import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
@@ -64,6 +65,7 @@ public class TickRunner
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	private final long _millisPerTick;
+	private final CreatureIdAssigner _idAssigner;
 	// Read-only snapshot of the previously-completed tick.
 	private Snapshot _snapshot;
 	
@@ -88,11 +90,13 @@ public class TickRunner
 	 * 
 	 * @param threadCount The number of threads to use to run the ticks.
 	 * @param millisPerTick The number of milliseconds to target for scheduling load within a tick.
+	 * @param idAssigner The assigner for spawning new creatures.
 	 * @param tickCompletionListener The consumer which we will given the completed snapshot of the state immediately before
 	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
 	 */
 	public TickRunner(int threadCount
 			, long millisPerTick
+			, CreatureIdAssigner idAssigner
 			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
@@ -100,6 +104,7 @@ public class TickRunner
 		_syncPoint = new SyncPoint(threadCount);
 		_threads = new Thread[threadCount];
 		_millisPerTick = millisPerTick;
+		_idAssigner = idAssigner;
 		_entitySharedAccess = new HashMap<>();
 		_partial = new _PartialHandoffData[threadCount];
 		_threadStats = new ProcessorElement.PerThreadStats[threadCount];
@@ -360,6 +365,7 @@ public class TickRunner
 						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
 					, newMutationSink
 					, newChangeSink
+					, _idAssigner
 			);
 			
 			long startCreatures = System.currentTimeMillis();

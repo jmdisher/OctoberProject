@@ -618,6 +618,8 @@ public class SpeculativeProjection
 					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
 				, newMutationSink
 				, newChangeSink
+				// We never spawn creatures on the client so no ID assigner.
+				, null
 		);
 		return context;
 	}

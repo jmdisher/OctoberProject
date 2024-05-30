@@ -52,22 +52,23 @@ public class FakeBlockUpdate
 						throw Assert.unreachable();
 					}
 				}
-		, new TickProcessingContext.IChangeSink() {
-			@Override
-			public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-			{
+			, new TickProcessingContext.IChangeSink() {
+				@Override
+				public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+				{
+				}
+				@Override
+				public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+				{
+					throw Assert.unreachable();
+				}
+				@Override
+				public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+				{
+					throw Assert.unreachable();
+				}
 			}
-			@Override
-			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-			{
-				throw Assert.unreachable();
-			}
-			@Override
-			public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-			{
-				throw Assert.unreachable();
-			}
-		}
+			, null
 		);
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
 		boolean didApply = mutation.applyMutation(context, mutable);

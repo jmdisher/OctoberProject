@@ -17,6 +17,7 @@ import java.util.function.BiFunction;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
@@ -54,7 +55,9 @@ public class ResourceLoader
 	private final MessageQueue _queue;
 	private final Thread _background;
 	private final ByteBuffer _backround_serializationBuffer;
-	private final CreatureIdAssigner _creatureIdAssigner;
+
+	// We directly expose the ID assigner since it is designed to be shared and is atomic.
+	public final CreatureIdAssigner creatureIdAssigner;
 
 	// Shared data for passing information back from the background thread.
 	private final ReentrantLock _sharedDataLock;
@@ -76,7 +79,7 @@ public class ResourceLoader
 			_background_main();
 		}, "Cuboid Loader");
 		_backround_serializationBuffer = ByteBuffer.allocate(SERIALIZATION_BUFFER_SIZE_BYTES);
-		_creatureIdAssigner = new CreatureIdAssigner();
+		this.creatureIdAssigner = new CreatureIdAssigner();
 		
 		_sharedDataLock = new ReentrantLock();
 		
@@ -160,7 +163,7 @@ public class ResourceLoader
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = _cuboidGenerator.apply(_creatureIdAssigner, address);
+							data = _cuboidGenerator.apply(this.creatureIdAssigner, address);
 						}
 					}
 					// If we found anything, return it.
@@ -304,7 +307,7 @@ public class ResourceLoader
 			List<CreatureEntity> creatures = new ArrayList<>();
 			for (int i = 0; i < creatureCount; ++i)
 			{
-				CreatureEntity entity = CodecHelpers.readCreatureEntity(_creatureIdAssigner.next(), buffer);
+				CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer);
 				creatures.add(entity);
 			}
 			
