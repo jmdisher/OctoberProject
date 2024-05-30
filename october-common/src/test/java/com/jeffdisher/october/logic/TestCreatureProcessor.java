@@ -1,9 +1,12 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -15,6 +18,7 @@ import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -29,12 +33,15 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -411,6 +418,107 @@ public class TestCreatureProcessor
 		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
 	}
 
+	@Test
+	public void cowsBreeding()
+	{
+		// Create 2 cows close to each other, feed both of them, and observe the messages related to how they breed.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
+		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(0.9f, 0.0f, 0.0f);
+		Item wheat_item = ENV.items.getItemById("op.wheat_item");
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), EntityType.COW, location1, (byte)100));
+		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureEntity cow1 = mutable.freeze();
+		mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), EntityType.COW, location2, (byte)100));
+		CreatureLogic.applyItemToCreature(wheat_item, mutable);
+		CreatureEntity cow2 = mutable.freeze();
+		
+		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cow1.id(), cow1
+				, cow2.id(), cow2
+		));
+		TickProcessingContext context = _createContext();
+		long millisSinceLastTick = 100L;
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, Map.of()
+		);
+		
+		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
+		creaturesById.putAll(group.updatedCreatures());
+		Map<Integer, IMutationEntity<IMutableCreatureEntity>> changes = new HashMap<>();
+		context = _updateContextWithCreatures(context, creaturesById.values(), new IChangeSink() {
+			@Override
+			public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+			{
+				throw new AssertionError("Not in test");
+			}
+			@Override
+			public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+			{
+				Assert.assertFalse(changes.containsKey(targetCreatureId));
+				changes.put(targetCreatureId, change);
+			}
+		}, null);
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, Map.of()
+		);
+		
+		// Verify that cow1 sent a message to cow2.
+		Assert.assertEquals(1, changes.size());
+		Assert.assertTrue(changes.get(cow2.id()) instanceof EntityChangeImpregnateCreature);
+		
+		// Run another tick to see the mother receive this request.
+		creaturesById.putAll(group.updatedCreatures());
+		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
+		);
+		
+		// Run a final tick to see the mother spawn the offspring.
+		creaturesById.putAll(group.updatedCreatures());
+		context = _updateContextWithCreatures(context, creaturesById.values(), null, idAssigner);
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, Map.of()
+		);
+		Assert.assertEquals(1, group.newlySpawnedCreatures().size());
+		CreatureEntity offspring = group.newlySpawnedCreatures().get(0);
+		Assert.assertEquals(-3, offspring.id());
+		Assert.assertEquals(EntityType.COW, offspring.type());
+		
+		// Run another tick to observe that nothing special happens.
+		creaturesById.putAll(group.updatedCreatures());
+		creaturesById.put(offspring.id(), offspring);
+		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, Map.of()
+		);
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{
@@ -427,6 +535,19 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
+		);
+		return context;
+	}
+
+	private static TickProcessingContext _updateContextWithCreatures(TickProcessingContext existing, Collection<CreatureEntity> creatures, IChangeSink newChangeSink, CreatureIdAssigner idAssigner)
+	{
+		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
+		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1
+				, existing.previousBlockLookUp
+				, (Integer id) -> minimal.get(id)
+				, null
+				, newChangeSink
+				, idAssigner
 		);
 		return context;
 	}

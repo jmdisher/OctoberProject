@@ -3,10 +3,12 @@ package com.jeffdisher.october.creatures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
@@ -14,6 +16,8 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MinimalEntity;
+import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -28,6 +32,8 @@ public class CowStateMachine
 {
 	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
 	public static final float COW_VIEW_DISTANCE = 6.0f;
+	public static final float COW_MATING_DISTANCE = 1.0f;
+	public static final byte COW_DEFAULT_HEALTH = 100;
 
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
@@ -64,7 +70,7 @@ public class CowStateMachine
 	 */
 	public static Object test_packageMovementPlan(List<AbsoluteLocation> movementPlan)
 	{
-		return new _ExtendedData(false, movementPlan);
+		return new _ExtendedData(false, movementPlan, 0, null);
 	}
 
 	/**
@@ -87,12 +93,26 @@ public class CowStateMachine
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
 	private List<AbsoluteLocation> _movementPlan;
+	private int _matingPartnerId;
+	private EntityLocation _offspringLocation;
 	
 	private CowStateMachine(_ExtendedData data)
 	{
 		_originalData = data;
-		_inLoveMode = (null != data) ? data.inLoveMode : false;
-		_movementPlan = (null != data) ? data.movementPlan : null;
+		if (null != data)
+		{
+			_inLoveMode = data.inLoveMode;
+			_movementPlan = data.movementPlan;
+			_matingPartnerId = data.matingPartnerId;
+			_offspringLocation = data.offspringLocation;
+		}
+		else
+		{
+			_inLoveMode = false;
+			_movementPlan = null;
+			_matingPartnerId = 0;
+			_offspringLocation = null;
+		}
 	}
 
 	/**
@@ -107,8 +127,12 @@ public class CowStateMachine
 		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
 		if (itemType == wheat)
 		{
-			// If this is already true, the item is lost as this is a saturating operation.
-			_inLoveMode = true;
+			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
+			if (null == _offspringLocation)
+			{
+				// If this is already true, the item is lost as this is a saturating operation.
+				_inLoveMode = true;
+			}
 		}
 	}
 
@@ -132,6 +156,7 @@ public class CowStateMachine
 		{
 			// Find another cow in breeding mode.
 			// We will just use arrays to pass this "by reference".
+			int[] targetId = new int[1];
 			EntityLocation[] target = new EntityLocation[1];
 			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 			entityCollection.walkCreaturesInRange(start, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
@@ -146,12 +171,16 @@ public class CowStateMachine
 						float distance = SpatialHelpers.distanceBetween(start, end);
 						if (distance < distanceToTarget[0])
 						{
+							targetId[0] = check.id();
 							target[0] = end;
 							distanceToTarget[0] = distance;
 						}
 					}
 				}
 			});
+			
+			// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
+			_matingPartnerId = targetId[0];
 			targetLocation = target[0];
 		}
 		else
@@ -212,6 +241,83 @@ public class CowStateMachine
 	}
 
 	/**
+	 * Sets the state of the cow to be ready to produce offspring at a specific location if it is in love mode but not
+	 * already pregnant.
+	 * 
+	 * @param offspringLocation The location where the offspring should be created.
+	 * @return True if the cow became pregnant.
+	 */
+	public boolean setPregnant(EntityLocation offspringLocation)
+	{
+		boolean didBecomePregnant = false;
+		if (_inLoveMode)
+		{
+			// Must not already be pregnant if in love mode.
+			Assert.assertTrue(null == _offspringLocation);
+			
+			_inLoveMode = false;
+			_matingPartnerId = 0;
+			_offspringLocation = offspringLocation;
+			didBecomePregnant = true;
+		}
+		return didBecomePregnant;
+	}
+
+	/**
+	 * Allows an opportunity for the cow to take a special action in this tick.  This includes things like sending
+	 * actions to other entities or requesting a creature to be spawned.
+	 * 
+	 * @param context The context of the current tick.
+	 * @param creatureSpawner A consumer for any new entities spawned.
+	 * @param thisEntity This entity.
+	 */
+	public void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
+	{
+		// See if we are pregnant or searching for our mate.
+		if (null != _offspringLocation)
+		{
+			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, COW_DEFAULT_HEALTH));
+			_offspringLocation = null;
+		}
+		else if (0 != _matingPartnerId)
+		{
+			// We have a mating partner so see if they are close enough.
+			MinimalEntity target = context.previousEntityLookUp.apply(_matingPartnerId);
+			// They could have unloaded or died so make sure that they are there
+			if (null != target)
+			{
+				// Check if they have a lower ID than we do (decides the "leader" of the interaction).
+				if (target.id() < thisEntity.id())
+				{
+					// Are they close enough.
+					EntityLocation ourLocation = thisEntity.location();
+					float distance = SpatialHelpers.distanceBetween(ourLocation, target.location());
+					if (distance <= COW_MATING_DISTANCE)
+					{
+						// Send the message to impregnate them.
+						EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(ourLocation);
+						context.newChangeSink.creature(_matingPartnerId, sperm);
+						// We can now exit love mode.
+						_inLoveMode = false;
+						_matingPartnerId = 0;
+					}
+				}
+				else
+				{
+					// We need to wait for THEM to impregnate US.
+				}
+			}
+			else
+			{
+				// Clear our partner and exit love mode.
+				_inLoveMode = false;
+				_matingPartnerId = 0;
+			}
+		}
+	}
+
+	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
 	 * the original instance.
 	 * NOTE:  The instance should be considered invalid after this call.
@@ -220,8 +326,8 @@ public class CowStateMachine
 	 */
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_inLoveMode || (null != _movementPlan))
-				? new _ExtendedData(_inLoveMode, _movementPlan)
+		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation))
+				? new _ExtendedData(_inLoveMode, _movementPlan, _matingPartnerId, _offspringLocation)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -234,6 +340,8 @@ public class CowStateMachine
 
 	private static record _ExtendedData(boolean inLoveMode
 			, List<AbsoluteLocation> movementPlan
+			, int matingPartnerId
+			, EntityLocation offspringLocation
 	)
 	{}
 }

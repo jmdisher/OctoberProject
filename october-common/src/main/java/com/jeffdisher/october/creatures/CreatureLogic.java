@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -113,6 +114,65 @@ public class CreatureLogic
 		case COW:
 			_populateNextStepsForCow(context, entityCollection, random, millisSinceLastTick, mutable);
 			break;
+		case ERROR:
+		case PLAYER:
+		default:
+			throw Assert.unreachable();
+		}
+	}
+
+	/**
+	 * Requests that the given creature be set pregnant.
+	 * 
+	 * @param creature The creature.
+	 * @param sireLocation The location of the sire of the new spawn (the "father").
+	 * @return True if the entity became pregnant.
+	 */
+	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
+	{
+		boolean didBecomePregnant;
+		switch (creature.getType())
+		{
+		case COW:{
+			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
+			// Average the locations.
+			EntityLocation parentLocation = creature.getLocation();
+			EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
+					, (sireLocation.y() + parentLocation.y()) / 2.0f
+					, (sireLocation.z() + parentLocation.z()) / 2.0f
+			);
+			didBecomePregnant = machine.setPregnant(spawnLocation);
+			if (didBecomePregnant)
+			{
+				creature.setExtendedData(machine.freezeToData());
+			}
+			break;
+		}
+		case ERROR:
+		case PLAYER:
+		default:
+			throw Assert.unreachable();
+		}
+		return didBecomePregnant;
+	}
+
+	/**
+	 * Allows the creature to take a special action in this tick.
+	 * 
+	 * @param context The current tick context.
+	 * @param creatureSpawner A consumer for any new entities spawned.
+	 * @param mutable The mutable creature.
+	 */
+	public static void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, MutableCreature mutable)
+	{
+		switch (mutable.creature.type())
+		{
+		case COW:{
+			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
+			machine.takeSpecialActions(context, creatureSpawner, mutable.creature);
+			mutable.newExtendedData = machine.freezeToData();
+			break;
+		}
 		case ERROR:
 		case PLAYER:
 		default:

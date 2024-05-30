@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.EntityChangeDoNothing;
@@ -51,6 +52,10 @@ public class CreatureProcessor
 	{
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
+		List<CreatureEntity> newlySpawnedCreatures = new ArrayList<>();
+		Consumer<CreatureEntity> creatureSpawner = (CreatureEntity newCreature) -> {
+			newlySpawnedCreatures.add(newCreature);
+		};
 		int committedMutationCount = 0;
 		Random random = new Random(context.currentTick);
 		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
@@ -63,6 +68,11 @@ public class CreatureProcessor
 				processor.creaturesProcessed += 1;
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
+				
+				// Before doing anything, ask the creature if it needs to do anything special (spawning offspring or siring a partner).
+				CreatureLogic.takeSpecialActions(context, creatureSpawner, mutable);
+				
+				// Determine if we need to schedule movements.
 				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
 				if (null == changes)
 				{
@@ -116,6 +126,7 @@ public class CreatureProcessor
 		return new CreatureGroup(committedMutationCount
 				, updatedCreatures
 				, deadCreatureIds
+				, newlySpawnedCreatures
 		);
 	}
 
@@ -194,5 +205,6 @@ public class CreatureProcessor
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds
+			, List<CreatureEntity> newlySpawnedCreatures
 	) {}
 }

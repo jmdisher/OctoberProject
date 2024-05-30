@@ -331,7 +331,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
-						, new CreatureProcessor.CreatureGroup(0, Map.of(), List.of())
+						, new CreatureProcessor.CreatureGroup(0, Map.of(), List.of(), List.of())
 						, List.of()
 						, Map.of()
 						, Map.of()
@@ -472,6 +472,7 @@ public class TickRunner
 				// Similarly, collect the results of the changed entities for the snapshot.
 				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
+				List<CreatureEntity> creaturesSpawnedInFragment = fragment.creatures.newlySpawnedCreatures();
 				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
 				mutableCrowdState.putAll(entitiesChangedInFragment);
 				// Creatures are like entities, but in their own collection.
@@ -479,6 +480,10 @@ public class TickRunner
 				for (Integer creatureId : creaturesKilledInFragment)
 				{
 					mutableCreatureState.remove(creatureId);
+				}
+				for (CreatureEntity newCreature : creaturesSpawnedInFragment)
+				{
+					mutableCreatureState.put(newCreature.id(), newCreature);
 				}
 				
 				// We will also collect all the per-client commit levels.
