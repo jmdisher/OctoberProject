@@ -30,7 +30,7 @@ public class TestMutableCreature
 				, (byte)50
 				, 0L
 				, List.of()
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null))
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null, null))
 		);
 		Assert.assertNotNull(CowStateMachine.decodeExtendedData(middle.extendedData()).movementPlan());
 		Assert.assertNotNull(middle.stepsToNextMove());

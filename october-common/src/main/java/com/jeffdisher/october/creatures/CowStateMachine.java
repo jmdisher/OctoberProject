@@ -73,7 +73,8 @@ public class CowStateMachine
 		return (null != testing)
 				? new _ExtendedData(testing.inLoveMode
 						, testing.movementPlan
-						, testing.matingPartnerId
+						, testing.targetEntityId
+						, testing.targetPreviousLocation
 						, testing.offspringLocation
 				)
 				: null
@@ -93,7 +94,8 @@ public class CowStateMachine
 		return (null != extended)
 				? new Test_ExtendedData(extended.inLoveMode
 						, extended.movementPlan
-						, extended.matingPartnerId
+						, extended.targetEntityId
+						, extended.targetPreviousLocation
 						, extended.offspringLocation
 				)
 				: null
@@ -104,7 +106,8 @@ public class CowStateMachine
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
 	private List<AbsoluteLocation> _movementPlan;
-	private int _matingPartnerId;
+	private int _targetEntityId;
+	private AbsoluteLocation _targetPreviousLocation;
 	private EntityLocation _offspringLocation;
 	
 	private CowStateMachine(_ExtendedData data)
@@ -114,14 +117,16 @@ public class CowStateMachine
 		{
 			_inLoveMode = data.inLoveMode;
 			_movementPlan = data.movementPlan;
-			_matingPartnerId = data.matingPartnerId;
+			_targetEntityId = data.targetEntityId;
+			_targetPreviousLocation = data.targetPreviousLocation;
 			_offspringLocation = data.offspringLocation;
 		}
 		else
 		{
 			_inLoveMode = false;
 			_movementPlan = null;
-			_matingPartnerId = 0;
+			_targetEntityId = 0;
+			_targetPreviousLocation = null;
 			_offspringLocation = null;
 		}
 	}
@@ -143,6 +148,8 @@ public class CowStateMachine
 			{
 				// If this is already true, the item is lost as this is a saturating operation.
 				_inLoveMode = true;
+				// Wipe any movement plan.
+				_clearPlans();
 			}
 		}
 	}
@@ -162,14 +169,13 @@ public class CowStateMachine
 		EntityLocation start = thisCreature.location();
 		
 		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
-		EntityLocation targetLocation;
+		// We will just use arrays to pass this "by reference".
+		int[] targetId = new int[1];
+		EntityLocation[] target = new EntityLocation[1];
+		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		if (_inLoveMode)
 		{
 			// Find another cow in breeding mode.
-			// We will just use arrays to pass this "by reference".
-			int[] targetId = new int[1];
-			EntityLocation[] target = new EntityLocation[1];
-			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 			entityCollection.walkCreaturesInRange(start, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
 				// Ignore ourselves and make sure that they are the right type.
 				if ((thisCreature != check) && (EntityType.COW == check.type()))
@@ -190,18 +196,12 @@ public class CowStateMachine
 				}
 			});
 			
-			// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
-			_matingPartnerId = targetId[0];
-			targetLocation = target[0];
 		}
 		else
 		{
 			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
 			Environment environment = Environment.getShared();
 			Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
-			// We will just use arrays to pass this "by reference".
-			EntityLocation[] target = new EntityLocation[1];
-			float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 			entityCollection.walkPlayersInRange(start, COW_VIEW_DISTANCE, (Entity player) -> {
 				// See if this player has wheat in their hand.
 				int itemKey = player.hotbarItems()[player.hotbarIndex()];
@@ -212,14 +212,17 @@ public class CowStateMachine
 					float distance = SpatialHelpers.distanceBetween(start, end);
 					if (distance < distanceToTarget[0])
 					{
+						targetId[0] = player.id();
 						target[0] = end;
 						distanceToTarget[0] = distance;
 					}
 				}
 			});
-			targetLocation = target[0];
 		}
-		return targetLocation;
+		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
+		_targetEntityId = targetId[0];
+		_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
+		return target[0];
 	}
 
 	/**
@@ -267,7 +270,8 @@ public class CowStateMachine
 			Assert.assertTrue(null == _offspringLocation);
 			
 			_inLoveMode = false;
-			_matingPartnerId = 0;
+			_targetEntityId = 0;
+			_targetPreviousLocation = null;
 			_offspringLocation = offspringLocation;
 			didBecomePregnant = true;
 		}
@@ -291,39 +295,40 @@ public class CowStateMachine
 			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, COW_DEFAULT_HEALTH));
 			_offspringLocation = null;
 		}
-		else if (0 != _matingPartnerId)
+		else if (0 != _targetEntityId)
 		{
-			// We have a mating partner so see if they are close enough.
-			MinimalEntity target = context.previousEntityLookUp.apply(_matingPartnerId);
-			// They could have unloaded or died so make sure that they are there
-			if (null != target)
+			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
+			// movement plans unless they are close enough for other actions).
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+			if (null != targetEntity)
 			{
-				// Check if they have a lower ID than we do (decides the "leader" of the interaction).
-				if (target.id() < thisEntity.id())
+				EntityLocation targetLocation = targetEntity.location();
+				EntityLocation ourLocation = thisEntity.location();
+				
+				// First, see if we could impregnate them.
+				float distance = SpatialHelpers.distanceBetween(ourLocation, targetLocation);
+				if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < thisEntity.id()))
 				{
-					// Are they close enough.
-					EntityLocation ourLocation = thisEntity.location();
-					float distance = SpatialHelpers.distanceBetween(ourLocation, target.location());
-					if (distance <= COW_MATING_DISTANCE)
-					{
-						// Send the message to impregnate them.
-						EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(ourLocation);
-						context.newChangeSink.creature(_matingPartnerId, sperm);
-						// We can now exit love mode.
-						_inLoveMode = false;
-						_matingPartnerId = 0;
-					}
+					// Send the message to impregnate them.
+					EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(ourLocation);
+					context.newChangeSink.creature(_targetEntityId, sperm);
+					// We can now exit love mode.
+					_inLoveMode = false;
+					_clearPlans();
 				}
 				else
 				{
-					// We need to wait for THEM to impregnate US.
+					// We can't so just see if they moved from our last plan.
+					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
+					if (!newLocation.equals(_targetPreviousLocation))
+					{
+						_clearPlans();
+					}
 				}
 			}
 			else
 			{
-				// Clear our partner and exit love mode.
-				_inLoveMode = false;
-				_matingPartnerId = 0;
+				_clearPlans();
 			}
 		}
 	}
@@ -338,7 +343,7 @@ public class CowStateMachine
 	public Object freezeToData()
 	{
 		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation))
-				? new _ExtendedData(_inLoveMode, _movementPlan, _matingPartnerId, _offspringLocation)
+				? new _ExtendedData(_inLoveMode, _movementPlan, _targetEntityId, _targetPreviousLocation, _offspringLocation)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -349,19 +354,29 @@ public class CowStateMachine
 	}
 
 
+	private void _clearPlans()
+	{
+		_targetEntityId = 0;
+		_targetPreviousLocation = null;
+		_movementPlan = null;
+	}
+
+
 	/**
 	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
 	 */
 	public static record Test_ExtendedData(boolean inLoveMode
 			, List<AbsoluteLocation> movementPlan
-			, int matingPartnerId
+			, int targetEntityId
+			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
 	)
 	{}
 
 	private static record _ExtendedData(boolean inLoveMode
 			, List<AbsoluteLocation> movementPlan
-			, int matingPartnerId
+			, int targetEntityId
+			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
 	)
 	{}
