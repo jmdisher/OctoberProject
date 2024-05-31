@@ -11,6 +11,7 @@ public enum EntityType
 
 	PLAYER,
 	COW,
+	ORC,
 
 	;
 }
