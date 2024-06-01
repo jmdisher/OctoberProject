@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -26,12 +27,14 @@ import com.jeffdisher.october.utils.Assert;
  * Ideally, we will eventually find a way to encode this in some declarative data structure, but that is a ways off, if
  * even possible (may not be sufficiently expressive).
  */
-public class OrcStateMachine
+public class OrcStateMachine implements ICreatureStateMachine
 {
 	public static final float ORC_VIEW_DISTANCE = 6.0f;
 	public static final byte ORC_DEFAULT_HEALTH = 50;
 	public static final float ORC_ATTACK_DISTANCE = 1.0f;
 	public static final byte ORC_DAMAGE = 5;
+	// Use 2x the view distance to account for obstacles.
+	public static final int ORC_PATH_DISTANCE = 2 * (int) ORC_VIEW_DISTANCE;
 
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
@@ -106,14 +109,7 @@ public class OrcStateMachine
 		}
 	}
 
-	/**
-	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
-	 * creatures in the loaded world.
-	 * 
-	 * @param entityCollection The collection of entities in the world.
-	 * @param thisCreature The instance being asked.
-	 * @return The location of the target entity or null if there is no target.
-	 */
+	@Override
 	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, CreatureEntity thisCreature)
 	{
 		// We can only call this if we don't already have a movement plan.
@@ -141,11 +137,7 @@ public class OrcStateMachine
 		return target[0];
 	}
 
-	/**
-	 * An accessor for the read-only movement plan in the instance.
-	 * 
-	 * @return A read-only view of the current movement plan (could be null).
-	 */
+	@Override
 	public List<AbsoluteLocation> getMovementPlan()
 	{
 		// The caller shouldn't change this.
@@ -155,11 +147,7 @@ public class OrcStateMachine
 		;
 	}
 
-	/**
-	 * Updates the movement plan to a copy of the one given.
-	 * 
-	 * @param movementPlan The movement plan (could be null).
-	 */
+	@Override
 	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
 	{
 		// This can be null but never empty.
@@ -170,14 +158,8 @@ public class OrcStateMachine
 		;
 	}
 
-	/**
-	 * Allows an opportunity for the orc to take a special action in this tick.  This includes things like sending
-	 * actions to attack players.
-	 * 
-	 * @param context The context of the current tick.
-	 * @param thisEntity This entity.
-	 */
-	public void takeSpecialActions(TickProcessingContext context, CreatureEntity thisEntity)
+	@Override
+	public void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		if (0 != _targetEntityId)
@@ -215,6 +197,12 @@ public class OrcStateMachine
 				_clearPlans();
 			}
 		}
+	}
+
+	@Override
+	public int getPathDistance()
+	{
+		return ORC_PATH_DISTANCE;
 	}
 
 	/**

@@ -425,11 +425,12 @@ public class TestResourceLoader
 			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
 		}
 		
-		// We expect a result with a single creature with ID -1.
+		// We expect a result with a cow of ID -1 and an orc with ID -2.
 		Assert.assertEquals(1, results.size());
 		SuspendedCuboid<CuboidData> generated = results.iterator().next();
-		Assert.assertEquals(1, generated.creatures().size());
+		Assert.assertEquals(2, generated.creatures().size());
 		Assert.assertEquals(-1, generated.creatures().get(0).id());
+		Assert.assertEquals(-2, generated.creatures().get(1).id());
 		Assert.assertEquals(0, generated.mutations().size());
 		
 		// Save this back.
@@ -445,11 +446,12 @@ public class TestResourceLoader
 			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
 		}
 		
-		// We expect a result with a single creature with ID -2.
+		// We expect a result with a cow of ID -3 and an orc with ID -4.
 		Assert.assertEquals(1, results.size());
 		SuspendedCuboid<CuboidData> loaded = results.iterator().next();
-		Assert.assertEquals(1, loaded.creatures().size());
-		Assert.assertEquals(-2, loaded.creatures().get(0).id());
+		Assert.assertEquals(2, loaded.creatures().size());
+		Assert.assertEquals(-3, loaded.creatures().get(0).id());
+		Assert.assertEquals(-4, loaded.creatures().get(1).id());
 		Assert.assertEquals(0, loaded.mutations().size());
 		loader.shutdown();
 	}

@@ -28,12 +28,14 @@ import com.jeffdisher.october.utils.Assert;
  * Ideally, we will eventually find a way to encode this in some declarative data structure, but that is a ways off, if
  * even possible (may not be sufficiently expressive).
  */
-public class CowStateMachine
+public class CowStateMachine implements ICreatureStateMachine
 {
 	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
 	public static final float COW_VIEW_DISTANCE = 6.0f;
 	public static final float COW_MATING_DISTANCE = 1.0f;
 	public static final byte COW_DEFAULT_HEALTH = 100;
+	// Use 2x the view distance to account for obstacles.
+	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
 
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
@@ -154,14 +156,7 @@ public class CowStateMachine
 		}
 	}
 
-	/**
-	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
-	 * creatures in the loaded world.
-	 * 
-	 * @param entityCollection The collection of entities in the world.
-	 * @param thisCreature The instance being asked.
-	 * @return The location of the target entity or null if there is no target.
-	 */
+	@Override
 	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, CreatureEntity thisCreature)
 	{
 		// We can only call this if we don't already have a movement plan.
@@ -225,11 +220,7 @@ public class CowStateMachine
 		return target[0];
 	}
 
-	/**
-	 * An accessor for the read-only movement plan in the instance.
-	 * 
-	 * @return A read-only view of the current movement plan (could be null).
-	 */
+	@Override
 	public List<AbsoluteLocation> getMovementPlan()
 	{
 		// The caller shouldn't change this.
@@ -239,11 +230,7 @@ public class CowStateMachine
 		;
 	}
 
-	/**
-	 * Updates the movement plan to a copy of the one given.
-	 * 
-	 * @param movementPlan The movement plan (could be null).
-	 */
+	@Override
 	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
 	{
 		// This can be null but never empty.
@@ -278,14 +265,7 @@ public class CowStateMachine
 		return didBecomePregnant;
 	}
 
-	/**
-	 * Allows an opportunity for the cow to take a special action in this tick.  This includes things like sending
-	 * actions to other entities or requesting a creature to be spawned.
-	 * 
-	 * @param context The context of the current tick.
-	 * @param creatureSpawner A consumer for any new entities spawned.
-	 * @param thisEntity This entity.
-	 */
+	@Override
 	public void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
 	{
 		// See if we are pregnant or searching for our mate.
@@ -331,6 +311,12 @@ public class CowStateMachine
 				_clearPlans();
 			}
 		}
+	}
+
+	@Override
+	public int getPathDistance()
+	{
+		return COW_PATH_DISTANCE;
 	}
 
 	/**

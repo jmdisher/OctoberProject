@@ -49,6 +49,9 @@ public class CreatureLogic
 		case COW:
 			canUse = CowStateMachine.canUseItem(item);
 			break;
+		case ORC:
+			canUse = false;
+			break;
 		case ERROR:
 		case PLAYER:
 		default:
@@ -83,6 +86,9 @@ public class CreatureLogic
 			{
 				didApply = false;
 			}
+			break;
+		case ORC:
+			didApply = false;
 			break;
 		case ERROR:
 		case PLAYER:
@@ -122,8 +128,17 @@ public class CreatureLogic
 		// The logic is per-creature type.
 		switch (mutable.creature.type())
 		{
-		case COW:
-			actionsProduced = _planNextActionsForCow(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable);
+		case COW: {
+			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
+			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable, machine);
+			mutable.newExtendedData = machine.freezeToData();
+		}
+			break;
+		case ORC: {
+			OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
+			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable, machine);
+			mutable.newExtendedData = machine.freezeToData();
+		}
 			break;
 		case ERROR:
 		case PLAYER:
@@ -160,6 +175,8 @@ public class CreatureLogic
 			}
 			break;
 		}
+		case ORC:
+			// This case shouldn't be reachable since a cow should only target another cow and IDs are never reused.
 		case ERROR:
 		case PLAYER:
 		default:
@@ -169,16 +186,16 @@ public class CreatureLogic
 	}
 
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActionsForCow(TickProcessingContext context
+	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActions(TickProcessingContext context
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
 			, boolean canStartNewPath
 			, Random random
 			, MutableCreature mutable
+			, ICreatureStateMachine machine
 	)
 	{
 		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
-		CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
 		
 		// We will first determine if we need to take any special actions (sending actions, spawning offspring, etc)
 		machine.takeSpecialActions(context, creatureSpawner, mutable.creature);
@@ -188,7 +205,7 @@ public class CreatureLogic
 		if ((null == movementPlan) && canStartNewPath)
 		{
 			// First, we want to see if we should walk toward a player.
-			movementPlan = _buildDeliberatePathCow(context, entityCollection, mutable.creature, machine);
+			movementPlan = _buildDeliberatePath(context, entityCollection, mutable.creature, machine);
 			if (null == movementPlan)
 			{
 				// We couldn't find a player so just make a random move.
@@ -231,11 +248,10 @@ public class CreatureLogic
 			}
 			machine.setMovementPlan(mutablePlan);
 		}
-		mutable.newExtendedData = machine.freezeToData();
 		return actionsProduced;
 	}
 
-	private static List<AbsoluteLocation> _buildDeliberatePathCow(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, CowStateMachine machine)
+	private static List<AbsoluteLocation> _buildDeliberatePath(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, ICreatureStateMachine machine)
 	{
 		Environment environment = Environment.getShared();
 		Predicate<AbsoluteLocation> blockPermitsPassage = (AbsoluteLocation location) -> {
@@ -254,7 +270,7 @@ public class CreatureLogic
 			// If this fails, it will return null which is already our failure case.
 			EntityVolume volume = CreatureVolumes.getVolume(creature);
 			EntityLocation start = creature.location();
-			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, 2 * CowStateMachine.COW_VIEW_DISTANCE);
+			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, machine.getPathDistance());
 		}
 		return path;
 	}

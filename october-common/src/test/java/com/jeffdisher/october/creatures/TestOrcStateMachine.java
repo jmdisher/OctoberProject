@@ -65,7 +65,7 @@ public class TestOrcStateMachine
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation)));
-		machine.takeSpecialActions(context, orc);
+		machine.takeSpecialActions(context, null, orc);
 		
 		// We should see that the father has lost the target and path (they will need to re-find it on a future selection).
 		Assert.assertNull(machine.getMovementPlan());
@@ -96,7 +96,7 @@ public class TestOrcStateMachine
 		
 		// Start with the orc targeting the player.
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation())));
-		machine.takeSpecialActions(context, orc);
+		machine.takeSpecialActions(context, null, orc);
 		
 		// We should see the orc send the attack message
 		Assert.assertEquals(player.id(), targetId[0]);

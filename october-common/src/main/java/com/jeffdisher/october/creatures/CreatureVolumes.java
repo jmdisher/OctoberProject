@@ -13,6 +13,7 @@ public class CreatureVolumes
 {
 	// Volume constants for different creature types.
 	public static final EntityVolume VOLUME_COW = new EntityVolume(0.7f, 0.8f);
+	public static final EntityVolume VOLUME_ORC = new EntityVolume(0.7f, 0.4f);
 
 	public static EntityVolume getVolume(CreatureEntity creature)
 	{
@@ -21,6 +22,9 @@ public class CreatureVolumes
 		{
 		case COW:
 			volume = VOLUME_COW;
+			break;
+		case ORC:
+			volume = VOLUME_ORC;
 			break;
 		default:
 			throw Assert.unreachable();

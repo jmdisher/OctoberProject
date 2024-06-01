@@ -117,6 +117,12 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 							, EntityType.COW
 							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
 							, (byte)100
+					),
+						// Temporarily, we will load an orc here, as well, until the dynamic spawning system is implemented.
+						CreatureEntity.create(creatureIdAssigner.next()
+							, EntityType.ORC
+							, new EntityLocation(baseOfCuboid.x() + 5, baseOfCuboid.y() + 5, baseOfCuboid.z())
+							, (byte)50
 					))
 					: List.of()
 			;
