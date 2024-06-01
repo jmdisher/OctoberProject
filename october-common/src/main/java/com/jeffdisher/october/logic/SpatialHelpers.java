@@ -178,7 +178,7 @@ public class SpatialHelpers
 		float xTop = (float) Math.floor(eastEdge);
 		float xToCheck = xTop - width;
 		EntityLocation match = null;
-		while ((null == match) && (xToCheck >= previousX))
+		while ((null == match) && (xToCheck > previousX))
 		{
 			EntityLocation checkLocation = new EntityLocation(xToCheck, start.y(), start.z());
 			if (_canExistInLocation(blockLookup, checkLocation, volume))
@@ -242,7 +242,7 @@ public class SpatialHelpers
 		float yTop = (float) Math.floor(northEdge);
 		float yToCheck = yTop - width;
 		EntityLocation match = null;
-		while ((null == match) && (yToCheck >= previousY))
+		while ((null == match) && (yToCheck > previousY))
 		{
 			EntityLocation checkLocation = new EntityLocation(start.x(), yToCheck, start.z());
 			if (_canExistInLocation(blockLookup, checkLocation, volume))

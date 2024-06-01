@@ -161,7 +161,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	private static boolean _isValidDistance(float xDistance, float yDistance)
 	{
 		long costMillis = _getTimeMostMillis(xDistance, yDistance);
-		return (costMillis <= LIMIT_COST_MILLIS);
+		return (costMillis > 0L) && (costMillis <= LIMIT_COST_MILLIS);
 	}
 
 	private static long _getTimeMostMillis(float xDistance, float yDistance)

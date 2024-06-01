@@ -203,4 +203,19 @@ public class TestSpatialHelpers
 		Assert.assertFalse(SpatialHelpers.isBlockAligned(0.005f));
 		Assert.assertFalse(SpatialHelpers.isBlockAligned(-0.005f));
 	}
+
+	@Test
+	public void noMovementShouldFail()
+	{
+		// We want to be right against the wall and try to move into it, which should fail.
+		EntityLocation location = new EntityLocation(-VOLUME.width(), 0.0f, 0.0f);
+		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.special.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
+				? new BlockProxy(l.getBlockAddress(), stone)
+				: new BlockProxy(l.getBlockAddress(), air)
+		;
+		EntityLocation touching = SpatialHelpers.locationTouchingEastWall(blockTypeReader, location, VOLUME, location.x());
+		Assert.assertNull(touching);
+	}
 }
