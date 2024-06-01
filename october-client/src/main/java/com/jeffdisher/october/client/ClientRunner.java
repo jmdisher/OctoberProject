@@ -166,10 +166,13 @@ public class ClientRunner
 				
 				// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
 				long millisToMove = EntityChangeMove.getTimeMostMillis(thisX, thisY);
-				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, thisX, thisY);
-				long missingMillis = (millisFree - millisToMove);
-				effectiveCurrentTimeMillis -= missingMillis;
-				_applyLocalChange(moveChange, effectiveCurrentTimeMillis);
+				if (millisToMove > 0L)
+				{
+					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, thisX, thisY);
+					long missingMillis = (millisFree - millisToMove);
+					effectiveCurrentTimeMillis -= missingMillis;
+					_applyLocalChange(moveChange, effectiveCurrentTimeMillis);
+				}
 			}
 			else
 			{
