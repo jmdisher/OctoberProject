@@ -1,6 +1,7 @@
 package com.jeffdisher.october.server;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -75,8 +76,9 @@ public class ServerRunner
 		network.readyAndStartListening(networkListener);
 		_network = network;
 		_loader = loader;
+		Random random = new Random();
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, loader.creatureIdAssigner, tickListener);
+		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, loader.creatureIdAssigner, (int bound) -> random.nextInt(bound), tickListener);
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {

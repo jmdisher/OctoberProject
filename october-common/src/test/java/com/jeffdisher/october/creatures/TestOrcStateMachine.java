@@ -2,6 +2,7 @@ package com.jeffdisher.october.creatures;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -154,12 +155,14 @@ public class TestOrcStateMachine
 				Assert.fail();
 			}
 		};
+		Random random = new Random();
 		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
 				, null
 				, previousEntityLookUp
 				, null
 				, changes
 				, assigner
+				, (int bound) -> random.nextInt(bound)
 		);
 		return context;
 	}

@@ -3,7 +3,6 @@ package com.jeffdisher.october.creatures;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.logic.EntityCollection;
@@ -177,7 +176,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 				if (distance <= ORC_ATTACK_DISTANCE)
 				{
 					// We can attack them so choose the target.
-					int index = new Random().nextInt(BodyPart.values().length);
+					int index = context.randomInt.applyAsInt(BodyPart.values().length);
 					BodyPart target = BodyPart.values()[index];
 					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, ORC_DAMAGE);
 					context.newChangeSink.next(_targetEntityId, takeDamage);

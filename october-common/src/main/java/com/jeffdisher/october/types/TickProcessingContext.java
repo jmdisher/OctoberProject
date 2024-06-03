@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.function.Function;
+import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -47,12 +48,18 @@ public class TickProcessingContext
 
 	public final CreatureIdAssigner idAssigner;
 
+	/**
+	 * Returns a random number when given a bound in the range:  [0..bound).
+	 */
+	public final IntUnaryOperator randomInt;
+
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 			, CreatureIdAssigner idAssigner
+			, IntUnaryOperator randomInt
 	)
 	{
 		this.currentTick = currentTick;
@@ -61,6 +68,7 @@ public class TickProcessingContext
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
 		this.idAssigner = idAssigner;
+		this.randomInt = randomInt;
 	}
 
 

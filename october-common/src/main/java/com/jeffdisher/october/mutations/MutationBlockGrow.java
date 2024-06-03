@@ -1,8 +1,6 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
-import java.util.function.IntSupplier;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -22,18 +20,6 @@ public class MutationBlockGrow implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.GROW;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
-	/**
-	 * The random provider is non-final since tests can replace it.
-	 */
-	public static IntSupplier RANDOM_PROVIDER;
-
-	static {
-		Random randomObject = new Random();
-		RANDOM_PROVIDER = () ->
-		{
-			return randomObject.nextInt();
-		};
-	}
 
 	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -67,8 +53,8 @@ public class MutationBlockGrow implements IMutationBlock
 		{
 			boolean shouldReschedule;
 			// See if the random generator says we should grow this tick or try again later.
-			int randomBits = RANDOM_PROVIDER.getAsInt();
-			if (1 == (randomBits % growthDivisor))
+			int randomBits = context.randomInt.applyAsInt(growthDivisor);
+			if (1 == randomBits)
 			{
 				Block nextPhase = env.plants.nextPhaseForPlant(block);
 				if (null != nextPhase)

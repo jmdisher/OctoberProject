@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -66,6 +67,7 @@ public class TickRunner
 	private final Thread[] _threads;
 	private final long _millisPerTick;
 	private final CreatureIdAssigner _idAssigner;
+	private final IntUnaryOperator _random;
 	// Read-only snapshot of the previously-completed tick.
 	private Snapshot _snapshot;
 	
@@ -91,12 +93,14 @@ public class TickRunner
 	 * @param threadCount The number of threads to use to run the ticks.
 	 * @param millisPerTick The number of milliseconds to target for scheduling load within a tick.
 	 * @param idAssigner The assigner for spawning new creatures.
+	 * @param randomInt A random generator producing values in the range of [0..bound) for a given bound.
 	 * @param tickCompletionListener The consumer which we will given the completed snapshot of the state immediately before
 	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
 	 */
 	public TickRunner(int threadCount
 			, long millisPerTick
 			, CreatureIdAssigner idAssigner
+			, IntUnaryOperator randomInt
 			, Consumer<Snapshot> tickCompletionListener
 	)
 	{
@@ -105,6 +109,7 @@ public class TickRunner
 		_threads = new Thread[threadCount];
 		_millisPerTick = millisPerTick;
 		_idAssigner = idAssigner;
+		_random = randomInt;
 		_entitySharedAccess = new HashMap<>();
 		_partial = new _PartialHandoffData[threadCount];
 		_threadStats = new ProcessorElement.PerThreadStats[threadCount];
@@ -366,6 +371,7 @@ public class TickRunner
 					, newMutationSink
 					, newChangeSink
 					, _idAssigner
+					, _random
 			);
 			
 			long startCreatures = System.currentTimeMillis();

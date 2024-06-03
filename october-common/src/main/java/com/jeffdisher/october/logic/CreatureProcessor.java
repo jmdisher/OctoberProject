@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
@@ -62,7 +61,6 @@ public class CreatureProcessor
 			newlySpawnedCreatures.add(newCreature);
 		};
 		int committedMutationCount = 0;
-		Random random = new Random(context.currentTick);
 		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -84,7 +82,7 @@ public class CreatureProcessor
 						// We have no immediate steps planned so ask the creature if it wants to take special actions or plan the next path
 						boolean canStartNewPath = (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION));
 						// Note that this may still return a null list of next steps if there is nothing to do.
-						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, millisSinceLastTick, mutable);
+						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, millisSinceLastTick, mutable);
 					}
 					if (null != mutable.newStepsToNextMove)
 					{

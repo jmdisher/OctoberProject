@@ -3,7 +3,6 @@ package com.jeffdisher.october.creatures;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -106,7 +105,6 @@ public class CreatureLogic
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param entityCollection The read-only collection of entities in the world.
-	 * @param random A random generator.
 	 * @param millisSinceLastTick Milliseconds since the last tick was run.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
@@ -116,7 +114,6 @@ public class CreatureLogic
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
 			, boolean canStartNewPath
-			, Random random
 			, long millisSinceLastTick
 			, MutableCreature mutable
 	)
@@ -130,13 +127,13 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable, machine);
+			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
 		case ORC: {
 			OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, random, mutable, machine);
+			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
@@ -190,7 +187,6 @@ public class CreatureLogic
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
 			, boolean canStartNewPath
-			, Random random
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)
@@ -209,7 +205,7 @@ public class CreatureLogic
 			if (null == movementPlan)
 			{
 				// We couldn't find a player so just make a random move.
-				movementPlan = _findPathToRandomSpot(context, random, mutable.creature);
+				movementPlan = _findPathToRandomSpot(context, mutable.creature);
 			}
 			if (null == movementPlan)
 			{
@@ -275,7 +271,7 @@ public class CreatureLogic
 		return path;
 	}
 
-	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context, Random random, CreatureEntity creature)
+	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context, CreatureEntity creature)
 	{
 		// Our current only action is to find a block nearby and walk to it.
 		Environment environment = Environment.getShared();
@@ -295,7 +291,7 @@ public class CreatureLogic
 		List<AbsoluteLocation> plannedPath;
 		if (size > 0)
 		{
-			int selection = Math.abs(random.nextInt()) % size;
+			int selection = context.randomInt.applyAsInt(size);
 			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
 			AbsoluteLocation target = possiblePaths.keySet().toArray((int arraySize) -> new AbsoluteLocation[arraySize])[selection];
 			

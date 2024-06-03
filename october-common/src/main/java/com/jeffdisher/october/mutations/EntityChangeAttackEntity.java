@@ -1,7 +1,6 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
 
 import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
@@ -95,8 +94,8 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			{
 				damageToApply = 1;
 			}
-			// Choose the target body part at random - TODO:  Handle this random value differently.
-			int index = new Random().nextInt(BodyPart.values().length);
+			// Choose the target body part at random.
+			int index = context.randomInt.applyAsInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];
 			if (_targetEntityId > 0)
 			{

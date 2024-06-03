@@ -114,6 +114,7 @@ public class TestCreatureProcessor
 					}}
 				, null
 				, null
+				, null
 		);
 		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
@@ -559,6 +560,8 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
+				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+				, (int bound) -> 1
 		);
 		return context;
 	}
@@ -572,6 +575,7 @@ public class TestCreatureProcessor
 				, null
 				, newChangeSink
 				, idAssigner
+				, existing.randomInt
 		);
 		return context;
 	}
@@ -584,6 +588,7 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
+				, existing.randomInt
 		);
 		return context;
 	}

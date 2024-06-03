@@ -184,6 +184,7 @@ public class TestCowStateMachine
 				, null
 				, changes
 				, assigner
+				, null
 		);
 		return context;
 	}

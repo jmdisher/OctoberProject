@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -94,6 +95,7 @@ public class TestCommonChanges
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> null
+				, null
 				, null
 				, null
 				, null
@@ -563,6 +565,7 @@ public class TestCommonChanges
 				}
 				, null
 				, null
+				, null
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -667,6 +670,7 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
+		Random random = new Random();
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
@@ -691,6 +695,7 @@ public class TestCommonChanges
 					}
 				}
 				, null
+				, (int bound) -> random.nextInt(bound)
 		);
 		
 		// Check the miss.
@@ -756,6 +761,7 @@ public class TestCommonChanges
 				}
 				, null
 				, null
+				, null
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
@@ -794,6 +800,7 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
+		Random random = new Random();
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
@@ -818,6 +825,7 @@ public class TestCommonChanges
 					}
 				}
 				, null
+				, (int bound) -> random.nextInt(bound)
 		);
 		
 		// Check that the sword durability changed and that we scheduled the hit.
@@ -844,6 +852,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, changeSink
+				, null
 				, null
 		);
 		int entityId = 1;
@@ -1249,6 +1258,7 @@ public class TestCommonChanges
 				, (byte) 100
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
+		Random random = new Random();
 		TickProcessingContext context = new TickProcessingContext(0L
 				, null
 				, (Integer id) -> {
@@ -1258,6 +1268,7 @@ public class TestCommonChanges
 				, null
 				, changeSink
 				, null
+				, (int bound) -> random.nextInt(bound)
 		);
 		
 		// Attack and verify that we see damage come through the creature path.
@@ -1314,6 +1325,7 @@ public class TestCommonChanges
 				, null
 				, changeSink
 				, null
+				, null
 		);
 		
 		// Feed the creature and verify that we see the apply scheduled.
@@ -1356,6 +1368,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, null
 		);
 		return context;
 	}
@@ -1369,6 +1382,7 @@ public class TestCommonChanges
 		
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
 		{
+			Random random = new Random();
 			this.context = new TickProcessingContext(0L
 					, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 					, null
@@ -1404,6 +1418,7 @@ public class TestCommonChanges
 						}
 					} : null
 					, null
+					, (int bound) -> random.nextInt(bound)
 			);
 		}
 	}

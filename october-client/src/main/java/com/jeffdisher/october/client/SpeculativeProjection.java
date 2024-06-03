@@ -620,6 +620,8 @@ public class SpeculativeProjection
 				, newChangeSink
 				// We never spawn creatures on the client so no ID assigner.
 				, null
+				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
+				, (int bound) -> 0
 		);
 		return context;
 	}
