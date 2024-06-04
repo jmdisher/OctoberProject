@@ -1573,7 +1573,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, spawn.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_ITEM));
+		Assert.assertEquals(1, blockInventory.getCount(ENV.items.getItemById("op.beef")));
 		
 		runner.shutdown();
 	}

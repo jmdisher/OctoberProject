@@ -2,4 +2,6 @@
 # ID<TAB>food_value
 # The ID must be a reference to the item registry.
 
-op.bread	50
+op.bread	20
+op.beef	30
+op.steak	50

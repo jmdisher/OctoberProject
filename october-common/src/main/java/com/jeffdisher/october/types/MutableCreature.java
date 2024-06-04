@@ -97,7 +97,20 @@ public class MutableCreature implements IMutableCreatureEntity
 		Environment env = Environment.getShared();
 		// TODO:  Change how we get this volume so we keep the package layering logical.
 		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, CreatureVolumes.getVolume(this.creature));
-		Items toDrop = new Items(env.items.getItemById("op.wheat_item"), 1);
+		Items toDrop;
+		switch (this.creature.type())
+		{
+		case COW:
+			toDrop = new Items(env.items.getItemById("op.beef"), 1);
+			break;
+		case ORC:
+			toDrop = new Items(env.items.getItemById("op.iron_ingot"), 1);
+			break;
+		case ERROR:
+		case PLAYER:
+		default:
+			throw Assert.unreachable();
+		}
 		mutationConsumer.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		this.newHealth = 0;
 	}

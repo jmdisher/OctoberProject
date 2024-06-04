@@ -88,3 +88,7 @@ op.chest	common
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.chest
 	millis	8000
+op.furnace_cook_steak	special_furnace
+	input	op.beef
+	output	op.steak
+	millis	1000
