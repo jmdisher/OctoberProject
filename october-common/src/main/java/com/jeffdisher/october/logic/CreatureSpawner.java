@@ -1,0 +1,165 @@
+package com.jeffdisher.october.logic;
+
+import java.util.Iterator;
+import java.util.Map;
+
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.creatures.CreatureVolumes;
+import com.jeffdisher.october.creatures.OrcStateMachine;
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.TickProcessingContext;
+
+
+/**
+ * The algorithm for spawning creatures in the world.
+ */
+public class CreatureSpawner
+{
+	/**
+	 * When determining if anything should be spawned, this number is used as a vague target per cuboid.
+	 */
+	public static final int TARGET_ENTITIES_PER_CUBOID = 5;
+	/**
+	 * When spawning in a specific cuboid, we will abort the spawn attempt if there are more than this many entities in
+	 * that specific cuboid.
+	 */
+	public static final int LIMIT_ENTITIES_PER_CUBOID = 10;
+
+	/**
+	 * Attempts to spawn a single creature by randomly selecting a spawning location in the given world.
+	 * 
+	 * @param context The context for the current tick.
+	 * @param completedCuboids The map of all cuboids from the previous tick.
+	 * @param completedCreatures The map of all creatures from the previous tick.
+	 * @return The new entity or null if spawning was aborted.
+	 */
+	public static CreatureEntity trySpawnCreature(TickProcessingContext context
+			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<Integer, CreatureEntity> completedCreatures
+	)
+	{
+		int cuboidCount = completedCuboids.size();
+		int estimatedTargetCreatureCount = cuboidCount * TARGET_ENTITIES_PER_CUBOID;
+		int creatureCount = completedCreatures.size();
+		
+		CreatureEntity spawned;
+		if (creatureCount < estimatedTargetCreatureCount)
+		{
+			// We might want to spawn something so pick a cuboid at random.
+			IReadOnlyCuboidData cuboid = _selectCuboid(context, completedCuboids, completedCreatures);
+			
+			if (null != cuboid)
+			{
+				spawned = _spawnInCuboid(context, cuboid);
+			}
+			else
+			{
+				// Candidate too crowded.
+				spawned = null;
+			}
+		}
+		else
+		{
+			// Too many creatures.
+			spawned = null;
+		}
+		return spawned;
+	}
+
+
+	private static IReadOnlyCuboidData _selectCuboid(TickProcessingContext context
+			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<Integer, CreatureEntity> completedCreatures
+	)
+	{
+		int index = context.randomInt.applyAsInt(completedCuboids.size());
+		// We don't have a way to index this so we will just walk.
+		Iterator<IReadOnlyCuboidData> iterator = completedCuboids.values().iterator();
+		IReadOnlyCuboidData cuboid = iterator.next();
+		for (int i = 0; i < index; ++i)
+		{
+			cuboid = iterator.next();
+		}
+		
+		// Check how many entities are already in this cuboid.
+		int existingInCuboid = 0;
+		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
+		for (CreatureEntity existing : completedCreatures.values())
+		{
+			if (cuboidAddress.equals(existing.location().getBlockLocation().getCuboidAddress()))
+			{
+				existingInCuboid += 1;
+			}
+		}
+		return (existingInCuboid < LIMIT_ENTITIES_PER_CUBOID)
+				? cuboid
+				: null
+		;
+	}
+
+	private static CreatureEntity _spawnInCuboid(TickProcessingContext context, IReadOnlyCuboidData cuboid)
+	{
+		// Pick a random location in this cuboid.
+		byte x = (byte)context.randomInt.applyAsInt(32);
+		byte y = (byte)context.randomInt.applyAsInt(32);
+		byte z = (byte)context.randomInt.applyAsInt(32);
+		
+		AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
+		AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, z);
+		
+		// We want to slide down through this cuboid until we reach solid ground.
+		int baseZ = cuboidBase.z();
+		Environment env = Environment.getShared();
+		AbsoluteLocation goodSpawningLocation = null;
+		while ((null == goodSpawningLocation) && (checkSpawningLocation.z() >= baseZ))
+		{
+			// See if this location is on a solid block and permits spawning.
+			AbsoluteLocation baseLocation = checkSpawningLocation.getRelative(0, 0, -1);
+			BlockProxy base = context.previousBlockLookUp.apply(baseLocation);
+			boolean isSolid = (null != base)
+					? !env.blocks.permitsEntityMovement(base.getBlock())
+					: false
+			;
+			if (isSolid)
+			{
+				goodSpawningLocation = checkSpawningLocation;
+			}
+			else
+			{
+				checkSpawningLocation = baseLocation;
+			}
+		}
+		
+		CreatureEntity spawned;
+		if (null != goodSpawningLocation)
+		{
+			EntityLocation location = new EntityLocation(goodSpawningLocation.x(), goodSpawningLocation.y(), goodSpawningLocation.z());
+			
+			// For now, we only dynamically spawn orcs.
+			EntityVolume creatureVolume = CreatureVolumes.VOLUME_ORC;
+			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
+			{
+				// We can spawn here.
+				spawned = CreatureEntity.create(context.idAssigner.next(), EntityType.ORC, location, OrcStateMachine.ORC_DEFAULT_HEALTH);
+			}
+			else
+			{
+				// No open space.
+				spawned = null;
+			}
+		}
+		else
+		{
+			// No solid ground.
+			spawned = null;
+		}
+		return spawned;
+	}
+}

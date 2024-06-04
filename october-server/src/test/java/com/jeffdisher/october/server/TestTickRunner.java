@@ -1674,6 +1674,8 @@ public class TestTickRunner
 
 	private TickRunner _createTestRunner()
 	{
+		// We want to disable spawning for most of these tests.
+		TickRunner.TEST_SPAWNING_ENABLED = false;
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
 		Random random = new Random();
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT

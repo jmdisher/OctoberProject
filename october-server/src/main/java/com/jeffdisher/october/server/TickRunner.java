@@ -25,6 +25,7 @@ import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.CreatureProcessor;
+import com.jeffdisher.october.logic.CreatureSpawner;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.ProcessorElement;
@@ -62,6 +63,11 @@ public class TickRunner
 	 * the slack should be at least 2 ticks and this gives us around 3.
 	 */
 	public static final int PENDING_ACTION_LIMIT = 20;
+
+	/**
+	 * Set false by some tests to disable dynamic creature spawning but this is normally true.
+	 */
+	public static boolean TEST_SPAWNING_ENABLED = true;
 
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
@@ -337,6 +343,7 @@ public class TickRunner
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
 						, new CreatureProcessor.CreatureGroup(0, Map.of(), List.of(), List.of())
+						, null
 						, List.of()
 						, Map.of()
 						, Map.of()
@@ -373,6 +380,16 @@ public class TickRunner
 					, _idAssigner
 					, _random
 			);
+			
+			// We will have the first thread attempt the monster spawning algorithm.
+			CreatureEntity spawned = null;
+			if (TEST_SPAWNING_ENABLED && thisThread.handleNextWorkUnit())
+			{
+				spawned = CreatureSpawner.trySpawnCreature(context
+						, materials.completedCuboids
+						, materials.completedCreatures
+				);
+			}
 			
 			long startCreatures = System.currentTimeMillis();
 			CreatureProcessor.CreatureGroup creatureGroup = CreatureProcessor.processCreatureGroupParallel(thisThread
@@ -421,6 +438,7 @@ public class TickRunner
 					, new _PartialHandoffData(fragment
 							, group
 							, creatureGroup
+							, spawned
 							, newMutationSink.takeExportedMutations()
 							, newChangeSink.takeExportedChanges()
 							, newChangeSink.takeExportedCreatureChanges()
@@ -490,6 +508,10 @@ public class TickRunner
 				for (CreatureEntity newCreature : creaturesSpawnedInFragment)
 				{
 					mutableCreatureState.put(newCreature.id(), newCreature);
+				}
+				if (null != fragment.spawned)
+				{
+					mutableCreatureState.put(fragment.spawned.id(), fragment.spawned);
 				}
 				
 				// We will also collect all the per-client commit levels.
@@ -1049,6 +1071,7 @@ public class TickRunner
 	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
 			, CrowdProcessor.ProcessedGroup crowd
 			, CreatureProcessor.CreatureGroup creatures
+			, CreatureEntity spawned
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
