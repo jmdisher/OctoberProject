@@ -657,7 +657,11 @@ public class SpeculativeProjection
 				List<IMutationEntity<IMutablePlayerEntity>> list = this.exportedChanges.get(key);
 				if (null != list)
 				{
+					// Note that some of these are produced as immutable.
+					// TODO: Remove this re-wrapping once we rework our mutable/immutable types.
+					list = new ArrayList<>(list);
 					list.addAll(value);
+					this.exportedChanges.put(key, list);
 				}
 				else
 				{

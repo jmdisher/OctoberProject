@@ -1298,6 +1298,83 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, feetInventory.getCount(dirt.item()));
 	}
 
+	@Test
+	public void moveWhileStarving()
+	{
+		// This verifies that the follow-up mutations are handled correctly in the SpeculativeProjection.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		
+		// Make sure that they are starving.
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.setFood((byte)0);
+		projector.setThisEntity(mutable.freeze());
+		
+		projector.applyChangesForServerTick(0L
+				, List.of()
+				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.thisEntityState);
+		
+		// Apply 3 steps, locally.
+		// (note that 0.4 is the limit for one tick)
+		EntityLocation startLocation = listener.thisEntityState.location();
+		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
+		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
+		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(startLocation, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(midStep, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(secondStep, 0.4f, 0.0f);
+		long commit1 = projector.applyLocalChange(move1, 100L);
+		long commit2 = projector.applyLocalChange(move2, 200L);
+		long commit3 = projector.applyLocalChange(move3, 300L);
+		Assert.assertEquals(1L, commit1);
+		Assert.assertEquals(2L, commit2);
+		Assert.assertEquals(3L, commit3);
+		
+		// We should see the entity moved to its speculative location.
+		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		
+		// Now, absorb the first 2 changes from the server so we force follow-ups to be evaluated in a way which allows them to bunch up.
+		int speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EntityMutationWrapper(move1), new EntityMutationWrapper(move2))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, 200L
+		);
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		
+		// Absorb the final change to make sure that the result is still as expected.
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EntityMutationWrapper(move3))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit3
+				, 300L
+		);
+		
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+	}
+
 
 	private int _countBlocks(IReadOnlyCuboidData cuboid, short blockType)
 	{
