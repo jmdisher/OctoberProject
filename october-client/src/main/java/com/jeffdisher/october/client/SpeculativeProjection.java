@@ -300,7 +300,7 @@ public class SpeculativeProjection
 					}
 					else
 					{
-						shared = new _SpeculativeConsequences(new HashMap<>(), new ArrayList<>());
+						shared = new _SpeculativeConsequences(new ArrayList<>(), new ArrayList<>());
 						_followUpTicks.add(i, shared);
 					}
 					shared.absorb(followUp);
@@ -448,7 +448,14 @@ public class SpeculativeProjection
 		{
 			_projectedLocalEntity = changedProjectedEntity[0];
 		}
-		Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> exportedChanges = _onlyImmediateChanges(newChangeSink.takeExportedChanges());
+		
+		// We only bother capturing the changes for this entity since those are the only ones we speculatively apply.
+		List<IMutationEntity<IMutablePlayerEntity>> exportedChanges = new ArrayList<>();
+		List<ScheduledChange> thisEntityChanges = newChangeSink.takeExportedChanges().get(_localEntityId);
+		if (null != thisEntityChanges)
+		{
+			exportedChanges.addAll(_onlyImmediateChanges(thisEntityChanges));
+		}
 		List<IMutationBlock> exportedMutations = _onlyImmediateMutations(newMutationSink.takeExportedMutations());
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
@@ -469,8 +476,13 @@ public class SpeculativeProjection
 			_applyFollowUpBlockMutations(innerContext, modifiedCuboids, exportedMutations);
 			_applyFollowUpEntityMutations(innerContext, exportedChanges);
 			
-			// Coalesce the results of these.
-			exportedChanges = new HashMap<>(_onlyImmediateChanges(innerNewChangeSink.takeExportedChanges()));
+			// Coalesce the results of these (again, only for this entity).
+			exportedChanges = new ArrayList<>();
+			thisEntityChanges = innerNewChangeSink.takeExportedChanges().get(_localEntityId);
+			if (null != thisEntityChanges)
+			{
+				exportedChanges.addAll(_onlyImmediateChanges(thisEntityChanges));
+			}
 			exportedMutations = new ArrayList<>(_onlyImmediateMutations(innerNewMutationSink.takeExportedMutations()));
 		}
 		
@@ -540,9 +552,8 @@ public class SpeculativeProjection
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 	}
 
-	private void _applyFollowUpEntityMutations(TickProcessingContext context, Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> entityMutations)
+	private void _applyFollowUpEntityMutations(TickProcessingContext context, List<IMutationEntity<IMutablePlayerEntity>> thisEntityMutations)
 	{
-		List<IMutationEntity<IMutablePlayerEntity>> thisEntityMutations = entityMutations.get(_localEntityId);
 		if (null != thisEntityMutations)
 		{
 			Entity[] result = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, thisEntityMutations);
@@ -553,22 +564,14 @@ public class SpeculativeProjection
 		}
 	}
 
-	private Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> _onlyImmediateChanges(Map<Integer, List<ScheduledChange>> changes)
+	private List<IMutationEntity<IMutablePlayerEntity>> _onlyImmediateChanges(List<ScheduledChange> thisChanges)
 	{
-		Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> result = new HashMap<>();
-		for (Map.Entry<Integer, List<ScheduledChange>> elt : changes.entrySet())
-		{
-			List<IMutationEntity<IMutablePlayerEntity>> list = elt.getValue().stream().filter(
-					(ScheduledChange change) -> (0L == change.millisUntilReady())
-			).map(
-					(ScheduledChange change) -> change.change()
-			).toList();
-			if (!list.isEmpty())
-			{
-				result.put(elt.getKey(), list);
-			}
-		}
-		return result;
+		List<IMutationEntity<IMutablePlayerEntity>> list = thisChanges.stream().filter(
+				(ScheduledChange change) -> (0L == change.millisUntilReady())
+		).map(
+				(ScheduledChange change) -> change.change()
+		).toList();
+		return list;
 	}
 
 	private List<IMutationBlock> _onlyImmediateMutations(List<ScheduledMutation> mutations)
@@ -646,28 +649,11 @@ public class SpeculativeProjection
 			, List<_SpeculativeConsequences> followUpTicks
 	) {}
 
-	private static record _SpeculativeConsequences(Map<Integer, List<IMutationEntity<IMutablePlayerEntity>>> exportedChanges, List<IMutationBlock> exportedMutations)
+	private static record _SpeculativeConsequences(List<IMutationEntity<IMutablePlayerEntity>> exportedChanges, List<IMutationBlock> exportedMutations)
 	{
 		public void absorb(_SpeculativeConsequences followUp)
 		{
-			for (Map.Entry<Integer, List<IMutationEntity<IMutablePlayerEntity>>> change : followUp.exportedChanges.entrySet())
-			{
-				int key = change.getKey();
-				List<IMutationEntity<IMutablePlayerEntity>> value = change.getValue();
-				List<IMutationEntity<IMutablePlayerEntity>> list = this.exportedChanges.get(key);
-				if (null != list)
-				{
-					// Note that some of these are produced as immutable.
-					// TODO: Remove this re-wrapping once we rework our mutable/immutable types.
-					list = new ArrayList<>(list);
-					list.addAll(value);
-					this.exportedChanges.put(key, list);
-				}
-				else
-				{
-					this.exportedChanges.put(key, value);
-				}
-			}
+			this.exportedChanges.addAll(followUp.exportedChanges);
 			this.exportedMutations.addAll(followUp.exportedMutations);
 		}
 	}
