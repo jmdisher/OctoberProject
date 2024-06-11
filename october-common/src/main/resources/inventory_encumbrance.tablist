@@ -42,3 +42,5 @@ op.iron_boots	2
 op.chest	2
 op.beef	1
 op.steak	1
+op.door_closed	4
+op.door_open	0

@@ -9,7 +9,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -38,11 +37,6 @@ public class MutationBlockReplace implements IMutationBlock
 
 	public MutationBlockReplace(AbsoluteLocation location, Block originalType, Block newType)
 	{
-		Environment env = Environment.getShared();
-		// Both types must be replaceable (for now, at least).
-		Assert.assertTrue(env.blocks.permitsEntityMovement(originalType));
-		Assert.assertTrue(env.blocks.permitsEntityMovement(newType));
-		
 		_location = location;
 		_originalType = originalType;
 		_newType = newType;

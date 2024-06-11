@@ -60,4 +60,9 @@ op.wheat_mature	permits_entity_movement
 	special_drop	op.wheat_seed	op.wheat_seed	op.wheat_item	op.wheat_item
 op.chest
 	block_material	AXE
+op.door_closed
+	block_material	AXE
+op.door_open	permits_entity_movement
+	block_material	AXE
+	special_drop	op.door_closed
 

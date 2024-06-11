@@ -40,3 +40,5 @@ op.iron_boots	Iron Boots
 op.chest	Chest
 op.beef	Raw Beef
 op.steak	Cooked Steak
+op.door_closed	Door
+op.door_open	Door (Open)

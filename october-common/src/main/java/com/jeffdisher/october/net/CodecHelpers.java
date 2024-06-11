@@ -356,6 +356,20 @@ public class CodecHelpers
 		}
 	}
 
+	public static boolean readBoolean(ByteBuffer buffer)
+	{
+		byte value = buffer.get();
+		// This MUST be a 1 or 0.
+		Assert.assertTrue((0 == value) || (1 == value));
+		return (1 == value);
+	}
+
+	public static void writeBoolean(ByteBuffer buffer, boolean flag)
+	{
+		byte value = (byte)(flag ? 1 : 0);
+		buffer.put(value);
+	}
+
 
 	private static Item _readItem(ByteBuffer buffer)
 	{

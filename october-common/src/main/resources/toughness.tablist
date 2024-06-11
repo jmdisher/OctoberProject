@@ -32,3 +32,5 @@ op.leaf	20
 op.wheat_seedling	20
 op.wheat_young	20
 op.wheat_mature	20
+op.door_closed	100
+op.door_open	100

@@ -1348,6 +1348,74 @@ public class TestCommonChanges
 		Assert.assertFalse(change.applyChange(context, mutable));
 	}
 
+	@Test
+	public void doorUsage() throws Throwable
+	{
+		// Give the entity a door, have them place it, open it, close it, open it, break it, and verify it is a normal door in the inventory.
+		Item itemDoorClosed = ENV.items.getItemById("op.door_closed");
+		Block closedDoor = ENV.blocks.getAsPlaceableBlock(itemDoorClosed);
+		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
+		
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(itemDoorClosed, 1);
+		newEntity.setSelectedKey(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
+		Assert.assertTrue(place.applyChange(holder.context, newEntity));
+		
+		// We also need to apply the actual mutation.
+		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Open the door.
+		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, EntityChangeSetBlockLogicState.OPEN_DOOR);
+		Assert.assertTrue(open.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(openedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Close the door.
+		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, EntityChangeSetBlockLogicState.CLOSE_DOOR);
+		Assert.assertTrue(close.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(closedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Open it again.
+		Assert.assertTrue(open.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(openedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Break it and verify it is a closed door in the inventory.
+		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		Assert.assertTrue(holder.change.applyChange(holder.context, newEntity));
+		holder.change = null;
+		
+		// Check our inventory.
+		Inventory inventory = newEntity.freeze().inventory();
+		Assert.assertEquals(1, inventory.sortedKeys().size());
+		Assert.assertEquals(1, inventory.getCount(itemDoorClosed));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

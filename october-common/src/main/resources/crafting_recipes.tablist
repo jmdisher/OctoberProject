@@ -92,3 +92,7 @@ op.furnace_cook_steak	special_furnace
 	input	op.beef
 	output	op.steak
 	millis	1000
+op.door_closed	common
+	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
+	output	op.door_closed
+	millis	8000

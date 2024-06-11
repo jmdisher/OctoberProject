@@ -15,6 +15,7 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
+import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.EntityChangeSwapArmour;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -55,6 +56,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangeUseSelectedItemOnEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnEntity.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeChangeHotbarSlot.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeChangeHotbarSlot.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeSwapArmour.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwapArmour.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeSetBlockLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSetBlockLogicState.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
