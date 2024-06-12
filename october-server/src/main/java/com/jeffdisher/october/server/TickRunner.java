@@ -40,6 +40,7 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -102,12 +103,14 @@ public class TickRunner
 	 * @param randomInt A random generator producing values in the range of [0..bound) for a given bound.
 	 * @param tickCompletionListener The consumer which we will given the completed snapshot of the state immediately before
 	 * publishing the snapshot and blocking for the next tick (called on internal thread so must be trivial).
+	 * @param difficulty The difficulty configuration of the server.
 	 */
 	public TickRunner(int threadCount
 			, long millisPerTick
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
 			, Consumer<Snapshot> tickCompletionListener
+			, Difficulty difficulty
 	)
 	{
 		AtomicInteger atomic = new AtomicInteger(0);
@@ -128,7 +131,10 @@ public class TickRunner
 				try
 				{
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
-					_backgroundThreadMain(thisThread, tickCompletionListener);
+					_backgroundThreadMain(thisThread
+							, tickCompletionListener
+							, difficulty
+					);
 				}
 				catch (Throwable t)
 				{
@@ -331,6 +337,7 @@ public class TickRunner
 
 	private void _backgroundThreadMain(ProcessorElement thisThread
 			, Consumer<Snapshot> tickCompletionListener
+			, Difficulty difficulty
 	)
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
@@ -379,6 +386,7 @@ public class TickRunner
 					, newChangeSink
 					, _idAssigner
 					, _random
+					, difficulty
 			);
 			
 			// We will have the first thread attempt the monster spawning algorithm.

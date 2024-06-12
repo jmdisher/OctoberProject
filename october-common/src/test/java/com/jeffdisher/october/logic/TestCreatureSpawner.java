@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -90,6 +91,7 @@ public class TestCreatureSpawner
 				, (int bound) -> (bound > randomValue)
 					? randomValue
 					: (bound - 1)
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}

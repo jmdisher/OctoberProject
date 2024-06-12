@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -30,7 +31,12 @@ public class ServerMain
 				Environment.createSharedInstance();
 				// We will just use the flat world generator since it should be populated with what we need for testing.
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(true));
-				ServerProcess process = new ServerProcess(port, ServerRunner.DEFAULT_MILLIS_PER_TICK, cuboidLoader, () -> System.currentTimeMillis());
+				ServerProcess process = new ServerProcess(port
+						, ServerRunner.DEFAULT_MILLIS_PER_TICK
+						, cuboidLoader
+						, () -> System.currentTimeMillis()
+						, Difficulty.HOSTILE
+				);
 				// We will just wait for input before shutting down.
 				System.in.read();
 				System.out.println("Shutting down...");

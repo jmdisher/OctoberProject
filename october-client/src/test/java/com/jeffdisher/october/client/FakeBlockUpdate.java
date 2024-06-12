@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -70,6 +71,7 @@ public class FakeBlockUpdate
 			}
 			, null
 			, null
+			, Difficulty.HOSTILE
 		);
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
 		boolean didApply = mutation.applyMutation(context, mutable);

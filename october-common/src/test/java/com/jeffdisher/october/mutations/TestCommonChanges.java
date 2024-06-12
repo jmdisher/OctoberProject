@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -100,6 +101,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -566,6 +568,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -696,6 +699,7 @@ public class TestCommonChanges
 				}
 				, null
 				, (int bound) -> random.nextInt(bound)
+				, Difficulty.HOSTILE
 		);
 		
 		// Check the miss.
@@ -762,6 +766,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
@@ -826,6 +831,7 @@ public class TestCommonChanges
 				}
 				, null
 				, (int bound) -> random.nextInt(bound)
+				, Difficulty.HOSTILE
 		);
 		
 		// Check that the sword durability changed and that we scheduled the hit.
@@ -854,6 +860,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.create(entityId);
@@ -1269,6 +1276,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, (int bound) -> random.nextInt(bound)
+				, Difficulty.HOSTILE
 		);
 		
 		// Attack and verify that we see damage come through the creature path.
@@ -1326,6 +1334,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		
 		// Feed the creature and verify that we see the apply scheduled.
@@ -1437,6 +1446,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}
@@ -1487,6 +1497,7 @@ public class TestCommonChanges
 					} : null
 					, null
 					, (int bound) -> random.nextInt(bound)
+					, Difficulty.HOSTILE
 			);
 		}
 	}

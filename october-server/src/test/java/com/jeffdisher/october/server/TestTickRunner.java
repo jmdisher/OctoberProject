@@ -41,6 +41,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -133,7 +134,12 @@ public class TestTickRunner
 	public void shockwaveMultiCuboids()
 	{
 		// Use extra threads here to stress further.
-		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK, null, null, (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, null
+				, null
+				, (TickRunner.Snapshot completed) -> {}
+				, Difficulty.HOSTILE
+		);
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR), List.of(), List.of())
 					, new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR), List.of(), List.of())
@@ -442,7 +448,13 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, null, null, snapshotListener);
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, null
+				, null
+				, snapshotListener
+				, Difficulty.HOSTILE
+		);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
 		int entityId = 1;
@@ -498,7 +510,13 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {
 			snapshotRef[0] = completed;
 		};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, null, null, snapshotListener);
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, null
+				, null
+				, snapshotListener
+				, Difficulty.HOSTILE
+		);
 		
 		// Verify that there is no snapshot until we start.
 		Assert.assertNull(snapshotRef[0]);
@@ -1283,7 +1301,13 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
 		
 		int[] randomHolder = new int[] {0};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, null, (int bound) -> randomHolder[0], (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, null
+				, (int bound) -> randomHolder[0]
+				, (TickRunner.Snapshot completed) -> {}
+				, Difficulty.HOSTILE
+		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
@@ -1347,7 +1371,13 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
 		
 		int[] randomHolder = new int[] {0};
-		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT, ServerRunner.DEFAULT_MILLIS_PER_TICK, null, (int bound) -> randomHolder[0], (TickRunner.Snapshot completed) -> {});
+		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
+				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, null
+				, (int bound) -> randomHolder[0]
+				, (TickRunner.Snapshot completed) -> {}
+				, Difficulty.HOSTILE
+		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
@@ -1683,6 +1713,7 @@ public class TestTickRunner
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
+				, Difficulty.HOSTILE
 		);
 		return runner;
 	}

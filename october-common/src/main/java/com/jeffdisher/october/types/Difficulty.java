@@ -1,0 +1,18 @@
+package com.jeffdisher.october.types;
+
+
+/**
+ * The difficulty setting controls some of the behaviours of the system.  This is passed through the
+ * TickProcessingContext so various parts of the system logic can use it.
+ */
+public enum Difficulty
+{
+	/**
+	 * Reserved for error/undefined cases.
+	 */
+	ERROR,
+	/**
+	 * The default mode of the system where damage is normal and hostile entities spawn.
+	 */
+	HOSTILE,
+}

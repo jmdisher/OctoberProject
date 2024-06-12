@@ -17,6 +17,7 @@ import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -185,6 +186,7 @@ public class TestCowStateMachine
 				, changes
 				, assigner
 				, null
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}

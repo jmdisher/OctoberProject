@@ -17,6 +17,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -69,6 +70,7 @@ public class ServerRunner
 			, IServerAdapter network
 			, ResourceLoader loader
 			, LongSupplier currentTimeMillisProvider
+			, Difficulty difficulty
 	)
 	{
 		_millisPerTick = millisPerTick;
@@ -78,7 +80,13 @@ public class ServerRunner
 		_loader = loader;
 		Random random = new Random();
 		TickListener tickListener = new TickListener();
-		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT, _millisPerTick, loader.creatureIdAssigner, (int bound) -> random.nextInt(bound), tickListener);
+		_tickRunner = new TickRunner(TICK_RUNNER_THREAD_COUNT
+				, _millisPerTick
+				, loader.creatureIdAssigner
+				, (int bound) -> random.nextInt(bound)
+				, tickListener
+				, difficulty
+		);
 		
 		_messages = new MessageQueue();
 		_background = new Thread(()-> {

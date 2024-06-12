@@ -29,6 +29,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -115,6 +116,7 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
@@ -562,6 +564,7 @@ public class TestCreatureProcessor
 				, null
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}
@@ -576,6 +579,7 @@ public class TestCreatureProcessor
 				, newChangeSink
 				, idAssigner
 				, existing.randomInt
+				, existing.difficulty
 		);
 		return context;
 	}
@@ -589,6 +593,7 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, existing.randomInt
+				, existing.difficulty
 		);
 		return context;
 	}

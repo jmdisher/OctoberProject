@@ -28,6 +28,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -57,18 +58,25 @@ public class ServerProcess
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
 	 * @param cuboidLoader The loader object which will load or generate required cuboids.
 	 * @param currentTimeMillisProvider The provider of the current system time, in milliseconds.
+	 * @param difficulty The difficulty configuration of the server.
 	 * @throws IOException There was an error starting up the network.
 	 */
 	public ServerProcess(int port
 			, long millisPerTick
 			, ResourceLoader cuboidLoader
 			, LongSupplier currentTimeMillisProvider
+			, Difficulty difficulty
 	) throws IOException
 	{
 		_clientsById = new HashMap<>();
 		_partialDisconnectIds = new HashSet<>();
 		// We will assume that ServerRunner will shut down the cuboidLoader for us.
-		_server = new ServerRunner(millisPerTick, new _ServerListener(), cuboidLoader, currentTimeMillisProvider);
+		_server = new ServerRunner(millisPerTick
+				, new _ServerListener()
+				, cuboidLoader
+				, currentTimeMillisProvider
+				, difficulty
+		);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
 		_network = new NetworkServer<ClientBuffer>(new _NetworkListener(), port);

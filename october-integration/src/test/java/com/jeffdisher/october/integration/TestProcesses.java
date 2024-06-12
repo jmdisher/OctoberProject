@@ -22,6 +22,7 @@ import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.PartialEntity;
@@ -55,7 +56,11 @@ public class TestProcesses
 	public void startStopServer() throws Throwable
 	{
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, TIME_SUPPLIER
+				, Difficulty.HOSTILE
+		);
 		server.stop();
 	}
 
@@ -71,7 +76,11 @@ public class TestProcesses
 	{
 		// Start everything, connect and disconnect once the see the entity arrive.
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, TIME_SUPPLIER
+				, Difficulty.HOSTILE
+		);
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
 		
@@ -95,7 +104,11 @@ public class TestProcesses
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		cuboidLoader.preload(cuboid);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, TIME_SUPPLIER
+				, Difficulty.HOSTILE
+		);
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
@@ -131,7 +144,11 @@ public class TestProcesses
 		// Load a cuboids.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, TIME_SUPPLIER);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, TIME_SUPPLIER
+				, Difficulty.HOSTILE
+		);
 		
 		// Connect the client.
 		_ClientListener listener = new _ClientListener();
@@ -173,7 +190,11 @@ public class TestProcesses
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> 100L);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, () -> 100L
+				, Difficulty.HOSTILE
+		);
 		
 		// Connect a client and wait to receive their entity.
 		_ClientListener listener = new _ClientListener();
@@ -204,7 +225,11 @@ public class TestProcesses
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ENV.special.AIR));
-		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK, cuboidLoader, () -> currentTimeMillis[0]);
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, () -> currentTimeMillis[0]
+				, Difficulty.HOSTILE
+		);
 		
 		// Create the first client.
 		_ClientListener listener1 = new _ClientListener();

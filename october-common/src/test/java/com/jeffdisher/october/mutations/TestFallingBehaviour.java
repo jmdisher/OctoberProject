@@ -14,6 +14,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
@@ -239,6 +240,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
 		Assert.assertTrue(update.applyMutation(context, proxy));
@@ -322,6 +324,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}

@@ -17,6 +17,7 @@ import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -163,6 +164,7 @@ public class TestOrcStateMachine
 				, changes
 				, assigner
 				, (int bound) -> random.nextInt(bound)
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}

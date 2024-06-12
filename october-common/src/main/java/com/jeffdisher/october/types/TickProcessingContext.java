@@ -53,6 +53,11 @@ public class TickProcessingContext
 	 */
 	public final IntUnaryOperator randomInt;
 
+	/**
+	 * The difficulty configuration of the server.
+	 */
+	public final Difficulty difficulty;
+
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
@@ -60,6 +65,7 @@ public class TickProcessingContext
 			, IChangeSink newChangeSink
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
+			, Difficulty difficulty
 	)
 	{
 		this.currentTick = currentTick;
@@ -69,6 +75,7 @@ public class TickProcessingContext
 		this.newChangeSink = newChangeSink;
 		this.idAssigner = idAssigner;
 		this.randomInt = randomInt;
+		this.difficulty = difficulty;
 	}
 
 

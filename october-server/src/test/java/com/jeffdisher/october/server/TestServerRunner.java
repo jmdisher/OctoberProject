@@ -33,6 +33,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -67,7 +68,12 @@ public class TestServerRunner
 		// Get the starting number of threads in our group.
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, new ResourceLoader(DIRECTORY.newFolder(), null), () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, new ResourceLoader(DIRECTORY.newFolder(), null)
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		// We expect to see an extra 6 threads:  ServerRunner, CuboidLoader, and 4xTickRunner.
 		Assert.assertEquals(startingActiveCount + 2 + ServerRunner.TICK_RUNNER_THREAD_COUNT, Thread.currentThread().getThreadGroup().activeCount());
 		runner.shutdown();
@@ -83,7 +89,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		int clientId2 = 2;
@@ -112,7 +123,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
@@ -150,7 +166,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
@@ -179,7 +200,12 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
@@ -202,6 +228,7 @@ public class TestServerRunner
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		), fake);
 		EntityChangeDoNothing<IMutablePlayerEntity> move2 = new EntityChangeDoNothing<>(fake.newLocation, 100L);
 		network.receiveFromClient(clientId, move1, 1L);
@@ -223,7 +250,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		int clientId2 = 2;
@@ -264,7 +296,12 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), STONE));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.special.AIR));
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
@@ -294,7 +331,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		
@@ -333,7 +375,12 @@ public class TestServerRunner
 		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
-		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK, network, cuboidLoader, () -> System.currentTimeMillis());
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, Difficulty.HOSTILE
+		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		

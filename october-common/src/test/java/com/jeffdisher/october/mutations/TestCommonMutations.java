@@ -16,6 +16,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -68,6 +69,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -220,6 +222,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
@@ -274,6 +277,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -313,6 +317,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
+				, Difficulty.HOSTILE
 		);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
@@ -380,6 +385,7 @@ public class TestCommonMutations
 					}
 					, null
 					, null
+					, Difficulty.HOSTILE
 			);
 		}
 	}
