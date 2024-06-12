@@ -42,3 +42,8 @@ op.beef	Raw Beef
 op.steak	Cooked Steak
 op.door_closed	Door
 op.door_open	Door (Open)
+op.hopper_down	Hopper
+op.hopper_north	Hopper (North)
+op.hopper_south	Hopper (South)
+op.hopper_east	Hopper (East)
+op.hopper_west	Hopper (West)

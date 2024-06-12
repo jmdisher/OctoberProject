@@ -96,3 +96,7 @@ op.door_closed	common
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.door_closed
 	millis	8000
+op.hopper_down	common
+	input	op.plank	op.plank	op.iron_ingot	op.iron_ingot
+	output	op.hopper_down
+	millis	10000

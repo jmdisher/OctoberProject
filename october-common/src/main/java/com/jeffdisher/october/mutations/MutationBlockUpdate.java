@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -106,6 +107,9 @@ public class MutationBlockUpdate implements IMutationBlock
 			didApply = CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _blockLocation, newBlock)
 					|| didApply;
 		}
+		
+		// Handle the case where this might be a hopper.
+		HopperHelpers.tryProcessHopper(context, _blockLocation, newBlock);
 		return didApply;
 	}
 

@@ -337,6 +337,53 @@ public class TestCommonMutations
 		Assert.assertNotNull(test);
 	}
 
+	@Test
+	public void transferBetweenInventory()
+	{
+		// Test that we can transfer items between blocks with MutationBlockPushToBlock.
+		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
+		AbsoluteLocation source = new AbsoluteLocation(3, 5, 5);
+		AbsoluteLocation sink = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(source.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockAddress(), chest.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, source.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.CHARCOAL, 2).finish());
+		cuboid.setData15(AspectRegistry.BLOCK, sink.getBlockAddress(), chest.item().number());
+		
+		IMutationBlock[] outMutation = new IMutationBlock[1];
+		TickProcessingContext context = new TickProcessingContext(1L
+				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
+				, null
+				, new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(outMutation[0]);
+						outMutation[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not expected in tets");
+					}
+				}
+				, null
+				, null
+				, null
+				, Difficulty.HOSTILE
+		);
+		
+		MutationBlockPushToBlock mutation = new MutationBlockPushToBlock(source, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY, sink);
+		MutableBlockProxy sourceProxy = new MutableBlockProxy(source, cuboid);
+		MutableBlockProxy sinkProxy = new MutableBlockProxy(sink, cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, sourceProxy));
+		Assert.assertTrue(sourceProxy.didChange());
+		Assert.assertEquals(1, sourceProxy.getInventory().getCount(ENV.items.CHARCOAL));
+		
+		Assert.assertTrue(outMutation[0].applyMutation(context, sinkProxy));
+		Assert.assertTrue(sinkProxy.didChange());
+		Assert.assertEquals(1, sinkProxy.getInventory().getCount(ENV.items.CHARCOAL));
+	}
+
 
 	private static class ProcessingSinks
 	{
