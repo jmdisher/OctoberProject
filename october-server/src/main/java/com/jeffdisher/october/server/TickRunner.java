@@ -814,7 +814,10 @@ public class TickRunner
 						.map(
 							(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
 						).toList();
-					updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
+					if (!locations.isEmpty())
+					{
+						updatedBlockLocationsByCuboid.put(entry.getKey(), locations);
+					}
 					
 					// Store the possible lighting update locations, much in the same style.
 					List<AbsoluteLocation> lightChangeLocations = entry.getValue().stream()

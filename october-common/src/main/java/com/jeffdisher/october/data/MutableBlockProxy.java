@@ -325,8 +325,10 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	 */
 	public boolean shouldTriggerUpdateEvent()
 	{
-		// For now, we will only include BLOCK aspect changes in the list of aspects triggering block updates.
-		return (null != _writes[AspectRegistry.BLOCK.index()]);
+		// For now, we will only include BLOCK and INVENTORY aspect changes in the list of aspects triggering block updates.
+		return (null != _writes[AspectRegistry.BLOCK.index()])
+				|| (null != _writes[AspectRegistry.INVENTORY.index()])
+		;
 	}
 
 	/**
