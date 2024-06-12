@@ -110,19 +110,17 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 		}
 		else
 		{
-			// We will load a single entity in the base of this cuboid if it is z=0.
+			// Load in 2 cows near the base of this cuboid if it is at z=0.
 			AbsoluteLocation baseOfCuboid = address.getBase();
 			entities = (0 == address.z())
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
 							, EntityType.COW
 							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
 							, (byte)100
-					),
-						// Temporarily, we will load an orc here, as well, until the dynamic spawning system is implemented.
-						CreatureEntity.create(creatureIdAssigner.next()
-							, EntityType.ORC
+						), CreatureEntity.create(creatureIdAssigner.next()
+							, EntityType.COW
 							, new EntityLocation(baseOfCuboid.x() + 5, baseOfCuboid.y() + 5, baseOfCuboid.z())
-							, (byte)50
+							, (byte)100
 					))
 					: List.of()
 			;

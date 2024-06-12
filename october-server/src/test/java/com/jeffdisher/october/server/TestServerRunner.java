@@ -372,14 +372,15 @@ public class TestServerRunner
 	@Test
 	public void clientRejoinCreatures() throws Throwable
 	{
-		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
+		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
+				, Difficulty.PEACEFUL
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -390,13 +391,11 @@ public class TestServerRunner
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
-		// Verify that we see the appropriate creatures - we expect 18 of them and they should be a mix of cow and orc.
-		for (int i = -2; i >= -18; i -= 2)
+		// Verify that we see the appropriate creatures - we expect 18 cows (2 for each surface cuboid around us).
+		for (int i = -2; i >= -18; i -= 1)
 		{
-			PartialEntity creature = network.waitForPeerEntity(clientId1, i + 1);
+			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
 			Assert.assertEquals(EntityType.COW, creature.type());
-			creature = network.waitForPeerEntity(clientId1, i);
-			Assert.assertEquals(EntityType.ORC, creature.type());
 		}
 		
 		// Disconnect.
@@ -411,27 +410,11 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// NOTE:  In the future, this may not be a valid check since this assumes that they are renumbered since they are being reloaded.
-		// We also can't be sure the load order the second time around so just count how many of each type they are.
-		int cowCount = 0;
-		int orcCount = 0;
 		for (int i = -19; i >= -36; --i)
 		{
 			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
-			if (EntityType.COW == creature.type())
-			{
-				cowCount += 1;
-			}
-			else if (EntityType.ORC == creature.type())
-			{
-				orcCount += 1;
-			}
-			else
-			{
-				Assert.fail();
-			}
+			Assert.assertEquals(EntityType.COW, creature.type());
 		}
-		Assert.assertEquals(9, cowCount);
-		Assert.assertEquals(9, orcCount);
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(18, network.clientPartialEntities.get(clientId1).size());
 		
