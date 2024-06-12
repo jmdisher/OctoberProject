@@ -57,6 +57,39 @@ public class TestCreatureSpawner
 	}
 
 	@Test
+	public void singleCuboidPeaceful()
+	{
+		// Create a cuboid of air with a single stone block located such that our random generator will find it but will fail to spawn due to peaceful mode.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)5, (byte)1), STONE.item().number());
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
+		int randomValue = 5;
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
+					return (null != oneCuboid)
+							? new BlockProxy(location.getBlockAddress(), oneCuboid)
+							: null
+					;
+				}
+				, null
+				, null
+				, null
+				, null
+				, (int bound) -> (bound > randomValue)
+					? randomValue
+					: (bound - 1)
+				, Difficulty.PEACEFUL
+		);
+		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, completedCuboids
+				, Map.of()
+		);
+		
+		Assert.assertNull(entity);
+	}
+
+	@Test
 	public void stackedCuboids()
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = _buildTestWorld();

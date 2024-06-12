@@ -11,6 +11,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -135,6 +136,12 @@ public class CreatureSpawner
 			{
 				checkSpawningLocation = baseLocation;
 			}
+		}
+		
+		// We will eventually spawn other things here but we currently only use orcs so disable this in peaceful mode once the selection was found.
+		if (Difficulty.PEACEFUL == context.difficulty)
+		{
+			goodSpawningLocation = null;
 		}
 		
 		CreatureEntity spawned;

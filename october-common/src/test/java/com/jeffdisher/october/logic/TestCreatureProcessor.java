@@ -162,6 +162,27 @@ public class TestCreatureProcessor
 	}
 
 	@Test
+	public void despawnOrcOnMovementDecision()
+	{
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)50);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		TickProcessingContext context = _createContextWithDifficulty(Difficulty.PEACEFUL);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), Set.of())
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		Assert.assertTrue(group.updatedCreatures().isEmpty());
+	}
+
+	@Test
 	public void takeNextStep()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
@@ -549,6 +570,11 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _createContext()
 	{
+		return _createContextWithDifficulty(Difficulty.HOSTILE);
+	}
+
+	private static TickProcessingContext _createContextWithDifficulty(Difficulty difficulty)
+	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
@@ -564,7 +590,7 @@ public class TestCreatureProcessor
 				, null
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
-				, Difficulty.HOSTILE
+				, difficulty
 		);
 		return context;
 	}

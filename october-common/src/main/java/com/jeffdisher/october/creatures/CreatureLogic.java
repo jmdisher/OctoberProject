@@ -15,6 +15,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -101,6 +102,7 @@ public class CreatureLogic
 	 * Called when newStepsToNextMove is null in order to determine the next action for the entity.  This is an
 	 * opportunity for the creature to either just return the next actions for newStepsToNextMove from an existing plan,
 	 * take special actions before doing that, or update/change its existing plan.
+	 * Of special note, this is also where hostile mobs will be killed if in peaceful mode.
 	 * 
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
@@ -132,9 +134,18 @@ public class CreatureLogic
 		}
 			break;
 		case ORC: {
-			OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
-			mutable.newExtendedData = machine.freezeToData();
+			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
+			if (Difficulty.PEACEFUL == context.difficulty)
+			{
+				actionsProduced = null;
+				mutable.newHealth = (byte)0;
+			}
+			else
+			{
+				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
+				actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
+				mutable.newExtendedData = machine.freezeToData();
+			}
 		}
 			break;
 		case ERROR:
