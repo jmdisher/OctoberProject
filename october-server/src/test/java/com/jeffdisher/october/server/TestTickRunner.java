@@ -870,7 +870,7 @@ public class TestTickRunner
 		
 		// Now, apply a mutation to an adjacent block.
 		AbsoluteLocation targetLocation = startLocation.getRelative(1, 0, 0);
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(targetLocation), 1L);
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(targetLocation, targetLocation), 1L);
 		
 		// Run a tick and see MutationBlockOverwrite enqueued.
 		runner.startNextTick();
@@ -1322,7 +1322,7 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1392,7 +1392,7 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1486,7 +1486,7 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location), 1L);
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)

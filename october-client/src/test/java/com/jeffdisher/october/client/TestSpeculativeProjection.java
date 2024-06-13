@@ -935,7 +935,7 @@ public class TestSpeculativeProjection
 		
 		// Apply the local change.
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location, location);
 		long commit1 = projector.applyLocalChange(place, 1L);
 		Assert.assertEquals(1, commit1);
 		// (verify that it fails if we try to run it again.
@@ -976,7 +976,7 @@ public class TestSpeculativeProjection
 		long currentTimeMillis = 1000L;
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
 		BlockAddress blockLocation = location.getBlockAddress();
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location, location);
 		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
 		
@@ -1207,7 +1207,7 @@ public class TestSpeculativeProjection
 		long currentTimeMillis = 1000L;
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 0);
 		BlockAddress blockLocation = location.getBlockAddress();
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(location, location);
 		long commit1 = projector.applyLocalChange(place, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
 		

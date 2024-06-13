@@ -223,7 +223,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, target);
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
@@ -406,24 +406,24 @@ public class TestCommonChanges
 		
 		// Try too close (colliding).
 		AbsoluteLocation tooClose = new AbsoluteLocation(0, 0, 10);
-		MutationPlaceSelectedBlock placeTooClose = new MutationPlaceSelectedBlock(tooClose);
+		MutationPlaceSelectedBlock placeTooClose = new MutationPlaceSelectedBlock(tooClose, tooClose);
 		Assert.assertFalse(placeTooClose.applyChange(holder.context, newEntity));
 		
 		// Try too far.
 		AbsoluteLocation tooFar = new AbsoluteLocation(0, 0, 15);
-		MutationPlaceSelectedBlock placeTooFar = new MutationPlaceSelectedBlock(tooFar);
+		MutationPlaceSelectedBlock placeTooFar = new MutationPlaceSelectedBlock(tooFar, tooFar);
 		Assert.assertFalse(placeTooFar.applyChange(holder.context, newEntity));
 		
 		// Try reasonable location.
 		AbsoluteLocation reasonable = new AbsoluteLocation(1, 1, 8);
-		MutationPlaceSelectedBlock placeReasonable = new MutationPlaceSelectedBlock(reasonable);
+		MutationPlaceSelectedBlock placeReasonable = new MutationPlaceSelectedBlock(reasonable, reasonable);
 		Assert.assertTrue(placeReasonable.applyChange(holder.context, newEntity));
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
 		holder.mutation = null;
 		
 		// Make sure we fail if there is no selection.
 		reasonable = new AbsoluteLocation(1, 1, 8);
-		placeReasonable = new MutationPlaceSelectedBlock(reasonable);
+		placeReasonable = new MutationPlaceSelectedBlock(reasonable, reasonable);
 		newEntity.setSelectedKey(Entity.NO_SELECTION);
 		Assert.assertFalse(placeReasonable.applyChange(holder.context, newEntity));
 	}
@@ -499,7 +499,7 @@ public class TestCommonChanges
 		
 		// Fail to place the charcoal item on the ground.
 		AbsoluteLocation air = new AbsoluteLocation(1, 0, 10);
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(air);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(air, air);
 		Assert.assertFalse(place.applyChange(holder.context, newEntity));
 		
 		// Change the selection to the log and prove that this works.
@@ -1372,7 +1372,7 @@ public class TestCommonChanges
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
-		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target);
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, target);
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
@@ -1423,6 +1423,74 @@ public class TestCommonChanges
 		Inventory inventory = newEntity.freeze().inventory();
 		Assert.assertEquals(1, inventory.sortedKeys().size());
 		Assert.assertEquals(1, inventory.getCount(itemDoorClosed));
+	}
+
+	@Test
+	public void hopperPlacement() throws Throwable
+	{
+		// Give the entity a hopper, place it with a direction, and observe that it ends up oriented that way.
+		Item itemHopperDown = ENV.items.getItemById("op.hopper_down");
+		
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(itemHopperDown, 6);
+		newEntity.setSelectedKey(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// We will place down 5 hoppers, all with different orientations, and verify that they end up correctly oriented in the world.
+		// We place in the opposite direction, facing north.
+		AbsoluteLocation centreTarget = new AbsoluteLocation(1, 1, 10);
+		
+		// Face north.
+		MutationPlaceSelectedBlock north = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), centreTarget);
+		Assert.assertTrue(north.applyChange(holder.context, newEntity));
+		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(ENV.items.getItemById("op.hopper_north"), proxy.getBlock().item());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Face south.
+		MutationPlaceSelectedBlock south = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 1, 0), centreTarget);
+		Assert.assertTrue(south.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(ENV.items.getItemById("op.hopper_south"), proxy.getBlock().item());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Face east.
+		MutationPlaceSelectedBlock east = new MutationPlaceSelectedBlock(centreTarget.getRelative(-1, 0, 0), centreTarget);
+		Assert.assertTrue(east.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(ENV.items.getItemById("op.hopper_east"), proxy.getBlock().item());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Face west.
+		MutationPlaceSelectedBlock west = new MutationPlaceSelectedBlock(centreTarget.getRelative(1, 0, 0), centreTarget);
+		Assert.assertTrue(west.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(ENV.items.getItemById("op.hopper_west"), proxy.getBlock().item());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Face down - this case, the target just needs to match z.
+		MutationPlaceSelectedBlock down = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 0, -1), centreTarget);
+		Assert.assertTrue(down.applyChange(holder.context, newEntity));
+		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
+		Assert.assertEquals(itemHopperDown, proxy.getBlock().item());
+		proxy.writeBack(cuboid);
+		holder.mutation = null;
+		
+		// Check our inventory.
+		Inventory inventory = newEntity.freeze().inventory();
+		Assert.assertEquals(1, inventory.sortedKeys().size());
+		Assert.assertEquals(1, inventory.getCount(itemHopperDown));
 	}
 
 

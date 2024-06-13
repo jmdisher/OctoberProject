@@ -27,19 +27,28 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_PLACE;
+	// We need to handle hopper placement as a special case since it cares about output direction.
+	public static final String HOPPER_DOWN  = "op.hopper_down";
+	public static final String HOPPER_NORTH = "op.hopper_north";
+	public static final String HOPPER_SOUTH = "op.hopper_south";
+	public static final String HOPPER_EAST  = "op.hopper_east";
+	public static final String HOPPER_WEST  = "op.hopper_west";
 
 	public static MutationPlaceSelectedBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		return new MutationPlaceSelectedBlock(target);
+		AbsoluteLocation blockOutput = CodecHelpers.readAbsoluteLocation(buffer);
+		return new MutationPlaceSelectedBlock(target, blockOutput);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
+	private final AbsoluteLocation _blockOutput;
 
-	public MutationPlaceSelectedBlock(AbsoluteLocation targetBlock)
+	public MutationPlaceSelectedBlock(AbsoluteLocation targetBlock, AbsoluteLocation blockOutput)
 	{
 		_targetBlock = targetBlock;
+		_blockOutput = blockOutput;
 	}
 
 	@Override
@@ -72,8 +81,10 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 		
 		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
 		EntityLocation entityLocation = newEntity.getLocation();
-		int absX = Math.abs(_targetBlock.x() - Math.round(entityLocation.x()));
-		int absY = Math.abs(_targetBlock.y() - Math.round(entityLocation.y()));
+		int targetX = _targetBlock.x();
+		int targetY = _targetBlock.y();
+		int absX = Math.abs(targetX - Math.round(entityLocation.x()));
+		int absY = Math.abs(targetY - Math.round(entityLocation.y()));
 		int absZ = Math.abs(_targetBlock.z() - Math.round(entityLocation.z()));
 		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
 		
@@ -101,9 +112,45 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 			{
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
+			
+			// Decide if this block type needs special orientation considerations.
+			// TODO:  Find some way to generalize this (maybe as part of getAsPlaceableBlock()?).
+			Block blockToPlace;
+			if (blockType.item().id().equals(HOPPER_DOWN))
+			{
+				// Check the direction of the output, relative to target block.
+				int outX = _blockOutput.x();
+				int outY = _blockOutput.y();
+				if (outY > targetY)
+				{
+					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_NORTH));
+				}
+				else if (outY < targetY)
+				{
+					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_SOUTH));
+				}
+				else if (outX > targetX)
+				{
+					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_EAST));
+				}
+				else if (outX < targetX)
+				{
+					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_WEST));
+				}
+				else
+				{
+					blockToPlace = blockType;
+				}
+			}
+			else
+			{
+				// Common case.
+				blockToPlace = blockType;
+			}
+			
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.
-			MutationBlockOverwrite write = new MutationBlockOverwrite(_targetBlock, blockType);
+			MutationBlockOverwrite write = new MutationBlockOverwrite(_targetBlock, blockToPlace);
 			context.mutationSink.next(write);
 			didApply = true;
 			
@@ -123,6 +170,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
+		CodecHelpers.writeAbsoluteLocation(buffer, _blockOutput);
 	}
 
 	@Override
