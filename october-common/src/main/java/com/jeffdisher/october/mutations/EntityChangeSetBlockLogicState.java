@@ -25,9 +25,14 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	public static final float MAX_REACH = 1.5f;
 	public static boolean OPEN_DOOR = true;
 	public static boolean CLOSE_DOOR = false;
+	public static boolean SWITCH_ON = true;
+	public static boolean SWITCH_OFF = false;
 
+	// TODO:  Replace this with something generalized into the broader logic aspect design.
 	private static final String STRING_DOOR_CLOSED = "op.door_closed";
 	private static final String STRING_DOOR_OPEN = "op.door_open";
+	private static final String STRING_SWITCH_OFF = "op.switch_off";
+	private static final String STRING_SWITCH_ON = "op.switch_on";
 
 	public static EntityChangeSetBlockLogicState deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -38,21 +43,37 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 
 	public static boolean canChangeBlockLogicState(Block block)
 	{
-		// Currently, this only is applied to doors.
+		// Check that this block is one of the logic-sensitive types.
 		Environment env = Environment.getShared();
+		
+		// TODO:  Generalize this lookup into data.
 		Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
 		Block doorOpen = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
-		return (block == doorClosed) || (block == doorOpen);
+		Block switchOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_OFF));
+		Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
+		return (block == doorClosed)
+				|| (block == doorOpen)
+				|| (block == switchOff)
+				|| (block == switchOn)
+		;
 	}
 
 	public static boolean getCurrentBlockLogicState(Block block)
 	{
-		// Currently, this only is applied to doors:  Open is considered "high".
+		// Logic interpretation as "high":  Open door and switch on.
 		Environment env = Environment.getShared();
 		Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
 		Block doorOpen = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
-		Assert.assertTrue((block == doorClosed) || (block == doorOpen));
-		return (block == doorOpen);
+		Block switchOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_OFF));
+		Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
+		Assert.assertTrue((block == doorClosed)
+				|| (block == doorOpen)
+				|| (block == switchOff)
+				|| (block == switchOn)
+		);
+		return (block == doorOpen)
+				|| (block == switchOn)
+		;
 	}
 
 
@@ -89,15 +110,23 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 			Environment env = Environment.getShared();
 			Block previousBlock = previous.getBlock();
 			
-			// This currently only applies to doors so check if this is one we can change.
+			// Logic interpretation as "high":  Open door and switch on.
 			Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
 			Block doorOpen = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
+			Block switchOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_OFF));
+			Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
 			if (_setHigh)
 			{
 				// Open the door.
 				if (doorClosed == previousBlock)
 				{
 					context.mutationSink.next(new MutationBlockReplace(_targetBlock, previousBlock, doorOpen));
+					didApply = true;
+				}
+				// Switch on.
+				else if (switchOff == previousBlock)
+				{
+					context.mutationSink.next(new MutationBlockReplace(_targetBlock, previousBlock, switchOn));
 					didApply = true;
 				}
 			}
@@ -107,6 +136,12 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 				if (doorOpen == previousBlock)
 				{
 					context.mutationSink.next(new MutationBlockReplace(_targetBlock, previousBlock, doorClosed));
+					didApply = true;
+				}
+				// Switch off.
+				else if (switchOn == previousBlock)
+				{
+					context.mutationSink.next(new MutationBlockReplace(_targetBlock, previousBlock, switchOff));
 					didApply = true;
 				}
 			}

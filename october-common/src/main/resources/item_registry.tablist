@@ -47,3 +47,5 @@ op.hopper_north	Hopper (North)
 op.hopper_south	Hopper (South)
 op.hopper_east	Hopper (East)
 op.hopper_west	Hopper (West)
+op.switch_off	Switch
+op.switch_on	Switch (On)

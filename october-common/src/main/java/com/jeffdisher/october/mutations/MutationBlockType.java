@@ -15,6 +15,7 @@ public enum MutationBlockType
 	GROW,
 	REPLACE_BLOCK,
 	PUSH_ITEMS_TO_BLOCK,
+	LOGIC_CHANGE,
 	
 	END_OF_LIST,
 }

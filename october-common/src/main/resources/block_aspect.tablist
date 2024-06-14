@@ -79,3 +79,6 @@ op.hopper_east
 op.hopper_west
 	block_material	AXE
 	special_drop	op.hopper_down
+op.switch_off
+op.switch_on
+	special_drop	op.switch_off
