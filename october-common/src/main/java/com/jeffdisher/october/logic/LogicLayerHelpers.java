@@ -41,6 +41,40 @@ public class LogicLayerHelpers
 		}
 	}
 
+	public static Block blockTypeToPlace(TickProcessingContext context, AbsoluteLocation location, Block type)
+	{
+		// Check to see if we are placing a logic-sensitive block.
+		Environment env = Environment.getShared();
+		Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
+		Block lampOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_OFF));
+		
+		// Default to a normal block.
+		Block placeType = type;
+		if ((doorClosed == type) || (lampOff == type))
+		{
+			// See if we should replace this with the "high" version.
+			Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
+			if (_isHighState(context, switchOn, location.getRelative(0, 0, -1))
+					|| _isHighState(context, switchOn, location.getRelative(0, 0, 1))
+					|| _isHighState(context, switchOn, location.getRelative(0, -1, 0))
+					|| _isHighState(context, switchOn, location.getRelative(0, 1, 0))
+					|| _isHighState(context, switchOn, location.getRelative(-1, 0, 0))
+					|| _isHighState(context, switchOn, location.getRelative(1, 0, 0))
+			)
+			{
+				if (doorClosed == type)
+				{
+					placeType = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
+				}
+				else if (lampOff == type)
+				{
+					placeType = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_ON));
+				}
+			}
+		}
+		return placeType;
+	}
+
 
 	private static void _checkSendLogicUpdate(TickProcessingContext context, Block doorOpen, Block doorClosed, Block lampOn, Block lampOff, AbsoluteLocation neighbour)
 	{
@@ -51,5 +85,12 @@ public class LogicLayerHelpers
 			MutationBlockLogicChange logicChange = new MutationBlockLogicChange(neighbour);
 			context.mutationSink.next(logicChange);
 		}
+	}
+
+	private static boolean _isHighState(TickProcessingContext context, Block switchOn, AbsoluteLocation neighbour)
+	{
+		BlockProxy proxy = context.previousBlockLookUp.apply(neighbour);
+		Block blockType = (null != proxy) ? proxy.getBlock() : null;
+		return (switchOn == blockType);
 	}
 }

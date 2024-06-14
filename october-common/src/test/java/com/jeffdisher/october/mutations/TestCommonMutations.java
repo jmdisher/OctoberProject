@@ -384,6 +384,28 @@ public class TestCommonMutations
 		Assert.assertEquals(1, sinkProxy.getInventory().getCount(ENV.items.CHARCOAL));
 	}
 
+	@Test
+	public void placeDuringLogicHigh()
+	{
+		// Place a lamp next to an activated switch to show that it turns into the "high" variant (since we only place "low" variants).
+		Block switchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block lampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
+		Block lampOn = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_on"));
+		AbsoluteLocation switchLocation = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation lampLocation = switchLocation.getRelative(1, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(switchLocation.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOn.item().number());
+		
+		ProcessingSinks sinks = new ProcessingSinks();
+		TickProcessingContext context = sinks.createBoundContext(cuboid);
+		
+		MutationBlockOverwrite mutation = new MutationBlockOverwrite(lampLocation, lampOff);
+		MutableBlockProxy proxy = new MutableBlockProxy(lampLocation, cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(lampOn, proxy.getBlock());
+	}
+
 
 	private static class ProcessingSinks
 	{

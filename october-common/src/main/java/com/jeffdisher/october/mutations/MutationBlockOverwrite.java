@@ -59,11 +59,14 @@ public class MutationBlockOverwrite implements IMutationBlock
 		Block oldBlock = newBlock.getBlock();
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
+			// See if the block we are changing needs a special logic mode.
+			Block newType = LogicLayerHelpers.blockTypeToPlace(context, _location, _blockType);
+			
 			// Make sure that this block can be supported by the one under it.
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1));
 			// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
 			boolean blockIsSupported = (null != belowBlock)
-					? env.blocks.canExistOnBlock(_blockType, belowBlock.getBlock())
+					? env.blocks.canExistOnBlock(newType, belowBlock.getBlock())
 					: true
 			;
 			
@@ -71,19 +74,19 @@ public class MutationBlockOverwrite implements IMutationBlock
 			if (blockIsSupported)
 			{
 				// If we are placing a block which allows entity movement, be sure to copy over any inventory on the ground.
-				Inventory inventoryToRestore = env.blocks.permitsEntityMovement(_blockType)
+				Inventory inventoryToRestore = env.blocks.permitsEntityMovement(newType)
 						? newBlock.getInventory()
 						: null
 				;
 				
 				// Replace the block with the type we have.
-				newBlock.setBlockAndClear(_blockType);
+				newBlock.setBlockAndClear(newType);
 				if (null != inventoryToRestore)
 				{
 					newBlock.setInventory(inventoryToRestore);
 				}
 				
-				if (env.plants.growthDivisor(_blockType) > 0)
+				if (env.plants.growthDivisor(newType) > 0)
 				{
 					context.mutationSink.future(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
@@ -91,7 +94,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 				
 				// See if we need to synthesize a logic update event.
 				// TODO:  Replace this with something generalized into the broader logic aspect design.
-				LogicLayerHelpers.blockWasReplaced(context, _location, oldBlock, _blockType);
+				LogicLayerHelpers.blockWasReplaced(context, _location, oldBlock, newType);
 			}
 		}
 		return didApply;
