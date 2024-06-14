@@ -20,6 +20,8 @@ public class MutationBlockLogicChange implements IMutationBlock
 	// TODO:  Replace this with something generalized into the broader logic aspect design.
 	private static final String STRING_DOOR_CLOSED = "op.door_closed";
 	private static final String STRING_DOOR_OPEN = "op.door_open";
+	private static final String STRING_LAMP_OFF = "op.lamp_off";
+	private static final String STRING_LAMP_ON = "op.lamp_on";
 	private static final String STRING_SWITCH_ON = "op.switch_on";
 
 	public static MutationBlockLogicChange deserializeFromBuffer(ByteBuffer buffer)
@@ -50,11 +52,13 @@ public class MutationBlockLogicChange implements IMutationBlock
 		// TODO:  Generalize this lookup into data.
 		Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
 		Block doorOpen = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
+		Block lampOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_OFF));
+		Block lampOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_ON));
 		Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
 		Block thisBlock = newBlock.getBlock();
 		
 		boolean didApply = false;
-		if ((doorClosed == thisBlock) || (doorOpen == thisBlock))
+		if ((doorClosed == thisBlock) || (doorOpen == thisBlock) || (lampOff == thisBlock) || (lampOn == thisBlock))
 		{
 			// This block is sensitive so check the surrounding blocks to see what they are emitting.
 			if (_getEmittedLogicValue(context, _blockLocation.getRelative(0, 0, -1), switchOn)
@@ -65,19 +69,29 @@ public class MutationBlockLogicChange implements IMutationBlock
 					|| _getEmittedLogicValue(context, _blockLocation.getRelative(1, 0, 0), switchOn)
 					)
 			{
-				// This is set high so make sure that we are the open door.
-				if (doorOpen != thisBlock)
+				// This is set high so switch to the corresponding "high".
+				if (doorClosed == thisBlock)
 				{
 					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, doorOpen));
+					didApply = true;
+				}
+				else if (lampOff == thisBlock)
+				{
+					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, lampOn));
 					didApply = true;
 				}
 			}
 			else
 			{
-				// This is set low so make sure that we are the closed door.
-				if (doorClosed != thisBlock)
+				// This is set low so switch to the corresponding "low".
+				if (doorOpen == thisBlock)
 				{
 					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, doorClosed));
+					didApply = true;
+				}
+				else if (lampOn == thisBlock)
+				{
+					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, lampOff));
 					didApply = true;
 				}
 			}

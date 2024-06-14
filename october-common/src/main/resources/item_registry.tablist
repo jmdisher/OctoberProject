@@ -49,3 +49,5 @@ op.hopper_east	Hopper (East)
 op.hopper_west	Hopper (West)
 op.switch_off	Switch
 op.switch_on	Switch (On)
+op.lamp_off	Lamp
+op.lamp_on	Lamp (On)

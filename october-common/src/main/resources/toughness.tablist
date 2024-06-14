@@ -36,3 +36,5 @@ op.door_closed	100
 op.door_open	100
 op.switch_off	40
 op.switch_on	40
+op.lamp_off	40
+op.lamp_on	40

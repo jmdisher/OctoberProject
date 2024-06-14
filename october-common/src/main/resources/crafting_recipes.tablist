@@ -104,3 +104,7 @@ op.switch_off	common
 	input	op.iron_ingot	op.stick
 	output	op.switch_off
 	millis	2000
+op.lamp_off	common
+	input	op.iron_ingot	op.iron_ingot	op.charcoal
+	output	op.lamp_off
+	millis	4000

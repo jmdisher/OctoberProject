@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -55,7 +56,8 @@ public class MutationBlockOverwrite implements IMutationBlock
 		Environment env = Environment.getShared();
 		boolean didApply = false;
 		// Check to see if this is the expected type.
-		if (env.blocks.canBeReplaced(newBlock.getBlock()))
+		Block oldBlock = newBlock.getBlock();
+		if (env.blocks.canBeReplaced(oldBlock))
 		{
 			// Make sure that this block can be supported by the one under it.
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(_location.getRelative(0, 0, -1));
@@ -86,6 +88,10 @@ public class MutationBlockOverwrite implements IMutationBlock
 					context.mutationSink.future(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				didApply = true;
+				
+				// See if we need to synthesize a logic update event.
+				// TODO:  Replace this with something generalized into the broader logic aspect design.
+				LogicLayerHelpers.blockWasReplaced(context, _location, oldBlock, _blockType);
 			}
 		}
 		return didApply;

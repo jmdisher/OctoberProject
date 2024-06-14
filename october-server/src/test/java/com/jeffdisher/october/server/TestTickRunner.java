@@ -24,6 +24,7 @@ import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -1643,6 +1644,69 @@ public class TestTickRunner
 		updated = snapshot.completedCreatures().get(creatureId);
 		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.804f), updated.location());
 		Assert.assertEquals(-1.96f, updated.zVelocityPerSecond(), 0.01f);
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void lampSwitch()
+	{
+		// Place a lamp and switch in the world, activate the switch, then observe the lamp change of state and lighting update.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Item lampOff = ENV.items.getItemById("op.lamp_off");
+		Item lampOn = ENV.items.getItemById("op.lamp_on");
+		Item switchOff = ENV.items.getItemById("op.switch_off");
+		Item switchOn = ENV.items.getItemById("op.switch_on");
+		AbsoluteLocation lampLocation = address.getBase().getRelative(5, 6, 7);
+		AbsoluteLocation switchLocation = lampLocation.getRelative(0, 0, 1);
+		AbsoluteLocation stoneLocation = address.getBase().getRelative(6, 6, 6);
+		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lampOff.number());
+		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOff.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
+		
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
+		Entity entity = mutable.freeze();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
+				)
+				, null
+				, List.of(new SuspendedEntity(entity, List.of()))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Enqueue the mutation to change the state of the switch.
+		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, EntityChangeSetBlockLogicState.SWITCH_ON);
+		runner.enqueueEntityChange(entityId, setSwitch, 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to apply the change to the block)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		// At the end of this next tick, we should see the switch state changed, but not yet the lamp.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(lampOff.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		
+		// After another tick, the logic update should go through but not yet the replacement call.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(lampOff.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		
+		// After the next tick, the lamp should have turned on but the lighting won't yet change.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(lampOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lampLocation.getBlockAddress()));
+		
+		// After one more tick, we should see the lighting update.
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(15, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lampLocation.getBlockAddress()));
 		
 		runner.shutdown();
 	}

@@ -7,3 +7,4 @@
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
 op.lantern	15
+op.lamp_on	15
