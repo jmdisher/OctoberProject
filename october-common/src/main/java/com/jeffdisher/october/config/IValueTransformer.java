@@ -117,4 +117,22 @@ public interface IValueTransformer<T>
 			return block;
 		}
 	}
+
+	/**
+	 * Decodes the given data as a boolean flag.
+	 */
+	public static class BooleanTransformer implements IValueTransformer<Boolean>
+	{
+		@Override
+		public Boolean transform(String value) throws TabListException
+		{
+			// We don't use "Boolean.parseBoolean" since we want to detect bogus cases,
+			boolean isTrue = value.equals(Boolean.TRUE.toString());
+			if (!isTrue && !value.equals(Boolean.FALSE.toString()))
+			{
+				throw new TabListReader.TabListException("Not a boolean: \"" + value + "\"");
+			}
+			return isTrue;
+		}
+	}
 }

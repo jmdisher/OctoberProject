@@ -73,6 +73,7 @@ public class Environment
 	public final ToolRegistry tools;
 	public final ArmourRegistry armour;
 	public final StationRegistry stations;
+	public final LogicAspect logic;
 	public final SpecialConstants special;
 
 	private Environment() throws IOException, TabListException
@@ -97,6 +98,7 @@ public class Environment
 		this.tools = ToolRegistry.load(this.items, loader.getResourceAsStream("tool_registry.tablist"));
 		this.armour = ArmourRegistry.load(this.items, loader.getResourceAsStream("armour_registry.tablist"));
 		this.stations = StationRegistry.load(this.items, this.blocks, loader.getResourceAsStream("station_registry.tablist"));
+		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }

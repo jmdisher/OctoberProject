@@ -1,0 +1,39 @@
+# Entries here have the form:
+# ID<TAB>(source/sink)
+# <TAB>value<TAB>(high/low)
+# <TAB>alternate<TAB>ID
+# <TAB>manual<TAB>boolean
+#
+# Each entry must be a source or a sink.  A sink will be changed to the corresponding high/low variant when exposed to
+# a source of that value.
+# "value" must be "high" or "low" describing what this outputs (for a source) or what corresponding ID matches the logic
+#  level asserted into the block (for a sink).
+# "alternate" gives the ID of the opposite value block.  These MUST be specified as exact pairs.
+# "manual" set to true means that the block can be manually triggered by players whereas false means it is logic signals
+#  only.
+# Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
+
+op.door_closed	sink
+	value	low
+	alternate	op.door_open
+	manual	true
+op.door_open	sink
+	value	high
+	alternate	op.door_closed
+	manual	true
+op.switch_off	source
+	value	low
+	alternate	op.switch_on
+	manual	true
+op.switch_on	source
+	value	high
+	alternate	op.switch_off
+	manual	true
+op.lamp_off	sink
+	value	low
+	alternate	op.lamp_on
+	manual	false
+op.lamp_on	sink
+	value	high
+	alternate	op.lamp_off
+	manual	false

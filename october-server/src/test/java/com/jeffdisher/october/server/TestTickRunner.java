@@ -1680,7 +1680,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Enqueue the mutation to change the state of the switch.
-		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, EntityChangeSetBlockLogicState.SWITCH_ON);
+		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
 		runner.enqueueEntityChange(entityId, setSwitch, 1L);
 		runner.startNextTick();
 		

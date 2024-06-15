@@ -17,12 +17,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class MutationBlockLogicChange implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.LOGIC_CHANGE;
-	// TODO:  Replace this with something generalized into the broader logic aspect design.
-	private static final String STRING_DOOR_CLOSED = "op.door_closed";
-	private static final String STRING_DOOR_OPEN = "op.door_open";
-	private static final String STRING_LAMP_OFF = "op.lamp_off";
-	private static final String STRING_LAMP_ON = "op.lamp_on";
-	private static final String STRING_SWITCH_ON = "op.switch_on";
 
 	public static MutationBlockLogicChange deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -49,49 +43,35 @@ public class MutationBlockLogicChange implements IMutationBlock
 	{
 		// Check to see if this block is sensitive to logic changes.
 		Environment env = Environment.getShared();
-		// TODO:  Generalize this lookup into data.
-		Block doorClosed = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_CLOSED));
-		Block doorOpen = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_DOOR_OPEN));
-		Block lampOff = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_OFF));
-		Block lampOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_LAMP_ON));
-		Block switchOn = env.blocks.getAsPlaceableBlock(env.items.getItemById(STRING_SWITCH_ON));
 		Block thisBlock = newBlock.getBlock();
 		
 		boolean didApply = false;
-		if ((doorClosed == thisBlock) || (doorOpen == thisBlock) || (lampOff == thisBlock) || (lampOn == thisBlock))
+		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock))
 		{
 			// This block is sensitive so check the surrounding blocks to see what they are emitting.
-			if (_getEmittedLogicValue(context, _blockLocation.getRelative(0, 0, -1), switchOn)
-					|| _getEmittedLogicValue(context, _blockLocation.getRelative(0, 0, 1), switchOn)
-					|| _getEmittedLogicValue(context, _blockLocation.getRelative(0, -1, 0), switchOn)
-					|| _getEmittedLogicValue(context, _blockLocation.getRelative(0, 1, 0), switchOn)
-					|| _getEmittedLogicValue(context, _blockLocation.getRelative(-1, 0, 0), switchOn)
-					|| _getEmittedLogicValue(context, _blockLocation.getRelative(1, 0, 0), switchOn)
+			if (_getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 0, -1))
+					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 0, 1))
+					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, -1, 0))
+					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 1, 0))
+					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(-1, 0, 0))
+					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(1, 0, 0))
 					)
 			{
 				// This is set high so switch to the corresponding "high".
-				if (doorClosed == thisBlock)
+				if (!env.logic.isHigh(thisBlock))
 				{
-					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, doorOpen));
-					didApply = true;
-				}
-				else if (lampOff == thisBlock)
-				{
-					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, lampOn));
+					Block alternate = env.logic.getAlternate(thisBlock);
+					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, alternate));
 					didApply = true;
 				}
 			}
 			else
 			{
 				// This is set low so switch to the corresponding "low".
-				if (doorOpen == thisBlock)
+				if (env.logic.isHigh(thisBlock))
 				{
-					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, doorClosed));
-					didApply = true;
-				}
-				else if (lampOn == thisBlock)
-				{
-					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, lampOff));
+					Block alternate = env.logic.getAlternate(thisBlock);
+					context.mutationSink.next(new MutationBlockReplace(_blockLocation, thisBlock, alternate));
 					didApply = true;
 				}
 			}
@@ -119,10 +99,10 @@ public class MutationBlockLogicChange implements IMutationBlock
 	}
 
 
-	private static boolean _getEmittedLogicValue(TickProcessingContext context, AbsoluteLocation location, Block switchOn)
+	private static boolean _getEmittedLogicValue(Environment env, TickProcessingContext context, AbsoluteLocation location)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.apply(location);
 		Block block = (null != proxy) ? proxy.getBlock() : null;
-		return (switchOn == block);
+		return env.logic.isSource(block) && env.logic.isHigh(block);
 	}
 }

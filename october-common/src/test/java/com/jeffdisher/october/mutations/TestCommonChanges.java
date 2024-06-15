@@ -1382,7 +1382,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Open the door.
-		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, EntityChangeSetBlockLogicState.OPEN_DOOR);
+		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
@@ -1391,7 +1391,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Close the door.
-		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, EntityChangeSetBlockLogicState.CLOSE_DOOR);
+		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, false);
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
@@ -1513,7 +1513,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Activate the switch - requires running the 3 follow-up mutations.
-		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(switchLocation, EntityChangeSetBlockLogicState.SWITCH_ON);
+		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(switchLocation, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
 		_runMutationInContext(cuboid, holder, onSwitch);
 		_runMutationInContext(cuboid, holder, closedDoor);
@@ -1521,7 +1521,7 @@ public class TestCommonChanges
 		Assert.assertNull(holder.mutation);
 		
 		// Deactivate the switch - requires running the 3 follow-up mutations.
-		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(switchLocation, EntityChangeSetBlockLogicState.SWITCH_OFF);
+		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(switchLocation, false);
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
 		_runMutationInContext(cuboid, holder, offSwitch);
 		_runMutationInContext(cuboid, holder, openedDoor);
