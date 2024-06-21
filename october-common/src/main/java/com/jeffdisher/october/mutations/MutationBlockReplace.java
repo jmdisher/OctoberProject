@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -67,10 +66,6 @@ public class MutationBlockReplace implements IMutationBlock
 				newBlock.setInventory(inventoryToRestore);
 			}
 			didApply = true;
-			
-			// See if we need to synthesize a logic update event.
-			// TODO:  Replace this with something generalized into the broader logic aspect design.
-			LogicLayerHelpers.blockWasReplaced(context, _location, oldType, _newType);
 		}
 		return didApply;
 	}

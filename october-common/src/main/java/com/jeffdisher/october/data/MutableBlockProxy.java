@@ -359,6 +359,32 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	}
 
 	/**
+	 * Checks the internal writes to see if those are state changes which may impact the logic aspect for the logically
+	 * connected blocks.  Note that other details may mean that there is no change (placing a sink block next to a "low"
+	 * source for example) so the actual check must be made in the following tick (since the data is only consistent
+	 * then).
+	 * NOTE:  This assumes that it was called AFTER didChange() in order to avoid vacuous changes.
+	 * 
+	 * @return True if this changed in a way which may require a logic aspect update.
+	 */
+	public boolean mayTriggerLogicChange()
+	{
+		// For now, the only blocks which can change logic signals to surrounding blocks are sources so see if this
+		// block has a different output level as a result of a block type change (source and high/low).
+		boolean logicMayChange = false;
+		if (null != _writes[AspectRegistry.BLOCK.index()])
+		{
+			short original = _data.getData15(AspectRegistry.BLOCK, _address);
+			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
+			Block originalBlock = _env.blocks.fromItem(rawItem);
+			boolean originalValue = _env.logic.isSource(originalBlock) ? _env.logic.isHigh(originalBlock) : false;
+			boolean newValue = _env.logic.isSource(_cachedBlock) ? _env.logic.isHigh(_cachedBlock) : false;
+			logicMayChange = originalValue != newValue;
+		}
+		return logicMayChange;
+	}
+
+	/**
 	 * Writes back any changes cached to the given CuboidData object.  Note that this should be called after didChange()
 	 * since it will revert redundant parts of the change.
 	 * 

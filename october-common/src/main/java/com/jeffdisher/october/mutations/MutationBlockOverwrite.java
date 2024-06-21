@@ -91,10 +91,6 @@ public class MutationBlockOverwrite implements IMutationBlock
 					context.mutationSink.future(new MutationBlockGrow(_location), MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				didApply = true;
-				
-				// See if we need to synthesize a logic update event.
-				// TODO:  Replace this with something generalized into the broader logic aspect design.
-				LogicLayerHelpers.blockWasReplaced(context, _location, oldBlock, newType);
 			}
 		}
 		return didApply;

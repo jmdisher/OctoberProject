@@ -49,6 +49,8 @@ public class WorldProcessor
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
 	 * @param potentialLightChangesByCuboid The map of block locations which may have incurred lighting updates in the
 	 * previous tick.
+	 * @param potentialLogicChangesByCuboid The map of block locations which may have incurred logic updates in the
+	 * previous tick.
 	 * @param cuboidsLoadedThisTick The set of cuboids which were loaded this tick (for update even synthesis).
 	 * @return The subset of the mutationsToRun work which was completed by this thread.
 	 */
@@ -59,6 +61,7 @@ public class WorldProcessor
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
@@ -135,6 +138,14 @@ public class WorldProcessor
 				
 				// We also want to process lighting updates from the previous tick.
 				PropagationHelpers.processPreviousTickLightUpdates(key, potentialLightChangesByCuboid, lazyMutableBlockCache, context.previousBlockLookUp);
+				
+				// While here, also process any logic aspect updates from the previous tick.
+				PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> context.mutationSink.next(update)
+						, key
+						, potentialLogicChangesByCuboid
+						, lazyMutableBlockCache
+						, context.previousBlockLookUp
+				);
 				
 				// Return the old instance if nothing changed.
 				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(

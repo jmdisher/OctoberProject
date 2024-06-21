@@ -224,6 +224,7 @@ public class SpeculativeProjection
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
+		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
@@ -232,6 +233,7 @@ public class SpeculativeProjection
 				, mutationsToRun
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
+				, potentialLogicChangesByCuboid
 				, cuboidsLoadedThisTick
 		);
 		
@@ -539,6 +541,7 @@ public class SpeculativeProjection
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
+		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedWorld
@@ -547,6 +550,7 @@ public class SpeculativeProjection
 				, innerMutations
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
+				, potentialLogicChangesByCuboid
 				, cuboidsLoadedThisTick
 		);
 		_projectedWorld.putAll(innerFragment.stateFragment());

@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -109,10 +108,6 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
 				}
-				
-				// See if we need to synthesize a logic update event.
-				// TODO:  Replace this with something generalized into the broader logic aspect design.
-				LogicLayerHelpers.blockWasReplaced(context, _location, block, emptyBlock);
 			}
 			else
 			{

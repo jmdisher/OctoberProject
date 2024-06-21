@@ -4,12 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -111,6 +114,34 @@ public class PropagationHelpers
 			_flushLightChanges(targetAddress, lazyLocalCache, lightValueOverlay);
 			// Now, re-update this with whatever was propagated.
 			_flushLightChanges(targetAddress, lazyLocalCache, lightChanges);
+		}
+	}
+
+	public static void processPreviousTickLogicUpdates(Consumer<IMutationBlock> updateMutations
+			, CuboidAddress targetAddress
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
+			, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
+			, Function<AbsoluteLocation, BlockProxy> lazyGlobalCache
+	)
+	{
+		// In the future, we will need to worry about actual propagation but for now we only have direct sources and sinks.
+		List<AbsoluteLocation> logicChanges = potentialLogicChangesByCuboid.get(targetAddress);
+		if (null != logicChanges)
+		{
+			for (AbsoluteLocation location : logicChanges)
+			{
+				// We can't compare against anything since we don't yet track the logic value anywhere and the previous
+				// tick is from when the block was changed so it will match.
+				// Therefore, we can only blindly send the update mutations.
+				
+				// Send updates to the surrounding blocks so they can adapt to this change.
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
+				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
+			}
 		}
 	}
 

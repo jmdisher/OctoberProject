@@ -18,6 +18,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -1512,10 +1513,10 @@ public class TestCommonChanges
 		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), offSwitch.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
-		// Activate the switch - requires running the 3 follow-up mutations.
+		// Activate the switch - requires that we invoke the PropagationHelpers to trigger the logic update event.
 		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(switchLocation, true);
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
-		_runMutationInContext(cuboid, holder, onSwitch);
+		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, onSwitch);
 		_runMutationInContext(cuboid, holder, closedDoor);
 		_runMutationInContext(cuboid, holder, openedDoor);
 		Assert.assertNull(holder.mutation);
@@ -1523,14 +1524,14 @@ public class TestCommonChanges
 		// Deactivate the switch - requires running the 3 follow-up mutations.
 		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(switchLocation, false);
 		Assert.assertTrue(close.applyChange(holder.context, newEntity));
-		_runMutationInContext(cuboid, holder, offSwitch);
+		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, offSwitch);
 		_runMutationInContext(cuboid, holder, openedDoor);
 		_runMutationInContext(cuboid, holder, closedDoor);
 		Assert.assertNull(holder.mutation);
 		
 		// Open it again.
 		Assert.assertTrue(open.applyChange(holder.context, newEntity));
-		_runMutationInContext(cuboid, holder, onSwitch);
+		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, onSwitch);
 		_runMutationInContext(cuboid, holder, closedDoor);
 		_runMutationInContext(cuboid, holder, openedDoor);
 		Assert.assertNull(holder.mutation);
@@ -1538,7 +1539,7 @@ public class TestCommonChanges
 		// Break it and watch the door close.
 		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(switchLocation, (short)100);
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
-		_runMutationInContext(cuboid, holder, ENV.special.AIR);
+		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, ENV.special.AIR);
 		_runMutationInContext(cuboid, holder, openedDoor);
 		_runMutationInContext(cuboid, holder, closedDoor);
 		Assert.assertNull(holder.mutation);
@@ -1585,6 +1586,36 @@ public class TestCommonChanges
 		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(expectedBlock, proxy.getBlock());
 		proxy.writeBack(cuboid);
+	}
+
+	private void _runMutationWithLogicUpdate(_ContextHolder holder
+			, CuboidData cuboid
+			, AbsoluteLocation triggerLocation
+			, AbsoluteLocation listenerLocation
+			, Block triggerBlock
+	)
+	{
+		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
+		BlockProxy previousTickBlock = new BlockProxy(triggerLocation.getBlockAddress(), cuboid);
+		_runMutationInContext(cuboid, holder, triggerBlock);
+		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> {
+					if (listenerLocation.equals(update.getAbsoluteLocation()))
+					{
+						Assert.assertTrue(null == holder.mutation);
+						holder.mutation = update;
+					}
+				}
+				, cuboidAddress
+				, Map.of(cuboid.getCuboidAddress(), List.of(triggerLocation))
+				, (AbsoluteLocation location) -> {
+					Assert.assertTrue(cuboidAddress.equals(location.getCuboidAddress()));
+					return new MutableBlockProxy(location, cuboid);
+				}
+				, (AbsoluteLocation location) -> {
+					Assert.assertTrue(location.equals(triggerLocation));
+					return previousTickBlock;
+				}
+		);
 	}
 
 

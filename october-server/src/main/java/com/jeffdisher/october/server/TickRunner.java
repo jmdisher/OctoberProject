@@ -428,6 +428,7 @@ public class TickRunner
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
 					, materials.potentialLightChangesByCuboid
+					, materials.potentialLogicChangesByCuboid
 					, materials.cuboidsLoadedThisTick
 			);
 			// There is always a returned fragment (even if it has no content).
@@ -806,6 +807,7 @@ public class TickRunner
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
+				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = new HashMap<>();
 				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
 				{
 					// Only store the updated block locations if the block change requires it.
@@ -825,7 +827,21 @@ public class TickRunner
 							.map(
 								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
 							).toList();
-					potentialLightChangesByCuboid.put(entry.getKey(), lightChangeLocations);
+					if (!lightChangeLocations.isEmpty())
+					{
+						potentialLightChangesByCuboid.put(entry.getKey(), lightChangeLocations);
+					}
+					
+					// Do the same with logic aspect changes.
+					List<AbsoluteLocation> logicChangeLocations = entry.getValue().stream()
+							.filter((BlockChangeDescription description) -> description.requiresLogicCheck())
+							.map(
+								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
+							).toList();
+					if (!logicChangeLocations.isEmpty())
+					{
+						potentialLogicChangesByCuboid.put(entry.getKey(), logicChangeLocations);
+					}
 				}
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.
@@ -844,6 +860,7 @@ public class TickRunner
 						, nextCreatureChanges
 						, updatedBlockLocationsByCuboid
 						, potentialLightChangesByCuboid
+						, potentialLogicChangesByCuboid
 						, cuboidsLoadedThisTick
 						
 						// Data only used by this method:
@@ -1044,6 +1061,9 @@ public class TickRunner
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			// The blocks which were modified in such a way that they may require a lighting update.
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+			// The blocks which were modified in such a way that they may have changed the logic aspect which needs to
+			// be propagated.
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
 			// The set of addresses loaded in this tick (they are present in this tick, but for the first time).
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 			

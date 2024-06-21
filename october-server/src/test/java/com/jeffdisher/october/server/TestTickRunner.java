@@ -1700,6 +1700,9 @@ public class TestTickRunner
 		
 		// After the next tick, the lamp should have turned on but the lighting won't yet change.
 		snapshot = runner.startNextTick();
+		// (this takes 2 ticks:  One to turn the switch on and one to detect the update).
+		Assert.assertEquals(lampOff.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		snapshot = runner.startNextTick();
 		Assert.assertEquals(lampOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
 		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lampLocation.getBlockAddress()));

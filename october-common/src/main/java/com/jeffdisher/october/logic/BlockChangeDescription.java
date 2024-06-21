@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
  */
 public record BlockChangeDescription(boolean requiresUpdateEvent
 		, boolean requiresLightingCheck
+		, boolean requiresLogicCheck
 		, MutationBlockSetBlock serializedForm
 )
 {
@@ -19,9 +20,11 @@ public record BlockChangeDescription(boolean requiresUpdateEvent
 	{
 		boolean requiresUpdateEvent = proxy.shouldTriggerUpdateEvent();
 		boolean requiresLightingCheck = proxy.mayTriggerLightingChange();
+		boolean requiresLogicCheck = proxy.mayTriggerLogicChange();
 		MutationBlockSetBlock serializedForm = MutationBlockSetBlock.extractFromProxy(scratchBuffer, proxy);
 		return new BlockChangeDescription(requiresUpdateEvent
 				, requiresLightingCheck
+				, requiresLogicCheck
 				, serializedForm
 		);
 	}
