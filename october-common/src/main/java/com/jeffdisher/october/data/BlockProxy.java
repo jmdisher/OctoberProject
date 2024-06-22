@@ -103,6 +103,12 @@ public class BlockProxy implements IBlockProxy
 		return _getData7(AspectRegistry.LIGHT);
 	}
 
+	@Override
+	public byte getLogic()
+	{
+		return _getData7(AspectRegistry.LOGIC);
+	}
+
 
 	private short _getData15(Aspect<Short, ?> type)
 	{

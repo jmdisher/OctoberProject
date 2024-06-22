@@ -45,6 +45,10 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 */
 	void setLight(byte light);
 	/**
+	 * @param logic The new logic level for this block.
+	 */
+	void setLogic(byte logic);
+	/**
 	 * Serializes all known aspects for this block into the given buffer.
 	 * 
 	 * @param buffer The buffer which should contain the serialized value of this block's aspects.

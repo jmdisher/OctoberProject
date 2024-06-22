@@ -16,6 +16,8 @@ import com.jeffdisher.october.types.Block;
  */
 public class LogicAspect
 {
+	public static final byte MAX_LEVEL = 15;
+
 	public static final String ROOT_SINK = "sink";
 	public static final String ROOT_SOURCE = "source";
 	public static final String FIELD_VALUE = "value";

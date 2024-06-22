@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -171,6 +172,19 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		Assert.assertTrue((light >= 0) && (light <= LightAspect.MAX_LIGHT));
 		_setData7(AspectRegistry.LIGHT, light);
+	}
+
+	@Override
+	public byte getLogic()
+	{
+		return _getData7(AspectRegistry.LOGIC);
+	}
+
+	@Override
+	public void setLogic(byte logic)
+	{
+		Assert.assertTrue((logic >= 0) && (logic <= LogicAspect.MAX_LEVEL));
+		_setData7(AspectRegistry.LOGIC, logic);
 	}
 
 	@Override

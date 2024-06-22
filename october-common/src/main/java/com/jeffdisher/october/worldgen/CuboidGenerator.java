@@ -38,12 +38,14 @@ public class CuboidGenerator
 		OctreeObject craftingData = OctreeObject.create();
 		OctreeObject fueledData = OctreeObject.create();
 		OctreeByte lightData = OctreeByte.create((byte) 0);
+		OctreeByte logicData = OctreeByte.create((byte) 0);
 		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData
 				, inventoryData
 				, damageData
 				, craftingData
 				, fueledData
 				, lightData
+				, logicData
 		});
 	}
 }

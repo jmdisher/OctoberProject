@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -128,19 +129,31 @@ public class PropagationHelpers
 		List<AbsoluteLocation> logicChanges = potentialLogicChangesByCuboid.get(targetAddress);
 		if (null != logicChanges)
 		{
+			Environment env = Environment.getShared();
 			for (AbsoluteLocation location : logicChanges)
 			{
-				// We can't compare against anything since we don't yet track the logic value anywhere and the previous
-				// tick is from when the block was changed so it will match.
-				// Therefore, we can only blindly send the update mutations.
+				// See if this block type disagrees with the logic value in the logic aspect.
+				MutableBlockProxy mutable = lazyLocalCache.apply(location);
+				byte logicLevel = mutable.getLogic();
+				Block block = mutable.getBlock();
+				byte expectedLogicLevel = (env.logic.isSource(block) && env.logic.isHigh(block))
+						? LogicAspect.MAX_LEVEL
+						: 0
+				;
 				
-				// Send updates to the surrounding blocks so they can adapt to this change.
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
-				updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
+				if (logicLevel != expectedLogicLevel)
+				{
+					// Update the logic level.
+					mutable.setLogic(expectedLogicLevel);
+					
+					// Send updates to the surrounding blocks so they can adapt to this change.
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
+					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
+				}
 			}
 		}
 	}

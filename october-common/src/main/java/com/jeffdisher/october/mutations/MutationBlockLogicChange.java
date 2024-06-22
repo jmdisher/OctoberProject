@@ -102,7 +102,10 @@ public class MutationBlockLogicChange implements IMutationBlock
 	private static boolean _getEmittedLogicValue(Environment env, TickProcessingContext context, AbsoluteLocation location)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.apply(location);
-		Block block = (null != proxy) ? proxy.getBlock() : null;
-		return env.logic.isSource(block) && env.logic.isHigh(block);
+		byte value = (null != proxy)
+				? proxy.getLogic()
+				: 0
+		;
+		return (value > 0);
 	}
 }

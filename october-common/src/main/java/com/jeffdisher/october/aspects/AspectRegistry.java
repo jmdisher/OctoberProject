@@ -100,6 +100,19 @@ public class AspectRegistry
 			// IAspectCodec only exists for OctreeObject types.
 			, null
 	);
+	/**
+	 * Block "logic value".  This is usually 0 ("off") but can be as high as 15.
+	 * This is specifically for things like switches and logic wire.
+	 */
+	public static final Aspect<Byte, OctreeByte> LOGIC = registerAspect(Byte.class
+			, OctreeByte.class
+			, () -> OctreeByte.empty()
+			, (OctreeByte original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -111,6 +124,7 @@ public class AspectRegistry
 		Assert.assertTrue(3 == CRAFTING.index());
 		Assert.assertTrue(4 == FUELED.index());
 		Assert.assertTrue(5 == LIGHT.index());
+		Assert.assertTrue(6 == LOGIC.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -120,6 +134,7 @@ public class AspectRegistry
 			CRAFTING,
 			FUELED,
 			LIGHT,
+			LOGIC,
 		};
 	}
 

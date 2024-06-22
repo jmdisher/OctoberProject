@@ -1598,6 +1598,7 @@ public class TestCommonChanges
 		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 		BlockProxy previousTickBlock = new BlockProxy(triggerLocation.getBlockAddress(), cuboid);
 		_runMutationInContext(cuboid, holder, triggerBlock);
+		MutableBlockProxy triggerProxy = new MutableBlockProxy(triggerLocation, cuboid);
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> {
 					if (listenerLocation.equals(update.getAbsoluteLocation()))
 					{
@@ -1608,14 +1609,15 @@ public class TestCommonChanges
 				, cuboidAddress
 				, Map.of(cuboid.getCuboidAddress(), List.of(triggerLocation))
 				, (AbsoluteLocation location) -> {
-					Assert.assertTrue(cuboidAddress.equals(location.getCuboidAddress()));
-					return new MutableBlockProxy(location, cuboid);
+					Assert.assertTrue(location.equals(triggerLocation));
+					return triggerProxy;
 				}
 				, (AbsoluteLocation location) -> {
 					Assert.assertTrue(location.equals(triggerLocation));
 					return previousTickBlock;
 				}
 		);
+		triggerProxy.writeBack(cuboid);
 	}
 
 

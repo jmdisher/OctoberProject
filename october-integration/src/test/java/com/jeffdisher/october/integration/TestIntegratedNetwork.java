@@ -240,6 +240,7 @@ public class TestIntegratedNetwork
 				, OctreeObject.create()
 				, OctreeObject.create()
 				, OctreeByte.create((byte)0)
+				, OctreeByte.create((byte)0)
 		});
 		
 		// We should be able to send this as 1 start packet and 2 fragment packets.
