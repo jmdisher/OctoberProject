@@ -51,3 +51,4 @@ op.switch_off	Switch
 op.switch_on	Switch (On)
 op.lamp_off	Lamp
 op.lamp_on	Lamp (On)
+op.logic_wire	Logic Wire

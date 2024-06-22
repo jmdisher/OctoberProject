@@ -27,6 +27,12 @@ public class LogicAspect
 	public static final String FIELD_MANUAL = "manual";
 
 	/**
+	 * We handle logic wire as a special-case since it would have otherwise required specializing the entire parser
+	 * just to mention it by ID (since none of the other parameters would apply).
+	 */
+	public static final String LOGIC_WIRE_ID = "op.logic_wire";
+
+	/**
 	 * Loads the logic-sensitive blocks types from the tablist in the given stream, sourcing Blocks from the given item
 	 * and block registries.
 	 * 
@@ -55,7 +61,12 @@ public class LogicAspect
 		TabListReader.readEntireFile(callbacks, stream);
 		
 		// We can just pass these in, directly.
-		return new LogicAspect(callbacks.topLevel, value.recordData, alternate.recordData, manual.recordData);
+		return new LogicAspect(callbacks.topLevel
+				, value.recordData
+				, alternate.recordData
+				, manual.recordData
+				, blocks.fromItem(items.getItemById(LOGIC_WIRE_ID))
+		);
 	}
 
 
@@ -63,17 +74,20 @@ public class LogicAspect
 	private final Map<Block, Value> _values;
 	private final Map<Block, Block> _alternates;
 	private final Map<Block, Boolean> _manual;
+	private final Block _logicWireBlock;
 
 	private LogicAspect(Map<Block, Role> roles
 			, Map<Block, Value> values
 			, Map<Block, Block> alternates
 			, Map<Block, Boolean> manual
+			, Block logicWireBlock
 	)
 	{
 		_roles = roles;
 		_values = values;
 		_alternates = alternates;
 		_manual = manual;
+		_logicWireBlock = logicWireBlock;
 	}
 
 	public boolean isSource(Block block)
@@ -90,7 +104,8 @@ public class LogicAspect
 
 	public boolean isAware(Block block)
 	{
-		return _roles.containsKey(block);
+		// A sink, source, or just a conduit are all considered aware.
+		return (_logicWireBlock == block) || _roles.containsKey(block);
 	}
 
 	public boolean isHigh(Block block)
@@ -109,6 +124,13 @@ public class LogicAspect
 		Boolean value = _manual.get(block);
 		return (Boolean.TRUE == value);
 	}
+
+	public boolean isConduit(Block block)
+	{
+		// This helper is a special-case for logic wire.
+		return (_logicWireBlock == block);
+	}
+
 
 	public static enum Role
 	{

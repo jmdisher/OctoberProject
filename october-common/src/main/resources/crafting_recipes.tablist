@@ -108,3 +108,7 @@ op.lamp_off	common
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lamp_off
 	millis	4000
+op.logic_wire	common
+	input	op.iron_ingot	op.charcoal
+	output	op.logic_wire	op.logic_wire	op.logic_wire
+	millis	1000

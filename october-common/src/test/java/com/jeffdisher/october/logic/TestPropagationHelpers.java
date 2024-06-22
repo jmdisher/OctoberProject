@@ -184,5 +184,8 @@ public class TestPropagationHelpers
 		Assert.assertTrue(ENV.logic.isManual(doorClosed));
 		Block doorOpen = ENV.blocks.fromItem(ENV.items.getItemById("op.door_open"));
 		Assert.assertTrue(ENV.logic.isAware(doorOpen));
+		Block logicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
+		Assert.assertTrue(ENV.logic.isAware(logicWire));
+		Assert.assertTrue(ENV.logic.isConduit(logicWire));
 	}
 }
