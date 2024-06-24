@@ -44,7 +44,6 @@ public class LogicLayerHelpers
 	private static boolean _isHighState(Environment env, TickProcessingContext context, AbsoluteLocation neighbour)
 	{
 		BlockProxy proxy = context.previousBlockLookUp.apply(neighbour);
-		Block blockType = (null != proxy) ? proxy.getBlock() : null;
-		return env.logic.isSource(blockType) && env.logic.isHigh(blockType);
+		return proxy.getLogic() > 0;
 	}
 }
