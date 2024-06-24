@@ -115,36 +115,74 @@ public class PropagationHelpers
 			, Function<AbsoluteLocation, BlockProxy> lazyGlobalCache
 	)
 	{
-		// In the future, we will need to worry about actual propagation but for now we only have direct sources and sinks.
-		List<AbsoluteLocation> logicChanges = potentialLogicChangesByCuboid.get(targetAddress);
-		if (null != logicChanges)
-		{
-			Environment env = Environment.getShared();
-			for (AbsoluteLocation location : logicChanges)
+		// The logic works like lighting so we will use the generic facility by interpreting light as logic.
+		Environment env = Environment.getShared();
+		_ILightAccess accessor = new _ILightAccess() {
+			@Override
+			public byte getMaxLight()
 			{
-				// See if this block type disagrees with the logic value in the logic aspect.
-				MutableBlockProxy mutable = lazyLocalCache.apply(location);
-				byte logicLevel = mutable.getLogic();
-				Block block = mutable.getBlock();
-				byte expectedLogicLevel = (env.logic.isSource(block) && env.logic.isHigh(block))
+				return LogicAspect.MAX_LEVEL;
+			}
+			@Override
+			public byte getLightForLocation(AbsoluteLocation location)
+			{
+				BlockProxy proxy = lazyGlobalCache.apply(location);
+				return (null != proxy)
+						? proxy.getLogic()
+						: LightBringer.IByteLookup.NOT_FOUND
+				;
+			}
+			@Override
+			public byte getLightOrZero(AbsoluteLocation location)
+			{
+				BlockProxy proxy = lazyGlobalCache.apply(location);
+				return (null != proxy)
+						? proxy.getLogic()
+						: 0
+				;
+			}
+			@Override
+			public boolean setLightForLocation(AbsoluteLocation location, byte lightValue)
+			{
+				MutableBlockProxy proxy = lazyLocalCache.apply(location);
+				boolean didChange = false;
+				byte previous = proxy.getLogic();
+				if (previous != lightValue)
+				{
+					proxy.setLogic(lightValue);
+					didChange = true;
+				}
+				return didChange;
+			}
+			@Override
+			public byte getEmissionForBlock(Block block)
+			{
+				// We only ever emit max or nothing.
+				return (env.logic.isSource(block) && env.logic.isHigh(block))
 						? LogicAspect.MAX_LEVEL
 						: 0
 				;
-				
-				if (logicLevel != expectedLogicLevel)
-				{
-					// Update the logic level.
-					mutable.setLogic(expectedLogicLevel);
-					
-					// Send updates to the surrounding blocks so they can adapt to this change.
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
-					updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
-				}
 			}
+			@Override
+			public byte getOpacityForBlock(Block block)
+			{
+				// Opacity is 1 for conduit blocks but 15 for everything else (even sources and sinks).
+				return env.logic.isConduit(block)
+						? 1
+						: LogicAspect.MAX_LEVEL
+				;
+			}
+		};
+		Set<AbsoluteLocation> changeLocations = _runCommonFlood(env, accessor, targetAddress, potentialLogicChangesByCuboid, lazyLocalCache, lazyGlobalCache);
+		for (AbsoluteLocation location : changeLocations)
+		{
+			// Send updates to the surrounding blocks so they can adapt to this change.
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
+			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
 		}
 	}
 

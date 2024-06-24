@@ -1659,10 +1659,13 @@ public class TestTickRunner
 		Item lampOn = ENV.items.getItemById("op.lamp_on");
 		Item switchOff = ENV.items.getItemById("op.switch_off");
 		Item switchOn = ENV.items.getItemById("op.switch_on");
-		AbsoluteLocation lampLocation = address.getBase().getRelative(5, 6, 7);
-		AbsoluteLocation switchLocation = lampLocation.getRelative(0, 0, 1);
+		Item logicWire = ENV.items.getItemById("op.logic_wire");
+		AbsoluteLocation lampLocation = address.getBase().getRelative(5, 6, 6);
+		AbsoluteLocation wireLocation = lampLocation.getRelative(0, 0, 1);
+		AbsoluteLocation switchLocation = wireLocation.getRelative(0, 0, 1);
 		AbsoluteLocation stoneLocation = address.getBase().getRelative(6, 6, 6);
 		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lampOff.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), logicWire.number());
 		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOff.number());
 		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
 		
@@ -1693,12 +1696,14 @@ public class TestTickRunner
 		snapshot = runner.startNextTick();
 		Assert.assertEquals(lampOff.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
 		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		
 		// After another tick, the logic update should go through but not yet the replacement call.
 		snapshot = runner.startNextTick();
 		Assert.assertEquals(lampOff.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
 		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
 		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		
 		// After the next tick, the lamp should have turned on but the lighting won't yet change.
 		snapshot = runner.startNextTick();
@@ -1712,6 +1717,90 @@ public class TestTickRunner
 		// After one more tick, we should see the lighting update.
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(15, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lampLocation.getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void breakLogicWire()
+	{
+		// Place an activated switch and some wire in the world, verify that the logic propagates, then break the wire and show that the wire goes dead.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Item switchOff = ENV.items.getItemById("op.switch_off");
+		Item switchOn = ENV.items.getItemById("op.switch_on");
+		Item logicWire = ENV.items.getItemById("op.logic_wire");
+		AbsoluteLocation stoneLocation = address.getBase().getRelative(6, 6, 6);
+		AbsoluteLocation switchLocation = stoneLocation.getRelative(0, 0, 1);
+		AbsoluteLocation wire1Location = switchLocation.getRelative(0, 0, 1);
+		AbsoluteLocation wire2Location = switchLocation.getRelative(0, 0, 2);
+		AbsoluteLocation wire3Location = switchLocation.getRelative(0, 0, 3);
+		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOff.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wire1Location.getBlockAddress(), logicWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wire2Location.getBlockAddress(), logicWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wire3Location.getBlockAddress(), logicWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
+		
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.create(entityId);
+		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
+		Entity entity = mutable.freeze();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
+				)
+				, null
+				, List.of(new SuspendedEntity(entity, List.of()))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Enqueue the mutation to change the state of the switch.
+		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
+		runner.enqueueEntityChange(entityId, setSwitch, 1L);
+		runner.startNextTick();
+		
+		// (run an extra tick to apply the change to the block)
+		TickRunner.Snapshot snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		// At the end of this next tick, we should see the switch state changed.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		
+		// After another tick, the logic update should go through the wires.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(switchOn.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 3, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		
+		// Break one of these wires.
+		runner.waitForPreviousTick();
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location, (short) 100);
+		runner.enqueueEntityChange(entityId, break1, 2L);
+		runner.startNextTick();
+		
+		// (run an extra tick to apply the change to the block)
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		
+		// At the end of this next tick, we should see the wire broken but no logic changes.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, wire1Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 3, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		
+		// After another tick, the logic wire should be dead.
+		snapshot = runner.startNextTick();
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
 		
 		runner.shutdown();
 	}

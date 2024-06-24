@@ -181,6 +181,125 @@ public class TestPropagationHelpers
 		Assert.assertTrue(ENV.logic.isConduit(logicWire));
 	}
 
+	@Test
+	public void onOffSwitchWithWire()
+	{
+		// Create a wire and observe it turn on and send updates when an on switch is updated.
+		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
+		
+		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
+		_setBlock(switchLocation, cuboid, blockSwitchOn, false, true);
+		AbsoluteLocation wireLocation = switchLocation.getRelative(1, 0, 0);
+		_setBlock(wireLocation, cuboid, blockLogicWire, false, false);
+		
+		List<IMutationBlock> updateMutations = new ArrayList<>();
+		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
+		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
+		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
+			, address
+			, Map.of(address, List.of(switchLocation))
+			, (AbsoluteLocation location) -> {
+				MutableBlockProxy proxy = lazyLocalCache.get(location);
+				if (null == proxy)
+				{
+					proxy = new MutableBlockProxy(location, cuboid);
+					lazyLocalCache.put(location, proxy);
+				}
+				return proxy;
+			}
+			, (AbsoluteLocation location) -> {
+				BlockProxy proxy = lazyGlobalCache.get(location);
+				if (null == proxy)
+				{
+					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					lazyGlobalCache.put(location, proxy);
+				}
+				return proxy;
+			}
+		);
+		
+		// Write-back the proxy changes - for the logic write-backs.
+		Assert.assertEquals(2, lazyLocalCache.size());
+		for (MutableBlockProxy proxy : lazyLocalCache.values())
+		{
+			proxy.writeBack(cuboid);
+		}
+		
+		// We expect to see the 12 update events:  All blocks adjacent to both updates (including the blocks themselves since there is no filtering).
+		Assert.assertEquals(12, updateMutations.size());
+		// We expect to see the logic value set in the switch and wire.
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, new BlockProxy(wireLocation.getBlockAddress(), cuboid).getLogic());
+	}
+
+	@Test
+	public void wireBreak()
+	{
+		// Create a wire a few blocks long, attached to an on switch, initialize the logic values and show the update when we break one near the switch.
+		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
+		
+		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
+		MutableBlockProxy mutable = new MutableBlockProxy(switchLocation, cuboid);
+		mutable.setBlockAndClear(blockSwitchOn);
+		mutable.setLogic(LogicAspect.MAX_LEVEL);
+		mutable.writeBack(cuboid);
+		AbsoluteLocation brokenWire = switchLocation.getRelative(1, 0, 0);
+		mutable = new MutableBlockProxy(brokenWire, cuboid);
+		mutable.setLogic((byte)(LogicAspect.MAX_LEVEL - 1));
+		mutable.writeBack(cuboid);
+		AbsoluteLocation finalWire = brokenWire.getRelative(1, 0, 0);
+		mutable = new MutableBlockProxy(finalWire, cuboid);
+		mutable.setBlockAndClear(blockLogicWire);
+		mutable.setLogic((byte)(LogicAspect.MAX_LEVEL - 2));
+		mutable.writeBack(cuboid);
+		
+		List<IMutationBlock> updateMutations = new ArrayList<>();
+		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
+		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
+		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
+			, address
+			, Map.of(address, List.of(brokenWire))
+			, (AbsoluteLocation location) -> {
+				MutableBlockProxy proxy = lazyLocalCache.get(location);
+				if (null == proxy)
+				{
+					proxy = new MutableBlockProxy(location, cuboid);
+					lazyLocalCache.put(location, proxy);
+				}
+				return proxy;
+			}
+			, (AbsoluteLocation location) -> {
+				BlockProxy proxy = lazyGlobalCache.get(location);
+				if (null == proxy)
+				{
+					proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+					lazyGlobalCache.put(location, proxy);
+				}
+				return proxy;
+			}
+		);
+		
+		// Write-back the proxy changes - for the logic write-backs.
+		Assert.assertEquals(2, lazyLocalCache.size());
+		for (MutableBlockProxy proxy : lazyLocalCache.values())
+		{
+			proxy.writeBack(cuboid);
+		}
+		
+		// We expect to see the 12 update events:  All blocks adjacent to both updates (including the blocks themselves since there is no filtering).
+		Assert.assertEquals(12, updateMutations.size());
+		// We expect to see the logic value set in the switch and wire.
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(0, new BlockProxy(brokenWire.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(0, new BlockProxy(finalWire.getBlockAddress(), cuboid).getLogic());
+	}
+
 
 	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
 	{
