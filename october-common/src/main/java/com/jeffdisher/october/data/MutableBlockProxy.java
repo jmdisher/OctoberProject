@@ -383,6 +383,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	 */
 	public boolean mayTriggerLogicChange()
 	{
+		// If the block changed to/from a source or conduit (the only blocks which carry logic signals), then we will return true.
+		// Note that we won't check against the logic value, at least yet, since those updates may already be scheduled to change in this tick from last tick's block change.
 		// For now, the only blocks which can change logic signals to surrounding blocks are sources so see if this
 		// block has a different output level as a result of a block type change (source and high/low).
 		boolean logicMayChange = false;
@@ -391,9 +393,12 @@ public class MutableBlockProxy implements IMutableBlockProxy
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
-			boolean originalValue = _env.logic.isSource(originalBlock) ? _env.logic.isHigh(originalBlock) : false;
-			boolean newValue = _env.logic.isSource(_cachedBlock) ? _env.logic.isHigh(_cachedBlock) : false;
-			logicMayChange = originalValue != newValue;
+			if (originalBlock != _cachedBlock)
+			{
+				boolean didChangeConduit = _env.logic.isConduit(originalBlock) || _env.logic.isConduit(_cachedBlock);
+				boolean didChangeSource = _env.logic.isSource(originalBlock) || _env.logic.isSource(_cachedBlock);
+				logicMayChange = didChangeConduit || didChangeSource;
+			}
 		}
 		return logicMayChange;
 	}

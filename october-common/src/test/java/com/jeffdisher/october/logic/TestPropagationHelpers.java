@@ -46,9 +46,7 @@ public class TestPropagationHelpers
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation lantern = address.getBase().getRelative(16, 16, 16);
-		MutableBlockProxy mutable = new MutableBlockProxy(lantern, cuboid);
-		mutable.setBlockAndClear(blockLantern);
-		mutable.writeBack(cuboid);
+		_setBlock(lantern, cuboid, blockLantern, true, false);
 		
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
 		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
@@ -116,17 +114,11 @@ public class TestPropagationHelpers
 		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation switchOn = address.getBase().getRelative(16, 16, 16);
-		MutableBlockProxy mutable = new MutableBlockProxy(switchOn, cuboid);
-		mutable.setBlockAndClear(blockSwitchOn);
-		mutable.writeBack(cuboid);
+		_setBlock(switchOn, cuboid, blockSwitchOn, false, true);
 		AbsoluteLocation switchOff = address.getBase().getRelative(14, 14, 14);
-		mutable = new MutableBlockProxy(switchOff, cuboid);
-		mutable.setBlockAndClear(blockSwitchOff);
-		mutable.writeBack(cuboid);
+		_setBlock(switchOff, cuboid, blockSwitchOff, false, false);
 		AbsoluteLocation lampOff = address.getBase().getRelative(18, 18, 18);
-		mutable = new MutableBlockProxy(lampOff, cuboid);
-		mutable.setBlockAndClear(blockLampOff);
-		mutable.writeBack(cuboid);
+		_setBlock(lampOff, cuboid, blockLampOff, true, false);
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
@@ -187,5 +179,21 @@ public class TestPropagationHelpers
 		Block logicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		Assert.assertTrue(ENV.logic.isAware(logicWire));
 		Assert.assertTrue(ENV.logic.isConduit(logicWire));
+	}
+
+
+	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
+	{
+		MutableBlockProxy mutable = new MutableBlockProxy(location, cuboid);
+		mutable.setBlockAndClear(block);
+		if (checkLight)
+		{
+			Assert.assertTrue(mutable.mayTriggerLightingChange());
+		}
+		if (checkLogic)
+		{
+			Assert.assertTrue(mutable.mayTriggerLogicChange());
+		}
+		mutable.writeBack(cuboid);
 	}
 }
