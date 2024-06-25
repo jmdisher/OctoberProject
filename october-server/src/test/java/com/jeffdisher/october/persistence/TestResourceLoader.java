@@ -1,6 +1,7 @@
 package com.jeffdisher.october.persistence;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +30,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Items;
@@ -453,6 +455,23 @@ public class TestResourceLoader
 		Assert.assertEquals(-3, loaded.creatures().get(0).id());
 		Assert.assertEquals(-4, loaded.creatures().get(1).id());
 		Assert.assertEquals(0, loaded.mutations().size());
+		loader.shutdown();
+	}
+
+	@Test
+	public void config() throws Throwable
+	{
+		File resourceDirectory = DIRECTORY.newFolder();
+		ResourceLoader loader = new ResourceLoader(resourceDirectory, null);
+		loader.storeWorldConfig(new WorldConfig());
+		File configFile = new File(resourceDirectory, "config.tablist");
+		String rawData = Files.readString(configFile.toPath());
+		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
+		Files.writeString(configFile.toPath(), "difficulty\tPEACEFUL\n");
+		loader = new ResourceLoader(resourceDirectory, null);
+		WorldConfig config = new WorldConfig();
+		loader.populateWorldConfig(config);
+		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 		loader.shutdown();
 	}
 

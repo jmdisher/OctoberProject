@@ -18,11 +18,11 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.persistence.ResourceLoader;
+import com.jeffdisher.october.persistence.WorldConfig;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.PartialEntity;
@@ -59,7 +59,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		server.stop();
 	}
@@ -79,7 +79,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		_ClientListener listener = new _ClientListener();
 		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, "test");
@@ -107,7 +107,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		
 		// Connect the client.
@@ -147,7 +147,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		
 		// Connect the client.
@@ -193,7 +193,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		
 		// Connect a client and wait to receive their entity.
@@ -228,7 +228,7 @@ public class TestProcesses
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		
 		// Create the first client.

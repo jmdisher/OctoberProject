@@ -1,12 +1,15 @@
 package com.jeffdisher.october.persistence;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,6 +18,9 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 
+import com.jeffdisher.october.config.FlatTabListCallbacks;
+import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
@@ -239,6 +245,56 @@ public class ResourceLoader
 				_background_writeEntityToDisk(entity);
 			}
 		});
+	}
+
+	/**
+	 * Reads the world config from disk, updating corresponding options in the given config object.
+	 * NOTE:  This call is synchronous so should only be called during start-up.
+	 * 
+	 * @param config A WorldConfig object to modify.
+	 * @throws IOException There was a problem loading the file.
+	 */
+	public void populateWorldConfig(WorldConfig config) throws IOException
+	{
+		File configFile = _getConfigFile();
+		if (configFile.exists())
+		{
+			Map<String, String> overrides;
+			try (FileInputStream stream = new FileInputStream(configFile))
+			{
+				FlatTabListCallbacks<String, String> callbacks = new FlatTabListCallbacks<>((String value) -> value, (String value) -> value);
+				TabListReader.readEntireFile(callbacks, stream);
+				overrides = callbacks.data;
+			}
+			catch (TabListException e)
+			{
+				// We will treat this as a static start-up failure.
+				throw Assert.unexpected(e);
+			}
+			config.loadOverrides(overrides);
+		}
+	}
+
+	/**
+	 * Stores the given world config to disk.
+	 * NOTE:  This call is synchronous so should only be called during shut-down.
+	 * 
+	 * @param config A WorldConfig object to save to disk.
+	 * @throws IOException There was a problem saving the file.
+	 */
+	public void storeWorldConfig(WorldConfig config) throws IOException
+	{
+		File configFile = _getConfigFile();
+		Map<String, String> options = config.getRawOptions();
+		try (FileOutputStream stream = new FileOutputStream(configFile))
+		{
+			stream.write("# World config for an OctoberProject world.  This uses the tablist format and errors will cause start-up failures.\n\n".getBytes(StandardCharsets.UTF_8));
+			for (Map.Entry<String, String> elt : options.entrySet())
+			{
+				String line = elt.getKey() + "\t" + elt.getValue() + "\n";
+				stream.write(line.getBytes(StandardCharsets.UTF_8));
+			}
+		}
 	}
 
 
@@ -494,5 +550,11 @@ public class ResourceLoader
 				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
 		return new SuspendedEntity(MutableEntity.create(id).freeze(), initialChanges);
+	}
+
+	private File _getConfigFile()
+	{
+		String fileName = "config.tablist";
+		return new File(_saveDirectory, fileName);
 	}
 }
