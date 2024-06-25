@@ -106,6 +106,22 @@ public class TestCreatureSpawner
 		}
 	}
 
+	@Test
+	public void singleCuboidLit()
+	{
+		// Use the same approach as singleCuboid, so we know where the spawn should happen, but set the LIGHT aspect so that the spawn will fail.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)5, (byte)1), STONE.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, new BlockAddress((byte)5, (byte)5, (byte)2), (byte)1);
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
+		TickProcessingContext context = _createContext(completedCuboids, 5);
+		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, completedCuboids
+				, Map.of()
+		);
+		Assert.assertNull(entity);
+	}
+
 
 	private static TickProcessingContext _createContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
 	{

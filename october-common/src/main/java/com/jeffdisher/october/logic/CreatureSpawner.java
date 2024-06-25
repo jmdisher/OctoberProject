@@ -121,14 +121,15 @@ public class CreatureSpawner
 		AbsoluteLocation goodSpawningLocation = null;
 		while ((null == goodSpawningLocation) && (checkSpawningLocation.z() >= baseZ))
 		{
-			// See if this location is on a solid block and permits spawning.
+			// See if this location is on a solid block, in the dark, and permits spawning.
 			AbsoluteLocation baseLocation = checkSpawningLocation.getRelative(0, 0, -1);
 			BlockProxy base = context.previousBlockLookUp.apply(baseLocation);
 			boolean isSolid = (null != base)
 					? !env.blocks.permitsEntityMovement(base.getBlock())
 					: false
 			;
-			if (isSolid)
+			boolean isDark = ((byte)0 == context.previousBlockLookUp.apply(checkSpawningLocation).getLight());
+			if (isSolid && isDark)
 			{
 				goodSpawningLocation = checkSpawningLocation;
 			}
