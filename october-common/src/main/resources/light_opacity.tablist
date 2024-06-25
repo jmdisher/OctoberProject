@@ -31,3 +31,4 @@ op.wheat_young	2
 op.wheat_mature	4
 op.door_open	2
 op.lamp_off	2
+op.logic_wire	1
