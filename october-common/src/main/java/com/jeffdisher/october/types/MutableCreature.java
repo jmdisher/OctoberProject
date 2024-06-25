@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -66,8 +65,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public EntityVolume getVolume()
 	{
-		// TODO:  Change how we get this volume so we keep the package layering logical.
-		return CreatureVolumes.getVolume(this.creature);
+		return EntityConstants.getVolume(this.creature);
 	}
 
 	@Override
@@ -95,8 +93,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		// For now, just drop wheat item for all creatures.
 		// TODO:  Define this drop loot table in data.
 		Environment env = Environment.getShared();
-		// TODO:  Change how we get this volume so we keep the package layering logical.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, CreatureVolumes.getVolume(this.creature));
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(this.creature));
 		Items toDrop;
 		switch (this.creature.type())
 		{

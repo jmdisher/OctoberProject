@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -275,7 +276,7 @@ public class CreatureLogic
 		{
 			// We have a target so try to build a path (we will use double the distance for pathing overhead).
 			// If this fails, it will return null which is already our failure case.
-			EntityVolume volume = CreatureVolumes.getVolume(creature);
+			EntityVolume volume = EntityConstants.getVolume(creature);
 			EntityLocation start = creature.location();
 			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, machine.getPathDistance());
 		}
@@ -293,7 +294,7 @@ public class CreatureLogic
 					: false
 			;
 		};
-		EntityVolume volume = CreatureVolumes.getVolume(creature);
+		EntityVolume volume = EntityConstants.getVolume(creature);
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);

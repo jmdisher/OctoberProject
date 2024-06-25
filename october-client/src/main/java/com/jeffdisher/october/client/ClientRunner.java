@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -150,7 +151,7 @@ public class ClientRunner
 			
 			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
 			float secondsFree = (float)millisFree / 1000.0f;
-			float distance = secondsFree * EntityChangeMove.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND;
+			float distance = secondsFree * EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND;
 			Assert.assertTrue(EntityChangeMove.isValidDistance(distance, 0.0f));
 			
 			// See if the horizontal movement is even feasible.

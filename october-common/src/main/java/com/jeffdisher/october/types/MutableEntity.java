@@ -15,8 +15,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableEntity implements IMutablePlayerEntity
 {
-	// Note that we used 1.8 x 0.5 volume for initial testing, and this will be good in the future, but makes spatial understanding in OctoberPlains confusing.
-	public static final EntityVolume DEFAULT_VOLUME = new EntityVolume(0.9f, 0.4f);
 	public static final EntityLocation DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
 	public static final float DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 	public static final byte DEFAULT_HEALTH = 100;
@@ -47,7 +45,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		Entity entity = new Entity(id
 				, DEFAULT_LOCATION
 				, 0.0f
-				, DEFAULT_VOLUME
+				, EntityConstants.VOLUME_PLAYER
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]

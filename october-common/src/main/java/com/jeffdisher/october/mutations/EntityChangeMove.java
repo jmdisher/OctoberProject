@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -33,14 +34,6 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.MOVE;
-
-	/**
-	 * The flat distance that an entity can move in a single second.
-	 * NOTE:  We currently operate using just axis-aligned movement, so no diagonals.
-	 */
-	public static final float ENTITY_MOVE_FLAT_LIMIT_PER_SECOND = 4.0f;
-	public static final float ENTITY_MOVE_CLIMB_LIMIT_PER_SECOND = 2.0f;
-	public static final float ENTITY_MOVE_FALL_LIMIT_PER_SECOND = 20.0f;
 
 	/**
 	 * We limit the time cost of a single movement to 100 ms.  This is typically the setting for a single server-side
@@ -170,7 +163,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		Assert.assertTrue((0.0f == xDistance) || (0.0f == yDistance));
 		
 		float xy = Math.abs(xDistance) + Math.abs(yDistance);
-		float secondsFlat = (xy / ENTITY_MOVE_FLAT_LIMIT_PER_SECOND);
+		float secondsFlat = (xy / EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND);
 		return (long) (secondsFlat * 1000.0f);
 	}
 

@@ -3,12 +3,12 @@ package com.jeffdisher.october.logic;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
@@ -19,7 +19,7 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 public class CreatureMovementHelpers
 {
 	public static final float FLOAT_THRESHOLD = 0.01f;
-	public static final float MAX_SINGLE_STEP = EntityChangeMove.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND * EntityChangeMove.LIMIT_COST_MILLIS / 1000.0f;
+	public static final float MAX_SINGLE_STEP = EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND * EntityChangeMove.LIMIT_COST_MILLIS / 1000.0f;
 
 	/**
 	 * Creates a list of movements to centre this entity on their current block.  Note that this isn't "centre" in a
@@ -31,7 +31,7 @@ public class CreatureMovementHelpers
 	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature)
 	{
 		EntityLocation location = creature.location();
-		float width = CreatureVolumes.getVolume(creature).width();
+		float width = EntityConstants.getVolume(creature).width();
 		int baseX = (int) Math.floor(location.x());
 		int baseY = (int) Math.floor(location.y());
 		int edgeX = (int) Math.floor(location.x() + width);

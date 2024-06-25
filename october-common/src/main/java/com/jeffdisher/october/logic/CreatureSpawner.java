@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.creatures.CreatureVolumes;
 import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -12,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -151,7 +151,7 @@ public class CreatureSpawner
 			EntityLocation location = new EntityLocation(goodSpawningLocation.x(), goodSpawningLocation.y(), goodSpawningLocation.z());
 			
 			// For now, we only dynamically spawn orcs.
-			EntityVolume creatureVolume = CreatureVolumes.VOLUME_ORC;
+			EntityVolume creatureVolume = EntityConstants.VOLUME_ORC;
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
