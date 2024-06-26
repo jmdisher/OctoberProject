@@ -17,7 +17,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -132,7 +131,6 @@ public class CodecHelpers
 		int id = buffer.getInt();
 		EntityLocation location = _readEntityLocation(buffer);
 		float zVelocityPerSecond = buffer.getFloat();
-		EntityVolume volume = _readEntityVolume(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
 		int[] hotbar = new int[Entity.HOTBAR_SIZE];
@@ -154,7 +152,6 @@ public class CodecHelpers
 		return new Entity(id
 				, location
 				, zVelocityPerSecond
-				, volume
 				, blocksPerTickSpeed
 				, inventory
 				, hotbar
@@ -172,7 +169,6 @@ public class CodecHelpers
 		int id = entity.id();
 		EntityLocation location = entity.location();
 		float zVelocityPerSecond = entity.zVelocityPerSecond();
-		EntityVolume volume = entity.volume();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
 		int[] hotbar = entity.hotbarItems();
@@ -183,7 +179,6 @@ public class CodecHelpers
 		buffer.putInt(id);
 		_writeEntityLocation(buffer, location);
 		buffer.putFloat(zVelocityPerSecond);
-		_writeEntityVolume(buffer, volume);
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
 		for (int key : hotbar)
@@ -208,12 +203,10 @@ public class CodecHelpers
 		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		float zVelocityPerSecond = buffer.getFloat();
-		EntityVolume volume = _readEntityVolume(buffer);
 		return new PartialEntity(id
 				, type
 				, location
 				, zVelocityPerSecond
-				, volume
 		);
 	}
 
@@ -224,13 +217,11 @@ public class CodecHelpers
 		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
 		float zVelocityPerSecond = entity.zVelocityPerSecond();
-		EntityVolume volume = entity.volume();
 		
 		buffer.putInt(id);
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
 		buffer.putFloat(zVelocityPerSecond);
-		_writeEntityVolume(buffer, volume);
 	}
 
 	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)
@@ -518,21 +509,6 @@ public class CodecHelpers
 		buffer.putFloat(location.x());
 		buffer.putFloat(location.y());
 		buffer.putFloat(location.z());
-	}
-
-	private static EntityVolume _readEntityVolume(ByteBuffer buffer)
-	{
-		float height = buffer.getFloat();
-		float width = buffer.getFloat();
-		return new EntityVolume(height, width);
-	}
-
-	private static void _writeEntityVolume(ByteBuffer buffer, EntityVolume volume)
-	{
-		float height = volume.height();
-		float width = volume.width();
-		buffer.putFloat(height);
-		buffer.putFloat(width);
 	}
 
 	private static CraftOperation _readCraftOperation(ByteBuffer buffer)

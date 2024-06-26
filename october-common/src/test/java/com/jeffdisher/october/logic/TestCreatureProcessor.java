@@ -643,7 +643,6 @@ public class TestCreatureProcessor
 		return new Entity(id
 				, location
 				, 0.0f
-				, null
 				, 0.0f
 				, inventory
 				, new int[] { key }

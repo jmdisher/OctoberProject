@@ -12,7 +12,6 @@ public record MinimalEntity(int id
 		, EntityLocation location
 		// We track the current z-velocity in blocks per second, up.
 		, float zVelocityPerSecond
-		, EntityVolume volume
 )
 {
 	public static MinimalEntity fromEntity(Entity entity)
@@ -24,7 +23,6 @@ public record MinimalEntity(int id
 					, EntityType.PLAYER
 					, entity.location()
 					, entity.zVelocityPerSecond()
-					, entity.volume()
 			);
 		}
 		return result;
@@ -39,7 +37,6 @@ public record MinimalEntity(int id
 					, creature.type()
 					, creature.location()
 					, creature.zVelocityPerSecond()
-					, EntityConstants.getVolume(creature.type())
 			);
 		}
 		return result;
@@ -54,7 +51,6 @@ public record MinimalEntity(int id
 					, entity.type()
 					, entity.location()
 					, entity.zVelocityPerSecond()
-					, entity.volume()
 			);
 		}
 		return result;

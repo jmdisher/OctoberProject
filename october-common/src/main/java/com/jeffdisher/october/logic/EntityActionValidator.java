@@ -5,7 +5,9 @@ import java.util.function.Predicate;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 
 
 /**
@@ -26,14 +28,13 @@ public class EntityActionValidator
 		// First, see how many blocks they could possibly move in this time.
 		float maxDistance = ticksToMove * entity.blocksPerTickSpeed();
 		// Check the path-finder to see if a path exists.
-		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, entity.volume(), entity.location(), newLocation, maxDistance);
+		List<AbsoluteLocation> path = PathFinder.findPathWithLimit(blockPermitsUser, EntityConstants.getVolume(EntityType.PLAYER), entity.location(), newLocation, maxDistance);
 		// NOTE:  We currently ignore collision with other entities, but that may change in the future.
 		// TODO:  We may need to do additional checking or synthesize mutations for things like pressure-plates in the future.
 		return (null != path)
 				? new Entity(entity.id()
 						, newLocation
 						, entity.zVelocityPerSecond()
-						, entity.volume()
 						, entity.blocksPerTickSpeed()
 						, entity.inventory()
 						, entity.hotbarItems()

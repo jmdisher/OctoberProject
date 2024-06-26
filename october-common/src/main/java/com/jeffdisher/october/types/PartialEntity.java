@@ -12,7 +12,6 @@ public record PartialEntity(int id
 		, EntityLocation location
 		// We track the current z-velocity in blocks per second, up.
 		, float zVelocityPerSecond
-		, EntityVolume volume
 )
 {
 	public static PartialEntity fromEntity(Entity entity)
@@ -21,7 +20,6 @@ public record PartialEntity(int id
 				, EntityType.PLAYER
 				, entity.location()
 				, entity.zVelocityPerSecond()
-				, entity.volume()
 		);
 	}
 
@@ -31,7 +29,6 @@ public record PartialEntity(int id
 				, entity.type()
 				, entity.location()
 				, entity.zVelocityPerSecond()
-				, EntityConstants.getVolume(entity.type())
 		);
 	}
 }

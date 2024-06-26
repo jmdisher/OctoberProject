@@ -44,7 +44,6 @@ public class MutablePartialEntity
 				, this.original.type()
 				, this.newLocation
 				, this.newZVelocityPerSecond
-				, this.original.volume()
 		);
 		return this.original.equals(newCopy)
 				? this.original

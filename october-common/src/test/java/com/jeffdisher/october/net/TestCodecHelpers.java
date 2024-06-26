@@ -162,7 +162,6 @@ public class TestCodecHelpers
 		Assert.assertEquals(test.id(), output.id());
 		Assert.assertEquals(test.location(), output.location());
 		Assert.assertEquals(test.zVelocityPerSecond(), output.zVelocityPerSecond(), 0.01f);
-		Assert.assertEquals(test.volume(), output.volume());
 		Assert.assertEquals(test.blocksPerTickSpeed(), output.blocksPerTickSpeed(), 0.01f);
 		Assert.assertEquals(test.hotbarItems()[test.hotbarIndex()], output.hotbarItems()[test.hotbarIndex()]);
 	}

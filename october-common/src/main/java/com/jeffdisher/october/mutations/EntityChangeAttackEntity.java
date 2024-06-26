@@ -61,7 +61,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		if (null != targetEntity)
 		{
 			// The target is loaded so check the distances.
-			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), targetEntity.volume());
+			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), EntityConstants.getVolume(targetEntity.type()));
 			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
 			float absX = Math.abs(targetCentre.x() - entityCentre.x());
 			float absY = Math.abs(targetCentre.y() - entityCentre.y());

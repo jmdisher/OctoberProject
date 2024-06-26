@@ -439,7 +439,7 @@ public class TestCommonChanges
 	{
 		// We will try to place a breaking a block of the wrong type or too far away.
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		
 		AbsoluteLocation tooFar = new AbsoluteLocation(7, 0, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
@@ -930,7 +930,7 @@ public class TestCommonChanges
 	{
 		// Break a block with a tool with 1 durability to observe it break.
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
 		// We assume that this is 1.
@@ -957,7 +957,7 @@ public class TestCommonChanges
 	{
 		// Break a block with a nearly full inventory and verify that it doesn't add the new item.
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		Item plank = ENV.items.getItemById("op.plank");
 		newEntity.newInventory.addItemsBestEfforts(plank, newEntity.newInventory.maxVacancyForItem(plank) - 1);
 		int initialEncumbrance = newEntity.newInventory.getCurrentEncumbrance();
@@ -1005,7 +1005,7 @@ public class TestCommonChanges
 		int startDurability = 100;
 		
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		newEntity.setSelectedKey(1);
 		
@@ -1052,7 +1052,7 @@ public class TestCommonChanges
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		
 		MutableEntity newEntity = MutableEntity.create(1);
-		newEntity.newLocation = new EntityLocation(6.0f - newEntity.original.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(emptyBucket, 0));
 		newEntity.setSelectedKey(1);
 		

@@ -179,7 +179,7 @@ public class ClientRunner
 			else
 			{
 				// We can't move horizontally but see if maybe we should generate a do nothing action to fall.
-				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, previous, _localEntityProjection.volume());
+				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, previous, EntityConstants.VOLUME_PLAYER);
 				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
 					|| !isOnGround)
 				{
@@ -255,7 +255,7 @@ public class ClientRunner
 			{
 				// Nothing is happening so just account for passive movement, assuming there is any which makes sense.
 				EntityLocation oldLocation = _localEntityProjection.location();
-				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, _localEntityProjection.volume());
+				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, EntityConstants.VOLUME_PLAYER);
 				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
 						|| !isOnGround)
 				{
@@ -314,7 +314,7 @@ public class ClientRunner
 
 	private EntityLocation _findMovementTarget(float xDistance, float yDistance, EntityLocation previous)
 	{
-		EntityVolume volume = _localEntityProjection.volume();
+		EntityVolume volume = EntityConstants.VOLUME_PLAYER;
 		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
 		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.projectionBlockLoader, validated, volume))
 		{

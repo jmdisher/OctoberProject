@@ -45,7 +45,6 @@ public class MutableEntity implements IMutablePlayerEntity
 		Entity entity = new Entity(id
 				, DEFAULT_LOCATION
 				, 0.0f
-				, EntityConstants.VOLUME_PLAYER
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
@@ -174,7 +173,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer)
 	{
 		// Drop their inventory.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, this.original.volume());
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(EntityType.PLAYER));
 		for (Integer key : this.newInventory.freeze().sortedKeys())
 		{
 			Items stackable = this.newInventory.getStackForKey(key);
@@ -299,7 +298,6 @@ public class MutableEntity implements IMutablePlayerEntity
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
 				, this.newZVelocityPerSecond
-				, this.original.volume()
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
 				, didHotbarChange ? this.newHotbar : this.original.hotbarItems()

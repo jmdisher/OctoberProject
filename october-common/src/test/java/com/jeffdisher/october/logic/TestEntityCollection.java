@@ -61,7 +61,6 @@ public class TestEntityCollection
 		return new Entity(id
 				, location
 				, 0.0f
-				, null
 				, 0.0f
 				, null
 				, null

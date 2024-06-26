@@ -10,7 +10,6 @@ public record Entity(int id
 		, EntityLocation location
 		// We track the current z-velocity in blocks per second, up.
 		, float zVelocityPerSecond
-		, EntityVolume volume
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
 		, Inventory inventory
@@ -43,7 +42,6 @@ public record Entity(int id
 		return new Entity(entity.id()
 				, entity.location()
 				, entity.zVelocityPerSecond()
-				, entity.volume()
 				, 0.0f
 				, Inventory.start(0).finish()
 				, new int[HOTBAR_SIZE]
