@@ -8,6 +8,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -60,7 +61,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
 		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), newEntity.getVolume());
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
 		EntityLocation blockCentre = SpatialHelpers.getBlockCentre(_targetBlock);
 		float absX = Math.abs(blockCentre.x() - entityCentre.x());
 		float absY = Math.abs(blockCentre.y() - entityCentre.y());

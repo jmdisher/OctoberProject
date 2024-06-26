@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -61,7 +62,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		{
 			// The target is loaded so check the distances.
 			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), targetEntity.volume());
-			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), newEntity.getVolume());
+			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
 			float absX = Math.abs(targetCentre.x() - entityCentre.x());
 			float absY = Math.abs(targetCentre.y() - entityCentre.y());
 			float absZ = Math.abs(targetCentre.z() - entityCentre.z());

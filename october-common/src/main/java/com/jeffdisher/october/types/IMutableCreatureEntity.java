@@ -9,11 +9,6 @@ package com.jeffdisher.october.types;
 public interface IMutableCreatureEntity extends IMutableMinimalEntity
 {
 	/**
-	 * @return The type of the creature (this will never change for an entity).
-	 */
-	EntityType getType();
-
-	/**
 	 * WARNING:  This extended data should be immutable!
 	 * 
 	 * @return Returns the extended data object for this creature (could be null).

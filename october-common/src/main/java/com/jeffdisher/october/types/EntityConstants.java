@@ -19,10 +19,10 @@ public class EntityConstants
 	public static final float SPEED_COW = 4.0f;
 	public static final float SPEED_ORC = 4.0f;
 
-	public static EntityVolume getVolume(CreatureEntity creature)
+	public static EntityVolume getVolume(EntityType type)
 	{
 		EntityVolume volume;
-		switch (creature.type())
+		switch (type)
 		{
 		case PLAYER:
 			volume = VOLUME_PLAYER;
@@ -39,10 +39,10 @@ public class EntityConstants
 		return volume;
 	}
 
-	public static float getBlocksPerSecondSpeed(CreatureEntity creature)
+	public static float getBlocksPerSecondSpeed(EntityType type)
 	{
 		float speed;
-		switch (creature.type())
+		switch (type)
 		{
 		case PLAYER:
 			speed = SPEED_PLAYER;

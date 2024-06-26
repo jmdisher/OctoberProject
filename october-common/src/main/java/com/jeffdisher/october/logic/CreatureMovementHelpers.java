@@ -30,12 +30,12 @@ public class CreatureMovementHelpers
 	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature)
 	{
 		EntityLocation location = creature.location();
-		float width = EntityConstants.getVolume(creature).width();
+		float width = EntityConstants.getVolume(creature.type()).width();
 		int baseX = (int) Math.floor(location.x());
 		int baseY = (int) Math.floor(location.y());
 		int edgeX = (int) Math.floor(location.x() + width);
 		int edgeY = (int) Math.floor(location.y() + width);
-		float speed = EntityConstants.getBlocksPerSecondSpeed(creature);
+		float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
 		
 		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 		if (baseX != edgeX)
@@ -82,7 +82,7 @@ public class CreatureMovementHelpers
 			float distanceY = Math.abs(stepLocation.y() - startLocation.y());
 			// We don't want to walk diagonally.
 			float maxHorizontal = Math.max(distanceX, distanceY);
-			float speed = EntityConstants.getBlocksPerSecondSpeed(creature);
+			float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
 			float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 			if (maxHorizontal > maxDistanceInOneMutation)
 			{

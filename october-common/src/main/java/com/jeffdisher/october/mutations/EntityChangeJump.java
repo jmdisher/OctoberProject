@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -42,7 +43,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		
 		// If the entity is standing on the ground with no z-vector, we will make them jump.
 		EntityLocation location = newEntity.getLocation();
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, newEntity.getVolume());
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, EntityConstants.getVolume(newEntity.getType()));
 		boolean isStatic = (0.0f == newEntity.getZVelocityPerSecond());
 		if (isOnGround && isStatic)
 		{

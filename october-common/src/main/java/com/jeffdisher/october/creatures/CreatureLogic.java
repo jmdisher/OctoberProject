@@ -276,7 +276,7 @@ public class CreatureLogic
 		{
 			// We have a target so try to build a path (we will use double the distance for pathing overhead).
 			// If this fails, it will return null which is already our failure case.
-			EntityVolume volume = EntityConstants.getVolume(creature);
+			EntityVolume volume = EntityConstants.getVolume(creature.type());
 			EntityLocation start = creature.location();
 			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, machine.getPathDistance());
 		}
@@ -294,7 +294,7 @@ public class CreatureLogic
 					: false
 			;
 		};
-		EntityVolume volume = EntityConstants.getVolume(creature);
+		EntityVolume volume = EntityConstants.getVolume(creature.type());
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -124,7 +125,8 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
-		boolean isSpeedValid = (_speedBlocksPerSecond <= newEntity.getMaxSpeedBlocksPerSecond());
+		float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
+		boolean isSpeedValid = (_speedBlocksPerSecond <= maxSpeed);
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
 		if (isSpeedValid && oldDoesMatch)
 		{
@@ -192,7 +194,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		// -apply gravity in any other case
 		float initialZVector = newEntity.getZVelocityPerSecond();
 		EntityLocation oldLocation = newEntity.getLocation();
-		EntityVolume volume = newEntity.getVolume();
+		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float newZVector;
 		boolean shouldAllowFalling;

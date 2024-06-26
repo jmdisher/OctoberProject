@@ -16,9 +16,10 @@ public interface IMutableMinimalEntity
 
 	EntityLocation getLocation();
 
-	EntityVolume getVolume();
-
-	float getMaxSpeedBlocksPerSecond();
+	/**
+	 * @return The type of the entity (this will never change for a given instance).
+	 */
+	EntityType getType();
 
 	float getZVelocityPerSecond();
 

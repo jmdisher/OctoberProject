@@ -133,15 +133,9 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public EntityVolume getVolume()
+	public EntityType getType()
 	{
-		return this.original.volume();
-	}
-
-	@Override
-	public float getMaxSpeedBlocksPerSecond()
-	{
-		return EntityConstants.SPEED_PLAYER;
+		return EntityType.PLAYER;
 	}
 
 	@Override

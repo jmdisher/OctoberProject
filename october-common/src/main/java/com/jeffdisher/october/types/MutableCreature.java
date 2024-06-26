@@ -63,15 +63,9 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public EntityVolume getVolume()
+	public EntityType getType()
 	{
-		return EntityConstants.getVolume(this.creature);
-	}
-
-	@Override
-	public float getMaxSpeedBlocksPerSecond()
-	{
-		return EntityConstants.getBlocksPerSecondSpeed(this.creature);
+		return this.creature.type();
 	}
 
 	@Override
@@ -99,7 +93,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		// For now, just drop wheat item for all creatures.
 		// TODO:  Define this drop loot table in data.
 		Environment env = Environment.getShared();
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(this.creature));
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(this.creature.type()));
 		Items toDrop;
 		switch (this.creature.type())
 		{
@@ -153,12 +147,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public void applyEnergyCost(TickProcessingContext context, int cost)
 	{
 		// Creatures don't currently have energy so do nothing.
-	}
-
-	@Override
-	public EntityType getType()
-	{
-		return this.creature.type();
 	}
 
 	@Override

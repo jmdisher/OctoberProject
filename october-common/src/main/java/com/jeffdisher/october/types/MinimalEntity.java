@@ -39,7 +39,7 @@ public record MinimalEntity(int id
 					, creature.type()
 					, creature.location()
 					, creature.zVelocityPerSecond()
-					, EntityConstants.getVolume(creature)
+					, EntityConstants.getVolume(creature.type())
 			);
 		}
 		return result;

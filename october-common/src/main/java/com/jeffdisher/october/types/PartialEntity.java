@@ -31,7 +31,7 @@ public record PartialEntity(int id
 				, entity.type()
 				, entity.location()
 				, entity.zVelocityPerSecond()
-				, EntityConstants.getVolume(entity)
+				, EntityConstants.getVolume(entity.type())
 		);
 	}
 }
