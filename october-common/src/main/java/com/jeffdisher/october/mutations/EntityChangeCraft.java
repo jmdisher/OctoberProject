@@ -7,7 +7,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -74,14 +76,19 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 			{
 				// We can now apply this and clear it.
 				Environment env = Environment.getShared();
-				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), newEntity.accessMutableInventory());
+				MutableInventory mutableInventory = newEntity.accessMutableInventory();
+				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), mutableInventory);
 				if (didCraft)
 				{
-					// Make sure that this cleared the hotbar, if we used the last of them.
-					int selectedKey = newEntity.getSelectedKey();
-					if (null == newEntity.accessMutableInventory().getStackForKey(selectedKey))
+					// Make sure that this cleared the hotbar, if we used the last of them (we need to check all of the hotbar slots).
+					for (int key : newEntity.copyHotbar())
 					{
-						newEntity.clearHotBarWithKey(selectedKey);
+						// NOTE:  This assumes that inputs are ALWAYS stackable.
+						if ((Entity.NO_SELECTION != key) && (null == newEntity.accessMutableInventory().getStackForKey(key)))
+						{
+							// This needs to be cleared.
+							newEntity.clearHotBarWithKey(key);
+						}
 					}
 				}
 				newEntity.setCurrentCraftingOperation(null);

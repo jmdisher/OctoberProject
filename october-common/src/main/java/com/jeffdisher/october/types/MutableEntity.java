@@ -114,6 +114,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public int[] copyHotbar()
+	{
+		return this.newHotbar.clone();
+	}
+
+	@Override
 	public int getSelectedKey()
 	{
 		return this.newHotbar[this.newHotbarIndex];

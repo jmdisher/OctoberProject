@@ -1557,6 +1557,41 @@ public class TestCommonChanges
 		Assert.assertEquals(1, inventory.getCount(itemSwitchOff));
 	}
 
+	@Test
+	public void craftHotbarClear() throws Throwable
+	{
+		// Handles the case where we need to clear the hotbar selections if we used up the last of them - test for the index we selected or another.
+		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
+		Craft stoneToBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		
+		// Put log and stone on the hotbar, selecting the log.
+		newEntity.newInventory.addAllItems(ENV.items.LOG, 1);
+		newEntity.newInventory.addAllItems(ENV.items.STONE, 1);
+		newEntity.newHotbar[0] = 1;
+		newEntity.newHotbar[1] = 2;
+		newEntity.newHotbarIndex = 0;
+		newEntity.freeze();
+		
+		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
+		TickProcessingContext context = _createSimpleContext();
+		
+		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
+		Assert.assertTrue(craft.applyChange(context, newEntity));
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
+		Assert.assertEquals(2, newEntity.newHotbar[1]);
+		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		newEntity.freeze();
+		
+		craft = new EntityChangeCraft(stoneToBrick, stoneToBrick.millisPerCraft);
+		Assert.assertTrue(craft.applyChange(context, newEntity));
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[0]);
+		Assert.assertEquals(Entity.NO_SELECTION, newEntity.newHotbar[1]);
+		Assert.assertEquals(0, newEntity.newHotbarIndex);
+		newEntity.freeze();
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

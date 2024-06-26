@@ -14,6 +14,8 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 
 	void setCurrentCraftingOperation(CraftOperation operation);
 
+	int[] copyHotbar();
+
 	/**
 	 * @return The key in the currently selected hotbar slot.
 	 */
