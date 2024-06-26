@@ -139,6 +139,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public float getMaxSpeedBlocksPerSecond()
+	{
+		return EntityConstants.SPEED_PLAYER;
+	}
+
+	@Override
 	public float getZVelocityPerSecond()
 	{
 		return this.newZVelocityPerSecond;

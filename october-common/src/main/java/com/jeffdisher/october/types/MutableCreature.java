@@ -69,6 +69,12 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
+	public float getMaxSpeedBlocksPerSecond()
+	{
+		return EntityConstants.getBlocksPerSecondSpeed(this.creature);
+	}
+
+	@Override
 	public float getZVelocityPerSecond()
 	{
 		return this.newZVelocityPerSecond;

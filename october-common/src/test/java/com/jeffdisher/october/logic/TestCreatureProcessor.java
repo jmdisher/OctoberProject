@@ -31,6 +31,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -187,9 +188,10 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.4f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), 0.0f, 0.4f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), 0.0f, 0.2f)
+		float speed = EntityConstants.SPEED_PLAYER;
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.4f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), speed, 0.0f, 0.4f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
@@ -218,7 +220,8 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, 0.0f, 0.2f)
+		float speed = EntityConstants.SPEED_PLAYER;
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)

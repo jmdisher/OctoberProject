@@ -151,8 +151,9 @@ public class ClientRunner
 			
 			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
 			float secondsFree = (float)millisFree / 1000.0f;
-			float distance = secondsFree * EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND;
-			Assert.assertTrue(EntityChangeMove.isValidDistance(distance, 0.0f));
+			float speed = EntityConstants.SPEED_PLAYER;
+			float distance = secondsFree * speed;
+			Assert.assertTrue(EntityChangeMove.isValidDistance(speed, distance, 0.0f));
 			
 			// See if the horizontal movement is even feasible.
 			EntityLocation previous = _localEntityProjection.location();
@@ -166,10 +167,10 @@ public class ClientRunner
 				float thisY = validated.y() - previous.y();
 				
 				// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
-				long millisToMove = EntityChangeMove.getTimeMostMillis(thisX, thisY);
+				long millisToMove = EntityChangeMove.getTimeMostMillis(speed, thisX, thisY);
 				if (millisToMove > 0L)
 				{
-					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, thisX, thisY);
+					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, speed, thisX, thisY);
 					long missingMillis = (millisFree - millisToMove);
 					effectiveCurrentTimeMillis -= missingMillis;
 					_applyLocalChange(moveChange, effectiveCurrentTimeMillis);

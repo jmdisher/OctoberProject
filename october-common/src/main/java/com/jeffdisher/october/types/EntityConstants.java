@@ -15,7 +15,9 @@ public class EntityConstants
 	public static final EntityVolume VOLUME_ORC = new EntityVolume(0.7f, 0.4f);
 
 	// Horizontal speed constants in blocks per second.
-	public static final float ENTITY_MOVE_FLAT_LIMIT_PER_SECOND = 4.0f;
+	public static final float SPEED_PLAYER = 4.0f;
+	public static final float SPEED_COW = 4.0f;
+	public static final float SPEED_ORC = 4.0f;
 
 	public static EntityVolume getVolume(CreatureEntity creature)
 	{
@@ -35,5 +37,25 @@ public class EntityConstants
 			throw Assert.unreachable();
 		}
 		return volume;
+	}
+
+	public static float getBlocksPerSecondSpeed(CreatureEntity creature)
+	{
+		float speed;
+		switch (creature.type())
+		{
+		case PLAYER:
+			speed = SPEED_PLAYER;
+			break;
+		case COW:
+			speed = SPEED_COW;
+			break;
+		case ORC:
+			speed = SPEED_ORC;
+			break;
+		default:
+			throw Assert.unreachable();
+		}
+		return speed;
 	}
 }

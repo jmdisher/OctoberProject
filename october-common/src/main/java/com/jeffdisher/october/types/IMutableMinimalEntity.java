@@ -18,6 +18,8 @@ public interface IMutableMinimalEntity
 
 	EntityVolume getVolume();
 
+	float getMaxSpeedBlocksPerSecond();
+
 	float getZVelocityPerSecond();
 
 	void setLocationAndVelocity(EntityLocation location, float zVelocityPerSecond);

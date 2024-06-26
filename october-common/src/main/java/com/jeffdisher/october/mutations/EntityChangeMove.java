@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -40,36 +39,45 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	 * tick but will work properly if not.
 	 */
 	public static final long LIMIT_COST_MILLIS = 100L;
+	/**
+	 * Can be multiplied against a per-second speed value to determine the maximum allowed by one mutation.
+	 */
+	public static final float MAX_PER_STEP_SPEED_MULTIPLIER = LIMIT_COST_MILLIS / 1000.0f;
 
 	/**
 	 * Checks that this kind of move can be requested, given the time limits imposed by the change object.
 	 * NOTE:  This doesn't mean that the move will succeed (could be a barrier, etc), just that it is well-formed.
 	 * 
+	 * @param speedBlocksPerSecond The speed of the moving entity, in blocks per second.
+	 * @param xDistance The distance in x-axis.
+	 * @param yDistance The distance in y-axis.
 	 * @return True if this is an acceptable move.
 	 */
-	public static boolean isValidDistance(float xDistance, float yDistance)
+	public static boolean isValidDistance(float speedBlocksPerSecond, float xDistance, float yDistance)
 	{
-		return _isValidDistance(xDistance, yDistance);
+		return _isValidDistance(speedBlocksPerSecond, xDistance, yDistance);
 	}
 
 	/**
 	 * Calculates the number of milliseconds it will take to move the given distance.
 	 * 
+	 * @param speedBlocksPerSecond The speed of the moving entity, in blocks per second.
 	 * @param xDistance The distance in x-axis.
 	 * @param yDistance The distance in y-axis.
 	 * @return The amount of time, in milliseconds.
 	 */
-	public static long getTimeMostMillis(float xDistance, float yDistance)
+	public static long getTimeMostMillis(float speedBlocksPerSecond, float xDistance, float yDistance)
 	{
-		return _getTimeMostMillis(xDistance, yDistance);
+		return _getTimeMostMillis(speedBlocksPerSecond, xDistance, yDistance);
 	}
 
 	public static <T extends IMutableMinimalEntity> EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		EntityLocation oldLocation = CodecHelpers.readEntityLocation(buffer);
+		float speedBlocksPerSecond = buffer.getFloat();
 		float xDistance = buffer.getFloat();
 		float yDistance = buffer.getFloat();
-		return new EntityChangeMove<>(oldLocation, xDistance, yDistance);
+		return new EntityChangeMove<>(oldLocation, speedBlocksPerSecond, xDistance, yDistance);
 	}
 
 	/**
@@ -90,16 +98,18 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 
 
 	private final EntityLocation _oldLocation;
+	private final float _speedBlocksPerSecond;
 	private final float _xDistance;
 	private final float _yDistance;
 
-	public EntityChangeMove(EntityLocation oldLocation, float xDistance, float yDistance)
+	public EntityChangeMove(EntityLocation oldLocation, float speedBlocksPerSecond, float xDistance, float yDistance)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.
-		Assert.assertTrue(_isValidDistance(xDistance, yDistance));
+		Assert.assertTrue(_isValidDistance(speedBlocksPerSecond, xDistance, yDistance));
 		
 		_oldLocation = oldLocation;
+		_speedBlocksPerSecond = speedBlocksPerSecond;
 		_xDistance = xDistance;
 		_yDistance = yDistance;
 	}
@@ -107,17 +117,18 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	@Override
 	public long getTimeCostMillis()
 	{
-		return _getTimeMostMillis(_xDistance, _yDistance);
+		return _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
+		boolean isSpeedValid = (_speedBlocksPerSecond <= newEntity.getMaxSpeedBlocksPerSecond());
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
-		if (oldDoesMatch)
+		if (isSpeedValid && oldDoesMatch)
 		{
-			long millisInMotion = _getTimeMostMillis(_xDistance, _yDistance);
+			long millisInMotion = _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
 			didApply = _handleMotion(context, newEntity, millisInMotion, _xDistance, _yDistance);
 			
 			if (didApply)
@@ -139,6 +150,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeEntityLocation(buffer, _oldLocation);
+		buffer.putFloat(_speedBlocksPerSecond);
 		buffer.putFloat(_xDistance);
 		buffer.putFloat(_yDistance);
 	}
@@ -151,19 +163,19 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	}
 
 
-	private static boolean _isValidDistance(float xDistance, float yDistance)
+	private static boolean _isValidDistance(float speed, float xDistance, float yDistance)
 	{
-		long costMillis = _getTimeMostMillis(xDistance, yDistance);
+		long costMillis = _getTimeMostMillis(speed, xDistance, yDistance);
 		return (costMillis > 0L) && (costMillis <= LIMIT_COST_MILLIS);
 	}
 
-	private static long _getTimeMostMillis(float xDistance, float yDistance)
+	private static long _getTimeMostMillis(float speed, float xDistance, float yDistance)
 	{
 		// TODO:  Change this when we allow diagonal movement.
 		Assert.assertTrue((0.0f == xDistance) || (0.0f == yDistance));
 		
 		float xy = Math.abs(xDistance) + Math.abs(yDistance);
-		float secondsFlat = (xy / EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND);
+		float secondsFlat = (xy / speed);
 		return (long) (secondsFlat * 1000.0f);
 	}
 

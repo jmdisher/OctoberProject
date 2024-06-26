@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -66,7 +67,8 @@ public class TestCommonChanges
 		// Check that the move works if the blocks are air.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
+		float speed = EntityConstants.SPEED_PLAYER;
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, speed, 0.4f, 0.0f);
 		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -80,7 +82,8 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, -16.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
+		float speed = EntityConstants.SPEED_PLAYER;
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, speed, 0.4f, 0.0f);
 		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -94,7 +97,8 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the target cuboid is missing.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
+		float speed = EntityConstants.SPEED_PLAYER;
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, speed, 0.4f, 0.0f);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> null
 				, null
@@ -116,7 +120,8 @@ public class TestCommonChanges
 	{
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, 0.4f, 0.0f);
+		float speed = EntityConstants.SPEED_PLAYER;
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(oldLocation, speed, 0.4f, 0.0f);
 		TickProcessingContext context = _createSimpleContext();
 		// We start with a zero z-vector since we should start falling.
 		MutableEntity newEntity = MutableEntity.create(1);

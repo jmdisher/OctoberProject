@@ -35,6 +35,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
@@ -313,7 +314,8 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId1, 6);
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(entity1.location(), -0.4f, 0.0f);
+		float speed = EntityConstants.SPEED_PLAYER;
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(entity1.location(), speed, -0.4f, 0.0f);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);

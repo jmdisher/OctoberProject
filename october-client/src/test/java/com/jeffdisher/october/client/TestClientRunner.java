@@ -228,7 +228,7 @@ public class TestClientRunner
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(ENV.items.LOG));
-		float stepDistance = EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND / 10.0f;
+		float stepDistance = EntityConstants.SPEED_PLAYER / 10.0f;
 		Assert.assertEquals(new EntityLocation(stepDistance, 0.0f, 0.0f), projection.thisEntity.location());
 	}
 

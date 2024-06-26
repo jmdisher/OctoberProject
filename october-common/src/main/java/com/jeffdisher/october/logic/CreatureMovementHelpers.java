@@ -19,7 +19,6 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 public class CreatureMovementHelpers
 {
 	public static final float FLOAT_THRESHOLD = 0.01f;
-	public static final float MAX_SINGLE_STEP = EntityConstants.ENTITY_MOVE_FLAT_LIMIT_PER_SECOND * EntityChangeMove.LIMIT_COST_MILLIS / 1000.0f;
 
 	/**
 	 * Creates a list of movements to centre this entity on their current block.  Note that this isn't "centre" in a
@@ -36,6 +35,7 @@ public class CreatureMovementHelpers
 		int baseY = (int) Math.floor(location.y());
 		int edgeX = (int) Math.floor(location.x() + width);
 		int edgeY = (int) Math.floor(location.y() + width);
+		float speed = EntityConstants.getBlocksPerSecondSpeed(creature);
 		
 		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 		if (baseX != edgeX)
@@ -43,14 +43,14 @@ public class CreatureMovementHelpers
 			// We need to move east/west.
 			// Simplify this by finding what would be the "very centre" instead of the tedious math to do the bare minimum.
 			float targetX = ((float) baseX) + (1.0f - width) / 2.0f;
-			_moveByX(list, location, targetX);
+			_moveByX(list, location, speed, targetX);
 		}
 		if (baseY != edgeY)
 		{
 			// We need to move north/south.
 			// Simplify this by finding what would be the "very centre" instead of the tedious math to do the bare minimum.
 			float targetY = ((float) baseY) + (1.0f - width) / 2.0f;
-			_moveByY(list, location, targetY);
+			_moveByY(list, location, speed, targetY);
 		}
 		return list;
 	}
@@ -82,17 +82,19 @@ public class CreatureMovementHelpers
 			float distanceY = Math.abs(stepLocation.y() - startLocation.y());
 			// We don't want to walk diagonally.
 			float maxHorizontal = Math.max(distanceX, distanceY);
-			if (maxHorizontal > MAX_SINGLE_STEP)
+			float speed = EntityConstants.getBlocksPerSecondSpeed(creature);
+			float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
+			if (maxHorizontal > maxDistanceInOneMutation)
 			{
 				// We need to move horizontally so figure out which way.
 				List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 				if (maxHorizontal == distanceX)
 				{
-					_moveByX(list, startLocation, stepLocation.x());
+					_moveByX(list, startLocation, speed, stepLocation.x());
 				}
 				else
 				{
-					_moveByY(list, startLocation, stepLocation.y());
+					_moveByY(list, startLocation, speed, stepLocation.y());
 				}
 				changes = list;
 			}
@@ -106,34 +108,36 @@ public class CreatureMovementHelpers
 	}
 
 
-	private static void _moveByX(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float targetX)
+	private static void _moveByX(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float speed, float targetX)
 	{
 		float moveX = targetX - location.x();
 		float sign = Math.signum(moveX);
 		float absoluteMove = Math.abs(moveX);
 		EntityLocation tempLocation = location;
+		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 		while (absoluteMove > FLOAT_THRESHOLD)
 		{
-			float oneAbs = Math.min(absoluteMove, MAX_SINGLE_STEP);
+			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, oneMove, 0.0f);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, speed, oneMove, 0.0f);
 			out_list.add(move);
 			tempLocation = new EntityLocation(tempLocation.x() + oneMove, tempLocation.y(), tempLocation.z());
 			absoluteMove -= oneAbs;
 		}
 	}
 
-	private static void _moveByY(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float targetY)
+	private static void _moveByY(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float speed, float targetY)
 	{
 		float moveY = targetY - location.y();
 		float sign = Math.signum(moveY);
 		float absoluteMove = Math.abs(moveY);
 		EntityLocation tempLocation = location;
+		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 		while (absoluteMove > FLOAT_THRESHOLD)
 		{
-			float oneAbs = Math.min(absoluteMove, MAX_SINGLE_STEP);
+			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, 0.0f, oneMove);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, speed, 0.0f, oneMove);
 			out_list.add(move);
 			tempLocation = new EntityLocation(tempLocation.x(), tempLocation.y() + oneMove, tempLocation.z());
 			absoluteMove -= oneAbs;

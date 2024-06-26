@@ -24,6 +24,7 @@ import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -124,7 +125,8 @@ public class TestProcesses
 		// Move the client, slightly, and verify that we see the update.
 		// (since we are using the real clock, wait for this move to be valid)
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		Thread.sleep(EntityChangeMove.getTimeMostMillis(0.4f, 0.0f));
+		float speed = EntityConstants.SPEED_PLAYER;
+		Thread.sleep(EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f));
 		client.moveHorizontalFully(1.0f, 0.0f, System.currentTimeMillis());
 		long serverTick = server.waitForTicksToPass(2L);
 		client.waitForTick(serverTick, System.currentTimeMillis());
