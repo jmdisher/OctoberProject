@@ -60,9 +60,10 @@ public class CreatureMovementHelpers
 	 * 
 	 * @param creature The creature.
 	 * @param targetBlock The target location.
+	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The list of changes, potentially empty but never null.
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock)
+	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock, boolean isIdleMovement)
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
@@ -83,6 +84,11 @@ public class CreatureMovementHelpers
 			// We don't want to walk diagonally.
 			float maxHorizontal = Math.max(distanceX, distanceY);
 			float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
+			if (isIdleMovement)
+			{
+				// We want idle movements to be slower (half speed).
+				speed /= 2.0f;
+			}
 			float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 			if (maxHorizontal > maxDistanceInOneMutation)
 			{

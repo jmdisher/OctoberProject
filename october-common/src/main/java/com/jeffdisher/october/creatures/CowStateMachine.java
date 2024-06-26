@@ -36,6 +36,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	public static final byte COW_DEFAULT_HEALTH = 100;
 	// Use 2x the view distance to account for obstacles.
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
+	public static final int NO_TARGET_ENTITY_ID = 0;
 
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
@@ -127,7 +128,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		{
 			_inLoveMode = false;
 			_movementPlan = null;
-			_targetEntityId = 0;
+			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_offspringLocation = null;
 		}
@@ -165,7 +166,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		
 		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
 		// We will just use arrays to pass this "by reference".
-		int[] targetId = new int[1];
+		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
 		EntityLocation[] target = new EntityLocation[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		if (_inLoveMode)
@@ -190,7 +191,6 @@ public class CowStateMachine implements ICreatureStateMachine
 					}
 				}
 			});
-			
 		}
 		else
 		{
@@ -319,6 +319,12 @@ public class CowStateMachine implements ICreatureStateMachine
 		return COW_PATH_DISTANCE;
 	}
 
+	@Override
+	public boolean isPlanDeliberate()
+	{
+		return (NO_TARGET_ENTITY_ID != _targetEntityId);
+	}
+
 	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
 	 * the original instance.
@@ -342,7 +348,7 @@ public class CowStateMachine implements ICreatureStateMachine
 
 	private void _clearPlans()
 	{
-		_targetEntityId = 0;
+		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
 		_movementPlan = null;
 	}

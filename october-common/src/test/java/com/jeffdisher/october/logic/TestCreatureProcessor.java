@@ -188,9 +188,11 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		float speed = EntityConstants.SPEED_PLAYER;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.4f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), speed, 0.0f, 0.4f)
+		float speed = EntityConstants.SPEED_COW;
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.2f, 0.0f), speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.6f, 0.0f), speed, 0.0f, 0.2f)
 			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
@@ -211,7 +213,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(2, updated.stepsToNextMove().size());
+		// We should see the 4 steps remaining.
+		Assert.assertEquals(4, updated.stepsToNextMove().size());
 		Assert.assertEquals(2, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
 	}
 
@@ -220,7 +223,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
-		float speed = EntityConstants.SPEED_PLAYER;
+		float speed = EntityConstants.SPEED_COW;
 		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
@@ -326,7 +329,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(2, updated.stepsToNextMove().size());
+		// Note that this is an idle movement so it is half the speed of a deliberate one (at 0.2 speed, this would be 1+4 steps but at 0.1, it is 1+9).
+		Assert.assertEquals(9, updated.stepsToNextMove().size());
 		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
 	}
 
@@ -407,8 +411,8 @@ public class TestCreatureProcessor
 		// Move the target entity and observe that the plan changes.
 		closeWheat = _createEntity(1, new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		
-		// We need to finish the previous step before a new one will be created so loop 3 times (2 to finish the step and one to decide on new).
-		for (int i = 0; i < 3; ++i)
+		// We need to finish the previous step before a new one will be created so loop 5 times (4 to finish the step and one to decide on new).
+		for (int i = 0; i < 5; ++i)
 		{
 			context = _updateContextWithPlayer(context, closeWheat);
 			creaturesById = group.updatedCreatures();
@@ -542,8 +546,24 @@ public class TestCreatureProcessor
 				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
 		);
 		
+		// The mother should now be pregnant but we need it to finish its last planned movement before spawning offspring (2 steps).
+		for (int i = 0; i < 2; ++i)
+		{
+			creaturesById.putAll(group.updatedCreatures());
+			Assert.assertNotNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()).offspringLocation());
+			context = _updateContextWithCreatures(context, creaturesById.values(), null, idAssigner);
+			group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), creaturesById.values())
+					, millisSinceLastTick
+					, Map.of()
+			);
+		}
+		
 		// Run a final tick to see the mother spawn the offspring.
 		creaturesById.putAll(group.updatedCreatures());
+		Assert.assertNotNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()).offspringLocation());
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, idAssigner);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -559,6 +579,7 @@ public class TestCreatureProcessor
 		
 		// Run another tick to observe that nothing special happens.
 		creaturesById.putAll(group.updatedCreatures());
+		Assert.assertNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()));
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread

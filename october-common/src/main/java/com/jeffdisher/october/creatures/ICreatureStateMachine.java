@@ -53,4 +53,9 @@ public interface ICreatureStateMachine
 	 * @return The maximum pathing distance this creature should use when planning the path to a target.
 	 */
 	int getPathDistance();
+
+	/**
+	 * @return True if the current plan has deliberate intent (false if no plan or just idle wandering).
+	 */
+	boolean isPlanDeliberate();
 }

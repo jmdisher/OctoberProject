@@ -34,6 +34,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public static final byte ORC_DAMAGE = 5;
 	// Use 2x the view distance to account for obstacles.
 	public static final int ORC_PATH_DISTANCE = 2 * (int) ORC_VIEW_DISTANCE;
+	public static final int NO_TARGET_ENTITY_ID = 0;
 
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
@@ -103,7 +104,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 		else
 		{
 			_movementPlan = null;
-			_targetEntityId = 0;
+			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 		}
 	}
@@ -117,7 +118,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 		
 		// Orcs only have a single target:  Any player in range.
 		// We will just use arrays to pass this "by reference".
-		int[] targetId = new int[1];
+		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
 		EntityLocation[] target = new EntityLocation[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkPlayersInRange(start, ORC_VIEW_DISTANCE, (Entity player) -> {
@@ -204,6 +205,12 @@ public class OrcStateMachine implements ICreatureStateMachine
 		return ORC_PATH_DISTANCE;
 	}
 
+	@Override
+	public boolean isPlanDeliberate()
+	{
+		return (NO_TARGET_ENTITY_ID != _targetEntityId);
+	}
+
 	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
 	 * the original instance.
@@ -227,7 +234,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 
 	private void _clearPlans()
 	{
-		_targetEntityId = 0;
+		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
 		_movementPlan = null;
 	}

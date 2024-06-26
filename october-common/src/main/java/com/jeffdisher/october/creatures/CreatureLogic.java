@@ -247,7 +247,7 @@ public class CreatureLogic
 		{
 			// The only reason why this is still null at this point is if we have a plan and we are ready to use it.
 			List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-			actionsProduced = _determineNextSteps(mutable.creature, mutablePlan);
+			actionsProduced = _determineNextSteps(mutable.creature, mutablePlan, !machine.isPlanDeliberate());
 			
 			// We can now update our extended data.
 			if (mutablePlan.isEmpty())
@@ -322,7 +322,7 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(CreatureEntity creature, List<AbsoluteLocation> mutablePlan)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(CreatureEntity creature, List<AbsoluteLocation> mutablePlan, boolean isIdleMovement)
 	{
 		// First, check to see if we are already in our next location.
 		AbsoluteLocation thisStep = mutablePlan.get(0);
@@ -337,7 +337,7 @@ public class CreatureLogic
 			if (!mutablePlan.isEmpty())
 			{
 				AbsoluteLocation nextStep = mutablePlan.get(0);
-				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep);
+				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, isIdleMovement);
 				// If this is empty, just allow us to do nothing and reset the timer instead of returning null (should only be empty if falling, for example).
 			}
 			else

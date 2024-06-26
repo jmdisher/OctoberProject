@@ -16,8 +16,8 @@ public class EntityConstants
 
 	// Horizontal speed constants in blocks per second.
 	public static final float SPEED_PLAYER = 4.0f;
-	public static final float SPEED_COW = 4.0f;
-	public static final float SPEED_ORC = 4.0f;
+	public static final float SPEED_COW = 2.0f;
+	public static final float SPEED_ORC = 3.0f;
 
 	public static EntityVolume getVolume(EntityType type)
 	{
