@@ -23,11 +23,14 @@ public class CreatureMovementHelpers
 	/**
 	 * Creates a list of movements to centre this entity on their current block.  Note that this isn't "centre" in a
 	 * "very centre" sense but just not flowing onto other blocks.
+	 * Additionally, if the creature is already in the block, the directionalHint will be used to position it against a
+	 * wall instead of the centre.
 	 * 
 	 * @param creature The creature.
+	 * @param directionHint Used to decide if we should lean to a specific side of the block instead of the centre.
 	 * @return The list of moves to make (empty if already in a good position).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature)
+	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature, AbsoluteLocation directionHint)
 	{
 		EntityLocation location = creature.location();
 		float width = EntityConstants.getVolume(creature.type()).width();
@@ -38,6 +41,7 @@ public class CreatureMovementHelpers
 		float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
 		
 		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
+		int hintX = directionHint.x();
 		if (baseX != edgeX)
 		{
 			// We need to move east/west.
@@ -45,11 +49,30 @@ public class CreatureMovementHelpers
 			float targetX = ((float) baseX) + (1.0f - width) / 2.0f;
 			_moveByX(list, location, speed, targetX);
 		}
+		else if (hintX != baseX)
+		{
+			// We should lean into this wall.
+			float targetX = (hintX > baseX)
+					? ((float)hintX - width)
+					: (float)baseX
+			;
+			_moveByX(list, location, speed, targetX);
+		}
+		int hintY = directionHint.y();
 		if (baseY != edgeY)
 		{
 			// We need to move north/south.
 			// Simplify this by finding what would be the "very centre" instead of the tedious math to do the bare minimum.
 			float targetY = ((float) baseY) + (1.0f - width) / 2.0f;
+			_moveByY(list, location, speed, targetY);
+		}
+		else if (hintY != baseY)
+		{
+			// We should lean into this wall.
+			float targetY = (hintY > baseY)
+					? ((float)hintY - width)
+					: (float)baseY
+			;
 			_moveByY(list, location, speed, targetY);
 		}
 		return list;

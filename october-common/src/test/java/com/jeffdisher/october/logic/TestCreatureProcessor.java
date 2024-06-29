@@ -13,9 +13,11 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
@@ -26,6 +28,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -382,7 +385,7 @@ public class TestCreatureProcessor
 	{
 		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
@@ -438,7 +441,7 @@ public class TestCreatureProcessor
 	{
 		// Create 1 player holding wheat and 2 cows:  a distant one in love mode and a closer not in love mode.  Show that a cow priorizes the love cow.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
@@ -591,6 +594,90 @@ public class TestCreatureProcessor
 		);
 	}
 
+	@Test
+	public void climbFromHole()
+	{
+		// Create an entity in a hole and see it position itself correctly and jump out.
+		// Make an air cuboid with the bottom layer stone and the layer above stone except for one air block.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		for (byte z = 0; z < 2; ++z)
+		{
+			for (byte y = 0; y < 16; ++y)
+			{
+				for (byte x = 0; x < 16; ++x)
+				{
+					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), STONE.item().number());
+				}
+			}
+		}
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)8, (byte)8, (byte)1), AIR.item().number());
+		
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)100);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		long millisSinceLastTick = 100L;
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(), creaturesById.values())
+				, millisSinceLastTick
+				, changesToRun
+		);
+		
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		// The cow should first position itself against the wall before making the jump.
+		for (int i = 0; i < 2; ++i)
+		{
+			Assert.assertEquals(0.0f, updated.zVelocityPerSecond(), 0.001f);
+			creaturesById = group.updatedCreatures();
+			group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), creaturesById.values())
+					, millisSinceLastTick
+					, changesToRun
+			);
+			updated = group.updatedCreatures().get(creature.id());
+		}
+		// We should now be against the wall.
+		Assert.assertEquals(8.0f, updated.location().x(), 0.001f);
+		
+		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
+		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertNotEquals(0.0f, updated.zVelocityPerSecond());
+		Assert.assertNull(updated.stepsToNextMove());
+		
+		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
+		List<AbsoluteLocation> movementPlan = OrcStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
+		Assert.assertEquals(2, movementPlan.size());
+		Assert.assertEquals(new AbsoluteLocation(8, 8, 2), movementPlan.get(0));
+		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), movementPlan.get(1));
+		
+		// Now, allow the entity to continue on its path and verify that it reaches the end of its path.
+		for (int i = 0; i < 12; ++i)
+		{
+			// Apply the next step.
+			creaturesById = group.updatedCreatures();
+			group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), creaturesById.values())
+					, millisSinceLastTick
+					, changesToRun
+			);
+			updated = group.updatedCreatures().get(creature.id());
+		}
+		
+		// By this point we should be on the ground, in the right block, with no plan.
+		Assert.assertEquals(2.0f, updated.location().z(), 0.001f);
+		Assert.assertNotEquals(0.0f, updated.zVelocityPerSecond());
+		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), updated.location().getBlockLocation());
+		Assert.assertNull(updated.stepsToNextMove());
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{
@@ -615,6 +702,26 @@ public class TestCreatureProcessor
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
 				, difficulty
+		);
+		return context;
+	}
+
+	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
+	{
+		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+				, (AbsoluteLocation location) -> {
+					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+						? new BlockProxy(location.getBlockAddress(), cuboid)
+						: null
+					;
+				}
+				, null
+				, null
+				, null
+				, null
+				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+				, (int bound) -> 1
+				, Difficulty.HOSTILE
 		);
 		return context;
 	}

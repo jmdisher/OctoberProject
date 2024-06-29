@@ -226,8 +226,23 @@ public class CreatureLogic
 			}
 			else
 			{
+				// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
+				AbsoluteLocation directionHint;
+				if (movementPlan.size() > 1)
+				{
+					directionHint = movementPlan.get(1);
+					if ((movementPlan.size() > 2) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
+					{
+						// This means we are jumping so choose the next place where we want to go for direction hint.
+						directionHint = movementPlan.get(2);
+					}
+				}
+				else
+				{
+					directionHint = movementPlan.get(0);
+				}
 				// We have a path so make sure we are centred in a block, first.
-				actionsProduced = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature);
+				actionsProduced = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature, directionHint);
 				if (actionsProduced.isEmpty())
 				{
 					// We are already in the centre so just get started.
@@ -243,11 +258,14 @@ public class CreatureLogic
 		
 		// Determine if we need to set the next steps in case we devised a plan.
 		// (the movementPlan should only be null here if we are waiting to make our next decision)
-		if ((null == actionsProduced) && (null != movementPlan))
+		if (null != movementPlan)
 		{
 			// The only reason why this is still null at this point is if we have a plan and we are ready to use it.
 			List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-			actionsProduced = _determineNextSteps(mutable.creature, mutablePlan, !machine.isPlanDeliberate());
+			if (null == actionsProduced)
+			{
+				actionsProduced = _determineNextSteps(mutable.creature, mutablePlan, !machine.isPlanDeliberate());
+			}
 			
 			// We can now update our extended data.
 			if (mutablePlan.isEmpty())

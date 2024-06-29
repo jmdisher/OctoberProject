@@ -20,12 +20,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature, location.getBlockLocation());
 		Assert.assertEquals(0, list.size());
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
 		creature = _createCow(location);
-		list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		list = CreatureMovementHelpers.centreOnCurrentBlock(creature, location.getBlockLocation());
 		Assert.assertEquals(0, list.size());
 	}
 
@@ -34,12 +34,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.centreOnCurrentBlock(creature, location.getBlockLocation());
 		Assert.assertEquals(8, list.size());
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
 		creature = _createCow(location);
-		list = CreatureMovementHelpers.centreOnCurrentBlock(creature);
+		list = CreatureMovementHelpers.centreOnCurrentBlock(creature, location.getBlockLocation());
 		Assert.assertEquals(8, list.size());
 	}
 
