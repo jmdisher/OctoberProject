@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -130,7 +131,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// Account for any movement while we were busy.
 		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
 		// This will need to be revisited when we change how blocks are broken.
-		boolean didMove = EntityChangeMove.handleMotion(context, newEntity, _millisToApply);
+		boolean didMove = EntityMovementHelpers.allowMovement(context, newEntity, _millisToApply);
 		
 		return didApply || didMove;
 	}

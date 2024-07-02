@@ -315,7 +315,7 @@ public class TestClientRunner
 		expectedChangeCount += 1;
 		runner.doNothing(currentTimeMillis);
 		location = projection.thisEntity.location();
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.0f), location);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), location);
 		Assert.assertEquals(0.0f, projection.thisEntity.zVelocityPerSecond(), 0.01f);
 		
 		// Make sure we won't send another action.

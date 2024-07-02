@@ -2,12 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.logic.MotionHelpers;
-import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -59,7 +56,7 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
 		if (oldDoesMatch)
 		{
-			didApply = _handleMotion(context, newEntity, _millisPassed);
+			didApply = EntityMovementHelpers.allowMovement(context, newEntity, _millisPassed);
 			
 			if (didApply)
 			{
@@ -88,120 +85,5 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 	{
 		// Common case.
 		return true;
-	}
-
-
-	private static boolean _handleMotion(TickProcessingContext context
-			, IMutableMinimalEntity newEntity
-			, long longMillisInMotion
-	)
-	{
-		// First of all, we need to figure out if we should be changing our z-vector:
-		// -cancel positive vector if we hit the ceiling
-		// -cancel negative vector if we hit the ground
-		// -apply gravity in any other case
-		EntityLocation vector = newEntity.getVelocityVector();
-		float initialZVector = vector.z();
-		EntityLocation oldLocation = newEntity.getLocation();
-		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
-		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
-		float newZVector;
-		boolean shouldAllowFalling;
-		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(context.previousBlockLookUp, oldLocation, volume))
-		{
-			// We are up against the ceiling so cancel the velocity.
-			newZVector = 0.0f;
-			shouldAllowFalling = true;
-		}
-		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, oldLocation, volume))
-		{
-			// We are on the ground so cancel the velocity.
-			newZVector = 0.0f;
-			shouldAllowFalling = false;
-		}
-		else
-		{
-			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
-			shouldAllowFalling = true;
-		}
-		
-		boolean didMove;
-		if (shouldAllowFalling)
-		{
-			// Figure out where our new location is (requires calculating the z-movement in this time).
-			float zDistance = shouldAllowFalling
-					? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
-					: 0.0f
-			;
-			float oldZ = oldLocation.z();
-			float zLocation = oldZ + zDistance;
-			EntityLocation newLocation = new EntityLocation(oldLocation.x(), oldLocation.y(), zLocation);
-			
-			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
-			{
-				// They can exist in the target location so update the entity.
-				newEntity.setLocation(newLocation);
-				newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
-				didMove = true;
-			}
-			else
-			{
-				// This means that we hit the ceiling, floor, or are stuck in a block.
-				if (zDistance > 0.0f)
-				{
-					// We were jumping to see if we can clamp our location under the block.
-					EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
-					if (null != highestLocation)
-					{
-						newEntity.setLocation(highestLocation);
-						newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
-						didMove = true;
-					}
-					else
-					{
-						// We can't find a ceiling we can fit under so we are inside a block.
-						didMove = false;
-					}
-				}
-				else if (zDistance < 0.0f)
-				{
-					// We were falling so see if we can stop on the block(s) above where we fell.
-					EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
-					if (null != lowestLocation)
-					{
-						newEntity.setLocation(lowestLocation);
-						newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
-						didMove = true;
-					}
-					else
-					{
-						// We can't find a floor we can land on so we are probably inside a block.
-						didMove = false;
-					}
-				}
-				else
-				{
-					// We must be inside a block.
-					didMove = false;
-				}
-			}
-		}
-		else
-		{
-			// No z-movement.
-			didMove = false;
-		}
-		
-		// Note that waiting around doesn't expend any energy.
-		
-		// We consider this having applied if we moved OR we at least updated the z-vector.
-		boolean didUpdateVelocity = false;
-		if (!didMove && (newZVector != initialZVector))
-		{
-			newEntity.setLocation(oldLocation);
-			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
-			didUpdateVelocity = true;
-		}
-		return didMove || didUpdateVelocity;
 	}
 }
