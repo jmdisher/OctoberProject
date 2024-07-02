@@ -15,8 +15,9 @@ public record CreatureEntity(int id
 		, EntityType type
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
-		// We track the current z-velocity in blocks per second, up.
-		, float zVelocityPerSecond
+		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
+		// Note that horizontal movement is usually cancelled by friction within the same tick.
+		, EntityLocation velocity
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
 		// These data elements are considered ephemeral and will NOT be persisted.
@@ -51,7 +52,7 @@ public record CreatureEntity(int id
 		return new CreatureEntity(id
 				, type
 				, location
-				, 0.0f
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, health
 				, 0L
 				, null

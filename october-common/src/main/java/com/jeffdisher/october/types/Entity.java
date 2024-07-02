@@ -8,8 +8,9 @@ package com.jeffdisher.october.types;
 public record Entity(int id
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
-		// We track the current z-velocity in blocks per second, up.
-		, float zVelocityPerSecond
+		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
+		// Note that horizontal movement is usually cancelled by friction within the same tick.
+		, EntityLocation velocity
 		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
 		, float blocksPerTickSpeed
 		, Inventory inventory
@@ -39,9 +40,11 @@ public record Entity(int id
 
 	public static Entity fromPartial(PartialEntity entity)
 	{
+		// We will assume no velocity - this may change if we start sending this data for client-side prediction, in the future.
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		return new Entity(entity.id()
 				, entity.location()
-				, 0.0f
+				, velocity
 				, 0.0f
 				, Inventory.start(0).finish()
 				, new int[HOTBAR_SIZE]

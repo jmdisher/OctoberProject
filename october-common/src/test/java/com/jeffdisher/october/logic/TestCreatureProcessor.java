@@ -191,6 +191,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
 		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
 			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.2f, 0.0f), speed, 0.0f, 0.2f)
@@ -201,7 +202,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -226,13 +227,14 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
 		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -256,10 +258,11 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.0f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -274,7 +277,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(3.92f, updated.zVelocityPerSecond(), 0.001f);
+		Assert.assertEquals(3.92f, updated.velocity().z(), 0.001f);
 		// We should only jump so there will be no next movement.
 		Assert.assertNull(updated.stepsToNextMove());
 		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
@@ -286,9 +289,10 @@ public class TestCreatureProcessor
 		// In this test, we should just be waiting for a jump to have an effect.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 1.0f, 0.441f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 3.92f, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -303,7 +307,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(2.94f, updated.zVelocityPerSecond(), 0.001f);
+		Assert.assertEquals(2.94f, updated.velocity().z(), 0.001f);
 		// We should only jump so there will be no next movement.
 		Assert.assertNull(updated.stepsToNextMove());
 		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
@@ -314,10 +318,11 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 1.2f);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, 0.0f, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		long millisSinceLastTick = 100L;
@@ -631,7 +636,7 @@ public class TestCreatureProcessor
 		// The cow should first position itself against the wall before making the jump.
 		for (int i = 0; i < 2; ++i)
 		{
-			Assert.assertEquals(0.0f, updated.zVelocityPerSecond(), 0.001f);
+			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();
 			group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
@@ -647,7 +652,7 @@ public class TestCreatureProcessor
 		
 		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertNotEquals(0.0f, updated.zVelocityPerSecond());
+		Assert.assertNotEquals(0.0f, updated.velocity().z());
 		Assert.assertNull(updated.stepsToNextMove());
 		
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
@@ -673,7 +678,7 @@ public class TestCreatureProcessor
 		
 		// By this point we should be on the ground, in the right block, with no plan.
 		Assert.assertEquals(2.0f, updated.location().z(), 0.001f);
-		Assert.assertNotEquals(0.0f, updated.zVelocityPerSecond());
+		Assert.assertNotEquals(0.0f, updated.velocity().z());
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), updated.location().getBlockLocation());
 		Assert.assertNull(updated.stepsToNextMove());
 	}
@@ -770,7 +775,7 @@ public class TestCreatureProcessor
 		int key = 1;
 		return new Entity(id
 				, location
-				, 0.0f
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, 0.0f
 				, inventory
 				, new int[] { key }

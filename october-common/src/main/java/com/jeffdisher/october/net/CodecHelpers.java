@@ -130,7 +130,7 @@ public class CodecHelpers
 	{
 		int id = buffer.getInt();
 		EntityLocation location = _readEntityLocation(buffer);
-		float zVelocityPerSecond = buffer.getFloat();
+		EntityLocation velocity = _readEntityLocation(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
 		int[] hotbar = new int[Entity.HOTBAR_SIZE];
@@ -151,7 +151,7 @@ public class CodecHelpers
 		
 		return new Entity(id
 				, location
-				, zVelocityPerSecond
+				, velocity
 				, blocksPerTickSpeed
 				, inventory
 				, hotbar
@@ -168,7 +168,7 @@ public class CodecHelpers
 	{
 		int id = entity.id();
 		EntityLocation location = entity.location();
-		float zVelocityPerSecond = entity.zVelocityPerSecond();
+		EntityLocation velocity = entity.velocity();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
 		int[] hotbar = entity.hotbarItems();
@@ -178,7 +178,7 @@ public class CodecHelpers
 		
 		buffer.putInt(id);
 		_writeEntityLocation(buffer, location);
-		buffer.putFloat(zVelocityPerSecond);
+		_writeEntityLocation(buffer, velocity);
 		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
 		for (int key : hotbar)
@@ -227,7 +227,7 @@ public class CodecHelpers
 		byte ordinal = buffer.get();
 		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
-		float zVelocityPerSecond = buffer.getFloat();
+		EntityLocation velocity = _readEntityLocation(buffer);
 		byte health = buffer.get();
 		
 		// Ephemeral data is just given default values.
@@ -237,7 +237,7 @@ public class CodecHelpers
 		return new CreatureEntity(id
 				, type
 				, location
-				, zVelocityPerSecond
+				, velocity
 				, health
 				, lastActionGameTick
 				, stepsToNextMove
@@ -251,12 +251,12 @@ public class CodecHelpers
 		int ordinal = entity.type().ordinal();
 		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
-		float zVelocityPerSecond = entity.zVelocityPerSecond();
+		EntityLocation velocity = entity.velocity();
 		byte health = entity.health();
 		
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
-		buffer.putFloat(zVelocityPerSecond);
+		_writeEntityLocation(buffer, velocity);
 		buffer.put(health);
 	}
 

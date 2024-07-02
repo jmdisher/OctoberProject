@@ -1638,13 +1638,13 @@ public class TestTickRunner
 		// See where the entity is.
 		CreatureEntity updated = snapshot.completedCreatures().get(creatureId);
 		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.951f), updated.location());
-		Assert.assertEquals(-0.98f, updated.zVelocityPerSecond(), 0.01f);
+		Assert.assertEquals(-0.98f, updated.velocity().z(), 0.01f);
 		
 		// Run another tick and see it move.
 		snapshot = runner.startNextTick();
 		updated = snapshot.completedCreatures().get(creatureId);
 		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.804f), updated.location());
-		Assert.assertEquals(-1.96f, updated.zVelocityPerSecond(), 0.01f);
+		Assert.assertEquals(-1.96f, updated.velocity().z(), 0.01f);
 		
 		runner.shutdown();
 	}

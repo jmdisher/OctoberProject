@@ -133,7 +133,7 @@ public class TestCommonChanges
 		// This movement would then be applied for 1/10 second.
 		// (note that we cut this in half since we apply the average over time, not just the one value).
 		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (0.5f * expectedZVector / 10.0f));
-		Assert.assertEquals(expectedZVector, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(expectedZVector, newEntity.newVelocity.z(), 0.01f);
 		Assert.assertEquals(expectedLocation, newEntity.newLocation);
 	}
 
@@ -151,7 +151,7 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		
 		// The jump doesn't move, just sets the vector.
-		Assert.assertEquals(EntityChangeJump.JUMP_FORCE, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(EntityChangeJump.JUMP_FORCE, newEntity.newVelocity.z(), 0.01f);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		
 		// Try a few falling steps to see how we sink back to the ground.
@@ -169,14 +169,14 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
-		Assert.assertEquals(-4.9f, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(-4.9f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
 		fall = new EntityChangeDoNothing<>(newEntity.newLocation, 100L);
 		didApply = fall.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
-		Assert.assertEquals(0.0f, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
 
 	@Test
@@ -483,7 +483,7 @@ public class TestCommonChanges
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(-9.8, newEntity.newZVelocityPerSecond, 0.01f);
+		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}
 
 	@Test

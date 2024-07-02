@@ -33,7 +33,7 @@ public class MutableCreature implements IMutableCreatureEntity
 
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
-	public float newZVelocityPerSecond;
+	public EntityLocation newVelocity;
 	public byte newHealth;
 	public long newLastActionGameTick;
 	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
@@ -43,7 +43,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	{
 		this.creature = creature;
 		this.newLocation = creature.location();
-		this.newZVelocityPerSecond = creature.zVelocityPerSecond();
+		this.newVelocity = creature.velocity();
 		this.newHealth = creature.health();
 		this.newLastActionGameTick = creature.lastActionGameTick();
 		this.newStepsToNextMove = creature.stepsToNextMove();
@@ -77,7 +77,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public EntityLocation getVelocityVector()
 	{
-		return new EntityLocation(0.0f, 0.0f, this.newZVelocityPerSecond);
+		return this.newVelocity;
 	}
 
 	@Override
@@ -86,7 +86,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		// This is just an API shape change - we don't expect an actual vectory in this, yet.
 		Assert.assertTrue(0.0f == vector.x());
 		Assert.assertTrue(0.0f == vector.y());
-		this.newZVelocityPerSecond = vector.z();
+		this.newVelocity = vector;
 	}
 
 	@Override
@@ -181,10 +181,11 @@ public class MutableCreature implements IMutableCreatureEntity
 		CreatureEntity newInstance;
 		if (this.newHealth > 0)
 		{
+			Assert.assertTrue(0.0f == this.newVelocity.x());
 			CreatureEntity immutable = new CreatureEntity(this.creature.id()
 					, this.creature.type()
 					, this.newLocation
-					, this.newZVelocityPerSecond
+					, this.newVelocity
 					, this.newHealth
 					, this.newLastActionGameTick
 					, this.newStepsToNextMove

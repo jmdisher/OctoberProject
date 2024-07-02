@@ -60,7 +60,7 @@ public class TestEntityCollection
 	{
 		return new Entity(id
 				, location
-				, 0.0f
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, 0.0f
 				, null
 				, null

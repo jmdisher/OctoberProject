@@ -34,7 +34,7 @@ public class EntityActionValidator
 		return (null != path)
 				? new Entity(entity.id()
 						, newLocation
-						, entity.zVelocityPerSecond()
+						, entity.velocity()
 						, entity.blocksPerTickSpeed()
 						, entity.inventory()
 						, entity.hotbarItems()

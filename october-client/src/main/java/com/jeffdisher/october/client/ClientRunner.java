@@ -180,7 +180,7 @@ public class ClientRunner
 			{
 				// We can't move horizontally but see if maybe we should generate a do nothing action to fall.
 				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, previous, EntityConstants.VOLUME_PLAYER);
-				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
+				if ((0.0f != _localEntityProjection.velocity().z())
 					|| !isOnGround)
 				{
 					EntityChangeDoNothing<IMutablePlayerEntity> moveChange = new EntityChangeDoNothing<>(previous, millisFree);
@@ -256,7 +256,7 @@ public class ClientRunner
 				// Nothing is happening so just account for passive movement, assuming there is any which makes sense.
 				EntityLocation oldLocation = _localEntityProjection.location();
 				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, EntityConstants.VOLUME_PLAYER);
-				if ((0.0f != _localEntityProjection.zVelocityPerSecond())
+				if ((0.0f != _localEntityProjection.velocity().z())
 						|| !isOnGround)
 				{
 					long doNothingTime = (millisToApply <= EntityChangeDoNothing.LIMIT_COST_MILLIS)

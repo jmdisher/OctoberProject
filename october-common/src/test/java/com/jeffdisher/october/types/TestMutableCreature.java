@@ -26,7 +26,7 @@ public class TestMutableCreature
 		CreatureEntity middle = new CreatureEntity(-1
 				, EntityType.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, 0.0f
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
 				, 0L
 				, List.of()

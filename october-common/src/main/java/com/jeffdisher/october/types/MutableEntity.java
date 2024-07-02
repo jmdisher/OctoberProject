@@ -44,7 +44,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
 				, DEFAULT_LOCATION
-				, 0.0f
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
@@ -65,7 +65,7 @@ public class MutableEntity implements IMutablePlayerEntity
 
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
-	public float newZVelocityPerSecond;
+	public EntityLocation newVelocity;
 	public int[] newHotbar;
 	public int newHotbarIndex;
 	public NonStackableItem[] newArmour;
@@ -79,7 +79,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.original = original;
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
-		this.newZVelocityPerSecond = original.zVelocityPerSecond();
+		this.newVelocity = original.velocity();
 		this.newHotbar = original.hotbarItems().clone();
 		this.newHotbarIndex = original.hotbarIndex();
 		this.newArmour = original.armourSlots().clone();
@@ -152,7 +152,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public EntityLocation getVelocityVector()
 	{
-		return new EntityLocation(0.0f, 0.0f, this.newZVelocityPerSecond);
+		return this.newVelocity;
 	}
 
 	@Override
@@ -161,7 +161,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		// This is just an API shape change - we don't expect an actual vectory in this, yet.
 		Assert.assertTrue(0.0f == vector.x());
 		Assert.assertTrue(0.0f == vector.y());
-		this.newZVelocityPerSecond = vector.z();
+		this.newVelocity = vector;
 	}
 
 	@Override
@@ -311,7 +311,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		}
 		Entity newInstance = new Entity(this.original.id()
 				, this.newLocation
-				, this.newZVelocityPerSecond
+				, this.newVelocity
 				, this.original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
 				, didHotbarChange ? this.newHotbar : this.original.hotbarItems()
