@@ -100,7 +100,8 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		float initialZVector = newEntity.getZVelocityPerSecond();
+		EntityLocation vector = newEntity.getVelocityVector();
+		float initialZVector = vector.z();
 		EntityLocation oldLocation = newEntity.getLocation();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
@@ -139,7 +140,8 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
 			{
 				// They can exist in the target location so update the entity.
-				newEntity.setLocationAndVelocity(newLocation, newZVector);
+				newEntity.setLocation(newLocation);
+				newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
 				didMove = true;
 			}
 			else
@@ -151,7 +153,8 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 					EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
 					if (null != highestLocation)
 					{
-						newEntity.setLocationAndVelocity(highestLocation, newZVector);
+						newEntity.setLocation(highestLocation);
+						newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
 						didMove = true;
 					}
 					else
@@ -166,7 +169,8 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 					EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
 					if (null != lowestLocation)
 					{
-						newEntity.setLocationAndVelocity(lowestLocation, newZVector);
+						newEntity.setLocation(lowestLocation);
+						newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
 						didMove = true;
 					}
 					else
@@ -194,7 +198,8 @@ public class EntityChangeDoNothing<T extends IMutableMinimalEntity> implements I
 		boolean didUpdateVelocity = false;
 		if (!didMove && (newZVector != initialZVector))
 		{
-			newEntity.setLocationAndVelocity(oldLocation, newZVector);
+			newEntity.setLocation(oldLocation);
+			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), newZVector));
 			didUpdateVelocity = true;
 		}
 		return didMove || didUpdateVelocity;

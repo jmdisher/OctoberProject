@@ -44,10 +44,11 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		// If the entity is standing on the ground with no z-vector, we will make them jump.
 		EntityLocation location = newEntity.getLocation();
 		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, EntityConstants.getVolume(newEntity.getType()));
-		boolean isStatic = (0.0f == newEntity.getZVelocityPerSecond());
+		EntityLocation vector = newEntity.getVelocityVector();
+		boolean isStatic = (0.0f == vector.z());
 		if (isOnGround && isStatic)
 		{
-			newEntity.setLocationAndVelocity(location, JUMP_FORCE);
+			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), JUMP_FORCE));
 			didApply = true;
 			
 			// Do other state reset.

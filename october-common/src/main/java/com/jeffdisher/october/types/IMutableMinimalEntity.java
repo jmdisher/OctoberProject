@@ -14,16 +14,18 @@ public interface IMutableMinimalEntity
 {
 	int getId();
 
-	EntityLocation getLocation();
-
 	/**
 	 * @return The type of the entity (this will never change for a given instance).
 	 */
 	EntityType getType();
 
-	float getZVelocityPerSecond();
+	EntityLocation getLocation();
 
-	void setLocationAndVelocity(EntityLocation location, float zVelocityPerSecond);
+	void setLocation(EntityLocation location);
+
+	EntityLocation getVelocityVector();
+
+	void setVelocityVector(EntityLocation vector);
 
 	byte getHealth();
 

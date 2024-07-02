@@ -132,28 +132,36 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public EntityLocation getLocation()
-	{
-		return this.newLocation;
-	}
-
-	@Override
 	public EntityType getType()
 	{
 		return EntityType.PLAYER;
 	}
 
 	@Override
-	public float getZVelocityPerSecond()
+	public EntityLocation getLocation()
 	{
-		return this.newZVelocityPerSecond;
+		return this.newLocation;
 	}
 
 	@Override
-	public void setLocationAndVelocity(EntityLocation location, float zVelocityPerSecond)
+	public void setLocation(EntityLocation location)
 	{
 		this.newLocation = location;
-		this.newZVelocityPerSecond = zVelocityPerSecond;
+	}
+
+	@Override
+	public EntityLocation getVelocityVector()
+	{
+		return new EntityLocation(0.0f, 0.0f, this.newZVelocityPerSecond);
+	}
+
+	@Override
+	public void setVelocityVector(EntityLocation vector)
+	{
+		// This is just an API shape change - we don't expect an actual vectory in this, yet.
+		Assert.assertTrue(0.0f == vector.x());
+		Assert.assertTrue(0.0f == vector.y());
+		this.newZVelocityPerSecond = vector.z();
 	}
 
 	@Override
