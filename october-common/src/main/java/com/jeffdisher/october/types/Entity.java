@@ -41,7 +41,7 @@ public record Entity(int id
 	{
 		return new Entity(entity.id()
 				, entity.location()
-				, entity.zVelocityPerSecond()
+				, 0.0f
 				, 0.0f
 				, Inventory.start(0).finish()
 				, new int[HOTBAR_SIZE]

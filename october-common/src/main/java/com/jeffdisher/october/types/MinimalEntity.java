@@ -10,8 +10,6 @@ public record MinimalEntity(int id
 		, EntityType type
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
-		// We track the current z-velocity in blocks per second, up.
-		, float zVelocityPerSecond
 )
 {
 	public static MinimalEntity fromEntity(Entity entity)
@@ -22,7 +20,6 @@ public record MinimalEntity(int id
 			result = new MinimalEntity(entity.id()
 					, EntityType.PLAYER
 					, entity.location()
-					, entity.zVelocityPerSecond()
 			);
 		}
 		return result;
@@ -36,7 +33,6 @@ public record MinimalEntity(int id
 			result = new MinimalEntity(creature.id()
 					, creature.type()
 					, creature.location()
-					, creature.zVelocityPerSecond()
 			);
 		}
 		return result;
@@ -50,7 +46,6 @@ public record MinimalEntity(int id
 			result = new MinimalEntity(entity.id()
 					, entity.type()
 					, entity.location()
-					, entity.zVelocityPerSecond()
 			);
 		}
 		return result;

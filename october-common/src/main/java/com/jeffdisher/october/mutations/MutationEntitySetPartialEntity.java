@@ -33,7 +33,6 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 	public void applyToEntity(TickProcessingContext context, MutablePartialEntity newEntity)
 	{
 		newEntity.newLocation = _entity.location();
-		newEntity.newZVelocityPerSecond = _entity.zVelocityPerSecond();
 	}
 
 	@Override
