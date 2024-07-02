@@ -113,7 +113,8 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		if (isSpeedValid && oldDoesMatch)
 		{
 			long millisInMotion = _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
-			didApply = EntityMovementHelpers.moveEntity(context, newEntity, millisInMotion, _xDistance, _yDistance);
+			EntityMovementHelpers.setVelocity(context, newEntity, millisInMotion, _xDistance, _yDistance);
+			didApply = EntityMovementHelpers.allowMovement(context, newEntity, millisInMotion);
 			
 			if (didApply)
 			{

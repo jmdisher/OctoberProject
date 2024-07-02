@@ -79,11 +79,14 @@ public class TestEntityMovementHelpers
 		_Entity entity = new _Entity();
 		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
-		boolean didMove = EntityMovementHelpers.moveEntity(context, entity, 100L, -0.2f, 0.0f);
+		long millisInMotion = 100L;
+		EntityMovementHelpers.setVelocity(context, entity, millisInMotion, -0.2f, 0.0f);
+		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
 		Assert.assertFalse(didMove);
 		Assert.assertEquals(startLocation, entity.location);
 		Assert.assertEquals(startVector, entity.vector);
-		Assert.assertEquals(0, entity.cost);
+		// Even though we hit a wall, we should still pay for the acceleration.
+		Assert.assertEquals(40, entity.cost);
 	}
 
 	@Test
@@ -93,12 +96,14 @@ public class TestEntityMovementHelpers
 		_Entity entity = new _Entity();
 		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
-		boolean didMove = EntityMovementHelpers.moveEntity(context, entity, 100L, 0.2f, 0.0f);
+		long millisInMotion = 100L;
+		EntityMovementHelpers.setVelocity(context, entity, millisInMotion, 0.2f, 0.0f);
+		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
 		Assert.assertNotEquals(startLocation, entity.location);
 		Assert.assertEquals(startVector, entity.vector);
-		Assert.assertNotEquals(0, entity.cost);
+		Assert.assertEquals(40, entity.cost);
 	}
 
 

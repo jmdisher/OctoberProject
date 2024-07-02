@@ -158,9 +158,6 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void setVelocityVector(EntityLocation vector)
 	{
-		// This is just an API shape change - we don't expect an actual vectory in this, yet.
-		Assert.assertTrue(0.0f == vector.x());
-		Assert.assertTrue(0.0f == vector.y());
 		this.newVelocity = vector;
 	}
 
