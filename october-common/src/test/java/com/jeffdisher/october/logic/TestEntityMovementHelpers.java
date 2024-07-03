@@ -80,7 +80,8 @@ public class TestEntityMovementHelpers
 		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
 		long millisInMotion = 100L;
-		EntityMovementHelpers.setVelocity(context, entity, millisInMotion, -0.2f, 0.0f);
+		float blocksPerSecond = 2.0f;
+		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInMotion, -1.0f, 0.0f);
 		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
 		Assert.assertFalse(didMove);
 		Assert.assertEquals(startLocation, entity.location);
@@ -94,14 +95,33 @@ public class TestEntityMovementHelpers
 	{
 		TickProcessingContext context = _createContext();
 		_Entity entity = new _Entity();
-		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
 		long millisInMotion = 100L;
-		EntityMovementHelpers.setVelocity(context, entity, millisInMotion, 0.2f, 0.0f);
+		float blocksPerSecond = 2.0f;
+		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInMotion, 1.0f, 0.0f);
 		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
-		Assert.assertNotEquals(startLocation, entity.location);
+		Assert.assertEquals(0.2f, entity.location.x(), 0.001f);
+		Assert.assertEquals(startVector, entity.vector);
+		Assert.assertEquals(40, entity.cost);
+	}
+
+	@Test
+	public void multiStepWalk()
+	{
+		TickProcessingContext context = _createContext();
+		_Entity entity = new _Entity();
+		EntityLocation startVector = entity.vector;
+		long millisInMotion = 100L;
+		float blocksPerSecond = 2.0f;
+		long millisInStep = millisInMotion / 2L;
+		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
+		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
+		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		// We should move but still have no vector since we aren't falling.
+		Assert.assertTrue(didMove);
+		Assert.assertEquals(0.2f, entity.location.x(), 0.001f);
 		Assert.assertEquals(startVector, entity.vector);
 		Assert.assertEquals(40, entity.cost);
 	}

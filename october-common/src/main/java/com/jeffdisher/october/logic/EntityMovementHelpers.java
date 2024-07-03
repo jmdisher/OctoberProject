@@ -15,42 +15,51 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityMovementHelpers
 {
 	/**
-	 * Sets the velocity vector of the given newEntity to account for the velocity required to cross the given distance
-	 * in the allotted number of millisInMotion.  No internal validation is done to verify that this is an appropriate
-	 * velocity for this creation.
+	 * Accelerates the given newEntity by adding blocksPerSecond for secondsInMotion split across the given xComponent
+	 * and yComponent to its existing velocity vector. Note that this assumes that the velocity will be applied once
+	 * per tick so it accounts for tick time to determine how to scale this velocity change for that observation.
+	 * Note:  No check is done on xComponent or yComponent but they should typically describe a combined vector of 1.0f
+	 * length.
 	 * This helper will also apply the movement energy cost to the entity.
 	 * 
 	 * @param context The context.
+	 * @param secondsInMotion How many seconds of motion to consider.
 	 * @param newEntity The entity to update.
-	 * @param longMillisInMotion How many milliseconds of motion to consider.
-	 * @param xDistance The distance the entity should move in the x-direction.
-	 * @param yDistance The distance the entity should move in the y-direction.
+	 * @param blocksPerSecond The speed of the entity for this time.
+	 * @param millisPerTick The number of milliseconds between "allowMovement()" calls.
+	 * @param xComponent The x-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
+	 * @param yComponent The y-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
 	 */
-	public static void setVelocity(TickProcessingContext context
+	public static void accelerate(TickProcessingContext context
+			, long millisPerTick
 			, IMutableMinimalEntity newEntity
+			, float blocksPerSecond
 			, long millisInMotion
-			, float xDistance
-			, float yDistance
+			, float xComponent
+			, float yComponent
 	)
 	{
 		// First set the velocity.
+		float secondsPerTick = ((float)millisPerTick) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float secondsInMotion = ((float)millisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		EntityLocation oldVector = newEntity.getVelocityVector();
-		float newX = xDistance / secondsInMotion;
-		float newY = yDistance / secondsInMotion;
+		float targetBlocksInStep = (blocksPerSecond * secondsInMotion);
+		float totalMotion = targetBlocksInStep / secondsPerTick;
+		float newX = oldVector.x() + (xComponent * totalMotion);
+		float newY = oldVector.y() + (yComponent * totalMotion);
 		newEntity.setVelocityVector(new EntityLocation(newX, newY, oldVector.z()));
 		
 		// Then pay for the acceleration.
-		// We only account for the x/y movement (we assume we paid for jumping and falling is free).
-		// We also just sum these, instead of taking the diagonal, just for simplicity (most of the rest of the system also ignores diagonals).
-		float distance = Math.abs(xDistance) + Math.abs(yDistance);
-		int cost = (int)(distance * (float)EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK);
+		int cost = (int)(targetBlocksInStep * (float)EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK);
 		newEntity.applyEnergyCost(context, cost);
 	}
 
 	/**
 	 * Updates the given newEntity location to account for passive rising/falling motion, and updates the z-factor.
 	 * Updates newEntity's location, velocity, and energy usage.
+	 * Note that this will reduce the horizontal velocity of newEntity to 0.0 (since we currently only have maximum
+	 * friction on all blocks and also want to stop air drift immediately - not realistic but keeps this simple and
+	 * makes the user feedback be what they would expect in a video game).
 	 * 
 	 * @param context The context.
 	 * @param newEntity The entity to update.

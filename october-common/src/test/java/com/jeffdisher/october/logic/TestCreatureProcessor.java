@@ -648,7 +648,7 @@ public class TestCreatureProcessor
 			updated = group.updatedCreatures().get(creature.id());
 		}
 		// We should now be against the wall.
-		Assert.assertEquals(8.0f, updated.location().x(), 0.001f);
+		Assert.assertEquals(8.0f, updated.location().x(), 0.01f);
 		
 		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
 		Assert.assertNotEquals(startLocation, updated.location());

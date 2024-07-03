@@ -297,20 +297,30 @@ public class TestProcesses
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
-		Assert.assertEquals(location1, listener1.getLocalEntity().location());
-		Assert.assertEquals(location1, listener2.otherEntities.get(clientId1).location());
+		_compareLocation(location1, listener1.getLocalEntity().location());
+		_compareLocation(location1, listener2.otherEntities.get(clientId1).location());
 		
 		serverTickNumber = server.waitForTicksToPass(5L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
-		Assert.assertEquals(location2, listener1.otherEntities.get(clientId2).location());
-		Assert.assertEquals(location2, listener2.getLocalEntity().location());
+		_compareLocation(location2, listener1.otherEntities.get(clientId2).location());
+		_compareLocation(location2, listener2.getLocalEntity().location());
 		
 		// We are done.
 		client1.disconnect();
 		client2.disconnect();
 		server.stop();
+	}
+
+
+	// We want to compare locations with 0.01 precision, since small rounding errors are unavoidable with floats but
+	// aren't a problem, so we use this helper.
+	private static void _compareLocation(EntityLocation expected, EntityLocation test)
+	{
+		Assert.assertEquals(expected.x(), test.x(), 0.01f);
+		Assert.assertEquals(expected.y(), test.y(), 0.01f);
+		Assert.assertEquals(expected.z(), test.z(), 0.01f);
 	}
 
 
