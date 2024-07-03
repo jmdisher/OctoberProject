@@ -142,15 +142,13 @@ public class CreatureMovementHelpers
 		float moveX = targetX - location.x();
 		float sign = Math.signum(moveX);
 		float absoluteMove = Math.abs(moveX);
-		EntityLocation tempLocation = location;
 		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 		while (absoluteMove > FLOAT_THRESHOLD)
 		{
 			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, speed, oneMove, 0.0f);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(speed, oneMove, 0.0f);
 			out_list.add(move);
-			tempLocation = new EntityLocation(tempLocation.x() + oneMove, tempLocation.y(), tempLocation.z());
 			absoluteMove -= oneAbs;
 		}
 	}
@@ -160,15 +158,13 @@ public class CreatureMovementHelpers
 		float moveY = targetY - location.y();
 		float sign = Math.signum(moveY);
 		float absoluteMove = Math.abs(moveY);
-		EntityLocation tempLocation = location;
 		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
 		while (absoluteMove > FLOAT_THRESHOLD)
 		{
 			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
-			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(tempLocation, speed, 0.0f, oneMove);
+			EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(speed, 0.0f, oneMove);
 			out_list.add(move);
-			tempLocation = new EntityLocation(tempLocation.x(), tempLocation.y() + oneMove, tempLocation.z());
 			absoluteMove -= oneAbs;
 		}
 	}

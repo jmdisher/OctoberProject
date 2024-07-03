@@ -193,11 +193,11 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.2f, 0.0f), speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.4f, 0.0f), speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.6f, 0.0f), speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(new EntityLocation(0.0f, 0.8f, 0.0f), speed, 0.0f, 0.2f)
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
+			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
@@ -229,7 +229,7 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(startLocation, speed, 0.0f, 0.2f)
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(speed, 0.0f, 0.2f)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
@@ -662,8 +662,10 @@ public class TestCreatureProcessor
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), movementPlan.get(1));
 		
 		// Now, allow the entity to continue on its path and verify that it reaches the end of its path.
-		for (int i = 0; i < 12; ++i)
+		CreatureEntity justUpdated = updated;
+		while (null != justUpdated)
 		{
+			updated = justUpdated;
 			// Apply the next step.
 			creaturesById = group.updatedCreatures();
 			group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -673,12 +675,16 @@ public class TestCreatureProcessor
 					, millisSinceLastTick
 					, changesToRun
 			);
-			updated = group.updatedCreatures().get(creature.id());
+			justUpdated = group.updatedCreatures().get(creature.id());
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(2.0f, updated.location().z(), 0.001f);
-		Assert.assertNotEquals(0.0f, updated.velocity().z());
+		Assert.assertEquals(7.0f, updated.location().x(), 0.01f);
+		Assert.assertEquals(8.0f, updated.location().y(), 0.01f);
+		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
+		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
+		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
+		Assert.assertEquals(0.0f, updated.velocity().z(), 0.01f);
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), updated.location().getBlockLocation());
 		Assert.assertNull(updated.stepsToNextMove());
 	}

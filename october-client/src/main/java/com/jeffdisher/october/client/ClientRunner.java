@@ -170,7 +170,7 @@ public class ClientRunner
 				long millisToMove = EntityChangeMove.getTimeMostMillis(speed, thisX, thisY);
 				if (millisToMove > 0L)
 				{
-					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(previous, speed, thisX, thisY);
+					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(speed, thisX, thisY);
 					long missingMillis = (millisFree - millisToMove);
 					effectiveCurrentTimeMillis -= missingMillis;
 					_applyLocalChange(moveChange, effectiveCurrentTimeMillis);

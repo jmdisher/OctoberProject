@@ -749,7 +749,7 @@ public class TestSpeculativeProjection
 	@Test
 	public void movePartialRejection()
 	{
-		// We want to test that 2 move changes, where the first is rejected by the server, the second is rejected locally.
+		// We want to test that 2 move changes, where the first is rejected by the server, but the second is still applied locally.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
@@ -769,12 +769,11 @@ public class TestSpeculativeProjection
 		
 		// Apply the 2 steps of the move, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation startLocation = listener.thisEntityState.location();
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_PLAYER;
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(startLocation, speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(midStep, speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
 		long commit1 = projector.applyLocalChange(move1, 1L);
 		long commit2 = projector.applyLocalChange(move2, 1001L);
 		Assert.assertEquals(1L, commit1);
@@ -796,9 +795,9 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		
-		// We should now see 0 speculative commits and the entity should still be where it started.
-		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(startLocation, listener.thisEntityState.location());
+		// We should now see 1 speculative commit and the entity should have moved over by that step, alone.
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(midStep, listener.thisEntityState.location());
 	}
 
 	@Test
@@ -1328,14 +1327,11 @@ public class TestSpeculativeProjection
 		
 		// Apply 3 steps, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation startLocation = listener.thisEntityState.location();
-		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
-		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_PLAYER;
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(startLocation, speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(midStep, speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(secondStep, speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
 		long commit1 = projector.applyLocalChange(move1, 100L);
 		long commit2 = projector.applyLocalChange(move2, 200L);
 		long commit3 = projector.applyLocalChange(move3, 300L);

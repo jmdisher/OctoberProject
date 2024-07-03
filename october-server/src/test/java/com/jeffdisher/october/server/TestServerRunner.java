@@ -315,7 +315,7 @@ public class TestServerRunner
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		float speed = EntityConstants.SPEED_PLAYER;
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(entity1.location(), speed, -0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(speed, -0.4f, 0.0f);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);

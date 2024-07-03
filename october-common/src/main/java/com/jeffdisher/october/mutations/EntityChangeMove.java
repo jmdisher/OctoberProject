@@ -3,9 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityConstants;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -72,26 +70,23 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 
 	public static <T extends IMutableMinimalEntity> EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
-		EntityLocation oldLocation = CodecHelpers.readEntityLocation(buffer);
 		float speedBlocksPerSecond = buffer.getFloat();
 		float xDistance = buffer.getFloat();
 		float yDistance = buffer.getFloat();
-		return new EntityChangeMove<>(oldLocation, speedBlocksPerSecond, xDistance, yDistance);
+		return new EntityChangeMove<>(speedBlocksPerSecond, xDistance, yDistance);
 	}
 
 
-	private final EntityLocation _oldLocation;
 	private final float _speedBlocksPerSecond;
 	private final float _xDistance;
 	private final float _yDistance;
 
-	public EntityChangeMove(EntityLocation oldLocation, float speedBlocksPerSecond, float xDistance, float yDistance)
+	public EntityChangeMove(float speedBlocksPerSecond, float xDistance, float yDistance)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.
 		Assert.assertTrue(_isValidDistance(speedBlocksPerSecond, xDistance, yDistance));
 		
-		_oldLocation = oldLocation;
 		_speedBlocksPerSecond = speedBlocksPerSecond;
 		_xDistance = xDistance;
 		_yDistance = yDistance;
@@ -109,8 +104,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		boolean didApply = false;
 		float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
 		boolean isSpeedValid = (_speedBlocksPerSecond <= maxSpeed);
-		boolean oldDoesMatch = _oldLocation.equals(newEntity.getLocation());
-		if (isSpeedValid && oldDoesMatch)
+		if (isSpeedValid)
 		{
 			long millisInMotion = _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
 			float xComponent = Math.signum(_xDistance);
@@ -136,7 +130,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeEntityLocation(buffer, _oldLocation);
 		buffer.putFloat(_speedBlocksPerSecond);
 		buffer.putFloat(_xDistance);
 		buffer.putFloat(_yDistance);
