@@ -1373,6 +1373,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
 		
 		int[] randomHolder = new int[] {0};
+		TickRunner.TEST_SPAWNING_ENABLED = false;
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, null
@@ -1382,7 +1383,7 @@ public class TestTickRunner
 		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
-		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
+		mutable.newLocation = new EntityLocation(location.x(), location.y(), location.z());
 		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.WHEAT_SEED));
 		Entity entity = mutable.freeze();
