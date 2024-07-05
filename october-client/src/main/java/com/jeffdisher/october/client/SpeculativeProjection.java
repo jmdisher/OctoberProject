@@ -361,10 +361,9 @@ public class SpeculativeProjection
 	 * server with this one.
 	 * 
 	 * @param change The entity change to apply.
-	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
+	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
