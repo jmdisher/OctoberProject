@@ -58,6 +58,11 @@ public class TickProcessingContext
 	 */
 	public final Difficulty difficulty;
 
+	/**
+	 * The number of milliseconds since the last tick, based on server configuration.
+	 */
+	public final long millisPerTick;
+
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
@@ -66,6 +71,7 @@ public class TickProcessingContext
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
 			, Difficulty difficulty
+			, long millisPerTick
 	)
 	{
 		this.currentTick = currentTick;
@@ -76,6 +82,7 @@ public class TickProcessingContext
 		this.idAssigner = idAssigner;
 		this.randomInt = randomInt;
 		this.difficulty = difficulty;
+		this.millisPerTick = millisPerTick;
 	}
 
 

@@ -72,6 +72,7 @@ public class FakeBlockUpdate
 			, null
 			, null
 			, Difficulty.HOSTILE
+			, 100L
 		);
 		MutableBlockProxy mutable = new MutableBlockProxy(location, mutableData);
 		boolean didApply = mutation.applyMutation(context, mutable);

@@ -187,6 +187,7 @@ public class TestCowStateMachine
 				, assigner
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}

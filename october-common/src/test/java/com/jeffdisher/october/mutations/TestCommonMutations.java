@@ -71,6 +71,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -224,6 +225,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
@@ -279,6 +281,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
@@ -319,6 +322,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
@@ -371,6 +375,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		MutationBlockPushToBlock mutation = new MutationBlockPushToBlock(source, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY, sink);
@@ -457,6 +462,7 @@ public class TestCommonMutations
 					, null
 					, null
 					, Difficulty.HOSTILE
+					, 100L
 			);
 		}
 	}

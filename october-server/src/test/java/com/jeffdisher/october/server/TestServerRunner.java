@@ -230,6 +230,7 @@ public class TestServerRunner
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, ServerRunner.DEFAULT_MILLIS_PER_TICK
 		), fake);
 		EntityChangeDoNothing<IMutablePlayerEntity> move2 = new EntityChangeDoNothing<>(fake.newLocation, 100L);
 		network.receiveFromClient(clientId, move1, 1L);

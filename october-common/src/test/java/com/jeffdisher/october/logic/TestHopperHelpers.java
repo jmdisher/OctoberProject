@@ -89,6 +89,7 @@ public class TestHopperHelpers
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Now apply the hopper processing and verify that we see the 2 mutations and the item removed from the hopper.

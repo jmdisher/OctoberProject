@@ -80,6 +80,7 @@ public class TestCreatureSpawner
 					? randomValue
 					: (bound - 1)
 				, Difficulty.PEACEFUL
+				, 100L
 		);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
 				, completedCuboids
@@ -141,6 +142,7 @@ public class TestCreatureSpawner
 					? randomValue
 					: (bound - 1)
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}

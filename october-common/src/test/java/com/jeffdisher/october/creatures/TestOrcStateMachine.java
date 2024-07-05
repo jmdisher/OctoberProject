@@ -165,6 +165,7 @@ public class TestOrcStateMachine
 				, assigner
 				, (int bound) -> random.nextInt(bound)
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}

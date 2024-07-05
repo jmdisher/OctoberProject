@@ -241,6 +241,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
 		Assert.assertTrue(update.applyMutation(context, proxy));
@@ -325,6 +326,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}

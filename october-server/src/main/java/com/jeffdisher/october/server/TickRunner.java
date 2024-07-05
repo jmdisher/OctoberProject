@@ -387,6 +387,7 @@ public class TickRunner
 					, _idAssigner
 					, _random
 					, difficulty
+					, _millisPerTick
 			);
 			
 			// We will have the first thread attempt the monster spawning algorithm.
@@ -404,7 +405,6 @@ public class TickRunner
 					, materials.completedCreatures
 					, context
 					, new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values())
-					, _millisPerTick
 					, materials.creatureChanges
 			);
 			// There is always a returned group (even if it has no content).
@@ -414,7 +414,6 @@ public class TickRunner
 			CrowdProcessor.ProcessedGroup group = CrowdProcessor.processCrowdGroupParallel(thisThread
 					, materials.completedEntities
 					, context
-					, _millisPerTick
 					, materials.changesToRun
 			);
 			// There is always a returned group (even if it has no content).
@@ -424,7 +423,6 @@ public class TickRunner
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
 					, context
-					, _millisPerTick
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
 					, materials.potentialLightChangesByCuboid

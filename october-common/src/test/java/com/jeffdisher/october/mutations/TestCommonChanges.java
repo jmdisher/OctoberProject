@@ -107,6 +107,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
@@ -575,6 +576,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
@@ -706,6 +708,7 @@ public class TestCommonChanges
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Check the miss.
@@ -773,6 +776,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
@@ -838,6 +842,7 @@ public class TestCommonChanges
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Check that the sword durability changed and that we scheduled the hit.
@@ -867,6 +872,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.create(entityId);
@@ -1283,6 +1289,7 @@ public class TestCommonChanges
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Attack and verify that we see damage come through the creature path.
@@ -1341,6 +1348,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		
 		// Feed the creature and verify that we see the apply scheduled.
@@ -1614,6 +1622,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}
@@ -1705,6 +1714,7 @@ public class TestCommonChanges
 					, null
 					, (int bound) -> random.nextInt(bound)
 					, Difficulty.HOSTILE
+					, 100L
 			);
 		}
 	}

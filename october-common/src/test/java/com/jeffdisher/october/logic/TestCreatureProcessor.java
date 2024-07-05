@@ -76,14 +76,12 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)10);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -121,15 +119,14 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, Difficulty.HOSTILE
+				, 100L
 		);
-		long millisSinceLastTick = 100L;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -149,13 +146,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -173,13 +168,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContextWithDifficulty(Difficulty.PEACEFUL);
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -205,13 +198,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -237,13 +228,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -265,13 +254,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -295,13 +282,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -325,13 +310,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -351,13 +334,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, startHealth);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -375,7 +356,6 @@ public class TestCreatureProcessor
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -397,13 +377,11 @@ public class TestCreatureProcessor
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity nonWheat = _createEntity(1, new EntityLocation(2.0f, 0.0f, 0.0f), null, new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -428,7 +406,6 @@ public class TestCreatureProcessor
 					, creaturesById
 					, context
 					, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
-					, millisSinceLastTick
 					, changesToRun
 			);
 			updated = group.updatedCreatures().get(creature.id());
@@ -461,13 +438,11 @@ public class TestCreatureProcessor
 		);
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(wheat_item, 2), null);
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(fedCow.id(), fedCow)
 				, context
 				, new EntityCollection(Set.of(closeWheat), creaturesById.values())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -501,12 +476,10 @@ public class TestCreatureProcessor
 				, cow2.id(), cow2
 		));
 		TickProcessingContext context = _createContext();
-		long millisSinceLastTick = 100L;
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, Map.of()
 		);
 		
@@ -535,7 +508,6 @@ public class TestCreatureProcessor
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, Map.of()
 		);
 		
@@ -550,7 +522,6 @@ public class TestCreatureProcessor
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
 		);
 		
@@ -564,7 +535,6 @@ public class TestCreatureProcessor
 					, creaturesById
 					, context
 					, new EntityCollection(Set.of(), creaturesById.values())
-					, millisSinceLastTick
 					, Map.of()
 			);
 		}
@@ -577,7 +547,6 @@ public class TestCreatureProcessor
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, Map.of()
 		);
 		Assert.assertEquals(1, group.newlySpawnedCreatures().size());
@@ -594,7 +563,6 @@ public class TestCreatureProcessor
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, Map.of()
 		);
 	}
@@ -622,13 +590,11 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		long millisSinceLastTick = 100L;
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), creaturesById.values())
-				, millisSinceLastTick
 				, changesToRun
 		);
 		
@@ -642,7 +608,6 @@ public class TestCreatureProcessor
 					, creaturesById
 					, context
 					, new EntityCollection(Set.of(), creaturesById.values())
-					, millisSinceLastTick
 					, changesToRun
 			);
 			updated = group.updatedCreatures().get(creature.id());
@@ -672,7 +637,6 @@ public class TestCreatureProcessor
 					, creaturesById
 					, context
 					, new EntityCollection(Set.of(), creaturesById.values())
-					, millisSinceLastTick
 					, changesToRun
 			);
 			justUpdated = group.updatedCreatures().get(creature.id());
@@ -713,6 +677,7 @@ public class TestCreatureProcessor
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
 				, difficulty
+				, 100L
 		);
 		return context;
 	}
@@ -733,6 +698,7 @@ public class TestCreatureProcessor
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
 				, Difficulty.HOSTILE
+				, 100L
 		);
 		return context;
 	}
@@ -748,6 +714,7 @@ public class TestCreatureProcessor
 				, idAssigner
 				, existing.randomInt
 				, existing.difficulty
+				, existing.millisPerTick
 		);
 		return context;
 	}
@@ -762,6 +729,7 @@ public class TestCreatureProcessor
 				, null
 				, existing.randomInt
 				, existing.difficulty
+				, existing.millisPerTick
 		);
 		return context;
 	}

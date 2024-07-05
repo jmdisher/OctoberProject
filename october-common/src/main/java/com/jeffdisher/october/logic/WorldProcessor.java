@@ -43,7 +43,6 @@ public class WorldProcessor
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
 	 * @param context The context used for running changes.
-	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
@@ -57,7 +56,6 @@ public class WorldProcessor
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
 			, TickProcessingContext context
-			, long millisSinceLastTick
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
@@ -65,6 +63,7 @@ public class WorldProcessor
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 	)
 	{
+		long millisSinceLastTick = context.millisPerTick;
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.

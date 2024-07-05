@@ -33,7 +33,6 @@ public class CrowdProcessor
 	 * @param processor The current thread.
 	 * @param entitiesById The map of all read-only entities from the previous tick.
 	 * @param context The context used for running changes.
-	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
 	 * @return The subset of the changesToRun work which was completed by this thread.
@@ -41,10 +40,10 @@ public class CrowdProcessor
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
 			, TickProcessingContext context
-			, long millisSinceLastTick
 			, Map<Integer, List<ScheduledChange>> changesToRun
 	)
 	{
+		long millisSinceLastTick = context.millisPerTick;
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;

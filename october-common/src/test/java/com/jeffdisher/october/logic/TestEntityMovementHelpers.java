@@ -147,6 +147,7 @@ public class TestEntityMovementHelpers
 				, null
 				, null
 				, null
+				, 100L
 		);
 	}
 

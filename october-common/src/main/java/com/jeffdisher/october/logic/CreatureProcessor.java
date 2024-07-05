@@ -41,7 +41,6 @@ public class CreatureProcessor
 	 * @param creaturesById The map of all read-only creatures from the previous tick.
 	 * @param context The context used for running changes.
 	 * @param entityCollection A look-up mechanism for the entities in the loaded world.
-	 * @param millisSinceLastTick Milliseconds based since last tick.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the creature on which they are
 	 * scheduled.
 	 * @return The subset of the changesToRun work which was completed by this thread.
@@ -50,10 +49,10 @@ public class CreatureProcessor
 			, Map<Integer, CreatureEntity> creaturesById
 			, TickProcessingContext context
 			, EntityCollection entityCollection
-			, long millisSinceLastTick
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun
 	)
 	{
+		long millisSinceLastTick = context.millisPerTick;
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
 		List<CreatureEntity> newlySpawnedCreatures = new ArrayList<>();

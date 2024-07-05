@@ -176,7 +176,9 @@ public class SpeculativeProjection
 		// TODO:  Determine if we want to apply any immediately mutations or changes (we currently capture them but do nothing with them).
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
-		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink);
+		// It doesn't matter how much time we allot for these mutations since they are just state updates.
+		long millisPerTick = 0L;
+		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink, millisPerTick);
 		
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;
@@ -216,8 +218,6 @@ public class SpeculativeProjection
 			}
 		}
 
-		// The time between ticks doesn't matter when replaying from server.
-		long ignoredMillisBetweenTicks = 0L;
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
@@ -229,7 +229,6 @@ public class SpeculativeProjection
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
 				, context
-				, ignoredMillisBetweenTicks
 				, mutationsToRun
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
@@ -437,12 +436,14 @@ public class SpeculativeProjection
 		
 		// Only the server can apply ticks so just provide 0.
 		long gameTick = 0L;
+		long millisecondsBeforeChange = change.getTimeCostMillis();
 		
 		CommonMutationSink newMutationSink = new CommonMutationSink();
 		CommonChangeSink newChangeSink = new CommonChangeSink();
 		TickProcessingContext context = _createContext(gameTick
 				, newMutationSink
 				, newChangeSink
+				, millisecondsBeforeChange
 		);
 		
 		Entity[] changedProjectedEntity = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, List.of(change));
@@ -470,9 +471,11 @@ public class SpeculativeProjection
 			
 			CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 			CommonChangeSink innerNewChangeSink = new CommonChangeSink();
+			long millisPerTick = 0L;
 			TickProcessingContext innerContext = _createContext(gameTick
 					, innerNewMutationSink
 					, innerNewChangeSink
+					, millisPerTick
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
@@ -522,9 +525,11 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
+		long millisPerTick = 0L;
 		TickProcessingContext innerContext = _createContext(gameTick
 				, innerNewMutationSink
 				, innerNewChangeSink
+				, millisPerTick
 		);
 		
 		// We ignore the results of these.
@@ -534,9 +539,6 @@ public class SpeculativeProjection
 
 	private void _applyFollowUpBlockMutations(TickProcessingContext context, Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
 	{
-		// Ignored variables in speculative mode.
-		long millisSinceLastTick = 0L;
-		
 		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this is theoretically possible).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
@@ -546,7 +548,6 @@ public class SpeculativeProjection
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedWorld
 				, context
-				, millisSinceLastTick
 				, innerMutations
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
@@ -590,14 +591,10 @@ public class SpeculativeProjection
 
 	private static Entity[] _runChangesOnEntity(ProcessorElement processor, TickProcessingContext context, int entityId, Entity entity, List<IMutationEntity<IMutablePlayerEntity>> entityMutations)
 	{
-		// The time between ticks doesn't matter when replaying from server.
-		long ignoredMillisBetweenTicks = 0L;
-		
 		List<ScheduledChange> scheduled = _scheduledChangeList(entityMutations);
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(processor
 				, (null != entity) ? Map.of(entityId, entity) : Map.of()
 				, context
-				, ignoredMillisBetweenTicks
 				, Map.of(entityId, scheduled)
 		);
 		return (innerGroup.committedMutationCount() > 0)
@@ -616,6 +613,7 @@ public class SpeculativeProjection
 	private TickProcessingContext _createContext(long gameTick
 			, CommonMutationSink newMutationSink
 			, CommonChangeSink newChangeSink
+			, long millisPerTick
 	)
 	{
 		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
@@ -632,6 +630,7 @@ public class SpeculativeProjection
 				, (int bound) -> 0
 				// By default, we run in hostile mode.
 				, Difficulty.HOSTILE
+				, millisPerTick
 		);
 		return context;
 	}
