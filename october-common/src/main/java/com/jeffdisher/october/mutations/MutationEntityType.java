@@ -5,7 +5,6 @@ public enum MutationEntityType
 {
 	ERROR,
 	
-	DO_NOTHING,
 	MOVE,
 	JUMP,
 	BLOCK_PLACE,

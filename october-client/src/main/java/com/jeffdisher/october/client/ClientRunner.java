@@ -11,7 +11,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
-import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IEntityUpdate;
@@ -178,14 +177,8 @@ public class ClientRunner
 			}
 			else
 			{
-				// We can't move horizontally but see if maybe we should generate a do nothing action to fall.
-				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, previous, EntityConstants.VOLUME_PLAYER);
-				if ((0.0f != _localEntityProjection.velocity().z())
-					|| !isOnGround)
-				{
-					EntityChangeDoNothing<IMutablePlayerEntity> moveChange = new EntityChangeDoNothing<>(previous, millisFree);
-					_applyLocalChange(moveChange);
-				}
+				// We can't move horizontally but we still want to run the EndOfTick to account for falling, etc.
+				_projection.fakePassTime(millisFree);
 			}
 			
 			// Whether or not we did anything, run any pending calls while we are here.
@@ -253,21 +246,8 @@ public class ClientRunner
 			}
 			else
 			{
-				// Nothing is happening so just account for passive movement, assuming there is any which makes sense.
-				EntityLocation oldLocation = _localEntityProjection.location();
-				boolean isOnGround = SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, oldLocation, EntityConstants.VOLUME_PLAYER);
-				if ((0.0f != _localEntityProjection.velocity().z())
-						|| !isOnGround)
-				{
-					long doNothingTime = (millisToApply <= EntityChangeDoNothing.LIMIT_COST_MILLIS)
-							? millisToApply
-							: EntityChangeDoNothing.LIMIT_COST_MILLIS
-					;
-					EntityChangeDoNothing<IMutablePlayerEntity> moveChange = new EntityChangeDoNothing<>(oldLocation, doNothingTime);
-					_applyLocalChange(moveChange);
-				}
-				// Whether or not we did anything, run any pending calls while we are here.
-				_runAllPendingCalls(currentTimeMillis);
+				// Nothing is happening so just account for time passing.
+				_projection.fakePassTime(millisToApply);
 			}
 			_lastCallMillis = currentTimeMillis;
 		}

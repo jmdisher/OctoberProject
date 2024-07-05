@@ -15,10 +15,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EntityChangeDoNothing;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
@@ -36,12 +34,12 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -196,7 +194,7 @@ public class TestServerRunner
 	@Test
 	public void entityFalling() throws Throwable
 	{
-		// Send some empty move changes to see that the entity is falling over time.
+		// Do nothing and observe that we see location updates from the server as the entity falls.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
@@ -213,34 +211,22 @@ public class TestServerRunner
 		server.clientConnected(clientId);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
+		EntityLocation start = entity.location();
 		// We also want to wait for the world to load before we start moving (we run the local mutation against a fake
 		// cuboid so we will need the server to have loaded something to get the same answer).
 		network.waitForCuboidAddedCount(clientId, 2);
 		
-		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
-		// We will send 2 full frames together since the server runner should handle that "bursty" behaviour in its change scheduler.
-		EntityChangeDoNothing<IMutablePlayerEntity> move1 = new EntityChangeDoNothing<>(entity.location(), 100L);
-		MutableEntity fake = MutableEntity.existing(entity);
-		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR);
-		move1.applyChange(new TickProcessingContext(1L
-				, (AbsoluteLocation loc) -> new BlockProxy(loc.getBlockAddress(), fakeCuboid)
-				, null
-				, null
-				, null
-				, null
-				, null
-				, Difficulty.HOSTILE
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
-		), fake);
-		EntityChangeDoNothing<IMutablePlayerEntity> move2 = new EntityChangeDoNothing<>(fake.newLocation, 100L);
-		network.receiveFromClient(clientId, move1, 1L);
-		network.receiveFromClient(clientId, move2, 2L);
-		
 		// Watch the entity fall as a result of implicit changes.
 		Object change0 = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		MutableEntity mutable = MutableEntity.existing(entity);
+		((MutationEntitySetEntity)change0).applyToEntity(null, mutable);
+		Assert.assertTrue(mutable.newLocation.z() < start.z());
+		EntityLocation first = mutable.newLocation;
 		Object change1 = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
+		((MutationEntitySetEntity)change1).applyToEntity(null, mutable);
+		Assert.assertTrue(mutable.newLocation.z() < first.z());
 		
 		runner.shutdown();
 	}

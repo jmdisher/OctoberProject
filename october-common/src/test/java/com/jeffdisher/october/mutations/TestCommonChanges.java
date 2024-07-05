@@ -74,6 +74,7 @@ public class TestCommonChanges
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
+		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 	}
 
@@ -87,8 +88,8 @@ public class TestCommonChanges
 		TickProcessingContext context = _createSimpleContext();
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
-		boolean didApply = move.applyChange(context, newEntity);
-		Assert.assertFalse(didApply);
+		move.applyChange(context, newEntity);
+		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 
@@ -111,8 +112,8 @@ public class TestCommonChanges
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
-		boolean didApply = move.applyChange(context, newEntity);
-		Assert.assertFalse(didApply);
+		move.applyChange(context, newEntity);
+		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 
@@ -129,6 +130,7 @@ public class TestCommonChanges
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
+		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
 		float expectedZVector = -0.98f;
 		// This movement would then be applied for 1/10 second.
@@ -159,23 +161,20 @@ public class TestCommonChanges
 		// (we will use 50ms updates to see the more detailed arc)
 		for (int i = 0; i < 18; ++i)
 		{
-			EntityChangeDoNothing<IMutablePlayerEntity> fall = new EntityChangeDoNothing<>(newEntity.newLocation, 50L);
-			didApply = fall.applyChange(context, newEntity);
-			Assert.assertTrue(didApply);
+			EntityEndOfTick fall = new EntityEndOfTick(50L);
+			fall.apply(context, newEntity);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
-		EntityChangeDoNothing<IMutablePlayerEntity> fall = new EntityChangeDoNothing<>(newEntity.newLocation, 100L);
-		didApply = fall.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
+		EntityEndOfTick fall = new EntityEndOfTick(100L);
+		fall.apply(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
 		Assert.assertEquals(-4.9f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
-		fall = new EntityChangeDoNothing<>(newEntity.newLocation, 100L);
-		didApply = fall.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
+		fall = new EntityEndOfTick(100L);
+		fall.apply(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
@@ -483,6 +482,7 @@ public class TestCommonChanges
 		// Craft some items to use these up and verify that we also moved.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		Assert.assertTrue(craft.applyChange(context, newEntity));
+		new EntityEndOfTick(craft.getTimeCostMillis()).apply(context, newEntity);
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}

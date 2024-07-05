@@ -7,11 +7,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.mutations.EntityChangeDoNothing;
+import com.jeffdisher.october.mutations.EntityEndOfTick;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -99,8 +98,6 @@ public class CreatureProcessor
 					
 				}
 				
-				long millisApplied = 0L;
-				
 				if (null != changes)
 				{
 					for (IMutationEntity<IMutableCreatureEntity> change : changes)
@@ -111,22 +108,13 @@ public class CreatureProcessor
 						{
 							committedMutationCount += 1;
 						}
-						millisApplied += change.getTimeCostMillis();
 					}
 					mutable.newLastActionGameTick = context.currentTick;
 				}
 				
-				// See if we need to account for doing nothing.
-				if (millisApplied < millisSinceLastTick)
-				{
-					long millisToWait = millisSinceLastTick - millisApplied;
-					EntityChangeDoNothing<IMutableMinimalEntity> doNothing = new EntityChangeDoNothing<>(mutable.newLocation, millisToWait);
-					boolean didApply = doNothing.applyChange(context, mutable);
-					if (didApply)
-					{
-						committedMutationCount += 1;
-					}
-				}
+				// Account for time passing.
+				EntityEndOfTick end = new EntityEndOfTick(millisSinceLastTick);
+				end.apply(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 				// This freeze() call will return the original instance if it is identical.

@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -112,13 +111,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 			int cost = (int)(_millisToApply * EntityChangePeriodic.ENERGY_COST_CRAFT_PER_SECOND / 1000);
 			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, cost);
 		}
-		
-		// Account for any movement while we were busy.
-		// NOTE:  This is currently wrong as it is only applied in the last part of the operation, not each tick.
-		// This will need to be revisited when we change the crafting action.
-		boolean didMove = EntityMovementHelpers.allowMovement(context, newEntity, _operation.millisPerCraft);
-		
-		return isValid || didMove;
+		return isValid;
 	}
 
 	@Override

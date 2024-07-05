@@ -23,8 +23,22 @@ public class EntityMutationWrapper implements IEntityUpdate
 	@Override
 	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
 	{
-		// NOTE:  This line of code is why the TickProcessingContext is provided in this interface.  If tests change to not need it, it should be removed.
-		_mutation.applyChange(context, newEntity);
+		// This is only used for client-side unit tests which use a 0ms tick time for updates from server so we will override this context.
+		// Ideally, tests should stop using this utility, altogether, since it is an ugly hack.
+		long millisPerTick = 100L;
+		TickProcessingContext override = new TickProcessingContext(context.currentTick
+				, context.previousBlockLookUp
+				, context.previousEntityLookUp
+				, context.mutationSink
+				, context.newChangeSink
+				, context.idAssigner
+				, context.randomInt
+				, context.difficulty
+				, millisPerTick
+		);
+		_mutation.applyChange(override, newEntity);
+		// We also need the corresponding end of tick.
+		new EntityEndOfTick(millisPerTick).apply(override, newEntity);
 	}
 
 	@Override

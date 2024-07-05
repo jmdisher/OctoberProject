@@ -359,6 +359,7 @@ public class SpeculativeProjection
 	 * that the returned number may be the same as that returned by the previous call if the implementation decided that
 	 * they could be coalesced.  In this case, the caller should replace the change it has buffered to send to the
 	 * server with this one.
+	 * Note that this will internally account for time passing if the change takes more than 0 milliseconds.
 	 * 
 	 * @param change The entity change to apply.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
@@ -390,6 +391,37 @@ public class SpeculativeProjection
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
 		_notifyChanges(Set.of(), modifiedCuboidAddresses, changedLocalEntity, Set.of());
 		return commitNumber;
+	}
+
+	/**
+	 * Allows millisToPass to pass within the system, simply so things like physics can be applied to the existing
+	 * entity.
+	 * 
+	 * @param millisToPass The number of milliseconds to allow to pass.
+	 */
+	public void fakePassTime(long millisToPass)
+	{
+		// We will just fake the end of tick with no other changes.
+		// We will ignore any follow-up mutations or changes.
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
+		TickProcessingContext context = _createContext(0L
+				, newMutationSink
+				, newChangeSink
+				, millisToPass
+		);
+		
+		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
+				, Map.of(_localEntityId, _projectedLocalEntity)
+				, context
+				, Map.of()
+		);
+		Entity updated = innerGroup.updatedEntities().get(_localEntityId);
+		if (null != updated)
+		{
+			_projectedLocalEntity = updated;
+			_notifyChanges(Set.of(), Set.of(), _projectedLocalEntity, Set.of());
+		}
 	}
 
 
