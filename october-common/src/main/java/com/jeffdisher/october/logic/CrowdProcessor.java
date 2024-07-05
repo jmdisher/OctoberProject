@@ -47,21 +47,19 @@ public class CrowdProcessor
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;
-		for (Map.Entry<Integer, List<ScheduledChange>> elt : changesToRun.entrySet())
+		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
 			{
 				// This is our element.
 				Integer id = elt.getKey();
-				Entity entity = entitiesById.get(id);
+				Entity entity = elt.getValue();
+				processor.entitiesProcessed += 1;
 				
-				// Note that the entity may have been unloaded.
-				if (null != entity)
+				MutableEntity mutable = MutableEntity.existing(entity);
+				List<ScheduledChange> changes = changesToRun.get(id);
+				if (null != changes)
 				{
-					processor.entitiesProcessed += 1;
-					
-					MutableEntity mutable = MutableEntity.existing(entity);
-					List<ScheduledChange> changes = elt.getValue();
 					for (ScheduledChange scheduled : changes)
 					{
 						long millisUntilReady = scheduled.millisUntilReady();
@@ -90,14 +88,14 @@ public class CrowdProcessor
 							list.add(new ScheduledChange(change, updatedMillis));
 						}
 					}
-					
-					// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
-					// This freeze() call will return the original instance if it is identical.
-					Entity newEntity = mutable.freeze();
-					if (newEntity != entity)
-					{
-						updatedEntities.put(id, newEntity);
-					}
+				}
+				
+				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
+				// This freeze() call will return the original instance if it is identical.
+				Entity newEntity = mutable.freeze();
+				if (newEntity != entity)
+				{
+					updatedEntities.put(id, newEntity);
 				}
 			}
 		}
