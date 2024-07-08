@@ -7,6 +7,7 @@ public enum MutationEntityType
 	
 	MOVE,
 	JUMP,
+	SWIM,
 	BLOCK_PLACE,
 	CRAFT,
 	SELECT_ITEM,

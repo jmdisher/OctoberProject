@@ -1600,6 +1600,67 @@ public class TestCommonChanges
 		newEntity.freeze();
 	}
 
+	@Test
+	public void basicSwim()
+	{
+		// Swim and see how our vector changes.
+		EntityLocation oldLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), waterSource);
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = oldLocation;
+		
+		EntityChangeSwim<IMutablePlayerEntity> swim = new EntityChangeSwim<>();
+		boolean didApply = swim.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		
+		// The swim doesn't move, just sets the vector.
+		Assert.assertEquals(EntityChangeSwim.SWIM_FORCE, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(oldLocation, newEntity.newLocation);
+		
+		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates in future).
+		EntityEndOfTick fall = new EntityEndOfTick(100L);
+		fall.apply(context, newEntity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.441f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
+		fall.apply(context, newEntity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.784f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		// We should fail to apply the swim, again, since we still have a positive z-velocity.
+		Assert.assertFalse(swim.applyChange(context, newEntity));
+	}
+
+	@Test
+	public void swimVersusJump()
+	{
+		// Create a water cuboid with a solid block in it to show that a jump or swim will work on the block but only swimming works in the water.
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), waterSource);
+		AbsoluteLocation stoneLocation = cuboid.getCuboidAddress().getBase().getRelative(5, 5, 5);
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
+		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
+		EntityChangeSwim<IMutablePlayerEntity> swim = new EntityChangeSwim<>();
+		
+		// Jumping under water is fine if standing on a solid block.
+		MutableEntity entity = MutableEntity.create(1);
+		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1);
+		Assert.assertTrue(jump.applyChange(context, entity));
+		
+		// Jumping under water fails if not on a solid block but swimming should work.
+		entity = MutableEntity.create(1);
+		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.5f);
+		Assert.assertFalse(jump.applyChange(context, entity));
+		Assert.assertTrue(swim.applyChange(context, entity));
+		
+		// Jumping under water fails if not on a solid block but swimming should work.
+		entity = MutableEntity.create(1);
+		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 2.0f);
+		Assert.assertFalse(jump.applyChange(context, entity));
+		Assert.assertTrue(swim.applyChange(context, entity));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
@@ -1616,6 +1677,26 @@ public class TestCommonChanges
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
+				, null
+				, null
+				, null
+				, null
+				, null
+				, Difficulty.HOSTILE
+				, 100L
+		);
+		return context;
+	}
+
+	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
+	{
+		TickProcessingContext context = new TickProcessingContext(0L
+				, (AbsoluteLocation location) -> {
+					return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+					;
+				}
 				, null
 				, null
 				, null

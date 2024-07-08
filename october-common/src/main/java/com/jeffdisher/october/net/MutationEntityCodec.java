@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.EntityChangeSwapArmour;
+import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -38,6 +39,7 @@ public class MutationEntityCodec
 	{
 		_CODEC_TABLE[EntityChangeMove.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeMove.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeJump.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeJump.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeSwim.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwim.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationPlaceSelectedBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationPlaceSelectedBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeCraft.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationEntitySelectItem.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationEntitySelectItem.deserializeFromBuffer(buffer);

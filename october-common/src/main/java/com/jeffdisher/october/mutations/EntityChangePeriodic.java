@@ -28,6 +28,8 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	public static final int ENERGY_COST_ATTACK = 2 * ENERGY_PER_FOOD;
 	// Jumping is pretty expensive.
 	public static final int ENERGY_COST_JUMP = 500;
+	// Swimming is similar to jumping.
+	public static final int ENERGY_COST_SWIM = 400;
 	// Crafting is somewhat cheap but depends on time so we will measure this per-second.
 	public static final int ENERGY_COST_CRAFT_PER_SECOND = 200;
 	// Movement depends on horizontal movement but this is the cost for a single block.
