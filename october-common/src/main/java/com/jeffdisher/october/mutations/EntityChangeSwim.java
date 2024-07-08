@@ -1,10 +1,12 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -26,6 +28,17 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	public static final float MINIMUM_UP_VELOCITY = 0.0f;
 	public static final MutationEntityType TYPE = MutationEntityType.SWIM;
 
+	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, EntityLocation location
+			, EntityLocation vector
+	)
+	{
+		return _canSwim(previousBlockLookUp
+				, location
+				, vector
+		);
+	}
+
 	public static <T extends IMutableMinimalEntity> EntityChangeSwim<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		return new EntityChangeSwim<>();
@@ -43,15 +56,14 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
-		Environment env = Environment.getShared();
-		Block sourceBlock = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.water_source"));
 		
 		// We will assume that we can swim if they have a low upward vector and their foot is in a water source (this logic will be made more complex, later).
 		EntityLocation vector = newEntity.getVelocityVector();
 		EntityLocation location = newEntity.getLocation();
-		BlockProxy footBlock = context.previousBlockLookUp.apply(location.getBlockLocation());
-		boolean isInWater = (sourceBlock == footBlock.getBlock());
-		if (isInWater && (vector.z() <= MINIMUM_UP_VELOCITY))
+		if (_canSwim(context.previousBlockLookUp
+				, location
+				, vector
+		))
 		{
 			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), SWIM_FORCE));
 			didApply = true;
@@ -82,5 +94,18 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	{
 		// Common case.
 		return true;
+	}
+
+
+	private static boolean _canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, EntityLocation location
+			, EntityLocation vector
+	)
+	{
+		BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
+		Environment env = Environment.getShared();
+		Block sourceBlock = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.water_source"));
+		boolean isInWater = (sourceBlock == footBlock.getBlock());
+		return (isInWater && (vector.z() <= MINIMUM_UP_VELOCITY));
 	}
 }

@@ -1,5 +1,8 @@
 package com.jeffdisher.october.logic;
 
+import com.jeffdisher.october.aspects.BlockAspect;
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
@@ -80,13 +83,23 @@ public class EntityMovementHelpers
 			, long longMillisInMotion
 	)
 	{
+		Environment env = Environment.getShared();
+		EntityLocation oldVector = newEntity.getVelocityVector();
+		EntityLocation oldLocation = newEntity.getLocation();
+		
 		// First of all, we need to figure out if we should be changing our z-vector:
+		// -apply viscosity to the previous vector (direct multiplier)
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		EntityLocation vector = newEntity.getVelocityVector();
+		BlockProxy currentLocationProxy = context.previousBlockLookUp.apply(oldLocation.getBlockLocation());
+		int currentBlockViscosity = (null != currentLocationProxy)
+				? env.blocks.blockViscosity(currentLocationProxy.getBlock())
+				: BlockAspect.SOLID_VISCOSITY
+		;
+		float viscosityMultiplier = (float)(BlockAspect.SOLID_VISCOSITY - currentBlockViscosity) / (float)BlockAspect.SOLID_VISCOSITY;
+		EntityLocation vector = new EntityLocation(viscosityMultiplier * oldVector.x(), viscosityMultiplier * oldVector.y(), viscosityMultiplier * oldVector.z());
 		float initialZVector = vector.z();
-		EntityLocation oldLocation = newEntity.getLocation();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float newZVector;

@@ -1622,13 +1622,14 @@ public class TestCommonChanges
 		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates in future).
 		EntityEndOfTick fall = new EntityEndOfTick(100L);
 		fall.apply(context, newEntity);
-		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.441f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 3.92f), newEntity.newVelocity);
-		fall.apply(context, newEntity);
-		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.784f), newEntity.newLocation);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 2.94f), newEntity.newVelocity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.196f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 1.47f), newEntity.newVelocity);
 		// We should fail to apply the swim, again, since we still have a positive z-velocity.
 		Assert.assertFalse(swim.applyChange(context, newEntity));
+		// Apply again and see that we are already sinking due to the water's viscosity.
+		fall.apply(context, newEntity);
+		Assert.assertEquals(new EntityLocation(5.0f, 5.0f, 5.2205f), newEntity.newLocation);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.245f), newEntity.newVelocity);
 	}
 
 	@Test

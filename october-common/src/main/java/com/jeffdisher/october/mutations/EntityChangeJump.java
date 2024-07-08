@@ -1,11 +1,15 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -22,6 +26,19 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	 */
 	public static final float JUMP_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
+
+	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, EntityLocation location
+			, EntityVolume volume
+			, EntityLocation vector
+	)
+	{
+		return _canJump(previousBlockLookUp
+				, location
+				, volume
+				, vector
+		);
+	}
 
 	public static <T extends IMutableMinimalEntity> EntityChangeJump<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -43,10 +60,12 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		
 		// If the entity is standing on the ground with no z-vector, we will make them jump.
 		EntityLocation location = newEntity.getLocation();
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, location, EntityConstants.getVolume(newEntity.getType()));
 		EntityLocation vector = newEntity.getVelocityVector();
-		boolean isStatic = (0.0f == vector.z());
-		if (isOnGround && isStatic)
+		if (_canJump(context.previousBlockLookUp
+				, location
+				, EntityConstants.getVolume(newEntity.getType())
+				, vector
+		))
 		{
 			newEntity.setVelocityVector(new EntityLocation(vector.x(), vector.y(), JUMP_FORCE));
 			didApply = true;
@@ -77,5 +96,17 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	{
 		// Common case.
 		return true;
+	}
+
+
+	private static boolean _canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, EntityLocation location
+			, EntityVolume volume
+			, EntityLocation vector
+	)
+	{
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(previousBlockLookUp, location, volume);
+		boolean isStatic = (0.0f == vector.z());
+		return isOnGround && isStatic;
 	}
 }
