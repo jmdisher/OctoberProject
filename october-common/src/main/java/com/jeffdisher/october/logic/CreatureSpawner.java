@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
@@ -125,7 +126,7 @@ public class CreatureSpawner
 			AbsoluteLocation baseLocation = checkSpawningLocation.getRelative(0, 0, -1);
 			BlockProxy base = context.previousBlockLookUp.apply(baseLocation);
 			boolean isSolid = (null != base)
-					? !env.blocks.permitsEntityMovement(base.getBlock())
+					? (BlockAspect.SOLID_VISCOSITY == env.blocks.blockViscosity(base.getBlock()))
 					: false
 			;
 			boolean isDark = ((byte)0 == context.previousBlockLookUp.apply(checkSpawningLocation).getLight());

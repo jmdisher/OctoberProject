@@ -23,6 +23,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BlockAspect
 {
+	/**
+	 * Viscosity is a fraction out of 100 where 100 means "solid".
+	 */
+	public static final int SOLID_VISCOSITY = 100;
+
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
@@ -49,7 +54,7 @@ public class BlockAspect
 		Map<Item, Block> blocksByItemType = new HashMap<>();
 		
 		Set<Block> canBeReplaced = new HashSet<>();
-		Set<Block> permitsEntityMovement = new HashSet<>();
+		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		Map<Block, Block> specialBlockSupport = new HashMap<>();
 		Map<Item, Block> specialBlockPlacement = new HashMap<>();
 		Map<Block, Item[]> specialBlockBreak = new HashMap<>();
@@ -165,15 +170,11 @@ public class BlockAspect
 							viscosity = -1;
 						}
 					}
-					if ((viscosity < 0) || (viscosity > 100))
+					if ((viscosity < 0) || (viscosity > SOLID_VISCOSITY))
 					{
 						throw new TabListReader.TabListException("One value in [0..100] required for viscosity");
 					}
-					// TODO:  Do something more descriptive with viscosity.
-					if (viscosity < 100)
-					{
-						permitsEntityMovement.add(_currentBlock);
-					}
+					nonSolidViscosity.put(_currentBlock, viscosity);
 				}
 				else
 				{
@@ -200,7 +201,7 @@ public class BlockAspect
 		return new BlockAspect(items
 				, blocksByType
 				, canBeReplaced
-				, permitsEntityMovement
+				, nonSolidViscosity
 				, specialBlockSupport
 				, specialBlockPlacement
 				, specialBlockBreak
@@ -210,7 +211,7 @@ public class BlockAspect
 
 	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
-	private final Set<Block> _permitsEntityMovement;
+	private final Map<Block, Integer> _nonSolidViscosity;
 	private final Map<Block, Block> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, Item[]> _specialBlockBreak;
@@ -219,7 +220,7 @@ public class BlockAspect
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
 			, Set<Block> canBeReplaced
-			, Set<Block> permitsEntityMovement
+			, Map<Block, Integer> nonSolidViscosity
 			, Map<Block, Block> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
 			, Map<Block, Item[]> specialBlockBreak
@@ -229,7 +230,7 @@ public class BlockAspect
 		_blocksByItemNumber = blocksByType;
 		
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
-		_permitsEntityMovement = Collections.unmodifiableSet(permitsEntityMovement);
+		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
@@ -262,16 +263,20 @@ public class BlockAspect
 	}
 
 	/**
-	 * Used to determine if the given block is something an entity can walk through, like air/water/etc.
-	 * NOTE:  These blocks should probably all permit an air inventory or entities will walk through them but items
+	 * Checks the viscosity of a given block to determine if it is solid (100) or can be passed through, returning the
+	 * impedance of the block material, if so.
+	 * NOTE:  Non-solid blocks should probably all permit an air inventory or entities will walk through them but items
 	 * can't be dropped here, which seems odd.
 	 * 
 	 * @param block The block to check.
-	 * @return True if block allows an entity to pass through.
+	 * @return The viscosity of the block.
 	 */
-	public boolean permitsEntityMovement(Block block)
+	public int blockViscosity(Block block)
 	{
-		return _permitsEntityMovement.contains(block);
+		return (_nonSolidViscosity.containsKey(block))
+				? _nonSolidViscosity.get(block)
+				: SOLID_VISCOSITY
+		;
 	}
 
 	/**

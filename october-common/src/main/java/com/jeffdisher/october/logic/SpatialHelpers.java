@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -72,7 +73,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = env.blocks.permitsEntityMovement(block.getBlock());
+					isAir = (env.blocks.blockViscosity(block.getBlock()) < BlockAspect.SOLID_VISCOSITY);
 				}
 				else
 				{
@@ -365,7 +366,7 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = env.blocks.permitsEntityMovement(block.getBlock());
+				canExist = (env.blocks.blockViscosity(block.getBlock()) < BlockAspect.SOLID_VISCOSITY);
 			}
 			else
 			{
@@ -391,7 +392,7 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = env.blocks.permitsEntityMovement(block.getBlock());
+					isAir = (env.blocks.blockViscosity(block.getBlock()) < BlockAspect.SOLID_VISCOSITY);
 				}
 				else
 				{

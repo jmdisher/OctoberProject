@@ -2,6 +2,7 @@ package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.types.Block;
@@ -23,7 +24,7 @@ public class BlockProxy implements IBlockProxy
 		if (0 == size)
 		{
 			// If this is 0, it means that it isn't a station so we will also check if this is a block which is "empty".
-			if (env.blocks.permitsEntityMovement(block))
+			if (env.blocks.blockViscosity(block) < BlockAspect.SOLID_VISCOSITY)
 			{
 				size = StationRegistry.CAPACITY_BLOCK_EMPTY;
 			}

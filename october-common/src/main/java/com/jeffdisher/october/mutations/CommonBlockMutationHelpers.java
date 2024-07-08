@@ -1,5 +1,6 @@
 package com.jeffdisher.october.mutations;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
@@ -89,7 +90,7 @@ public class CommonBlockMutationHelpers
 		Environment env = Environment.getShared();
 		
 		// Note that this should ONLY be called if the existing block is "empty".
-		Assert.assertTrue(env.blocks.permitsEntityMovement(newBlock.getBlock()));
+		Assert.assertTrue(env.blocks.blockViscosity(newBlock.getBlock()) < BlockAspect.SOLID_VISCOSITY);
 		// This should also have a non-empty inventory (otherwise, this shouldn't be called).
 		Assert.assertTrue(newBlock.getInventory().currentEncumbrance > 0);
 		
@@ -97,7 +98,7 @@ public class CommonBlockMutationHelpers
 		boolean didDropInventory = false;
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
+		if ((null != below) && (env.blocks.blockViscosity(below.getBlock()) < BlockAspect.SOLID_VISCOSITY))
 		{
 			// We want to drop this inventory into the below block.
 			Inventory inventory = newBlock.getInventory();

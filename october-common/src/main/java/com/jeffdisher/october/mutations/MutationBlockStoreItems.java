@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -68,12 +69,12 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// First, we want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
 		if (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect)
 		{
-			if (env.blocks.permitsEntityMovement(newBlock.getBlock()))
+			if (env.blocks.blockViscosity(newBlock.getBlock()) < BlockAspect.SOLID_VISCOSITY)
 			{
 				// This is an air block but see what is below it.
 				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && env.blocks.permitsEntityMovement(below.getBlock()))
+				if ((null != below) && (env.blocks.blockViscosity(below.getBlock()) < BlockAspect.SOLID_VISCOSITY))
 				{
 					// We want to drop this into the below block.
 					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _stackable, _nonStackable, _inventoryAspect));
