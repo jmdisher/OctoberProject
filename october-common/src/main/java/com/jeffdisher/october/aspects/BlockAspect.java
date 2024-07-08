@@ -23,6 +23,13 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class BlockAspect
 {
+	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
+	private static final String SUB_PLACED_FROM = "placed_from";
+	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
+	private static final String SUB_SPECIAL_DROP = "special_drop";
+	private static final String SUB_BLOCK_MATERIAL = "block_material";
+	private static final String SUB_VISCOSITY = "viscosity";
+
 	/**
 	 * Loads the block aspect from the tablist in the given stream, sourcing Items from the given items registry.
 	 * 
@@ -61,13 +68,9 @@ public class BlockAspect
 				// Read the flag list.
 				for (String value : parameters)
 				{
-					if ("can_be_replaced".equals(value))
+					if (FLAG_CAN_BE_REPLACED.equals(value))
 					{
 						canBeReplaced.add(_currentBlock);
-					}
-					else if ("permits_entity_movement".equals(value))
-					{
-						permitsEntityMovement.add(_currentBlock);
 					}
 					else
 					{
@@ -89,7 +92,7 @@ public class BlockAspect
 			{
 				Assert.assertTrue(null != _currentBlock);
 				// See which of the sublists this is an enter the correct state.
-				if ("placed_from".equals(name))
+				if (SUB_PLACED_FROM.equals(name))
 				{
 					if (0 == parameters.length)
 					{
@@ -105,7 +108,7 @@ public class BlockAspect
 						}
 					}
 				}
-				else if ("requires_support".equals(name))
+				else if (SUB_REQUIRES_SUPPORT.equals(name))
 				{
 					// TODO: We probably want to support multiple values here.
 					if (1 != parameters.length)
@@ -125,7 +128,7 @@ public class BlockAspect
 						Assert.assertTrue(null == previous);
 					}
 				}
-				else if ("special_drop".equals(name))
+				else if (SUB_SPECIAL_DROP.equals(name))
 				{
 					// Note that duplicates are expected in this parameter list (empty also makes sense).
 					Item[] drops = new Item[parameters.length];
@@ -135,7 +138,7 @@ public class BlockAspect
 					}
 					specialBlockBreak.put(_currentBlock, drops);
 				}
-				else if ("block_material".equals(name))
+				else if (SUB_BLOCK_MATERIAL.equals(name))
 				{
 					if (1 != parameters.length)
 					{
@@ -147,6 +150,30 @@ public class BlockAspect
 						throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
 					}
 					blockMaterials.put(_currentBlock, material);
+				}
+				else if (SUB_VISCOSITY.equals(name))
+				{
+					int viscosity = -1;
+					if (1 == parameters.length)
+					{
+						try
+						{
+							viscosity = Integer.parseInt(parameters[0]);
+						}
+						catch (NumberFormatException e)
+						{
+							viscosity = -1;
+						}
+					}
+					if ((viscosity < 0) || (viscosity > 100))
+					{
+						throw new TabListReader.TabListException("One value in [0..100] required for viscosity");
+					}
+					// TODO:  Do something more descriptive with viscosity.
+					if (viscosity < 100)
+					{
+						permitsEntityMovement.add(_currentBlock);
+					}
 				}
 				else
 				{
