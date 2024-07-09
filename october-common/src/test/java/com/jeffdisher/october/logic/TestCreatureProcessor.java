@@ -195,7 +195,16 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1
+				, EntityType.COW
+				, startLocation
+				, velocity
+				, (byte)100
+				, EntityConstants.MAX_BREATH
+				, 0L
+				, stepsToNextMove
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -225,7 +234,16 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, stepsToNextMove, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1
+				, EntityType.COW
+				, startLocation
+				, velocity
+				, (byte)100
+				, EntityConstants.MAX_BREATH
+				, 0L
+				, stepsToNextMove
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -251,7 +269,16 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1
+				, EntityType.COW
+				, startLocation
+				, velocity
+				, (byte)100
+				, EntityConstants.MAX_BREATH
+				, 0L
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -279,7 +306,16 @@ public class TestCreatureProcessor
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 3.92f);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1
+				, EntityType.COW
+				, startLocation
+				, velocity
+				, (byte)100
+				, EntityConstants.MAX_BREATH
+				, 0L
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -307,7 +343,16 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1, EntityType.COW, startLocation, velocity, (byte)100, 0L, null, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null)));
+		CreatureEntity creature = new CreatureEntity(-1
+				, EntityType.COW
+				, startLocation
+				, velocity
+				, (byte)100
+				, EntityConstants.MAX_BREATH
+				, 0L
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -758,6 +803,7 @@ public class TestCreatureProcessor
 				, null
 				, (byte)0
 				, (byte)0
+				, EntityConstants.MAX_BREATH
 				, 0
 		);
 	}

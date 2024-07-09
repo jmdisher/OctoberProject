@@ -26,6 +26,8 @@ public record Entity(int id
 		, byte health
 		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
 		, byte food
+		// The breath the entity has (for drowning).
+		, int breath
 		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
 		, int energyDeficit
 )
@@ -53,6 +55,7 @@ public record Entity(int id
 				, null
 				, (byte)0
 				, (byte)0
+				, EntityConstants.MAX_BREATH
 				, 0
 		);
 	}

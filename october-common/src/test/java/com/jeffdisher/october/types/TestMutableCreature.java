@@ -28,6 +28,7 @@ public class TestMutableCreature
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
+				, EntityConstants.MAX_BREATH
 				, 0L
 				, List.of()
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null, null))

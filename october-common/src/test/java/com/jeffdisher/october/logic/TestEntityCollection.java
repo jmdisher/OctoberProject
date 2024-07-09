@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 
@@ -69,6 +70,7 @@ public class TestEntityCollection
 				, null
 				, (byte)0
 				, (byte)0
+				, EntityConstants.MAX_BREATH
 				, 0
 		);
 	}

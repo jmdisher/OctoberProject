@@ -20,6 +20,8 @@ public record CreatureEntity(int id
 		, EntityLocation velocity
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
+		// The breath the entity has (for drowning).
+		, int breath
 		// These data elements are considered ephemeral and will NOT be persisted.
 		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
 		, long lastActionGameTick
@@ -54,6 +56,7 @@ public record CreatureEntity(int id
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, health
+				, EntityConstants.MAX_BREATH
 				, 0L
 				, null
 				, null

@@ -147,6 +147,7 @@ public class CodecHelpers
 		CraftOperation localCraftOperation = _readCraftOperation(buffer);
 		byte health = buffer.get();
 		byte food = buffer.get();
+		int breath = buffer.getInt();
 		int energyDeficit = buffer.getInt();
 		
 		return new Entity(id
@@ -160,6 +161,7 @@ public class CodecHelpers
 				, localCraftOperation
 				, health
 				, food
+				, breath
 				, energyDeficit
 		);
 	}
@@ -193,6 +195,7 @@ public class CodecHelpers
 		_writeCraftOperation(buffer, localCraftOperation);
 		buffer.put(entity.health());
 		buffer.put(entity.food());
+		buffer.putInt(entity.breath());
 		buffer.putInt(entity.energyDeficit());
 	}
 
@@ -229,6 +232,7 @@ public class CodecHelpers
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		byte health = buffer.get();
+		int breath = buffer.getInt();
 		
 		// Ephemeral data is just given default values.
 		long lastActionGameTick = 0L;
@@ -239,6 +243,7 @@ public class CodecHelpers
 				, location
 				, velocity
 				, health
+				, breath
 				, lastActionGameTick
 				, stepsToNextMove
 				, extendedData
@@ -253,11 +258,13 @@ public class CodecHelpers
 		EntityLocation location = entity.location();
 		EntityLocation velocity = entity.velocity();
 		byte health = entity.health();
+		int breath = entity.breath();
 		
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
 		buffer.put(health);
+		buffer.putInt(breath);
 	}
 
 	public static CraftOperation readCraftOperation(ByteBuffer buffer)

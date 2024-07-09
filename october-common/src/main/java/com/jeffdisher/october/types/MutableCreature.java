@@ -35,6 +35,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
 	public byte newHealth;
+	public int newBreath;
 	public long newLastActionGameTick;
 	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
 	public Object newExtendedData;
@@ -45,6 +46,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newLocation = creature.location();
 		this.newVelocity = creature.velocity();
 		this.newHealth = creature.health();
+		this.newBreath = creature.breath();
 		this.newLastActionGameTick = creature.lastActionGameTick();
 		this.newStepsToNextMove = creature.stepsToNextMove();
 		this.newExtendedData = creature.extendedData();
@@ -184,6 +186,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newLocation
 					, this.newVelocity
 					, this.newHealth
+					, this.newBreath
 					, this.newLastActionGameTick
 					, this.newStepsToNextMove
 					, this.newExtendedData
