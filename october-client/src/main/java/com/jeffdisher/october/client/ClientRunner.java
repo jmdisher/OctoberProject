@@ -251,6 +251,7 @@ public class ClientRunner
 			}
 			_lastCallMillis = currentTimeMillis;
 		}
+		_runAllPendingCalls(currentTimeMillis);
 	}
 
 	/**
