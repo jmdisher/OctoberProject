@@ -120,8 +120,12 @@ public class TestServerRunner
 	public void multiPhase() throws Throwable
 	{
 		TestAdapter network = new TestAdapter();
+		
+		// Create a world with a stone cuboid and an air cuboid on top.
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
-		_loadDefaultMap(cuboidLoader);
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
@@ -134,11 +138,11 @@ public class TestServerRunner
 		server.clientConnected(clientId);
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
-		// (we also want to wait until the server has loaded the cuboid, since this change reads them)
-		network.waitForCuboidAddedCount(clientId, 1);
+		// (we also want to wait until the server has loaded the cuboids, since this change reads them)
+		network.waitForCuboidAddedCount(clientId, 2);
 		
 		// Break a block in 2 steps, observing the changes coming out.
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 1, -1);
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
 		network.receiveFromClient(clientId, break1, 1L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.

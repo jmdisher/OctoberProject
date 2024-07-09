@@ -27,6 +27,10 @@ public class BlockAspect
 	 * Viscosity is a fraction out of 100 where 100 means "solid".
 	 */
 	public static final int SOLID_VISCOSITY = 100;
+	/**
+	 * A viscosity of this level or greater is considered not breathable.
+	 */
+	public static final int SUFFOCATION_VISCOSITY = 50;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String SUB_PLACED_FROM = "placed_from";

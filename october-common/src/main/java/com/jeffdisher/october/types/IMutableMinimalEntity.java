@@ -31,6 +31,10 @@ public interface IMutableMinimalEntity
 
 	void setHealth(byte health);
 
+	int getBreath();
+
+	void setBreath(int breath);
+
 	NonStackableItem getArmour(BodyPart part);
 
 	void setArmour(BodyPart part, NonStackableItem item);

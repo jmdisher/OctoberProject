@@ -41,6 +41,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newLocalCraftOperation = _entity.localCraftOperation();
 		newEntity.newHealth = _entity.health();
 		newEntity.newFood = _entity.food();
+		newEntity.newBreath = _entity.breath();
 	}
 
 	@Override

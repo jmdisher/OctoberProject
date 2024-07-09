@@ -199,6 +199,16 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
+		public int getBreath()
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public void setBreath(int breath)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
 		public NonStackableItem getArmour(BodyPart part)
 		{
 			throw new AssertionError("Not in test");

@@ -245,6 +245,18 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public int getBreath()
+	{
+		return this.newBreath;
+	}
+
+	@Override
+	public void setBreath(int breath)
+	{
+		this.newBreath = breath;
+	}
+
+	@Override
 	public NonStackableItem getArmour(BodyPart part)
 	{
 		return this.newArmour[part.ordinal()];
