@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -126,11 +127,71 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(40, entity.cost);
 	}
 
+	@Test
+	public void fallingThroughAir()
+	{
+		TickProcessingContext context = _createContext();
+		_Entity entity = new _Entity();
+		EntityLocation startLocation = new EntityLocation(5, 5, 30);
+		entity.location = startLocation;
+		long millisInMotion = 100L;
+		for (int i = 0; i < 10; ++i)
+		{
+			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+		}
+		// We know that this should be -9.8 and the acceleration is linear so the distance is half.
+		Assert.assertEquals(-9.8f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(-4.9f, entity.location.z() - startLocation.z(), 0.01f);
+	}
+
+	@Test
+	public void fallingThroughWater()
+	{
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		TickProcessingContext context = _createContextWithCuboidType(waterSource);
+		_Entity entity = new _Entity();
+		EntityLocation startLocation = new EntityLocation(5, 5, 30);
+		entity.location = startLocation;
+		long millisInMotion = 100L;
+		for (int i = 0; i < 10; ++i)
+		{
+			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+		}
+		// We know that the drag of the water will slow this down but these are experimentally derived.
+		Assert.assertEquals(-7.86f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(-4.36f, entity.location.z() - startLocation.z(), 0.01f);
+	}
+
+	@Test
+	public void swimmingUp()
+	{
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		TickProcessingContext context = _createContextWithCuboidType(waterSource);
+		_Entity entity = new _Entity();
+		EntityLocation startLocation = new EntityLocation(5, 5, 5);
+		entity.location = startLocation;
+		long millisInMotion = 100L;
+		for (int i = 0; i < 10; ++i)
+		{
+			entity.vector = new EntityLocation(0.0f, 0.0f, EntityChangeSwim.SWIM_FORCE);
+			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+		}
+		// We know that the drag of the water will slow this down but these are experimentally derived.
+		Assert.assertEquals(3.675f, entity.vector.z(), 0.01f);
+		Assert.assertEquals( 4.41f, entity.location.z() - startLocation.z(), 0.01f);
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{
-		// We will treat the 0x0x0 cuboid as air, but all others as stone.
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		// The common context is air.
+		return _createContextWithCuboidType(AIR);
+	}
+
+	private static TickProcessingContext _createContextWithCuboidType(Block fillBlock)
+	{
+		// We will treat the 0x0x0 cuboid as the fill type, but all others as stone.
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), fillBlock);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			BlockAddress block = location.getBlockAddress();

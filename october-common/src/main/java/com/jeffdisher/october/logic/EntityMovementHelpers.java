@@ -97,9 +97,9 @@ public class EntityMovementHelpers
 				? env.blocks.blockViscosity(currentLocationProxy.getBlock())
 				: BlockAspect.SOLID_VISCOSITY
 		;
-		float viscosityMultiplier = (float)(BlockAspect.SOLID_VISCOSITY - currentBlockViscosity) / (float)BlockAspect.SOLID_VISCOSITY;
-		EntityLocation vector = new EntityLocation(viscosityMultiplier * oldVector.x(), viscosityMultiplier * oldVector.y(), viscosityMultiplier * oldVector.z());
-		float initialZVector = vector.z();
+		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
+		float viscosityFraction = (float)currentBlockViscosity / (float)BlockAspect.SOLID_VISCOSITY;
+		float initialZVector = oldVector.z();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float newZVector;
@@ -118,14 +118,20 @@ public class EntityMovementHelpers
 		}
 		else
 		{
-			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
+			newZVector = MotionHelpers.applyZAcceleration(initialZVector, viscosityFraction, secondsInMotion);
 			shouldAllowFalling = true;
 		}
 		
+		// Update the x and y velocities based on drag in this environment.
+		float initialXVector = oldVector.x();
+		float initialYVector = oldVector.y();
+		float newXVector = MotionHelpers.velocityAfterDrag(initialXVector, viscosityFraction, secondsInMotion);
+		float newYVector = MotionHelpers.velocityAfterDrag(initialYVector, viscosityFraction, secondsInMotion);
+		
 		// We need to decide how far they would move in the x or y directions based on the current velocity and time.
 		// (for now, we will just apply the movement based on the current velocity, not accounting for friction-based deceleration).
-		float xDistance = secondsInMotion * vector.x();
-		float yDistance = secondsInMotion * vector.y();
+		float xDistance = secondsInMotion * (initialXVector + newXVector) / 2.0f;
+		float yDistance = secondsInMotion * (initialYVector + newYVector) / 2.0f;
 		// Figure out where our new location is (requires calculating the z-movement in this time).
 		float zDistance = shouldAllowFalling
 				? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
@@ -166,7 +172,7 @@ public class EntityMovementHelpers
 				else
 				{
 					// We can't find a ceiling we can fit under so we are probably hitting a wall.
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, vector.z()));
+					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
 					didMove = false;
 				}
 			}
@@ -183,14 +189,14 @@ public class EntityMovementHelpers
 				else
 				{
 					// We can't find a floor we can land on so we are probably hitting a wall.
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, vector.z()));
+					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
 					didMove = false;
 				}
 			}
 			else
 			{
 				// We just hit a wall.
-				newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, vector.z()));
+				newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
 				didMove = false;
 			}
 		}
