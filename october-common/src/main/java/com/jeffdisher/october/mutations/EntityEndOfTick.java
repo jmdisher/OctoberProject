@@ -31,7 +31,9 @@ public class EntityEndOfTick
 
 	public void apply(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
-		boolean didApply = EntityMovementHelpers.allowMovement(context, newEntity, _millisInTick);
+		EntityLocation oldLocation = newEntity.getLocation();
+		EntityMovementHelpers.allowMovement(context, newEntity, _millisInTick);
+		boolean didApply = !oldLocation.equals(newEntity.getLocation());
 		
 		if (didApply)
 		{

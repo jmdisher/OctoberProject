@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
@@ -23,7 +22,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -156,32 +154,25 @@ public class ClientRunner
 			
 			// See if the horizontal movement is even feasible.
 			EntityLocation previous = _localEntityProjection.location();
-			EntityLocation validated = _findMovementTarget(xMultiple * distance, yMultiple * distance, previous);
+			float xDistance = xMultiple * distance;
+			float yDistance = yMultiple * distance;
+			EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
 			
 			// Now, apply the move with validated the location (validated would be null if there is no way to partially reach our destination).
 			long effectiveCurrentTimeMillis = currentTimeMillis;
-			if (null != validated)
+			float thisX = validated.x() - previous.x();
+			float thisY = validated.y() - previous.y();
+			
+			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
+			long millisToMove = EntityChangeMove.getTimeMostMillis(speed, thisX, thisY);
+			if (millisToMove > 0L)
 			{
-				float thisX = validated.x() - previous.x();
-				float thisY = validated.y() - previous.y();
-				
-				// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
-				long millisToMove = EntityChangeMove.getTimeMostMillis(speed, thisX, thisY);
-				if (millisToMove > 0L)
-				{
-					EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(speed, thisX, thisY);
-					long missingMillis = (millisFree - millisToMove);
-					effectiveCurrentTimeMillis -= missingMillis;
-					_applyLocalChange(moveChange);
-				}
-			}
-			else
-			{
-				// We can't move horizontally but we still want to run the EndOfTick to account for falling, etc.
-				_projection.fakePassTime(millisFree);
+				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(speed, thisX, thisY);
+				long missingMillis = (millisFree - millisToMove);
+				effectiveCurrentTimeMillis -= missingMillis;
+				_applyLocalChange(moveChange);
 			}
 			
-			// Whether or not we did anything, run any pending calls while we are here.
 			_runAllPendingCalls(effectiveCurrentTimeMillis);
 			_lastCallMillis = effectiveCurrentTimeMillis;
 		}
@@ -291,37 +282,6 @@ public class ClientRunner
 		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
 		_applyLocalChange(craftOperation);
 		_runAllPendingCalls(currentTimeMillis);
-	}
-
-	private EntityLocation _findMovementTarget(float xDistance, float yDistance, EntityLocation previous)
-	{
-		EntityVolume volume = EntityConstants.VOLUME_PLAYER;
-		EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
-		while ((null != validated) && !SpatialHelpers.canExistInLocation(_projection.projectionBlockLoader, validated, volume))
-		{
-			// Adjust the coordinates.
-			if (xDistance > 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingEastWall(_projection.projectionBlockLoader, validated, volume, previous.x());
-			}
-			else if (xDistance < 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingWestWall(_projection.projectionBlockLoader, validated, volume, previous.x());
-			}
-			else if (yDistance > 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingNorthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
-			}
-			else if (yDistance < 0.0f)
-			{
-				validated = SpatialHelpers.locationTouchingSouthWall(_projection.projectionBlockLoader, validated, volume, previous.y());
-			}
-			else
-			{
-				validated = null;
-			}
-		}
-		return validated;
 	}
 
 

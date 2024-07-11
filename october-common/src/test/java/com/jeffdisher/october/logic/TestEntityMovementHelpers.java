@@ -51,7 +51,7 @@ public class TestEntityMovementHelpers
 		_Entity entity = new _Entity();
 		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
-		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, 100L);
+		boolean didMove = _allowMovement(context, entity, 100L);
 		Assert.assertFalse(didMove);
 		Assert.assertEquals(startLocation, entity.location);
 		Assert.assertEquals(startVector, entity.vector);
@@ -66,7 +66,7 @@ public class TestEntityMovementHelpers
 		entity.location = new EntityLocation(0.0f, 0.0f, 20.0f);
 		EntityLocation startLocation = entity.location;
 		EntityLocation startVector = entity.vector;
-		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, 100L);
+		boolean didMove = _allowMovement(context, entity, 100L);
 		Assert.assertTrue(didMove);
 		Assert.assertNotEquals(startLocation, entity.location);
 		Assert.assertNotEquals(startVector, entity.vector);
@@ -83,7 +83,7 @@ public class TestEntityMovementHelpers
 		long millisInMotion = 100L;
 		float blocksPerSecond = 2.0f;
 		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInMotion, -1.0f, 0.0f);
-		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		Assert.assertFalse(didMove);
 		Assert.assertEquals(startLocation, entity.location);
 		Assert.assertEquals(startVector, entity.vector);
@@ -100,7 +100,7 @@ public class TestEntityMovementHelpers
 		long millisInMotion = 100L;
 		float blocksPerSecond = 2.0f;
 		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInMotion, 1.0f, 0.0f);
-		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
 		Assert.assertEquals(0.2f, entity.location.x(), 0.001f);
@@ -119,7 +119,7 @@ public class TestEntityMovementHelpers
 		long millisInStep = millisInMotion / 2L;
 		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
 		EntityMovementHelpers.accelerate(context, millisInMotion, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
-		boolean didMove = EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
 		Assert.assertEquals(0.2f, entity.location.x(), 0.001f);
@@ -137,7 +137,7 @@ public class TestEntityMovementHelpers
 		long millisInMotion = 100L;
 		for (int i = 0; i < 10; ++i)
 		{
-			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that this should be -9.8 and the acceleration is linear so the distance is half.
 		Assert.assertEquals(-9.8f, entity.vector.z(), 0.01f);
@@ -155,7 +155,7 @@ public class TestEntityMovementHelpers
 		long millisInMotion = 100L;
 		for (int i = 0; i < 10; ++i)
 		{
-			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
 		Assert.assertEquals(-7.86f, entity.vector.z(), 0.01f);
@@ -174,7 +174,7 @@ public class TestEntityMovementHelpers
 		for (int i = 0; i < 10; ++i)
 		{
 			entity.vector = new EntityLocation(0.0f, 0.0f, EntityChangeSwim.SWIM_FORCE);
-			Assert.assertTrue(EntityMovementHelpers.allowMovement(context, entity, millisInMotion));
+			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
 		Assert.assertEquals(3.675f, entity.vector.z(), 0.01f);
@@ -210,6 +210,13 @@ public class TestEntityMovementHelpers
 				, null
 				, 100L
 		);
+	}
+
+	private boolean _allowMovement(TickProcessingContext context, _Entity entity, long millisInMotion)
+	{
+		EntityLocation oldLocation = entity.getLocation();
+		EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		return !oldLocation.equals(entity.getLocation());
 	}
 
 	private static class _Entity implements IMutableMinimalEntity

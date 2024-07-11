@@ -67,18 +67,17 @@ public class EntityMovementHelpers
 	 * @param context The context.
 	 * @param newEntity The entity to update.
 	 * @param longMillisInMotion How many milliseconds of motion to consider.
-	 * @return True if any motion change was applied, false if nothing changed or could change.
 	 */
-	public static boolean allowMovement(TickProcessingContext context
+	public static void allowMovement(TickProcessingContext context
 			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 	)
 	{
-		return _handleMotion(context, newEntity, longMillisInMotion);
+		_handleMotion(context, newEntity, longMillisInMotion);
 	}
 
 
-	private static boolean _handleMotion(TickProcessingContext context
+	private static void _handleMotion(TickProcessingContext context
 			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 	)
@@ -137,43 +136,99 @@ public class EntityMovementHelpers
 				? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
 				: 0.0f
 		;
+		float oldX = oldLocation.x();
+		float oldY = oldLocation.y();
 		float oldZ = oldLocation.z();
-		float xLocation = oldLocation.x() + xDistance;
-		float yLocation = oldLocation.y() + yDistance;
+		float xLocation = oldX + xDistance;
+		float yLocation = oldY + yDistance;
 		float zLocation = oldZ + zDistance;
-		EntityLocation newLocation = new EntityLocation(xLocation, yLocation, zLocation);
 		
-		boolean didMove;
-		if ((initialZVector == newZVector) && oldLocation.equals(newLocation))
+		// We will incrementally search for barriers in each axis.
+		// -X
+		EntityLocation newLocation = new EntityLocation(xLocation, oldY, oldZ);
+		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
 		{
-			// We don't want to apply this change if the entity isn't actually moving, since that will cause redundant update events.
-			didMove = false;
+			// Adjust the X axis.
+			EntityLocation attempt = newLocation;
+			if (xDistance > 0.0f)
+			{
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingEastWall(context.previousBlockLookUp, newLocation, volume, oldX);
+				if (null != adjustedLocation)
+				{
+					newLocation = adjustedLocation;
+				}
+			}
+			else if (xDistance < 0.0f)
+			{
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingWestWall(context.previousBlockLookUp, newLocation, volume, oldX);
+				if (null != adjustedLocation)
+				{
+					newLocation = adjustedLocation;
+				}
+			}
+			else
+			{
+				// We must be inside a wall.
+			}
+			
+			if (attempt == newLocation)
+			{
+				// We can't stand anywhere so just cancel x movement.
+				newLocation = new EntityLocation(oldX, newLocation.y(), newLocation.z());
+			}
 		}
-		else if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+		// The x-vector is always cancelled.
+		newXVector = 0.0f;
+		
+		// -Y
+		newLocation = new EntityLocation(newLocation.x(), yLocation, newLocation.z());
+		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
 		{
-			// They can exist in the target location so update the entity.
-			newEntity.setLocation(newLocation);
-			newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, newZVector));
-			didMove = true;
+			// Adjust the Y axis.
+			EntityLocation attempt = newLocation;
+			if (yDistance > 0.0f)
+			{
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingNorthWall(context.previousBlockLookUp, newLocation, volume, oldY);
+				if (null != adjustedLocation)
+				{
+					newLocation = adjustedLocation;
+				}
+			}
+			else if (yDistance < 0.0f)
+			{
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingSouthWall(context.previousBlockLookUp, newLocation, volume, oldY);
+				if (null != adjustedLocation)
+				{
+					newLocation = adjustedLocation;
+				}
+			}
+			else
+			{
+				// We must be inside a wall.
+			}
+			
+			if (attempt == newLocation)
+			{
+				// We can't stand anywhere so just cancel y movement.
+				newLocation = new EntityLocation(newLocation.x(), oldY, newLocation.z());
+			}
 		}
-		else
+		// The y-vector is always cancelled.
+		newYVector = 0.0f;
+		
+		// -Z
+		newLocation = new EntityLocation(newLocation.x(), newLocation.y(), zLocation);
+		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
 		{
-			// This can happen when we bump into a wall (which would be a failure) but we will handle the special case of hitting the floor or ceiling and clamp the z.
+			// Adjust the Z axis.
+			EntityLocation attempt = newLocation;
 			if (zDistance > 0.0f)
 			{
 				// We were jumping to see if we can clamp our location under the block.
 				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != highestLocation)
 				{
-					newEntity.setLocation(highestLocation);
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, newZVector));
-					didMove = true;
-				}
-				else
-				{
-					// We can't find a ceiling we can fit under so we are probably hitting a wall.
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
-					didMove = false;
+					newLocation = highestLocation;
 				}
 			}
 			else if (zDistance < 0.0f)
@@ -182,24 +237,25 @@ public class EntityMovementHelpers
 				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != lowestLocation)
 				{
-					newEntity.setLocation(lowestLocation);
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, newZVector));
-					didMove = true;
-				}
-				else
-				{
-					// We can't find a floor we can land on so we are probably hitting a wall.
-					newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
-					didMove = false;
+					newLocation = lowestLocation;
 				}
 			}
 			else
 			{
-				// We just hit a wall.
-				newEntity.setVelocityVector(new EntityLocation(0.0f, 0.0f, initialZVector));
-				didMove = false;
+				// We must be inside a wall.
+			}
+			
+			if (attempt == newLocation)
+			{
+				// We can't stand anywhere so just cancel y movement.
+				newLocation = new EntityLocation(newLocation.x(), newLocation.y(), oldZ);
+				// (this also requires handling the z-vector since we don't implicitly cancel it).
+				newZVector = 0.0f;
 			}
 		}
-		return didMove;
+		
+		// Set the location and velocity.
+		newEntity.setLocation(newLocation);
+		newEntity.setVelocityVector(new EntityLocation(newXVector, newYVector, newZVector));
 	}
 }
