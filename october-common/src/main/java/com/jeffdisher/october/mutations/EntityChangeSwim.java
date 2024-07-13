@@ -25,7 +25,6 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	 * with experimentation and "play feel" later on.
 	 */
 	public static final float SWIM_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
-	public static final float MINIMUM_UP_VELOCITY = 0.0f;
 	public static final MutationEntityType TYPE = MutationEntityType.SWIM;
 
 	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
@@ -106,6 +105,6 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 		Environment env = Environment.getShared();
 		Block sourceBlock = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.water_source"));
 		boolean isInWater = (sourceBlock == footBlock.getBlock());
-		return (isInWater && (vector.z() <= MINIMUM_UP_VELOCITY));
+		return isInWater;
 	}
 }

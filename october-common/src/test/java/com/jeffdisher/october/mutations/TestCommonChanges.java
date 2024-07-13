@@ -1624,8 +1624,6 @@ public class TestCommonChanges
 		fall.apply(context, newEntity);
 		Assert.assertEquals(5.441, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(3.675f, newEntity.newVelocity.z(), 0.01f);
-		// We should fail to apply the swim, again, since we still have a positive z-velocity.
-		Assert.assertFalse(swim.applyChange(context, newEntity));
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
