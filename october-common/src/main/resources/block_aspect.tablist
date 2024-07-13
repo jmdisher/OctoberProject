@@ -12,7 +12,7 @@
 # requires_support means that this block requires the given block under it.
 # special_drop means that the block drops as the given item, instead of itself, when broken.
 # viscosity is a number in [0..100] describing the resistance of the block (100 is default and means "solid" - lower
-#  numbers mean entities and items can exist in the block).
+#  numbers mean entities and items can exist in the block).  Values in the range [50..99] are considered "swimmable".
 #
 # Anything not referenced here is an item which cannot be placed at all.
 # Note that the ID references are against item_registry.tablist.

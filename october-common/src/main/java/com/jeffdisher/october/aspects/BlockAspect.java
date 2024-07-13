@@ -31,6 +31,10 @@ public class BlockAspect
 	 * A viscosity of this level or greater is considered not breathable.
 	 */
 	public static final int SUFFOCATION_VISCOSITY = 50;
+	/**
+	 * A viscosity of at least this level, but less than SOLID is considered to allow and entity to swim.
+	 */
+	public static final int SWIMMABLE_VISCOSITY = 50;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String SUB_PLACED_FROM = "placed_from";
@@ -178,7 +182,10 @@ public class BlockAspect
 					{
 						throw new TabListReader.TabListException("One value in [0..100] required for viscosity");
 					}
-					nonSolidViscosity.put(_currentBlock, viscosity);
+					if (viscosity < SOLID_VISCOSITY)
+					{
+						nonSolidViscosity.put(_currentBlock, viscosity);
+					}
 				}
 				else
 				{
@@ -290,6 +297,20 @@ public class BlockAspect
 	{
 		return (_nonSolidViscosity.containsKey(block))
 				? (_nonSolidViscosity.get(block) < SUFFOCATION_VISCOSITY)
+				: false
+		;
+	}
+
+	/**
+	 * Checks the viscosity of a given block to determine if an entity should be able to swim in it (>=50, <100).
+	 * 
+	 * @param block The block to check.
+	 * @return True if the entity can swim in this block.
+	 */
+	public boolean canSwimInBlock(Block block)
+	{
+		return (_nonSolidViscosity.containsKey(block))
+				? (_nonSolidViscosity.get(block) >= SWIMMABLE_VISCOSITY)
 				: false
 		;
 	}

@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -103,8 +102,6 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	{
 		BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
 		Environment env = Environment.getShared();
-		Block sourceBlock = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.water_source"));
-		boolean isInWater = (sourceBlock == footBlock.getBlock());
-		return isInWater;
+		return env.blocks.canSwimInBlock(footBlock.getBlock());
 	}
 }
