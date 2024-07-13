@@ -267,19 +267,44 @@ public class BlockAspect
 	}
 
 	/**
-	 * Checks the viscosity of a given block to determine if it is solid (100) or can be passed through, returning the
-	 * impedance of the block material, if so.
-	 * NOTE:  Non-solid blocks should probably all permit an air inventory or entities will walk through them but items
-	 * can't be dropped here, which seems odd.
+	 * Checks the viscosity of a given block to determine if it is solid (100).
 	 * 
 	 * @param block The block to check.
-	 * @return The viscosity of the block.
+	 * @return True if this block is solid, meaning nothing can pass through it or exist within it.
 	 */
-	public int blockViscosity(Block block)
+	public boolean isSolid(Block block)
 	{
 		return (_nonSolidViscosity.containsKey(block))
-				? _nonSolidViscosity.get(block)
-				: SOLID_VISCOSITY
+				? (SOLID_VISCOSITY == _nonSolidViscosity.get(block))
+				: true
+		;
+	}
+
+	/**
+	 * Checks the viscosity of a given block to determine if an entity should be allowed to breath in it (<50).
+	 * 
+	 * @param block The block to check.
+	 * @return True if the entity can breathe in this block.
+	 */
+	public boolean canBreatheInBlock(Block block)
+	{
+		return (_nonSolidViscosity.containsKey(block))
+				? (_nonSolidViscosity.get(block) < SUFFOCATION_VISCOSITY)
+				: false
+		;
+	}
+
+	/**
+	 * Returns a fraction representing the viscosity of this block from 0.0f (air) to 1.0f (solid).
+	 * 
+	 * @param block The block to check.
+	 * @return A fractional value in the range of [0.0f .. 1.0f].
+	 */
+	public float getViscosityFraction(Block block)
+	{
+		return (_nonSolidViscosity.containsKey(block))
+				? ((float)_nonSolidViscosity.get(block) / 100.0f)
+				: 1.0f
 		;
 	}
 

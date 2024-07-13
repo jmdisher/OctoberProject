@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -102,7 +101,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		}
 		
 		// Check to see if this has an inventory which should fall.
-		if ((env.blocks.blockViscosity(thisBlock) < BlockAspect.SOLID_VISCOSITY) && (newBlock.getInventory().currentEncumbrance > 0))
+		if (!env.blocks.isSolid(thisBlock) && (newBlock.getInventory().currentEncumbrance > 0))
 		{
 			// We want to say that this did apply if anything happened, including dropping the inventory.
 			didApply = CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _blockLocation, newBlock)

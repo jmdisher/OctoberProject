@@ -1,6 +1,5 @@
 package com.jeffdisher.october.mutations;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
@@ -54,8 +53,13 @@ public class EntityEndOfTick
 		if (null != headProxy)
 		{
 			Environment env = Environment.getShared();
-			boolean isSolid = (env.blocks.blockViscosity(headProxy.getBlock()) >= BlockAspect.SUFFOCATION_VISCOSITY);
-			if (isSolid)
+			boolean isBreathable = env.blocks.canBreatheInBlock(headProxy.getBlock());
+			if (isBreathable)
+			{
+				// Reset breath.
+				newEntity.setBreath(EntityConstants.MAX_BREATH);
+			}
+			else
 			{
 				// Suffocate.
 				int breath = newEntity.getBreath();
@@ -79,11 +83,6 @@ public class EntityEndOfTick
 						context.newChangeSink.creature(id, takeDamage);
 					}
 				}
-			}
-			else
-			{
-				// Reset breath.
-				newEntity.setBreath(EntityConstants.MAX_BREATH);
 			}
 		}
 	}

@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -75,7 +74,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 			if (blockIsSupported)
 			{
 				// If we are placing a block which allows entity movement, be sure to copy over any inventory on the ground.
-				Inventory inventoryToRestore = (env.blocks.blockViscosity(newType) < BlockAspect.SOLID_VISCOSITY)
+				Inventory inventoryToRestore = !env.blocks.isSolid(newType)
 						? newBlock.getInventory()
 						: null
 				;

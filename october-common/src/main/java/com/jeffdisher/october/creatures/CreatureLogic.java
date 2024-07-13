@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
@@ -284,7 +283,7 @@ public class CreatureLogic
 		Predicate<AbsoluteLocation> blockPermitsPassage = (AbsoluteLocation location) -> {
 			BlockProxy proxy = context.previousBlockLookUp.apply(location);
 			return (null != proxy)
-					? (environment.blocks.blockViscosity(proxy.getBlock()) < BlockAspect.SOLID_VISCOSITY)
+					? !environment.blocks.isSolid(proxy.getBlock())
 					: false
 			;
 		};
@@ -309,7 +308,7 @@ public class CreatureLogic
 		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
 			BlockProxy proxy = context.previousBlockLookUp.apply(location);
 			return (null != proxy)
-					? (environment.blocks.blockViscosity(proxy.getBlock()) < BlockAspect.SOLID_VISCOSITY)
+					? !environment.blocks.isSolid(proxy.getBlock())
 					: false
 			;
 		};

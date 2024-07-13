@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
@@ -92,12 +91,11 @@ public class EntityMovementHelpers
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
 		BlockProxy currentLocationProxy = context.previousBlockLookUp.apply(oldLocation.getBlockLocation());
-		int currentBlockViscosity = (null != currentLocationProxy)
-				? env.blocks.blockViscosity(currentLocationProxy.getBlock())
-				: BlockAspect.SOLID_VISCOSITY
-		;
 		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
-		float viscosityFraction = (float)currentBlockViscosity / (float)BlockAspect.SOLID_VISCOSITY;
+		float viscosityFraction = (null != currentLocationProxy)
+				? env.blocks.getViscosityFraction(currentLocationProxy.getBlock())
+				: 1.0f
+		;
 		float initialZVector = oldVector.z();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
