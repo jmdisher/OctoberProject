@@ -1,6 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -32,7 +32,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), so test that.
@@ -48,7 +48,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), so test that - walking half a block will fail.
@@ -62,7 +62,7 @@ public class TestEntityActionValidator
 	{
 		// The default location is 0,0,0 so say that the floor is -1.
 		int floor = -1;
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? false : true;
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = (AbsoluteLocation location) -> (floor == location.z()) ? PathFinder.BlockKind.SOLID : PathFinder.BlockKind.WALKABLE;
 		Entity start = MutableEntity.create(1).freeze();
 		
 		// We can walk .5 blocks per tick (by default), show that we can tip-toe around.

@@ -1,7 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
@@ -23,7 +23,7 @@ public class EntityActionValidator
 		// No instantiation.
 	}
 
-	public static Entity moveEntity(Predicate<AbsoluteLocation> blockPermitsUser, Entity entity, EntityLocation newLocation, int ticksToMove)
+	public static Entity moveEntity(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser, Entity entity, EntityLocation newLocation, int ticksToMove)
 	{
 		// First, see how many blocks they could possibly move in this time.
 		float maxDistance = ticksToMove * entity.blocksPerTickSpeed();

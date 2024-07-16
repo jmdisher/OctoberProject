@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -42,13 +42,13 @@ public class PathFinder
 	 * Finds the path, in block locations, of every step from source to target which can be occupied by the entity with
 	 * volume.
 	 * 
-	 * @param blockPermitsUser Returns true if an entity can pass through the block at this location.
+	 * @param blockKind Returns the kind of block at the given location.
 	 * @param volume The volume of the entity.
 	 * @param source The source location of the entity.
 	 * @param target The target location of the entity.
 	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
 	 */
-	public static List<AbsoluteLocation> findPath(Predicate<AbsoluteLocation> blockPermitsUser, EntityVolume volume, EntityLocation source, EntityLocation target)
+	public static List<AbsoluteLocation> findPath(Function<AbsoluteLocation, BlockKind> blockKind, EntityVolume volume, EntityLocation source, EntityLocation target)
 	{
 		// We will limit algorithm by a limit of 2x the manhattan distance, so we don't walk too far around obstacles.
 		float manhattan = Math.abs(source.x() - target.x())
@@ -56,23 +56,23 @@ public class PathFinder
 				+ Math.abs(source.z() - target.z())
 		;
 		float limit = 2 * manhattan;
-		return _findPathWithLimit(blockPermitsUser, volume, source, target, limit);
+		return _findPathWithLimit(blockKind, volume, source, target, limit);
 	}
 
 	/**
 	 * Finds the path, in block locations, of every step from source to target which can be occupied by the entity with
 	 * volume, limiting the search distance to the given limit of steps.
 	 * 
-	 * @param blockPermitsUser Returns true if an entity can pass through the block at this location.
+	 * @param blockKind Returns the kind of block at the given location.
 	 * @param volume The volume of the entity.
 	 * @param source The source location of the entity.
 	 * @param target The target location of the entity.
-	 * @param limitSteps The maximum distance which can be traveled, in units of total blocks.
+	 * @param limitSteps The maximum distance which can be travelled, in units of total blocks.
 	 * @return The path to follow to reach the target, starting with the current location, null if no path exists.
 	 */
-	public static List<AbsoluteLocation> findPathWithLimit(Predicate<AbsoluteLocation> blockPermitsUser, EntityVolume volume, EntityLocation source, EntityLocation target, float limitSteps)
+	public static List<AbsoluteLocation> findPathWithLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityVolume volume, EntityLocation source, EntityLocation target, float limitSteps)
 	{
-		return _findPathWithLimit(blockPermitsUser, volume, source, target, limitSteps);
+		return _findPathWithLimit(blockKind, volume, source, target, limitSteps);
 	}
 
 	/**
@@ -81,17 +81,17 @@ public class PathFinder
 	 * Note that not all target places may make sense since they only also include places like "jumping into the air" as
 	 * a final step.
 	 * 
-	 * @param blockTypeReader Resolves block types.
+	 * @param blockKind Returns the kind of block at the given location.
 	 * @param volume The volume of the entity (must be less than 1.0f width).
 	 * @param source The starting location of the entity.
 	 * @param limitSteps The movement cost limit.
 	 * @return The walk-back map.
 	 */
-	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Predicate<AbsoluteLocation> blockPermitsUser, EntityVolume volume, EntityLocation source, float limitSteps)
+	public static Map<AbsoluteLocation, AbsoluteLocation> findPlacesWithinLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityVolume volume, EntityLocation source, float limitSteps)
 	{
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map
-		_populateWalkbackMap(walkBackward, blockPermitsUser, volume, source, null, limitSteps);
+		_populateWalkbackMap(walkBackward, blockKind, volume, source, null, limitSteps);
 		return walkBackward;
 	}
 
@@ -107,12 +107,12 @@ public class PathFinder
 		;
 	}
 
-	private static List<AbsoluteLocation> _findPathWithLimit(Predicate<AbsoluteLocation> blockPermitsUser, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	private static List<AbsoluteLocation> _findPathWithLimit(Function<AbsoluteLocation, BlockKind> blockKind, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
 	{
 		// Key is destination.
 		Map<AbsoluteLocation, AbsoluteLocation> walkBackward = new HashMap<>();
 		// This will populate the walkBackward map and return the final spot for entityTarget, assuming it could be reached.
-		Spot targetSpot = _populateWalkbackMap(walkBackward, blockPermitsUser, volume, entitySource, entityTarget, limit);
+		Spot targetSpot = _populateWalkbackMap(walkBackward, blockKind, volume, entitySource, entityTarget, limit);
 		List<AbsoluteLocation> path = null;
 		if (null != targetSpot)
 		{
@@ -128,7 +128,7 @@ public class PathFinder
 		return path;
 	}
 
-	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, Predicate<AbsoluteLocation> blockPermitsUser, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
+	private static Spot _populateWalkbackMap(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, Function<AbsoluteLocation, BlockKind> blockKind, EntityVolume volume, EntityLocation entitySource, EntityLocation entityTarget, float limit)
 	{
 		// This algorithm currently only works for 1-block-wide entities..
 		Assert.assertTrue(volume.width() < 1.0f);
@@ -177,7 +177,7 @@ public class PathFinder
 				// If we are standing on an air block AND the previous step was only XY movement, that means that we
 				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
 				// over a gap).
-				boolean isStandingOnAir = blockPermitsUser.test(down);
+				boolean isStandingOnAir = (BlockKind.SOLID != blockKind.apply(down));
 				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
 				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
 				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
@@ -189,30 +189,30 @@ public class PathFinder
 					AbsoluteLocation north = spotLocation.getRelative(0, 1, 0);
 					AbsoluteLocation south = spotLocation.getRelative(0, -1, 0);
 					
-					_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, east, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, west, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, north, COST_STEP_FLAT);
-					_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, south, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, east, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, west, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, north, COST_STEP_FLAT);
+					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, south, COST_STEP_FLAT);
 				}
 				if (!isStandingOnAir)
 				{
 					AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
-					_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, up, COST_CLIMB);
+					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, up, COST_CLIMB);
 				}
-				_tryAddSpot(walkBackward, workQueue, blockPermitsUser, limit, height, spot, down, COST_FALL);
+				_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, down, COST_FALL);
 			}
 		}
 		return targetSpot;
 	}
 
 
-	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Predicate<AbsoluteLocation> blockPermitsUser, float limit, int height, Spot start, AbsoluteLocation target, float scoreToAdd)
+	private static void _tryAddSpot(Map<AbsoluteLocation, AbsoluteLocation> walkBackward, PriorityQueue<Spot> workQueue, Function<AbsoluteLocation, BlockKind> blockKind, float limit, int height, Spot start, AbsoluteLocation target, float scoreToAdd)
 	{
 		// Make sure that we haven't already reached this desintation via an earlier path.
 		if (!walkBackward.containsKey(target))
 		{
 			// Make sure that we can fit here.
-			if (_canFitInSpace(blockPermitsUser, target, height))
+			if (_canFitInSpace(blockKind, target, height))
 			{
 				// Add this target spot unless we have gone too far.
 				float newDistance = start.distance + scoreToAdd;
@@ -228,19 +228,31 @@ public class PathFinder
 		}
 	}
 
-	private static boolean _canFitInSpace(Predicate<AbsoluteLocation> blockPermitsUser, AbsoluteLocation space, int entityHeight)
+	private static boolean _canFitInSpace(Function<AbsoluteLocation, BlockKind> blockKind, AbsoluteLocation space, int entityHeight)
 	{
 		// We just check to see if this block, and the blocks required to accommodate our height, are air.
-		// (this will still return true, even if the spot is floating int he air).
+		// (this will still return true, even if the spot is floating in the air).
 		boolean canFit = true;
 		for (int i = 0; canFit && (i < entityHeight); ++i)
 		{
 			AbsoluteLocation check = space.getRelative(0, 0, i);
-			canFit = blockPermitsUser.test(check);
+			canFit = (BlockKind.SOLID != blockKind.apply(check));
 		}
 		return canFit;
 	}
 
+
+	public static enum BlockKind
+	{
+		/**
+		 * A block which can be traversed easily.
+		 */
+		WALKABLE,
+		/**
+		 * A block which cannot be passed through and which supports an entity.
+		 */
+		SOLID,
+	}
 
 	private record Spot(AbsoluteLocation location, float distance)
 	{

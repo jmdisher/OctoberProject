@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -14,6 +14,7 @@ import com.jeffdisher.october.logic.PathFinder;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityConstants;
@@ -279,15 +280,7 @@ public class CreatureLogic
 
 	private static List<AbsoluteLocation> _buildDeliberatePath(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, ICreatureStateMachine machine)
 	{
-		Environment environment = Environment.getShared();
-		Predicate<AbsoluteLocation> blockPermitsPassage = (AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(location);
-			return (null != proxy)
-					? !environment.blocks.isSolid(proxy.getBlock())
-					: false
-			;
-		};
-		
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage = _createLookupHelper(context);
 		EntityLocation targetLocation = machine.selectDeliberateTarget(entityCollection, creature);
 		List<AbsoluteLocation> path = null;
 		if (null != targetLocation)
@@ -303,15 +296,7 @@ public class CreatureLogic
 
 	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context, CreatureEntity creature)
 	{
-		// Our current only action is to find a block nearby and walk to it.
-		Environment environment = Environment.getShared();
-		Predicate<AbsoluteLocation> blockPermitsUser = (AbsoluteLocation location) -> {
-			BlockProxy proxy = context.previousBlockLookUp.apply(location);
-			return (null != proxy)
-					? !environment.blocks.isSolid(proxy.getBlock())
-					: false
-			;
-		};
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = _createLookupHelper(context);
 		EntityVolume volume = EntityConstants.getVolume(creature.type());
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
@@ -380,5 +365,33 @@ public class CreatureLogic
 			}
 		}
 		return changes;
+	}
+
+	private static Function<AbsoluteLocation, PathFinder.BlockKind> _createLookupHelper(TickProcessingContext context)
+	{
+		Environment environment = Environment.getShared();
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKind = (AbsoluteLocation location) -> {
+			BlockProxy proxy = context.previousBlockLookUp.apply(location);
+			PathFinder.BlockKind kind;
+			if (null == proxy)
+			{
+				// If we can't find the proxy, we will treat this as solid.
+				kind = PathFinder.BlockKind.SOLID;
+			}
+			else
+			{
+				Block block = proxy.getBlock();
+				if (environment.blocks.isSolid(block))
+				{
+					kind = PathFinder.BlockKind.SOLID;
+				}
+				else
+				{
+					kind = PathFinder.BlockKind.WALKABLE;
+				}
+			}
+			return kind;
+		};
+		return blockKind;
 	}
 }
