@@ -385,6 +385,10 @@ public class CreatureLogic
 				{
 					kind = PathFinder.BlockKind.SOLID;
 				}
+				else if (environment.blocks.canSwimInBlock(block))
+				{
+					kind = PathFinder.BlockKind.SWIMMABLE;
+				}
 				else
 				{
 					kind = PathFinder.BlockKind.WALKABLE;

@@ -177,12 +177,15 @@ public class PathFinder
 				// If we are standing on an air block AND the previous step was only XY movement, that means that we
 				// just stepped into a hole so we can't immediately step out (can in later steps but we can't step right
 				// over a gap).
+				// (we just check the down block for solid, assuming anything walkabe 
 				boolean isStandingOnAir = (BlockKind.SOLID != blockKind.apply(down));
+				boolean isSwimmable = (BlockKind.SWIMMABLE == blockKind.apply(spotLocation));
 				AbsoluteLocation previousStep = walkBackward.get(spotLocation);
 				boolean wasXyStep = (null != previousStep) && (previousStep.z() == spotLocation.z());
 				boolean didStepIntoHole = (isStandingOnAir && wasXyStep);
 				
-				if (!didStepIntoHole)
+				// If we are currently in swimmable block, that means we don't need to fall into a hole.
+				if (!didStepIntoHole || isSwimmable)
 				{
 					AbsoluteLocation east = spotLocation.getRelative(1, 0, 0);
 					AbsoluteLocation west = spotLocation.getRelative(-1, 0, 0);
@@ -194,7 +197,8 @@ public class PathFinder
 					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, north, COST_STEP_FLAT);
 					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, south, COST_STEP_FLAT);
 				}
-				if (!isStandingOnAir)
+				// If we are currently in swimmable block, that means we can still "jump" (swim) up.
+				if (!isStandingOnAir || isSwimmable)
 				{
 					AbsoluteLocation up = spotLocation.getRelative(0, 0, 1);
 					_tryAddSpot(walkBackward, workQueue, blockKind, limit, height, spot, up, COST_CLIMB);
@@ -252,6 +256,10 @@ public class PathFinder
 		 * A block which cannot be passed through and which supports an entity.
 		 */
 		SOLID,
+		/**
+		 * A block which is "WALKABLE" but also allows swimming (and is not breathable).
+		 */
+		SWIMMABLE,
 	}
 
 	private record Spot(AbsoluteLocation location, float distance)

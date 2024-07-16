@@ -202,6 +202,110 @@ public class TestPathFinder
 		_printStepMap2D(10, 9, 5, places);
 	}
 
+	@Test
+	public void swimUpTube()
+	{
+		// We want to swim up a tube in some stone.
+		EntityLocation source = new EntityLocation(3.5f, 2.5f, 1.0f);
+		EntityLocation target = new EntityLocation(1.5f, 2.5f, 4.0f);
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+			new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSWWS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSWWS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSWSS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SWWSS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAASS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAASS",
+					"SSSSS",
+					"SSSSS",
+			}
+		});
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		int xSteps = 2;
+		int ySteps = 0;
+		int zSteps = 3;
+		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
+	}
+
+	@Test
+	public void swimOverGap()
+	{
+		// Show that we can swim over an air block hole.
+		EntityLocation source = new EntityLocation(1.5f, 2.5f, 2.0f);
+		EntityLocation target = new EntityLocation(3.5f, 2.5f, 2.0f);
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = new MapResolver3D(new String[][] {
+			new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SSASS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SWWWS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAAAS",
+					"SSSSS",
+					"SSSSS",
+			}, new String[] {
+					"SSSSS",
+					"SSSSS",
+					"SAAAS",
+					"SSSSS",
+					"SSSSS",
+			}
+		});
+		List<AbsoluteLocation> path = PathFinder.findPath(blockPermitsUser, VOLUME, source, target);
+		int xSteps = 2;
+		int ySteps = 0;
+		int zSteps = 0;
+		Assert.assertEquals(1 + xSteps + ySteps + zSteps, path.size());
+	}
+
 
 	private static void _printMap2D(int x, int y, Collection<AbsoluteLocation> path)
 	{
@@ -285,6 +389,10 @@ public class TestPathFinder
 					{
 						kind = PathFinder.BlockKind.SOLID;
 					}
+					else if ('W' == c)
+					{
+						kind = PathFinder.BlockKind.SWIMMABLE;
+					}
 				}
 				else
 				{
@@ -307,11 +415,20 @@ public class TestPathFinder
 			Assert.assertTrue((x >= 0) && (x < layer[0].length())
 					&& (y >= 0) && (y < layer.length)
 			);
+			PathFinder.BlockKind kind;
 			char c = layer[l.y()].charAt(l.x());
-			return ('S' == c)
-					? PathFinder.BlockKind.SOLID
-					: PathFinder.BlockKind.WALKABLE
-			;
+			switch (c)
+			{
+				case 'S':
+					kind = PathFinder.BlockKind.SOLID;
+					break;
+				case 'W':
+					kind = PathFinder.BlockKind.SWIMMABLE;
+					break;
+				default:
+					kind = PathFinder.BlockKind.WALKABLE;
+			}
+			return kind;
 		}
 	}
 }
