@@ -168,7 +168,7 @@ public class TestEntityMovementHelpers
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		TickProcessingContext context = _createContextWithCuboidType(waterSource);
 		_Entity entity = new _Entity();
-		EntityLocation startLocation = new EntityLocation(5, 5, 5);
+		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
 		entity.location = startLocation;
 		long millisInMotion = 100L;
 		for (int i = 0; i < 10; ++i)
@@ -177,8 +177,8 @@ public class TestEntityMovementHelpers
 			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
-		Assert.assertEquals(3.675f, entity.vector.z(), 0.01f);
-		Assert.assertEquals( 4.41f, entity.location.z() - startLocation.z(), 0.01f);
+		Assert.assertEquals(3.68f, entity.vector.z(), 0.0001f);
+		Assert.assertEquals(9.40f, entity.location.z(), 0.0001f);
 	}
 
 

@@ -6,9 +6,17 @@ package com.jeffdisher.october.types;
  * around the primitive floats, directly.
  * Note that an entity also has EntityVolume so the EntityLocation is the bottom, south-west corner of the total space
  * currently occupied by the entity.
+ * NOTE:  EntityLocation instances are ALWAYS rounded to have 0.01f precision on each coordinate.
  */
 public final record EntityLocation(float x, float y, float z)
 {
+	public EntityLocation(float x, float y, float z)
+	{
+		this.x = _roundToHundredths(x);
+		this.y = _roundToHundredths(y);
+		this.z = _roundToHundredths(z);
+	}
+
 	/**
 	 * @return The location of the block where this entity is located.
 	 */
@@ -34,5 +42,13 @@ public final record EntityLocation(float x, float y, float z)
 		// We round from floor, instead of casting, since we need the negative values to saturate down, instead of just
 		// cut off:  -0.1 should be -1 (floor) instead of 0 (cast).
 		return Math.round((float)Math.floor(inBlock));
+	}
+
+	private static float _roundToHundredths(float f)
+	{
+		// We might need to check more on this for very large numbers (might need BigDecimal rounding) but this approach
+		// is simple and provides the predictability we want to reasonable numbers (this is mostly just to make tests
+		// deterministic and obvious).
+		return Math.round(100.0f * f) / 100.0f;
 	}
 }

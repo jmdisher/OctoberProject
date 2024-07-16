@@ -267,9 +267,9 @@ public class TestClientRunner
 		
 		// See where they are - we expect them to have jumped slightly, despite hitting the wall.
 		EntityLocation location = projection.thisEntity.location();
-		Assert.assertEquals(0.0f, location.x(), 0.001f);
-		Assert.assertEquals(0.0f, location.y(), 0.001f);
-		Assert.assertEquals(0.441f, location.z(), 0.001f);
+		Assert.assertEquals(0.0f, location.x(), 0.0001f);
+		Assert.assertEquals(0.0f, location.y(), 0.0001f);
+		Assert.assertEquals(0.44f, location.z(), 0.0001f);
 	}
 
 	@Test

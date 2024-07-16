@@ -43,4 +43,19 @@ public class TestEntityLocation
 		Assert.assertEquals(0.5f, block.y(), 0.01f);
 		Assert.assertEquals(0.3f, block.z(), 0.01f);
 	}
+
+	@Test
+	public void forcedRounding()
+	{
+		// Make sure that our forced rounding to .01 precision works for some positive and negative numbers.
+		EntityLocation positive = new EntityLocation( 0.001f,  1.885f,  2.347f);
+		Assert.assertEquals(0.00f, positive.x(), 0.0001f);
+		Assert.assertEquals(1.89f, positive.y(), 0.0001f);
+		Assert.assertEquals(2.35f, positive.z(), 0.0001f);
+		
+		EntityLocation negative = new EntityLocation(-0.001f, -1.885f, -2.347f);
+		Assert.assertEquals( 0.00f, negative.x(), 0.0001f);
+		Assert.assertEquals(-1.88f, negative.y(), 0.0001f);
+		Assert.assertEquals(-2.35f, negative.z(), 0.0001f);
+	}
 }
