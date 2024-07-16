@@ -11,7 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.logic.CreatureIdAssigner;
-import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -157,7 +156,7 @@ public class TestOrcStateMachine
 			}
 		};
 		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+		TickProcessingContext context = new TickProcessingContext(1L
 				, null
 				, previousEntityLookUp
 				, null

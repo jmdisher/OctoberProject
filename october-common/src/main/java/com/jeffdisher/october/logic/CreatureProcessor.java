@@ -23,11 +23,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureProcessor
 {
-	/**
-	 * The minimum number of ticks we will allow an entity to stay in one place before we tell them to plan a new route.
-	 */
-	public static final long MINIMUM_TICKS_TO_NEW_ACTION = 10L;
-
 	private CreatureProcessor()
 	{
 		// This is just static logic.
@@ -78,9 +73,10 @@ public class CreatureProcessor
 					if (null == mutable.newStepsToNextMove)
 					{
 						// We have no immediate steps planned so ask the creature if it wants to take special actions or plan the next path
-						boolean canStartNewPath = (context.currentTick > (mutable.newLastActionGameTick + MINIMUM_TICKS_TO_NEW_ACTION));
+						long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
+						long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
 						// Note that this may still return a null list of next steps if there is nothing to do.
-						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, millisSinceLastTick, mutable);
+						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, millisSinceLastTick, mutable);
 					}
 					if (null != mutable.newStepsToNextMove)
 					{

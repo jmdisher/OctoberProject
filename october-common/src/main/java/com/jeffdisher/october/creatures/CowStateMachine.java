@@ -31,7 +31,7 @@ import com.jeffdisher.october.utils.Assert;
 public class CowStateMachine implements ICreatureStateMachine
 {
 	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
-	public static final float COW_VIEW_DISTANCE = 6.0f;
+	public static final float COW_VIEW_DISTANCE = 7.0f;
 	public static final float COW_MATING_DISTANCE = 1.0f;
 	public static final byte COW_DEFAULT_HEALTH = 100;
 	// Use 2x the view distance to account for obstacles.

@@ -667,9 +667,10 @@ public class TestCreatureProcessor
 		
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
 		List<AbsoluteLocation> movementPlan = OrcStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
-		Assert.assertEquals(2, movementPlan.size());
+		Assert.assertEquals(3, movementPlan.size());
 		Assert.assertEquals(new AbsoluteLocation(8, 8, 2), movementPlan.get(0));
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), movementPlan.get(1));
+		Assert.assertEquals(new AbsoluteLocation(7, 9, 2), movementPlan.get(2));
 		
 		// Now, allow the entity to continue on its path and verify that it reaches the end of its path.
 		CreatureEntity justUpdated = updated;
@@ -689,12 +690,12 @@ public class TestCreatureProcessor
 		
 		// By this point we should be on the ground, in the right block, with no plan.
 		Assert.assertEquals(7.0f, updated.location().x(), 0.01f);
-		Assert.assertEquals(8.0f, updated.location().y(), 0.01f);
+		Assert.assertEquals(9.0f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().z(), 0.01f);
-		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), updated.location().getBlockLocation());
+		Assert.assertEquals(new AbsoluteLocation(7, 9, 2), updated.location().getBlockLocation());
 		Assert.assertNull(updated.stepsToNextMove());
 	}
 
@@ -708,7 +709,8 @@ public class TestCreatureProcessor
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+		long millisPerTick = 100L;
+		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 				, (AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
 						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
@@ -722,14 +724,15 @@ public class TestCreatureProcessor
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
 				, difficulty
-				, 100L
+				, millisPerTick
 		);
 		return context;
 	}
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
-		TickProcessingContext context = new TickProcessingContext(CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1L
+		long millisPerTick = 100L;
+		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 				, (AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 						? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -743,7 +746,7 @@ public class TestCreatureProcessor
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
 				, Difficulty.HOSTILE
-				, 100L
+				, millisPerTick
 		);
 		return context;
 	}
@@ -751,7 +754,7 @@ public class TestCreatureProcessor
 	private static TickProcessingContext _updateContextWithCreatures(TickProcessingContext existing, Collection<CreatureEntity> creatures, IChangeSink newChangeSink, CreatureIdAssigner idAssigner)
 	{
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1
+		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1L
 				, existing.previousBlockLookUp
 				, (Integer id) -> minimal.get(id)
 				, null
@@ -766,7 +769,7 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
 	{
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + CreatureProcessor.MINIMUM_TICKS_TO_NEW_ACTION + 1
+		TickProcessingContext context = new TickProcessingContext(existing.currentTick + (CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick)
 				, existing.previousBlockLookUp
 				, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null
 				, null

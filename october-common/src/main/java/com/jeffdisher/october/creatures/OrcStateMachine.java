@@ -28,7 +28,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class OrcStateMachine implements ICreatureStateMachine
 {
-	public static final float ORC_VIEW_DISTANCE = 6.0f;
+	public static final float ORC_VIEW_DISTANCE = 8.0f;
 	public static final byte ORC_DEFAULT_HEALTH = 50;
 	public static final float ORC_ATTACK_DISTANCE = 1.0f;
 	public static final byte ORC_DAMAGE = 5;

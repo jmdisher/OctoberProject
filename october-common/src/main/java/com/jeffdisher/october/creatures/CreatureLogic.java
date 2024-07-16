@@ -34,7 +34,17 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CreatureLogic
 {
-	public static final float RANDOM_MOVEMENT_DISTANCE = 2.5f;
+	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
+	/**
+	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
+	 */
+	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
+	/**
+	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
+	 * there was no good deliberate option.
+	 */
+	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
+
 
 	/**
 	 * A helper to determine if the given item can be used on a specific entity type with this entity mutation.
@@ -109,6 +119,7 @@ public class CreatureLogic
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param entityCollection The read-only collection of entities in the world.
+	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
 	 * @param millisSinceLastTick Milliseconds since the last tick was run.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
@@ -117,7 +128,7 @@ public class CreatureLogic
 	public static List<IMutationEntity<IMutableCreatureEntity>> planNextActions(TickProcessingContext context
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
-			, boolean canStartNewPath
+			, long millisSinceLastAction
 			, long millisSinceLastTick
 			, MutableCreature mutable
 	)
@@ -131,7 +142,7 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
+			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable, machine);
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
@@ -145,7 +156,7 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-				actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, canStartNewPath, mutable, machine);
+				actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable, machine);
 				mutable.newExtendedData = machine.freezeToData();
 			}
 		}
@@ -199,7 +210,7 @@ public class CreatureLogic
 	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActions(TickProcessingContext context
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
-			, boolean canStartNewPath
+			, long millisSinceLastAction
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)
@@ -211,19 +222,23 @@ public class CreatureLogic
 		
 		// Now, determine if we have a plan or need to make one.
 		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
-		if ((null == movementPlan) && canStartNewPath)
+		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.
+		if ((null == movementPlan)
+				&& (millisSinceLastAction >= MINIMUM_MILLIS_TO_DELIBERATE_ACTION)
+				&& ((millisSinceLastAction % MINIMUM_MILLIS_TO_DELIBERATE_ACTION) <= context.millisPerTick)
+		)
 		{
 			// First, we want to see if we should walk toward a player.
 			movementPlan = _buildDeliberatePath(context, entityCollection, mutable.creature, machine);
-			if (null == movementPlan)
+			if ((null == movementPlan) && (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION))
 			{
 				// We couldn't find a player so just make a random move.
 				movementPlan = _findPathToRandomSpot(context, mutable.creature);
 			}
 			if (null == movementPlan)
 			{
-				// There are no possible moves so do nothing, but make an empty plan so we will reset the last move timer (as to not just do the same thing, again).
-				actionsProduced = List.of();
+				// Fall through if we have no plan so we will try again on the next tick.
+				actionsProduced = null;
 			}
 			else
 			{
