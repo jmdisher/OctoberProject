@@ -1,6 +1,7 @@
 package com.jeffdisher.october.creatures;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -12,6 +13,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -19,6 +22,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -116,6 +121,40 @@ public class TestCreatureLogic
 		{
 			// Expected from test.
 		}
+	}
+
+	@Test
+	public void leaveWaterWhenDrowning()
+	{
+		// Verify that idle movement will avoid stopping in the water (these should all jump).
+		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		_setLayer(input, (byte)1, "op.water_source");
+		
+		// Even though this is only the idle timeout, we will see a plan made and that it ends above water.
+		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(location.getBlockAddress(), input)
+					: null
+			;
+		}, 12);
+		long millisSinceLastTick = 100L;
+		MutableCreature mutable = MutableCreature.existing(entity);
+		mutable.newBreath -= 1;
+		List<IMutationEntity<IMutableCreatureEntity>> actions = CreatureLogic.planNextActions(context
+				, null
+				, new EntityCollection(Set.of(), Set.of(entity))
+				, CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION
+				, millisSinceLastTick
+				, mutable
+		);
+		Assert.assertTrue(actions.size() > 0);
+		OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
+		List<AbsoluteLocation> plan = machine.getMovementPlan();
+		Assert.assertEquals(2, plan.get(plan.size() - 1).z());
 	}
 
 

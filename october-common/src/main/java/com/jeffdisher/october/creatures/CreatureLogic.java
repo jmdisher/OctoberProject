@@ -242,11 +242,21 @@ public class CreatureLogic
 		{
 			// First, we want to see if we should walk toward a player.
 			movementPlan = _buildDeliberatePath(context, entityCollection, mutable.creature, machine);
-			if ((null == movementPlan) && (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION))
+			
+			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
+			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
+			// movements are "safe").
+			boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
+			if ((null == movementPlan) && (
+					isInDanger
+					|| (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION)
+			))
 			{
 				// We couldn't find a player so just make a random move.
 				movementPlan = _findPathToRandomSpot(context, mutable.creature);
 			}
+			
+			// Convert the new plan into actions.
 			if (null == movementPlan)
 			{
 				// Fall through if we have no plan so we will try again on the next tick.
