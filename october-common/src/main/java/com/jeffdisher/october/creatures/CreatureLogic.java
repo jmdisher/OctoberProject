@@ -206,6 +206,18 @@ public class CreatureLogic
 		return didBecomePregnant;
 	}
 
+	/**
+	 * Just a testing entry-point for the random target path selection (idle movement).
+	 * 
+	 * @param context The testing context.
+	 * @param creature The test creature.
+	 * @return A path to a randomly selected target.
+	 */
+	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, CreatureEntity creature)
+	{
+		return _findPathToRandomSpot(context, creature);
+	}
+
 
 	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActions(TickProcessingContext context
 			, Consumer<CreatureEntity> creatureSpawner
@@ -316,14 +328,18 @@ public class CreatureLogic
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);
-		// Just pick one of these destinations at random, of default to standing still.
-		int size = possiblePaths.size();
+		
+		// Strip out any of the ending positions which we don't want.
+		List<AbsoluteLocation> goodTargets = _extractAcceptablePathTargets(blockPermitsUser, possiblePaths);
+		
+		// Just pick one of these destinations at random, or default to standing still.
+		int size = goodTargets.size();
 		List<AbsoluteLocation> plannedPath;
 		if (size > 0)
 		{
 			int selection = context.randomInt.applyAsInt(size);
 			// Skip over this many options (we can't really index into this and choosing the "first" would give a hash-order preference).
-			AbsoluteLocation target = possiblePaths.keySet().toArray((int arraySize) -> new AbsoluteLocation[arraySize])[selection];
+			AbsoluteLocation target = goodTargets.get(selection);
 			
 			// We can now build the plan - note that we build this in reverse since the map is back-pointers.
 			plannedPath = new ArrayList<>();
@@ -412,5 +428,40 @@ public class CreatureLogic
 			return kind;
 		};
 		return blockKind;
+	}
+
+	private static List<AbsoluteLocation> _extractAcceptablePathTargets(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser
+			, Map<AbsoluteLocation, AbsoluteLocation> possiblePaths
+	)
+	{
+		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
+		List<AbsoluteLocation> goodTargets = new ArrayList<>();
+		for (Map.Entry<AbsoluteLocation, AbsoluteLocation> elt : possiblePaths.entrySet())
+		{
+			AbsoluteLocation end = elt.getKey();
+			PathFinder.BlockKind endKind = blockPermitsUser.apply(end);
+			boolean shouldInclude = true;
+			if (PathFinder.BlockKind.SWIMMABLE == endKind)
+			{
+				// This path ends in water so don't include it.
+				shouldInclude = false;
+			}
+			else
+			{
+				// Blocks we pass through can only be walkable or swimmable.
+				Assert.assertTrue(PathFinder.BlockKind.WALKABLE == endKind);
+				AbsoluteLocation under = end.getRelative(0, 0, -1);
+				if (PathFinder.BlockKind.WALKABLE == blockPermitsUser.apply(under))
+				{
+					// This block is over top of a walkable block (meaning it was a jump) so ignore it.
+					shouldInclude = false;
+				}
+			}
+			if (shouldInclude)
+			{
+				goodTargets.add(end);
+			}
+		}
+		return goodTargets;
 	}
 }
