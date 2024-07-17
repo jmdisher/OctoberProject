@@ -120,7 +120,6 @@ public class CreatureLogic
 	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
-	 * @param millisSinceLastTick Milliseconds since the last tick was run.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
 	 * timer).
@@ -129,7 +128,6 @@ public class CreatureLogic
 			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
-			, long millisSinceLastTick
 			, MutableCreature mutable
 	)
 	{

@@ -141,14 +141,12 @@ public class TestCreatureLogic
 					: null
 			;
 		}, 12);
-		long millisSinceLastTick = 100L;
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
 		List<IMutationEntity<IMutableCreatureEntity>> actions = CreatureLogic.planNextActions(context
 				, null
 				, new EntityCollection(Set.of(), Set.of(entity))
 				, CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION
-				, millisSinceLastTick
 				, mutable
 		);
 		Assert.assertTrue(actions.size() > 0);

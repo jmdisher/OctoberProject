@@ -76,7 +76,7 @@ public class CreatureProcessor
 						long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
 						long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
 						// Note that this may still return a null list of next steps if there is nothing to do.
-						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, millisSinceLastTick, mutable);
+						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable);
 					}
 					if (null != mutable.newStepsToNextMove)
 					{
