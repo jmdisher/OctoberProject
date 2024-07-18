@@ -35,6 +35,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 	// Use 2x the view distance to account for obstacles.
 	public static final int ORC_PATH_DISTANCE = 2 * (int) ORC_VIEW_DISTANCE;
 	public static final int NO_TARGET_ENTITY_ID = 0;
+	// We will only allow one attack per second.
+	public static final long ATTACK_COOLDOWN_MILLIS = 1000L;
 
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
@@ -62,6 +64,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 				? new _ExtendedData(testing.movementPlan
 						, testing.targetEntityId
 						, testing.targetPreviousLocation
+						, testing.lastAttackTick
 				)
 				: null
 		;
@@ -81,6 +84,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 				? new Test_ExtendedData(extended.movementPlan
 						, extended.targetEntityId
 						, extended.targetPreviousLocation
+						, extended.lastAttackTick
 				)
 				: null
 		;
@@ -91,6 +95,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private List<AbsoluteLocation> _movementPlan;
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
+	private long _lastAttackTick;
 	
 	private OrcStateMachine(_ExtendedData data)
 	{
@@ -100,12 +105,14 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_movementPlan = data.movementPlan;
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
+			_lastAttackTick = data.lastAttackTick;
 		}
 		else
 		{
 			_movementPlan = null;
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
+			_lastAttackTick = 0L;
 		}
 	}
 
@@ -163,7 +170,9 @@ public class OrcStateMachine implements ICreatureStateMachine
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
-		if (NO_TARGET_ENTITY_ID != _targetEntityId)
+		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
+		long millisSinceLastAttack = (context.currentTick - _lastAttackTick) * context.millisPerTick;
+		if ((NO_TARGET_ENTITY_ID != _targetEntityId) && (millisSinceLastAttack >= ATTACK_COOLDOWN_MILLIS))
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
@@ -182,6 +191,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 					BodyPart target = BodyPart.values()[index];
 					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, ORC_DAMAGE);
 					context.newChangeSink.next(_targetEntityId, takeDamage);
+					// Set us on to cooldown.
+					_lastAttackTick = context.currentTick;
 					// We only count a successful attack as an "action".
 					didTakeAction = true;
 				}
@@ -225,7 +236,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public Object freezeToData()
 	{
 		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId))
-				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation)
+				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -250,12 +261,14 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public static record Test_ExtendedData(List<AbsoluteLocation> movementPlan
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
+			, long lastAttackTick
 	)
 	{}
 
 	private static record _ExtendedData(List<AbsoluteLocation> movementPlan
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
+			, long lastAttackTick
 	)
 	{}
 }

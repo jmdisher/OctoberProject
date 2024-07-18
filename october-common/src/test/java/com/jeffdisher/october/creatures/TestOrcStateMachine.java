@@ -65,7 +65,7 @@ public class TestOrcStateMachine
 		
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
@@ -98,7 +98,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation())));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
 		Assert.assertTrue(didTakeAction);
 		
@@ -112,8 +112,15 @@ public class TestOrcStateMachine
 		OrcStateMachine.Test_ExtendedData result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertEquals(player.id(), result.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
+		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
-		// A second attack should also land (this will change was an attack rate limiter is added).
+		// A second attack on the following tick should fail since we are on cooldown.
+		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc));
+		Assert.assertEquals(context.currentTick, result.lastAttackTick());
+		
+		// But will work if we advance tick number further.
+		long ticksToAdvance = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick;
+		context = _advanceTick(context, ticksToAdvance);
 		didTakeAction = machine.doneSpecialActions(context, null, orc);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
@@ -123,6 +130,7 @@ public class TestOrcStateMachine
 		result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertEquals(player.id(), result.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
+		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 	}
 
 
@@ -169,8 +177,10 @@ public class TestOrcStateMachine
 				Assert.fail();
 			}
 		};
+		long millisPerTick = 100L;
+		long tickNumber = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / millisPerTick;
 		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(1L
+		TickProcessingContext context = new TickProcessingContext(tickNumber
 				, null
 				, previousEntityLookUp
 				, null
@@ -178,8 +188,22 @@ public class TestOrcStateMachine
 				, assigner
 				, (int bound) -> random.nextInt(bound)
 				, Difficulty.HOSTILE
-				, 100L
+				, millisPerTick
 		);
 		return context;
+	}
+
+	private static TickProcessingContext _advanceTick(TickProcessingContext context, long ticksToAdvance)
+	{
+		return new TickProcessingContext(context.currentTick + ticksToAdvance
+				, context.previousBlockLookUp
+				, context.previousEntityLookUp
+				, context.mutationSink
+				, context.newChangeSink
+				, context.idAssigner
+				, context.randomInt
+				, context.difficulty
+				, context.millisPerTick
+		);
 	}
 }
