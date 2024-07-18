@@ -42,12 +42,14 @@ public interface ICreatureStateMachine
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending
 	 * actions to other entities or requesting a creature to be spawned.
+	 * If it returns true, the system will assume that this is all the creature wanted to do in this tick.
 	 * 
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param creature This entity.
+	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity creature);
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity creature);
 
 	/**
 	 * @return The maximum pathing distance this creature should use when planning the path to a target.

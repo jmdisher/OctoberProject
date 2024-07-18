@@ -66,7 +66,9 @@ public class TestOrcStateMachine
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation)));
-		machine.takeSpecialActions(context, null, orc);
+		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
+		// (they are still out of range so we didn't hit them)
+		Assert.assertFalse(didTakeAction);
 		
 		// We should see that the father has lost the target and path (they will need to re-find it on a future selection).
 		Assert.assertNull(machine.getMovementPlan());
@@ -97,7 +99,8 @@ public class TestOrcStateMachine
 		
 		// Start with the orc targeting the player.
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation())));
-		machine.takeSpecialActions(context, null, orc);
+		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
+		Assert.assertTrue(didTakeAction);
 		
 		// We should see the orc send the attack message
 		Assert.assertEquals(player.id(), targetId[0]);
@@ -107,6 +110,17 @@ public class TestOrcStateMachine
 		
 		// The orc should still target them.
 		OrcStateMachine.Test_ExtendedData result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
+		Assert.assertEquals(player.id(), result.targetEntityId());
+		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
+		
+		// A second attack should also land (this will change was an attack rate limiter is added).
+		didTakeAction = machine.doneSpecialActions(context, null, orc);
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(player.id(), targetId[0]);
+		targetId[0] = 0;
+		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamage);
+		message[0] = null;
+		result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertEquals(player.id(), result.targetEntityId());
 		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
 	}

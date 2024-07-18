@@ -442,8 +442,8 @@ public class TestCreatureProcessor
 		// Move the target entity and observe that the plan changes.
 		closeWheat = _createEntity(1, new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		
-		// We need to finish the previous step before a new one will be created so loop 5 times (4 to finish the step and one to decide on new).
-		for (int i = 0; i < 5; ++i)
+		// We need to finish the previous step before a new one will be created so loop 6 times (5 to finish the step and one to decide on new).
+		for (int i = 0; i < 6; ++i)
 		{
 			context = _updateContextWithPlayer(context, closeWheat);
 			creaturesById = group.updatedCreatures();

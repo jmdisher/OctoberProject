@@ -228,8 +228,28 @@ public class CreatureLogic
 		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		
 		// We will first determine if we need to take any special actions (sending actions, spawning offspring, etc)
-		machine.takeSpecialActions(context, creatureSpawner, mutable.creature);
+		boolean isDone = machine.doneSpecialActions(context, creatureSpawner, mutable.creature);
 		
+		if (isDone)
+		{
+			// We are done after taking special actions for this tick.
+			actionsProduced = null;
+		}
+		else
+		{
+			actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
+		}
+		return actionsProduced;
+	}
+
+	private static List<IMutationEntity<IMutableCreatureEntity>> _actionsToProduce(TickProcessingContext context
+			, EntityCollection entityCollection
+			, long millisSinceLastAction
+			, MutableCreature mutable
+			, ICreatureStateMachine machine
+	)
+	{
+		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		// Now, determine if we have a plan or need to make one.
 		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
 		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.

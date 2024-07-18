@@ -257,8 +257,7 @@ public class CowStateMachine implements ICreatureStateMachine
 			Assert.assertTrue(null == _offspringLocation);
 			
 			_inLoveMode = false;
-			_targetEntityId = 0;
-			_targetPreviousLocation = null;
+			_clearPlans();
 			_offspringLocation = offspringLocation;
 			didBecomePregnant = true;
 		}
@@ -266,14 +265,16 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
 	{
 		// See if we are pregnant or searching for our mate.
+		boolean didTakeAction = false;
 		if (null != _offspringLocation)
 		{
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
 			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, COW_DEFAULT_HEALTH));
 			_offspringLocation = null;
+			didTakeAction = true;
 		}
 		else if (0 != _targetEntityId)
 		{
@@ -310,7 +311,9 @@ public class CowStateMachine implements ICreatureStateMachine
 			{
 				_clearPlans();
 			}
+			didTakeAction = true;
 		}
+		return didTakeAction;
 	}
 
 	@Override

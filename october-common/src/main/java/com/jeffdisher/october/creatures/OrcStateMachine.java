@@ -159,10 +159,11 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public void takeSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
-		if (0 != _targetEntityId)
+		boolean didTakeAction = false;
+		if (NO_TARGET_ENTITY_ID != _targetEntityId)
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
@@ -181,6 +182,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 					BodyPart target = BodyPart.values()[index];
 					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, ORC_DAMAGE);
 					context.newChangeSink.next(_targetEntityId, takeDamage);
+					// We only count a successful attack as an "action".
+					didTakeAction = true;
 				}
 				else
 				{
@@ -197,6 +200,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 				_clearPlans();
 			}
 		}
+		return didTakeAction;
 	}
 
 	@Override
@@ -220,7 +224,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	 */
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (null != _movementPlan)
+		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId))
 				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation)
 				: null
 		;
