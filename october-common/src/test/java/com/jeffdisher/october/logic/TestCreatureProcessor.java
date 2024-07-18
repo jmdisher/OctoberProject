@@ -763,6 +763,74 @@ public class TestCreatureProcessor
 		Assert.assertEquals(4.60f, airCreature.location().x(), 0.01f);
 	}
 
+	@Test
+	public void swimToSurface()
+	{
+		// Show a creature swimming to the surface of a body of water.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
+		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
+		_setCuboidLayer(cuboid, (byte)1, waterSourceNumber);
+		_setCuboidLayer(cuboid, (byte)2, waterSourceNumber);
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		
+		EntityLocation startLocation = new EntityLocation(8.0f, 8.0f, 1.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)100);
+		// We need to reduce their breath to trigger this response.
+		MutableCreature mutable = MutableCreature.existing(creature);
+		mutable.newBreath -= 1;
+		creature = mutable.freeze();
+		
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		long millisPerTick = 100L;
+		
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		for (int i = 0; i < 8; ++i)
+		{
+			TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+					, (AbsoluteLocation location) -> {
+						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+						;
+					}
+					, null
+					, null
+					, null
+					, null
+					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
+					, (int bound) -> 0
+					, Difficulty.HOSTILE
+					, millisPerTick
+			);
+			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), creaturesById.values())
+					, changesToRun
+			);
+			creaturesById = group.updatedCreatures();
+			float oldZ = creature.location().z();
+			creature = group.updatedCreatures().get(creature.id());
+			// Make sure that we are rising.
+			Assert.assertTrue(creature.location().z() > oldZ);
+			
+			// We expect the 8th iteration to be the final one.
+			if (i < 7)
+			{
+				Assert.assertNotNull(creature.extendedData());
+			}
+			else
+			{
+				Assert.assertNull(creature.extendedData());
+			}
+		}
+		// We should be in the same column but higher.
+		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
+		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
+		Assert.assertEquals(3.1f, creature.location().z(), 0.01f);
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{

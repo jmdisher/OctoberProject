@@ -213,7 +213,8 @@ public class CreatureLogic
 	 */
 	public static List<AbsoluteLocation> test_findPathToRandomSpot(TickProcessingContext context, CreatureEntity creature)
 	{
-		return _findPathToRandomSpot(context, creature);
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+		return _findPathToRandomSpot(context, blockKindLookup, creature);
 	}
 
 
@@ -252,6 +253,7 @@ public class CreatureLogic
 		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		// Now, determine if we have a plan or need to make one.
 		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.
 		if ((null == movementPlan)
 				&& (millisSinceLastAction >= MINIMUM_MILLIS_TO_DELIBERATE_ACTION)
@@ -259,7 +261,7 @@ public class CreatureLogic
 		)
 		{
 			// First, we want to see if we should walk toward a player.
-			movementPlan = _buildDeliberatePath(context, entityCollection, mutable.creature, machine);
+			movementPlan = _buildDeliberatePath(blockKindLookup, entityCollection, mutable.creature, machine);
 			
 			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
 			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
@@ -271,7 +273,7 @@ public class CreatureLogic
 			))
 			{
 				// We couldn't find a player so just make a random move.
-				movementPlan = _findPathToRandomSpot(context, mutable.creature);
+				movementPlan = _findPathToRandomSpot(context, blockKindLookup, mutable.creature);
 			}
 			
 			// Convert the new plan into actions.
@@ -320,7 +322,7 @@ public class CreatureLogic
 			List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
 			if (null == actionsProduced)
 			{
-				actionsProduced = _determineNextSteps(mutable.creature, mutablePlan, !machine.isPlanDeliberate());
+				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, !machine.isPlanDeliberate());
 			}
 			
 			// We can now update our extended data.
@@ -333,9 +335,8 @@ public class CreatureLogic
 		return actionsProduced;
 	}
 
-	private static List<AbsoluteLocation> _buildDeliberatePath(TickProcessingContext context, EntityCollection entityCollection, CreatureEntity creature, ICreatureStateMachine machine)
+	private static List<AbsoluteLocation> _buildDeliberatePath(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage, EntityCollection entityCollection, CreatureEntity creature, ICreatureStateMachine machine)
 	{
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage = _createLookupHelper(context);
 		EntityLocation targetLocation = machine.selectDeliberateTarget(entityCollection, creature);
 		List<AbsoluteLocation> path = null;
 		if (null != targetLocation)
@@ -349,9 +350,11 @@ public class CreatureLogic
 		return path;
 	}
 
-	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context, CreatureEntity creature)
+	private static List<AbsoluteLocation> _findPathToRandomSpot(TickProcessingContext context
+			, Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser
+			, CreatureEntity creature
+	)
 	{
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser = _createLookupHelper(context);
 		EntityVolume volume = EntityConstants.getVolume(creature.type());
 		EntityLocation source = creature.location();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
@@ -384,7 +387,11 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(CreatureEntity creature, List<AbsoluteLocation> mutablePlan, boolean isIdleMovement)
+	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+			, CreatureEntity creature
+			, List<AbsoluteLocation> mutablePlan
+			, boolean isIdleMovement
+	)
 	{
 		// First, check to see if we are already in our next location.
 		AbsoluteLocation thisStep = mutablePlan.get(0);
@@ -399,7 +406,8 @@ public class CreatureLogic
 			if (!mutablePlan.isEmpty())
 			{
 				AbsoluteLocation nextStep = mutablePlan.get(0);
-				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, isIdleMovement);
+				boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(entityLocation.getBlockLocation()));
+				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, isIdleMovement, isSwimmable);
 				// If this is empty, just allow us to do nothing and reset the timer instead of returning null (should only be empty if falling, for example).
 			}
 			else

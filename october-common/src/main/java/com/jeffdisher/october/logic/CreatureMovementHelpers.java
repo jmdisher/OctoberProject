@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -87,19 +88,35 @@ public class CreatureMovementHelpers
 	 * @param creature The creature.
 	 * @param targetBlock The target location.
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
+	 * @param isBlockSwimmable True if the creature is in a block where they can swim.
 	 * @return The list of changes, potentially empty but never null.
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock, boolean isIdleMovement)
+	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock, boolean isIdleMovement, boolean isBlockSwimmable)
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
 		List<IMutationEntity<IMutableCreatureEntity>> changes;
 		EntityLocation startLocation = creature.location();
-		if ((targetBlock.z() > startLocation.z()) && SpatialHelpers.isBlockAligned(startLocation.z()))
+		if (targetBlock.z() > startLocation.z())
 		{
-			// Jump.
-			EntityChangeJump<IMutableCreatureEntity> jump = new EntityChangeJump<>();
-			changes = List.of(jump);
+			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
+			if (SpatialHelpers.isBlockAligned(startLocation.z()))
+			{
+				// Jump.
+				EntityChangeJump<IMutableCreatureEntity> jump = new EntityChangeJump<>();
+				changes = List.of(jump);
+			}
+			else if (isBlockSwimmable)
+			{
+				// Swim.
+				EntityChangeSwim<IMutableCreatureEntity> swim = new EntityChangeSwim<>();
+				changes = List.of(swim);
+			}
+			else
+			{
+				// We will have to rely on our momentum to carry us there (or we are just failing to reach it).
+				changes = List.of();
+			}
 		}
 		else
 		{
