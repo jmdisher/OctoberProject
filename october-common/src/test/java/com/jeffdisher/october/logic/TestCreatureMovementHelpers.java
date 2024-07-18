@@ -50,7 +50,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 1);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, false);
-		Assert.assertEquals(5, list.size());
+		Assert.assertEquals(6, list.size());
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class TestCreatureMovementHelpers
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, true);
 		// Idle movement is 0.1/move.
-		Assert.assertEquals(10, list.size());
+		Assert.assertEquals(9, list.size());
 	}
 
 	@Test
@@ -103,7 +103,7 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 2);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, false);
-		Assert.assertEquals(5, list.size());
+		Assert.assertEquals(6, list.size());
 	}
 
 	@Test

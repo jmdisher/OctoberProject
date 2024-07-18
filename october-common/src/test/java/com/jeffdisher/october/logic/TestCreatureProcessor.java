@@ -365,8 +365,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		// Note that this is an idle movement so it is half the speed of a deliberate one (at 0.2 speed, this would be 1+4 steps but at 0.1, it is 1+9).
-		Assert.assertEquals(9, updated.stepsToNextMove().size());
+		// Note that this is an idle movement so it is half the speed of a deliberate one (at 0.2 speed, this would be 1+5 steps but at 0.1, it is 1+10).
+		Assert.assertEquals(10, updated.stepsToNextMove().size());
 		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
 	}
 
@@ -620,13 +620,7 @@ public class TestCreatureProcessor
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
 		for (byte z = 0; z < 2; ++z)
 		{
-			for (byte y = 0; y < 16; ++y)
-			{
-				for (byte x = 0; x < 16; ++x)
-				{
-					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), STONE.item().number());
-				}
-			}
+			_setCuboidLayer(cuboid, z, STONE.item().number());
 		}
 		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)8, (byte)8, (byte)1), AIR.item().number());
 		
@@ -689,14 +683,84 @@ public class TestCreatureProcessor
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.0f, updated.location().x(), 0.01f);
-		Assert.assertEquals(9.0f, updated.location().y(), 0.01f);
+		Assert.assertEquals(7.3f, updated.location().x(), 0.01f);
+		Assert.assertEquals(9.3f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().z(), 0.01f);
 		Assert.assertEquals(new AbsoluteLocation(7, 9, 2), updated.location().getBlockLocation());
 		Assert.assertNull(updated.stepsToNextMove());
+	}
+
+	@Test
+	public void walkThroughWaterOrAir()
+	{
+		// Demonstrate that the walking speed through water and air is different.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
+		_setCuboidLayer(cuboid, (byte)1, ENV.items.getItemById("op.water_source").number());
+		_setCuboidLayer(cuboid, (byte)16, STONE.item().number());
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		
+		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
+		EntityLocation airStart = new EntityLocation(2.0f, 2.0f, 17.0f);
+		CreatureEntity waterCreature = CreatureEntity.create(-1, EntityType.ORC, waterStart, (byte)100);
+		CreatureEntity airCreature = CreatureEntity.create(-2, EntityType.ORC, airStart, (byte)100);
+		float targetDistance = 4.0f;
+		Entity waterTarget = _createEntity(1, new EntityLocation(waterStart.x() + targetDistance, waterStart.y(), waterStart.z()), null, null);
+		Entity airTarget = _createEntity(2, new EntityLocation(airStart.x() + targetDistance, airStart.y(), airStart.z()), null, null);
+		
+		Map<Integer, CreatureEntity> creaturesById = Map.of(waterCreature.id(), waterCreature
+				, airCreature.id(), airCreature
+		);
+		long millisPerTick = 100L;
+		
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		for (int i = 0; i < 10; ++i)
+		{
+			Map<Integer, MinimalEntity> minimalEntitiesById = Map.of(waterTarget.id(), MinimalEntity.fromEntity(waterTarget)
+					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
+			);
+			TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+					, (AbsoluteLocation location) -> {
+						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+						;
+					}
+					, (Integer id) -> minimalEntitiesById.get(id)
+					, null
+					, null
+					, null
+					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
+					, (int bound) -> 1
+					, Difficulty.HOSTILE
+					, millisPerTick
+			);
+			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(waterTarget, airTarget), creaturesById.values())
+					, changesToRun
+			);
+			creaturesById = group.updatedCreatures();
+			float oldWater = waterCreature.location().x();
+			float oldAir = waterCreature.location().x();
+			waterCreature = group.updatedCreatures().get(waterCreature.id());
+			airCreature = group.updatedCreatures().get(airCreature.id());
+			// Make sure that both are making progress.
+			Assert.assertTrue(waterCreature.location().x() > oldWater);
+			Assert.assertTrue(airCreature.location().x() > oldAir);
+			// Make sure that the air creature is further ahead.
+			Assert.assertTrue(airCreature.location().x() > waterCreature.location().x());
+			// Make sure we still have our plans.
+			Assert.assertNotNull(waterCreature.extendedData());
+			Assert.assertNotNull(airCreature.extendedData());
+		}
+		// TODO:  These numbers are WAY TOO CLOSE so we need to redo the viscosity drag calculations to increase impact.
+		Assert.assertEquals(4.56f, waterCreature.location().x(), 0.01f);
+		Assert.assertEquals(4.60f, airCreature.location().x(), 0.01f);
 	}
 
 
@@ -809,5 +873,16 @@ public class TestCreatureProcessor
 				, EntityConstants.MAX_BREATH
 				, 0
 		);
+	}
+
+	private void _setCuboidLayer(CuboidData cuboid, byte z, short number)
+	{
+		for (byte y = 0; y < 16; ++y)
+		{
+			for (byte x = 0; x < 16; ++x)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
+			}
+		}
 	}
 }

@@ -18,6 +18,9 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
  */
 public class CreatureMovementHelpers
 {
+	/**
+	 * We use this as a "reasonably close" threshold since we can't reasonably compare against 0.0f in floats.
+	 */
 	public static final float FLOAT_THRESHOLD = 0.01f;
 
 	/**
@@ -112,18 +115,21 @@ public class CreatureMovementHelpers
 				// We want idle movements to be slower (half speed).
 				speed /= 2.0f;
 			}
-			float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
-			if (maxHorizontal > maxDistanceInOneMutation)
+			if (maxHorizontal > FLOAT_THRESHOLD)
 			{
 				// We need to move horizontally so figure out which way.
 				List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
+				// We will move to the centre of the block to avoid edge rounding errors (also looks a bit better).
+				float width = EntityConstants.getVolume(creature.type()).width();
 				if (maxHorizontal == distanceX)
 				{
-					_moveByX(list, startLocation, speed, stepLocation.x());
+					float targetX = ((float) stepLocation.x()) + (1.0f - width) / 2.0f;
+					_moveByX(list, startLocation, speed, targetX);
 				}
 				else
 				{
-					_moveByY(list, startLocation, speed, stepLocation.y());
+					float targetY = ((float) stepLocation.y()) + (1.0f - width) / 2.0f;
+					_moveByY(list, startLocation, speed, targetY);
 				}
 				changes = list;
 			}
