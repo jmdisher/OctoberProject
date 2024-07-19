@@ -463,17 +463,17 @@ public class ClientProcess
 			});
 		}
 		@Override
-		public void thisEntityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.thisEntityDidLoad(entity);
+				_listener.thisEntityDidLoad(authoritativeEntity);
 			});
 		}
 		@Override
-		public void thisEntityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.thisEntityDidChange(entity);
+				_listener.thisEntityDidChange(authoritativeEntity, projectedEntity);
 			});
 		}
 		@Override
@@ -540,18 +540,72 @@ public class ClientProcess
 	 */
 	public interface IListener
 	{
+		/**
+		 * Called when the connection first comes online and the ID of the client's entity is discovered.
+		 * Only called once per instance.
+		 * 
+		 * @param assignedEntityId The ID of this client's entity (>0).
+		 */
 		void connectionEstablished(int assignedEntityId);
+		/**
+		 * Called when the server connection is closed.  The ClientProcess will have to be discarded and recreated to
+		 * re-establish the connection.
+		 * Only called once per instance.
+		 */
 		void connectionClosed();
 		
+		/**
+		 * Called when a new cuboid is loaded (may have been previously unloaded but not currently loaded).
+		 * 
+		 * @param cuboid The read-only cuboid data.
+		 */
 		void cuboidDidLoad(IReadOnlyCuboidData cuboid);
+		/**
+		 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
+		 * 
+		 * @param cuboid The read-only cuboid data.
+		 */
 		void cuboidDidChange(IReadOnlyCuboidData cuboid);
+		/**
+		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
+		 * 
+		 * @param address The address of the cuboid.
+		 */
 		void cuboidDidUnload(CuboidAddress address);
 		
-		void thisEntityDidLoad(Entity entity);
-		void thisEntityDidChange(Entity entity);
+		/**
+		 * Called when the client's entity has loaded for the first time.
+		 * Only called once per instance.
+		 * 
+		 * @param authoritativeEntity The entity state from the server.
+		 */
+		void thisEntityDidLoad(Entity authoritativeEntity);
+		/**
+		 * Called when the client's entity has changed (either due to server-originating changes or local changes).
+		 * Called very frequently.
+		 * 
+		 * @param authoritativeEntity The entity state from the server.
+		 * @param projectedEntity The client's local state (local changes applied to server data).
+		 */
+		void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity);
 		
+		/**
+		 * Called when another entity is loaded for the first time.
+		 * 
+		 * @param entity The server's entity data.
+		 */
 		void otherEntityDidLoad(PartialEntity entity);
+		/**
+		 * Called when a previously-loaded entity's state changes.
+		 * 
+		 * @param entity The server's entity data.
+		 */
 		void otherEntityDidChange(PartialEntity entity);
+		/**
+		 * Called when another entity should be unloaded as the server is no longer sending us updates.
+		 * 
+		 * @param id The ID of the entity to unload.
+		 */
 		void otherEntityDidUnload(int id);
 	}
 }

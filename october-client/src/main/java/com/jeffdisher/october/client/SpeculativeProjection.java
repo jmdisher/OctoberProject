@@ -320,7 +320,9 @@ public class SpeculativeProjection
 		// Notify the listener of was added.
 		if (isFirstRun)
 		{
-			_listener.thisEntityDidLoad(_projectedLocalEntity);
+			// This is the first load so nothing should have changed.
+			Assert.assertTrue(_thisShadowEntity == _projectedLocalEntity);
+			_listener.thisEntityDidLoad(_thisShadowEntity);
 			// We won't say that this changed.
 			updatedShadowEntity = null;
 		}
@@ -337,7 +339,7 @@ public class SpeculativeProjection
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
 		Set<Integer> otherEntitiesChanges = new HashSet<>(entitiesChangedInTick.keySet());
 		otherEntitiesChanges.remove(_localEntityId);
-		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, changedLocalEntity, otherEntitiesChanges);
+		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -389,7 +391,7 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyChanges(Set.of(), modifiedCuboidAddresses, changedLocalEntity, Set.of());
+		_notifyChanges(Set.of(), modifiedCuboidAddresses, _thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -420,12 +422,12 @@ public class SpeculativeProjection
 		if (null != updated)
 		{
 			_projectedLocalEntity = updated;
-			_notifyChanges(Set.of(), Set.of(), _projectedLocalEntity, Set.of());
+			_notifyChanges(Set.of(), Set.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
 		}
 	}
 
 
-	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<CuboidAddress> changedCuboidAddresses, Entity updatedLocalEntity, Set<Integer> otherEntityIds)
+	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<CuboidAddress> changedCuboidAddresses, Entity authoritativeLocalEntity, Entity updatedLocalEntity, Set<Integer> otherEntityIds)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		for (CuboidAddress address : changedCuboidAddresses)
@@ -452,7 +454,7 @@ public class SpeculativeProjection
 		}
 		if (null != updatedLocalEntity)
 		{
-			_listener.thisEntityDidChange(updatedLocalEntity);
+			_listener.thisEntityDidChange(authoritativeLocalEntity, updatedLocalEntity);
 		}
 		for (Integer entityId : otherEntityIds)
 		{
@@ -669,15 +671,58 @@ public class SpeculativeProjection
 
 	public static interface IProjectionListener
 	{
+		/**
+		 * Called when a new cuboid is loaded (may have been previously unloaded but not currently loaded).
+		 * 
+		 * @param cuboid The read-only cuboid data.
+		 */
 		void cuboidDidLoad(IReadOnlyCuboidData cuboid);
+		/**
+		 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
+		 * 
+		 * @param cuboid The read-only cuboid data.
+		 */
 		void cuboidDidChange(IReadOnlyCuboidData cuboid);
+		/**
+		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
+		 * 
+		 * @param address The address of the cuboid.
+		 */
 		void cuboidDidUnload(CuboidAddress address);
 		
-		void thisEntityDidLoad(Entity entity);
-		void thisEntityDidChange(Entity entity);
+		/**
+		 * Called when the client's entity has loaded for the first time.
+		 * Only called once per instance.
+		 * 
+		 * @param authoritativeEntity The entity state from the server.
+		 */
+		void thisEntityDidLoad(Entity authoritativeEntity);
+		/**
+		 * Called when the client's entity has changed (either due to server-originating changes or local changes).
+		 * Called very frequently.
+		 * 
+		 * @param authoritativeEntity The entity state from the server.
+		 * @param projectedEntity The client's local state (local changes applied to server data).
+		 */
+		void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity);
 		
+		/**
+		 * Called when another entity is loaded for the first time.
+		 * 
+		 * @param entity The server's entity data.
+		 */
 		void otherEntityDidLoad(PartialEntity entity);
+		/**
+		 * Called when a previously-loaded entity's state changes.
+		 * 
+		 * @param entity The server's entity data.
+		 */
 		void otherEntityDidChange(PartialEntity entity);
+		/**
+		 * Called when another entity should be unloaded as the server is no longer sending us updates.
+		 * 
+		 * @param id The ID of the entity to unload.
+		 */
 		void otherEntityDidUnload(int id);
 	}
 

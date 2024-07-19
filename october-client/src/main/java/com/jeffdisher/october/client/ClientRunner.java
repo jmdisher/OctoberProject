@@ -457,16 +457,18 @@ public class ClientRunner
 			_projectionListener.cuboidDidUnload(address);
 		}
 		@Override
-		public void thisEntityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
-			_localEntityProjection = entity;
-			_projectionListener.thisEntityDidLoad(entity);
+			// We will start with the authoritative data since their is no client-divergence, yet.
+			_localEntityProjection = authoritativeEntity;
+			_projectionListener.thisEntityDidLoad(authoritativeEntity);
 		}
 		@Override
-		public void thisEntityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
-			_localEntityProjection = entity;
-			_projectionListener.thisEntityDidChange(entity);
+			// We only use the projected entity in this class since the authoritative is just for reporting stable numbers.
+			_localEntityProjection = projectedEntity;
+			_projectionListener.thisEntityDidChange(authoritativeEntity, projectedEntity);
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)

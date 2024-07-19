@@ -367,16 +367,16 @@ public class TestProcesses
 			Assert.assertNotNull(old);
 		}
 		@Override
-		public void thisEntityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
 			Assert.assertNull(_thisEntity);
-			_thisEntity = entity;
+			_thisEntity = authoritativeEntity;
 		}
 		@Override
-		public void thisEntityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
 			Assert.assertNotNull(_thisEntity);
-			_thisEntity = entity;
+			_thisEntity = projectedEntity;
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)

@@ -423,20 +423,20 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void thisEntityDidLoad(Entity entity)
+		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
-			int id = entity.id();
+			int id = authoritativeEntity.id();
 			Assert.assertFalse(this.otherEnties.containsKey(id));
 			Assert.assertNull(this.thisEntity);
-			this.thisEntity = entity;
+			this.thisEntity = authoritativeEntity;
 		}
 		@Override
-		public void thisEntityDidChange(Entity entity)
+		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
-			int id = entity.id();
+			int id = projectedEntity.id();
 			Assert.assertFalse(this.otherEnties.containsKey(id));
 			Assert.assertNotNull(this.thisEntity);
-			this.thisEntity = entity;
+			this.thisEntity = projectedEntity;
 			this.allEntityChangeCount += 1;
 		}
 		@Override
