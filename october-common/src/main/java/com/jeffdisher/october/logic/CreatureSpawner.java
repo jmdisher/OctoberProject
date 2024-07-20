@@ -24,16 +24,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class CreatureSpawner
 {
 	/**
-	 * When determining if anything should be spawned, this number is used as a vague target per cuboid.
-	 */
-	public static final int TARGET_ENTITIES_PER_CUBOID = 5;
-	/**
-	 * When spawning in a specific cuboid, we will abort the spawn attempt if there are more than this many entities in
-	 * that specific cuboid.
-	 */
-	public static final int LIMIT_ENTITIES_PER_CUBOID = 10;
-
-	/**
 	 * Attempts to spawn a single creature by randomly selecting a spawning location in the given world.
 	 * 
 	 * @param context The context for the current tick.
@@ -47,7 +37,7 @@ public class CreatureSpawner
 	)
 	{
 		int cuboidCount = completedCuboids.size();
-		int estimatedTargetCreatureCount = cuboidCount * TARGET_ENTITIES_PER_CUBOID;
+		int estimatedTargetCreatureCount = cuboidCount * context.config.hostilesPerCuboidTarget;
 		int creatureCount = completedCreatures.size();
 		
 		CreatureEntity spawned;
@@ -99,7 +89,7 @@ public class CreatureSpawner
 				existingInCuboid += 1;
 			}
 		}
-		return (existingInCuboid < LIMIT_ENTITIES_PER_CUBOID)
+		return (existingInCuboid < context.config.hostilesPerCuboidLimit)
 				? cuboid
 				: null
 		;
