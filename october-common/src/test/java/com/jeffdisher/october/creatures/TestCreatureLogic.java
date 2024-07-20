@@ -19,12 +19,12 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -169,7 +169,7 @@ public class TestCreatureLogic
 					Assert.assertTrue(limit > random);
 					return random;
 				}
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		return context;

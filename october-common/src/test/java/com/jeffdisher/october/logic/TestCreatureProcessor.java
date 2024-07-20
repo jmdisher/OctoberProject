@@ -46,6 +46,7 @@ import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -118,7 +119,7 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
@@ -735,7 +736,7 @@ public class TestCreatureProcessor
 					, null
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 					, (int bound) -> 1
-					, Difficulty.HOSTILE
+					, new WorldConfig()
 					, millisPerTick
 			);
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -800,7 +801,7 @@ public class TestCreatureProcessor
 					, null
 					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
 					, (int bound) -> 0
-					, Difficulty.HOSTILE
+					, new WorldConfig()
 					, millisPerTick
 			);
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -842,6 +843,8 @@ public class TestCreatureProcessor
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
 		long millisPerTick = 100L;
+		WorldConfig config = new WorldConfig();
+		config.difficulty = difficulty;
 		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 				, (AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
@@ -855,7 +858,7 @@ public class TestCreatureProcessor
 				, null
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
-				, difficulty
+				, config
 				, millisPerTick
 		);
 		return context;
@@ -877,7 +880,7 @@ public class TestCreatureProcessor
 				, null
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				, (int bound) -> 1
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, millisPerTick
 		);
 		return context;
@@ -893,7 +896,7 @@ public class TestCreatureProcessor
 				, newChangeSink
 				, idAssigner
 				, existing.randomInt
-				, existing.difficulty
+				, existing.config
 				, existing.millisPerTick
 		);
 		return context;
@@ -908,7 +911,7 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, existing.randomInt
-				, existing.difficulty
+				, existing.config
 				, existing.millisPerTick
 		);
 		return context;

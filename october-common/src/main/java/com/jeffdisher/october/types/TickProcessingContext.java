@@ -54,9 +54,9 @@ public class TickProcessingContext
 	public final IntUnaryOperator randomInt;
 
 	/**
-	 * The difficulty configuration of the server.
+	 * The server's config object.
 	 */
-	public final Difficulty difficulty;
+	public final WorldConfig config;
 
 	/**
 	 * The number of milliseconds since the last tick, based on server configuration.
@@ -70,7 +70,7 @@ public class TickProcessingContext
 			, IChangeSink newChangeSink
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
-			, Difficulty difficulty
+			, WorldConfig config
 			, long millisPerTick
 	)
 	{
@@ -81,7 +81,7 @@ public class TickProcessingContext
 		this.newChangeSink = newChangeSink;
 		this.idAssigner = idAssigner;
 		this.randomInt = randomInt;
-		this.difficulty = difficulty;
+		this.config = config;
 		this.millisPerTick = millisPerTick;
 	}
 

@@ -26,7 +26,6 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
@@ -42,6 +41,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -107,7 +107,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		MutableEntity newEntity = MutableEntity.create(1);
@@ -575,7 +575,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -707,7 +707,7 @@ public class TestCommonChanges
 				}
 				, null
 				, (int bound) -> random.nextInt(bound)
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -775,7 +775,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -841,7 +841,7 @@ public class TestCommonChanges
 				}
 				, null
 				, (int bound) -> random.nextInt(bound)
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -871,7 +871,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		int entityId = 1;
@@ -1288,7 +1288,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, (int bound) -> random.nextInt(bound)
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -1347,7 +1347,7 @@ public class TestCommonChanges
 				, changeSink
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -1688,7 +1688,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		return context;
@@ -1708,7 +1708,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		return context;
@@ -1800,7 +1800,7 @@ public class TestCommonChanges
 					} : null
 					, null
 					, (int bound) -> random.nextInt(bound)
-					, Difficulty.HOSTILE
+					, new WorldConfig()
 					, 100L
 			);
 		}

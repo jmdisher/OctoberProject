@@ -25,12 +25,12 @@ import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
-import com.jeffdisher.october.persistence.WorldConfig;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -75,7 +75,7 @@ public class ServerProcess
 				, new _ServerListener()
 				, cuboidLoader
 				, currentTimeMillisProvider
-				, config.difficulty
+				, config
 		);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);

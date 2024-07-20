@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -64,6 +65,8 @@ public class TestCreatureSpawner
 		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)5, (byte)1), STONE.item().number());
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		int randomValue = 5;
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> {
 					IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
@@ -79,7 +82,7 @@ public class TestCreatureSpawner
 				, (int bound) -> (bound > randomValue)
 					? randomValue
 					: (bound - 1)
-				, Difficulty.PEACEFUL
+				, config
 				, 100L
 		);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
@@ -141,7 +144,7 @@ public class TestCreatureSpawner
 				, (int bound) -> (bound > randomValue)
 					? randomValue
 					: (bound - 1)
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		return context;

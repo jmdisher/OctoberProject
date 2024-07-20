@@ -40,6 +40,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -71,7 +72,7 @@ public class TestServerRunner
 				, network
 				, new ResourceLoader(DIRECTORY.newFolder(), null)
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		// We expect to see an extra 6 threads:  ServerRunner, CuboidLoader, and 4xTickRunner.
 		Assert.assertEquals(startingActiveCount + 2 + ServerRunner.TICK_RUNNER_THREAD_COUNT, Thread.currentThread().getThreadGroup().activeCount());
@@ -92,7 +93,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -130,7 +131,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -173,7 +174,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -207,7 +208,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
@@ -246,7 +247,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -292,7 +293,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -328,7 +329,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
@@ -368,12 +369,14 @@ public class TestServerRunner
 		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
+		WorldConfig config = new WorldConfig();
+		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
+		config.difficulty = Difficulty.PEACEFUL;
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
-				// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
-				, Difficulty.PEACEFUL
+				, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;

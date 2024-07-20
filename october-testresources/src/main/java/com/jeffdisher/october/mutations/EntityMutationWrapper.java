@@ -33,7 +33,7 @@ public class EntityMutationWrapper implements IEntityUpdate
 				, context.newChangeSink
 				, context.idAssigner
 				, context.randomInt
-				, context.difficulty
+				, context.config
 				, millisPerTick
 		);
 		_mutation.applyChange(override, newEntity);

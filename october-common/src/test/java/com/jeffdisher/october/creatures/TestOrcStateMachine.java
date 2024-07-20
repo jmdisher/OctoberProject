@@ -16,7 +16,6 @@ import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -25,6 +24,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 
 
 public class TestOrcStateMachine
@@ -187,7 +187,7 @@ public class TestOrcStateMachine
 				, changes
 				, assigner
 				, (int bound) -> random.nextInt(bound)
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, millisPerTick
 		);
 		return context;
@@ -202,7 +202,7 @@ public class TestOrcStateMachine
 				, context.newChangeSink
 				, context.idAssigner
 				, context.randomInt
-				, context.difficulty
+				, context.config
 				, context.millisPerTick
 		);
 	}

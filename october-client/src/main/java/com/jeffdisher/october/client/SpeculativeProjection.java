@@ -29,7 +29,6 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -37,6 +36,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -662,7 +662,7 @@ public class SpeculativeProjection
 				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
 				, (int bound) -> 0
 				// By default, we run in hostile mode.
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, millisPerTick
 		);
 		return context;

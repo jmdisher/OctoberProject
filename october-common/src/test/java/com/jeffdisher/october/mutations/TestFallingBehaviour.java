@@ -14,11 +14,11 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -240,7 +240,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
@@ -325,7 +325,7 @@ public class TestFallingBehaviour
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		return context;

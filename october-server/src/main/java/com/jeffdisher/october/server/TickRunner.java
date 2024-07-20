@@ -40,13 +40,13 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -110,7 +110,7 @@ public class TickRunner
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
 			, Consumer<Snapshot> tickCompletionListener
-			, Difficulty difficulty
+			, WorldConfig config
 	)
 	{
 		AtomicInteger atomic = new AtomicInteger(0);
@@ -133,7 +133,7 @@ public class TickRunner
 					ProcessorElement thisThread = new ProcessorElement(id, _syncPoint, atomic);
 					_backgroundThreadMain(thisThread
 							, tickCompletionListener
-							, difficulty
+							, config
 					);
 				}
 				catch (Throwable t)
@@ -337,7 +337,7 @@ public class TickRunner
 
 	private void _backgroundThreadMain(ProcessorElement thisThread
 			, Consumer<Snapshot> tickCompletionListener
-			, Difficulty difficulty
+			, WorldConfig config
 	)
 	{
 		// There is nothing loaded at the start so pass in an empty world and crowd state, as well as no work having been processed.
@@ -386,7 +386,7 @@ public class TickRunner
 					, newChangeSink
 					, _idAssigner
 					, _random
-					, difficulty
+					, config
 					, _millisPerTick
 			);
 			

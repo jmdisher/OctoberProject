@@ -140,7 +140,7 @@ public class CreatureSpawner
 		}
 		
 		// We will eventually spawn other things here but we currently only use orcs so disable this in peaceful mode once the selection was found.
-		if (Difficulty.PEACEFUL == context.difficulty)
+		if (Difficulty.PEACEFUL == context.config.difficulty)
 		{
 			goodSpawningLocation = null;
 		}

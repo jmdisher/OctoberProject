@@ -17,7 +17,6 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -26,6 +25,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -70,7 +70,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
@@ -224,7 +224,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -280,7 +280,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		boolean didApply = mutation.applyMutation(context, proxy);
@@ -321,7 +321,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
@@ -374,7 +374,7 @@ public class TestCommonMutations
 				, null
 				, null
 				, null
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 				, 100L
 		);
 		
@@ -461,7 +461,7 @@ public class TestCommonMutations
 					}
 					, null
 					, null
-					, Difficulty.HOSTILE
+					, new WorldConfig()
 					, 100L
 			);
 		}

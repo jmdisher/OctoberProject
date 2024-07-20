@@ -6,8 +6,8 @@ import java.io.IOException;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
-import com.jeffdisher.october.persistence.WorldConfig;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 

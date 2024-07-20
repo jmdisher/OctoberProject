@@ -146,7 +146,7 @@ public class CreatureLogic
 			break;
 		case ORC: {
 			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
-			if (Difficulty.PEACEFUL == context.difficulty)
+			if (Difficulty.PEACEFUL == context.config.difficulty)
 			{
 				actionsProduced = null;
 				mutable.newHealth = (byte)0;

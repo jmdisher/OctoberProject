@@ -1,8 +1,6 @@
-package com.jeffdisher.october.persistence;
+package com.jeffdisher.october.types;
 
 import java.util.Map;
-
-import com.jeffdisher.october.types.Difficulty;
 
 
 /**

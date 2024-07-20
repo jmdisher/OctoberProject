@@ -43,7 +43,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -52,6 +51,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -140,7 +140,7 @@ public class TestTickRunner
 				, null
 				, null
 				, (TickRunner.Snapshot completed) -> {}
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR), List.of(), List.of())
@@ -455,7 +455,7 @@ public class TestTickRunner
 				, null
 				, null
 				, snapshotListener
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
@@ -517,7 +517,7 @@ public class TestTickRunner
 				, null
 				, null
 				, snapshotListener
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		
 		// Verify that there is no snapshot until we start.
@@ -1308,7 +1308,7 @@ public class TestTickRunner
 				, null
 				, (int bound) -> randomHolder[0]
 				, (TickRunner.Snapshot completed) -> {}
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
@@ -1379,7 +1379,7 @@ public class TestTickRunner
 				, null
 				, (int bound) -> randomHolder[0]
 				, (TickRunner.Snapshot completed) -> {}
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
@@ -1872,7 +1872,7 @@ public class TestTickRunner
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
-				, Difficulty.HOSTILE
+				, new WorldConfig()
 		);
 		return runner;
 	}
