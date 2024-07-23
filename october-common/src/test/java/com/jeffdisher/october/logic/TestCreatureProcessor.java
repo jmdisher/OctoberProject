@@ -187,11 +187,12 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
-			, new EntityChangeMove<>(speed, 0.0f, 0.2f)
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.0f, 0.2f);
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
+			, new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
+			, new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
+			, new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
+			, new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)
@@ -230,7 +231,8 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.8f, 0.0f);
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_COW;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(speed, 0.0f, 0.2f)
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.0f, 0.2f);
+		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = List.of(new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.NORTH)
 		);
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 0)
 			, new AbsoluteLocation(0, 1, 1)

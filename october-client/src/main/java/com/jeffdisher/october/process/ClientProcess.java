@@ -12,6 +12,7 @@ import com.jeffdisher.october.client.SpeculativeProjection;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
@@ -192,19 +193,17 @@ public class ClientProcess
 	}
 
 	/**
-	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
-	 * fragments, multiplied by how far the entity can move since its last action.  The change will internally account
-	 * for things like an existing z-vector, when falling or jumping, when building the final target location.
-	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
-	 * existing z movement to be handled.
+	 * Creates the change to move the entity from the current location in the speculative projection along the given
+	 * horizontal direction for the amount of time which has passed since the last call.
+	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
+	 * least attempt to move in this way (and will send the change to the server).
 	 * 
-	 * @param xMultiple The fraction of the movement in the x-direction (usually -1.0, 0.0, or +1.0).
-	 * @param yMultiple The fraction of the movement in the y-direction (usually -1.0, 0.0, or +1.0).
+	 * @param direction The direction to move.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontalFully(float xMultiple, float yMultiple, long currentTimeMillis)
+	public void moveHorizontalFully(EntityChangeMove.Direction direction, long currentTimeMillis)
 	{
-		_clientRunner.moveHorizontalFully(xMultiple, yMultiple, currentTimeMillis);
+		_clientRunner.moveHorizontalFully(direction, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 

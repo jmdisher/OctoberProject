@@ -20,8 +20,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -128,53 +126,27 @@ public class ClientRunner
 	}
 
 	/**
-	 * Creates the change to move the entity from the current location in the speculative projection by the given x/y
-	 * fragments, multiplied by how far the entity can move since its last action.  The change will internally account
-	 * for things like an existing z-vector, when falling or jumping, when building the final target location.
-	 * Additionally, it will ignore the x and y movements if they aren't possible (hitting a wall), allowing any
-	 * existing z movement to be handled.
+	 * Creates the change to move the entity from the current location in the speculative projection along the given
+	 * horizontal direction for the amount of time which has passed since the last call.
+	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
+	 * least attempt to move in this way (and will send the change to the server).
 	 * 
-	 * @param xMultiple The fraction of the movement in the x-direction (usually -1.0, 0.0, or +1.0).
-	 * @param yMultiple The fraction of the movement in the y-direction (usually -1.0, 0.0, or +1.0).
+	 * @param direction The direction to move.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontalFully(float xMultiple, float yMultiple, long currentTimeMillis)
+	public void moveHorizontalFully(EntityChangeMove.Direction direction, long currentTimeMillis)
 	{
 		// Make sure that at least some time has passed.
 		if (currentTimeMillis > _lastCallMillis)
 		{
-			// Make sure that the fractions of the movement are valid.
-			Assert.assertTrue(1.0f == (Math.abs(xMultiple) + Math.abs(yMultiple)));
-			
 			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
-			float secondsFree = (float)millisFree / 1000.0f;
-			float speed = EntityConstants.SPEED_PLAYER;
-			float distance = secondsFree * speed;
-			Assert.assertTrue(EntityChangeMove.isValidDistance(speed, distance, 0.0f));
-			
-			// See if the horizontal movement is even feasible.
-			EntityLocation previous = _localEntityProjection.location();
-			float xDistance = xMultiple * distance;
-			float yDistance = yMultiple * distance;
-			EntityLocation validated = new EntityLocation(previous.x() + xDistance, previous.y() + yDistance, previous.z());
-			
-			// Now, apply the move with validated the location (validated would be null if there is no way to partially reach our destination).
-			long effectiveCurrentTimeMillis = currentTimeMillis;
-			float thisX = validated.x() - previous.x();
-			float thisY = validated.y() - previous.y();
 			
 			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
-			long millisToMove = EntityChangeMove.getTimeMostMillis(speed, thisX, thisY);
-			if (millisToMove > 0L)
-			{
-				EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(speed, thisX, thisY);
-				long missingMillis = (millisFree - millisToMove);
-				effectiveCurrentTimeMillis -= missingMillis;
-				_applyLocalChange(moveChange);
-			}
+			EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(millisFree, 1.0f, direction);
+			_applyLocalChange(moveChange);
 			
-			_runAllPendingCalls(effectiveCurrentTimeMillis);
-			_lastCallMillis = effectiveCurrentTimeMillis;
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
 		}
 	}
 

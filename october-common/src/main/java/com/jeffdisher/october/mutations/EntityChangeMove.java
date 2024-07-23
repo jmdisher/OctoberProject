@@ -42,20 +42,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	public static final float MAX_PER_STEP_SPEED_MULTIPLIER = LIMIT_COST_MILLIS / 1000.0f;
 
 	/**
-	 * Checks that this kind of move can be requested, given the time limits imposed by the change object.
-	 * NOTE:  This doesn't mean that the move will succeed (could be a barrier, etc), just that it is well-formed.
-	 * 
-	 * @param speedBlocksPerSecond The speed of the moving entity, in blocks per second.
-	 * @param xDistance The distance in x-axis.
-	 * @param yDistance The distance in y-axis.
-	 * @return True if this is an acceptable move.
-	 */
-	public static boolean isValidDistance(float speedBlocksPerSecond, float xDistance, float yDistance)
-	{
-		return _isValidDistance(speedBlocksPerSecond, xDistance, yDistance);
-	}
-
-	/**
 	 * Calculates the number of milliseconds it will take to move the given distance.
 	 * 
 	 * @param speedBlocksPerSecond The speed of the moving entity, in blocks per second.
@@ -65,51 +51,81 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	 */
 	public static long getTimeMostMillis(float speedBlocksPerSecond, float xDistance, float yDistance)
 	{
-		return _getTimeMostMillis(speedBlocksPerSecond, xDistance, yDistance);
+		long millis = 0L;
+		float totalDistance = (float)Math.sqrt((xDistance * xDistance) + (yDistance * yDistance));
+		if (totalDistance > 0.0f)
+		{
+			float secondsToMove = totalDistance / speedBlocksPerSecond;
+			millis = Math.round(secondsToMove * 1000.0f);
+		}
+		return millis;
 	}
 
 	public static <T extends IMutableMinimalEntity> EntityChangeMove<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
-		float speedBlocksPerSecond = buffer.getFloat();
-		float xDistance = buffer.getFloat();
-		float yDistance = buffer.getFloat();
-		return new EntityChangeMove<>(speedBlocksPerSecond, xDistance, yDistance);
+		long millisInMotion = buffer.getLong();
+		float speedMultiplier = buffer.getFloat();
+		Direction direction = Direction.values()[buffer.get()];
+		return new EntityChangeMove<>(millisInMotion, speedMultiplier, direction);
 	}
 
 
-	private final float _speedBlocksPerSecond;
-	private final float _xDistance;
-	private final float _yDistance;
+	private final long _millisInMotion;
+	private final float _speedMultipler;
+	private final Direction _direction;
 
-	public EntityChangeMove(float speedBlocksPerSecond, float xDistance, float yDistance)
+	public EntityChangeMove(long millisInMotion, float speedMultipler, Direction direction)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.
-		Assert.assertTrue(_isValidDistance(speedBlocksPerSecond, xDistance, yDistance));
+		Assert.assertTrue(millisInMotion <= LIMIT_COST_MILLIS);
 		
-		_speedBlocksPerSecond = speedBlocksPerSecond;
-		_xDistance = xDistance;
-		_yDistance = yDistance;
+		_millisInMotion = millisInMotion;
+		_speedMultipler = speedMultipler;
+		_direction = direction;
 	}
 
 	@Override
 	public long getTimeCostMillis()
 	{
-		return _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
+		return _millisInMotion;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		boolean didApply = false;
-		float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
-		boolean isSpeedValid = (_speedBlocksPerSecond <= maxSpeed);
-		if (isSpeedValid)
+		
+		if ((_millisInMotion > 0) && (_millisInMotion <= LIMIT_COST_MILLIS) && (Direction.ERROR != _direction))
 		{
-			long millisInMotion = _getTimeMostMillis(_speedBlocksPerSecond, _xDistance, _yDistance);
-			float xComponent = Math.signum(_xDistance);
-			float yComponent = Math.signum(_yDistance);
-			EntityMovementHelpers.accelerate(context, context.millisPerTick, newEntity, _speedBlocksPerSecond, millisInMotion, xComponent, yComponent);
+			// Find our speed and determine the components of movement.
+			float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
+			float xComponent;
+			float yComponent;
+			switch (_direction)
+			{
+			case NORTH:
+				xComponent = 0.0f;
+				yComponent = 1.0f;
+				break;
+			case EAST:
+				xComponent = 1.0f;
+				yComponent = 0.0f;
+				break;
+			case SOUTH:
+				xComponent = 0.0f;
+				yComponent = -1.0f;
+				break;
+			case WEST:
+				xComponent = -1.0f;
+				yComponent = 0.0f;
+				break;
+			case ERROR:
+			default:
+				throw Assert.unreachable();
+			}
+			float speed = maxSpeed * _speedMultipler;
+			EntityMovementHelpers.accelerate(context, context.millisPerTick, newEntity, speed, _millisInMotion, xComponent, yComponent);
 			didApply = true;
 		}
 		return didApply;
@@ -124,9 +140,9 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putFloat(_speedBlocksPerSecond);
-		buffer.putFloat(_xDistance);
-		buffer.putFloat(_yDistance);
+		buffer.putLong(_millisInMotion);
+		buffer.putFloat(_speedMultipler);
+		buffer.put((byte)_direction.ordinal());
 	}
 
 	@Override
@@ -137,19 +153,15 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	}
 
 
-	private static boolean _isValidDistance(float speed, float xDistance, float yDistance)
+	/**
+	 * The direction of a horizontal move.
+	 */
+	public static enum Direction
 	{
-		long costMillis = _getTimeMostMillis(speed, xDistance, yDistance);
-		return (costMillis > 0L) && (costMillis <= LIMIT_COST_MILLIS);
-	}
-
-	private static long _getTimeMostMillis(float speed, float xDistance, float yDistance)
-	{
-		// TODO:  Change this when we allow diagonal movement.
-		Assert.assertTrue((0.0f == xDistance) || (0.0f == yDistance));
-		
-		float xy = Math.abs(xDistance) + Math.abs(yDistance);
-		float secondsFlat = (xy / speed);
-		return (long) (secondsFlat * 1000.0f);
+		ERROR,
+		NORTH,
+		EAST,
+		SOUTH,
+		WEST,
 	}
 }

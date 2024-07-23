@@ -126,8 +126,9 @@ public class TestProcesses
 		// (since we are using the real clock, wait for this move to be valid)
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_PLAYER;
-		Thread.sleep(EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f));
-		client.moveHorizontalFully(1.0f, 0.0f, System.currentTimeMillis());
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		Thread.sleep(millisInStep);
+		client.moveHorizontalFully(EntityChangeMove.Direction.EAST, System.currentTimeMillis());
 		long serverTick = server.waitForTicksToPass(2L);
 		client.waitForTick(serverTick, System.currentTimeMillis());
 		Assert.assertEquals(newLocation, listener.getLocalEntity().location());
@@ -268,15 +269,15 @@ public class TestProcesses
 			// We can walk 0.4 horizontally in a single tick.
 			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
-			client1.moveHorizontalFully(1.0f, 0.0f, currentTimeMillis[0]);
-			client2.moveHorizontalFully(0.0f, -1.0f, currentTimeMillis[0]);
+			client1.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis[0]);
+			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
 		for (int i = 0; i < 5; ++i)
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
-			client2.moveHorizontalFully(0.0f, -1.0f, currentTimeMillis[0]);
+			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
 			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
 		}
 		

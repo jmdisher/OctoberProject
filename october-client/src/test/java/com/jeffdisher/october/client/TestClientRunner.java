@@ -15,6 +15,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
+import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityMutationWrapper;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -224,7 +225,7 @@ public class TestClientRunner
 		Assert.assertNotNull(projection.thisEntity.localCraftOperation());
 		
 		currentTimeMillis += 100L;
-		runner.moveHorizontalFully(1.0f, 0.0f, currentTimeMillis);
+		runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(ENV.items.LOG));
@@ -262,7 +263,7 @@ public class TestClientRunner
 		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
-		runner.moveHorizontalFully(-1.0f, 0.0f, currentTimeMillis);
+		runner.moveHorizontalFully(EntityChangeMove.Direction.WEST, currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		// See where they are - we expect them to have jumped slightly, despite hitting the wall.

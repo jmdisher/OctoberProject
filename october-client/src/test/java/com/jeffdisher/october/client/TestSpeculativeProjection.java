@@ -786,8 +786,9 @@ public class TestSpeculativeProjection
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_PLAYER;
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		long commit1 = projector.applyLocalChange(move1);
 		long commit2 = projector.applyLocalChange(move2);
 		Assert.assertEquals(1L, commit1);
@@ -1366,9 +1367,10 @@ public class TestSpeculativeProjection
 		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
 		float speed = EntityConstants.SPEED_PLAYER;
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(speed, 0.4f, 0.0f);
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
+		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
+		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		long commit1 = projector.applyLocalChange(move1);
 		long commit2 = projector.applyLocalChange(move2);
 		long commit3 = projector.applyLocalChange(move3);
