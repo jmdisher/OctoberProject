@@ -44,7 +44,6 @@ public class CrowdProcessor
 			, Map<Integer, List<ScheduledChange>> changesToRun
 	)
 	{
-		long millisSinceLastTick = context.millisPerTick;
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;
@@ -76,7 +75,7 @@ public class CrowdProcessor
 						}
 						else
 						{
-							long updatedMillis = millisUntilReady - millisSinceLastTick;
+							long updatedMillis = millisUntilReady - context.millisPerTick;
 							if (updatedMillis < 0L)
 							{
 								updatedMillis = 0L;
@@ -92,7 +91,7 @@ public class CrowdProcessor
 				}
 				
 				// Account for time passing.
-				EntityEndOfTick end = new EntityEndOfTick(millisSinceLastTick);
+				EntityEndOfTick end = new EntityEndOfTick();
 				end.apply(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.

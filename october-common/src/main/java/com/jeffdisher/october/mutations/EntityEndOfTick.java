@@ -21,17 +21,14 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class EntityEndOfTick
 {
-	private final long _millisInTick;
-
-	public EntityEndOfTick(long millisInTick)
+	public EntityEndOfTick()
 	{
-		_millisInTick = millisInTick;
 	}
 
 	public void apply(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		EntityLocation oldLocation = newEntity.getLocation();
-		EntityMovementHelpers.allowMovement(context, newEntity, _millisInTick);
+		EntityMovementHelpers.allowMovement(context, newEntity, context.millisPerTick);
 		boolean didApply = !oldLocation.equals(newEntity.getLocation());
 		
 		if (didApply)

@@ -38,7 +38,7 @@ public class EntityMutationWrapper implements IEntityUpdate
 		);
 		_mutation.applyChange(override, newEntity);
 		// We also need the corresponding end of tick.
-		new EntityEndOfTick(millisPerTick).apply(override, newEntity);
+		new EntityEndOfTick().apply(override, newEntity);
 	}
 
 	@Override

@@ -46,7 +46,6 @@ public class CreatureProcessor
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun
 	)
 	{
-		long millisSinceLastTick = context.millisPerTick;
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
 		List<CreatureEntity> newlySpawnedCreatures = new ArrayList<>();
@@ -88,7 +87,7 @@ public class CreatureProcessor
 						}
 						else
 						{
-							changes = _scheduleForThisTick(millisSinceLastTick, mutable);
+							changes = _scheduleForThisTick(context.millisPerTick, mutable);
 						}
 					}
 					
@@ -109,7 +108,7 @@ public class CreatureProcessor
 				}
 				
 				// Account for time passing.
-				EntityEndOfTick end = new EntityEndOfTick(millisSinceLastTick);
+				EntityEndOfTick end = new EntityEndOfTick();
 				end.apply(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.

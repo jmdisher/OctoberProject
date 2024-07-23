@@ -71,11 +71,12 @@ public class TestCommonChanges
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
+		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
+		new EntityEndOfTick().apply(context, newEntity);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 	}
 
@@ -88,10 +89,11 @@ public class TestCommonChanges
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
+		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		move.applyChange(context, newEntity);
-		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
+		new EntityEndOfTick().apply(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 
@@ -113,10 +115,11 @@ public class TestCommonChanges
 				, new WorldConfig()
 				, 100L
 		);
+		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		move.applyChange(context, newEntity);
-		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
+		new EntityEndOfTick().apply(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 	}
 
@@ -129,12 +132,13 @@ public class TestCommonChanges
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
+		context = _createNextTick(context, move.getTimeCostMillis());
 		// We start with a zero z-vector since we should start falling.
 		MutableEntity newEntity = MutableEntity.create(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		new EntityEndOfTick(move.getTimeCostMillis()).apply(context, newEntity);
+		new EntityEndOfTick().apply(context, newEntity);
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
 		float expectedZVector = -0.98f;
 		// This movement would then be applied for 1/10 second.
@@ -165,19 +169,22 @@ public class TestCommonChanges
 		// (we will use 50ms updates to see the more detailed arc)
 		for (int i = 0; i < 18; ++i)
 		{
-			EntityEndOfTick fall = new EntityEndOfTick(50L);
+			context = _createNextTick(context, 50L);
+			EntityEndOfTick fall = new EntityEndOfTick();
 			fall.apply(context, newEntity);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
-		EntityEndOfTick fall = new EntityEndOfTick(100L);
+		context = _createNextTick(context, 100L);
+		EntityEndOfTick fall = new EntityEndOfTick();
 		fall.apply(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
 		Assert.assertEquals(-4.9f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
-		fall = new EntityEndOfTick(100L);
+		context = _createNextTick(context, 100L);
+		fall = new EntityEndOfTick();
 		fall.apply(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
@@ -485,8 +492,9 @@ public class TestCommonChanges
 		
 		// Craft some items to use these up and verify that we also moved.
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
+		context = _createNextTick(context, craft.getTimeCostMillis());
 		Assert.assertTrue(craft.applyChange(context, newEntity));
-		new EntityEndOfTick(craft.getTimeCostMillis()).apply(context, newEntity);
+		new EntityEndOfTick().apply(context, newEntity);
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
 	}
@@ -1624,7 +1632,7 @@ public class TestCommonChanges
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		
 		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates if viscosity or acceleration calculation changes).
-		EntityEndOfTick fall = new EntityEndOfTick(100L);
+		EntityEndOfTick fall = new EntityEndOfTick();
 		fall.apply(context, newEntity);
 		Assert.assertEquals(5.441, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(3.675f, newEntity.newVelocity.z(), 0.01f);
@@ -1716,6 +1724,20 @@ public class TestCommonChanges
 				, 100L
 		);
 		return context;
+	}
+
+	private static TickProcessingContext _createNextTick(TickProcessingContext context, long millisInTick)
+	{
+		return new TickProcessingContext(context.currentTick + 1L
+				, context.previousBlockLookUp
+				, context.previousEntityLookUp
+				, context.mutationSink
+				, context.newChangeSink
+				, context.idAssigner
+				, context.randomInt
+				, context.config
+				, millisInTick
+		);
 	}
 
 	private void _runMutationInContext(CuboidData cuboid, _ContextHolder holder, Block expectedBlock)
