@@ -375,6 +375,49 @@ public class TestClientRunner
 		Assert.assertEquals(2, proxy.getInventory().getCount(ENV.items.PLANK));
 	}
 
+	@Test
+	public void walkWithFrameRate() throws Throwable
+	{
+		// Walk in a horizontal path emulating the frame rate-based updates from a client (17 ms).
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
+		// We will stand on the ground, in air, but there will be a wall directly to the West.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Walk east for 300 frames.
+		runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
+		EntityLocation afterMove = projection.thisEntity.location();
+		for (int i = 0; i < 300; ++i)
+		{
+			network.client.receivedEndOfTick(i + 2L, i);
+			EntityLocation afterTick = projection.thisEntity.location();
+			// These values should be the same since the projection should be maintained on top.
+			Assert.assertEquals(afterMove, afterTick);
+			currentTimeMillis += 17L;
+			runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
+			afterMove = projection.thisEntity.location();
+			Assert.assertNotNull(network.toSend);
+			network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
+			network.toSend = null;
+		}
+		// Compare this walked distance to what we have experimentally verified.
+		Assert.assertEquals(new EntityLocation(21.0f, 0.0f, 0.0f), projection.thisEntity.location());
+	}
+
 
 	private static class TestAdapter implements IClientAdapter
 	{

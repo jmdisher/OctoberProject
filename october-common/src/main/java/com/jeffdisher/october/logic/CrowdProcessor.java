@@ -58,6 +58,7 @@ public class CrowdProcessor
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
 				List<ScheduledChange> changes = changesToRun.get(id);
+				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
 					for (ScheduledChange scheduled : changes)
@@ -70,6 +71,16 @@ public class CrowdProcessor
 							boolean didApply = change.applyChange(context, mutable);
 							if (didApply)
 							{
+								// If this applied, account for time passing.
+								long millisInChange = change.getTimeCostMillis();
+								if (millisInChange > 0L)
+								{
+									TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
+									// WARNING:  Due to the way "in-progress" changes are handled, this may underflow
+									// into the negative so the accounting for movement may double-count when these
+									// changes span ticks.
+									millisAtEndOfTick -= millisInChange;
+								}
 								committedMutationCount += 1;
 							}
 						}
@@ -91,7 +102,6 @@ public class CrowdProcessor
 				}
 				
 				// Account for time passing.
-				long millisAtEndOfTick = context.millisPerTick;
 				if (millisAtEndOfTick > 0L)
 				{
 					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);

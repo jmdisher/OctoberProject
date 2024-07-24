@@ -38,7 +38,11 @@ public class EntityMutationWrapper implements IEntityUpdate
 		);
 		_mutation.applyChange(override, newEntity);
 		// We also need the corresponding end of tick.
-		TickUtils.allowMovement(override.previousBlockLookUp, newEntity, override.millisPerTick);
+		long millisInChange = _mutation.getTimeCostMillis();
+		if (millisInChange > 0L)
+		{
+			TickUtils.allowMovement(override.previousBlockLookUp, newEntity, millisInChange);
+		}
 		TickUtils.endOfTick(override, newEntity);
 	}
 

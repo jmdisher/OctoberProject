@@ -93,6 +93,7 @@ public class CreatureProcessor
 					
 				}
 				
+				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
 					for (IMutationEntity<IMutableCreatureEntity> change : changes)
@@ -101,6 +102,13 @@ public class CreatureProcessor
 						boolean didApply = change.applyChange(context, mutable);
 						if (didApply)
 						{
+							// If this applied, account for time passing.
+							long millisInChange = change.getTimeCostMillis();
+							if (millisInChange > 0L)
+							{
+								TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
+								millisAtEndOfTick -= millisInChange;
+							}
 							committedMutationCount += 1;
 						}
 					}
@@ -108,7 +116,6 @@ public class CreatureProcessor
 				}
 				
 				// Account for time passing.
-				long millisAtEndOfTick = context.millisPerTick;
 				if (millisAtEndOfTick > 0L)
 				{
 					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);

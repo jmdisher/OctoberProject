@@ -20,9 +20,8 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityMovementHelpers
 {
 	/**
-	 * Accelerates the given newEntity by adding blocksPerSecond for secondsInMotion split across the given xComponent
-	 * and yComponent to its existing velocity vector. Note that this assumes that the velocity will be applied once
-	 * per tick so it accounts for tick time to determine how to scale this velocity change for that observation.
+	 * Sets the velocity of the given newEntity based on the given x/y components and a target total speed of
+	 * blocksPerSecond.
 	 * Note:  No check is done on xComponent or yComponent but they should typically describe a combined vector of 1.0f
 	 * length.
 	 * This helper will also apply the movement energy cost to the entity.
@@ -31,12 +30,10 @@ public class EntityMovementHelpers
 	 * @param secondsInMotion How many seconds of motion to consider.
 	 * @param newEntity The entity to update.
 	 * @param blocksPerSecond The speed of the entity for this time.
-	 * @param millisPerTick The number of milliseconds between "allowMovement()" calls.
 	 * @param xComponent The x-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
 	 * @param yComponent The y-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
 	 */
 	public static void accelerate(TickProcessingContext context
-			, long millisPerTick
 			, IMutableMinimalEntity newEntity
 			, float blocksPerSecond
 			, long millisInMotion
@@ -45,13 +42,11 @@ public class EntityMovementHelpers
 	)
 	{
 		// First set the velocity.
-		float secondsPerTick = ((float)millisPerTick) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float secondsInMotion = ((float)millisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		EntityLocation oldVector = newEntity.getVelocityVector();
 		float targetBlocksInStep = (blocksPerSecond * secondsInMotion);
-		float totalMotion = targetBlocksInStep / secondsPerTick;
-		float newX = oldVector.x() + (xComponent * totalMotion);
-		float newY = oldVector.y() + (yComponent * totalMotion);
+		float newX = xComponent * blocksPerSecond;
+		float newY = yComponent * blocksPerSecond;
 		newEntity.setVelocityVector(new EntityLocation(newX, newY, oldVector.z()));
 		
 		// Then pay for the acceleration.
