@@ -215,7 +215,7 @@ public class TestEntityMovementHelpers
 	private boolean _allowMovement(TickProcessingContext context, _Entity entity, long millisInMotion)
 	{
 		EntityLocation oldLocation = entity.getLocation();
-		EntityMovementHelpers.allowMovement(context, entity, millisInMotion);
+		EntityMovementHelpers.allowMovement(context.previousBlockLookUp, entity, millisInMotion);
 		return !oldLocation.equals(entity.getLocation());
 	}
 

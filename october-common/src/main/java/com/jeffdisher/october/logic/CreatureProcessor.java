@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.mutations.EntityEndOfTick;
+import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -108,8 +108,12 @@ public class CreatureProcessor
 				}
 				
 				// Account for time passing.
-				EntityEndOfTick end = new EntityEndOfTick();
-				end.apply(context, mutable);
+				long millisAtEndOfTick = context.millisPerTick;
+				if (millisAtEndOfTick > 0L)
+				{
+					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);
+				}
+				TickUtils.endOfTick(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.
 				// This freeze() call will return the original instance if it is identical.

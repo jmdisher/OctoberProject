@@ -1,5 +1,7 @@
 package com.jeffdisher.october.mutations;
 
+import java.util.function.Function;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
@@ -14,21 +16,22 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
+ * A utility class which allows for motion and entity state updates during a tick, not directly associated with a
+ * specific change.
  * Implicitly added by CrowdProcessor and CreatureProcessor at the very end of a tick to account for things like gravity
  * and applying the velocity vector to location.
- * These are similar to IMutationEntity but cannot be sent by the clients or stored since they have no serialized shape.
- * However, the client will synthesize these in order to account for time passing between frames.
  */
-public class EntityEndOfTick
+public class TickUtils
 {
-	public EntityEndOfTick()
+	private TickUtils()
 	{
+		// There is no need to instantiate this.
 	}
 
-	public void apply(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, IMutableMinimalEntity newEntity, long millisToMove)
 	{
 		EntityLocation oldLocation = newEntity.getLocation();
-		EntityMovementHelpers.allowMovement(context, newEntity, context.millisPerTick);
+		EntityMovementHelpers.allowMovement(previousBlockLookUp, newEntity, millisToMove);
 		boolean didApply = !oldLocation.equals(newEntity.getLocation());
 		
 		if (didApply)
@@ -36,7 +39,10 @@ public class EntityEndOfTick
 			// Do other state reset now that we are moving.
 			newEntity.resetLongRunningOperations();
 		}
-		
+	}
+
+	public static void endOfTick(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	{
 		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
 		EntityLocation footLocation = newEntity.getLocation();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());

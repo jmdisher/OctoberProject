@@ -1,8 +1,11 @@
 package com.jeffdisher.october.logic;
 
+import java.util.function.Function;
+
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -63,20 +66,20 @@ public class EntityMovementHelpers
 	 * friction on all blocks and also want to stop air drift immediately - not realistic but keeps this simple and
 	 * makes the user feedback be what they would expect in a video game).
 	 * 
-	 * @param context The context.
+	 * @param previousBlockLookUp Lookup function to find the blocks from the previous tick.
 	 * @param newEntity The entity to update.
 	 * @param longMillisInMotion How many milliseconds of motion to consider.
 	 */
-	public static void allowMovement(TickProcessingContext context
+	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 	)
 	{
-		_handleMotion(context, newEntity, longMillisInMotion);
+		_handleMotion(previousBlockLookUp, newEntity, longMillisInMotion);
 	}
 
 
-	private static void _handleMotion(TickProcessingContext context
+	private static void _handleMotion(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, IMutableMinimalEntity newEntity
 			, long longMillisInMotion
 	)
@@ -90,7 +93,7 @@ public class EntityMovementHelpers
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		BlockProxy currentLocationProxy = context.previousBlockLookUp.apply(oldLocation.getBlockLocation());
+		BlockProxy currentLocationProxy = previousBlockLookUp.apply(oldLocation.getBlockLocation());
 		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
 		float viscosityFraction = (null != currentLocationProxy)
 				? env.blocks.getViscosityFraction(currentLocationProxy.getBlock())
@@ -101,13 +104,13 @@ public class EntityMovementHelpers
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float newZVector;
 		boolean shouldAllowFalling;
-		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(context.previousBlockLookUp, oldLocation, volume))
+		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
 		{
 			// We are up against the ceiling so cancel the velocity.
 			newZVector = 0.0f;
 			shouldAllowFalling = true;
 		}
-		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, oldLocation, volume))
+		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(previousBlockLookUp, oldLocation, volume))
 		{
 			// We are on the ground so cancel the velocity.
 			newZVector = 0.0f;
@@ -144,13 +147,13 @@ public class EntityMovementHelpers
 		// We will incrementally search for barriers in each axis.
 		// -X
 		EntityLocation newLocation = new EntityLocation(xLocation, oldY, oldZ);
-		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
 		{
 			// Adjust the X axis.
 			EntityLocation attempt = newLocation;
 			if (xDistance > 0.0f)
 			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingEastWall(context.previousBlockLookUp, newLocation, volume, oldX);
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingEastWall(previousBlockLookUp, newLocation, volume, oldX);
 				if (null != adjustedLocation)
 				{
 					newLocation = adjustedLocation;
@@ -158,7 +161,7 @@ public class EntityMovementHelpers
 			}
 			else if (xDistance < 0.0f)
 			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingWestWall(context.previousBlockLookUp, newLocation, volume, oldX);
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingWestWall(previousBlockLookUp, newLocation, volume, oldX);
 				if (null != adjustedLocation)
 				{
 					newLocation = adjustedLocation;
@@ -180,13 +183,13 @@ public class EntityMovementHelpers
 		
 		// -Y
 		newLocation = new EntityLocation(newLocation.x(), yLocation, newLocation.z());
-		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
 		{
 			// Adjust the Y axis.
 			EntityLocation attempt = newLocation;
 			if (yDistance > 0.0f)
 			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingNorthWall(context.previousBlockLookUp, newLocation, volume, oldY);
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingNorthWall(previousBlockLookUp, newLocation, volume, oldY);
 				if (null != adjustedLocation)
 				{
 					newLocation = adjustedLocation;
@@ -194,7 +197,7 @@ public class EntityMovementHelpers
 			}
 			else if (yDistance < 0.0f)
 			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingSouthWall(context.previousBlockLookUp, newLocation, volume, oldY);
+				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingSouthWall(previousBlockLookUp, newLocation, volume, oldY);
 				if (null != adjustedLocation)
 				{
 					newLocation = adjustedLocation;
@@ -216,14 +219,14 @@ public class EntityMovementHelpers
 		
 		// -Z
 		newLocation = new EntityLocation(newLocation.x(), newLocation.y(), zLocation);
-		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, newLocation, volume))
+		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
 		{
 			// Adjust the Z axis.
 			EntityLocation attempt = newLocation;
 			if (zDistance > 0.0f)
 			{
 				// We were jumping to see if we can clamp our location under the block.
-				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(context.previousBlockLookUp, newLocation, volume, oldZ);
+				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != highestLocation)
 				{
 					newLocation = highestLocation;
@@ -232,7 +235,7 @@ public class EntityMovementHelpers
 			else if (zDistance < 0.0f)
 			{
 				// We were falling so see if we can stop on the block(s) above where we fell.
-				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(context.previousBlockLookUp, newLocation, volume, oldZ);
+				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(previousBlockLookUp, newLocation, volume, oldZ);
 				if (null != lowestLocation)
 				{
 					newLocation = lowestLocation;
