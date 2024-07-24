@@ -78,6 +78,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.
+		Assert.assertTrue(millisInMotion > 0L);
 		Assert.assertTrue(millisInMotion <= LIMIT_COST_MILLIS);
 		
 		_millisInMotion = millisInMotion;

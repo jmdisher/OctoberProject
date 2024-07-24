@@ -280,6 +280,11 @@ public class TickRunner
 	 */
 	public boolean enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 	{
+		// TODO:  We should validate these parameters closer to the decoding point.
+		Assert.assertTrue(entityId > 0);
+		Assert.assertTrue(change.getTimeCostMillis() >= 0L);
+		Assert.assertTrue(commitLevel > 0L);
+		
 		boolean didAdd;
 		_sharedDataLock.lock();
 		try
@@ -945,28 +950,8 @@ public class TickRunner
 	private long _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, List<ScheduledChange> scheduledQueue, long schedulingBudget)
 	{
 		long commitLevel = 0L;
-		// First, check if this next change is a cancellation (-1 cost).
-		_EntityMutationWrapper next = access.newChanges.peek();
-		if (null != next)
-		{
-			long delayMillis = next.mutation.getTimeCostMillis();
-			if (-1L == delayMillis)
-			{
-				// We are consuming this so remove it.
-				access.newChanges.remove();
-				// If there was something in-progress, drop it and run the cancellation instead (just so that we will update the commit level through the common path in the caller).
-				if (null != access.inProgress)
-				{
-					scheduledQueue.add(new ScheduledChange(next.mutation, 0L));
-					commitLevel = next.commitLevel;
-					access.inProgress = null;
-				}
-				// Advance to the next for scheduling decisions.
-				next = access.newChanges.peek();
-			}
-		}
 		
-		// Next, check the in-progress to see if we can schedule it.
+		// First, check the in-progress to see if we can schedule it.
 		if (null != access.inProgress)
 		{
 			if (access.millisUntilInProgressExecution <= schedulingBudget)
@@ -986,9 +971,12 @@ public class TickRunner
 		}
 		
 		// Schedule anything else which fits in the budget.
+		_EntityMutationWrapper next = access.newChanges.peek();
 		while ((null != next) && (schedulingBudget > 0L))
 		{
 			long cost = next.mutation.getTimeCostMillis();
+			// The cost of these was validated when enqueuing.
+			Assert.assertTrue(cost >= 0L);
 			if (cost <= schedulingBudget)
 			{
 				// Just schedule this.

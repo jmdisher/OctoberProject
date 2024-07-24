@@ -23,12 +23,9 @@ public interface IMutationEntity<T extends IMutableMinimalEntity>
 	 * This "budget" is how the server determines if the entity is "busy" and is how it allows long-running tasks to
 	 * occupy the entity until they are considered "done" and the corresponding change is executed.
 	 * The general assumption is that the server's tick rate is 1 tick every 100 ms but that may change in the future.
-	 * Returning -1 here will imply that the previous change should be aborted as failure, and not run, unless it
-	 * already completed, in which case this change will be aborted as failure, instead.
 	 * This is called during scheduling where the entity's time budget will limit how much is scheduled.
 	 * 
-	 * @return The number of milliseconds for which the entity should be considered occupied (-1 to cancel previous
-	 * change).
+	 * @return The number of milliseconds for which the entity should be considered occupied (must be >= 0L).
 	 */
 	long getTimeCostMillis();
 
