@@ -118,14 +118,14 @@ public class MutationBlockGrow implements IMutationBlock
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
 		newBlock.setBlockAndClear(log);
-		_tryScheduleLeaf(context, env, leaf, -1,  0,  0);
-		_tryScheduleLeaf(context, env, leaf,  1,  0,  0);
-		_tryScheduleLeaf(context, env, leaf,  0, -1,  0);
-		_tryScheduleLeaf(context, env, leaf,  0,  1,  0);
-		_tryScheduleLeaf(context, env, leaf,  0,  0,  1);
+		_tryScheduleBlockOverwrite(context, env,  log,  0,  0,  1);
+		_tryScheduleBlockOverwrite(context, env, leaf, -1,  0,  1);
+		_tryScheduleBlockOverwrite(context, env, leaf,  1,  0,  1);
+		_tryScheduleBlockOverwrite(context, env, leaf,  0, -1,  1);
+		_tryScheduleBlockOverwrite(context, env, leaf,  0,  1,  1);
 	}
 
-	private void _tryScheduleLeaf(TickProcessingContext context, Environment env, Block leaf, int x, int y, int z)
+	private void _tryScheduleBlockOverwrite(TickProcessingContext context, Environment env, Block blockType, int x, int y, int z)
 	{
 		AbsoluteLocation location = _location.getRelative(x, y, z);
 		BlockProxy proxy = context.previousBlockLookUp.apply(location);
@@ -134,7 +134,7 @@ public class MutationBlockGrow implements IMutationBlock
 			Block block = proxy.getBlock();
 			if (env.blocks.canBeReplaced(block))
 			{
-				context.mutationSink.next(new MutationBlockOverwrite(location, leaf));
+				context.mutationSink.next(new MutationBlockOverwrite(location, blockType));
 			}
 		}
 	}

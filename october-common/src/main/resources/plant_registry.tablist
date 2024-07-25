@@ -13,11 +13,11 @@
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
 op.sapling
-	growth_divisor	10
+	growth_divisor	100
 	grow_as_tree
 op.wheat_seedling
-	growth_divisor	2
+	growth_divisor	6
 	next_phase	op.wheat_young
 op.wheat_young
-	growth_divisor	2
+	growth_divisor	12
 	next_phase	op.wheat_mature

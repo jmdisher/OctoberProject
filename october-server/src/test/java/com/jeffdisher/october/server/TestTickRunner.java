@@ -1358,7 +1358,8 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Now, we should see the leaf blocks which could be placed in the cuboid.
 		Assert.assertEquals(4, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.LEAF.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.items.LOG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.items.LEAF.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(1, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
 	}
