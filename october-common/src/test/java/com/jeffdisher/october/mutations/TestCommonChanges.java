@@ -894,8 +894,8 @@ public class TestCommonChanges
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.create(entityId);
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
-		// We should only see this change after applying it 10 times.
-		for (int i = 0; i < 9; ++i)
+		// We should only see this change after applying it 20 times.
+		for (int i = 0; i < 19; ++i)
 		{
 			Assert.assertTrue(periodic.applyChange(context, newEntity));
 			Assert.assertEquals((byte)100, newEntity.newFood);
@@ -917,7 +917,7 @@ public class TestCommonChanges
 		Assert.assertEquals((byte)100, newEntity.newHealth);
 		
 		// We should see one call enqueued for each call except the starving one, where we should see 2.
-		Assert.assertEquals(9 + 3 + 1, changeSink.takeExportedChanges().get(entityId).size());
+		Assert.assertEquals(19 + 3 + 1, changeSink.takeExportedChanges().get(entityId).size());
 	}
 
 	@Test

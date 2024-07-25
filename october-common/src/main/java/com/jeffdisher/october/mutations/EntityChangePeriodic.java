@@ -22,18 +22,18 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 
 	// Energy constants.
 	public static final int ENERGY_PER_FOOD = 1000;
-	// Means we will lose a food every 10 seconds.
-	public static final int ENERGY_COST_IDLE = 100;
+	// Means we will lose a food every 20 seconds idling.
+	public static final int ENERGY_COST_IDLE = 50;
 	// We will assume that attacking takes an entire 2 food.
 	public static final int ENERGY_COST_ATTACK = 2 * ENERGY_PER_FOOD;
 	// Jumping is pretty expensive.
-	public static final int ENERGY_COST_JUMP = 500;
+	public static final int ENERGY_COST_JUMP = 300;
 	// Swimming is similar to jumping.
-	public static final int ENERGY_COST_SWIM = 400;
+	public static final int ENERGY_COST_SWIM = 200;
 	// Crafting is somewhat cheap but depends on time so we will measure this per-second.
-	public static final int ENERGY_COST_CRAFT_PER_SECOND = 200;
+	public static final int ENERGY_COST_CRAFT_PER_SECOND = 100;
 	// Movement depends on horizontal movement but this is the cost for a single block.
-	public static final int ENERGY_COST_MOVE_PER_BLOCK = 200;
+	public static final int ENERGY_COST_MOVE_PER_BLOCK = 100;
 
 	public static EntityChangePeriodic deserializeFromBuffer(ByteBuffer buffer)
 	{
