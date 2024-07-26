@@ -138,7 +138,8 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
+			boolean didMakePlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
+			actionsProduced = _produceNextActions(context, mutable, machine, didMakePlan);
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
@@ -152,7 +153,8 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-				actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
+				boolean didMakePlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
+				actionsProduced = _produceNextActions(context, mutable, machine, didMakePlan);
 				mutable.newExtendedData = machine.freezeToData();
 			}
 		}
@@ -263,14 +265,14 @@ public class CreatureLogic
 	}
 
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _actionsToProduce(TickProcessingContext context
+	private static boolean _makeMovementPlan(TickProcessingContext context
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)
 	{
-		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
+		boolean didMakePlan;
 		// Now, determine if we have a plan or need to make one.
 		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
@@ -296,13 +298,32 @@ public class CreatureLogic
 				movementPlan = _findPathToRandomSpot(context, blockKindLookup, mutable.creature);
 			}
 			
-			// Convert the new plan into actions.
-			if (null == movementPlan)
-			{
-				// Fall through if we have no plan so we will try again on the next tick.
-				actionsProduced = null;
-			}
-			else
+			// We can now update our extended data.
+			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+			machine.setMovementPlan(movementPlan);
+			didMakePlan = true;
+		}
+		else
+		{
+			didMakePlan = false;
+		}
+		return didMakePlan;
+	}
+
+	private static List<IMutationEntity<IMutableCreatureEntity>> _produceNextActions(TickProcessingContext context
+			, MutableCreature mutable
+			, ICreatureStateMachine machine
+			, boolean tryToCentre
+	)
+	{
+		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
+		// Now, determine if we have a plan or need to make one.
+		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+		
+		if (null != movementPlan)
+		{
+			if (tryToCentre)
 			{
 				// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 				AbsoluteLocation directionHint;
@@ -319,38 +340,31 @@ public class CreatureLogic
 				{
 					directionHint = movementPlan.get(0);
 				}
-				// We have a path so make sure we are centred in a block, first.
 				actionsProduced = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature, directionHint);
-				if (actionsProduced.isEmpty())
+			}
+			else
+			{
+				// Fall through.
+				actionsProduced = List.of();
+			}
+			if (actionsProduced.isEmpty())
+			{
+				// We are already in the centre so just get started.
+				List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
+				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, !machine.isPlanDeliberate());
+				
+				// We can now update our extended data.
+				if (mutablePlan.isEmpty())
 				{
-					// We are already in the centre so just get started.
-					actionsProduced = null;
+					mutablePlan = null;
 				}
+				machine.setMovementPlan(mutablePlan);
 			}
 		}
 		else
 		{
-			// We start with no actions and will fall-through to the plans below.
+			// No path, no actions.
 			actionsProduced = null;
-		}
-		
-		// Determine if we need to set the next steps in case we devised a plan.
-		// (the movementPlan should only be null here if we are waiting to make our next decision)
-		if (null != movementPlan)
-		{
-			// The only reason why this is still null at this point is if we have a plan and we are ready to use it.
-			List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-			if (null == actionsProduced)
-			{
-				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, !machine.isPlanDeliberate());
-			}
-			
-			// We can now update our extended data.
-			if (mutablePlan.isEmpty())
-			{
-				mutablePlan = null;
-			}
-			machine.setMovementPlan(mutablePlan);
 		}
 		return actionsProduced;
 	}
