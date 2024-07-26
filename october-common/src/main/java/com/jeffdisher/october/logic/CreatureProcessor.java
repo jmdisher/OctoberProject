@@ -72,10 +72,16 @@ public class CreatureProcessor
 					if (null == mutable.newStepsToNextMove)
 					{
 						// We have no immediate steps planned so ask the creature if it wants to take special actions or plan the next path
-						long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
-						long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
-						// Note that this may still return a null list of next steps if there is nothing to do.
-						mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable);
+						// See if they have something special to do (only check once per tick).
+						boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
+						if (!didSpecial)
+						{
+							// If we didn't perform a special action, we can proceed with movement.
+							long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
+							long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
+							// Note that this may still return a null list of next steps if there is nothing to do.
+							mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, entityCollection, millisSinceLastAction, mutable);
+						}
 					}
 					if (null != mutable.newStepsToNextMove)
 					{

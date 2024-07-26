@@ -112,12 +112,11 @@ public class CreatureLogic
 
 	/**
 	 * Called when newStepsToNextMove is null in order to determine the next action for the entity.  This is an
-	 * opportunity for the creature to either just return the next actions for newStepsToNextMove from an existing plan,
-	 * take special actions before doing that, or update/change its existing plan.
+	 * opportunity for the creature to either just return the next actions for newStepsToNextMove from an existing plan
+	 * or update/change its existing plan.
 	 * Of special note, this is also where hostile mobs will be killed if in peaceful mode.
 	 * 
 	 * @param context The context of the current tick.
-	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
 	 * @param mutable The mutable creature object currently being evaluated.
@@ -125,7 +124,6 @@ public class CreatureLogic
 	 * timer).
 	 */
 	public static List<IMutationEntity<IMutableCreatureEntity>> planNextActions(TickProcessingContext context
-			, Consumer<CreatureEntity> creatureSpawner
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
 			, MutableCreature mutable
@@ -140,7 +138,7 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable, machine);
+			actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
@@ -154,7 +152,7 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-				actionsProduced = _planNextActions(context, creatureSpawner, entityCollection, millisSinceLastAction, mutable, machine);
+				actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
 				mutable.newExtendedData = machine.freezeToData();
 			}
 		}
@@ -205,6 +203,53 @@ public class CreatureLogic
 	}
 
 	/**
+	 * Called when newStepsToNextMove is null in order to allow the entity to potentially take any special actions.
+	 * 
+	 * @param context The context of the current tick.
+	 * @param creatureSpawner A consumer for any new entities spawned.
+	 * @param entityCollection The read-only collection of entities in the world.
+	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
+	 * @param mutable The mutable creature object currently being evaluated.
+	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
+	 * timer).
+	 */
+	public static boolean didTakeSpecialActions(TickProcessingContext context
+			, Consumer<CreatureEntity> creatureSpawner
+			, MutableCreature creature
+	)
+	{
+		// Only called if we don't currently have a published set of next steps.
+		Assert.assertTrue(null == creature.newStepsToNextMove);
+		
+		boolean isDone;
+		switch (creature.getType())
+		{
+		case COW:{
+			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
+			isDone = machine.doneSpecialActions(context, creatureSpawner, creature.creature);
+			if (isDone)
+			{
+				creature.setExtendedData(machine.freezeToData());
+			}
+			break;
+		}
+		case ORC:
+			OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
+			isDone = machine.doneSpecialActions(context, creatureSpawner, creature.creature);
+			if (isDone)
+			{
+				creature.setExtendedData(machine.freezeToData());
+			}
+			break;
+		case ERROR:
+		case PLAYER:
+		default:
+			throw Assert.unreachable();
+		}
+		return isDone;
+	}
+
+	/**
 	 * Just a testing entry-point for the random target path selection (idle movement).
 	 * 
 	 * @param context The testing context.
@@ -217,31 +262,6 @@ public class CreatureLogic
 		return _findPathToRandomSpot(context, blockKindLookup, creature);
 	}
 
-
-	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextActions(TickProcessingContext context
-			, Consumer<CreatureEntity> creatureSpawner
-			, EntityCollection entityCollection
-			, long millisSinceLastAction
-			, MutableCreature mutable
-			, ICreatureStateMachine machine
-	)
-	{
-		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
-		
-		// We will first determine if we need to take any special actions (sending actions, spawning offspring, etc)
-		boolean isDone = machine.doneSpecialActions(context, creatureSpawner, mutable.creature);
-		
-		if (isDone)
-		{
-			// We are done after taking special actions for this tick.
-			actionsProduced = null;
-		}
-		else
-		{
-			actionsProduced = _actionsToProduce(context, entityCollection, millisSinceLastAction, mutable, machine);
-		}
-		return actionsProduced;
-	}
 
 	private static List<IMutationEntity<IMutableCreatureEntity>> _actionsToProduce(TickProcessingContext context
 			, EntityCollection entityCollection
