@@ -642,7 +642,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		// The cow should first position itself against the wall before making the jump.
-		for (int i = 0; i < 2; ++i)
+		// Note that it will take 4 steps, instead of 2, since this is an idle movement.
+		for (int i = 0; i < 4; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();
@@ -655,7 +656,7 @@ public class TestCreatureProcessor
 			updated = group.updatedCreatures().get(creature.id());
 		}
 		// We should now be against the wall.
-		Assert.assertEquals(8.0f, updated.location().x(), 0.01f);
+		Assert.assertEquals(8.01f, updated.location().x(), 0.01f);
 		
 		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
 		Assert.assertNotEquals(startLocation, updated.location());

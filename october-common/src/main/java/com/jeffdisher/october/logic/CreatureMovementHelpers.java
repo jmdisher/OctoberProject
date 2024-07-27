@@ -25,60 +25,116 @@ public class CreatureMovementHelpers
 	public static final float FLOAT_THRESHOLD = 0.01f;
 
 	/**
-	 * Creates a list of movements to centre this entity on their current block.  Note that this isn't "centre" in a
-	 * "very centre" sense but just not flowing onto other blocks.
-	 * Additionally, if the creature is already in the block, the directionalHint will be used to position it against a
-	 * wall instead of the centre.
+	 * Creates a list of movements to position the creature within its current block such that it can move in the
+	 * direction of directionHint.  Returns an empty list if the creature is already in directionHint or is aligned on
+	 * that edge of its current block.
 	 * 
 	 * @param creature The creature.
-	 * @param directionHint Used to decide if we should lean to a specific side of the block instead of the centre.
+	 * @param directionHint The block we need to eventually enter.
+	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The list of moves to make (empty if already in a good position).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> centreOnCurrentBlock(CreatureEntity creature, AbsoluteLocation directionHint)
+	public static List<IMutationEntity<IMutableCreatureEntity>> prepareForMove(CreatureEntity creature, AbsoluteLocation directionHint, boolean isIdleMovement)
 	{
+		// Find our current location.
 		EntityLocation location = creature.location();
+		AbsoluteLocation baseLocation = location.getBlockLocation();
 		float width = EntityConstants.getVolume(creature.type()).width();
-		int baseX = (int) Math.floor(location.x());
-		int baseY = (int) Math.floor(location.y());
-		int edgeX = (int) Math.floor(location.x() + width);
-		int edgeY = (int) Math.floor(location.y() + width);
-		float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
 		
+		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
+		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
+		float westBound = (float)baseLocation.x() + FLOAT_THRESHOLD;
+		float eastBound = (float)baseLocation.x() + 1.0f - width - FLOAT_THRESHOLD;
+		float southBound = (float)baseLocation.y() + FLOAT_THRESHOLD;
+		float northBound = (float)baseLocation.y() + 1.0f - width - FLOAT_THRESHOLD;
+		
+		float targetX = location.x();
+		float targetY = location.y();
+		
+		if (directionHint.y() > baseLocation.y())
+		{
+			// North.
+			float possibleY = northBound;
+			northBound += 1.0f;
+			// If we are already north of our new possible target, just stay where we are.
+			if (targetY > possibleY)
+			{
+				// We are already closer than we need to be.
+			}
+			else
+			{
+				targetY = possibleY;
+			}
+		}
+		else if (directionHint.x() > baseLocation.x())
+		{
+			// East.
+			float possibleX = eastBound;
+			eastBound += 1.0f;
+			// If we are already east of our new possible target, just stay where we are.
+			if (targetX > possibleX)
+			{
+				// We are already closer than we need to be.
+			}
+			else
+			{
+				targetX = possibleX;
+			}
+		}
+		else if (directionHint.y() < baseLocation.y())
+		{
+			// South.
+			float possibleY = southBound;
+			southBound -= 1.0f;
+			// If we are already south of our new possible target, just stay where we are.
+			if (targetY < possibleY)
+			{
+				// We are already closer than we need to be.
+			}
+			else
+			{
+				targetY = possibleY;
+			}
+		}
+		else if (directionHint.x() < baseLocation.x())
+		{
+			// West.
+			float possibleX = westBound;
+			westBound -= 1.0f;
+			// If we are already west of our new possible target, just stay where we are.
+			if (targetX < possibleX)
+			{
+				// We are already closer than we need to be.
+			}
+			else
+			{
+				targetX = possibleX;
+			}
+		}
+		else
+		{
+			// The target is probably above or below us so we don't need horizontal movement.
+		}
+		
+		// Now, make sure that whatever target axes were unchanged still fit within our bounds.
+		if (targetX > eastBound)
+		{
+			targetX = eastBound;
+		}
+		if (targetY > northBound)
+		{
+			targetY = northBound;
+		}
+		
+		// Now, move.
 		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
-		int hintX = directionHint.x();
-		if (baseX != edgeX)
-		{
-			// We need to move east/west.
-			// Simplify this by finding what would be the "very centre" instead of the tedious math to do the bare minimum.
-			float targetX = ((float) baseX) + (1.0f - width) / 2.0f;
-			_moveByX(list, location, speed, 1.0f, targetX);
-		}
-		else if (hintX != baseX)
-		{
-			// We should lean into this wall.
-			float targetX = (hintX > baseX)
-					? ((float)hintX - width)
-					: (float)baseX
-			;
-			_moveByX(list, location, speed, 1.0f, targetX);
-		}
-		int hintY = directionHint.y();
-		if (baseY != edgeY)
-		{
-			// We need to move north/south.
-			// Simplify this by finding what would be the "very centre" instead of the tedious math to do the bare minimum.
-			float targetY = ((float) baseY) + (1.0f - width) / 2.0f;
-			_moveByY(list, location, speed, 1.0f, targetY);
-		}
-		else if (hintY != baseY)
-		{
-			// We should lean into this wall.
-			float targetY = (hintY > baseY)
-					? ((float)hintY - width)
-					: (float)baseY
-			;
-			_moveByY(list, location, speed, 1.0f, targetY);
-		}
+		float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
+		float speedMultipler = isIdleMovement
+				? 0.5f
+				: 1.0f
+		;
+		_moveByX(list, location, speed, speedMultipler, targetX);
+		_moveByY(list, location, speed, speedMultipler, targetY);
 		return list;
 	}
 

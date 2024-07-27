@@ -323,6 +323,7 @@ public class CreatureLogic
 		
 		if (null != movementPlan)
 		{
+			boolean isIdleMovement = !machine.isPlanDeliberate();
 			if (tryToCentre)
 			{
 				// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
@@ -340,7 +341,7 @@ public class CreatureLogic
 				{
 					directionHint = movementPlan.get(0);
 				}
-				actionsProduced = CreatureMovementHelpers.centreOnCurrentBlock(mutable.creature, directionHint);
+				actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, isIdleMovement);
 			}
 			else
 			{
@@ -351,7 +352,7 @@ public class CreatureLogic
 			{
 				// We are already in the centre so just get started.
 				List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, !machine.isPlanDeliberate());
+				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, isIdleMovement);
 				
 				// We can now update our extended data.
 				if (mutablePlan.isEmpty())
