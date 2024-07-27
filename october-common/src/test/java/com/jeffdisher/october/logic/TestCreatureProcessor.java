@@ -762,8 +762,7 @@ public class TestCreatureProcessor
 			Assert.assertNotNull(waterCreature.extendedData());
 			Assert.assertNotNull(airCreature.extendedData());
 		}
-		// TODO:  These numbers are WAY TOO CLOSE so we need to redo the viscosity drag calculations to increase impact.
-		Assert.assertEquals(4.56f, waterCreature.location().x(), 0.01f);
+		Assert.assertEquals(3.45f, waterCreature.location().x(), 0.01f);
 		Assert.assertEquals(4.60f, airCreature.location().x(), 0.01f);
 	}
 
@@ -789,7 +788,7 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
-		for (int i = 0; i < 8; ++i)
+		for (int i = 0; i < 16; ++i)
 		{
 			TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 					, (AbsoluteLocation location) -> {
@@ -819,8 +818,8 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We expect the 8th iteration to be the final one.
-			if (i < 7)
+			// We expect the 16th iteration to be the final one.
+			if (i < 15)
 			{
 				Assert.assertNotNull(creature.extendedData());
 			}
@@ -832,7 +831,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.1f, creature.location().z(), 0.01f);
+		Assert.assertEquals(3.34f, creature.location().z(), 0.01f);
 	}
 
 

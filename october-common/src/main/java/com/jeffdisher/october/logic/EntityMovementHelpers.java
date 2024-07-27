@@ -70,15 +70,6 @@ public class EntityMovementHelpers
 			, long longMillisInMotion
 	)
 	{
-		_handleMotion(previousBlockLookUp, newEntity, longMillisInMotion);
-	}
-
-
-	private static void _handleMotion(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, IMutableMinimalEntity newEntity
-			, long longMillisInMotion
-	)
-	{
 		Environment env = Environment.getShared();
 		EntityLocation oldVector = newEntity.getVelocityVector();
 		EntityLocation oldLocation = newEntity.getLocation();
@@ -113,25 +104,28 @@ public class EntityMovementHelpers
 		}
 		else
 		{
-			newZVector = MotionHelpers.applyZAcceleration(initialZVector, viscosityFraction, secondsInMotion);
+			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
 			shouldAllowFalling = true;
 		}
 		
-		// Update the x and y velocities based on drag in this environment.
-		float initialXVector = oldVector.x();
-		float initialYVector = oldVector.y();
-		float newXVector = MotionHelpers.velocityAfterDrag(initialXVector, viscosityFraction, secondsInMotion);
-		float newYVector = MotionHelpers.velocityAfterDrag(initialYVector, viscosityFraction, secondsInMotion);
+		// Note that we currently just set the x/y velocities to zero after applying the movement so just directly apply these through the viscosity.
+		// TODO:  This assumption of setting x/y velocity to zero will need to change to support icy surfaces or "flying through the air".
+		float velocityFraction = (1.0f - viscosityFraction);
+		float velocityToApplyX = velocityFraction * oldVector.x();
+		float velocityToApplyY = velocityFraction * oldVector.y();
 		
 		// We need to decide how far they would move in the x or y directions based on the current velocity and time.
 		// (for now, we will just apply the movement based on the current velocity, not accounting for friction-based deceleration).
-		float xDistance = secondsInMotion * (initialXVector + newXVector) / 2.0f;
-		float yDistance = secondsInMotion * (initialYVector + newYVector) / 2.0f;
+		float xDistance = secondsInMotion * velocityToApplyX;
+		float yDistance = secondsInMotion * velocityToApplyY;
 		// Figure out where our new location is (requires calculating the z-movement in this time).
-		float zDistance = shouldAllowFalling
+		// Note that we directly fudge this by the velocity fraction from the viscosity.
+		float rawZ = shouldAllowFalling
 				? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
 				: 0.0f
 		;
+		float zDistance = velocityFraction * rawZ;
+		
 		float oldX = oldLocation.x();
 		float oldY = oldLocation.y();
 		float oldZ = oldLocation.z();
@@ -174,7 +168,7 @@ public class EntityMovementHelpers
 			}
 		}
 		// The x-vector is always cancelled.
-		newXVector = 0.0f;
+		float newXVector = 0.0f;
 		
 		// -Y
 		newLocation = new EntityLocation(newLocation.x(), yLocation, newLocation.z());
@@ -210,7 +204,7 @@ public class EntityMovementHelpers
 			}
 		}
 		// The y-vector is always cancelled.
-		newYVector = 0.0f;
+		float newYVector = 0.0f;
 		
 		// -Z
 		newLocation = new EntityLocation(newLocation.x(), newLocation.y(), zLocation);

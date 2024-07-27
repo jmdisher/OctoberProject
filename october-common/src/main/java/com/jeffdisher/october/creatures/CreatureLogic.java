@@ -319,10 +319,11 @@ public class CreatureLogic
 		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		// Now, determine if we have a plan or need to make one.
 		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 		
 		if (null != movementPlan)
 		{
+			Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
+			float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
 			boolean isIdleMovement = !machine.isPlanDeliberate();
 			if (tryToCentre)
 			{
@@ -341,7 +342,7 @@ public class CreatureLogic
 				{
 					directionHint = movementPlan.get(0);
 				}
-				actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, isIdleMovement);
+				actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
 			}
 			else
 			{
@@ -352,7 +353,8 @@ public class CreatureLogic
 			{
 				// We are already in the centre so just get started.
 				List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, isIdleMovement);
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, viscosity, isIdleMovement);
 				
 				// We can now update our extended data.
 				if (mutablePlan.isEmpty())
@@ -425,6 +427,7 @@ public class CreatureLogic
 	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, CreatureEntity creature
 			, List<AbsoluteLocation> mutablePlan
+			, float viscosity
 			, boolean isIdleMovement
 	)
 	{
@@ -442,7 +445,7 @@ public class CreatureLogic
 			{
 				AbsoluteLocation nextStep = mutablePlan.get(0);
 				boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(entityLocation.getBlockLocation()));
-				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, isIdleMovement, isSwimmable);
+				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, viscosity, isIdleMovement, isSwimmable);
 				// If this is empty, just allow us to do nothing and reset the timer instead of returning null (should only be empty if falling, for example).
 			}
 			else
@@ -462,8 +465,18 @@ public class CreatureLogic
 			}
 			else
 			{
-				// Do nothing since we are moving through the air.
-				changes = null;
+				// This generally moves we are rising or falling so we might need to plan another movement if we are in water and our z-velocity isn't high enough (since we might want to swim up).
+				boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(entityLocation.getBlockLocation()));
+				if (isSwimmable && (creature.velocity().z() < 0.1f))
+				{
+					AbsoluteLocation nextStep = mutablePlan.get(0);
+					changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, viscosity, isIdleMovement, isSwimmable);
+				}
+				else
+				{
+					// Do nothing since we are moving through the air.
+					changes = null;
+				}
 			}
 		}
 		return changes;

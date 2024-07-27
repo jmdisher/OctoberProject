@@ -6,6 +6,9 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Contains some helpers related to motion.
  * This is mostly just to give a concise place for this logic, and our associated constants, to live.
+ * 
+ * NOTE:  For simplicity (since horizontal and vertical are treated differently), the viscosity is only applied when
+ * calculating displacement based on velocity and NOT during acceleration.
  */
 public class MotionHelpers
 {
@@ -18,14 +21,15 @@ public class MotionHelpers
 	 * Applies acceleration to the velocity, determining a final updated velocity after the given time interval.
 	 * 
 	 * @param initialZVelocityPerSecond The initial velocity.
-	 * @param viscosityFraction A viscosity fraction to apply (in the range of [0..1]).
 	 * @param secondsInMotion The seconds of acceleration.
 	 * @return The updated velocity, in blocks per second, capped at the terminal velocity.
 	 */
-	public static float applyZAcceleration(float initialZVelocityPerSecond, float viscosityFraction, float secondsInMotion)
+	public static float applyZAcceleration(float initialZVelocityPerSecond, float secondsInMotion)
 	{
-		// We are falling so update the velocity.
-		float newZVelocityPerSecond = _newVelocity(initialZVelocityPerSecond, GRAVITY_CHANGE_PER_SECOND, viscosityFraction, secondsInMotion);
+		// NOTE:  For simplicity (since horizontal and vertical are treated differently), the viscosity is only applied when calculating displacement based on velocity and NOT during acceleration.
+		// TODO:  This should probably be generalized into the correct physics model instead of treating the axes differently.
+		float velocityIncrease = GRAVITY_CHANGE_PER_SECOND * secondsInMotion;
+		float newZVelocityPerSecond = initialZVelocityPerSecond + velocityIncrease;
 		// Verify terminal velocity (we only apply this to falling).
 		// Note that we don't gradually slow acceleration, we immediately stop it at terminal velocity.
 		if (newZVelocityPerSecond < FALLING_TERMINAL_VELOCITY_PER_SECOND)
@@ -33,19 +37,6 @@ public class MotionHelpers
 			newZVelocityPerSecond = FALLING_TERMINAL_VELOCITY_PER_SECOND;
 		}
 		return newZVelocityPerSecond;
-	}
-
-	/**
-	 * Applies drag from the given viscosity to the initial velocity, returning the final velocity.
-	 * 
-	 * @param initialVelocity The initial velocity.
-	 * @param viscosityFraction A viscosity fraction to apply (in the range of [0..1]).
-	 * @param secondsInMotion The seconds of acceleration.
-	 * @return The updated velocity, in blocks per second.
-	 */
-	public static float velocityAfterDrag(float initialVelocity, float viscosityFraction, float secondsInMotion)
-	{
-		return _newVelocity(initialVelocity, 0.0f, viscosityFraction, secondsInMotion);
 	}
 
 	/**
@@ -75,14 +66,5 @@ public class MotionHelpers
 		float distanceConstant = (initialZVelocityPerSecond * secondsConstant);
 		
 		return distanceAccelerating + distanceConstant;
-	}
-
-
-	private static float _newVelocity(float initialVelocity, float acceleration, float viscosityFraction, float secondsInMotion)
-	{
-		float velocityIncrease = acceleration * secondsInMotion;
-		float velocityDrag = (-1.0f * initialVelocity * viscosityFraction) * secondsInMotion;
-		float velocityChange = velocityIncrease + velocityDrag;
-		return initialVelocity + velocityChange;
 	}
 }

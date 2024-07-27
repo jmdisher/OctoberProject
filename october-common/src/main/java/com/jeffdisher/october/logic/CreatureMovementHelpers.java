@@ -31,10 +31,11 @@ public class CreatureMovementHelpers
 	 * 
 	 * @param creature The creature.
 	 * @param directionHint The block we need to eventually enter.
+	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @return The list of moves to make (empty if already in a good position).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> prepareForMove(CreatureEntity creature, AbsoluteLocation directionHint, boolean isIdleMovement)
+	public static List<IMutationEntity<IMutableCreatureEntity>> prepareForMove(CreatureEntity creature, AbsoluteLocation directionHint, float viscosityFraction, boolean isIdleMovement)
 	{
 		// Find our current location.
 		EntityLocation location = creature.location();
@@ -129,12 +130,14 @@ public class CreatureMovementHelpers
 		// Now, move.
 		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 		float speed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
+		// We will apply the viscosity directly to speed.
+		float effectiveSpeed = (1.0f - viscosityFraction) * speed;
 		float speedMultipler = isIdleMovement
 				? 0.5f
 				: 1.0f
 		;
-		_moveByX(list, location, speed, speedMultipler, targetX);
-		_moveByY(list, location, speed, speedMultipler, targetY);
+		_moveByX(list, location, effectiveSpeed, speedMultipler, targetX);
+		_moveByY(list, location, effectiveSpeed, speedMultipler, targetY);
 		return list;
 	}
 
@@ -143,11 +146,12 @@ public class CreatureMovementHelpers
 	 * 
 	 * @param creature The creature.
 	 * @param targetBlock The target location.
+	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @param isBlockSwimmable True if the creature is in a block where they can swim.
 	 * @return The list of changes, potentially empty but never null.
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock, boolean isIdleMovement, boolean isBlockSwimmable)
+	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(CreatureEntity creature, AbsoluteLocation targetBlock, float viscosityFraction, boolean isIdleMovement, boolean isBlockSwimmable)
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
@@ -183,12 +187,12 @@ public class CreatureMovementHelpers
 			// We don't want to walk diagonally.
 			float maxHorizontal = Math.max(distanceX, distanceY);
 			float baseSpeed = EntityConstants.getBlocksPerSecondSpeed(creature.type());
-			float speedMultipler = 1.0f;
-			if (isIdleMovement)
-			{
-				// We want idle movements to be slower (half speed).
-				speedMultipler = 0.5f;
-			}
+			// We will apply the viscosity directly to speed.
+			float effectiveSpeed = (1.0f - viscosityFraction) * baseSpeed;
+			float speedMultipler = isIdleMovement
+					? 0.5f
+					: 1.0f
+			;
 			if (maxHorizontal > FLOAT_THRESHOLD)
 			{
 				// We need to move horizontally so figure out which way.
@@ -198,12 +202,12 @@ public class CreatureMovementHelpers
 				if (maxHorizontal == distanceX)
 				{
 					float targetX = ((float) stepLocation.x()) + (1.0f - width) / 2.0f;
-					_moveByX(list, startLocation, baseSpeed, speedMultipler, targetX);
+					_moveByX(list, startLocation, effectiveSpeed, speedMultipler, targetX);
 				}
 				else
 				{
 					float targetY = ((float) stepLocation.y()) + (1.0f - width) / 2.0f;
-					_moveByY(list, startLocation, baseSpeed, speedMultipler, targetY);
+					_moveByY(list, startLocation, effectiveSpeed, speedMultipler, targetY);
 				}
 				changes = list;
 			}
