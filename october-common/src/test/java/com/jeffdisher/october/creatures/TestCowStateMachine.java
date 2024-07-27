@@ -82,8 +82,9 @@ public class TestCowStateMachine
 		message[0] = null;
 		
 		CowStateMachine motherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null, father.id(), father.location().getBlockLocation(), null)));
+		// The mother should not take any action since they are waiting for the father.
 		didTakeAction = motherMachine.doneSpecialActions(context, null, mother);
-		Assert.assertTrue(didTakeAction);
+		Assert.assertFalse(didTakeAction);
 		// The mother should be unchanged.
 		Assert.assertNull(message[0]);
 		

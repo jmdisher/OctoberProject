@@ -296,6 +296,7 @@ public class CowStateMachine implements ICreatureStateMachine
 					// We can now exit love mode.
 					_inLoveMode = false;
 					_clearPlans();
+					didTakeAction = true;
 				}
 				else
 				{
@@ -304,14 +305,15 @@ public class CowStateMachine implements ICreatureStateMachine
 					if (!newLocation.equals(_targetPreviousLocation))
 					{
 						_clearPlans();
+						didTakeAction = true;
 					}
 				}
 			}
 			else
 			{
 				_clearPlans();
+				didTakeAction = true;
 			}
-			didTakeAction = true;
 		}
 		return didTakeAction;
 	}
