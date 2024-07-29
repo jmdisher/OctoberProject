@@ -207,7 +207,7 @@ public class MutationBlockPushToBlock implements IMutationBlock
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
 			FuelState fuel = block.getFuel();
-			block.setFuel(new FuelState(fuel.millisFueled(), fuel.currentFuel(), inv));
+			block.setFuel(new FuelState(fuel.millisFuelled(), fuel.currentFuel(), inv));
 			break;
 		default:
 			throw Assert.unreachable();

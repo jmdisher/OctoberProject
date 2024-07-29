@@ -72,7 +72,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setDataSpecial(AspectRegistry.INVENTORY, null);
 		_setData15(AspectRegistry.DAMAGE, (short)0);
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
-		_setDataSpecial(AspectRegistry.FUELED, null);
+		_setDataSpecial(AspectRegistry.FUELLED, null);
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
 	}
 
@@ -134,7 +134,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	@Override
 	public FuelState getFuel()
 	{
-		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
+		FuelState fuel = _getDataSpecial(AspectRegistry.FUELLED);
 		// We can't return null if this block can support fuel.
 		if (null == fuel)
 		{
@@ -153,11 +153,11 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// If this is empty, we want to store null, instead.
 		if (fuel.isEmpty())
 		{
-			_setDataSpecial(AspectRegistry.FUELED, null);
+			_setDataSpecial(AspectRegistry.FUELLED, null);
 		}
 		else
 		{
-			_setDataSpecial(AspectRegistry.FUELED, fuel);
+			_setDataSpecial(AspectRegistry.FUELLED, fuel);
 		}
 	}
 

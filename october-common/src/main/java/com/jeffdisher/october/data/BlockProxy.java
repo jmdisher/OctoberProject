@@ -84,7 +84,7 @@ public class BlockProxy implements IBlockProxy
 	@Override
 	public FuelState getFuel()
 	{
-		FuelState fuel = _getDataSpecial(AspectRegistry.FUELED);
+		FuelState fuel = _getDataSpecial(AspectRegistry.FUELLED);
 		// We can't return null if this block can support fuel.
 		if (null == fuel)
 		{

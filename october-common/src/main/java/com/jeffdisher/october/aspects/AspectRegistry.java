@@ -4,7 +4,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.data.CraftingAspectCodec;
-import com.jeffdisher.october.data.FueledAspectCodec;
+import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
@@ -79,14 +79,14 @@ public class AspectRegistry
 	 * FuelState objects, usually null.  These are used by things like furnaces to perform fuel-based crafting
 	 * operations.
 	 */
-	public static final Aspect<FuelState, OctreeObject> FUELED = registerAspect(FuelState.class
+	public static final Aspect<FuelState, OctreeObject> FUELLED = registerAspect(FuelState.class
 			, OctreeObject.class
 			, () -> OctreeObject.create()
 			, (OctreeObject original) -> {
 				// These are immutable so create the shallow clone.
 				return original.cloneMapShallow();
 			}
-			, new FueledAspectCodec()
+			, new FuelledAspectCodec()
 	);
 	/**
 	 * Block "light value".  This is usually 0 ("dark") but can be as high as 15.
@@ -122,7 +122,7 @@ public class AspectRegistry
 		Assert.assertTrue(1 == INVENTORY.index());
 		Assert.assertTrue(2 == DAMAGE.index());
 		Assert.assertTrue(3 == CRAFTING.index());
-		Assert.assertTrue(4 == FUELED.index());
+		Assert.assertTrue(4 == FUELLED.index());
 		Assert.assertTrue(5 == LIGHT.index());
 		Assert.assertTrue(6 == LOGIC.index());
 		
@@ -132,7 +132,7 @@ public class AspectRegistry
 			INVENTORY,
 			DAMAGE,
 			CRAFTING,
-			FUELED,
+			FUELLED,
 			LIGHT,
 			LOGIC,
 		};

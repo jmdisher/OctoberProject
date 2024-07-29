@@ -200,7 +200,7 @@ public class TestCodecHelpers
 		CodecHelpers.writeFuelState(buffer, test);
 		buffer.flip();
 		FuelState output = CodecHelpers.readFuelState(buffer);
-		Assert.assertEquals(test.millisFueled(), output.millisFueled());
+		Assert.assertEquals(test.millisFuelled(), output.millisFuelled());
 		Assert.assertEquals(test.currentFuel(), output.currentFuel());
 		Assert.assertEquals(test.fuelInventory().getCount(ENV.items.STONE), output.fuelInventory().getCount(ENV.items.STONE));
 		

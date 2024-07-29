@@ -100,8 +100,8 @@ public class CraftingBlockSupport
 	}
 
 	/**
-	 * Runs a fueled craft within the given block.
-	 * NOTE:  This assumes that this block supports fueled crafting.
+	 * Runs a fuelled craft within the given block.
+	 * NOTE:  This assumes that this block supports fuelled crafting.
 	 * 
 	 * @param env The environment.
 	 * @param newBlock The block.
@@ -109,19 +109,19 @@ public class CraftingBlockSupport
 	 * @return The result tuple, describing whether some work was done and whether the caller should schedule another
 	 * crafting operation against this block.
 	 */
-	public static FueledResult runFueled(Environment env, IMutableBlockProxy newBlock, long millisToApply)
+	public static FuelledResult runFuelled(Environment env, IMutableBlockProxy newBlock, long millisToApply)
 	{
 		boolean didApply;
 		boolean shouldReschedule;
 		// First, check the ephemeral object to make sure we didn't already do this (since this is initially scheduled via interaction but can only happen once per tick).
 		if (null == newBlock.getEphemeralState())
 		{
-			CraftOperation craft = _getValidFueledCraft(env, newBlock);
+			CraftOperation craft = _getValidFuelledCraft(env, newBlock);
 			if (null != craft)
 			{
 				// Advance the craft and store it and the fuel back.
 				FuelState fuel = newBlock.getFuel();
-				int fuelAvailable = fuel.millisFueled();
+				int fuelAvailable = fuel.millisFuelled();
 				if (0 == fuelAvailable)
 				{
 					// Consume fuel - we will just get the first one as there is no sort rule, here.
@@ -164,7 +164,7 @@ public class CraftingBlockSupport
 				didApply = true;
 				
 				// After we have done everything and saving state, see if we have more crafting work to do or fuel to drain.
-				if ((fuelAvailable > 0) || (null != _getValidFueledCraft(env, newBlock)))
+				if ((fuelAvailable > 0) || (null != _getValidFuelledCraft(env, newBlock)))
 				{
 					shouldReschedule = true;
 				}
@@ -179,8 +179,8 @@ public class CraftingBlockSupport
 				// Even if not actively crafting, we still want to burn through any existing fuel.
 				FuelState fuel = newBlock.getFuel();
 				// Nothing should schedule this if there is nothing to craft and nothing to burn (implies a bug elsewhere).
-				Assert.assertTrue((null != fuel) && (fuel.millisFueled() > 0));
-				int fuelRemaining = fuel.millisFueled() - (int)millisToApply;
+				Assert.assertTrue((null != fuel) && (fuel.millisFuelled() > 0));
+				int fuelRemaining = fuel.millisFuelled() - (int)millisToApply;
 				if (fuelRemaining < 0)
 				{
 					fuelRemaining = 0;
@@ -208,31 +208,31 @@ public class CraftingBlockSupport
 			didApply = false;
 			shouldReschedule = false;
 		}
-		return new FueledResult(didApply, shouldReschedule);
+		return new FuelledResult(didApply, shouldReschedule);
 	}
 
 	/**
-	 * Gets the current or possible fueled crafting operation within the block under proxy.  Returns null if no
+	 * Gets the current or possible fuelled crafting operation within the block under proxy.  Returns null if no
 	 * operation is possible.
 	 * 
 	 * @param env The environment.
 	 * @param proxy The block.
 	 * @return The crafting operation which is either currently active or could be started.
 	 */
-	public static CraftOperation getValidFueledCraft(Environment env, IBlockProxy proxy)
+	public static CraftOperation getValidFuelledCraft(Environment env, IBlockProxy proxy)
 	{
-		return _getValidFueledCraft(env, proxy);
+		return _getValidFuelledCraft(env, proxy);
 	}
 
 
-	private static CraftOperation _getValidFueledCraft(Environment env, IBlockProxy proxy)
+	private static CraftOperation _getValidFuelledCraft(Environment env, IBlockProxy proxy)
 	{
 		CraftOperation canCraft = null;
 		Block craftingBlock = proxy.getBlock();
 		// Note that we have no way to generalize this helper.
 		if (env.stations.getCraftingClasses(craftingBlock).contains(Craft.Classification.SPECIAL_FURNACE))
 		{
-			// We know that a block with this classification must have crafting, inventory, and fueled aspects.
+			// We know that a block with this classification must have crafting, inventory, and fuelled aspects.
 			CraftOperation runningCraft = proxy.getCrafting();
 			
 			// See if there is a possible crafting operation.
@@ -253,7 +253,7 @@ public class CraftingBlockSupport
 			
 			// See if we have fuel.
 			FuelState state = proxy.getFuel();
-			boolean hasFuel = (state.millisFueled() > 0) || (state.fuelInventory().currentEncumbrance > 0);
+			boolean hasFuel = (state.millisFuelled() > 0) || (state.fuelInventory().currentEncumbrance > 0);
 			
 			if (((null != runningCraft) || (null != possibleCraft)) && hasFuel)
 			{
@@ -267,5 +267,5 @@ public class CraftingBlockSupport
 	}
 
 
-	public static record FueledResult(boolean didApply, boolean shouldReschedule) {}
+	public static record FuelledResult(boolean didApply, boolean shouldReschedule) {}
 }

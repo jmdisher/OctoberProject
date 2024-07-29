@@ -739,7 +739,7 @@ public class TestTickRunner
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
 			if (0 != (i % 20))
 			{
-				Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
+				Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
 				Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
 			}
 			else
@@ -760,7 +760,7 @@ public class TestTickRunner
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(0, proxy.getInventory().getCount(ENV.items.LOG));
 		Assert.assertEquals(3, proxy.getInventory().getCount(ENV.items.CHARCOAL));
-		Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
+		Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
 		Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
@@ -773,9 +773,9 @@ public class TestTickRunner
 			
 			Assert.assertEquals(1, snap.committedCuboidMutationCount());
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-			Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFueled());
+			Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
 		}
-		Assert.assertEquals(0, proxy.getFuel().millisFueled());
+		Assert.assertEquals(0, proxy.getFuel().millisFuelled());
 		Assert.assertNull(proxy.getFuel().currentFuel());
 		
 		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.

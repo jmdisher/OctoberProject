@@ -44,7 +44,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	{
 		// TODO:  Stop using this constant once we pass this tick time through the context.
 		long craftMillisRemaining = 100L;
-		CraftingBlockSupport.FueledResult result = CraftingBlockSupport.runFueled(Environment.getShared(), newBlock, craftMillisRemaining);
+		CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(Environment.getShared(), newBlock, craftMillisRemaining);
 		if (result.shouldReschedule())
 		{
 			context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));

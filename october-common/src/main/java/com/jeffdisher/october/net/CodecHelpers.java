@@ -280,17 +280,17 @@ public class CodecHelpers
 	public static FuelState readFuelState(ByteBuffer buffer)
 	{
 		// We will use -1 as the "null".
-		int millisFueled = buffer.getInt();
+		int millisFuelled = buffer.getInt();
 		FuelState result;
-		if (millisFueled >= 0)
+		if (millisFuelled >= 0)
 		{
 			Item currentFuel = _readItem(buffer);
 			Inventory fuelInventory = _readInventory(buffer);
-			result = new FuelState(millisFueled, currentFuel, fuelInventory);
+			result = new FuelState(millisFuelled, currentFuel, fuelInventory);
 		}
 		else
 		{
-			Assert.assertTrue(-1 == millisFueled);
+			Assert.assertTrue(-1 == millisFuelled);
 			result = null;
 		}
 		return result;
@@ -300,7 +300,7 @@ public class CodecHelpers
 	{
 		if (null != fuel)
 		{
-			buffer.putInt(fuel.millisFueled());
+			buffer.putInt(fuel.millisFuelled());
 			_writeItem(buffer, fuel.currentFuel());
 			_writeInventory(buffer, fuel.fuelInventory());
 		}

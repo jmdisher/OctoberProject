@@ -101,7 +101,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 				_putInventory(newBlock, inv.freeze());
 				
 				// See if we might need to trigger an automatic crafting operation in this block.
-				if (null != CraftingBlockSupport.getValidFueledCraft(env, newBlock))
+				if (null != CraftingBlockSupport.getValidFuelledCraft(env, newBlock))
 				{
 					context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));
 				}
@@ -174,7 +174,7 @@ public class MutationBlockStoreItems implements IMutationBlock
 			break;
 		case Inventory.INVENTORY_ASPECT_FUEL:
 			FuelState fuel = block.getFuel();
-			block.setFuel(new FuelState(fuel.millisFueled(), fuel.currentFuel(), inv));
+			block.setFuel(new FuelState(fuel.millisFuelled(), fuel.currentFuel(), inv));
 			break;
 		default:
 			throw Assert.unreachable();
