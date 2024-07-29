@@ -11,104 +11,104 @@
 #
 # Note that the item ID references are against item_registry.tablist.
 
-op.log_to_planks	trivial
+op.log_to_planks	BUILT_IN
 	input	op.log
 	output	op.plank	op.plank
 	millis	1000
-op.stone_to_stone_brick	trivial
+op.stone_to_stone_brick	BUILT_IN
 	input	op.stone
 	output	op.stone_brick
 	millis	2000
-op.planks_to_crafting_table	trivial
+op.planks_to_crafting_table	BUILT_IN
 	input	op.plank	op.plank	op.plank	op.plank
 	output	op.crafting_table
 	millis	4000
-op.stone_bricks_to_furnace	common
+op.stone_bricks_to_furnace	COMMON
 	input	op.stone_brick	op.stone_brick	op.stone_brick	op.stone_brick
 	output	op.furnace
 	millis	8000
-op.lantern	common
+op.lantern	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lantern
 	millis	4000
-op.furnace_logs_to_charcoal	special_furnace
+op.furnace_logs_to_charcoal	FUELLED_FURNACE
 	input	op.log
 	output	op.charcoal
 	millis	1000
-op.furnace_smelt_iron	special_furnace
+op.furnace_smelt_iron	FUELLED_FURNACE
 	input	op.iron_ore
 	output	op.iron_ingot
 	millis	2000
-op.temp_bread	common
+op.temp_bread	COMMON
 	input	op.wheat_item
 	output	op.bread
 	millis	8000
 # TODO:  This should make more than 1 stick but we need to do an encumbrance rework, first.
-op.plank_to_stick	trivial
+op.plank_to_stick	BUILT_IN
 	input	op.plank
 	output	op.stick
 	millis	1000
-op.iron_pickaxe	common
+op.iron_pickaxe	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_pickaxe
 	millis	16000
-op.iron_shovel	common
+op.iron_shovel	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_shovel
 	millis	12000
-op.iron_axe	common
+op.iron_axe	COMMON
 	input	op.stick	op.iron_ingot
 	output	op.iron_axe
 	millis	12000
-op.iron_sword	common
+op.iron_sword	COMMON
 	input	op.stick	op.iron_ingot	op.iron_ingot
 	output	op.iron_sword
 	millis	20000
-op.bucket_empty	common
+op.bucket_empty	COMMON
 	input	op.iron_ingot
 	output	op.bucket_empty
 	millis	10000
-op.iron_helmet	common
+op.iron_helmet	COMMON
 	input	op.iron_ingot	op.iron_ingot
 	output	op.iron_helmet
 	millis	20000
-op.iron_chestplate	common
+op.iron_chestplate	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.iron_ingot	op.iron_ingot
 	output	op.iron_chestplate
 	millis	80000
-op.iron_greaves	common
+op.iron_greaves	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.iron_ingot
 	output	op.iron_greaves
 	millis	40000
-op.iron_boots	common
+op.iron_boots	COMMON
 	input	op.iron_ingot	op.iron_ingot
 	output	op.iron_boots
 	millis	20000
-op.chest	common
+op.chest	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.chest
 	millis	8000
-op.furnace_cook_steak	special_furnace
+op.furnace_cook_steak	FUELLED_FURNACE
 	input	op.beef
 	output	op.steak
 	millis	1000
-op.door_closed	common
+op.door_closed	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
 	output	op.door_closed
 	millis	8000
-op.hopper_down	common
+op.hopper_down	COMMON
 	input	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.hopper_down
 	millis	10000
-op.switch_off	common
+op.switch_off	COMMON
 	input	op.iron_ingot	op.stick
 	output	op.switch_off
 	millis	2000
-op.lamp_off	common
+op.lamp_off	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
 	output	op.lamp_off
 	millis	4000
-op.logic_wire	common
+op.logic_wire	COMMON
 	input	op.iron_ingot	op.charcoal
 	output	op.logic_wire	op.logic_wire	op.logic_wire
 	millis	1000

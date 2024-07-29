@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CraftAspect
 {
+	/**
+	 * This constant is defined for the "in-inventory" built-in crafting recipes.  This constant is implicitly defined
+	 * and can be referenced by any recipe.
+	 */
+	public static final String BUILT_IN = "BUILT_IN";
 
 	/**
 	 * Loads the craft aspect from the tablist in the given stream, sourcing Items from the given items registry and
@@ -44,12 +50,16 @@ public class CraftAspect
 			throw new IOException("Resource missing");
 		}
 		
+		// We will dynamically build the set of classifications but always start with the built-in.
+		Set<String> craftingClassifications = new HashSet<>();
+		craftingClassifications.add(CraftAspect.BUILT_IN);
+		
 		List<Craft> crafts = new ArrayList<>();
 		Map<String, Craft> craftByName = new HashMap<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
 			private String _name;
-			private Craft.Classification _classification;
+			private String _classification;
 			private Map<Item, Integer> _input;
 			// NOTE:  Output can be stackable or not so multiple instances of an item should just be added this list multiple times.
 			private List<Item> _output;
@@ -63,11 +73,9 @@ public class CraftAspect
 					throw new TabListReader.TabListException("One classification required: \"" + name + "\"");
 				}
 				_name = name;
-				_classification = Craft.Classification.valueOf(parameters[0].toUpperCase());
-				if (null == _classification)
-				{
-					throw new TabListReader.TabListException("Invalid classification: \"" + parameters[0] + "\"");
-				}
+				// Add this classification.
+				craftingClassifications.add(parameters[0]);
+				_classification = parameters[0];
 				_input = new HashMap<>();
 				_output = new ArrayList<>();
 				_millis = 0L;
@@ -160,9 +168,10 @@ public class CraftAspect
 			}
 		}, stream);
 		
-		return new CraftAspect(blocks, inventory, crafts, craftByName);
+		return new CraftAspect(blocks, inventory, craftingClassifications, crafts, craftByName);
 	}
 
+	private final Set<String> _craftingClassifications;
 	private final Map<String, Craft> _craftByName;
 
 	/**
@@ -170,10 +179,16 @@ public class CraftAspect
 	 */
 	public final Craft[] CRAFTING_OPERATIONS;
 
-	private CraftAspect(BlockAspect blocks, InventoryEncumbrance inventory, List<Craft> crafts, Map<String, Craft> craftByName)
+	private CraftAspect(BlockAspect blocks
+			, InventoryEncumbrance inventory
+			, Set<String> craftingClassifications
+			, List<Craft> crafts
+			, Map<String, Craft> craftByName
+	)
 	{
 		this.CRAFTING_OPERATIONS = crafts.toArray((int size) -> new Craft[size]);
 		
+		_craftingClassifications = craftingClassifications;
 		_craftByName = craftByName;
 		
 		// We never want to allow encumbrance to increase through crafting.
@@ -213,9 +228,20 @@ public class CraftAspect
 	 * @param classifications The set of classifications to check.
 	 * @return The list of crafting operations in the union of these classifications.
 	 */
-	public List<Craft> craftsForClassifications(Set<Craft.Classification> classifications)
+	public List<Craft> craftsForClassifications(Set<String> classifications)
 	{
 		return List.of(CRAFTING_OPERATIONS).stream().filter((Craft craft) -> classifications.contains(craft.classification)).toList();
+	}
+
+	/**
+	 * Checks if the given value is a defined crafting classification.  Note that this check is case sensitive.
+	 * 
+	 * @param value The value to check.
+	 * @return True if the crafting classification is defined.
+	 */
+	public boolean isCraftingClassification(String value)
+	{
+		return _craftingClassifications.contains(value);
 	}
 
 

@@ -31,7 +31,7 @@ public class TestCraftAspect
 	{
 		Craft craft = new Craft((short)1
 				, "Simple"
-				, Craft.Classification.COMMON
+				, "COMMON"
 				, new Items[] { new Items(ENV.items.DIRT, 2), new Items(ENV.items.STONE, 1)  }
 				, new Item[] {ENV.items.COAL_ORE, ENV.items.COAL_ORE, ENV.items.IRON_ORE }
 				, 1000L
@@ -53,7 +53,7 @@ public class TestCraftAspect
 		Item pick = ENV.items.getItemById("op.iron_pickaxe");
 		Craft craft = new Craft((short)1
 				, "Non-stack"
-				, Craft.Classification.COMMON
+				, "COMMON"
 				, new Items[] { new Items(ENV.items.DIRT, 1), new Items(ENV.items.STONE, 1)  }
 				, new Item[] { pick }
 				, 1000L

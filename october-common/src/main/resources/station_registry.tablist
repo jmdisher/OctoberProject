@@ -15,11 +15,11 @@
 
 op.crafting_table
 	inventory	30
-	crafting	TRIVIAL	COMMON
+	crafting	BUILT_IN	COMMON
 	manual_multiplier	10
 op.furnace
 	inventory	30
-	crafting	SPECIAL_FURNACE
+	crafting	FUELLED_FURNACE
 	fuel_inventory	20
 	manual_multiplier	0
 op.chest

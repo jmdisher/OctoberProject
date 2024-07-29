@@ -9,47 +9,23 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class Craft
 {
-	/**
-	 * Used to categorize crafting recipes since they may only be applicable in certain environments.
-	 */
-	public static enum Classification
-	{
-		/**
-		 * Cannot be used.
-		 */
-		ERROR,
-		/**
-		 * Crafting operations so trivial that they can be done directly in-inventory.
-		 */
-		TRIVIAL,
-		/**
-		 * Crafting operations which require a crafting table.
-		 */
-		COMMON,
-		/**
-		 * A special crafting operation which happens automatically within a furnace.
-		 */
-		SPECIAL_FURNACE,
-	}
-
-
 	public final short number;
 	public final String name;
-	public final Classification classification;
+	public final String classification;
 	public final Items[] input;
 	public final Item[] output;
 	public final long millisPerCraft;
 
 	public Craft(short number
 			, String name
-			, Classification classification
+			, String classification
 			, Items[] input
 			, Item[] output
 			, long millisPerCraft
 	)
 	{
 		Assert.assertTrue(number >= 0);
-		Assert.assertTrue(Classification.ERROR != classification);
+		Assert.assertTrue(null != classification);
 		
 		this.number = number;
 		this.name = name;

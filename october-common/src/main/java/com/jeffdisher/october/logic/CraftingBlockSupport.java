@@ -25,6 +25,11 @@ import com.jeffdisher.october.utils.Assert;
 public class CraftingBlockSupport
 {
 	/**
+	 * The special crafting classification for fuelled furnace crafting.
+	 */
+	public static final String FUELLED_CLASSIFICATION = "FUELLED_FURNACE";
+
+	/**
 	 * Runs a manual crafting operation in the given newBlock, potentially starting startCraft if non-null.
 	 * NOTE:  This assumes that this block supports manual crafting.
 	 * 
@@ -39,7 +44,7 @@ public class CraftingBlockSupport
 		boolean didApply;
 		Block craftingBlock = newBlock.getBlock();
 		long craftingMultiplier = (long) env.stations.getManualMultiplier(craftingBlock);
-		Set<Craft.Classification> classifications = env.stations.getCraftingClasses(craftingBlock);
+		Set<String> classifications = env.stations.getCraftingClasses(craftingBlock);
 		// See if this is something new or if we are continuing.
 		CraftOperation currentOperation = newBlock.getCrafting();
 		Craft currentCraft = (null != currentOperation) ? currentOperation.selectedCraft() : null;
@@ -230,7 +235,7 @@ public class CraftingBlockSupport
 		CraftOperation canCraft = null;
 		Block craftingBlock = proxy.getBlock();
 		// Note that we have no way to generalize this helper.
-		if (env.stations.getCraftingClasses(craftingBlock).contains(Craft.Classification.SPECIAL_FURNACE))
+		if (env.stations.getCraftingClasses(craftingBlock).contains(FUELLED_CLASSIFICATION))
 		{
 			// We know that a block with this classification must have crafting, inventory, and fuelled aspects.
 			CraftOperation runningCraft = proxy.getCrafting();
@@ -240,7 +245,7 @@ public class CraftingBlockSupport
 			if (null == runningCraft)
 			{
 				Inventory inv = proxy.getInventory();
-				for (Craft craft : env.crafting.craftsForClassifications(Set.of(Craft.Classification.SPECIAL_FURNACE)))
+				for (Craft craft : env.crafting.craftsForClassifications(Set.of(FUELLED_CLASSIFICATION)))
 				{
 					// Just take the first match (we don't currently have a priority).
 					if (CraftAspect.canApply(craft, inv))

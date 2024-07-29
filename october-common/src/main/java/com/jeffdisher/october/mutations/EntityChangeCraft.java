@@ -59,7 +59,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 		{
 			// We will start a new operation, here.
 			// We need to make sure that this is a crafting operations which can be performed in their inventory.
-			if (_operation.classification == Craft.Classification.TRIVIAL)
+			if (_operation.classification.equals(CraftAspect.BUILT_IN))
 			{
 				existing = new CraftOperation(_operation, 0L);
 			}

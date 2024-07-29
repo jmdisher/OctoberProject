@@ -12,7 +12,6 @@ import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Craft;
 
 
 /**
@@ -40,6 +39,7 @@ public class StationRegistry
 	 * 
 	 * @param items The existing ItemRegistry.
 	 * @param blocks The existing BlockAspect.
+	 * @param craftAspect The registry where crafting classifications are defined.
 	 * @param stream The stream containing the tablist describing stations.
 	 * @return The registry (never null).
 	 * @throws IOException There was a problem with a stream.
@@ -47,17 +47,18 @@ public class StationRegistry
 	 */
 	public static StationRegistry load(ItemRegistry items
 			, BlockAspect blocks
+			, CraftAspect craftAspect
 			, InputStream stream
 	) throws IOException, TabListReader.TabListException
 	{
 		IValueTransformer<Block> keyTransformer = new IValueTransformer.BlockTransformer(items, blocks);
 		IValueTransformer<Integer> inventoryTransformer = new IValueTransformer.IntegerTransformer(FIELD_INVENTORY);
-		IValueTransformer<Craft.Classification> craftingTransformer = new _CraftingTransformer(FIELD_CRAFTING);
+		IValueTransformer<String> craftingTransformer = new _CraftingTransformer(craftAspect, FIELD_CRAFTING);
 		IValueTransformer<Integer> fuelInventoryTransformer = new IValueTransformer.IntegerTransformer(FIELD_FUEL_INVENTORY);
 		IValueTransformer<Integer> manualMultiplierTransformer = new IValueTransformer.IntegerTransformer(FIELD_MANUAL_MULTIPLIER);
 		
 		Map<Block, Integer> inventories = new HashMap<>();
-		Map<Block, Set<Craft.Classification>> classifications = new HashMap<>();
+		Map<Block, Set<String>> classifications = new HashMap<>();
 		Map<Block, Integer> fuelInventories = new HashMap<>();
 		Map<Block, Integer> manualMultipliers = new HashMap<>();
 		TabListReader.IParseCallbacks callbacks = new TabListReader.IParseCallbacks() {
@@ -110,7 +111,7 @@ public class StationRegistry
 					{
 						throw new TabListReader.TabListException("At least one classification required in \"" + _currentKey.item().id() + "\"");
 					}
-					Set<Craft.Classification> set = new HashSet<>();
+					Set<String> set = new HashSet<>();
 					for (String parameter : parameters)
 					{
 						set.add(craftingTransformer.transform(parameter));
@@ -150,12 +151,12 @@ public class StationRegistry
 
 
 	private final Map<Block, Integer> _inventories;
-	private final Map<Block, Set<Craft.Classification>> _classifications;
+	private final Map<Block, Set<String>> _classifications;
 	private final Map<Block, Integer> _fuelInventories;
 	private final Map<Block, Integer> _manualMultipliers;
 
 	private StationRegistry(Map<Block, Integer> inventories
-			, Map<Block, Set<Craft.Classification>> classifications
+			, Map<Block, Set<String>> classifications
 			, Map<Block, Integer> fuelInventories
 			, Map<Block, Integer> manualMultipliers
 	)
@@ -187,9 +188,9 @@ public class StationRegistry
 	 * @param block The block.
 	 * @return The crafting classifications (empty if not a crafting block).
 	 */
-	public Set<Craft.Classification> getCraftingClasses(Block block)
+	public Set<String> getCraftingClasses(Block block)
 	{
-		Set<Craft.Classification> set = _classifications.get(block);
+		Set<String> set = _classifications.get(block);
 		return (null != set)
 				? set
 				: Set.of()
@@ -228,23 +229,25 @@ public class StationRegistry
 
 
 	/**
-	 * Decodes the value as a Craft.Classification object.
+	 * Decodes the value as a crafting classification string, as previously defined by CraftAspect.
 	 */
-	private static class _CraftingTransformer implements IValueTransformer<Craft.Classification>
+	private static class _CraftingTransformer implements IValueTransformer<String>
 	{
+		private final CraftAspect _craftAspect;
 		private final String _name;
-		public _CraftingTransformer(String numberName)
+		public _CraftingTransformer(CraftAspect craftAspect, String fieldName)
 		{
-			_name = numberName;
+			_craftAspect = craftAspect;
+			_name = fieldName;
 		}
 		@Override
-		public Craft.Classification transform(String value) throws TabListException
+		public String transform(String value) throws TabListException
 		{
-			try
+			if (_craftAspect.isCraftingClassification(value))
 			{
-				return Craft.Classification.valueOf(value.toUpperCase());
+				return value;
 			}
-			catch (IllegalArgumentException e)
+			else
 			{
 				throw new TabListReader.TabListException("Not a valid " + _name + " crafting classification: \"" + value + "\"");
 			}
