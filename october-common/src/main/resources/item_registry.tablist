@@ -21,7 +21,7 @@ op.iron_ingot	Iron Ingot
 op.sapling	Sapling
 op.leaf	Leaf
 op.wheat_seed	Wheat Seed
-op.wheat_item	Wheat Item
+op.wheat_item	Wheat
 op.wheat_seedling	Wheat Seedling
 op.wheat_young	Young Wheat
 op.wheat_mature	Mature Wheat
@@ -57,3 +57,8 @@ op.flour	Flour
 op.iron_dust	Iron Dust
 op.torch	Torch
 op.fertilizer	Fertilizer
+op.carrot_seed	Carrot Seed
+op.carrot_item	Carrot
+op.carrot_seedling	Carrot Seedling
+op.carrot_young	Young Carrot
+op.carrot_mature	Mature Carrot

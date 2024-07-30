@@ -32,6 +32,7 @@ public class StructureLoader
 	public static final char C_LANTERN  = 'L';
 	public static final char C_SEEDLING = 'P';
 	public static final char C_SAPLING  = 'S';
+	public static final char C_CARROT  = 'C';
 
 	private final Map<Character, Block> _lookup;
 
@@ -49,6 +50,7 @@ public class StructureLoader
 				, C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))
 				, C_SEEDLING, blocks.fromItem(items.getItemById("op.wheat_seedling"))
 				, C_SAPLING, blocks.fromItem(items.getItemById("op.sapling"))
+				, C_CARROT, blocks.fromItem(items.getItemById("op.carrot_seedling"))
 		);
 	}
 

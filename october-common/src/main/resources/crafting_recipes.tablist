@@ -132,7 +132,11 @@ op.torch	BUILT_IN
 	input	op.stick	op.charcoal
 	output	op.torch	op.torch
 	millis	1000
-op.fertilizer	GRINDING
+op.fertilizer_from_wheat	GRINDING
 	input	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.wheat_seed	op.charcoal
+	output	op.fertilizer	op.fertilizer
+	millis	4000
+op.fertilizer_from_carrot	GRINDING
+	input	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.carrot_seed	op.charcoal
 	output	op.fertilizer	op.fertilizer
 	millis	4000

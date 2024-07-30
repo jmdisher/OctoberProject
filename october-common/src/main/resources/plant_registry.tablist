@@ -21,3 +21,9 @@ op.wheat_seedling
 op.wheat_young
 	growth_divisor	12
 	next_phase	op.wheat_mature
+op.carrot_seedling
+	growth_divisor	10
+	next_phase	op.carrot_young
+op.carrot_young
+	growth_divisor	20
+	next_phase	op.carrot_mature

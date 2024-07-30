@@ -38,14 +38,14 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 			+ "DBBBBBBD\n"
 			+ "DDDDDDDD\n"
 			, ""
-			+ "S PPPP S\n"
+			+ "S CCCC S\n"
 			+ " L    L \n"
 			+ "P      P\n"
 			+ "P      P\n"
 			+ "P      P\n"
 			+ "P      P\n"
 			+ " L    L \n"
-			+ "S PPPP S\n"
+			+ "S CCCC S\n"
 	};
 	public static final AbsoluteLocation BASE = new AbsoluteLocation(-4, -4, -1);
 
