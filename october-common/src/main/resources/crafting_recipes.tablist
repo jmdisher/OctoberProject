@@ -39,10 +39,14 @@ op.furnace_smelt_iron	FUELLED_FURNACE
 	input	op.iron_ore
 	output	op.iron_ingot
 	millis	2000
-op.temp_bread	COMMON
-	input	op.wheat_item
+op.furnace_smelt_iron_dust	FUELLED_FURNACE
+	input	op.iron_dust	op.iron_dust
+	output	op.iron_ingot
+	millis	2000
+op.bread	FUELLED_FURNACE
+	input	op.flour
 	output	op.bread
-	millis	8000
+	millis	1000
 # TODO:  This should make more than 1 stick but we need to do an encumbrance rework, first.
 op.plank_to_stick	BUILT_IN
 	input	op.plank
@@ -120,3 +124,7 @@ op.flour	GRINDING
 	input	op.wheat_item
 	output	op.flour
 	millis	2000
+op.iron_dust	GRINDING
+	input	op.iron_ore
+	output	op.iron_dust	op.iron_dust	op.iron_dust
+	millis	4000
