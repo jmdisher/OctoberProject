@@ -63,7 +63,7 @@ public class BlockAspect
 		
 		Set<Block> canBeReplaced = new HashSet<>();
 		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
-		Map<Block, Block> specialBlockSupport = new HashMap<>();
+		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
 		Map<Item, Block> specialBlockPlacement = new HashMap<>();
 		Map<Block, Item[]> specialBlockBreak = new HashMap<>();
 		Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
@@ -123,11 +123,12 @@ public class BlockAspect
 				}
 				else if (SUB_REQUIRES_SUPPORT.equals(name))
 				{
-					// TODO: We probably want to support multiple values here.
-					if (1 != parameters.length)
+					// We need at least one value here.
+					if (0 == parameters.length)
 					{
-						throw new TabListReader.TabListException("Exactly one value required for requires_support");
+						throw new TabListReader.TabListException("At least one value required for requires_support");
 					}
+					Set<Block> supportingBlocks = new HashSet<>();
 					for (String value : parameters)
 					{
 						Item item = _getItem(value);
@@ -136,10 +137,11 @@ public class BlockAspect
 						{
 							throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
 						}
-						Block previous = specialBlockSupport.put(_currentBlock, support);
-						// We already checked this in size, above.
-						Assert.assertTrue(null == previous);
+						supportingBlocks.add(support);
 					}
+					Set<Block> previous = specialBlockSupport.put(_currentBlock, supportingBlocks);
+					// We already checked this in size, above.
+					Assert.assertTrue(null == previous);
 				}
 				else if (SUB_SPECIAL_DROP.equals(name))
 				{
@@ -223,7 +225,7 @@ public class BlockAspect
 	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
 	private final Map<Block, Integer> _nonSolidViscosity;
-	private final Map<Block, Block> _specialBlockSupport;
+	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, Item[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
@@ -232,7 +234,7 @@ public class BlockAspect
 			, Block[] blocksByType
 			, Set<Block> canBeReplaced
 			, Map<Block, Integer> nonSolidViscosity
-			, Map<Block, Block> specialBlockSupport
+			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
 			, Map<Block, Item[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
@@ -334,7 +336,7 @@ public class BlockAspect
 	 * types have specific requirements.
 	 * 
 	 * @param topBlock The block being checked (on top).
-	 * @param bottomBlock The block underneath.
+	 * @param bottomBlock The block underneath (null if not loaded).
 	 * @return True if topBlock can exist on top of bottomBlock.
 	 */
 	public boolean canExistOnBlock(Block topBlock, Block bottomBlock)
@@ -345,8 +347,9 @@ public class BlockAspect
 		if (null != bottomBlock)
 		{
 			// See if this is one of our special-cases.
-			Block specialBottom = _specialBlockSupport.get(topBlock);
-			canExist = (null == specialBottom) || (bottomBlock == specialBottom);
+			Set<Block> specialBottom = _specialBlockSupport.get(topBlock);
+			// This can exist if there is no supporting set or if this block is in the supporting set.
+			canExist = (null == specialBottom) || specialBottom.contains(bottomBlock);
 		}
 		return canExist;
 	}

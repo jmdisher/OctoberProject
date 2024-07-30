@@ -2,14 +2,14 @@
 # ID<TAB>flag_list
 # [<TAB>block_material<TAB>material]
 # [<TAB>placed_from<TAB>ID]
-# [<TAB>requires_support<TAB>ID]
+# [<TAB>requires_support<TAB>item_list]
 # [<TAB>special_drop<TAB>ID]
 #
 # flag_list includes:
 # -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
-# requires_support means that this block requires the given block under it.
+# requires_support means that this block requires one of the given blocks under it.
 # special_drop means that the block drops as the given item, instead of itself, when broken.
 # viscosity is a number in [0..100] describing the resistance of the block (100 is default and means "solid" - lower
 #  numbers mean entities and items can exist in the block).  Values in the range [50..99] are considered "swimmable".
@@ -98,3 +98,7 @@ op.lamp_on
 op.logic_wire
 op.quern
 	block_material	PICKAXE
+op.torch
+	block_material	AXE
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt
+	viscosity	0

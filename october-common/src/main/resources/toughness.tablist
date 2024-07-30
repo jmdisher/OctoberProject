@@ -39,3 +39,4 @@ op.switch_on	40
 op.lamp_off	40
 op.lamp_on	40
 op.logic_wire	10
+op.torch	10
