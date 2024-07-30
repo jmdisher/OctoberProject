@@ -29,42 +29,48 @@ public class TestCraftAspect
 	@Test
 	public void simpleCraft() throws Throwable
 	{
+		Item dirtItem = ENV.items.getItemById("op.dirt");
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Item coalOreItem = ENV.items.getItemById("op.coal_ore");
+		Item ironOreItem = ENV.items.getItemById("op.iron_ore");
 		Craft craft = new Craft((short)1
 				, "Simple"
 				, "COMMON"
-				, new Items[] { new Items(ENV.items.DIRT, 2), new Items(ENV.items.STONE, 1)  }
-				, new Item[] {ENV.items.COAL_ORE, ENV.items.COAL_ORE, ENV.items.IRON_ORE }
+				, new Items[] { new Items(dirtItem, 2), new Items(stoneItem, 1)  }
+				, new Item[] {coalOreItem, coalOreItem, ironOreItem }
 				, 1000L
 		);
-		Inventory inv = Inventory.start(50).addStackable(ENV.items.DIRT, 4).addStackable(ENV.items.STONE, 2).finish();
+		Inventory inv = Inventory.start(50).addStackable(dirtItem, 4).addStackable(stoneItem, 2).finish();
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 		MutableInventory mutable = new MutableInventory(inv);
 		CraftAspect.craft(ENV, craft, mutable);
 		inv = mutable.freeze();
-		Assert.assertEquals(2, inv.getCount(ENV.items.DIRT));
-		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
-		Assert.assertEquals(2, inv.getCount(ENV.items.COAL_ORE));
-		Assert.assertEquals(1, inv.getCount(ENV.items.IRON_ORE));
+		Assert.assertEquals(2, inv.getCount(dirtItem));
+		Assert.assertEquals(1, inv.getCount(stoneItem));
+		Assert.assertEquals(2, inv.getCount(coalOreItem));
+		Assert.assertEquals(1, inv.getCount(ironOreItem));
 	}
 
 	@Test
 	public void nonStack() throws Throwable
 	{
 		Item pick = ENV.items.getItemById("op.iron_pickaxe");
+		Item dirtItem = ENV.items.getItemById("op.dirt");
+		Item stoneItem = ENV.items.getItemById("op.stone");
 		Craft craft = new Craft((short)1
 				, "Non-stack"
 				, "COMMON"
-				, new Items[] { new Items(ENV.items.DIRT, 1), new Items(ENV.items.STONE, 1)  }
+				, new Items[] { new Items(dirtItem, 1), new Items(stoneItem, 1)  }
 				, new Item[] { pick }
 				, 1000L
 		);
-		Inventory inv = Inventory.start(50).addStackable(ENV.items.DIRT, 2).addStackable(ENV.items.STONE, 1).finish();
+		Inventory inv = Inventory.start(50).addStackable(dirtItem, 2).addStackable(stoneItem, 1).finish();
 		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 		MutableInventory mutable = new MutableInventory(inv);
 		CraftAspect.craft(ENV, craft, mutable);
 		inv = mutable.freeze();
 		Assert.assertEquals(2, inv.sortedKeys().size());
-		Assert.assertEquals(1, inv.getCount(ENV.items.DIRT));
+		Assert.assertEquals(1, inv.getCount(dirtItem));
 		Assert.assertEquals(pick, inv.getNonStackableForKey(3).type());
 	}
 }

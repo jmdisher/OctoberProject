@@ -71,7 +71,8 @@ public class TestMutationBlockCodec
 	public void storeItemsStack() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		Items items = new Items(ENV.items.STONE, 2);
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		Items items = new Items(stoneItem, 2);
 		MutationBlockStoreItems mutation = new MutationBlockStoreItems(location, items, null, Inventory.INVENTORY_ASPECT_INVENTORY);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

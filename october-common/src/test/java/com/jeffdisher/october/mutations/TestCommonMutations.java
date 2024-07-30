@@ -37,12 +37,16 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestCommonMutations
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
+	private static Item CHARCOAL_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -80,7 +84,7 @@ public class TestCommonMutations
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Inventory inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.sortedKeys().size());
-		Assert.assertEquals(1, inv.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
 	}
 
 	@Test
@@ -203,10 +207,10 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		AbsoluteLocation down = target.getRelative(0, 0, -1);
 		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ENV.items.WATER_STRONG.number());
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.items.WATER_WEAK.number());
-		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.items.AIR.number());
-		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.items.AIR.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ENV.special.WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_WEAK.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
 		TickProcessingContext context = new TickProcessingContext(1L
 				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
 				, null
@@ -299,7 +303,7 @@ public class TestCommonMutations
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.CHARCOAL, 1).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
 		
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -327,7 +331,7 @@ public class TestCommonMutations
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(1, proxy.getInventory().getCount(ENV.items.CHARCOAL));
+		Assert.assertEquals(1, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test
@@ -351,7 +355,7 @@ public class TestCommonMutations
 		AbsoluteLocation sink = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(source.getCuboidAddress(), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockAddress(), chest.item().number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, source.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.CHARCOAL, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, source.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 2).finish());
 		cuboid.setData15(AspectRegistry.BLOCK, sink.getBlockAddress(), chest.item().number());
 		
 		IMutationBlock[] outMutation = new IMutationBlock[1];
@@ -383,11 +387,11 @@ public class TestCommonMutations
 		MutableBlockProxy sinkProxy = new MutableBlockProxy(sink, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, sourceProxy));
 		Assert.assertTrue(sourceProxy.didChange());
-		Assert.assertEquals(1, sourceProxy.getInventory().getCount(ENV.items.CHARCOAL));
+		Assert.assertEquals(1, sourceProxy.getInventory().getCount(CHARCOAL_ITEM));
 		
 		Assert.assertTrue(outMutation[0].applyMutation(context, sinkProxy));
 		Assert.assertTrue(sinkProxy.didChange());
-		Assert.assertEquals(1, sinkProxy.getInventory().getCount(ENV.items.CHARCOAL));
+		Assert.assertEquals(1, sinkProxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test

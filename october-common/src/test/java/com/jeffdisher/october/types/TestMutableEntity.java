@@ -11,10 +11,12 @@ import com.jeffdisher.october.aspects.Environment;
 public class TestMutableEntity
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		STONE_ITEM = ENV.items.getItemById("op.stone");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -61,8 +63,8 @@ public class TestMutableEntity
 	{
 		Entity input = _buildTestEntity();
 		MutableEntity mutable = MutableEntity.existing(input);
-		mutable.newInventory.addAllItems(ENV.items.STONE, 1);
-		mutable.newInventory.removeStackableItems(ENV.items.STONE, 1);
+		mutable.newInventory.addAllItems(STONE_ITEM, 1);
+		mutable.newInventory.removeStackableItems(STONE_ITEM, 1);
 		Entity output = mutable.freeze();
 		
 		Assert.assertTrue(input == output);

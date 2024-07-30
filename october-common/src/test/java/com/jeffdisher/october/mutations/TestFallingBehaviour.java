@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -25,12 +26,14 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestFallingBehaviour
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -45,18 +48,18 @@ public class TestFallingBehaviour
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.create(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		newEntity.newInventory.addAllItems(ENV.items.STONE, 2);
-		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(ENV.items.STONE));
+		newEntity.newInventory.addAllItems(STONE_ITEM, 2);
+		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(STONE_ITEM));
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
 		// Create a solid block a little below this so we can watch it fall down.
-		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), STONE_ITEM.number());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
-		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(ENV.items.STONE), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(STONE_ITEM), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(context, newEntity));
 		
 		// We should see the mutation requested and then we can process step 2.
@@ -95,7 +98,7 @@ public class TestFallingBehaviour
 		Assert.assertNull(blockHolder[0]);
 		AbsoluteLocation finalLocation = targetLocation.getRelative(0, 0, -2);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, finalLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 	}
 
 	@Test
@@ -118,7 +121,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		
 		// Now, break the top block.
 		AbsoluteLocation topLocation = bottomLocation.getRelative(0, 0, 1);
@@ -138,7 +141,7 @@ public class TestFallingBehaviour
 		
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(2, blockInventory.getCount(STONE_ITEM));
 	}
 
 	@Test
@@ -162,7 +165,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, topLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		
 		// Now, break the bottom block.
 		AbsoluteLocation bottomLocation = topLocation.getRelative(0, 0, -1);
@@ -174,7 +177,7 @@ public class TestFallingBehaviour
 		// We should see nothing scheduled and the inventory on the ground.
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		
 		// Now, we will synthesize the update event which would normally be scheduled against this and see it fall.
 		topBlock = new MutableBlockProxy(topLocation, cuboid);
@@ -194,7 +197,7 @@ public class TestFallingBehaviour
 		
 		Assert.assertNull(blockHolder[0]);
 		blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, bottomLocation.getBlockAddress());
-		Assert.assertEquals(2, blockInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(2, blockInventory.getCount(STONE_ITEM));
 	}
 
 	@Test
@@ -204,7 +207,7 @@ public class TestFallingBehaviour
 		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
@@ -214,7 +217,7 @@ public class TestFallingBehaviour
 		Assert.assertFalse(update.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertNull(blockHolder[0]);
-		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Use a new context with a new cuboid to show that the items fall if updated now.
 		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
@@ -263,11 +266,11 @@ public class TestFallingBehaviour
 		AbsoluteLocation southLocation = targetLocation.getRelative(0, -1, 0);
 		AbsoluteLocation upLocation = targetLocation.getRelative(0, 0, 1);
 		AbsoluteLocation downLocation = targetLocation.getRelative(0, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, eastLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
-		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
-		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ENV.items.AIR.number());
-		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.items.AIR.number());
-		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
+		cuboid.setData15(AspectRegistry.BLOCK, eastLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
 		
@@ -277,7 +280,7 @@ public class TestFallingBehaviour
 		Assert.assertTrue(breaking.applyMutation(context, targetBlock));
 		targetBlock.writeBack(cuboid);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		Assert.assertEquals(ENV.items.WATER_SOURCE.number(), cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		
 		// Run this store operation.
 		MutationBlockStoreItems store = (MutationBlockStoreItems) blockHolder[0];
@@ -293,7 +296,7 @@ public class TestFallingBehaviour
 		Assert.assertTrue(new MutationBlockUpdate(downLocation).applyMutation(context, downBlock));
 		downBlock.writeBack(cuboid);
 		Assert.assertNull(blockHolder[0]);
-		Assert.assertEquals(ENV.items.WATER_STRONG.number(), cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
 		
 		Assert.assertFalse(new MutationBlockUpdate(eastLocation).applyMutation(context, new MutableBlockProxy(eastLocation, cuboid)));
 		Assert.assertFalse(new MutationBlockUpdate(westLocation).applyMutation(context, new MutableBlockProxy(westLocation, cuboid)));

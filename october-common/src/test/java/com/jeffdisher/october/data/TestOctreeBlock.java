@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.Item;
 
 
 public class TestOctreeBlock
@@ -29,26 +30,27 @@ public class TestOctreeBlock
 	@Test
 	public void filled()
 	{
-		OctreeShort test = OctreeShort.create(ENV.items.AIR.number());
-		Assert.assertEquals(ENV.items.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(ENV.items.AIR.number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		OctreeShort test = OctreeShort.create(ENV.special.AIR.item().number());
+		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
 	}
 
 	@Test
 	public void update()
 	{
-		OctreeShort test = OctreeShort.create(ENV.items.AIR.number());
+		Item stoneItem = ENV.items.getItemById("op.stone");
+		OctreeShort test = OctreeShort.create(ENV.special.AIR.item().number());
 		
 		// Write a value into each subtree.
-		_setAllSubtrees(test, (byte)0, ENV.items.STONE.number());
+		_setAllSubtrees(test, (byte)0, stoneItem.number());
 		// Check that it changed, but not adjacent blocks.
-		_checkAllSubtrees(test, (byte)0, ENV.items.STONE.number());
-		_checkAllSubtrees(test, (byte)1, ENV.items.AIR.number());
+		_checkAllSubtrees(test, (byte)0, stoneItem.number());
+		_checkAllSubtrees(test, (byte)1, ENV.special.AIR.item().number());
 		
 		// Change it back, causing it to coalesce.
-		_setAllSubtrees(test, (byte)0, ENV.items.AIR.number());
-		_checkAllSubtrees(test, (byte)0, ENV.items.AIR.number());
-		_checkAllSubtrees(test, (byte)1, ENV.items.AIR.number());
+		_setAllSubtrees(test, (byte)0, ENV.special.AIR.item().number());
+		_checkAllSubtrees(test, (byte)0, ENV.special.AIR.item().number());
+		_checkAllSubtrees(test, (byte)1, ENV.special.AIR.item().number());
 	}
 
 	@Test

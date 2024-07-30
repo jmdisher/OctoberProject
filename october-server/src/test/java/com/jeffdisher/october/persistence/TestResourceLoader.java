@@ -33,6 +33,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -44,12 +45,14 @@ public class TestResourceLoader
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -115,8 +118,8 @@ public class TestResourceLoader
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		short test0 = loaded.get(0).getData15(AspectRegistry.BLOCK, block);
 		short test1 = loaded.get(1).getData15(AspectRegistry.BLOCK, block);
-		Assert.assertTrue((ENV.items.AIR.number() == test0) || (ENV.items.AIR.number() == test1));
-		Assert.assertTrue((ENV.items.STONE.number() == test0) || (ENV.items.STONE.number() == test1));
+		Assert.assertTrue((ENV.special.AIR.item().number() == test0) || (ENV.special.AIR.item().number() == test1));
+		Assert.assertTrue((STONE_ITEM.number() == test0) || (STONE_ITEM.number() == test1));
 		loader.shutdown();
 	}
 
@@ -133,7 +136,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		// Modify a block and write this back.
-		loaded.setData15(AspectRegistry.BLOCK, block, ENV.items.STONE.number());
+		loaded.setData15(AspectRegistry.BLOCK, block, STONE_ITEM.number());
 		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(), List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
@@ -147,7 +150,7 @@ public class TestResourceLoader
 		results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		loaded = _waitForOne(loader);
-		Assert.assertEquals(ENV.items.STONE.number(), loaded.getData15(AspectRegistry.BLOCK, block));
+		Assert.assertEquals(STONE_ITEM.number(), loaded.getData15(AspectRegistry.BLOCK, block));
 		loader.shutdown();
 	}
 

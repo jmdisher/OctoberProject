@@ -28,6 +28,7 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -36,12 +37,18 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestClientRunner
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
+	private static Item LOG_ITEM;
+	private static Item PLANK_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		LOG_ITEM = ENV.items.getItemById("op.log");
+		PLANK_ITEM = ENV.items.getItemById("op.plank");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -143,7 +150,7 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
-		Assert.assertEquals(ENV.items.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 500 ms each time.
@@ -167,7 +174,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
-		Assert.assertEquals(ENV.items.STONE.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)500, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
@@ -185,7 +192,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify the final state of the projection.
-		Assert.assertEquals(ENV.items.AIR.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		
 		// Disconnect them.
 		network.client.adapterDisconnected();
@@ -210,7 +217,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.create(clientId);
-		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
+		mutable.newInventory.addAllItems(LOG_ITEM, 2);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
@@ -228,7 +235,7 @@ public class TestClientRunner
 		runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
-		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(ENV.items.LOG));
+		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
 		float stepDistance = EntityConstants.SPEED_PLAYER / 10.0f;
 		Assert.assertEquals(new EntityLocation(stepDistance, 0.0f, 0.0f), projection.thisEntity.location());
 	}
@@ -344,8 +351,8 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		MutableEntity mutable = MutableEntity.create(clientId);
-		mutable.newInventory.addAllItems(ENV.items.LOG, 2);
-		int logKey = mutable.newInventory.getIdOfStackableType(ENV.items.LOG);
+		mutable.newInventory.addAllItems(LOG_ITEM, 2);
+		int logKey = mutable.newInventory.getIdOfStackableType(LOG_ITEM);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
@@ -372,7 +379,7 @@ public class TestClientRunner
 		runner.craftInBlock(table, null, currentTimeMillis);
 		proxy = projection.readBlock(table);
 		Assert.assertNull(proxy.getCrafting());
-		Assert.assertEquals(2, proxy.getInventory().getCount(ENV.items.PLANK));
+		Assert.assertEquals(2, proxy.getInventory().getCount(PLANK_ITEM));
 	}
 
 	@Test

@@ -16,6 +16,7 @@ import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -48,11 +49,12 @@ public class TestCuboidCodec
 	@Test
 	public void simple()
 	{
+		Item stoneItem = ENV.items.getItemById("op.stone");
 		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
-		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(ENV.items.STONE, 2).finish());
+		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(stoneItem, 2).finish());
 		
 		CuboidData output = _codec(input);
 		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress));
@@ -60,7 +62,7 @@ public class TestCuboidCodec
 		Assert.assertEquals(5, inv.maxEncumbrance);
 		Assert.assertEquals(4, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.sortedKeys().size());
-		Assert.assertEquals(2, inv.getCount(ENV.items.STONE));
+		Assert.assertEquals(2, inv.getCount(stoneItem));
 	}
 
 

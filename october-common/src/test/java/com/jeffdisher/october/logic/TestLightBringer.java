@@ -20,6 +20,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -547,6 +548,7 @@ public class TestLightBringer
 	private static BlockAddress _loadBlockMap(CuboidData cuboid, byte z, String map)
 	{
 		BlockAddress match = null;
+		Item stoneItem = ENV.items.getItemById("op.stone");
 		int index = 0;
 		for (byte y = 31; y >= 0; --y)
 		{
@@ -558,16 +560,16 @@ public class TestLightBringer
 				switch(c)
 				{
 				case ' ':
-					value = ENV.items.AIR.number();
+					value = ENV.special.AIR.item().number();
 					break;
 				case 'S':
-					value = ENV.items.STONE.number();
+					value = stoneItem.number();
 					break;
 				case 'W':
-					value = ENV.items.WATER_SOURCE.number();
+					value = ENV.special.WATER_SOURCE.item().number();
 					break;
 				case 'X':
-					value = ENV.items.AIR.number();
+					value = ENV.special.AIR.item().number();
 					Assert.assertNull(match);
 					match = new BlockAddress(x, y, z);
 					break;

@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -80,6 +81,7 @@ public class TestMutableBlockProxy
 	@Test
 	public void simpleSerialization()
 	{
+		Item stoneItem = ENV.items.getItemById("op.stone");
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
@@ -87,7 +89,7 @@ public class TestMutableBlockProxy
 		
 		// Store into the block's inventory and see how that serializes.
 		MutableBlockProxy proxy = new MutableBlockProxy(location, input);
-		proxy.setInventory(Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 1).finish());
+		proxy.setInventory(Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(stoneItem, 1).finish());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Assert.assertTrue(proxy.didChange());
 		proxy.serializeToBuffer(buffer);

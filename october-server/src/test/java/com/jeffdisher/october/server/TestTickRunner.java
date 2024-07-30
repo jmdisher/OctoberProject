@@ -58,12 +58,40 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestTickRunner
 {
 	private static Environment ENV;
+	private static Item STONE_ITEM;
+	private static Item STONE_BRICK_ITEM;
+	private static Item LOG_ITEM;
+	private static Item PLANK_ITEM;
+	private static Item CHARCOAL_ITEM;
+	private static Item DIRT_ITEM;
+	private static Item SAPLING_ITEM;
+	private static Item LANTERN_ITEM;
+	private static Item LEAF_ITEM;
+	private static Item WHEAT_SEED_ITEM;
+	private static Item WHEAT_ITEM_ITEM;
+	private static Item WHEAT_SEEDLING_ITEM;
+	private static Item WHEAT_YOUNG_ITEM;
+	private static Item WHEAT_MATURE_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE_BRICK_ITEM = ENV.items.getItemById("op.stone_brick");
+		LOG_ITEM = ENV.items.getItemById("op.log");
+		PLANK_ITEM = ENV.items.getItemById("op.plank");
+		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
+		DIRT_ITEM = ENV.items.getItemById("op.dirt");
+		SAPLING_ITEM = ENV.items.getItemById("op.sapling");
+		LANTERN_ITEM = ENV.items.getItemById("op.lantern");
+		LEAF_ITEM = ENV.items.getItemById("op.leaf");
+		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
+		WHEAT_ITEM_ITEM = ENV.items.getItemById("op.wheat_item");
+		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
+		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
+		WHEAT_MATURE_ITEM = ENV.items.getItemById("op.wheat_mature");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -86,7 +114,7 @@ public class TestTickRunner
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.items.AIR.number(), ENV.items.STONE.number())), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -203,7 +231,7 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.special.AIR, block.getBlock());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.items.AIR.number(), ENV.items.STONE.number())), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -220,7 +248,7 @@ public class TestTickRunner
 	{
 		// Just add, add, and remove some inventory items.
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
-		Item stoneItem = ENV.items.STONE;
+		Item stoneItem = STONE_ITEM;
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		
@@ -292,7 +320,7 @@ public class TestTickRunner
 		// Now, add a mutation from this entity to deliver the block replacement mutation.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, ENV.items.AIR.number(), ENV.items.STONE.number())), commit1);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), commit1);
 		
 		// This will take a few ticks to be observable:
 		// -after tick 1, the change will have been run and the mutation enqueued
@@ -321,7 +349,7 @@ public class TestTickRunner
 		int entityId1 = 1;
 		int entityId2 = 2;
 		MutableEntity mutable = MutableEntity.create(entityId1);
-		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
+		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		runner.setupChangesForTick(null
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of())
@@ -334,7 +362,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Try to pass the items to the other entity.
-		EntityChangeSendItem send = new EntityChangeSendItem(entityId2, ENV.items.STONE);
+		EntityChangeSendItem send = new EntityChangeSendItem(entityId2, STONE_ITEM);
 		long commit1 = 1L;
 		runner.enqueueEntityChange(entityId1, send, commit1);
 		// (run a tick to run the change and enqueue the next)
@@ -356,7 +384,7 @@ public class TestTickRunner
 		Entity receiver = finalSnapshot.completedEntities().get(entityId2);
 		Assert.assertEquals(0, sender.inventory().sortedKeys().size());
 		Assert.assertEquals(1, receiver.inventory().sortedKeys().size());
-		Assert.assertEquals(2, receiver.inventory().getCount(ENV.items.STONE));
+		Assert.assertEquals(2, receiver.inventory().getCount(STONE_ITEM));
 	}
 
 	@Test
@@ -434,7 +462,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, blockInventory.sortedKeys().size());
 		Entity entity = snapshot.completedEntities().get(entityId);
 		Inventory entityInventory = entity.inventory();
-		Assert.assertEquals(1, entityInventory.getCount(ENV.items.STONE));
+		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
 		// We should also see the durability loss on our tool (2 x 50ms).
 		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability();
@@ -486,7 +514,7 @@ public class TestTickRunner
 		Assert.assertEquals(2, initialCuboids.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
-		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.items.AIR.number(), ENV.items.STONE.number())), 1L);
+		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -666,16 +694,16 @@ public class TestTickRunner
 	public void furnaceLoadAndCraft()
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
-		int burnMillisPlank = ENV.fuel.millisOfFuel(ENV.items.PLANK);
+		int burnMillisPlank = ENV.fuel.millisOfFuel(PLANK_ITEM);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
-		mutable.newInventory.addAllItems(ENV.items.LOG, 3);
-		int logKey = mutable.newInventory.getIdOfStackableType(ENV.items.LOG);
-		mutable.newInventory.addAllItems(ENV.items.PLANK, 2);
-		int plankKey = mutable.newInventory.getIdOfStackableType(ENV.items.PLANK);
+		mutable.newInventory.addAllItems(LOG_ITEM, 3);
+		int logKey = mutable.newInventory.getIdOfStackableType(LOG_ITEM);
+		mutable.newInventory.addAllItems(PLANK_ITEM, 2);
+		int plankKey = mutable.newInventory.getIdOfStackableType(PLANK_ITEM);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of()))
 				, null
@@ -709,8 +737,8 @@ public class TestTickRunner
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-		Assert.assertEquals(3, proxy.getInventory().getCount(ENV.items.LOG));
-		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
+		Assert.assertEquals(3, proxy.getInventory().getCount(LOG_ITEM));
+		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 		
 		// Loop until the craft is done.
 		int burnedMillis = 0;
@@ -735,12 +763,12 @@ public class TestTickRunner
 			Assert.assertEquals(1, snap.committedCuboidMutationCount());
 			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-			Assert.assertEquals(logCount, proxy.getInventory().getCount(ENV.items.LOG));
-			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(ENV.items.PLANK));
+			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
+			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 			if (0 != (i % 20))
 			{
 				Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
-				Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
+				Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
 			}
 			else
 			{
@@ -758,10 +786,10 @@ public class TestTickRunner
 		Assert.assertEquals(1, snap.committedCuboidMutationCount());
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-		Assert.assertEquals(0, proxy.getInventory().getCount(ENV.items.LOG));
-		Assert.assertEquals(3, proxy.getInventory().getCount(ENV.items.CHARCOAL));
+		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
+		Assert.assertEquals(3, proxy.getInventory().getCount(CHARCOAL_ITEM));
 		Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
-		Assert.assertEquals(ENV.items.PLANK, proxy.getFuel().currentFuel());
+		Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
 		// Now, wait for the fuel to finish.
@@ -850,15 +878,15 @@ public class TestTickRunner
 		// We need an entity to generate the change which will trigger the update.
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
-		mutable.newInventory.addAllItems(ENV.items.STONE_BRICK, 3);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.STONE_BRICK));
+		mutable.newInventory.addAllItems(STONE_BRICK_ITEM, 3);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_BRICK_ITEM));
 		Entity entity = mutable.freeze();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
 		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
 		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of(), List.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -868,7 +896,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Now, apply a mutation to an adjacent block.
 		AbsoluteLocation targetLocation = startLocation.getRelative(1, 0, 0);
@@ -880,14 +908,14 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0).mutation() instanceof MutationBlockOverwrite);
-		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Run another tick and we shouldn't see anything scheduled (since updated don't go through that path).
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Run another tick where we should see the items start falling.
 		runner.startNextTick();
@@ -917,7 +945,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid
 				, List.of()
-				, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(ENV.items.STONE, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY), 0L))
+				, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY), 0L))
 				))
 				, null
 				, null
@@ -973,7 +1001,7 @@ public class TestTickRunner
 		AbsoluteLocation startLocation = new AbsoluteLocation(32, 32, 32);
 		CuboidAddress address0 = startLocation.getCuboidAddress();
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(ENV.items.STONE, 2).finish());
+		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, List.of(), List.of()))
 				, null
 				, null
@@ -983,7 +1011,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(ENV.items.STONE));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Now, load an air cuboid below this and verify that the items start falling.
 		CuboidAddress address1 = address0.getRelative(0, 0, -1);
@@ -1047,7 +1075,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.WATER_STRONG.number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
 		
 		runner.shutdown();
 	}
@@ -1061,14 +1089,14 @@ public class TestTickRunner
 		
 		CuboidData cascade = _buildCascade(new CuboidAddress((short)-3, (short)-4, (short)-5));
 		AbsoluteLocation plug = cascade.getCuboidAddress().getBase().getRelative(16, 16, 30);
-		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), ENV.items.DIRT.number());
-		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ENV.items.WATER_SOURCE.number());
+		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
+		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
-		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.STONE));
+		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, List.of(), List.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
@@ -1109,14 +1137,14 @@ public class TestTickRunner
 		CuboidAddress startAddress = new CuboidAddress((short)-3, (short)-4, (short)-5);
 		CuboidData topNorthEast = _buildCascade(startAddress);
 		AbsoluteLocation plug = topNorthEast.getCuboidAddress().getBase().getRelative(0, 0, 30);
-		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), ENV.items.DIRT.number());
-		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ENV.items.WATER_SOURCE.number());
+		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
+		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
-		mutable.newInventory.addAllItems(ENV.items.STONE, 2);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.STONE));
+		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(topNorthEast, List.of(), List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, 0, -1)), List.of(), List.of())
 				, new SuspendedCuboid<IReadOnlyCuboidData>(_buildCascade(startAddress.getRelative(0, -1, 0)), List.of(), List.of())
@@ -1167,8 +1195,8 @@ public class TestTickRunner
 		AbsoluteLocation stoneLocation = address.getBase().getRelative(5, 5, 0);
 		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
 		AbsoluteLocation emptyLocation = stoneLocation.getRelative(-1, 0, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.PLANK.number());
-		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.items.WATER_SOURCE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), PLANK_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
@@ -1191,7 +1219,7 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		
 		// Let that mutation apply and verify the updated damage but no other change.
 		runner.startNextTick();
@@ -1199,7 +1227,7 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		Assert.assertEquals((short)50, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
 		
 		// Apply the second break attempt, which should break it.
@@ -1209,7 +1237,7 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		
 		// Let that mutation apply and verify that the block is broken (we won't see the update apply until the next tick).
 		runner.startNextTick();
@@ -1217,8 +1245,8 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		
 		// Run the tick which will trigger the block update, thus causing the water to flow.
 		runner.startNextTick();
@@ -1226,8 +1254,8 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.items.WATER_STRONG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		
 		runner.shutdown();
 	}
@@ -1259,8 +1287,8 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		// Enqueue the mutations to replace these 2 blocks (this mutation is just for testing and doesn't use the inventory or location).
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(lanternLocation, ENV.items.AIR.number(), ENV.items.LANTERN.number())), 1L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(stoneLocation, ENV.items.AIR.number(), ENV.items.STONE.number())), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(lanternLocation, ENV.special.AIR.item().number(), LANTERN_ITEM.number())), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(stoneLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1271,8 +1299,8 @@ public class TestTickRunner
 		// Here, we should see the block types changed but not yet the light.
 		Assert.assertEquals(2, snapshot.committedCuboidMutationCount());
 		Assert.assertEquals(2, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.LANTERN.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.items.STONE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(LANTERN_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getBlockAddress()));
 		
 		runner.startNextTick();
@@ -1281,10 +1309,10 @@ public class TestTickRunner
 		Assert.assertEquals(3028, snapshot.resultantBlockChangesByCuboid().get(address).size());
 		Assert.assertEquals(483, snapshot.resultantBlockChangesByCuboid().get(otherAddress0).size());
 		Assert.assertEquals(5, snapshot.resultantBlockChangesByCuboid().get(otherAddress1).size());
-		Assert.assertEquals(ENV.items.LANTERN.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
+		Assert.assertEquals(LANTERN_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, lanternLocation.getRelative(0, 1, 0).getBlockAddress()));
-		Assert.assertEquals(ENV.items.STONE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
+		Assert.assertEquals(STONE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(11, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getRelative(1, 0, 0).getBlockAddress()));
 		Assert.assertEquals(9, snapshot.completedCuboids().get(otherAddress0).getData7(AspectRegistry.LIGHT, new BlockAddress((byte)31, (byte)6, (byte)7)));
@@ -1300,7 +1328,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
@@ -1313,8 +1341,8 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
-		mutable.newInventory.addAllItems(ENV.items.SAPLING, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.SAPLING));
+		mutable.newInventory.addAllItems(SAPLING_ITEM, 1);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(SAPLING_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
 				)
@@ -1334,7 +1362,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// We should see the sapling for one tick before it grows.
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		Assert.assertEquals(ENV.items.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(SAPLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
 		// Then, there will be 1 growth attempt, but we set the random provider to 0 so it will fail.  Then we will see another 100 ticks pass.
@@ -1344,7 +1372,7 @@ public class TestTickRunner
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 		}
-		Assert.assertEquals(ENV.items.SAPLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(SAPLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// This time, set the provider to 1 so that it matches (it takes the number mod some constant and compares it to 1).
 		randomHolder[0] = 1;
@@ -1352,14 +1380,14 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.LOG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(LOG_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Now, we should see the leaf blocks which could be placed in the cuboid.
 		Assert.assertEquals(4, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.LOG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(ENV.items.LEAF.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertEquals(LOG_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(LEAF_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(1, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
 	}
@@ -1371,7 +1399,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
 		TickRunner.TEST_SPAWNING_ENABLED = false;
@@ -1385,8 +1413,8 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x(), location.y(), location.z());
-		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.WHEAT_SEED));
+		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
 				)
@@ -1406,7 +1434,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		Assert.assertEquals(ENV.items.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
 		// We will just set the random number to 1 to easily watch it go through all phases.
@@ -1416,13 +1444,13 @@ public class TestTickRunner
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 		}
-		Assert.assertEquals(ENV.items.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.WHEAT_YOUNG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Wait another 100 ticks to see the next growth.
 		for (int i = 0; i < 100; ++i)
@@ -1430,13 +1458,13 @@ public class TestTickRunner
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
 		}
-		Assert.assertEquals(ENV.items.WHEAT_YOUNG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the sapling replaced with a log but the leaves are only placed next tick.
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
-		Assert.assertEquals(ENV.items.WHEAT_MATURE.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_MATURE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Break the mature crop and check the inventory dropped.
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(location, (short) 100);
@@ -1451,15 +1479,15 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getRelative(0, 0, 1).getBlockAddress()));
 		
 		// We should see these items in the entity inventory, not the ground.
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, location.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
 		Assert.assertEquals(2, entityInventory.sortedKeys().size());
-		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_SEED));
-		Assert.assertEquals(2, entityInventory.getCount(ENV.items.WHEAT_ITEM));
+		Assert.assertEquals(2, entityInventory.getCount(WHEAT_SEED_ITEM));
+		Assert.assertEquals(2, entityInventory.getCount(WHEAT_ITEM_ITEM));
 		
 		runner.shutdown();
 	}
@@ -1472,15 +1500,15 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), ENV.items.DIRT.number());
-		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), DIRT_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.create(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
-		mutable.newInventory.addAllItems(ENV.items.WHEAT_SEED, 1);
-		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(ENV.items.WHEAT_SEED));
+		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
+		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
 				)
@@ -1500,7 +1528,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		Assert.assertEquals(ENV.items.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, creak the dirt block.
 		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(dirtLocation, (short)100), 2L);
@@ -1512,21 +1540,21 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-		Assert.assertEquals(ENV.items.WHEAT_SEEDLING.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Run another tick and see the seedling break.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
-		Assert.assertEquals(ENV.items.AIR.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The item should be in the entity inventory, not the ground.
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertNull(blockInventory);
 		Inventory entityInventory = snapshot.completedEntities().get(entityId).inventory();
 		Assert.assertEquals(1, entityInventory.sortedKeys().size());
-		Assert.assertEquals(1, entityInventory.getCount(ENV.items.DIRT));
+		Assert.assertEquals(1, entityInventory.getCount(DIRT_ITEM));
 		
 		// Run another tick to see the seed drop into this inventory.
 		runner.startNextTick();
@@ -1534,7 +1562,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
+		Assert.assertEquals(1, blockInventory.getCount(WHEAT_SEED_ITEM));
 		
 		// Now, just run for another hundred ticks to make sure nothing goes wrong.
 		for (int i = 0; i < 100; ++i)
@@ -1544,7 +1572,7 @@ public class TestTickRunner
 		}
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.WHEAT_SEED));
+		Assert.assertEquals(1, blockInventory.getCount(WHEAT_SEED_ITEM));
 		
 		runner.shutdown();
 	}
@@ -1556,7 +1584,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), ENV.items.DIRT.number());
+		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
 		int creatureId = -1;
 		CreatureEntity creature = CreatureEntity.create(creatureId, EntityType.COW, entityLocation, (byte)15);
@@ -1669,7 +1697,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lampOff.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), logicWire.number());
 		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOff.number());
-		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE_ITEM.number());
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -1741,7 +1769,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, wire1Location.getBlockAddress(), logicWire.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wire2Location.getBlockAddress(), logicWire.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wire3Location.getBlockAddress(), logicWire.number());
-		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), ENV.items.STONE.number());
+		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE_ITEM.number());
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -1850,7 +1878,7 @@ public class TestTickRunner
 			{
 				for (byte x = offset; x < 32; x += 2)
 				{
-					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), ENV.items.STONE.number());
+					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), STONE_ITEM.number());
 				}
 			}
 		}

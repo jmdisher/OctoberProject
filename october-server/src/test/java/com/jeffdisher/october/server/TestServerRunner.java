@@ -37,6 +37,7 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -49,12 +50,14 @@ public class TestServerRunner
 	@ClassRule
 	public static TemporaryFolder DIRECTORY = new TemporaryFolder();
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	private static Block STONE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -184,7 +187,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity);
 		
 		// Trickle in a few items to observe them showing up.
-		network.receiveFromClient(clientId, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 3)), 1L);
+		network.receiveFromClient(clientId, new EntityChangeTrickleInventory(new Items(STONE_ITEM, 3)), 1L);
 		
 		Object change0 = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -343,7 +346,7 @@ public class TestServerRunner
 		Assert.assertEquals(0, entity1.inventory().sortedKeys().size());
 		
 		// Change something - we will add items to the inventory.
-		network.receiveFromClient(clientId1, new EntityChangeTrickleInventory(new Items(ENV.items.STONE, 1)), 1L);
+		network.receiveFromClient(clientId1, new EntityChangeTrickleInventory(new Items(STONE_ITEM, 1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
