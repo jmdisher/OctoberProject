@@ -96,3 +96,5 @@ op.lamp_off
 op.lamp_on
 	special_drop	op.lamp_off
 op.logic_wire
+op.quern
+	block_material	PICKAXE

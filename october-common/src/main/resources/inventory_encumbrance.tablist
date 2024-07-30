@@ -54,3 +54,5 @@ op.switch_on	0
 op.lamp_off	1
 op.lamp_on	0
 op.logic_wire	1
+op.quern	4
+op.flour	1

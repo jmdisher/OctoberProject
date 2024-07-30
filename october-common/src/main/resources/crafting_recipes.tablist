@@ -112,3 +112,11 @@ op.logic_wire	COMMON
 	input	op.iron_ingot	op.charcoal
 	output	op.logic_wire	op.logic_wire	op.logic_wire
 	millis	1000
+op.quern	COMMON
+	input	op.stone	op.stone	op.stone_brick
+	output	op.quern
+	millis	8000
+op.flour	GRINDING
+	input	op.wheat_item
+	output	op.flour
+	millis	2000

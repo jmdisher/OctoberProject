@@ -1685,6 +1685,59 @@ public class TestCommonChanges
 		Assert.assertTrue(swim.applyChange(context, entity));
 	}
 
+	@Test
+	public void grindFlourInQuern() throws Throwable
+	{
+		Craft grindFlour = ENV.crafting.getCraftById("op.flour");
+		Item wheatItem = ENV.items.getItemById("op.wheat_item");
+		Item flour = ENV.items.getItemById("op.flour");
+		MutableEntity newEntity = MutableEntity.create(1);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(wheatItem, 1);
+		int wheatId = newEntity.newInventory.getIdOfStackableType(wheatItem);
+		AbsoluteLocation quern = new AbsoluteLocation(2, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		MutableBlockProxy mutable = new MutableBlockProxy(quern, cuboid);
+		mutable.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.quern")));
+		mutable.writeBack(cuboid);
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// Place the wheat into the quern.
+		MutationEntityPushItems pushToInventory = new MutationEntityPushItems(quern, wheatId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(pushToInventory.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.change);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockStoreItems);
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNull(holder.change);
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+		
+		// Run the crafting operation.
+		EntityChangeCraftInBlock craft = new EntityChangeCraftInBlock(quern, grindFlour, grindFlour.millisPerCraft);
+		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
+		// Run the first crafting operation - we will need to run this again to "finish".
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNotNull(mutable.getCrafting());
+		Inventory inv = mutable.getInventory();
+		Assert.assertEquals(1, inv.getCount(wheatItem));
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+		
+		// Run the follow-up to finish this.
+		Assert.assertTrue(craft.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockCraft);
+		// Run the first crafting operation - we will need to run this again to "finish".
+		Assert.assertTrue(holder.mutation.applyMutation(holder.context, mutable));
+		Assert.assertNull(mutable.getCrafting());
+		inv = mutable.getInventory();
+		Assert.assertEquals(0, inv.getCount(wheatItem));
+		Assert.assertEquals(1, inv.getCount(flour));
+		holder.mutation = null;
+		mutable.writeBack(cuboid);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

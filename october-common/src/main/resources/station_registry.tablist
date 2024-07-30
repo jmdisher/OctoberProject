@@ -34,3 +34,7 @@ op.hopper_east
 	inventory	20
 op.hopper_west
 	inventory	20
+op.quern
+	inventory	20
+	crafting	GRINDING
+	manual_multiplier	1
