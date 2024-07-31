@@ -24,15 +24,18 @@ public class MutationBlockGrow implements IMutationBlock
 	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		return new MutationBlockGrow(location);
+		boolean forceGrow = CodecHelpers.readBoolean(buffer);
+		return new MutationBlockGrow(location, forceGrow);
 	}
 
 
 	private final AbsoluteLocation _location;
+	private final boolean _forceGrow;
 
-	public MutationBlockGrow(AbsoluteLocation location)
+	public MutationBlockGrow(AbsoluteLocation location, boolean forceGrow)
 	{
 		_location = location;
+		_forceGrow = forceGrow;
 	}
 
 	@Override
@@ -52,9 +55,14 @@ public class MutationBlockGrow implements IMutationBlock
 		if (growthDivisor > 0)
 		{
 			boolean shouldReschedule;
-			// See if the random generator says we should grow this tick or try again later.
-			int randomBits = context.randomInt.applyAsInt(growthDivisor);
-			if (1 == randomBits)
+			boolean canGrow = _forceGrow;
+			if (!canGrow)
+			{
+				// See if the random generator says we should grow this tick or try again later.
+				int randomBits = context.randomInt.applyAsInt(growthDivisor);
+				canGrow = (1 == randomBits);
+			}
+			if (canGrow)
 			{
 				Block nextPhase = env.plants.nextPhaseForPlant(block);
 				if (null != nextPhase)
@@ -81,7 +89,7 @@ public class MutationBlockGrow implements IMutationBlock
 				shouldReschedule = true;
 			}
 			
-			if (shouldReschedule)
+			if (shouldReschedule && !_forceGrow)
 			{
 				context.mutationSink.future(this, MILLIS_BETWEEN_GROWTH_CALLS);
 			}
@@ -100,6 +108,7 @@ public class MutationBlockGrow implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
+		CodecHelpers.writeBoolean(buffer, _forceGrow);
 	}
 
 	@Override

@@ -1333,13 +1333,18 @@ public class TestCommonChanges
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Item breadItem = ENV.items.getItemById("op.bread");
+		Item fertilizerItem = ENV.items.getItemById("op.fertilizer");
 		Block waterSource = ENV.special.WATER_SOURCE;
 		Block waterWeak = ENV.special.WATER_WEAK;
+		Block wheatYoung = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_young"));
+		Block wheatMature = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
 		
 		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterSource));
 		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(waterBucket, waterWeak));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(emptyBucket, waterWeak));
+		Assert.assertTrue(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatYoung));
+		Assert.assertFalse(EntityChangeUseSelectedItemOnBlock.canUseOnBlock(fertilizerItem, wheatMature));
 		
 		Assert.assertTrue(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(breadItem));
 		Assert.assertFalse(EntityChangeUseSelectedItemOnSelf.canBeUsedOnSelf(waterBucket));
