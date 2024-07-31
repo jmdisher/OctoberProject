@@ -32,3 +32,6 @@ op.wheat_mature	4
 op.door_open	2
 op.lamp_off	2
 op.logic_wire	1
+op.carrot_seedling	2
+op.carrot_young	2
+op.carrot_mature	4
