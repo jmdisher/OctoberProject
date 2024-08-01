@@ -101,7 +101,7 @@ public class ServerRunner
 				t.printStackTrace();
 				System.exit(101);
 			}
-		});
+		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;

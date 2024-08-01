@@ -82,6 +82,14 @@ public class ServerProcess
 		_network = new NetworkServer<ClientBuffer>(new _NetworkListener(), port);
 	}
 
+	/**
+	 * Specifically called by tests to wait for a certain number of ticks to advance.
+	 * Blocks until at least the given ticksToAdvance have completed.
+	 * 
+	 * @param ticksToAdvance The minimum number of takes to wait before returning.
+	 * @return The last tick number which completed.
+	 * @throws InterruptedException If the waiting thread was interrupted.
+	 */
 	public synchronized long waitForTicksToPass(long ticksToAdvance) throws InterruptedException
 	{
 		long target = _latestTickNumber + ticksToAdvance;
