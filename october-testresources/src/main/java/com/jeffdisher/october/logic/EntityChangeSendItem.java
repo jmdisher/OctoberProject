@@ -5,9 +5,9 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -45,7 +45,7 @@ public class EntityChangeSendItem implements IMutationEntity<IMutablePlayerEntit
 	private int _common(IMutablePlayerEntity newEntity, TickProcessingContext.IChangeSink newChangeSink)
 	{
 		// Extract all items of this type from the entity, failing the mutation if there aren't any.
-		MutableInventory inventory = newEntity.accessMutableInventory();
+		IMutableInventory inventory = newEntity.accessMutableInventory();
 		int foundCount = inventory.getCount(_itemType);
 		
 		if (foundCount > 0)

@@ -8,7 +8,7 @@ package com.jeffdisher.october.types;
  */
 public interface IMutablePlayerEntity extends IMutableMinimalEntity
 {
-	MutableInventory accessMutableInventory();
+	IMutableInventory accessMutableInventory();
 
 	CraftOperation getCurrentCraftingOperation();
 

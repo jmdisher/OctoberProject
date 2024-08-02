@@ -8,10 +8,10 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -78,7 +78,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 	{
 		Environment env = Environment.getShared();
 		int selectedKey = newEntity.getSelectedKey();
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		NonStackableItem nonStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getNonStackableForKey(selectedKey) : null;
 		Items stack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item type = (null != nonStack)

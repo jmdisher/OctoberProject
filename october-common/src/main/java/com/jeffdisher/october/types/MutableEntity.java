@@ -99,7 +99,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public MutableInventory accessMutableInventory()
+	public IMutableInventory accessMutableInventory()
 	{
 		return this.newInventory;
 	}

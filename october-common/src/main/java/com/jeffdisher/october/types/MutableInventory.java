@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * A mutable wrapper over an Inventory, providing high-level helpers to manipulate it.
  */
-public class MutableInventory
+public class MutableInventory implements IMutableInventory
 {
 	private final Inventory _original;
 	private final Map<Integer, Items> _stackable;
@@ -53,6 +53,7 @@ public class MutableInventory
 	 * @param type The type to check.
 	 * @return The key this inventory uses to address the stack of this type or 0 if not known.
 	 */
+	@Override
 	public int getIdOfStackableType(Item type)
 	{
 		Assert.assertTrue(null != type);
@@ -66,6 +67,7 @@ public class MutableInventory
 	 * @param key The identifier key.
 	 * @return The Items object for this stack (null if this key is not in the inventory).
 	 */
+	@Override
 	public Items getStackForKey(int key)
 	{
 		return _stackable.get(key);
@@ -77,6 +79,7 @@ public class MutableInventory
 	 * @param key The identifier key.
 	 * @return The NonStackable object for this stack (null if stackable).
 	 */
+	@Override
 	public NonStackableItem getNonStackableForKey(int key)
 	{
 		return _nonStackable.get(key);
@@ -89,6 +92,7 @@ public class MutableInventory
 	 * @param type The item type.
 	 * @return The number of items of this type.
 	 */
+	@Override
 	public int getCount(Item type)
 	{
 		Assert.assertTrue(null != type);
@@ -116,6 +120,7 @@ public class MutableInventory
 	 * @param count The number of items of that type.
 	 * @return True if the items were all added, false if none were.
 	 */
+	@Override
 	public boolean addAllItems(Item type, int count)
 	{
 		Assert.assertTrue(null != type);
@@ -141,6 +146,7 @@ public class MutableInventory
 	 * @param count The number of items of that type.
 	 * @return The number of items which were actually added.
 	 */
+	@Override
 	public int addItemsBestEfforts(Item type, int count)
 	{
 		Assert.assertTrue(null != type);
@@ -170,6 +176,7 @@ public class MutableInventory
 	 * @param type The type of item to add.
 	 * @param count The number of items of that type.
 	 */
+	@Override
 	public void addItemsAllowingOverflow(Item type, int count)
 	{
 		Assert.assertTrue(null != type);
@@ -184,6 +191,7 @@ public class MutableInventory
 	 * @param nonStackable The item to attempt to add.
 	 * @return True if it was added or false if it couldn't fit.
 	 */
+	@Override
 	public boolean addNonStackableBestEfforts(NonStackableItem nonStackable)
 	{
 		Assert.assertTrue(null != nonStackable);
@@ -207,6 +215,7 @@ public class MutableInventory
 	 * 
 	 * @param nonStackable The item to add.
 	 */
+	@Override
 	public void addNonStackableAllowingOverflow(NonStackableItem nonStackable)
 	{
 		Assert.assertTrue(null != nonStackable);
@@ -224,6 +233,7 @@ public class MutableInventory
 	 * @param key The key used to address the item.
 	 * @param updated The new instance.
 	 */
+	@Override
 	public void replaceNonStackable(int key, NonStackableItem updated)
 	{
 		Assert.assertTrue(key > 0);
@@ -240,6 +250,7 @@ public class MutableInventory
 	 * @param type The item type.
 	 * @return The number of these items which can be added.
 	 */
+	@Override
 	public int maxVacancyForItem(Item type)
 	{
 		Assert.assertTrue(null != type);
@@ -262,6 +273,7 @@ public class MutableInventory
 	 * @param type The type of item to remove.
 	 * @param count The number of items of that type to remove.
 	 */
+	@Override
 	public void removeStackableItems(Item type, int count)
 	{
 		Assert.assertTrue(null != type);
@@ -292,6 +304,7 @@ public class MutableInventory
 	 * 
 	 * @param key The key of the item to remove.
 	 */
+	@Override
 	public void removeNonStackableItems(int key)
 	{
 		Assert.assertTrue(key > 0);
@@ -305,6 +318,7 @@ public class MutableInventory
 	/**
 	 * @return The current encumbrance of the inventory (0 implies no items are stored).
 	 */
+	@Override
 	public int getCurrentEncumbrance()
 	{
 		return _currentEncumbrance;

@@ -3,9 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -32,7 +32,7 @@ public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEn
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		MutableInventory entityInventory = newEntity.accessMutableInventory();
+		IMutableInventory entityInventory = newEntity.accessMutableInventory();
 		boolean didAdd = entityInventory.addAllItems(_items.type(), _items.count());
 		if (didAdd)
 		{

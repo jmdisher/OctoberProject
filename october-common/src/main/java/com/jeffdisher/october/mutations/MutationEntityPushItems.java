@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -66,7 +67,7 @@ public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEn
 		boolean didApply = false;
 		
 		// Make sure that we actually have this much of the referenced item in our inventory.
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		Items stackable = mutableInventory.getStackForKey(_localInventoryId);
 		NonStackableItem nonStackable = mutableInventory.getNonStackableForKey(_localInventoryId);
 		// We should see precisely one of these.

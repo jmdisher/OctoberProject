@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -53,7 +53,7 @@ public class EntityChangeSwapArmour implements IMutationEntity<IMutablePlayerEnt
 		Environment env = Environment.getShared();
 		
 		// Make sure that the inventory key references a valid type and that there is something to swap.
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		NonStackableItem fromInventory = mutableInventory.getNonStackableForKey(_inventoryId);
 		BodyPart inventoryArmour = (null != fromInventory) ? env.armour.getBodyPart(fromInventory.type()) : _slot;
 		NonStackableItem fromArmour = newEntity.getArmour(_slot);

@@ -8,8 +8,8 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -76,7 +76,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 			{
 				// We can now apply this and clear it.
 				Environment env = Environment.getShared();
-				MutableInventory mutableInventory = newEntity.accessMutableInventory();
+				IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 				boolean didCraft = CraftAspect.craft(env, existing.selectedCraft(), mutableInventory);
 				if (didCraft)
 				{

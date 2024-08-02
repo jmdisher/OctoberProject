@@ -10,9 +10,9 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -70,7 +70,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		
 		boolean didApply = false;
 		if (isLocationClose && !isAir)

@@ -5,11 +5,11 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -60,7 +60,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 	{
 		// Get the current selected item.
 		int selectedKey = newEntity.getSelectedKey();
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		// (we currently only handle the wheat type so just check for stackable)
 		Items selectedStack = (Entity.NO_SELECTION != selectedKey) ? mutableInventory.getStackForKey(selectedKey) : null;
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;

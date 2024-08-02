@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Craft;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -247,14 +248,14 @@ public class CraftAspect
 
 	public static boolean canApply(Craft craft, Inventory inv)
 	{
-		return _canApply(craft, inv);
+		return _canApply(craft, new MutableInventory(inv));
 	}
 
-	public static boolean craft(Environment env, Craft craft, MutableInventory inv)
+	public static boolean craft(Environment env, Craft craft, IMutableInventory inv)
 	{
 		boolean didCraft = false;
 		// Verify that they have the input.
-		if (_canApply(craft, inv.freeze()))
+		if (_canApply(craft, inv))
 		{
 			// Now, perform the craft against this inventory.
 			for (Items items : craft.input)
@@ -282,7 +283,7 @@ public class CraftAspect
 	}
 
 
-	private static boolean _canApply(Craft craft, Inventory inv)
+	private static boolean _canApply(Craft craft, IMutableInventory inv)
 	{
 		boolean canApply = true;
 		for (Items items : craft.input)

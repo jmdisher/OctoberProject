@@ -10,10 +10,10 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -77,7 +77,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		{
 			// We will just use the tool speed modifier of the selected item to figure out the damage.
 			// TODO:  Filter this based on some kind of target type so a sword hits harder than a pick-axe.
-			MutableInventory mutableInventory = newEntity.accessMutableInventory();
+			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 			NonStackableItem nonStack = mutableInventory.getNonStackableForKey(newEntity.getSelectedKey());
 			Item toolType = (null != nonStack)
 					? nonStack.type()

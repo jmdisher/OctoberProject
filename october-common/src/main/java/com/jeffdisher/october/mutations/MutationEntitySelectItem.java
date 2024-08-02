@@ -2,9 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Items;
-import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -41,7 +41,7 @@ public class MutationEntitySelectItem implements IMutationEntity<IMutablePlayerE
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		boolean didApply = false;
-		MutableInventory mutableInventory = newEntity.accessMutableInventory();
+		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 		Items stack = mutableInventory.getStackForKey(_inventoryId);
 		NonStackableItem nonStack = mutableInventory.getNonStackableForKey(_inventoryId);
 		boolean isValidId = ((null != stack) || (null != nonStack));
