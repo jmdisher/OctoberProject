@@ -177,20 +177,21 @@ public class TestMutableInventory
 				.addNonStackable(new NonStackableItem(STONE_ITEM, 0))
 				.addStackable(STONE_ITEM, 1)
 				.addNonStackable(new NonStackableItem(PLANK_ITEM, 0))
+				.addStackable(STONE_ITEM, 1)
 				.finish();
 		MutableInventory inv = new MutableInventory(original);
 		inv.addAllItems(STONE_ITEM, 1);
 		inv.addNonStackableBestEfforts(new NonStackableItem(DIRT_ITEM, 0));
-		// The stackable items are added first, then the non-stackable in-order.
-		int firstNonStackableItem = 2;
+		// Items are added in the order they are given to the builder (first stackable added counts).
+		int firstNonStackableItem = 1;
 		inv.removeNonStackableItems(firstNonStackableItem);
 		inv.addNonStackableAllowingOverflow(new NonStackableItem(LOG_ITEM, 0));
 		
 		Inventory frozen = inv.freeze();
 		Assert.assertEquals(0, frozen.getCount(LOG_ITEM));
-		Assert.assertEquals(2, frozen.getCount(STONE_ITEM));
-		Assert.assertArrayEquals(new Object[] { Integer.valueOf(1), Integer.valueOf(3), Integer.valueOf(4), Integer.valueOf(5) }, frozen.sortedKeys().toArray());
-		Assert.assertEquals(STONE_ITEM, frozen.getStackForKey(1).type());
+		Assert.assertEquals(3, frozen.getCount(STONE_ITEM));
+		Assert.assertArrayEquals(new Object[] { Integer.valueOf(2), Integer.valueOf(3), Integer.valueOf(4), Integer.valueOf(5) }, frozen.sortedKeys().toArray());
+		Assert.assertEquals(STONE_ITEM, frozen.getStackForKey(2).type());
 		Assert.assertEquals(PLANK_ITEM, frozen.getNonStackableForKey(3).type());
 		Assert.assertEquals(DIRT_ITEM, frozen.getNonStackableForKey(4).type());
 		Assert.assertEquals(LOG_ITEM, frozen.getNonStackableForKey(5).type());

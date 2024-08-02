@@ -191,21 +191,25 @@ public class Inventory
 	public static class Builder
 	{
 		private final int _maxEncumbrance;
+		private final List<_Pair> _order;
 		private final Map<Item, Integer> _stackable;
-		private final List<NonStackableItem> _nonStackable;
 		private int _currentEncumbrance;
 		
 		private Builder(int maxEncumbrance)
 		{
 			_maxEncumbrance = maxEncumbrance;
+			_order = new ArrayList<>();
 			_stackable = new HashMap<>();
-			_nonStackable = new ArrayList<>();
 		}
 		public Builder addStackable(Item type, int count)
 		{
 			Environment env = Environment.getShared();
 			Assert.assertTrue(count > 0);
 			
+			if (!_stackable.containsKey(type))
+			{
+				_order.add(new _Pair(type, null));
+			}
 			int current = _stackable.containsKey(type) ? _stackable.get(type) : 0;
 			current += count;
 			_stackable.put(type, current);
@@ -216,7 +220,7 @@ public class Inventory
 		{
 			Environment env = Environment.getShared();
 			
-			_nonStackable.add(item);
+			_order.add(new _Pair(null, item));
 			_currentEncumbrance += env.encumbrance.getEncumbrance(item.type());
 			return this;
 		}
@@ -225,14 +229,18 @@ public class Inventory
 			Map<Integer, Items> stackable = new HashMap<>();
 			Map<Integer, NonStackableItem> nonStackable = new HashMap<>();
 			int nextAddressId = 1;
-			for (Map.Entry<Item, Integer> entry : _stackable.entrySet())
+			for (_Pair pair : _order)
 			{
-				stackable.put(nextAddressId, new Items(entry.getKey(), entry.getValue()));
-				nextAddressId += 1;
-			}
-			for (NonStackableItem item : _nonStackable)
-			{
-				nonStackable.put(nextAddressId, item);
+				if (null != pair.stackable)
+				{
+					int count = _stackable.get(pair.stackable);
+					stackable.put(nextAddressId, new Items(pair.stackable, count));
+				}
+				else
+				{
+					Assert.assertTrue(null != pair.nonStackable);
+					nonStackable.put(nextAddressId, pair.nonStackable);
+				}
 				nextAddressId += 1;
 			}
 			return new Inventory(_maxEncumbrance
@@ -242,4 +250,6 @@ public class Inventory
 			);
 		}
 	}
+
+	private static record _Pair(Item stackable, NonStackableItem nonStackable) {}
 }
