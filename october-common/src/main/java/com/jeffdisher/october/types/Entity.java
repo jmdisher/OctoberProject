@@ -5,6 +5,8 @@ package com.jeffdisher.october.types;
  * An Entity represents something which can move in the world.  This includes users, monsters, animals, and machines.
  */
 public record Entity(int id
+		// If this flag is set, the entity's inventory is ignored and it doesn't get hungry or take damage.
+		, boolean isCreativeMode
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
 		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
@@ -44,6 +46,7 @@ public record Entity(int id
 		// We will assume no velocity - this may change if we start sending this data for client-side prediction, in the future.
 		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
 		return new Entity(entity.id()
+				, false
 				, entity.location()
 				, velocity
 				, 0.0f

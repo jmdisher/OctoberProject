@@ -933,6 +933,7 @@ public class TestCreatureProcessor
 		Inventory inventory = builder.finish();
 		int key = 1;
 		return new Entity(id
+				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, 0.0f

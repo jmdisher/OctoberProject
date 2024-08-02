@@ -1751,6 +1751,83 @@ public class TestCommonChanges
 		mutable.writeBack(cuboid);
 	}
 
+	@Test
+	public void dropItemsCreative() throws Throwable
+	{
+		// Create an entity in an air block, in creative mode, then drop some of the items and observe the inventory is unchanged.
+		int entityId = 1;
+		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
+		Entity original = new Entity(entityId
+				, true
+				, new EntityLocation(0.0f, 0.0f, 10.0f)
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, MutableEntity.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, new int[Entity.HOTBAR_SIZE]
+				, 0
+				, new NonStackableItem[BodyPart.values().length]
+				, null
+				, MutableEntity.DEFAULT_HEALTH
+				, MutableEntity.DEFAULT_FOOD
+				, EntityConstants.MAX_BREATH
+				, 0
+		);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// This is a multi-step process which starts by asking the entity to start the 2 drops.
+		// We will use the keys we assume are appropriate for these, based on how the creative inventory works.
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		int stoneId = STONE_ITEM.number();
+		int pickId = pickItem.number();
+		MutableEntity newEntity = MutableEntity.existing(original);
+		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, stoneId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(push.applyChange(holder.context, newEntity));
+		MutationBlockStoreItems step2_1 = (MutationBlockStoreItems) holder.mutation;
+		holder.mutation = null;
+		push = new MutationEntityPushItems(targetLocation, pickId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
+		Assert.assertTrue(push.applyChange(holder.context, newEntity));
+		MutationBlockStoreItems step2_2 = (MutationBlockStoreItems) holder.mutation;
+		holder.mutation = null;
+		
+		// This should be unchanged and the block shouldn't yet have the items.
+		Assert.assertEquals(Integer.MAX_VALUE, newEntity.accessMutableInventory().getCount(STONE_ITEM));
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
+		
+		// We can now apply the step 2.
+		AbsoluteLocation location = step2_1.getAbsoluteLocation();
+		MutableBlockProxy newBlock = new MutableBlockProxy(location, cuboid);
+		Assert.assertTrue(step2_1.applyMutation(holder.context, newBlock));
+		Assert.assertTrue(step2_2.applyMutation(holder.context, newBlock));
+		newBlock.writeBack(cuboid);
+		Assert.assertNull(holder.mutation);
+		
+		// We can now verify that the block has the stone and the pick.
+		Inventory blockInventory = cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress());
+		int stone = 0;
+		int pick = 0;
+		for (Integer key : blockInventory.sortedKeys())
+		{
+			Items stack = blockInventory.getStackForKey(key);
+			NonStackableItem nonStack = blockInventory.getNonStackableForKey(key);
+			Assert.assertTrue((null == stack) != (null == nonStack));
+			if (null != stack)
+			{
+				Assert.assertEquals(STONE_ITEM, stack.type());
+				stone += stack.count();
+			}
+			else
+			{
+				Assert.assertEquals(pickItem, nonStack.type());
+				pick += 1;
+			}
+		}
+		Assert.assertEquals(1, stone);
+		Assert.assertEquals(1, pick);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

@@ -43,6 +43,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		Assert.assertTrue(id > 0);
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
+				, false
 				, DEFAULT_LOCATION
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
@@ -101,7 +102,17 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public IMutableInventory accessMutableInventory()
 	{
-		return this.newInventory;
+		// If this is a creative player, which ignore their inventory and always return the fake creative one.
+		IMutableInventory inv;
+		if (this.original.isCreativeMode())
+		{
+			inv = new CreativeInventory();
+		}
+		else
+		{
+			inv = this.newInventory;
+		}
+		return inv;
 	}
 
 	@Override
@@ -303,8 +314,11 @@ public class MutableEntity implements IMutablePlayerEntity
 			int newKey = this.newHotbar[i];
 			if (Entity.NO_SELECTION != newKey)
 			{
-				Items stack = this.newInventory.getStackForKey(newKey);
-				NonStackableItem nonStack = this.newInventory.getNonStackableForKey(newKey);
+				IMutableInventory inventoryToCheck = this.original.isCreativeMode()
+						? new CreativeInventory()
+						: this.newInventory;
+				Items stack = inventoryToCheck.getStackForKey(newKey);
+				NonStackableItem nonStack = inventoryToCheck.getNonStackableForKey(newKey);
 				Assert.assertTrue((null != stack) != (null != nonStack));
 			}
 			if (newKey != this.original.hotbarItems()[i])
@@ -322,6 +336,7 @@ public class MutableEntity implements IMutablePlayerEntity
 			}
 		}
 		Entity newInstance = new Entity(this.original.id()
+				, this.original.isCreativeMode()
 				, this.newLocation
 				, this.newVelocity
 				, this.original.blocksPerTickSpeed()

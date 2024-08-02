@@ -60,6 +60,7 @@ public class TestEntityCollection
 	private static Entity _buildPlayer(int id, EntityLocation location)
 	{
 		return new Entity(id
+				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, 0.0f

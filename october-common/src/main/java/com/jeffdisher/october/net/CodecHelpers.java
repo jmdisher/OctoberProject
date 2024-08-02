@@ -129,6 +129,7 @@ public class CodecHelpers
 	public static Entity readEntity(ByteBuffer buffer)
 	{
 		int id = buffer.getInt();
+		boolean isCreativeMode = _readBoolean(buffer);
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		float blocksPerTickSpeed = buffer.getFloat();
@@ -151,6 +152,7 @@ public class CodecHelpers
 		int energyDeficit = buffer.getInt();
 		
 		return new Entity(id
+				, isCreativeMode
 				, location
 				, velocity
 				, blocksPerTickSpeed
@@ -169,6 +171,7 @@ public class CodecHelpers
 	public static void writeEntity(ByteBuffer buffer, Entity entity)
 	{
 		int id = entity.id();
+		boolean isCreativeMode = entity.isCreativeMode();
 		EntityLocation location = entity.location();
 		EntityLocation velocity = entity.velocity();
 		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
@@ -179,6 +182,7 @@ public class CodecHelpers
 		CraftOperation localCraftOperation = entity.localCraftOperation();
 		
 		buffer.putInt(id);
+		_writeBoolean(buffer, isCreativeMode);
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
 		buffer.putFloat(blocksPerTickSpeed);
@@ -352,16 +356,12 @@ public class CodecHelpers
 
 	public static boolean readBoolean(ByteBuffer buffer)
 	{
-		byte value = buffer.get();
-		// This MUST be a 1 or 0.
-		Assert.assertTrue((0 == value) || (1 == value));
-		return (1 == value);
+		return _readBoolean(buffer);
 	}
 
 	public static void writeBoolean(ByteBuffer buffer, boolean flag)
 	{
-		byte value = (byte)(flag ? 1 : 0);
-		buffer.put(value);
+		_writeBoolean(buffer, flag);
 	}
 
 
@@ -608,5 +608,19 @@ public class CodecHelpers
 		{
 			buffer.putInt(item.durability());
 		}
+	}
+
+	private static boolean _readBoolean(ByteBuffer buffer)
+	{
+		byte value = buffer.get();
+		// This MUST be a 1 or 0.
+		Assert.assertTrue((0 == value) || (1 == value));
+		return (1 == value);
+	}
+
+	private static void _writeBoolean(ByteBuffer buffer, boolean flag)
+	{
+		byte value = (byte)(flag ? 1 : 0);
+		buffer.put(value);
 	}
 }
