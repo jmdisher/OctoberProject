@@ -39,9 +39,9 @@ public class ServerMain
 						, () -> System.currentTimeMillis()
 						, config
 				);
-				// We will just wait for input before shutting down.
-				System.in.read();
-				System.out.println("Shutting down...");
+				// Hand over control to the ConsoleHandler.  Once it returns, we can shut down.
+				ConsoleHandler.readUntilStop(System.in, System.out);
+				// We returned, so we can stop the ServerProcess.
 				process.stop();
 				// Everything has stopped so now write-back the config.
 				cuboidLoader.storeWorldConfig(config);
