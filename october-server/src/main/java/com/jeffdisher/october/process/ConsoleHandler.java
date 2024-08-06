@@ -37,10 +37,12 @@ public class ConsoleHandler
 			if (first.startsWith("!"))
 			{
 				String name = first.substring(1);
+				String[] params = new String[fragments.length - 1];
+				System.arraycopy(fragments, 1, params, 0, params.length);
 				try
 				{
 					_Command command = _Command.valueOf(name.toUpperCase());
-					command.handler.run(out, state);
+					command.handler.run(out, state, params);
 				}
 				catch (IllegalArgumentException e)
 				{
@@ -74,22 +76,22 @@ public class ConsoleHandler
 
 	private static interface _CommandHandler
 	{
-		void run(PrintStream out, _ConsoleState state);
+		void run(PrintStream out, _ConsoleState state, String[] parameters);
 	}
 
 	private static enum _Command
 	{
-		HELP((PrintStream out, _ConsoleState state) -> {
+		HELP((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			out.println("Commands:");
 			for (_Command command : _Command.values())
 			{
 				out.println("!" + command.name());
 			}
 		}),
-		STOP((PrintStream out, _ConsoleState state) -> {
+		STOP((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			state.canContinue = false;
 		}),
-		LIST_CLIENTS((PrintStream out, _ConsoleState state) -> {
+		LIST_CLIENTS((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			Map<Integer, String> clientIds = state.monitoringAgent.getClientsCopy();
 			out.println("Connected clients (" + clientIds.size() + "):");
 			for (Map.Entry<Integer, String> elt : clientIds.entrySet())
@@ -97,7 +99,7 @@ public class ConsoleHandler
 				out.println("\t" + elt.getKey() + " - " + elt.getValue());
 			}
 		}),
-		LAST_SNAPSHOT((PrintStream out, _ConsoleState state) -> {
+		LAST_SNAPSHOT((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			MonitoringAgent monitoringAgent = state.monitoringAgent;
 			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
 			long tickNumber = snapshot.tickNumber();
@@ -109,6 +111,13 @@ public class ConsoleHandler
 			out.println("\tEntities: " + entityCount);
 			out.println("\tCuboids: " + cuboidCount);
 			out.println("\tCreatures: " + creatureCount);
+		}),
+		ECHO((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			for (String param : parameters)
+			{
+				out.print(param + " ");
+			}
+			out.println();
 		}),
 		;
 		
