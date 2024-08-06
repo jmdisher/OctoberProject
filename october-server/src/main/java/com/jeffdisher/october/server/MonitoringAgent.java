@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.net.NetworkLayer;
+import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -14,19 +15,30 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MonitoringAgent
 {
-	private final Map<Integer, String> _connectedClients = new HashMap<>();
+	private final Map<Integer, String> _connectedClientIds = new HashMap<>();
+	private final Map<Integer, NetworkLayer.PeerToken> _connectedClientTokens = new HashMap<>();
+	private volatile NetworkServer<?> _network;
 	private volatile TickRunner.Snapshot _lastSnapshot;
+
+	public void setNetwork(NetworkServer<?> network)
+	{
+		// This should only be called once (and is ALWAYS called before anything else).
+		Assert.assertTrue(null == _network);
+		_network = network;
+	}
 
 	public synchronized void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
 	{
-		String old = _connectedClients.put(clientId, name);
+		String old = _connectedClientIds.put(clientId, name);
 		Assert.assertTrue(null == old);
+		_connectedClientTokens.put(clientId, token);
 	}
 
 	public synchronized void clientDisconnected(int clientId)
 	{
-		String old = _connectedClients.remove(clientId);
+		String old = _connectedClientIds.remove(clientId);
 		Assert.assertTrue(null != old);
+		_connectedClientTokens.remove(clientId);
 	}
 
 	public void snapshotPublished(TickRunner.Snapshot snapshot)
@@ -34,9 +46,19 @@ public class MonitoringAgent
 		_lastSnapshot = snapshot;
 	}
 
+	public NetworkServer<?> getNetwork()
+	{
+		return _network;
+	}
+
 	public synchronized Map<Integer, String> getClientsCopy()
 	{
-		return new HashMap<>(_connectedClients);
+		return new HashMap<>(_connectedClientIds);
+	}
+
+	public synchronized NetworkLayer.PeerToken getTokenForClient(int clientId)
+	{
+		return _connectedClientTokens.get(clientId);
 	}
 
 	public TickRunner.Snapshot getLastSnapshot()

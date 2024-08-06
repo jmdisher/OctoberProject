@@ -17,6 +17,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
@@ -327,6 +328,56 @@ public class TestProcesses
 		server.stop();
 	}
 
+	@Test
+	public void forceDisconnectClient() throws Throwable
+	{
+		// Connect a client and then use the agent to request that they be disconnected.
+		long currentTimeMillis = 1000L;
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
+		cuboidLoader.preload(cuboid);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, () -> 100L
+				, monitoringAgent
+				, new WorldConfig()
+		);
+		
+		// Connect a client and wait to receive their entity.
+		_ClientListener listener = new _ClientListener();
+		String clientName = "test";
+		ClientProcess client = new ClientProcess(listener, InetAddress.getLocalHost(), PORT, clientName);
+		long tick = client.waitForLocalEntity(currentTimeMillis);
+		currentTimeMillis += 100L;
+		// Wait until we have received the entity and cuboid.
+		client.waitForTick(tick + 3L, currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		client.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertNotNull(listener.getLocalEntity());
+		Assert.assertNotNull(listener.cuboids.get(cuboid.getCuboidAddress()));
+		
+		// Disconnect them.
+		Assert.assertEquals(1, monitoringAgent.getClientsCopy().size());
+		int clientId = monitoringAgent.getClientsCopy().keySet().iterator().next();
+		NetworkLayer.PeerToken token = monitoringAgent.getTokenForClient(clientId);
+		monitoringAgent.getNetwork().disconnectClient(token);
+		
+		// Wait for disconnect.
+		while (-1 != listener.assignedEntityId)
+		{
+			long millis = 10L;
+			Thread.sleep(millis);
+			currentTimeMillis += millis;
+			client.runPendingCalls(currentTimeMillis);
+		}
+		server.stop();
+	}
+
 
 	// We want to compare locations with 0.01 precision, since small rounding errors are unavoidable with floats but
 	// aren't a problem, so we use this helper.
@@ -361,6 +412,8 @@ public class TestProcesses
 		@Override
 		public void connectionClosed()
 		{
+			Assert.assertTrue(assignedEntityId > 0);
+			assignedEntityId = -1;
 		}
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)

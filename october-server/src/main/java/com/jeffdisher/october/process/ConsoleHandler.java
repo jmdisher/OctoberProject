@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Map;
 
+import com.jeffdisher.october.net.NetworkLayer;
+import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
 
@@ -118,6 +120,39 @@ public class ConsoleHandler
 				out.print(param + " ");
 			}
 			out.println();
+		}),
+		DISCONNECT((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			if (parameters.length > 0)
+			{
+				MonitoringAgent monitoringAgent = state.monitoringAgent;
+				NetworkServer<?> network = monitoringAgent.getNetwork();
+				for (String param : parameters)
+				{
+					NetworkLayer.PeerToken token = null;
+					try
+					{
+						int clientId = Integer.parseInt(param);
+						token = monitoringAgent.getTokenForClient(clientId);
+					}
+					catch (IllegalArgumentException e)
+					{
+						// If the ID isn't a number.
+					}
+					
+					if (null != token)
+					{
+						network.disconnectClient(token);
+					}
+					else
+					{
+						out.println("Error: \"" + param + "\" is not a valid ID");
+					}
+				}
+			}
+			else
+			{
+				out.println("You must specify at least 1 ID");
+			}
 		}),
 		;
 		
