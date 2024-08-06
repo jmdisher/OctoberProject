@@ -6,6 +6,7 @@ import java.io.IOException;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
+import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -31,16 +32,18 @@ public class ServerMain
 				Environment.createSharedInstance();
 				// We will just use the flat world generator since it should be populated with what we need for testing.
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(true));
+				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
 				cuboidLoader.populateWorldConfig(config);
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK
 						, cuboidLoader
 						, () -> System.currentTimeMillis()
+						, monitoringAgent
 						, config
 				);
 				// Hand over control to the ConsoleHandler.  Once it returns, we can shut down.
-				ConsoleHandler.readUntilStop(System.in, System.out);
+				ConsoleHandler.readUntilStop(System.in, System.out, monitoringAgent);
 				// We returned, so we can stop the ServerProcess.
 				process.stop();
 				// Everything has stopped so now write-back the config.

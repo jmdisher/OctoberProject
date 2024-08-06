@@ -71,10 +71,12 @@ public class TestServerRunner
 		// Get the starting number of threads in our group.
 		int startingActiveCount = Thread.currentThread().getThreadGroup().activeCount();
 		TestAdapter network = new TestAdapter();
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, new ResourceLoader(DIRECTORY.newFolder(), null)
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		// We expect to see an extra 6 threads:  ServerRunner, CuboidLoader, and 4xTickRunner.
@@ -92,10 +94,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -113,10 +117,12 @@ public class TestServerRunner
 		Assert.assertNotNull(entity2_1);
 		Entity entity2_2 = network.waitForThisEntity(clientId2);
 		Assert.assertNotNull(entity2_2);
+		Assert.assertEquals(2, monitoringAgent.getClientsCopy().size());
 		server.clientDisconnected(1);
 		network.resetClient(1);
 		server.clientDisconnected(2);
 		network.resetClient(2);
+		Assert.assertEquals(0, monitoringAgent.getClientsCopy().size());
 		runner.shutdown();
 	}
 
@@ -130,10 +136,12 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
 		
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -173,10 +181,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -207,10 +217,12 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -246,10 +258,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -292,10 +306,12 @@ public class TestServerRunner
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), STONE));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -329,10 +345,12 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
 		_loadDefaultMap(cuboidLoader);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -373,6 +391,7 @@ public class TestServerRunner
 		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		WorldConfig config = new WorldConfig();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
 		config.difficulty = Difficulty.PEACEFUL;
@@ -380,6 +399,7 @@ public class TestServerRunner
 				, network
 				, cuboidLoader
 				, () -> System.currentTimeMillis()
+				, monitoringAgent
 				, config
 		);
 		IServerAdapter.IListener server = network.waitForServer(1);
@@ -417,6 +437,10 @@ public class TestServerRunner
 		}
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(18, network.clientPartialEntities.get(clientId1).size());
+		
+		// Verify that the monitoring agent sees consistent data.
+		Assert.assertEquals(1, monitoringAgent.getClientsCopy().size());
+		Assert.assertEquals(18, monitoringAgent.getLastSnapshot().completedCreatures().size());
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);

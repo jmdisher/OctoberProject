@@ -26,6 +26,7 @@ import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
+import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -58,6 +59,7 @@ public class ServerProcess
 	 * @param millisPerTick The number of milliseconds which should be allowed to pass between logical ticks.
 	 * @param cuboidLoader The loader object which will load or generate required cuboids.
 	 * @param currentTimeMillisProvider The provider of the current system time, in milliseconds.
+	 * @param monitoringAgent Stores descriptive information about the state of the server, for external monitoring.
 	 * @param config The configuration of this world.
 	 * @throws IOException There was an error starting up the network.
 	 */
@@ -65,6 +67,7 @@ public class ServerProcess
 			, long millisPerTick
 			, ResourceLoader cuboidLoader
 			, LongSupplier currentTimeMillisProvider
+			, MonitoringAgent monitoringAgent
 			, WorldConfig config
 	) throws IOException
 	{
@@ -75,6 +78,7 @@ public class ServerProcess
 				, new _ServerListener()
 				, cuboidLoader
 				, currentTimeMillisProvider
+				, monitoringAgent
 				, config
 		);
 		// The server passes its listener back within the constructor so we should see that, now.

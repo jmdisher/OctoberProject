@@ -20,6 +20,7 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
+import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -57,9 +58,11 @@ public class TestProcesses
 	public void startStopServer() throws Throwable
 	{
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		server.stop();
@@ -77,9 +80,11 @@ public class TestProcesses
 	{
 		// Start everything, connect and disconnect once the see the entity arrive.
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		_ClientListener listener = new _ClientListener();
@@ -105,9 +110,11 @@ public class TestProcesses
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		cuboidLoader.preload(cuboid);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		
@@ -147,9 +154,11 @@ public class TestProcesses
 		// Load a cuboids.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, TIME_SUPPLIER
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		
@@ -193,9 +202,11 @@ public class TestProcesses
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> 100L
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		
@@ -228,9 +239,11 @@ public class TestProcesses
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
 				, () -> currentTimeMillis[0]
+				, monitoringAgent
 				, new WorldConfig()
 		);
 		

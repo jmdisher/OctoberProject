@@ -59,6 +59,7 @@ public class ServerRunner
 
 	// Variables "owned" by the background thread.
 	private final LongSupplier _currentTimeMillisProvider;
+	private final MonitoringAgent _monitoringAgent;
 	private long _nextTickMillis;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
@@ -70,6 +71,7 @@ public class ServerRunner
 			, IServerAdapter network
 			, ResourceLoader loader
 			, LongSupplier currentTimeMillisProvider
+			, MonitoringAgent monitoringAgent
 			, WorldConfig config
 	)
 	{
@@ -103,6 +105,7 @@ public class ServerRunner
 			}
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
+		_monitoringAgent = monitoringAgent;
 		
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		_tickAdvancer = new _TickAdvancer();
@@ -183,6 +186,8 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				_stateManager.clientConnected(clientId);
+				
+				_monitoringAgent.clientConnected(clientId);
 			});
 		}
 		@Override
@@ -192,6 +197,8 @@ public class ServerRunner
 				_stateManager.clientDisconnected(clientId);
 				// This message is now in-order so we can ack the disconnect.
 				_network.acknowledgeDisconnect(clientId);
+				
+				_monitoringAgent.clientDisconnected(clientId);
 			});
 		}
 		@Override
@@ -214,6 +221,8 @@ public class ServerRunner
 			_messages.enqueue(() -> {
 				// This means we can schedule the next tick.
 				_scheduledAdvancer = _tickAdvancer;
+				
+				_monitoringAgent.snapshotPublished(completedSnapshot);
 			});
 		}
 	}

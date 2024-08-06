@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.Set;
+
+import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.server.TickRunner;
 
 
 /**
@@ -17,13 +21,14 @@ public class ConsoleHandler
 	 * 
 	 * @param in The input stream.
 	 * @param out The output stream.
+	 * @param monitoringAgent The shared agent structure which collects information from the rest of the system.
 	 * @throws IOException If there was an error reading the input.
 	 */
-	public static void readUntilStop(InputStream in, PrintStream out) throws IOException
+	public static void readUntilStop(InputStream in, PrintStream out, MonitoringAgent monitoringAgent) throws IOException
 	{
 		// We will read lines until we get a stop command.
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-		_ConsoleState state = new _ConsoleState();
+		_ConsoleState state = new _ConsoleState(monitoringAgent);
 		while (state.canContinue)
 		{
 			String line = reader.readLine();
@@ -60,6 +65,11 @@ public class ConsoleHandler
 	private static class _ConsoleState
 	{
 		public boolean canContinue = true;
+		public final MonitoringAgent monitoringAgent;
+		public _ConsoleState(MonitoringAgent monitoringAgent)
+		{
+			this.monitoringAgent = monitoringAgent;
+		}
 	}
 
 	private static interface _CommandHandler
@@ -78,6 +88,27 @@ public class ConsoleHandler
 		}),
 		STOP((PrintStream out, _ConsoleState state) -> {
 			state.canContinue = false;
+		}),
+		LIST_CLIENTS((PrintStream out, _ConsoleState state) -> {
+			Set<Integer> clientIds = state.monitoringAgent.getClientsCopy();
+			out.println("Connected clients (" + clientIds.size() + "):");
+			for (int id : clientIds)
+			{
+				out.println("\t" + id);
+			}
+		}),
+		LAST_SNAPSHOT((PrintStream out, _ConsoleState state) -> {
+			MonitoringAgent monitoringAgent = state.monitoringAgent;
+			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
+			long tickNumber = snapshot.tickNumber();
+			long processMillis = snapshot.millisTickPreamble() + snapshot.millisTickParallelPhase() + snapshot.millisTickPostamble();
+			int entityCount = snapshot.completedEntities().size();
+			int cuboidCount = snapshot.completedCuboids().size();
+			int creatureCount = snapshot.completedCreatures().size();
+			out.printf("Tick %d processed in %d ms:\n", tickNumber, processMillis);
+			out.println("\tEntities: " + entityCount);
+			out.println("\tCuboids: " + cuboidCount);
+			out.println("\tCreatures: " + creatureCount);
 		}),
 		;
 		
