@@ -142,7 +142,7 @@ public class ServerProcess
 			// This is valid so install it.
 			ClientBuffer buffer = new ClientBuffer(token, hash);
 			_clientsById.put(hash, buffer);
-			_serverListener.clientConnected(hash);
+			_serverListener.clientConnected(hash, token, name);
 			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
 		}
 		return result;

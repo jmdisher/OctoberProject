@@ -107,8 +107,8 @@ public class TestServerRunner
 		int clientId2 = 2;
 		network.prepareForClient(clientId1);
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId1);
-		server.clientConnected(clientId2);
+		server.clientConnected(clientId1, null, "name1");
+		server.clientConnected(clientId2, null, "name1");
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
 		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
@@ -147,7 +147,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId);
+		server.clientConnected(clientId, null, "name");
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		// (we also want to wait until the server has loaded the cuboids, since this change reads them)
@@ -192,7 +192,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId);
+		server.clientConnected(clientId, null, "name");
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		
@@ -228,7 +228,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId = 1;
 		network.prepareForClient(clientId);
-		server.clientConnected(clientId);
+		server.clientConnected(clientId, null, "name");
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		EntityLocation start = entity.location();
@@ -271,8 +271,8 @@ public class TestServerRunner
 		int clientId2 = 2;
 		network.prepareForClient(clientId1);
 		network.prepareForClient(clientId2);
-		server.clientConnected(clientId1);
-		server.clientConnected(clientId2);
+		server.clientConnected(clientId1, null, "name1");
+		server.clientConnected(clientId2, null, "name2");
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
 		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
@@ -317,7 +317,7 @@ public class TestServerRunner
 		IServerAdapter.IListener server = network.waitForServer(1);
 		int clientId1 = 1;
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1);
+		server.clientConnected(clientId1, null, "name");
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -358,7 +358,7 @@ public class TestServerRunner
 		
 		// Connect.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1);
+		server.clientConnected(clientId1, null, "name");
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(0, entity1.inventory().sortedKeys().size());
@@ -375,7 +375,7 @@ public class TestServerRunner
 		
 		// Reconnect and verify that the change is visible.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1);
+		server.clientConnected(clientId1, null, "name");
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		Assert.assertEquals(1, entity1.inventory().sortedKeys().size());
@@ -407,7 +407,7 @@ public class TestServerRunner
 		
 		// Connect.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1);
+		server.clientConnected(clientId1, null, "name");
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
@@ -425,7 +425,7 @@ public class TestServerRunner
 		
 		// Reconnect and verify that the creatures are the same but with different IDs.
 		network.prepareForClient(clientId1);
-		server.clientConnected(clientId1);
+		server.clientConnected(clientId1, null, "name");
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		

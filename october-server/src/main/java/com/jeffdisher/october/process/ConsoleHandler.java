@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.Set;
+import java.util.Map;
 
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
@@ -90,11 +90,11 @@ public class ConsoleHandler
 			state.canContinue = false;
 		}),
 		LIST_CLIENTS((PrintStream out, _ConsoleState state) -> {
-			Set<Integer> clientIds = state.monitoringAgent.getClientsCopy();
+			Map<Integer, String> clientIds = state.monitoringAgent.getClientsCopy();
 			out.println("Connected clients (" + clientIds.size() + "):");
-			for (int id : clientIds)
+			for (Map.Entry<Integer, String> elt : clientIds.entrySet())
 			{
-				out.println("\t" + id);
+				out.println("\t" + elt.getKey() + " - " + elt.getValue());
 			}
 		}),
 		LAST_SNAPSHOT((PrintStream out, _ConsoleState state) -> {

@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -182,12 +183,12 @@ public class ServerRunner
 	private class NetworkListener implements IServerAdapter.IListener
 	{
 		@Override
-		public void clientConnected(int clientId)
+		public void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
 		{
 			_messages.enqueue(() -> {
 				_stateManager.clientConnected(clientId);
 				
-				_monitoringAgent.clientConnected(clientId);
+				_monitoringAgent.clientConnected(clientId, token, name);
 			});
 		}
 		@Override

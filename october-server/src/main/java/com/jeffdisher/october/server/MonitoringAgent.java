@@ -1,8 +1,9 @@
 package com.jeffdisher.october.server;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -13,19 +14,19 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MonitoringAgent
 {
-	private final Set<Integer> _connectedClients = new HashSet<>();
+	private final Map<Integer, String> _connectedClients = new HashMap<>();
 	private volatile TickRunner.Snapshot _lastSnapshot;
 
-	public synchronized void clientConnected(int clientId)
+	public synchronized void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
 	{
-		boolean didAdd = _connectedClients.add(clientId);
-		Assert.assertTrue(didAdd);
+		String old = _connectedClients.put(clientId, name);
+		Assert.assertTrue(null == old);
 	}
 
 	public synchronized void clientDisconnected(int clientId)
 	{
-		boolean didRemove = _connectedClients.remove(clientId);
-		Assert.assertTrue(didRemove);
+		String old = _connectedClients.remove(clientId);
+		Assert.assertTrue(null != old);
 	}
 
 	public void snapshotPublished(TickRunner.Snapshot snapshot)
@@ -33,9 +34,9 @@ public class MonitoringAgent
 		_lastSnapshot = snapshot;
 	}
 
-	public synchronized Set<Integer> getClientsCopy()
+	public synchronized Map<Integer, String> getClientsCopy()
 	{
-		return new HashSet<>(_connectedClients);
+		return new HashMap<>(_connectedClients);
 	}
 
 	public TickRunner.Snapshot getLastSnapshot()

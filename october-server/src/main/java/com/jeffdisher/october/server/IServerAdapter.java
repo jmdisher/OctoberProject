@@ -4,6 +4,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -129,8 +130,10 @@ public interface IServerAdapter
 		 * Called when a client connects.
 		 * 
 		 * @param clientId The ID of the client (as assigned by the adapter implementation).
+		 * @param token The token representing the connection to this client.
+		 * @param name The client's human-readable name.
 		 */
-		void clientConnected(int clientId);
+		void clientConnected(int clientId, NetworkLayer.PeerToken token, String name);
 		/**
 		 * Called when a client disconnects.
 		 * Note that a call receiving this MUST call acknowledgeDisconnect(clientId) once it has accounted for this.
