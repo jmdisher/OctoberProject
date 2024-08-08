@@ -11,7 +11,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PathFinder;
-import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -354,13 +353,14 @@ public class CreatureLogic
 				// We are already in the centre so just get started.
 				List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
 				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-				actionsProduced = _determineNextSteps(blockKindLookup, mutable.creature, mutablePlan, viscosity, isIdleMovement);
+				mutablePlan = _advanceMovementPlan(blockKindLookup, mutable.creature, mutablePlan);
+				if (null != mutablePlan)
+				{
+					actionsProduced = _planNextSteps(blockKindLookup, mutable.creature, mutablePlan, viscosity, isIdleMovement);
+				}
 				
 				// We can now update our extended data.
-				if (mutablePlan.isEmpty())
-				{
-					mutablePlan = null;
-				}
+				Assert.assertTrue((null == mutablePlan) || !mutablePlan.isEmpty());
 				machine.setMovementPlan(mutablePlan);
 			}
 		}
@@ -424,62 +424,79 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _determineNextSteps(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	private static List<AbsoluteLocation> _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, CreatureEntity creature
-			, List<AbsoluteLocation> mutablePlan
-			, float viscosity
-			, boolean isIdleMovement
+			, List<AbsoluteLocation> existingPlan
 	)
 	{
 		// First, check to see if we are already in our next location.
-		AbsoluteLocation thisStep = mutablePlan.get(0);
+		AbsoluteLocation thisStep = existingPlan.get(0);
 		EntityLocation entityLocation = creature.location();
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		
-		List<IMutationEntity<IMutableCreatureEntity>> changes;
+		List<AbsoluteLocation> updatedPlan;
 		if (currentLocation.equals(thisStep))
 		{
 			// If we are, that means that we can remove this from the path and plan to move to the next step.
-			mutablePlan.remove(0);
-			if (!mutablePlan.isEmpty())
+			if (existingPlan.size() > 1)
 			{
-				AbsoluteLocation nextStep = mutablePlan.get(0);
-				boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(entityLocation.getBlockLocation()));
-				changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, viscosity, isIdleMovement, isSwimmable);
-				// If this is empty, just allow us to do nothing and reset the timer instead of returning null (should only be empty if falling, for example).
+				updatedPlan = new ArrayList<>(existingPlan);
+				updatedPlan.remove(0);
 			}
 			else
 			{
-				// There is nothing left in the plan so just return null so that the timer will expire soon for the next plan.
-				changes = null;
+				updatedPlan = null;
 			}
 		}
 		else
 		{
-			// Otherwise, check to see if we are currently in the air, since we might just be jumping/falling into the next location.
-			if (SpatialHelpers.isBlockAligned(entityLocation.z()))
+			// We just need to see if the plan is still valid.  This means that the next step must be adjacent and both our current and next locations can be entered.
+			int distanceToNext = Math.abs(currentLocation.x() - thisStep.x())
+					+ Math.abs(currentLocation.y() - thisStep.y())
+					+ Math.abs(currentLocation.z() - thisStep.z())
+			;
+			boolean isAdjacent = (1 == distanceToNext);
+			if (isAdjacent)
 			{
-				// We appear to be on the surface, meaning that we were somehow blocked.  Therefore, clear the plan and we will try again after our idle timer.
-				mutablePlan.clear();
-				changes = null;
-			}
-			else
-			{
-				// This generally moves we are rising or falling so we might need to plan another movement if we are in water and our z-velocity isn't high enough (since we might want to swim up).
-				boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(entityLocation.getBlockLocation()));
-				if (isSwimmable && (creature.velocity().z() < 0.1f))
+				// Just make sure we can move in both of these.
+				PathFinder.BlockKind currentKind = blockKindLookup.apply(currentLocation);
+				PathFinder.BlockKind nextKind = blockKindLookup.apply(thisStep);
+				if ((PathFinder.BlockKind.SOLID == currentKind) || (PathFinder.BlockKind.SOLID == nextKind))
 				{
-					AbsoluteLocation nextStep = mutablePlan.get(0);
-					changes = CreatureMovementHelpers.moveToNextLocation(creature, nextStep, viscosity, isIdleMovement, isSwimmable);
+					// Something is blocked so clear the plan.
+					updatedPlan = null;
 				}
 				else
 				{
-					// Do nothing since we are moving through the air.
-					changes = null;
+					// We can continue along this path.
+					updatedPlan = existingPlan;
 				}
 			}
+			else
+			{
+				// We must have fallen or been pushed so clear the plan.
+				updatedPlan = null;
+			}
 		}
-		return changes;
+		return updatedPlan;
+	}
+
+	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextSteps(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+			, CreatureEntity creature
+			, List<AbsoluteLocation> existingPlan
+			, float viscosity
+			, boolean isIdleMovement
+	)
+	{
+		AbsoluteLocation thisStep = existingPlan.get(0);
+		EntityLocation entityLocation = creature.location();
+		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
+		
+		// We know that this should only be called AFTER updating our planned path.
+		Assert.assertTrue(!currentLocation.equals(thisStep));
+		
+		boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(currentLocation));
+		return CreatureMovementHelpers.moveToNextLocation(creature, thisStep, viscosity, isIdleMovement, isSwimmable);
 	}
 
 	private static Function<AbsoluteLocation, PathFinder.BlockKind> _createLookupHelper(TickProcessingContext context)
