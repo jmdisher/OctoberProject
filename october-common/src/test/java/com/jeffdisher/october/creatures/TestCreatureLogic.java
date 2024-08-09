@@ -154,6 +154,32 @@ public class TestCreatureLogic
 		Assert.assertEquals(2, plan.get(plan.size() - 1).z());
 	}
 
+	@Test
+	public void idleNoPath()
+	{
+		// Verify that we will choose to do nothing if there are no idle movement targets.
+		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
+		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		_setLayer(input, (byte)0, "op.stone");
+		_setLayer(input, (byte)1, "op.stone");
+		input.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)1), stoneNumber);
+		_setLayer(input, (byte)2, "op.stone");
+		input.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)2), stoneNumber);
+		
+		// We should see 0 possible locations.
+		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(location.getBlockAddress(), input)
+					: null
+			;
+		}, 0);
+		List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity);
+		Assert.assertNull(path);
+	}
+
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{

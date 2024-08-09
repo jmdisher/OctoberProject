@@ -284,23 +284,34 @@ public class CreatureLogic
 			// First, we want to see if we should walk toward a player.
 			movementPlan = _buildDeliberatePath(blockKindLookup, entityCollection, mutable.creature, machine);
 			
-			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
-			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
-			// movements are "safe").
-			boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
-			if ((null == movementPlan) && (
-					isInDanger
-					|| (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION)
-			))
+			if (null != movementPlan)
 			{
-				// We couldn't find a player so just make a random move.
-				movementPlan = _findPathToRandomSpot(context, blockKindLookup, mutable.creature);
+				// We made a deliberate plan but it might not have any steps.
+				if (movementPlan.isEmpty())
+				{
+					movementPlan = null;
+				}
+			}
+			else
+			{
+				// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
+				// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
+				// movements are "safe").
+				boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
+				if ((null == movementPlan) && (
+						isInDanger
+						|| (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION)
+				))
+				{
+					// We couldn't find a player so just make a random move.
+					movementPlan = _findPathToRandomSpot(context, blockKindLookup, mutable.creature);
+				}
 			}
 			
 			// We can now update our extended data.
 			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
 			machine.setMovementPlan(movementPlan);
-			didMakePlan = true;
+			didMakePlan = (null != movementPlan);
 		}
 		else
 		{
@@ -327,19 +338,11 @@ public class CreatureLogic
 			if (tryToCentre)
 			{
 				// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-				AbsoluteLocation directionHint;
-				if (movementPlan.size() > 1)
+				AbsoluteLocation directionHint = movementPlan.get(0);
+				if ((movementPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
 				{
+					// This means we are jumping so choose the next place where we want to go for direction hint.
 					directionHint = movementPlan.get(1);
-					if ((movementPlan.size() > 2) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
-					{
-						// This means we are jumping so choose the next place where we want to go for direction hint.
-						directionHint = movementPlan.get(2);
-					}
-				}
-				else
-				{
-					directionHint = movementPlan.get(0);
 				}
 				actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
 			}
@@ -372,6 +375,7 @@ public class CreatureLogic
 		return actionsProduced;
 	}
 
+	// NOTE:  This will return an empty path if it made a decision but the decision has no steps.
 	private static List<AbsoluteLocation> _buildDeliberatePath(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage, EntityCollection entityCollection, CreatureEntity creature, ICreatureStateMachine machine)
 	{
 		EntityLocation targetLocation = machine.selectDeliberateTarget(entityCollection, creature);
@@ -383,6 +387,12 @@ public class CreatureLogic
 			EntityVolume volume = EntityConstants.getVolume(creature.type());
 			EntityLocation start = creature.location();
 			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, start, targetLocation, machine.getPathDistance());
+			// We want to strip away the first step, since it is the current location.
+			if (null != path)
+			{
+				path.remove(0);
+				// (we will still return an empty path just to communicate that we made a decision.
+			}
 		}
 		return path;
 	}
@@ -418,6 +428,12 @@ public class CreatureLogic
 			}
 			// We should never see a path ending where we started.
 			Assert.assertTrue(plannedPath.size() > 0);
+			// We want to strip away the first step, since it is the current location.
+			plannedPath.remove(0);
+			if (plannedPath.isEmpty())
+			{
+				plannedPath = null;
+			}
 		}
 		else
 		{

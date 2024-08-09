@@ -573,20 +573,7 @@ public class TestCreatureProcessor
 				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
 		);
 		
-		// The mother should now be pregnant but we need it to finish its last planned movement before spawning offspring (2 steps).
-		for (int i = 0; i < 2; ++i)
-		{
-			creaturesById.putAll(group.updatedCreatures());
-			Assert.assertNotNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()).offspringLocation());
-			context = _updateContextWithCreatures(context, creaturesById.values(), null, idAssigner);
-			group = CreatureProcessor.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Set.of(), creaturesById.values())
-					, Map.of()
-			);
-		}
-		
+		// The mother should now be pregnant (has offspring location).
 		// Run a final tick to see the mother spawn the offspring.
 		creaturesById.putAll(group.updatedCreatures());
 		Assert.assertNotNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()).offspringLocation());
