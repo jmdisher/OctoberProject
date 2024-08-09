@@ -137,8 +137,30 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			boolean didMakePlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
-			actionsProduced = _produceNextActions(context, mutable, machine, didMakePlan);
+			
+			// Get the movement plan and see if we should advance it.
+			List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+			boolean shouldMakePlan = (null == movementPlan);
+			if (shouldMakePlan)
+			{
+				movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
+			}
+			else
+			{
+				movementPlan = _advanceMovementPlan(blockKindLookup, mutable.creature, movementPlan);
+			}
+			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+			machine.setMovementPlan(movementPlan);
+			
+			if (null != movementPlan)
+			{
+				actionsProduced = _produceNextActions(context, mutable, machine, movementPlan, shouldMakePlan);
+			}
+			else
+			{
+				actionsProduced = null;
+			}
 			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
@@ -152,8 +174,30 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-				boolean didMakePlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
-				actionsProduced = _produceNextActions(context, mutable, machine, didMakePlan);
+				
+				// Get the movement plan and see if we should advance it.
+				List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+				boolean shouldMakePlan = (null == movementPlan);
+				if (shouldMakePlan)
+				{
+					movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
+				}
+				else
+				{
+					movementPlan = _advanceMovementPlan(blockKindLookup, mutable.creature, movementPlan);
+				}
+				Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+				machine.setMovementPlan(movementPlan);
+				
+				if (null != movementPlan)
+				{
+					actionsProduced = _produceNextActions(context, mutable, machine, movementPlan, shouldMakePlan);
+				}
+				else
+				{
+					actionsProduced = null;
+				}
 				mutable.newExtendedData = machine.freezeToData();
 			}
 		}
@@ -264,19 +308,17 @@ public class CreatureLogic
 	}
 
 
-	private static boolean _makeMovementPlan(TickProcessingContext context
+	private static List<AbsoluteLocation> _makeMovementPlan(TickProcessingContext context
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)
 	{
-		boolean didMakePlan;
-		// Now, determine if we have a plan or need to make one.
-		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		List<AbsoluteLocation> movementPlan;
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.
-		if ((null == movementPlan)
+		if (true
 				&& (millisSinceLastAction >= MINIMUM_MILLIS_TO_DELIBERATE_ACTION)
 				&& ((millisSinceLastAction % MINIMUM_MILLIS_TO_DELIBERATE_ACTION) <= context.millisPerTick)
 		)
@@ -298,79 +340,54 @@ public class CreatureLogic
 				// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
 				// movements are "safe").
 				boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
-				if ((null == movementPlan) && (
-						isInDanger
+				if (isInDanger
 						|| (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION)
-				))
+				)
 				{
 					// We couldn't find a player so just make a random move.
 					movementPlan = _findPathToRandomSpot(context, blockKindLookup, mutable.creature);
 				}
 			}
-			
-			// We can now update our extended data.
-			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-			machine.setMovementPlan(movementPlan);
-			didMakePlan = (null != movementPlan);
 		}
 		else
 		{
-			didMakePlan = false;
+			movementPlan = null;
 		}
-		return didMakePlan;
+		return movementPlan;
 	}
 
 	private static List<IMutationEntity<IMutableCreatureEntity>> _produceNextActions(TickProcessingContext context
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
+			, List<AbsoluteLocation> existingPlan
 			, boolean tryToCentre
 	)
 	{
-		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
-		// Now, determine if we have a plan or need to make one.
-		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		Assert.assertTrue(!existingPlan.isEmpty());
+		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced = null;
 		
-		if (null != movementPlan)
+		Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
+		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
+		boolean isIdleMovement = !machine.isPlanDeliberate();
+		if (tryToCentre)
 		{
-			Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
-			float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
-			boolean isIdleMovement = !machine.isPlanDeliberate();
-			if (tryToCentre)
+			// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
+			AbsoluteLocation directionHint = existingPlan.get(0);
+			if ((existingPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
 			{
-				// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-				AbsoluteLocation directionHint = movementPlan.get(0);
-				if ((movementPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
-				{
-					// This means we are jumping so choose the next place where we want to go for direction hint.
-					directionHint = movementPlan.get(1);
-				}
-				actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
+				// This means we are jumping so choose the next place where we want to go for direction hint.
+				directionHint = existingPlan.get(1);
 			}
-			else
-			{
-				// Fall through.
-				actionsProduced = List.of();
-			}
+			actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
 			if (actionsProduced.isEmpty())
 			{
-				// We are already in the centre so just get started.
-				List<AbsoluteLocation> mutablePlan = new ArrayList<>(movementPlan);
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-				mutablePlan = _advanceMovementPlan(blockKindLookup, mutable.creature, mutablePlan);
-				if (null != mutablePlan)
-				{
-					actionsProduced = _planNextSteps(blockKindLookup, mutable.creature, mutablePlan, viscosity, isIdleMovement);
-				}
-				
-				// We can now update our extended data.
-				Assert.assertTrue((null == mutablePlan) || !mutablePlan.isEmpty());
-				machine.setMovementPlan(mutablePlan);
+				actionsProduced = null;
 			}
 		}
-		else
+		if (null == actionsProduced)
 		{
-			// No path, no actions.
-			actionsProduced = null;
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+			actionsProduced = _planNextSteps(blockKindLookup, mutable.creature, existingPlan, viscosity, isIdleMovement);
 		}
 		return actionsProduced;
 	}
