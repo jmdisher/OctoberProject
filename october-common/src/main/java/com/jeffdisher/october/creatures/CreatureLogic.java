@@ -155,7 +155,7 @@ public class CreatureLogic
 			
 			if (null != movementPlan)
 			{
-				actionsProduced = _produceNextActions(context, mutable, machine, movementPlan, shouldMakePlan);
+				actionsProduced = _produceNextActions(context, mutable, machine, movementPlan);
 			}
 			else
 			{
@@ -192,7 +192,7 @@ public class CreatureLogic
 				
 				if (null != movementPlan)
 				{
-					actionsProduced = _produceNextActions(context, mutable, machine, movementPlan, shouldMakePlan);
+					actionsProduced = _produceNextActions(context, mutable, machine, movementPlan);
 				}
 				else
 				{
@@ -360,7 +360,6 @@ public class CreatureLogic
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 			, List<AbsoluteLocation> existingPlan
-			, boolean tryToCentre
 	)
 	{
 		Assert.assertTrue(!existingPlan.isEmpty());
@@ -369,26 +368,24 @@ public class CreatureLogic
 		Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
 		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
 		boolean isIdleMovement = !machine.isPlanDeliberate();
-		if (tryToCentre)
+		
+		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
+		AbsoluteLocation directionHint = existingPlan.get(0);
+		if ((existingPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
 		{
-			// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
-			AbsoluteLocation directionHint = existingPlan.get(0);
-			if ((existingPlan.size() > 1) && (directionHint.z() > Math.floor(mutable.creature.location().z())))
-			{
-				// This means we are jumping so choose the next place where we want to go for direction hint.
-				directionHint = existingPlan.get(1);
-			}
-			actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
-			if (actionsProduced.isEmpty())
-			{
-				actionsProduced = null;
-			}
+			// This means we are jumping so choose the next place where we want to go for direction hint.
+			directionHint = existingPlan.get(1);
 		}
-		if (null == actionsProduced)
+		actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.creature, directionHint, viscosity, isIdleMovement);
+		// This list can be empty, but never null.
+		Assert.assertTrue(null != actionsProduced);
+		if (actionsProduced.isEmpty())
 		{
+			// If we are already in a reasonable location, proceed to move.
 			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 			actionsProduced = _planNextSteps(blockKindLookup, mutable.creature, existingPlan, viscosity, isIdleMovement);
 		}
+		
 		return actionsProduced;
 	}
 

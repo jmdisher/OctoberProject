@@ -346,7 +346,8 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 0, 1)
 			, new AbsoluteLocation(0, 1, 1)
 		);
-		CreatureEntity creature = new CreatureEntity(-1
+		int creatureId = -1;
+		CreatureEntity creature = new CreatureEntity(creatureId
 				, EntityType.COW
 				, startLocation
 				, velocity
@@ -356,21 +357,57 @@ public class TestCreatureProcessor
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
 		);
-		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = _createContext();
+		
+		// We will create a stone platform for the context so that the entity will fall into the expected block.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
+		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		
+		// We expect that there will be 2 moves to make to get into the right place to _begin_ moving into the new block.
+		for (int i = 0; i < 2; ++i)
+		{
+			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
+			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), Set.of())
+					, changesToRun
+			);
+			creature = group.updatedCreatures().get(creatureId);
+			Assert.assertNotNull(creature);
+		}
+		Assert.assertEquals(new EntityLocation(0.0f, 0.19f, 1.0f), creature.location());
+		
+		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 9 in total.
+		for (int i = 0; i < 9; ++i)
+		{
+			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
+			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+					, creaturesById
+					, context
+					, new EntityCollection(Set.of(), Set.of())
+					, changesToRun
+			);
+			creature = group.updatedCreatures().get(creatureId);
+			Assert.assertNotNull(creature);
+		}
+		Assert.assertEquals(new EntityLocation(0.0f, 1.09f, 1.0f), creature.location());
+		Assert.assertNull(creature.stepsToNextMove());
+		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(creature.extendedData()).movementPlan().size());
+		
+		// One final iteration should clear the plan since we have now arrived.
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(), Set.of())
 				, changesToRun
 		);
-		
-		CreatureEntity updated = group.updatedCreatures().get(creature.id());
-		Assert.assertNotEquals(startLocation, updated.location());
-		// Note that this is an idle movement so it is half the speed of a deliberate one (at 0.2 speed, this would be 1+5 steps but at 0.1, it is 1+10).
-		Assert.assertEquals(10, updated.stepsToNextMove().size());
-		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
+		creature = group.updatedCreatures().get(creatureId);
+		Assert.assertEquals(new EntityLocation(0.0f, 1.09f, 1.0f), creature.location());
+		Assert.assertNull(creature.stepsToNextMove());
+		Assert.assertNull(creature.extendedData());
 	}
 
 	@Test
