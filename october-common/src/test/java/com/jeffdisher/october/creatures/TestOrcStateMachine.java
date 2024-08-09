@@ -41,7 +41,7 @@ public class TestOrcStateMachine
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
 		
 		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
-		machine.selectDeliberateTarget(new EntityCollection(Set.of(player), Set.of(orc)), orc);
+		machine.selectDeliberateTarget(new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
 		// Set a movement plan so we store the extended data.
 		machine.setMovementPlan(List.of(orcLocation.getBlockLocation()));
 		
@@ -66,7 +66,7 @@ public class TestOrcStateMachine
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L)));
-		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
+		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
 		
@@ -99,7 +99,7 @@ public class TestOrcStateMachine
 		
 		// Start with the orc targeting the player.
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L)));
-		boolean didTakeAction = machine.doneSpecialActions(context, null, orc);
+		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		
 		// We should see the orc send the attack message
@@ -115,13 +115,13 @@ public class TestOrcStateMachine
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// A second attack on the following tick should fail since we are on cooldown.
-		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc));
+		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc.location(), orc.id()));
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// But will work if we advance tick number further.
 		long ticksToAdvance = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick;
 		context = _advanceTick(context, ticksToAdvance);
-		didTakeAction = machine.doneSpecialActions(context, null, orc);
+		didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;

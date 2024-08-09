@@ -29,7 +29,7 @@ public class MutableCreature implements IMutableCreatureEntity
 
 
 	// Some data elements are actually immutable (id, for example) so they are just left in the original, along with the original data.
-	public final CreatureEntity creature;
+	private final CreatureEntity _creature;
 
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
@@ -42,7 +42,7 @@ public class MutableCreature implements IMutableCreatureEntity
 
 	private MutableCreature(CreatureEntity creature)
 	{
-		this.creature = creature;
+		_creature = creature;
 		this.newLocation = creature.location();
 		this.newVelocity = creature.velocity();
 		this.newHealth = creature.health();
@@ -55,13 +55,13 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public int getId()
 	{
-		return this.creature.id();
+		return _creature.id();
 	}
 
 	@Override
 	public EntityType getType()
 	{
-		return this.creature.type();
+		return _creature.type();
 	}
 
 	@Override
@@ -100,9 +100,9 @@ public class MutableCreature implements IMutableCreatureEntity
 		// For now, just drop wheat item for all creatures.
 		// TODO:  Define this drop loot table in data.
 		Environment env = Environment.getShared();
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(this.creature.type()));
+		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(_creature.type()));
 		Items toDrop;
-		switch (this.creature.type())
+		switch (_creature.type())
 		{
 		case COW:
 			toDrop = new Items(env.items.getItemById("op.beef"), 1);
@@ -193,8 +193,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		if (this.newHealth > 0)
 		{
 			Assert.assertTrue(0.0f == this.newVelocity.x());
-			CreatureEntity immutable = new CreatureEntity(this.creature.id()
-					, this.creature.type()
+			CreatureEntity immutable = new CreatureEntity(_creature.id()
+					, _creature.type()
 					, this.newLocation
 					, this.newVelocity
 					, this.newHealth
@@ -204,8 +204,8 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newExtendedData
 			);
 			// See if these are identical.
-			newInstance = this.creature.equals(immutable)
-					? this.creature
+			newInstance = _creature.equals(immutable)
+					? _creature
 					: immutable
 			;
 		}

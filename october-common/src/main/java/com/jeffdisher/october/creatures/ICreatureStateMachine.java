@@ -34,10 +34,11 @@ public interface ICreatureStateMachine
 	 * creatures in the loaded world.
 	 * 
 	 * @param entityCollection The collection of entities in the world.
-	 * @param thisCreature The instance being asked.
+	 * @param creatureLocation The creature's location.
+	 * @param creatureId The creature's ID.
 	 * @return The location of the target entity or null if there is no target.
 	 */
-	EntityLocation selectDeliberateTarget(EntityCollection entityCollection, CreatureEntity creature);
+	EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
 
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending
@@ -46,10 +47,11 @@ public interface ICreatureStateMachine
 	 * 
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
-	 * @param creature This entity.
+	 * @param creatureLocation The creature's location.
+	 * @param creatureId The creature's ID.
 	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity creature);
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, int creatureId);
 
 	/**
 	 * @return The maximum pathing distance this creature should use when planning the path to a target.

@@ -62,7 +62,7 @@ public class MutableEntity implements IMutablePlayerEntity
 
 
 	// Some data elements are actually immutable (id, for example) so they are just left in the original, along with the original data.
-	public final Entity original;
+	private final Entity _original;
 	public final MutableInventory newInventory;
 
 	// The location is immutable but can be directly replaced.
@@ -79,7 +79,7 @@ public class MutableEntity implements IMutablePlayerEntity
 
 	private MutableEntity(Entity original)
 	{
-		this.original = original;
+		_original = original;
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
 		this.newVelocity = original.velocity();
@@ -96,7 +96,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public int getId()
 	{
-		return this.original.id();
+		return _original.id();
 	}
 
 	@Override
@@ -104,7 +104,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	{
 		// If this is a creative player, which ignore their inventory and always return the fake creative one.
 		IMutableInventory inv;
-		if (this.original.isCreativeMode())
+		if (_original.isCreativeMode())
 		{
 			inv = new CreativeInventory();
 		}
@@ -314,14 +314,14 @@ public class MutableEntity implements IMutablePlayerEntity
 			int newKey = this.newHotbar[i];
 			if (Entity.NO_SELECTION != newKey)
 			{
-				IMutableInventory inventoryToCheck = this.original.isCreativeMode()
+				IMutableInventory inventoryToCheck = _original.isCreativeMode()
 						? new CreativeInventory()
 						: this.newInventory;
 				Items stack = inventoryToCheck.getStackForKey(newKey);
 				NonStackableItem nonStack = inventoryToCheck.getNonStackableForKey(newKey);
 				Assert.assertTrue((null != stack) != (null != nonStack));
 			}
-			if (newKey != this.original.hotbarItems()[i])
+			if (newKey != _original.hotbarItems()[i])
 			{
 				didHotbarChange = true;
 			}
@@ -329,21 +329,21 @@ public class MutableEntity implements IMutablePlayerEntity
 		boolean didArmourChange = false;
 		for (int i = 0; i < this.newArmour.length; ++i)
 		{
-			if (this.newArmour[i] != this.original.armourSlots()[i])
+			if (this.newArmour[i] != _original.armourSlots()[i])
 			{
 				didArmourChange = true;
 				break;
 			}
 		}
-		Entity newInstance = new Entity(this.original.id()
-				, this.original.isCreativeMode()
+		Entity newInstance = new Entity(_original.id()
+				, _original.isCreativeMode()
 				, this.newLocation
 				, this.newVelocity
-				, this.original.blocksPerTickSpeed()
+				, _original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
-				, didHotbarChange ? this.newHotbar : this.original.hotbarItems()
+				, didHotbarChange ? this.newHotbar : _original.hotbarItems()
 				, this.newHotbarIndex
-				, didArmourChange ? this.newArmour : this.original.armourSlots()
+				, didArmourChange ? this.newArmour : _original.armourSlots()
 				, this.newLocalCraftOperation
 				, this.newHealth
 				, this.newFood
@@ -351,8 +351,8 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newEnergyDeficit
 		);
 		// See if these are identical.
-		return this.original.equals(newInstance)
-				? this.original
+		return _original.equals(newInstance)
+				? _original
 				: newInstance
 		;
 	}

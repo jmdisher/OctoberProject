@@ -158,11 +158,10 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, CreatureEntity thisCreature)
+	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		// We can only call this if we don't already have a movement plan.
 		Assert.assertTrue(null == _movementPlan);
-		EntityLocation start = thisCreature.location();
 		
 		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
 		// We will just use arrays to pass this "by reference".
@@ -172,16 +171,16 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (_inLoveMode)
 		{
 			// Find another cow in breeding mode.
-			entityCollection.walkCreaturesInRange(start, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
+			entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
 				// Ignore ourselves and make sure that they are the right type.
-				if ((thisCreature != check) && (EntityType.COW == check.type()))
+				if ((creatureId != check.id()) && (EntityType.COW == check.type()))
 				{
 					// See if they are also in love mode.
 					_ExtendedData other = (_ExtendedData) check.extendedData();
 					if ((null != other) && other.inLoveMode)
 					{
 						EntityLocation end = check.location();
-						float distance = SpatialHelpers.distanceBetween(start, end);
+						float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 						if (distance < distanceToTarget[0])
 						{
 							targetId[0] = check.id();
@@ -197,14 +196,14 @@ public class CowStateMachine implements ICreatureStateMachine
 			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
 			Environment environment = Environment.getShared();
 			Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
-			entityCollection.walkPlayersInRange(start, COW_VIEW_DISTANCE, (Entity player) -> {
+			entityCollection.walkPlayersInRange(creatureLocation, COW_VIEW_DISTANCE, (Entity player) -> {
 				// See if this player has wheat in their hand.
 				int itemKey = player.hotbarItems()[player.hotbarIndex()];
 				Items itemsInHand = player.inventory().getStackForKey(itemKey);
 				if ((null != itemsInHand) && (wheat == itemsInHand.type()))
 				{
 					EntityLocation end = player.location();
-					float distance = SpatialHelpers.distanceBetween(start, end);
+					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 					if (distance < distanceToTarget[0])
 					{
 						targetId[0] = player.id();
@@ -265,7 +264,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, int creatureId)
 	{
 		// See if we are pregnant or searching for our mate.
 		boolean didTakeAction = false;
@@ -284,14 +283,13 @@ public class CowStateMachine implements ICreatureStateMachine
 			if (null != targetEntity)
 			{
 				EntityLocation targetLocation = targetEntity.location();
-				EntityLocation ourLocation = thisEntity.location();
 				
 				// First, see if we could impregnate them.
-				float distance = SpatialHelpers.distanceBetween(ourLocation, targetLocation);
-				if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < thisEntity.id()))
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+				if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < creatureId))
 				{
 					// Send the message to impregnate them.
-					EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(ourLocation);
+					EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
 					context.newChangeSink.creature(_targetEntityId, sperm);
 					// We can now exit love mode.
 					_inLoveMode = false;

@@ -22,12 +22,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature, location.getBlockLocation(), 0.0f, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), location.getBlockLocation(), 0.0f, false);
 		Assert.assertEquals(0, list.size());
 		
 		location = new EntityLocation(-1.0f, -1.0f, 1.0f);
 		creature = _createCow(location);
-		list = CreatureMovementHelpers.prepareForMove(creature, location.getBlockLocation(), 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), location.getBlockLocation(), 0.0f, false);
 		Assert.assertEquals(0, list.size());
 	}
 
@@ -36,12 +36,12 @@ public class TestCreatureMovementHelpers
 	{
 		EntityLocation location = new EntityLocation(1.9f, 1.9f, 1.0f);
 		CreatureEntity creature = _createCow(location);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature, location.getBlockLocation(), 0.0f, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), location.getBlockLocation(), 0.0f, false);
 		Assert.assertEquals(8, list.size());
 		
 		location = new EntityLocation(-1.1f, -1.1f, 1.0f);
 		creature = _createCow(location);
-		list = CreatureMovementHelpers.prepareForMove(creature, location.getBlockLocation(), 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), location.getBlockLocation(), 0.0f, false);
 		Assert.assertEquals(8, list.size());
 	}
 
@@ -51,7 +51,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 1);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, false, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, false, false);
 		Assert.assertEquals(6, list.size());
 	}
 
@@ -61,7 +61,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, false, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, false, false);
 		// Deliberate movement is 0.2/move.
 		Assert.assertEquals(5, list.size());
 	}
@@ -72,7 +72,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, true, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, true, false);
 		// Idle movement is 0.1/move.
 		Assert.assertEquals(9, list.size());
 	}
@@ -83,7 +83,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, true, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, true, false);
 		Assert.assertEquals(1, list.size());
 		Assert.assertTrue(list.get(0) instanceof EntityChangeJump);
 	}
@@ -95,7 +95,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.5f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, true, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, true, false);
 		Assert.assertEquals(0, list.size());
 	}
 
@@ -105,7 +105,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 2.2f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 2, 2);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, false, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, false, false);
 		Assert.assertEquals(6, list.size());
 	}
 
@@ -115,7 +115,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.0f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 0);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.0f, true, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, true, false);
 		Assert.assertEquals(0, list.size());
 	}
 
@@ -125,7 +125,7 @@ public class TestCreatureMovementHelpers
 		EntityLocation location = new EntityLocation(1.0f, 1.0f, 1.1f);
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 2);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature, target, 0.5f, true, true);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.5f, true, true);
 		Assert.assertEquals(1, list.size());
 		Assert.assertTrue(list.get(0) instanceof EntityChangeSwim);
 	}
@@ -140,37 +140,37 @@ public class TestCreatureMovementHelpers
 		// Now, check that we can handle hints in all 6 directions for centring.
 		// NORTH
 		AbsoluteLocation directionHint = new AbsoluteLocation(1, 2, 1);
-		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 3 WEST
 		Assert.assertEquals(3, list.size());
 		
 		// EAST
 		directionHint = new AbsoluteLocation(2, 1, 1);
-		list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 3 SOUTH
 		Assert.assertEquals(3, list.size());
 		
 		// SOUTH
 		directionHint = new AbsoluteLocation(1, 0, 1);
-		list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 3 WEST, 4 SOUTH
 		Assert.assertEquals(7, list.size());
 		
 		// WEST
 		directionHint = new AbsoluteLocation(0, 1, 1);
-		list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 4 WEST, 3 SOUTH
 		Assert.assertEquals(7, list.size());
 		
 		// UP
 		directionHint = new AbsoluteLocation(1, 1, 2);
-		list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 3 WEST, 3 SOUTH
 		Assert.assertEquals(6, list.size());
 		
 		// DOWN
 		directionHint = new AbsoluteLocation(1, 1, 0);
-		list = CreatureMovementHelpers.prepareForMove(creature, directionHint, 0.0f, false);
+		list = CreatureMovementHelpers.prepareForMove(creature.location(), creature.type(), directionHint, 0.0f, false);
 		// 3 WEST, 3 SOUTH
 		Assert.assertEquals(6, list.size());
 	}

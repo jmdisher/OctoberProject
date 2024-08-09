@@ -61,7 +61,7 @@ public class TestCreatureLogic
 						: null
 				;
 			}, i);
-			List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity);
+			List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 			AbsoluteLocation target = path.get(path.size() - 1);
 			Assert.assertEquals(1, target.z());
 		}
@@ -74,7 +74,7 @@ public class TestCreatureLogic
 						: null
 				;
 			}, 24);
-			CreatureLogic.test_findPathToRandomSpot(context, entity);
+			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		}
 		catch (AssertionError e)
 		{
@@ -102,7 +102,7 @@ public class TestCreatureLogic
 						: null
 				;
 			}, i);
-			List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity);
+			List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 			AbsoluteLocation target = path.get(path.size() - 1);
 			Assert.assertEquals(2, target.z());
 		}
@@ -115,7 +115,7 @@ public class TestCreatureLogic
 						: null
 				;
 			}, 13);
-			CreatureLogic.test_findPathToRandomSpot(context, entity);
+			CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		}
 		catch (AssertionError e)
 		{
@@ -176,7 +176,7 @@ public class TestCreatureLogic
 					: null
 			;
 		}, 0);
-		List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity);
+		List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		Assert.assertNull(path);
 	}
 

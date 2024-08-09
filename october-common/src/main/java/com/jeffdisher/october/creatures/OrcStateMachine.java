@@ -117,20 +117,19 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, CreatureEntity thisCreature)
+	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		// We can only call this if we don't already have a movement plan.
 		Assert.assertTrue(null == _movementPlan);
-		EntityLocation start = thisCreature.location();
 		
 		// Orcs only have a single target:  Any player in range.
 		// We will just use arrays to pass this "by reference".
 		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
 		EntityLocation[] target = new EntityLocation[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(start, ORC_VIEW_DISTANCE, (Entity player) -> {
+		entityCollection.walkPlayersInRange(creatureLocation, ORC_VIEW_DISTANCE, (Entity player) -> {
 			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceBetween(start, end);
+			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 			if (distance < distanceToTarget[0])
 			{
 				targetId[0] = player.id();
@@ -166,7 +165,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, CreatureEntity thisEntity)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, int creatureId)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
@@ -180,10 +179,9 @@ public class OrcStateMachine implements ICreatureStateMachine
 			if (null != targetEntity)
 			{
 				EntityLocation targetLocation = targetEntity.location();
-				EntityLocation ourLocation = thisEntity.location();
 				
 				// Should we attack them.
-				float distance = SpatialHelpers.distanceBetween(ourLocation, targetLocation);
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
 				if (distance <= ORC_ATTACK_DISTANCE)
 				{
 					// We can attack them so choose the target.
