@@ -52,8 +52,8 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		
-		// We should see 25 possible locations, all at z-level 1 as their final destination.
-		for (int i = 0; i < 25; ++i)
+		// We should see 24 possible locations, all at z-level 1 as their final destination, minus where we started.
+		for (int i = 0; i < 24; ++i)
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
 				return location.getCuboidAddress().equals(cuboidAddress)
@@ -65,7 +65,7 @@ public class TestCreatureLogic
 			AbsoluteLocation target = path.get(path.size() - 1);
 			Assert.assertEquals(1, target.z());
 		}
-		// Verify that there are only 25.
+		// Verify that there are only 24.
 		try
 		{
 			TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
@@ -73,7 +73,7 @@ public class TestCreatureLogic
 						? new BlockProxy(location.getBlockAddress(), input)
 						: null
 				;
-			}, 25);
+			}, 24);
 			CreatureLogic.test_findPathToRandomSpot(context, entity);
 		}
 		catch (AssertionError e)

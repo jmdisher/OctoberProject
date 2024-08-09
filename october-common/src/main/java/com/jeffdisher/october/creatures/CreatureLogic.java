@@ -398,7 +398,7 @@ public class CreatureLogic
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, source, limitSteps);
 		
 		// Strip out any of the ending positions which we don't want.
-		List<AbsoluteLocation> goodTargets = _extractAcceptablePathTargets(blockPermitsUser, possiblePaths);
+		List<AbsoluteLocation> goodTargets = _extractAcceptablePathTargets(blockPermitsUser, possiblePaths, source.getBlockLocation());
 		
 		// Just pick one of these destinations at random, or default to standing still.
 		int size = goodTargets.size();
@@ -416,6 +416,8 @@ public class CreatureLogic
 				plannedPath.add(0, target);
 				target = possiblePaths.get(target);
 			}
+			// We should never see a path ending where we started.
+			Assert.assertTrue(plannedPath.size() > 0);
 		}
 		else
 		{
@@ -533,6 +535,7 @@ public class CreatureLogic
 
 	private static List<AbsoluteLocation> _extractAcceptablePathTargets(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsUser
 			, Map<AbsoluteLocation, AbsoluteLocation> possiblePaths
+			, AbsoluteLocation currentLocation
 	)
 	{
 		// We will only choose paths which don't end in air above air (jumping into the air for no reason) or in water (since none of our creatures can breathe under water).
@@ -545,6 +548,11 @@ public class CreatureLogic
 			if (PathFinder.BlockKind.SWIMMABLE == endKind)
 			{
 				// This path ends in water so don't include it.
+				shouldInclude = false;
+			}
+			else if (currentLocation.equals(end))
+			{
+				// We don't want to end where we started.
 				shouldInclude = false;
 			}
 			else
