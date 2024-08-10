@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
@@ -18,7 +17,6 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -240,7 +238,6 @@ public class CodecHelpers
 		
 		// Ephemeral data is just given default values.
 		long lastActionGameTick = 0L;
-		List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove = null;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -249,7 +246,6 @@ public class CodecHelpers
 				, health
 				, breath
 				, lastActionGameTick
-				, stepsToNextMove
 				, extendedData
 		);
 	}

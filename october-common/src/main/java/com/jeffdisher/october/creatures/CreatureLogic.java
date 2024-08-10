@@ -128,8 +128,6 @@ public class CreatureLogic
 			, MutableCreature mutable
 	)
 	{
-		// Only called if we don't currently have a published set of next steps.
-		Assert.assertTrue(null == mutable.newStepsToNextMove);
 		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
 		
 		// The logic is per-creature type.
@@ -263,9 +261,6 @@ public class CreatureLogic
 			, MutableCreature creature
 	)
 	{
-		// Only called if we don't currently have a published set of next steps.
-		Assert.assertTrue(null == creature.newStepsToNextMove);
-		
 		boolean isDone;
 		switch (creature.getType())
 		{

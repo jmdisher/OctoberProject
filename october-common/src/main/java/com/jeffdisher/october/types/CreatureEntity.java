@@ -1,8 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
-
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -25,9 +22,6 @@ public record CreatureEntity(int id
 		// These data elements are considered ephemeral and will NOT be persisted.
 		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
 		, long lastActionGameTick
-		// The next steps required to get to the next block.  This is normally null but may have something in it if the
-		// entity is walking slowly and requires multiple ticks to reach the next block.
-		, List<IMutationEntity<IMutableCreatureEntity>> stepsToNextMove
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -58,7 +52,6 @@ public record CreatureEntity(int id
 				, health
 				, EntityConstants.MAX_BREATH
 				, 0L
-				, null
 				, null
 		);
 	}

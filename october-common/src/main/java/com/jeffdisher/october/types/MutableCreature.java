@@ -1,12 +1,10 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
@@ -37,7 +35,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public byte newHealth;
 	public int newBreath;
 	public long newLastActionGameTick;
-	public List<IMutationEntity<IMutableCreatureEntity>> newStepsToNextMove;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -48,7 +45,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
 		this.newLastActionGameTick = creature.lastActionGameTick();
-		this.newStepsToNextMove = creature.stepsToNextMove();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -132,7 +128,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		
 		// Whenever a creature's health changes, we will wipe its AI state.
 		// TODO:  In the future, we should make this about taking damage from a specific source.
-		this.newStepsToNextMove = null;
 		this.newExtendedData = null;
 	}
 
@@ -200,7 +195,6 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newHealth
 					, this.newBreath
 					, this.newLastActionGameTick
-					, this.newStepsToNextMove
 					, this.newExtendedData
 			);
 			// See if these are identical.
