@@ -392,7 +392,7 @@ public class TestCreatureProcessor
 			creature = group.updatedCreatures().get(creatureId);
 			Assert.assertNotNull(creature);
 		}
-		Assert.assertEquals(new EntityLocation(0.0f, 1.09f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.01f, 1.0f), creature.location());
 		Assert.assertNull(creature.stepsToNextMove());
 		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(creature.extendedData()).movementPlan().size());
 		
@@ -405,7 +405,7 @@ public class TestCreatureProcessor
 				, changesToRun
 		);
 		creature = group.updatedCreatures().get(creatureId);
-		Assert.assertEquals(new EntityLocation(0.0f, 1.09f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.01f, 1.0f), creature.location());
 		Assert.assertNull(creature.stepsToNextMove());
 		Assert.assertNull(creature.extendedData());
 	}
@@ -711,8 +711,8 @@ public class TestCreatureProcessor
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.3f, updated.location().x(), 0.01f);
-		Assert.assertEquals(9.3f, updated.location().y(), 0.01f);
+		Assert.assertEquals(7.59f, updated.location().x(), 0.01f);
+		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);

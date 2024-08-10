@@ -73,8 +73,8 @@ public class TestCreatureMovementHelpers
 		CreatureEntity creature = _createCow(location);
 		AbsoluteLocation target = new AbsoluteLocation(0, 1, 1);
 		List<IMutationEntity<IMutableCreatureEntity>> list = CreatureMovementHelpers.moveToNextLocation(creature.location(), creature.type(), target, 0.0f, true, false);
-		// Idle movement is 0.1/move.
-		Assert.assertEquals(9, list.size());
+		// Idle movement is 0.1/move and we are moving 0.8 (width) plus a fudge factor (which is rounded down, here).
+		Assert.assertEquals(8, list.size());
 	}
 
 	@Test

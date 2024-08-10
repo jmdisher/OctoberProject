@@ -192,33 +192,51 @@ public class CreatureMovementHelpers
 		else
 		{
 			// We might need to walk, coast in the air (which is the same as walking), or just fall.
-			EntityLocation stepLocation = new EntityLocation(targetBlock.x(), targetBlock.y(), targetBlock.z());
+			// We will just move over by the axis which differs and otherwise stay where we are in the other axis.
+			float stepX = creatureLocation.x();
+			float stepY = creatureLocation.y();
+			AbsoluteLocation creatureBase = creatureLocation.getBlockLocation();
+			float width = EntityConstants.getVolume(creatureType).width();
+			if (targetBlock.x() > creatureBase.x())
+			{
+				stepX = targetBlock.x() + FLOAT_THRESHOLD;
+			}
+			else if (targetBlock.x() < creatureBase.x())
+			{
+				stepX = targetBlock.x() + 1.0f - FLOAT_THRESHOLD - width;
+			}
+			if (targetBlock.y() > creatureBase.y())
+			{
+				stepY = targetBlock.y() + FLOAT_THRESHOLD;
+			}
+			else if (targetBlock.y() < creatureBase.y())
+			{
+				stepY = targetBlock.y() + 1.0f - FLOAT_THRESHOLD - width;
+			}
+			float stepZ = targetBlock.z();
+			EntityLocation stepLocation = new EntityLocation(stepX, stepY, stepZ);
 			float distanceX = Math.abs(stepLocation.x() - creatureLocation.x());
 			float distanceY = Math.abs(stepLocation.y() - creatureLocation.y());
-			// We don't want to walk diagonally.
+			// We don't want to walk diagonally so just see which is the largest distance.
 			float maxHorizontal = Math.max(distanceX, distanceY);
-			float baseSpeed = EntityConstants.getBlocksPerSecondSpeed(creatureType);
-			// We will apply the viscosity directly to speed.
-			float effectiveSpeed = (1.0f - viscosityFraction) * baseSpeed;
-			float speedMultipler = isIdleMovement
-					? 0.5f
-					: 1.0f
-			;
 			if (maxHorizontal > FLOAT_THRESHOLD)
 			{
+				float baseSpeed = EntityConstants.getBlocksPerSecondSpeed(creatureType);
+				// We will apply the viscosity directly to speed.
+				float effectiveSpeed = (1.0f - viscosityFraction) * baseSpeed;
+				float speedMultipler = isIdleMovement
+						? 0.5f
+						: 1.0f
+				;
 				// We need to move horizontally so figure out which way.
 				List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
-				// We will move to the centre of the block to avoid edge rounding errors (also looks a bit better).
-				float width = EntityConstants.getVolume(creatureType).width();
 				if (maxHorizontal == distanceX)
 				{
-					float targetX = ((float) stepLocation.x()) + (1.0f - width) / 2.0f;
-					_moveByX(list, creatureLocation, effectiveSpeed, speedMultipler, targetX);
+					_moveByX(list, creatureLocation, effectiveSpeed, speedMultipler, stepLocation.x());
 				}
 				else
 				{
-					float targetY = ((float) stepLocation.y()) + (1.0f - width) / 2.0f;
-					_moveByY(list, creatureLocation, effectiveSpeed, speedMultipler, targetY);
+					_moveByY(list, creatureLocation, effectiveSpeed, speedMultipler, stepLocation.y());
 				}
 				changes = list;
 			}
