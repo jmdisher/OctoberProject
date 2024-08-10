@@ -285,7 +285,7 @@ public class TestCreatureProcessor
 			creature = group.updatedCreatures().get(creatureId);
 			Assert.assertNotNull(creature);
 		}
-		Assert.assertEquals(new EntityLocation(0.0f, 0.19f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 1.0f), creature.location());
 		
 		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 9 in total.
 		for (int i = 0; i < 9; ++i)
@@ -301,7 +301,7 @@ public class TestCreatureProcessor
 			Assert.assertNotNull(creature);
 		}
 		// We should be in the final location with a cleared movement plan by this point.
-		Assert.assertEquals(new EntityLocation(0.0f, 1.01f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 1.0f), creature.location());
 		Assert.assertNull(creature.extendedData());
 	}
 
@@ -663,8 +663,8 @@ public class TestCreatureProcessor
 			Assert.assertNotNull(waterCreature.extendedData());
 			Assert.assertNotNull(airCreature.extendedData());
 		}
-		Assert.assertEquals(3.46f, waterCreature.location().x(), 0.01f);
-		Assert.assertEquals(4.60f, airCreature.location().x(), 0.01f);
+		Assert.assertEquals(3.5f, waterCreature.location().x(), 0.01f);
+		Assert.assertEquals(5.0f, airCreature.location().x(), 0.01f);
 	}
 
 	@Test

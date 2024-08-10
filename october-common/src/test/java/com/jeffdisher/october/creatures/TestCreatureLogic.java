@@ -143,12 +143,13 @@ public class TestCreatureLogic
 		}, 12);
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
-		List<IMutationEntity<IMutableCreatureEntity>> actions = CreatureLogic.planNextActions(context
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, new EntityCollection(Set.of(), Set.of(entity))
 				, CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION
 				, mutable
+				, 100L
 		);
-		Assert.assertTrue(actions.size() > 0);
+		Assert.assertNotNull(action);
 		OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
 		List<AbsoluteLocation> plan = machine.getMovementPlan();
 		Assert.assertEquals(2, plan.get(plan.size() - 1).z());

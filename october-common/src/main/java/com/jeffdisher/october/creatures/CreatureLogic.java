@@ -119,16 +119,17 @@ public class CreatureLogic
 	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
 	 * @param mutable The mutable creature object currently being evaluated.
-	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
-	 * timer).
+	 * @param timeLimitMillis The number of milliseconds left in the tick.
+	 * @return The next action to take (null if there is nothing to do).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> planNextActions(TickProcessingContext context
+	public static IMutationEntity<IMutableCreatureEntity> planNextAction(TickProcessingContext context
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
 			, MutableCreature mutable
+			, long timeLimitMillis
 	)
 	{
-		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced;
+		IMutationEntity<IMutableCreatureEntity> actionProduced;
 		
 		// The logic is per-creature type.
 		switch (mutable.getType())
@@ -153,11 +154,11 @@ public class CreatureLogic
 			
 			if (null != movementPlan)
 			{
-				actionsProduced = _produceNextActions(context, mutable, machine, movementPlan);
+				actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
 			}
 			else
 			{
-				actionsProduced = null;
+				actionProduced = null;
 			}
 			mutable.newExtendedData = machine.freezeToData();
 		}
@@ -166,7 +167,7 @@ public class CreatureLogic
 			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
 			if (Difficulty.PEACEFUL == context.config.difficulty)
 			{
-				actionsProduced = null;
+				actionProduced = null;
 				mutable.newHealth = (byte)0;
 			}
 			else
@@ -190,11 +191,11 @@ public class CreatureLogic
 				
 				if (null != movementPlan)
 				{
-					actionsProduced = _produceNextActions(context, mutable, machine, movementPlan);
+					actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
 				}
 				else
 				{
-					actionsProduced = null;
+					actionProduced = null;
 				}
 				mutable.newExtendedData = machine.freezeToData();
 			}
@@ -205,7 +206,7 @@ public class CreatureLogic
 		default:
 			throw Assert.unreachable();
 		}
-		return actionsProduced;
+		return actionProduced;
 	}
 
 	/**
@@ -366,14 +367,14 @@ public class CreatureLogic
 		return movementPlan;
 	}
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _produceNextActions(TickProcessingContext context
+	private static IMutationEntity<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 			, List<AbsoluteLocation> existingPlan
+			, long timeLimitMillis
 	)
 	{
 		Assert.assertTrue(!existingPlan.isEmpty());
-		List<IMutationEntity<IMutableCreatureEntity>> actionsProduced = null;
 		
 		Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
 		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
@@ -386,17 +387,15 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		actionsProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getType(), directionHint, viscosity, isIdleMovement);
-		// This list can be empty, but never null.
-		Assert.assertTrue(null != actionsProduced);
-		if (actionsProduced.isEmpty())
+		IMutationEntity<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
 			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-			actionsProduced = _planNextSteps(blockKindLookup, mutable.getLocation(), mutable.getType(), existingPlan, viscosity, isIdleMovement);
+			actionProduced = _planNextStep(blockKindLookup, mutable.getLocation(), mutable.getType(), existingPlan, timeLimitMillis, viscosity, isIdleMovement);
 		}
 		
-		return actionsProduced;
+		return actionProduced;
 	}
 
 	// NOTE:  This will return an empty path if it made a decision but the decision has no steps.
@@ -527,10 +526,11 @@ public class CreatureLogic
 		return updatedPlan;
 	}
 
-	private static List<IMutationEntity<IMutableCreatureEntity>> _planNextSteps(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	private static IMutationEntity<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, EntityLocation entityLocation
 			, EntityType type
 			, List<AbsoluteLocation> existingPlan
+			, long timeLimitMillis
 			, float viscosity
 			, boolean isIdleMovement
 	)
@@ -542,7 +542,7 @@ public class CreatureLogic
 		Assert.assertTrue(!currentLocation.equals(thisStep));
 		
 		boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(currentLocation));
-		return CreatureMovementHelpers.moveToNextLocation(entityLocation, type, thisStep, viscosity, isIdleMovement, isSwimmable);
+		return CreatureMovementHelpers.moveToNextLocation(entityLocation, type, thisStep, timeLimitMillis, viscosity, isIdleMovement, isSwimmable);
 	}
 
 	private static Function<AbsoluteLocation, PathFinder.BlockKind> _createLookupHelper(TickProcessingContext context)

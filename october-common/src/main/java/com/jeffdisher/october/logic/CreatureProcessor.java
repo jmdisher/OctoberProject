@@ -102,11 +102,9 @@ public class CreatureProcessor
 						while (canSchedule)
 						{
 							// Note that this may still return a null list of next steps if there is nothing to do.
-							// TODO:  Replace this list with individual elements once this logic is verified and we can re-write the callee.
-							List<IMutationEntity<IMutableCreatureEntity>> list = CreatureLogic.planNextActions(context, entityCollection, millisSinceLastAction, mutable);
-							if ((null != list) && (list.size() > 0))
+							IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, millisSinceLastAction, mutable, millisAtEndOfTick);
+							if (null != change)
 							{
-								IMutationEntity<IMutableCreatureEntity> change = list.get(0);
 								long timeCostMillis = change.getTimeCostMillis();
 								// This must be able to fit into a single tick.
 								Assert.assertTrue(timeCostMillis <= context.millisPerTick);

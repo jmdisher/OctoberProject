@@ -1,8 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
@@ -32,13 +29,15 @@ public class CreatureMovementHelpers
 	 * @param creatureLocation The creature's location.
 	 * @param creatureType The type of creature.
 	 * @param directionHint The block we need to eventually enter.
+	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
-	 * @return The list of moves to make (empty if already in a good position).
+	 * @return The next move to make to centre in the block toward directionHint (null if there is no useful action).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> prepareForMove(EntityLocation creatureLocation
+	public static EntityChangeMove<IMutableCreatureEntity> prepareForMove(EntityLocation creatureLocation
 			, EntityType creatureType
 			, AbsoluteLocation directionHint
+			, long timeLimitMillis
 			, float viscosityFraction
 			, boolean isIdleMovement
 	)
@@ -133,7 +132,6 @@ public class CreatureMovementHelpers
 		}
 		
 		// Now, move.
-		List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 		float speed = EntityConstants.getBlocksPerSecondSpeed(creatureType);
 		// We will apply the viscosity directly to speed.
 		float effectiveSpeed = (1.0f - viscosityFraction) * speed;
@@ -141,9 +139,12 @@ public class CreatureMovementHelpers
 				? 0.5f
 				: 1.0f
 		;
-		_moveByX(list, creatureLocation, effectiveSpeed, speedMultipler, targetX);
-		_moveByY(list, creatureLocation, effectiveSpeed, speedMultipler, targetY);
-		return list;
+		EntityChangeMove<IMutableCreatureEntity> move = _moveByX(creatureLocation, timeLimitMillis, effectiveSpeed, speedMultipler, targetX);
+		if (null == move)
+		{
+			move = _moveByY(creatureLocation, timeLimitMillis, effectiveSpeed, speedMultipler, targetY);
+		}
+		return move;
 	}
 
 	/**
@@ -152,14 +153,17 @@ public class CreatureMovementHelpers
 	 * @param creatureLocation The creature's location.
 	 * @param creatureType The type of creature.
 	 * @param targetBlock The target location.
+	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @param viscosityFraction The viscosity of the current block ([0.0 .. 1.0]) where 1.0 is solid.
 	 * @param isIdleMovement True if this movement is just idle and not one with a specific goal.
 	 * @param isBlockSwimmable True if the creature is in a block where they can swim.
-	 * @return The list of changes, potentially empty but never null.
+	 * @return The next move toward targetBlock (null if there is no useful action at this time - usually just pass
+	 * time).
 	 */
-	public static List<IMutationEntity<IMutableCreatureEntity>> moveToNextLocation(EntityLocation creatureLocation
+	public static IMutationEntity<IMutableCreatureEntity> moveToNextLocation(EntityLocation creatureLocation
 			, EntityType creatureType
 			, AbsoluteLocation targetBlock
+			, long timeLimitMillis
 			, float viscosityFraction
 			, boolean isIdleMovement
 			, boolean isBlockSwimmable
@@ -167,26 +171,24 @@ public class CreatureMovementHelpers
 	{
 		// We might need to jump, walk, or do nothing.
 		// If the target is above us and we are on the ground, 
-		List<IMutationEntity<IMutableCreatureEntity>> changes;
+		IMutationEntity<IMutableCreatureEntity> change;
 		if (targetBlock.z() > creatureLocation.z())
 		{
 			// We need to go up so see if we should jump, swim, or hope our momentum will get us there.
 			if (SpatialHelpers.isBlockAligned(creatureLocation.z()))
 			{
 				// Jump.
-				EntityChangeJump<IMutableCreatureEntity> jump = new EntityChangeJump<>();
-				changes = List.of(jump);
+				change = new EntityChangeJump<>();
 			}
 			else if (isBlockSwimmable)
 			{
 				// Swim.
-				EntityChangeSwim<IMutableCreatureEntity> swim = new EntityChangeSwim<>();
-				changes = List.of(swim);
+				change = new EntityChangeSwim<>();
 			}
 			else
 			{
 				// We will have to rely on our momentum to carry us there (or we are just failing to reach it).
-				changes = List.of();
+				change = null;
 			}
 		}
 		else
@@ -229,78 +231,78 @@ public class CreatureMovementHelpers
 						: 1.0f
 				;
 				// We need to move horizontally so figure out which way.
-				List<IMutationEntity<IMutableCreatureEntity>> list = new ArrayList<>();
 				if (maxHorizontal == distanceX)
 				{
-					_moveByX(list, creatureLocation, effectiveSpeed, speedMultipler, stepLocation.x());
+					change = _moveByX(creatureLocation, timeLimitMillis, effectiveSpeed, speedMultipler, stepLocation.x());
 				}
 				else
 				{
-					_moveByY(list, creatureLocation, effectiveSpeed, speedMultipler, stepLocation.y());
+					change = _moveByY(creatureLocation, timeLimitMillis, effectiveSpeed, speedMultipler, stepLocation.y());
 				}
-				changes = list;
 			}
 			else
 			{
 				// We don't need horizontal movement so just do nothing.
-				changes = List.of();
+				change = null;
 			}
 		}
-		return changes;
+		return change;
 	}
 
 
-	private static void _moveByX(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float baseSpeed, float speedMultipler, float targetX)
+	private static EntityChangeMove<IMutableCreatureEntity> _moveByX(EntityLocation location, long timeLimitMillis, float baseSpeed, float speedMultipler, float targetX)
 	{
 		float moveX = targetX - location.x();
 		float sign = Math.signum(moveX);
 		float absoluteMove = Math.abs(moveX);
 		float speed = baseSpeed * speedMultipler;
 		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
-		while (absoluteMove > FLOAT_THRESHOLD)
+		EntityChangeMove<IMutableCreatureEntity> move = null;
+		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
 			float secondsToMove = (oneAbs / speed);
 			// Round up to make sure that the mutation actually can fit in the time.
-			long millisToMove = (long) Math.ceil(secondsToMove * 1000.0f);
+			long millisToMove = Math.min(timeLimitMillis, (long) Math.ceil(secondsToMove * 1000.0f));
 			if (millisToMove > 0L)
 			{
 				EntityChangeMove.Direction direction = (oneMove > 0.0f)
 						? EntityChangeMove.Direction.EAST
 						: EntityChangeMove.Direction.WEST
 				;
-				EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(millisToMove, speedMultipler, direction);
-				out_list.add(move);
+				move = new EntityChangeMove<>(millisToMove, speedMultipler, direction);
 			}
 			absoluteMove -= oneAbs;
 		}
+		return move;
 	}
 
-	private static void _moveByY(List<IMutationEntity<IMutableCreatureEntity>> out_list, EntityLocation location, float baseSpeed, float speedMultipler, float targetY)
+	private static EntityChangeMove<IMutableCreatureEntity> _moveByY(EntityLocation location, long timeLimitMillis, float baseSpeed, float speedMultipler, float targetY)
 	{
 		float moveY = targetY - location.y();
 		float sign = Math.signum(moveY);
 		float absoluteMove = Math.abs(moveY);
 		float speed = baseSpeed * speedMultipler;
 		float maxDistanceInOneMutation = EntityChangeMove.MAX_PER_STEP_SPEED_MULTIPLIER * speed;
-		while (absoluteMove > FLOAT_THRESHOLD)
+		EntityChangeMove<IMutableCreatureEntity> move = null;
+		if (absoluteMove > FLOAT_THRESHOLD)
 		{
 			float oneAbs = Math.min(absoluteMove, maxDistanceInOneMutation);
 			float oneMove = sign * oneAbs;
 			float secondsToMove = (oneAbs / speed);
 			// Round up to make sure that the mutation actually can fit in the time.
-			long millisToMove = (long) Math.ceil(secondsToMove * 1000.0f);
+			long millisToMove = Math.min(timeLimitMillis, (long) Math.ceil(secondsToMove * 1000.0f));
 			if (millisToMove > 0L)
 			{
 				EntityChangeMove.Direction direction = (oneMove > 0.0f)
 						? EntityChangeMove.Direction.NORTH
 						: EntityChangeMove.Direction.SOUTH
 				;
-				EntityChangeMove<IMutableCreatureEntity> move = new EntityChangeMove<>(millisToMove, speedMultipler, direction);
-				out_list.add(move);
+				move = new EntityChangeMove<>(millisToMove, speedMultipler, direction);
 			}
 			absoluteMove -= oneAbs;
 		}
+		return move;
 	}
 }
