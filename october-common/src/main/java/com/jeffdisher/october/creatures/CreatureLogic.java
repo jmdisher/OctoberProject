@@ -164,41 +164,32 @@ public class CreatureLogic
 		}
 			break;
 		case ORC: {
-			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
-			if (Difficulty.PEACEFUL == context.config.difficulty)
+			OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
+			
+			// Get the movement plan and see if we should advance it.
+			List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+			boolean shouldMakePlan = (null == movementPlan);
+			if (shouldMakePlan)
 			{
-				actionProduced = null;
-				mutable.newHealth = (byte)0;
+				movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
 			}
 			else
 			{
-				OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-				
-				// Get the movement plan and see if we should advance it.
-				List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-				boolean shouldMakePlan = (null == movementPlan);
-				if (shouldMakePlan)
-				{
-					movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
-				}
-				else
-				{
-					movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
-				}
-				Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-				machine.setMovementPlan(movementPlan);
-				
-				if (null != movementPlan)
-				{
-					actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
-				}
-				else
-				{
-					actionProduced = null;
-				}
-				mutable.newExtendedData = machine.freezeToData();
+				movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
 			}
+			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+			machine.setMovementPlan(movementPlan);
+			
+			if (null != movementPlan)
+			{
+				actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
+			}
+			else
+			{
+				actionProduced = null;
+			}
+			mutable.newExtendedData = machine.freezeToData();
 		}
 			break;
 		case ERROR:
@@ -247,15 +238,14 @@ public class CreatureLogic
 	}
 
 	/**
-	 * Called when newStepsToNextMove is null in order to allow the entity to potentially take any special actions.
+	 * Called by CreatureProcessor at the beginning of each tick for each creature so that they can take special
+	 * actions.
 	 * 
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
-	 * @param entityCollection The read-only collection of entities in the world.
-	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
-	 * @param mutable The mutable creature object currently being evaluated.
-	 * @return Returns the list of actions to take next (could be null if nothing to do or empty just to reset the idle
-	 * timer).
+	 * @param creature The mutable creature object currently being evaluated.
+	 * @return True if some special action was taken, meaning that this tick's actions should be skipped for this
+	 * creature.
 	 */
 	public static boolean didTakeSpecialActions(TickProcessingContext context
 			, Consumer<CreatureEntity> creatureSpawner
@@ -265,7 +255,7 @@ public class CreatureLogic
 		boolean isDone;
 		switch (creature.getType())
 		{
-		case COW:{
+		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
 			isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getId());
 			if (isDone)
@@ -274,13 +264,23 @@ public class CreatureLogic
 			}
 			break;
 		}
-		case ORC:
-			OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
-			isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getId());
-			if (isDone)
+		case ORC: {
+			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
+			if (Difficulty.PEACEFUL == context.config.difficulty)
 			{
-				creature.setExtendedData(machine.freezeToData());
+				creature.newHealth = (byte)0;
+				isDone = true;
 			}
+			else
+			{
+				OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
+				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getId());
+				if (isDone)
+				{
+					creature.setExtendedData(machine.freezeToData());
+				}
+			}
+		}
 			break;
 		case ERROR:
 		case PLAYER:
