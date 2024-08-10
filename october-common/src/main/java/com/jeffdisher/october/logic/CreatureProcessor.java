@@ -66,39 +66,6 @@ public class CreatureProcessor
 				
 				// Determine if we need to schedule movements.
 				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
-				if (null == changes)
-				{
-					// We have nothing to do, and nothing is acting on us, so see if we have a plan to apply or should select one.
-					if (null == mutable.newStepsToNextMove)
-					{
-						// We have no immediate steps planned so ask the creature if it wants to take special actions or plan the next path
-						// See if they have something special to do (only check once per tick).
-						boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
-						if (!didSpecial)
-						{
-							// If we didn't perform a special action, we can proceed with movement.
-							long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
-							long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
-							// Note that this may still return a null list of next steps if there is nothing to do.
-							mutable.newStepsToNextMove = CreatureLogic.planNextActions(context, entityCollection, millisSinceLastAction, mutable);
-						}
-					}
-					if (null != mutable.newStepsToNextMove)
-					{
-						// It is possible that we have an empty plan (just to reset the last move timer).
-						if (mutable.newStepsToNextMove.isEmpty())
-						{
-							mutable.newStepsToNextMove = null;
-							changes = List.of();
-						}
-						else
-						{
-							changes = _scheduleForThisTick(context.millisPerTick, mutable);
-						}
-					}
-					
-				}
-				
 				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
@@ -119,6 +86,65 @@ public class CreatureProcessor
 						}
 					}
 					mutable.newLastActionGameTick = context.currentTick;
+				}
+				
+				// If we have any time left, see what other actions we can take.
+				if (millisAtEndOfTick > 0L)
+				{
+					boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
+					if (!didSpecial)
+					{
+						// If we didn't perform a special action, we can proceed with movement.
+						long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
+						long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
+						
+						boolean canSchedule = true;
+						while (canSchedule)
+						{
+							// Note that this may still return a null list of next steps if there is nothing to do.
+							// TODO:  Replace this list with individual elements once this logic is verified and we can re-write the callee.
+							List<IMutationEntity<IMutableCreatureEntity>> list = CreatureLogic.planNextActions(context, entityCollection, millisSinceLastAction, mutable);
+							if ((null != list) && (list.size() > 0))
+							{
+								IMutationEntity<IMutableCreatureEntity> change = list.get(0);
+								long timeCostMillis = change.getTimeCostMillis();
+								// This must be able to fit into a single tick.
+								Assert.assertTrue(timeCostMillis <= context.millisPerTick);
+								// NOTE:  This "isScheduleAllowed" is just a hack to maintain some earlier behaviour and should be removed once behaviour-only changes are small.
+								boolean temp_isScheduleAllowed = (timeCostMillis > 0L) || (0 == committedMutationCount);
+								if (temp_isScheduleAllowed && (timeCostMillis <= millisAtEndOfTick))
+								{
+									processor.creatureChangesProcessed += 1;
+									boolean didApply = change.applyChange(context, mutable);
+									if (didApply)
+									{
+										// If this applied, account for time passing.
+										if (timeCostMillis > 0L)
+										{
+											TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
+										}
+										committedMutationCount += 1;
+									}
+									mutable.newLastActionGameTick = context.currentTick;
+									millisAtEndOfTick -= timeCostMillis;
+									if ((0L == millisAtEndOfTick) || (0L == timeCostMillis))
+									{
+										canSchedule = false;
+									}
+								}
+								else
+								{
+									// We have done all we can.
+									canSchedule = false;
+								}
+							}
+							else
+							{
+								// We have done all we can.
+								canSchedule = false;
+							}
+						}
+					}
 				}
 				
 				// Account for time passing.
@@ -147,51 +173,6 @@ public class CreatureProcessor
 				, deadCreatureIds
 				, newlySpawnedCreatures
 		);
-	}
-
-
-	private static List<IMutationEntity<IMutableCreatureEntity>> _scheduleForThisTick(long millisSinceLastTick, MutableCreature mutable)
-	{
-		// We are already on the way to the next step in our path so see what we can apply in this tick.
-		List<IMutationEntity<IMutableCreatureEntity>> changes = new ArrayList<>();
-		long millisRemaining = millisSinceLastTick;
-		List<IMutationEntity<IMutableCreatureEntity>> remainingSteps = new ArrayList<>();
-		boolean canAdd = true;
-		for (IMutationEntity<IMutableCreatureEntity> check : mutable.newStepsToNextMove)
-		{
-			if (canAdd)
-			{
-				long timeCostMillis = check.getTimeCostMillis();
-				// This must be able to fit into a single tick.
-				Assert.assertTrue(timeCostMillis <= millisSinceLastTick);
-				if (timeCostMillis <= millisRemaining)
-				{
-					changes.add(check);
-					millisRemaining -= timeCostMillis;
-				}
-				else
-				{
-					// We have done all we can.
-					canAdd = false;
-				}
-			}
-			if (!canAdd)
-			{
-				remainingSteps.add(check);
-			}
-		}
-		
-		// We must have at least done something.
-		Assert.assertTrue(!changes.isEmpty());
-		if (remainingSteps.isEmpty())
-		{
-			mutable.newStepsToNextMove = null;
-		}
-		else
-		{
-			mutable.newStepsToNextMove = remainingSteps;
-		}
-		return changes;
 	}
 
 
