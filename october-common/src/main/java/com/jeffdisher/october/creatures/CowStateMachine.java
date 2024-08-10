@@ -328,13 +328,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		return (NO_TARGET_ENTITY_ID != _targetEntityId);
 	}
 
-	/**
-	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
-	 * the original instance.
-	 * NOTE:  The instance should be considered invalid after this call.
-	 * 
-	 * @return An opaque extended data object (could be null).
-	 */
+	@Override
 	public Object freezeToData()
 	{
 		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation))

@@ -129,67 +129,17 @@ public class CreatureLogic
 			, long timeLimitMillis
 	)
 	{
-		IMutationEntity<IMutableCreatureEntity> actionProduced;
+		ICreatureStateMachine machine;
 		
-		// The logic is per-creature type.
+		// The machine must be decoded based on type but the planning logic is common (at least for now).
 		switch (mutable.getType())
 		{
 		case COW: {
-			CowStateMachine machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-			
-			// Get the movement plan and see if we should advance it.
-			List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-			boolean shouldMakePlan = (null == movementPlan);
-			if (shouldMakePlan)
-			{
-				movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
-			}
-			else
-			{
-				movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
-			}
-			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-			machine.setMovementPlan(movementPlan);
-			
-			if (null != movementPlan)
-			{
-				actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
-			}
-			else
-			{
-				actionProduced = null;
-			}
-			mutable.newExtendedData = machine.freezeToData();
+			machine = CowStateMachine.extractFromData(mutable.newExtendedData);
 		}
 			break;
 		case ORC: {
-			OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-			
-			// Get the movement plan and see if we should advance it.
-			List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-			boolean shouldMakePlan = (null == movementPlan);
-			if (shouldMakePlan)
-			{
-				movementPlan = _makeMovementPlan(context, entityCollection, millisSinceLastAction, mutable, machine);
-			}
-			else
-			{
-				movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
-			}
-			Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-			machine.setMovementPlan(movementPlan);
-			
-			if (null != movementPlan)
-			{
-				actionProduced = _produceNextAction(context, mutable, machine, movementPlan, timeLimitMillis);
-			}
-			else
-			{
-				actionProduced = null;
-			}
-			mutable.newExtendedData = machine.freezeToData();
+			machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
 		}
 			break;
 		case ERROR:
@@ -197,6 +147,32 @@ public class CreatureLogic
 		default:
 			throw Assert.unreachable();
 		}
+		
+		// Get the movement plan and see if we should advance it.
+		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+		boolean shouldMakePlan = (null == movementPlan);
+		if (shouldMakePlan)
+		{
+			movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, millisSinceLastAction, mutable, machine);
+		}
+		else
+		{
+			movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
+		}
+		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+		machine.setMovementPlan(movementPlan);
+		
+		IMutationEntity<IMutableCreatureEntity> actionProduced;
+		if (null != movementPlan)
+		{
+			actionProduced = _produceNextAction(context, blockKindLookup, mutable, machine, movementPlan, timeLimitMillis);
+		}
+		else
+		{
+			actionProduced = null;
+		}
+		mutable.newExtendedData = machine.freezeToData();
 		return actionProduced;
 	}
 
@@ -310,6 +286,7 @@ public class CreatureLogic
 
 
 	private static List<AbsoluteLocation> _makeMovementPlan(TickProcessingContext context
+			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, EntityCollection entityCollection
 			, long millisSinceLastAction
 			, MutableCreature mutable
@@ -317,7 +294,6 @@ public class CreatureLogic
 	)
 	{
 		List<AbsoluteLocation> movementPlan;
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.
 		if (true
 				&& (millisSinceLastAction >= MINIMUM_MILLIS_TO_DELIBERATE_ACTION)
@@ -368,6 +344,7 @@ public class CreatureLogic
 	}
 
 	private static IMutationEntity<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
+			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 			, List<AbsoluteLocation> existingPlan
@@ -391,7 +368,6 @@ public class CreatureLogic
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
-			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 			actionProduced = _planNextStep(blockKindLookup, mutable.getLocation(), mutable.getType(), existingPlan, timeLimitMillis, viscosity, isIdleMovement);
 		}
 		

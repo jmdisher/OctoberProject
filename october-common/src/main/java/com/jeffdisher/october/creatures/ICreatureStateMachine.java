@@ -62,4 +62,13 @@ public interface ICreatureStateMachine
 	 * @return True if the current plan has deliberate intent (false if no plan or just idle wandering).
 	 */
 	boolean isPlanDeliberate();
+
+	/**
+	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
+	 * the original instance.
+	 * NOTE:  The receiver should be considered invalid after this call.
+	 * 
+	 * @return An opaque extended data object (could be null).
+	 */
+	Object freezeToData();
 }
