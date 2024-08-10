@@ -108,4 +108,10 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 		// The block may have changed so drop this.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Craft " + _craft + " in block " + _targetBlock + " for " + _millisToApply + " ms";
+	}
 }

@@ -62,4 +62,10 @@ public class EntityChangeChangeHotbarSlot implements IMutationEntity<IMutablePla
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Select hotbar index " + _index;
+	}
 }

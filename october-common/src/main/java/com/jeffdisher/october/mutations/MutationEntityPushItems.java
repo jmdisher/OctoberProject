@@ -149,6 +149,12 @@ public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEn
 		return false;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Push " + _count + " items of local inventory key " + _localInventoryId + " to " + _blockLocation + " (inventory aspect " + _inventoryAspect + ")";
+	}
+
 
 	private Inventory _getInventory(BlockProxy block, Item type)
 	{

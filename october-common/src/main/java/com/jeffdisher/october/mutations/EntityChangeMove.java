@@ -153,6 +153,12 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		return true;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Move " + _direction + " for " + _millisInMotion + " ms at " + _speedMultipler + " m/s";
+	}
+
 
 	/**
 	 * The direction of a horizontal move.

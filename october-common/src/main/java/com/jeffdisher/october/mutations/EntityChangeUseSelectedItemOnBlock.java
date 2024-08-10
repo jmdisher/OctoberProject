@@ -147,4 +147,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 		// The target may have changed.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Use selected item on block " + _target;
+	}
 }

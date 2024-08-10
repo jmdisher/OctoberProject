@@ -98,6 +98,12 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		return true;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Jump";
+	}
+
 
 	private static boolean _canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, EntityLocation location

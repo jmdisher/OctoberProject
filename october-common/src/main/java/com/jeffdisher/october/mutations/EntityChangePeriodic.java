@@ -92,6 +92,12 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 		return true;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Periodic";
+	}
+
 
 	private static void _useEnergy(TickProcessingContext context, IMutablePlayerEntity newEntity, int energy)
 	{

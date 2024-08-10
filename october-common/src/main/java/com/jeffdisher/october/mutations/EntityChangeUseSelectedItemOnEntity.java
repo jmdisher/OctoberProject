@@ -105,4 +105,10 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 		// The target may have changed.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Use selected item on entity " + _entityId;
+	}
 }

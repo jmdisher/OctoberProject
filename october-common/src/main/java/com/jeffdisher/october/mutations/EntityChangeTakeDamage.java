@@ -127,4 +127,10 @@ public class EntityChangeTakeDamage<T extends IMutableMinimalEntity> implements 
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Take " + _damage + " damage to " + _target;
+	}
 }

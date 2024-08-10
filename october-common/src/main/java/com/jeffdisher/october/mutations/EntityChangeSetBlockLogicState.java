@@ -117,4 +117,10 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	{
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Set logic state of " + _targetBlock + " to " + (_setHigh ? "HIGH" : "LOW");
+	}
 }

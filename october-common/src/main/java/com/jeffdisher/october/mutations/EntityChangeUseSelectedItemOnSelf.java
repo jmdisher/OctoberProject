@@ -103,4 +103,10 @@ public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutab
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Use selected item on self";
+	}
 }

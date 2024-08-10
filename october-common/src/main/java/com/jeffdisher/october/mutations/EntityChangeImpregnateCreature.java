@@ -55,4 +55,10 @@ public class EntityChangeImpregnateCreature implements IMutationEntity<IMutableC
 		// Not in creature-only types.
 		throw Assert.unreachable();
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Impregnate by sire at " + _sireLocation;
+	}
 }

@@ -94,6 +94,12 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 		return true;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Swim";
+	}
+
 
 	private static boolean _canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, EntityLocation location

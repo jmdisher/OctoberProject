@@ -180,4 +180,10 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 		// Block reference.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Place selected block " + _targetBlock + " facing " + _blockOutput;
+	}
 }

@@ -157,4 +157,10 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		// Target entity may have moved so don't save this.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Attack entity " + _targetEntityId;
+	}
 }

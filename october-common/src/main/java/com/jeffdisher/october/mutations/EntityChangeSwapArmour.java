@@ -95,4 +95,10 @@ public class EntityChangeSwapArmour implements IMutationEntity<IMutablePlayerEnt
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Swap armour in " + _slot + " with " + _inventoryId;
+	}
 }

@@ -67,4 +67,10 @@ public class EntityChangeAcceptItems implements IMutationEntity<IMutablePlayerEn
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Accept items " + _items;
+	}
 }

@@ -74,4 +74,10 @@ public class MutationEntitySelectItem implements IMutationEntity<IMutablePlayerE
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Select item in active hotbar slot: " + _inventoryId;
+	}
 }

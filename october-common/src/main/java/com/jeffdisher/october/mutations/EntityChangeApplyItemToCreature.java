@@ -56,4 +56,10 @@ public class EntityChangeApplyItemToCreature implements IMutationEntity<IMutable
 		// Not in creature-only types.
 		throw Assert.unreachable();
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Apply item to creature " + _itemType;
+	}
 }

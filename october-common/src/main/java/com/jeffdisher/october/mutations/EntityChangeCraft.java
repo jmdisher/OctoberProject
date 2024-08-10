@@ -133,4 +133,10 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Craft " + _operation + " for " + _millisToApply + " ms";
+	}
 }

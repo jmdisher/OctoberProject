@@ -148,4 +148,10 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// The target may have changed.
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Incremental break " + _targetBlock + " for " + _millisToApply + " ms";
+	}
 }

@@ -133,6 +133,12 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutable
 		return false;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "Request " + _countRequested + " items of block key " + _blockInventoryKey + " from " + _blockLocation + " (inventory aspect " + _inventoryAspect + ")";
+	}
+
 
 	private Inventory _getInventory(BlockProxy block)
 	{

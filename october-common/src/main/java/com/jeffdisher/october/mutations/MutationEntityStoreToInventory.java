@@ -122,4 +122,10 @@ public class MutationEntityStoreToInventory implements IMutationEntity<IMutableP
 		// Common case.
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Store to entity inventory " + ((null != _stack) ? _stack : _nonStack);
+	}
 }
