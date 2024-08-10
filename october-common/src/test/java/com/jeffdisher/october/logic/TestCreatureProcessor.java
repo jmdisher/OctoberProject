@@ -545,8 +545,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		// The cow should first position itself against the wall before making the jump.
-		// Note that it will take 4 steps, instead of 2, since this is an idle movement.
-		for (int i = 0; i < 4; ++i)
+		// Note that it will take 3 steps, instead of 2, since this is an idle movement (half-speed but also ends in a jump).
+		for (int i = 0; i < 3; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();

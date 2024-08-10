@@ -110,9 +110,7 @@ public class CreatureProcessor
 								long timeCostMillis = change.getTimeCostMillis();
 								// This must be able to fit into a single tick.
 								Assert.assertTrue(timeCostMillis <= context.millisPerTick);
-								// NOTE:  This "isScheduleAllowed" is just a hack to maintain some earlier behaviour and should be removed once behaviour-only changes are small.
-								boolean temp_isScheduleAllowed = (timeCostMillis > 0L) || (0 == committedMutationCount);
-								if (temp_isScheduleAllowed && (timeCostMillis <= millisAtEndOfTick))
+								if (timeCostMillis <= millisAtEndOfTick)
 								{
 									processor.creatureChangesProcessed += 1;
 									boolean didApply = change.applyChange(context, mutable);
