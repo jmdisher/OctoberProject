@@ -85,7 +85,6 @@ public class TestCreatureProcessor
 				, changesToRun
 		);
 		
-		Assert.assertEquals(1, group.committedMutationCount());
 		Assert.assertEquals(1, group.updatedCreatures().size());
 		Assert.assertEquals(0, group.deadCreatureIds().size());
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
@@ -130,7 +129,6 @@ public class TestCreatureProcessor
 				, changesToRun
 		);
 		
-		Assert.assertEquals(1, group.committedMutationCount());
 		Assert.assertEquals(0, group.updatedCreatures().size());
 		Assert.assertEquals(1, group.deadCreatureIds().size());
 		Assert.assertEquals(creature.id(), group.deadCreatureIds().get(0).intValue());

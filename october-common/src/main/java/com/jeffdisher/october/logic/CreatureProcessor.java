@@ -52,7 +52,6 @@ public class CreatureProcessor
 		Consumer<CreatureEntity> creatureSpawner = (CreatureEntity newCreature) -> {
 			newlySpawnedCreatures.add(newCreature);
 		};
-		int committedMutationCount = 0;
 		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -69,78 +68,17 @@ public class CreatureProcessor
 				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
-					for (IMutationEntity<IMutableCreatureEntity> change : changes)
-					{
-						processor.creatureChangesProcessed += 1;
-						boolean didApply = change.applyChange(context, mutable);
-						if (didApply)
-						{
-							// If this applied, account for time passing.
-							long millisInChange = change.getTimeCostMillis();
-							if (millisInChange > 0L)
-							{
-								TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
-								millisAtEndOfTick -= millisInChange;
-							}
-							committedMutationCount += 1;
-						}
-					}
-					mutable.newLastActionGameTick = context.currentTick;
+					millisAtEndOfTick = _runExternalChanges(processor, context, mutable, changes, millisAtEndOfTick);
 				}
 				
+				// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
+				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
+				
 				// If we have any time left, see what other actions we can take.
-				if (millisAtEndOfTick > 0L)
+				if (!didSpecial && (millisAtEndOfTick > 0L))
 				{
-					boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
-					if (!didSpecial)
-					{
-						// If we didn't perform a special action, we can proceed with movement.
-						long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
-						long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
-						
-						boolean canSchedule = true;
-						while (canSchedule)
-						{
-							// Note that this may still return a null list of next steps if there is nothing to do.
-							IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, millisSinceLastAction, mutable, millisAtEndOfTick);
-							if (null != change)
-							{
-								long timeCostMillis = change.getTimeCostMillis();
-								// This must be able to fit into a single tick.
-								Assert.assertTrue(timeCostMillis <= context.millisPerTick);
-								if (timeCostMillis <= millisAtEndOfTick)
-								{
-									processor.creatureChangesProcessed += 1;
-									boolean didApply = change.applyChange(context, mutable);
-									if (didApply)
-									{
-										// If this applied, account for time passing.
-										if (timeCostMillis > 0L)
-										{
-											TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
-										}
-										committedMutationCount += 1;
-									}
-									mutable.newLastActionGameTick = context.currentTick;
-									millisAtEndOfTick -= timeCostMillis;
-									if ((0L == millisAtEndOfTick) || (0L == timeCostMillis))
-									{
-										canSchedule = false;
-									}
-								}
-								else
-								{
-									// We have done all we can.
-									canSchedule = false;
-								}
-							}
-							else
-							{
-								// We have done all we can.
-								canSchedule = false;
-							}
-						}
-					}
+					// If we didn't perform a special action, we can proceed with movement.
+					millisAtEndOfTick = _runInternalChanges(processor, context, entityCollection, mutable, millisAtEndOfTick);
 				}
 				
 				// Account for time passing.
@@ -164,7 +102,7 @@ public class CreatureProcessor
 				}
 			}
 		}
-		return new CreatureGroup(committedMutationCount
+		return new CreatureGroup(false
 				, updatedCreatures
 				, deadCreatureIds
 				, newlySpawnedCreatures
@@ -172,7 +110,88 @@ public class CreatureProcessor
 	}
 
 
-	public static record CreatureGroup(int committedMutationCount
+	private static long _runExternalChanges(ProcessorElement processor
+			, TickProcessingContext context
+			, MutableCreature mutable
+			, List<IMutationEntity<IMutableCreatureEntity>> changes
+			, long millisAtEndOfTick
+	)
+	{
+		for (IMutationEntity<IMutableCreatureEntity> change : changes)
+		{
+			processor.creatureChangesProcessed += 1;
+			boolean didApply = change.applyChange(context, mutable);
+			if (didApply)
+			{
+				// If this applied, account for time passing.
+				long millisInChange = change.getTimeCostMillis();
+				if (millisInChange > 0L)
+				{
+					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
+					millisAtEndOfTick -= millisInChange;
+				}
+			}
+		}
+		mutable.newLastActionGameTick = context.currentTick;
+		return millisAtEndOfTick;
+	}
+
+	private static long _runInternalChanges(ProcessorElement processor
+			, TickProcessingContext context
+			, EntityCollection entityCollection
+			, MutableCreature mutable
+			, long millisAtEndOfTick
+	)
+	{
+		long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
+		long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
+		
+		boolean canSchedule = true;
+		while (canSchedule)
+		{
+			// Note that this may still return a null list of next steps if there is nothing to do.
+			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, millisSinceLastAction, mutable, millisAtEndOfTick);
+			if (null != change)
+			{
+				long timeCostMillis = change.getTimeCostMillis();
+				// This must be able to fit into a single tick.
+				Assert.assertTrue(timeCostMillis <= context.millisPerTick);
+				if (timeCostMillis <= millisAtEndOfTick)
+				{
+					processor.creatureChangesProcessed += 1;
+					boolean didApply = change.applyChange(context, mutable);
+					if (didApply)
+					{
+						// If this applied, account for time passing.
+						if (timeCostMillis > 0L)
+						{
+							TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
+						}
+					}
+					mutable.newLastActionGameTick = context.currentTick;
+					millisAtEndOfTick -= timeCostMillis;
+					if ((0L == millisAtEndOfTick) || (0L == timeCostMillis))
+					{
+						canSchedule = false;
+					}
+				}
+				else
+				{
+					// We have done all we can.
+					canSchedule = false;
+				}
+			}
+			else
+			{
+				// We have done all we can.
+				canSchedule = false;
+			}
+		}
+		return millisAtEndOfTick;
+	}
+
+
+	public static record CreatureGroup(boolean ignored
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds

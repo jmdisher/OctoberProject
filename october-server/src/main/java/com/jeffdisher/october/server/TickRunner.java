@@ -354,7 +354,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
-						, new CreatureProcessor.CreatureGroup(0, Map.of(), List.of(), List.of())
+						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of(), List.of())
 						, null
 						, List.of()
 						, Map.of()
