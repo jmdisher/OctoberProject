@@ -323,10 +323,13 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertNotNull(CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan());
+		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(updated.extendedData());
+		Assert.assertNotNull(extended.movementPlan());
+		long previousTickTimer = extended.nextIdleActTick();
 		
-		// Now, hit them and see this clears their movement plan.
+		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		creaturesById = group.updatedCreatures();
+		context = _updateContextForTick(context);
 		byte damage = 10;
 		changesToRun = Map.of(creature.id(), List.of(new EntityChangeTakeDamage<>(BodyPart.FEET, damage)));
 		group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -338,7 +341,8 @@ public class TestCreatureProcessor
 		
 		updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth - damage, updated.health());
-		Assert.assertNull(CowStateMachine.decodeExtendedData(updated.extendedData()));
+		extended = CowStateMachine.decodeExtendedData(updated.extendedData());
+		Assert.assertEquals(previousTickTimer + 1, extended.nextIdleActTick());
 	}
 
 	@Test
@@ -505,7 +509,9 @@ public class TestCreatureProcessor
 		
 		// Run another tick to observe that nothing special happens.
 		creaturesById.putAll(group.updatedCreatures());
-		Assert.assertNull(CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData()));
+		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData());
+		Assert.assertNull(extended.movementPlan());
+		Assert.assertNull(extended.offspringLocation());
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -724,7 +730,8 @@ public class TestCreatureProcessor
 			}
 			else
 			{
-				Assert.assertNull(creature.extendedData());
+				OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(creature.extendedData());
+				Assert.assertNull(extended.movementPlan());
 			}
 		}
 		// We should be in the same column but higher.
@@ -811,6 +818,21 @@ public class TestCreatureProcessor
 				, null
 				, null
 				, null
+				, existing.randomInt
+				, existing.config
+				, existing.millisPerTick
+		);
+		return context;
+	}
+
+	private static TickProcessingContext _updateContextForTick(TickProcessingContext existing)
+	{
+		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1
+				, existing.previousBlockLookUp
+				, existing.previousEntityLookUp
+				, existing.mutationSink
+				, existing.newChangeSink
+				, existing.idAssigner
 				, existing.randomInt
 				, existing.config
 				, existing.millisPerTick

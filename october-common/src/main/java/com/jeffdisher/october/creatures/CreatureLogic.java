@@ -293,53 +293,40 @@ public class CreatureLogic
 			, ICreatureStateMachine machine
 	)
 	{
-		List<AbsoluteLocation> movementPlan;
-		// We only want to check every MINIMUM_MILLIS_TO_DELIBERATE_ACTION so that we don't slam this decision-making on every tick.
-		if (true
-				&& (millisSinceLastAction >= MINIMUM_MILLIS_TO_DELIBERATE_ACTION)
-				&& ((millisSinceLastAction % MINIMUM_MILLIS_TO_DELIBERATE_ACTION) <= context.millisPerTick)
-		)
+		// We will first see if they can make a deliberate plan.
+		List<AbsoluteLocation> movementPlan = _buildDeliberatePath(context
+				, blockKindLookup
+				, entityCollection
+				, mutable.getLocation()
+				, mutable.getType()
+				, mutable.getId()
+				, machine
+		);
+		if (null != movementPlan)
 		{
-			// First, we want to see if we should walk toward a player.
-			movementPlan = _buildDeliberatePath(context
-					, blockKindLookup
-					, entityCollection
-					, mutable.getLocation()
-					, mutable.getType()
-					, mutable.getId()
-					, machine
-			);
-			
-			if (null != movementPlan)
+			// We made a deliberate plan but it might not have any steps.
+			if (movementPlan.isEmpty())
 			{
-				// We made a deliberate plan but it might not have any steps.
-				if (movementPlan.isEmpty())
-				{
-					movementPlan = null;
-				}
-			}
-			else
-			{
-				// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
-				// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
-				// movements are "safe").
-				boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
-				if (isInDanger
-						|| (millisSinceLastAction >= MINIMUM_MILLIS_TO_IDLE_ACTION)
-				)
-				{
-					// We couldn't find a player so just make a random move.
-					movementPlan = _findPathToRandomSpot(context
-							, blockKindLookup
-							, mutable.getLocation()
-							, mutable.getType()
-					);
-				}
+				movementPlan = null;
 			}
 		}
 		else
 		{
-			movementPlan = null;
+			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
+			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
+			// movements are "safe").
+			boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
+			if (isInDanger
+					|| machine.canMakeIdleMovement(context)
+			)
+			{
+				// We couldn't find a player so just make a random move.
+				movementPlan = _findPathToRandomSpot(context
+						, blockKindLookup
+						, mutable.getLocation()
+						, mutable.getType()
+				);
+			}
 		}
 		return movementPlan;
 	}
