@@ -145,7 +145,6 @@ public class TestCreatureLogic
 		mutable.newBreath -= 1;
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, new EntityCollection(Set.of(), Set.of(entity))
-				, CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION
 				, mutable
 				, 100L
 		);

@@ -34,7 +34,6 @@ public class MutableCreature implements IMutableCreatureEntity
 	public EntityLocation newVelocity;
 	public byte newHealth;
 	public int newBreath;
-	public long newLastActionGameTick;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -44,7 +43,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newVelocity = creature.velocity();
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
-		this.newLastActionGameTick = creature.lastActionGameTick();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -194,7 +192,6 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newVelocity
 					, this.newHealth
 					, this.newBreath
-					, this.newLastActionGameTick
 					, this.newExtendedData
 			);
 			// See if these are identical.

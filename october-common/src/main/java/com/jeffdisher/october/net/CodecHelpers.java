@@ -237,7 +237,6 @@ public class CodecHelpers
 		int breath = buffer.getInt();
 		
 		// Ephemeral data is just given default values.
-		long lastActionGameTick = 0L;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -245,7 +244,6 @@ public class CodecHelpers
 				, velocity
 				, health
 				, breath
-				, lastActionGameTick
 				, extendedData
 		);
 	}

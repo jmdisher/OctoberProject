@@ -34,15 +34,6 @@ import com.jeffdisher.october.utils.Assert;
 public class CreatureLogic
 {
 	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
-	 */
-	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
-	 * there was no good deliberate option.
-	 */
-	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
 
 
 	/**
@@ -117,14 +108,12 @@ public class CreatureLogic
 	 * 
 	 * @param context The context of the current tick.
 	 * @param entityCollection The read-only collection of entities in the world.
-	 * @param millisSinceLastAction The number of milliseconds since this creature last took an action.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @return The next action to take (null if there is nothing to do).
 	 */
 	public static IMutationEntity<IMutableCreatureEntity> planNextAction(TickProcessingContext context
 			, EntityCollection entityCollection
-			, long millisSinceLastAction
 			, MutableCreature mutable
 			, long timeLimitMillis
 	)
@@ -154,7 +143,7 @@ public class CreatureLogic
 		boolean shouldMakePlan = (null == movementPlan);
 		if (shouldMakePlan)
 		{
-			movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, millisSinceLastAction, mutable, machine);
+			movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable, machine);
 		}
 		else
 		{
@@ -288,7 +277,6 @@ public class CreatureLogic
 	private static List<AbsoluteLocation> _makeMovementPlan(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, EntityCollection entityCollection
-			, long millisSinceLastAction
 			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)

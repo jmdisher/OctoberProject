@@ -19,9 +19,7 @@ public record CreatureEntity(int id
 		, byte health
 		// The breath the entity has (for drowning).
 		, int breath
-		// These data elements are considered ephemeral and will NOT be persisted.
-		// The last tick where an action was taken (used to determine when the creature has "idled" long enough before next move).
-		, long lastActionGameTick
+		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -51,7 +49,6 @@ public record CreatureEntity(int id
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, health
 				, EntityConstants.MAX_BREATH
-				, 0L
 				, null
 		);
 	}

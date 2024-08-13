@@ -132,7 +132,6 @@ public class CreatureProcessor
 				}
 			}
 		}
-		mutable.newLastActionGameTick = context.currentTick;
 		return millisAtEndOfTick;
 	}
 
@@ -143,14 +142,11 @@ public class CreatureProcessor
 			, long millisAtEndOfTick
 	)
 	{
-		long ticksSinceLastAction = context.currentTick - mutable.newLastActionGameTick;
-		long millisSinceLastAction = context.millisPerTick * ticksSinceLastAction;
-		
 		boolean canSchedule = true;
 		while (canSchedule)
 		{
 			// Note that this may still return a null list of next steps if there is nothing to do.
-			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, millisSinceLastAction, mutable, millisAtEndOfTick);
+			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, mutable, millisAtEndOfTick);
 			if (null != change)
 			{
 				long timeCostMillis = change.getTimeCostMillis();
@@ -168,7 +164,6 @@ public class CreatureProcessor
 							TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
 						}
 					}
-					mutable.newLastActionGameTick = context.currentTick;
 					millisAtEndOfTick -= timeCostMillis;
 					if ((0L == millisAtEndOfTick) || (0L == timeCostMillis))
 					{

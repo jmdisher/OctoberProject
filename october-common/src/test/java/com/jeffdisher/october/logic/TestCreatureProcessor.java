@@ -191,7 +191,6 @@ public class TestCreatureProcessor
 				, velocity
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -225,7 +224,6 @@ public class TestCreatureProcessor
 				, velocity
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -260,7 +258,6 @@ public class TestCreatureProcessor
 				, velocity
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		
@@ -631,7 +628,7 @@ public class TestCreatureProcessor
 			Map<Integer, MinimalEntity> minimalEntitiesById = Map.of(waterTarget.id(), MinimalEntity.fromEntity(waterTarget)
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
-			TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+			TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 					, (AbsoluteLocation location) -> {
 						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -695,7 +692,7 @@ public class TestCreatureProcessor
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		for (int i = 0; i < 11; ++i)
 		{
-			TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+			TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 					, (AbsoluteLocation location) -> {
 						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -753,7 +750,7 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;
-		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+		TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 				, (AbsoluteLocation location) -> {
 					return ((short)-1 == location.z())
 						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
@@ -775,7 +772,7 @@ public class TestCreatureProcessor
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
 		long millisPerTick = 100L;
-		TickProcessingContext context = new TickProcessingContext(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
+		TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
 				, (AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 						? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -812,7 +809,7 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
 	{
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + (CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick)
+		TickProcessingContext context = new TickProcessingContext(existing.currentTick + (OrcStateMachine.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick)
 				, existing.previousBlockLookUp
 				, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null
 				, null
