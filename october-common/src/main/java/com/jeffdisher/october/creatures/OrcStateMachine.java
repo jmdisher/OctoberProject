@@ -65,6 +65,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 						, testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.lastAttackTick
+						, testing.nextDeliberateActTick
+						, testing.nextIdleActTick
 				)
 				: null
 		;
@@ -85,6 +87,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 						, extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.lastAttackTick
+						, extended.nextDeliberateActTick
+						, extended.nextIdleActTick
 				)
 				: null
 		;
@@ -96,6 +100,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private long _lastAttackTick;
+	private long _nextDeliberateActTick;
+	private long _nextIdleActTick;
 	
 	private OrcStateMachine(_ExtendedData data)
 	{
@@ -106,6 +112,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_lastAttackTick = data.lastAttackTick;
+			_nextDeliberateActTick = data.nextDeliberateActTick;
+			_nextIdleActTick = data.nextIdleActTick;
 		}
 		else
 		{
@@ -113,6 +121,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_lastAttackTick = 0L;
+			_nextDeliberateActTick = 0L;
+			_nextIdleActTick = 0L;
 		}
 	}
 
@@ -217,8 +227,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId))
-				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick)
+		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
+				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -259,6 +269,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
+			, long nextDeliberateActTick
+			, long nextIdleActTick
 	)
 	{}
 
@@ -266,6 +278,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
+			, long nextDeliberateActTick
+			, long nextIdleActTick
 	)
 	{}
 }

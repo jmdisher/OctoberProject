@@ -30,7 +30,7 @@ public class TestMutableCreature
 				, (byte)50
 				, EntityConstants.MAX_BREATH
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null, null))
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null, null, 0L, 0L))
 		);
 		Assert.assertNotNull(CowStateMachine.decodeExtendedData(middle.extendedData()).movementPlan());
 		

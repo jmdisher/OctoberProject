@@ -79,6 +79,8 @@ public class CowStateMachine implements ICreatureStateMachine
 						, testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.offspringLocation
+						, testing.nextDeliberateActTick
+						, testing.nextIdleActTick
 				)
 				: null
 		;
@@ -100,6 +102,8 @@ public class CowStateMachine implements ICreatureStateMachine
 						, extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.offspringLocation
+						, extended.nextDeliberateActTick
+						, extended.nextIdleActTick
 				)
 				: null
 		;
@@ -112,6 +116,8 @@ public class CowStateMachine implements ICreatureStateMachine
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private EntityLocation _offspringLocation;
+	private long _nextDeliberateActTick;
+	private long _nextIdleActTick;
 	
 	private CowStateMachine(_ExtendedData data)
 	{
@@ -123,6 +129,8 @@ public class CowStateMachine implements ICreatureStateMachine
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_offspringLocation = data.offspringLocation;
+			_nextDeliberateActTick = data.nextDeliberateActTick;
+			_nextIdleActTick = data.nextIdleActTick;
 		}
 		else
 		{
@@ -131,6 +139,8 @@ public class CowStateMachine implements ICreatureStateMachine
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_offspringLocation = null;
+			_nextDeliberateActTick = 0L;
+			_nextIdleActTick = 0L;
 		}
 	}
 
@@ -295,8 +305,8 @@ public class CowStateMachine implements ICreatureStateMachine
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation))
-				? new _ExtendedData(_inLoveMode, _movementPlan, _targetEntityId, _targetPreviousLocation, _offspringLocation)
+		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
+				? new _ExtendedData(_inLoveMode, _movementPlan, _targetEntityId, _targetPreviousLocation, _offspringLocation, _nextDeliberateActTick, _nextIdleActTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -370,6 +380,8 @@ public class CowStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
+			, long nextDeliberateActTick
+			, long nextIdleActTick
 	)
 	{}
 
@@ -378,6 +390,8 @@ public class CowStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
+			, long nextDeliberateActTick
+			, long nextIdleActTick
 	)
 	{}
 }

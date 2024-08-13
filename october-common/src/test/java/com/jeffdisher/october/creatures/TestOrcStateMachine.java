@@ -66,7 +66,7 @@ public class TestOrcStateMachine
 		
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L, 0L, 0L)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
@@ -99,7 +99,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L, 0L, 0L)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		

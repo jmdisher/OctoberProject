@@ -192,7 +192,7 @@ public class TestCreatureProcessor
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -226,7 +226,7 @@ public class TestCreatureProcessor
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -261,7 +261,7 @@ public class TestCreatureProcessor
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null))
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
