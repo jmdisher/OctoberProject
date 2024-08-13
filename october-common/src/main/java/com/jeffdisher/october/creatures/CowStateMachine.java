@@ -158,7 +158,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
+	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		// We can only call this if we don't already have a movement plan.
 		Assert.assertTrue(null == _movementPlan);
@@ -167,51 +167,15 @@ public class CowStateMachine implements ICreatureStateMachine
 		// We will just use arrays to pass this "by reference".
 		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
 		EntityLocation[] target = new EntityLocation[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		if (_inLoveMode)
 		{
 			// Find another cow in breeding mode.
-			entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
-				// Ignore ourselves and make sure that they are the right type.
-				if ((creatureId != check.id()) && (EntityType.COW == check.type()))
-				{
-					// See if they are also in love mode.
-					_ExtendedData other = (_ExtendedData) check.extendedData();
-					if ((null != other) && other.inLoveMode)
-					{
-						EntityLocation end = check.location();
-						float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
-						if (distance < distanceToTarget[0])
-						{
-							targetId[0] = check.id();
-							target[0] = end;
-							distanceToTarget[0] = distance;
-						}
-					}
-				}
-			});
+			_findBreedableCow(entityCollection, creatureLocation, creatureId, targetId, target);
 		}
 		else
 		{
 			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
-			Environment environment = Environment.getShared();
-			Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
-			entityCollection.walkPlayersInRange(creatureLocation, COW_VIEW_DISTANCE, (Entity player) -> {
-				// See if this player has wheat in their hand.
-				int itemKey = player.hotbarItems()[player.hotbarIndex()];
-				Items itemsInHand = player.inventory().getStackForKey(itemKey);
-				if ((null != itemsInHand) && (wheat == itemsInHand.type()))
-				{
-					EntityLocation end = player.location();
-					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
-					if (distance < distanceToTarget[0])
-					{
-						targetId[0] = player.id();
-						target[0] = end;
-						distanceToTarget[0] = distance;
-					}
-				}
-			});
+			_findWheatTarget(entityCollection, creatureLocation, targetId, target);
 		}
 		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
 		_targetEntityId = targetId[0];
@@ -348,6 +312,53 @@ public class CowStateMachine implements ICreatureStateMachine
 		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
 		_movementPlan = null;
+	}
+
+	private void _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId, int[] out_targetId, EntityLocation[] out_target)
+	{
+		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
+		entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
+			// Ignore ourselves and make sure that they are the right type.
+			if ((thisCreatureId != check.id()) && (EntityType.COW == check.type()))
+			{
+				// See if they are also in love mode.
+				_ExtendedData other = (_ExtendedData) check.extendedData();
+				if ((null != other) && other.inLoveMode)
+				{
+					EntityLocation end = check.location();
+					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+					if (distance < distanceToTarget[0])
+					{
+						out_targetId[0] = check.id();
+						out_target[0] = end;
+						distanceToTarget[0] = distance;
+					}
+				}
+			}
+		});
+	}
+
+	private void _findWheatTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int[] out_targetId, EntityLocation[] out_target)
+	{
+		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
+		Environment environment = Environment.getShared();
+		Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
+		entityCollection.walkPlayersInRange(creatureLocation, COW_VIEW_DISTANCE, (Entity player) -> {
+			// See if this player has wheat in their hand.
+			int itemKey = player.hotbarItems()[player.hotbarIndex()];
+			Items itemsInHand = player.inventory().getStackForKey(itemKey);
+			if ((null != itemsInHand) && (wheat == itemsInHand.type()))
+			{
+				EntityLocation end = player.location();
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+				if (distance < distanceToTarget[0])
+				{
+					out_targetId[0] = player.id();
+					out_target[0] = end;
+					distanceToTarget[0] = distance;
+				}
+			}
+		});
 	}
 
 

@@ -33,12 +33,13 @@ public interface ICreatureStateMachine
 	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
 	 * creatures in the loaded world.
 	 * 
+	 * @param context The context of the current tick.
 	 * @param entityCollection The collection of entities in the world.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureId The creature's ID.
 	 * @return The location of the target entity or null if there is no target.
 	 */
-	EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
+	EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
 
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending

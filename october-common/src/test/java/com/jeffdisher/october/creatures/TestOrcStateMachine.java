@@ -41,7 +41,8 @@ public class TestOrcStateMachine
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
 		
 		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
-		machine.selectDeliberateTarget(new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
+		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
+		machine.selectDeliberateTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
 		// Set a movement plan so we store the extended data.
 		machine.setMovementPlan(List.of(orcLocation.getBlockLocation()));
 		

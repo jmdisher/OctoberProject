@@ -117,7 +117,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation selectDeliberateTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
+	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		// We can only call this if we don't already have a movement plan.
 		Assert.assertTrue(null == _movementPlan);
@@ -126,17 +126,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 		// We will just use arrays to pass this "by reference".
 		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
 		EntityLocation[] target = new EntityLocation[1];
-		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(creatureLocation, ORC_VIEW_DISTANCE, (Entity player) -> {
-			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
-			if (distance < distanceToTarget[0])
-			{
-				targetId[0] = player.id();
-				target[0] = end;
-				distanceToTarget[0] = distance;
-			}
-		});
+		_findPlayerInRange(entityCollection, creatureLocation, targetId, target);
 		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
 		_targetEntityId = targetId[0];
 		_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
@@ -244,6 +234,21 @@ public class OrcStateMachine implements ICreatureStateMachine
 		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
 		_movementPlan = null;
+	}
+
+	private void _findPlayerInRange(EntityCollection entityCollection, EntityLocation creatureLocation, int[] out_targetId, EntityLocation[] out_target)
+	{
+		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
+		entityCollection.walkPlayersInRange(creatureLocation, ORC_VIEW_DISTANCE, (Entity player) -> {
+			EntityLocation end = player.location();
+			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+			if (distance < distanceToTarget[0])
+			{
+				out_targetId[0] = player.id();
+				out_target[0] = end;
+				distanceToTarget[0] = distance;
+			}
+		});
 	}
 
 

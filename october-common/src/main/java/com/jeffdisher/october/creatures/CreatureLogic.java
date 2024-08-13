@@ -301,7 +301,8 @@ public class CreatureLogic
 		)
 		{
 			// First, we want to see if we should walk toward a player.
-			movementPlan = _buildDeliberatePath(blockKindLookup
+			movementPlan = _buildDeliberatePath(context
+					, blockKindLookup
 					, entityCollection
 					, mutable.getLocation()
 					, mutable.getType()
@@ -375,7 +376,8 @@ public class CreatureLogic
 	}
 
 	// NOTE:  This will return an empty path if it made a decision but the decision has no steps.
-	private static List<AbsoluteLocation> _buildDeliberatePath(Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage
+	private static List<AbsoluteLocation> _buildDeliberatePath(TickProcessingContext context
+			, Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage
 			, EntityCollection entityCollection
 			, EntityLocation creatureLocation
 			, EntityType type
@@ -383,7 +385,7 @@ public class CreatureLogic
 			, ICreatureStateMachine machine
 	)
 	{
-		EntityLocation targetLocation = machine.selectDeliberateTarget(entityCollection, creatureLocation, creatureId);
+		EntityLocation targetLocation = machine.selectDeliberateTarget(context, entityCollection, creatureLocation, creatureId);
 		List<AbsoluteLocation> path = null;
 		if (null != targetLocation)
 		{
