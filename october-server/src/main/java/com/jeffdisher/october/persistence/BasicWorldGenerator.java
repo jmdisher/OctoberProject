@@ -285,7 +285,24 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				biomeTotal += _biomeVote(seeds[2 + y][2 + x]);
 			}
 		}
+		// We want to spread the biomes more aggressively since this averaging will push them too close together.
+		biomeTotal = (biomeTotal * 2) + 1;
+		// We also want to avoid division truncation making the numbers smaller.
 		int biome = biomeTotal / 25;
+		if ((biomeTotal % 25) > 12)
+		{
+			biome += 1;
+		}
+		// We can now strip off the edges and collapse this back into [0..15].
+		biome -= 8;
+		if (biome < 0)
+		{
+			biome = 0;
+		}
+		else if (biome > 15)
+		{
+			biome = 15;
+		}
 		return biome;
 	}
 
