@@ -252,12 +252,13 @@ public class ResourceLoader
 	 * Reads the world config from disk, updating corresponding options in the given config object.
 	 * NOTE:  This call is synchronous so should only be called during start-up.
 	 * 
+	 * @param saveDirectory The directory where the world data is stored.
 	 * @param config A WorldConfig object to modify.
 	 * @throws IOException There was a problem loading the file.
 	 */
-	public void populateWorldConfig(WorldConfig config) throws IOException
+	public static void populateWorldConfig(File saveDirectory, WorldConfig config) throws IOException
 	{
-		File configFile = _getConfigFile();
+		File configFile = _getConfigFile(saveDirectory);
 		if (configFile.exists())
 		{
 			Map<String, String> overrides;
@@ -285,7 +286,7 @@ public class ResourceLoader
 	 */
 	public void storeWorldConfig(WorldConfig config) throws IOException
 	{
-		File configFile = _getConfigFile();
+		File configFile = _getConfigFile(_saveDirectory);
 		Map<String, String> options = config.getRawOptions();
 		try (FileOutputStream stream = new FileOutputStream(configFile))
 		{
@@ -553,9 +554,9 @@ public class ResourceLoader
 		return new SuspendedEntity(MutableEntity.create(id).freeze(), initialChanges);
 	}
 
-	private File _getConfigFile()
+	private static File _getConfigFile(File saveDirectory)
 	{
 		String fileName = "config.tablist";
-		return new File(_saveDirectory, fileName);
+		return new File(saveDirectory, fileName);
 	}
 }

@@ -474,7 +474,7 @@ public class TestResourceLoader
 		Files.writeString(configFile.toPath(), "difficulty\tPEACEFUL\n");
 		loader = new ResourceLoader(resourceDirectory, null);
 		WorldConfig config = new WorldConfig();
-		loader.populateWorldConfig(config);
+		ResourceLoader.populateWorldConfig(resourceDirectory, config);
 		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 		loader.shutdown();
 	}

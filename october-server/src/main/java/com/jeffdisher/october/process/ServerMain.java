@@ -31,10 +31,10 @@ public class ServerMain
 				}
 				Environment.createSharedInstance();
 				// We will just use the flat world generator since it should be populated with what we need for testing.
-				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(true));
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
-				cuboidLoader.populateWorldConfig(config);
+				ResourceLoader.populateWorldConfig(worldDirectory, config);
+				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(true));
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK
 						, cuboidLoader
