@@ -4,11 +4,11 @@ import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.persistence.FlatWorldGenerator;
+import com.jeffdisher.october.persistence.BasicWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
-import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -30,14 +30,16 @@ public class ServerMain
 				{
 					Assert.assertTrue(worldDirectory.mkdirs());
 				}
-				Environment.createSharedInstance();
+				Environment env = Environment.createSharedInstance();
 				// We will just use the flat world generator since it should be populated with what we need for testing.
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
 				ResourceLoader.populateWorldConfig(worldDirectory, config);
+				BasicWorldGenerator worldGen = new BasicWorldGenerator(env, config.basicSeed);
+				EntityLocation spawnLocation = worldGen.getDefaultSpawnLocation();
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
-						, new FlatWorldGenerator(true)
-						, MutableEntity.TESTING_LOCATION
+						, worldGen
+						, spawnLocation
 				);
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK
