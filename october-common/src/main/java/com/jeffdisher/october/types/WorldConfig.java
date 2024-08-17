@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import java.util.Map;
+import java.util.Random;
 
 
 /**
@@ -28,6 +29,12 @@ public class WorldConfig
 	public int hostilesPerCuboidLimit;
 
 	/**
+	 * The seed value to use when configuring BasicWorldGenerator.  It is just a 32-bit int.
+	 */
+	public static final String KEY_BASIC_SEED = "basic_seed";
+	public int basicSeed;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -35,6 +42,8 @@ public class WorldConfig
 		this.difficulty = Difficulty.HOSTILE;
 		this.hostilesPerCuboidTarget = 2;
 		this.hostilesPerCuboidLimit = 4;
+		// We default the seed to a random int.
+		this.basicSeed = new Random().nextInt();
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -51,6 +60,10 @@ public class WorldConfig
 		{
 			this.hostilesPerCuboidLimit = Integer.parseInt(overrides.get(KEY_HOSTILES_PER_CUBOID_LIMIT));
 		}
+		if (overrides.containsKey(KEY_BASIC_SEED))
+		{
+			this.basicSeed = Integer.parseInt(overrides.get(KEY_BASIC_SEED));
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -59,6 +72,7 @@ public class WorldConfig
 				KEY_DIFFICULTY, this.difficulty.name()
 				, KEY_HOSTILES_PER_CUBOID_TARGET, Integer.toString(this.hostilesPerCuboidTarget)
 				, KEY_HOSTILES_PER_CUBOID_LIMIT, Integer.toString(this.hostilesPerCuboidLimit)
+				, KEY_BASIC_SEED, Integer.toString(this.basicSeed)
 		);
 	}
 }
