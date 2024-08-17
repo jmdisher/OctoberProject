@@ -33,7 +33,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(1353309739, generator.test_getCuboidSeed((short)0, (short)0));
 		Assert.assertEquals(8, generator.test_getBiome((short)0, (short)0));
 		Assert.assertEquals(new BlockAddress((byte)5, (byte)9, (byte)0), generator.test_getCentre((short)0, (short)0));
-		Assert.assertEquals(7, generator.test_getPeak((short)0, (short)0));
+		Assert.assertEquals(7, generator.test_getRawPeak((short)0, (short)0));
+		Assert.assertEquals(7, generator.test_getAdjustedPeak((short)0, (short)0));
 		int[][] heightMap = generator.test_getHeightMap((short)0, (short)0);
 		Assert.assertEquals(8, heightMap[0][0]);
 	}
