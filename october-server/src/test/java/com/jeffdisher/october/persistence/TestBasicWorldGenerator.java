@@ -5,10 +5,13 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestBasicWorldGenerator
@@ -96,5 +99,53 @@ public class TestBasicWorldGenerator
 				0,
 		};
 		Assert.assertArrayEquals(expectedDistribution, samples);
+	}
+
+	@Test
+	public void renderCuboid() throws Throwable
+	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)0, (short)0, (short)0));
+		CuboidData cuboid = suspended.cuboid();
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short dirtNumber = ENV.items.getItemById("op.dirt").number();
+		short airNumber = ENV.items.getItemById("op.air").number();
+		// We will just verify that this has air above stone with a dirt layer between.
+		int minDirt = Integer.MAX_VALUE;
+		int maxDirt = 0;
+		int dirtCount = 0;
+		for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+		{
+			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			{
+				boolean foundDirt = false;
+				for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
+				{
+					short number = cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
+					if (!foundDirt)
+					{
+						if (dirtNumber == number)
+						{
+							foundDirt = true;
+							minDirt = Math.min(minDirt, z);
+							maxDirt = Math.max(maxDirt, z);
+							dirtCount += 1;
+						}
+						else
+						{
+							Assert.assertEquals(stoneNumber, number);
+						}
+					}
+					else
+					{
+						Assert.assertEquals(airNumber, number);
+					}
+				}
+			}
+		}
+		Assert.assertEquals(7, minDirt);
+		Assert.assertEquals(9, maxDirt);
+		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, dirtCount);
 	}
 }

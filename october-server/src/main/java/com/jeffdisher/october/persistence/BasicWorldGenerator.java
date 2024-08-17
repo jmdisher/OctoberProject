@@ -2,14 +2,22 @@ package com.jeffdisher.october.persistence;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiFunction;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 /**
@@ -43,6 +51,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public static final int SHIFT_YCENTRE = 16;
 	public static final int MASK_XCENTRE = 0x03E00000;
 	public static final int SHIFT_XCENTRE = 21;
+	public static final int WATER_Z_LEVEL = 0;
 
 	public static final int[] BIOME_HEIGHT_OFFSET = {
 			-200,
@@ -62,7 +71,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			100,
 			200,
 	};
+	private final Environment _env;
 	private final int _seed;
+	private final Block _blockStone;
+	private final Block _blockDirt;
 
 	/**
 	 * Creates the world generator.
@@ -72,14 +84,106 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 */
 	public BasicWorldGenerator(Environment env, int seed)
 	{
+		_env = env;
 		_seed = seed;
+		
+		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
+		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
 	}
 
 	@Override
 	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
-		// TODO:  Implement once this is connected to the loader.
-		throw Assert.unreachable();
+		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
+		int[][] heightMap = _generateHeightMapForCuboidColumn(address.x(), address.y());
+		int minHeight = 0;
+		int maxHeight = Integer.MAX_VALUE;
+		int totalHeight = 0;
+		int count = 0;
+		for (int[] row : heightMap)
+		{
+			for (int height : row)
+			{
+				minHeight = Math.min(minHeight, height);
+				maxHeight = Math.max(maxHeight, height);
+				totalHeight += height;
+				count += 1;
+			}
+		}
+		Assert.assertTrue((Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE) == count);
+		int averageHeight = totalHeight / count;
+		AbsoluteLocation cuboidBase = address.getBase();
+		int cuboidZ = cuboidBase.z();
+		
+		// Determine how to start this based on the height compared to this z.
+		Block defaultEmptyBlock;
+		if (cuboidZ >= WATER_Z_LEVEL)
+		{
+			// Air.
+			defaultEmptyBlock = _env.special.AIR;
+		}
+		else
+		{
+			// Water.
+			defaultEmptyBlock = _env.special.WATER_SOURCE;
+		}
+		
+		Block defaultBlock;
+		if (averageHeight >= cuboidZ)
+		{
+			// This cuboid is either underground or intersecting with the surface so start with stone.
+			defaultBlock = _blockStone;
+		}
+		else
+		{
+			// This cuboid is at least mostly above the surface so fill with either air or water.
+			defaultBlock = defaultEmptyBlock;
+		}
+		CuboidData data = CuboidGenerator.createFilledCuboid(address, defaultBlock);
+		
+		// Now, walk the height map and make any required adjustments.
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = heightMap[y][x];
+				for (int z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
+				{
+					int thisZ = cuboidZ + z;
+					Block blockToWrite;
+					if (thisZ > height)
+					{
+						// This is whatever the air block is.
+						blockToWrite = defaultEmptyBlock;
+					}
+					else if (thisZ < height)
+					{
+						// This is stone.
+						blockToWrite = _blockStone;
+					}
+					else
+					{
+						// This is dirt since it IS the top.
+						blockToWrite = _blockDirt;
+					}
+					if (blockToWrite != defaultBlock)
+					{
+						data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte)z), blockToWrite.item().number());
+					}
+				}
+			}
+		}
+		
+		// TODO:  Add ore and flora.
+		// TODO:  Add spawned creatures.
+		List<CreatureEntity> entities = List.of();
+		// TODO:  Add flora mutations.
+		List<ScheduledMutation> mutations = List.of();
+		
+		return new SuspendedCuboid<CuboidData>(data
+				, entities
+				, mutations
+		);
 	}
 
 	/**
@@ -163,6 +267,12 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 */
 	public int[][] test_getHeightMap(short cuboidX, short cuboidY)
 	{
+		return _generateHeightMapForCuboidColumn(cuboidX, cuboidY);
+	}
+
+
+	private int[][] _generateHeightMapForCuboidColumn(short cuboidX, short cuboidY)
+	{
 		// Note that we need to consider "biome" and "cuboid centre height" which requires that we generate the seed values for 5x5 cuboids around this one.
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
 		
@@ -175,10 +285,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		int thisPeak = _peakWithinBiome(new _SubField(seeds, 0, 0));
 		int thisPeakY = yCentres[1][1];
 		int thisPeakX = xCentres[1][1];
-		int[][] heightMapForCuboidColumn = new int[32][32];
-		for (int y = 0; y < 32; ++y)
+		int[][] heightMapForCuboidColumn = new int[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < 32; ++x)
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height;
 				if ((thisPeakY == y) && (thisPeakX == x))
@@ -194,7 +304,6 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		}
 		return heightMapForCuboidColumn;
 	}
-
 
 	private static int _deterministicRandom(int seed, int x, int y)
 	{
@@ -258,8 +367,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			for (int x = -1; x <= 1; ++x)
 			{
 				int peak = _peakWithinBiome(new _SubField(seeds, x, y));
-				int yC = yCentres[1 + y][1 + x] + (32 * y);
-				int xC = xCentres[1 + y][1 + x] + (32 * x);
+				int yC = yCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * y);
+				int xC = xCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * x);
 				int dY = thisY - yC;
 				int dX = thisX - xC;
 				int distanceSquare = (dY * dY) + (dX * dX);
