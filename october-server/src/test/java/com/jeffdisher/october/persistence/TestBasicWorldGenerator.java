@@ -11,6 +11,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.Structure;
 
 
@@ -147,5 +148,16 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(7, minDirt);
 		Assert.assertEquals(9, maxDirt);
 		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, dirtCount);
+	}
+
+	@Test
+	public void checkDefaultSpawn() throws Throwable
+	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		EntityLocation spawn = generator.getDefaultSpawnLocation();
+		// This expected value was verified by looking at the renderRegion() test output.
+		// (a 9 is the greatest value in the centre cuboid and is first found by walking up along y in the first x location - then we add 1 to be on top).
+		Assert.assertEquals(new EntityLocation(0.0f, 22.0f, 10.0f), spawn);
 	}
 }

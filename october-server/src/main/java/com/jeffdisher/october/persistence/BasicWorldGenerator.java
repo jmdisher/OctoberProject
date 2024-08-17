@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
@@ -184,6 +185,37 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				, entities
 				, mutations
 		);
+	}
+
+	/**
+	 * This just returns a "reasonable" spawn location in the world but where the target starting location is is handled
+	 * purely internally.
+	 * Currently, this just returns a location in the 0,0 column which is standing on the ground where the world
+	 * would be generated (since it cannot account for changes since the world was generated).
+	 * 
+	 * @return The location where new entities can be reasonably spawned.
+	 */
+	public EntityLocation getDefaultSpawnLocation()
+	{
+		int[][] heightMap = _generateHeightMapForCuboidColumn((short)0, (short)0);
+		// Find the largest value here and spawn there (note that this may not be in the zero-z cuboid).
+		int maxZ = Integer.MIN_VALUE;
+		int targetX = -1;
+		int targetY = -1;
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = heightMap[y][x];
+				if (height > maxZ)
+				{
+					maxZ = height;
+					targetX = x;
+					targetY = y;
+				}
+			}
+		}
+		return new EntityLocation(targetX, targetY, (maxZ + 1));
 	}
 
 	/**
