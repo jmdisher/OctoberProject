@@ -27,6 +27,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -58,7 +59,7 @@ public class TestProcesses
 	@Test
 	public void startStopServer() throws Throwable
 	{
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
@@ -80,7 +81,7 @@ public class TestProcesses
 	public void startStop() throws Throwable
 	{
 		// Start everything, connect and disconnect once the see the entity arrive.
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
@@ -106,7 +107,7 @@ public class TestProcesses
 	public void basicMovement() throws Throwable
 	{
 		// Demonstrate that a client can move around the server without issue.
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Load a cuboid.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
@@ -150,7 +151,7 @@ public class TestProcesses
 	public void falling() throws Throwable
 	{
 		// Demonstrate that a client will fall through air and this will make sense in the projection.
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Load a cuboids.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
@@ -197,7 +198,7 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long currentTimeMillis = 1000L;
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Create and load the cuboid full of stone with no inventories.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -235,7 +236,7 @@ public class TestProcesses
 	{
 		// We want to create a server with a single cuboid, connect a client to it, and observe that the client sees everything.
 		long[] currentTimeMillis = new long[] { 1000L };
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
@@ -333,7 +334,7 @@ public class TestProcesses
 	{
 		// Connect a client and then use the agent to request that they be disconnected.
 		long currentTimeMillis = 1000L;
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));

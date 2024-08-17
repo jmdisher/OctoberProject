@@ -73,7 +73,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity.
-		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
@@ -106,8 +106,8 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them their own entity and another one.
-		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
-		network.client.receivedPartialEntity(PartialEntity.fromEntity(MutableEntity.create(2).freeze()));
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
+		network.client.receivedPartialEntity(PartialEntity.fromEntity(MutableEntity.createForTest(2).freeze()));
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (this requires and end of tick for the projection to be rebuilt)
@@ -145,7 +145,7 @@ public class TestClientRunner
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		
 		// Send them an entity and a cuboid.
-		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		network.client.receivedCuboid(cuboid);
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
@@ -216,7 +216,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		MutableEntity mutable = MutableEntity.create(clientId);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newInventory.addAllItems(LOG_ITEM, 2);
 		Entity startEntity = mutable.freeze();
 		network.client.receivedFullEntity(startEntity);
@@ -256,7 +256,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), STONE));
@@ -296,7 +296,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
 		// We want to position ourselves above the ground and drop onto the ground and observe that we no longer move.
-		MutableEntity mutable = MutableEntity.create(clientId);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 2.0f);
 		Entity entity = mutable.freeze();
 		network.client.receivedFullEntity(entity);
@@ -350,7 +350,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		MutableEntity mutable = MutableEntity.create(clientId);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		mutable.newInventory.addAllItems(LOG_ITEM, 2);
 		int logKey = mutable.newInventory.getIdOfStackableType(LOG_ITEM);
 		Entity startEntity = mutable.freeze();
@@ -398,7 +398,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
-		network.client.receivedFullEntity(MutableEntity.create(clientId).freeze());
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
 		// We will stand on the ground, in air, but there will be a wall directly to the West.
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
 		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));

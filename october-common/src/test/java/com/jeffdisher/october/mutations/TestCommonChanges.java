@@ -80,7 +80,7 @@ public class TestCommonChanges
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
 		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -99,7 +99,7 @@ public class TestCommonChanges
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
 		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		move.applyChange(context, newEntity);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
@@ -126,7 +126,7 @@ public class TestCommonChanges
 				, 100L
 		);
 		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		move.applyChange(context, newEntity);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
@@ -145,7 +145,7 @@ public class TestCommonChanges
 		TickProcessingContext context = _createSimpleContext();
 		context = _createNextTick(context, move.getTimeCostMillis());
 		// We start with a zero z-vector since we should start falling.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
@@ -166,7 +166,7 @@ public class TestCommonChanges
 		// Jump into the air and fall back down.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		TickProcessingContext context = _createSimpleContext();
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		
 		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
@@ -206,7 +206,7 @@ public class TestCommonChanges
 	public void selection() throws Throwable
 	{
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
 		// We will create a bogus context which just says that they are standing in a wall so they don't try to move.
@@ -245,7 +245,7 @@ public class TestCommonChanges
 	public void placeBlock() throws Throwable
 	{
 		// Create the entity in an air block so we can place this (give us a starter inventory).
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
@@ -273,7 +273,7 @@ public class TestCommonChanges
 	{
 		// Create an air cuboid with items in an inventory slot and then pick it up.
 		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.create(entityId);
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
@@ -328,7 +328,7 @@ public class TestCommonChanges
 	{
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -382,7 +382,7 @@ public class TestCommonChanges
 	{
 		// Create an air cuboid and an entity with an item, then try to drop it onto a block.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.durability.getDurability(pickItem)));
@@ -426,7 +426,7 @@ public class TestCommonChanges
 	public void invalidPlacements() throws Throwable
 	{
 		// We will try to place a block colliding with the entity or too far from them to verify that this fails.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
@@ -461,7 +461,7 @@ public class TestCommonChanges
 	public void invalidBreak() throws Throwable
 	{
 		// We will try to place a breaking a block of the wrong type or too far away.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		
 		AbsoluteLocation tooFar = new AbsoluteLocation(7, 0, 10);
@@ -494,7 +494,7 @@ public class TestCommonChanges
 		// We want to run a basic craft operation and observe that we start falling when it completes.
 		// (this will need to be adapted when the crafting system changes, later)
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
@@ -516,7 +516,7 @@ public class TestCommonChanges
 	public void nonBlockUsage() throws Throwable
 	{
 		// Show that a non-block item cannot be placed in the world, but can be placed in inventories.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 2);
@@ -558,12 +558,12 @@ public class TestCommonChanges
 	{
 		// Fill a block to only have space for 1 item left, then show that 2 entities storing the item in the same tick still cause the block to become over-full.
 		int entityId1 = 1;
-		MutableEntity mutable1 = MutableEntity.create(entityId1);
+		MutableEntity mutable1 = MutableEntity.createForTest(entityId1);
 		mutable1.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable1.newInventory.addAllItems(STONE_ITEM, 1);
 		mutable1.setSelectedKey(mutable1.newInventory.getIdOfStackableType(STONE_ITEM));
 		int entityId2 = 2;
-		MutableEntity mutable2 = MutableEntity.create(entityId2);
+		MutableEntity mutable2 = MutableEntity.createForTest(entityId2);
 		mutable2.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		mutable2.newInventory.addAllItems(STONE_ITEM, 1);
 		mutable2.setSelectedKey(mutable2.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -671,7 +671,7 @@ public class TestCommonChanges
 	{
 		// Normally, we won't try to store an item if the inventory is already full but something like breaking a block bypasses that check so see what happens when the inventory is full.
 		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.create(entityId);
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int stored = newEntity.newInventory.addItemsBestEfforts(STONE_ITEM, 100);
 		Assert.assertTrue(stored < 100);
@@ -693,13 +693,13 @@ public class TestCommonChanges
 		int attackerId = 1;
 		int targetId = 2;
 		int missId = 3;
-		MutableEntity attacker = MutableEntity.create(attackerId);
+		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
-		MutableEntity target = MutableEntity.create(targetId);
+		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
-		MutableEntity miss = MutableEntity.create(missId);
+		MutableEntity miss = MutableEntity.createForTest(missId);
 		miss.newLocation = new EntityLocation(12.0f, 10.0f, 0.0f);
 		
 		Map<Integer, Entity> targetsById = Map.of(targetId, target.freeze(), missId, miss.freeze());
@@ -752,9 +752,9 @@ public class TestCommonChanges
 		// Verify that damage is correctly applied, as well as the "respawn" mechanic.
 		int attackerId = 1;
 		int targetId = 2;
-		MutableEntity attacker = MutableEntity.create(attackerId);
+		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
-		MutableEntity target = MutableEntity.create(targetId);
+		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -815,7 +815,7 @@ public class TestCommonChanges
 		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
-		Assert.assertEquals(MutableEntity.DEFAULT_LOCATION, target.newLocation);
+		Assert.assertEquals(MutableEntity.TESTING_LOCATION, target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 	}
 
@@ -825,13 +825,13 @@ public class TestCommonChanges
 		// Verify sowrd damage and durability loss.
 		int attackerId = 1;
 		int targetId = 2;
-		MutableEntity attacker = MutableEntity.create(attackerId);
+		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		Item swordType = ENV.items.getItemById("op.iron_sword");
 		int startDurability = 100;
 		attacker.newInventory.addNonStackableBestEfforts(new NonStackableItem(swordType, startDurability));
 		attacker.setSelectedKey(1);
-		MutableEntity target = MutableEntity.create(targetId);
+		MutableEntity target = MutableEntity.createForTest(targetId);
 		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -900,7 +900,7 @@ public class TestCommonChanges
 				, 100L
 		);
 		int entityId = 1;
-		MutableEntity newEntity = MutableEntity.create(entityId);
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
 		// We should only see this change after applying it 20 times.
 		for (int i = 0; i < 19; ++i)
@@ -933,7 +933,7 @@ public class TestCommonChanges
 	{
 		// Show that we can eat bread, but not stone, and that the bread increases our food level.
 		Item bread = ENV.items.getItemById("op.bread");
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 1);
 		newEntity.newInventory.addAllItems(bread, 1);
@@ -960,7 +960,7 @@ public class TestCommonChanges
 	public void breakTool() throws Throwable
 	{
 		// Break a block with a tool with 1 durability to observe it break.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
@@ -987,7 +987,7 @@ public class TestCommonChanges
 	public void breakBlockFullInventory() throws Throwable
 	{
 		// Break a block with a nearly full inventory and verify that it doesn't add the new item.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		Item plank = ENV.items.getItemById("op.plank");
 		newEntity.newInventory.addItemsBestEfforts(plank, newEntity.newInventory.maxVacancyForItem(plank) - 1);
@@ -1035,7 +1035,7 @@ public class TestCommonChanges
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		int startDurability = 100;
 		
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		newEntity.setSelectedKey(1);
@@ -1082,7 +1082,7 @@ public class TestCommonChanges
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(emptyBucket, 0));
 		newEntity.setSelectedKey(1);
@@ -1121,7 +1121,7 @@ public class TestCommonChanges
 	public void changeHotbar() throws Throwable
 	{
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		int stoneId = 1;
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		Item swordType = ENV.items.getItemById("op.iron_sword");
@@ -1152,7 +1152,7 @@ public class TestCommonChanges
 	{
 		// We will put some armour on the entity and see how the health is impacted by various attacks.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int startDurability = 15;
 		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
@@ -1182,7 +1182,7 @@ public class TestCommonChanges
 	{
 		// Put some armour in the inventory and show that we can swap it in and out of the armour slots.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item dirtType = ENV.items.getItemById("op.dirt");
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int helmet1Durability = 15;
@@ -1225,7 +1225,7 @@ public class TestCommonChanges
 	public void loadUnloadFurnaceFuel() throws Throwable
 	{
 		// Verify that we can load and unload the furnace fuel inventory.
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 2);
 		int charcoalId = newEntity.newInventory.getIdOfStackableType(CHARCOAL_ITEM);
@@ -1294,7 +1294,7 @@ public class TestCommonChanges
 		// Verify that attacking a creature ends up calling the other path.
 		int attackerId = 1;
 		int targetId = -1;
-		MutableEntity attacker = MutableEntity.create(attackerId);
+		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(targetId
 				, EntityType.COW
@@ -1356,7 +1356,7 @@ public class TestCommonChanges
 		// Verify that feeding a creature ends up sending the follow-up change and that it works.
 		int entityId = 1;
 		int targetId = -1;
-		MutableEntity entity = MutableEntity.create(entityId);
+		MutableEntity entity = MutableEntity.createForTest(entityId);
 		entity.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		entity.newInventory.addAllItems(ENV.items.getItemById("op.wheat_item"), 1);
 		// We assume that this is key 1.
@@ -1409,7 +1409,7 @@ public class TestCommonChanges
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(itemDoorClosed);
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
 		
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemDoorClosed, 1);
 		newEntity.setSelectedKey(1);
@@ -1475,7 +1475,7 @@ public class TestCommonChanges
 		// Give the entity a hopper, place it with a direction, and observe that it ends up oriented that way.
 		Item itemHopperDown = ENV.items.getItemById("op.hopper_down");
 		
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemHopperDown, 6);
 		newEntity.setSelectedKey(1);
@@ -1547,7 +1547,7 @@ public class TestCommonChanges
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_closed"));
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
 		
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		AbsoluteLocation doorLocation = new AbsoluteLocation(0, 1, 10);
@@ -1601,7 +1601,7 @@ public class TestCommonChanges
 		// Handles the case where we need to clear the hotbar selections if we used up the last of them - test for the index we selected or another.
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		Craft stoneToBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		
 		// Put log and stone on the hotbar, selecting the log.
@@ -1638,7 +1638,7 @@ public class TestCommonChanges
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), waterSource);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		
 		EntityChangeSwim<IMutablePlayerEntity> swim = new EntityChangeSwim<>();
@@ -1681,18 +1681,18 @@ public class TestCommonChanges
 		EntityChangeSwim<IMutablePlayerEntity> swim = new EntityChangeSwim<>();
 		
 		// Jumping under water is fine if standing on a solid block.
-		MutableEntity entity = MutableEntity.create(1);
+		MutableEntity entity = MutableEntity.createForTest(1);
 		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1);
 		Assert.assertTrue(jump.applyChange(context, entity));
 		
 		// Jumping under water fails if not on a solid block but swimming should work.
-		entity = MutableEntity.create(1);
+		entity = MutableEntity.createForTest(1);
 		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.5f);
 		Assert.assertFalse(jump.applyChange(context, entity));
 		Assert.assertTrue(swim.applyChange(context, entity));
 		
 		// Jumping under water fails if not on a solid block but swimming should work.
-		entity = MutableEntity.create(1);
+		entity = MutableEntity.createForTest(1);
 		entity.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 2.0f);
 		Assert.assertFalse(jump.applyChange(context, entity));
 		Assert.assertTrue(swim.applyChange(context, entity));
@@ -1704,7 +1704,7 @@ public class TestCommonChanges
 		Craft grindFlour = ENV.crafting.getCraftById("op.flour");
 		Item wheatItem = ENV.items.getItemById("op.wheat_item");
 		Item flour = ENV.items.getItemById("op.flour");
-		MutableEntity newEntity = MutableEntity.create(1);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(wheatItem, 1);
 		int wheatId = newEntity.newInventory.getIdOfStackableType(wheatItem);

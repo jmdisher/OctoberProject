@@ -158,7 +158,7 @@ public class TestCodecHelpers
 	public void entity() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		Entity test = MutableEntity.create(1).freeze();
+		Entity test = MutableEntity.createForTest(1).freeze();
 		CodecHelpers.writeEntity(buffer, test);
 		buffer.flip();
 		Entity output = CodecHelpers.readEntity(buffer);
@@ -174,7 +174,7 @@ public class TestCodecHelpers
 	public void entityWithCraft() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		MutableEntity mutable = MutableEntity.create(1);
+		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocalCraftOperation = new CraftOperation(ENV.crafting.getCraftById("op.stone_to_stone_brick"), 50L);
 		Entity test = mutable.freeze();
 		CodecHelpers.writeEntity(buffer, test);

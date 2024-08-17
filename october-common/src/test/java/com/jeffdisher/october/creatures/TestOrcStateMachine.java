@@ -34,7 +34,7 @@ public class TestOrcStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation location = new EntityLocation(4.0f, 0.0f, 0.0f);
-		MutableEntity mutable = MutableEntity.create(1);
+		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -56,7 +56,7 @@ public class TestOrcStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation location = new EntityLocation(4.0f, 0.0f, 0.0f);
-		MutableEntity mutable = MutableEntity.create(1);
+		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -82,7 +82,7 @@ public class TestOrcStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation location = new EntityLocation(1.0f, 0.0f, 0.0f);
-		MutableEntity mutable = MutableEntity.create(1);
+		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);

@@ -113,7 +113,7 @@ public class TestCommonMutations
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;
-		Entity entity = MutableEntity.create(clientId).freeze();
+		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		
 		// Without a tool, this will take 5 hits.
 		MutableBlockProxy proxy = null;
@@ -159,7 +159,7 @@ public class TestCommonMutations
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;
-		MutableEntity mutable = MutableEntity.create(clientId);
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, ENV.durability.getDurability(pickaxe)));
 		mutable.setSelectedKey(1);

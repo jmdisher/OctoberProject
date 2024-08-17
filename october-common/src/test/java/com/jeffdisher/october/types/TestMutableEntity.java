@@ -87,7 +87,7 @@ public class TestMutableEntity
 
 	private static Entity _buildTestEntity()
 	{
-		MutableEntity mutable = MutableEntity.create(1);
+		MutableEntity mutable = MutableEntity.createForTest(1);
 		return mutable.freeze();
 	}
 }

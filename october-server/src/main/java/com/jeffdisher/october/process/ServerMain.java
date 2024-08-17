@@ -8,6 +8,7 @@ import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -34,7 +35,10 @@ public class ServerMain
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
 				ResourceLoader.populateWorldConfig(worldDirectory, config);
-				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(true));
+				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
+						, new FlatWorldGenerator(true)
+						, MutableEntity.TESTING_LOCATION
+				);
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK
 						, cuboidLoader

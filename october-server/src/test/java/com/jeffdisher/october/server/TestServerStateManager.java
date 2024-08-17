@@ -89,7 +89,7 @@ public class TestServerStateManager
 		callouts.requestedEntityIds.clear();
 		
 		// Load this entity.
-		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.create(clientId).freeze(), List.of()));
+		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId).freeze(), List.of()));
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertTrue(changes.newCuboids().isEmpty());
 		Assert.assertTrue(changes.cuboidsToUnload().isEmpty());

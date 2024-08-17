@@ -92,7 +92,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -216,7 +216,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -302,7 +302,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -405,7 +405,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -503,7 +503,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -614,11 +614,11 @@ public class TestSpeculativeProjection
 		
 		// We need 2 entities for this but we will give one some items.
 		int entityId2 = 2;
-		MutableEntity mutable = MutableEntity.create(entityId1);
+		MutableEntity mutable = MutableEntity.createForTest(entityId1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		projector.setThisEntity(mutable.freeze());
 		projector.applyChangesForServerTick(0L
-				, List.of(PartialEntity.fromEntity(MutableEntity.create(entityId2).freeze()))
+				, List.of(PartialEntity.fromEntity(MutableEntity.createForTest(entityId2).freeze()))
 				, Collections.emptyList()
 				, List.of()
 				, Collections.emptyMap()
@@ -688,7 +688,7 @@ public class TestSpeculativeProjection
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		long currentTimeMillis = 1L;
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, List.of(cuboid)
@@ -777,7 +777,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
@@ -837,7 +837,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		projector.setThisEntity(MutableEntity.create(entityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, Collections.emptyList()
@@ -895,7 +895,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		// Start the entity with some stone and with them selected.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		mutable.setSelectedKey(stoneKey);
@@ -952,7 +952,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
@@ -992,7 +992,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		MutableEntity mutable = MutableEntity.create(localEntityId);
+		MutableEntity mutable = MutableEntity.createForTest(localEntityId);
 		mutable.newInventory.addAllItems(CRAFTING_TABLE_ITEM, 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(CRAFTING_TABLE_ITEM));
@@ -1075,7 +1075,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_BRICK_ITEM, 4);
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).addStackable(STONE_BRICK_ITEM, 4).finish();
 		Entity entity = mutable.freeze();
@@ -1121,7 +1121,7 @@ public class TestSpeculativeProjection
 		Inventory inv = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
 		int stoneKey = inv.getIdOfStackableType(STONE_ITEM);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
-		projector.setThisEntity(MutableEntity.create(localEntityId).freeze());
+		projector.setThisEntity(MutableEntity.createForTest(localEntityId).freeze());
 		projector.applyChangesForServerTick(0L
 				, List.of()
 				, List.of(cuboid)
@@ -1229,7 +1229,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
-		MutableEntity mutable = MutableEntity.create(localEntityId);
+		MutableEntity mutable = MutableEntity.createForTest(localEntityId);
 		mutable.newInventory.addAllItems(FURNACE_ITEM, 1);
 		mutable.newInventory.addAllItems(PLANK_ITEM, 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 1);
@@ -1308,7 +1308,7 @@ public class TestSpeculativeProjection
 		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 100);
 		Assert.assertTrue(stored < 100);
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
@@ -1355,7 +1355,7 @@ public class TestSpeculativeProjection
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		
 		// Make sure that they are starving.
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.setFood((byte)0);
 		projector.setThisEntity(mutable.freeze());
 		

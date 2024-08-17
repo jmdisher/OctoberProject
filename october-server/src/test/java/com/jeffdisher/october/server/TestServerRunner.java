@@ -74,7 +74,7 @@ public class TestServerRunner
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
-				, new ResourceLoader(DIRECTORY.newFolder(), null)
+				, new ResourceLoader(DIRECTORY.newFolder(), null, null)
 				, () -> System.currentTimeMillis()
 				, monitoringAgent
 				, new WorldConfig()
@@ -92,7 +92,7 @@ public class TestServerRunner
 	{
 		// Just connect two clients and verify that they see themselves and each other.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -132,7 +132,7 @@ public class TestServerRunner
 		TestAdapter network = new TestAdapter();
 		
 		// Create a world with a stone cuboid and an air cuboid on top.
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
 		
@@ -179,7 +179,7 @@ public class TestServerRunner
 	{
 		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -214,7 +214,7 @@ public class TestServerRunner
 	{
 		// Do nothing and observe that we see location updates from the server as the entity falls.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
@@ -256,7 +256,7 @@ public class TestServerRunner
 	{
 		// Connect 2 clients and verify that 1 can see the other when they disconnect.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -297,7 +297,7 @@ public class TestServerRunner
 	{
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), STONE));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.special.AIR));
 		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
@@ -343,7 +343,7 @@ public class TestServerRunner
 	{
 		// Connect a client, change something about them, disconnect, then reconnect and verify the change is still present.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		_loadDefaultMap(cuboidLoader);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -390,7 +390,7 @@ public class TestServerRunner
 	{
 		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false));
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		WorldConfig config = new WorldConfig();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).

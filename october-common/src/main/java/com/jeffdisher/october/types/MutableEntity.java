@@ -15,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MutableEntity implements IMutablePlayerEntity
 {
-	public static final EntityLocation DEFAULT_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
+	public static final EntityLocation TESTING_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
 	public static final float DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 	public static final byte DEFAULT_HEALTH = 100;
 	public static final byte DEFAULT_FOOD = 100;
@@ -32,19 +32,37 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	/**
-	 * Creates a mutable entity based on the default values for a new entity.
+	 * Creates a mutable entity with the given id and location.
+	 * 
+	 * @param id The entity ID (must be positive).
+	 * @param location The location of the entity.
+	 * @return A mutable entity.
+	 */
+	public static MutableEntity createWithLocation(int id, EntityLocation location)
+	{
+		return _createWithLocation(id, location);
+	}
+
+	/**
+	 * A helper to create a mutable entity for testing purposes (uses testing defaults).
 	 * 
 	 * @param id The entity ID (must be positive).
 	 * @return A mutable entity.
 	 */
-	public static MutableEntity create(int id)
+	public static MutableEntity createForTest(int id)
+	{
+		return _createWithLocation(id, TESTING_LOCATION);
+	}
+
+	private static MutableEntity _createWithLocation(int id, EntityLocation location)
 	{
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(id > 0);
+		Assert.assertTrue(null != location);
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
 				, false
-				, DEFAULT_LOCATION
+				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
@@ -209,7 +227,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		
 		// Respawn them.
 		this.newInventory.clearInventory(null);
-		this.newLocation = MutableEntity.DEFAULT_LOCATION;
+		this.newLocation = MutableEntity.TESTING_LOCATION;
 		this.newHealth = MutableEntity.DEFAULT_HEALTH;
 		this.newFood = MutableEntity.DEFAULT_FOOD;
 		// Wipe all the hotbar slots.

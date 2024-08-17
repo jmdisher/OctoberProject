@@ -348,7 +348,7 @@ public class TestTickRunner
 		// We need 2 entities for this but we will give one some items.
 		int entityId1 = 1;
 		int entityId2 = 2;
-		MutableEntity mutable = MutableEntity.create(entityId1);
+		MutableEntity mutable = MutableEntity.createForTest(entityId1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		runner.setupChangesForTick(null
 				, null
@@ -398,7 +398,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		// We will load a pickaxe into the entity so that it can do this in only a few small hits.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
 		int startDurability = ENV.durability.getDurability(pickaxe);
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
@@ -699,7 +699,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(LOG_ITEM, 3);
 		int logKey = mutable.newInventory.getIdOfStackableType(LOG_ITEM);
 		mutable.newInventory.addAllItems(PLANK_ITEM, 2);
@@ -877,7 +877,7 @@ public class TestTickRunner
 		
 		// We need an entity to generate the change which will trigger the update.
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_BRICK_ITEM, 3);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_BRICK_ITEM));
 		Entity entity = mutable.freeze();
@@ -1093,7 +1093,7 @@ public class TestTickRunner
 		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -1141,7 +1141,7 @@ public class TestTickRunner
 		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -1199,7 +1199,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z());
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of()))
@@ -1339,7 +1339,7 @@ public class TestTickRunner
 				, new WorldConfig()
 		);
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(SAPLING_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(SAPLING_ITEM));
@@ -1411,7 +1411,7 @@ public class TestTickRunner
 				, new WorldConfig()
 		);
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x(), location.y(), location.z());
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
@@ -1505,7 +1505,7 @@ public class TestTickRunner
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
@@ -1591,7 +1591,7 @@ public class TestTickRunner
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(spawn.x() + 1, spawn.y(), spawn.z());
 		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), 1000));
 		mutable.setSelectedKey(1);
@@ -1701,7 +1701,7 @@ public class TestTickRunner
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
@@ -1773,7 +1773,7 @@ public class TestTickRunner
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		MutableEntity mutable = MutableEntity.create(entityId);
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of())
@@ -1887,7 +1887,7 @@ public class TestTickRunner
 
 	private SuspendedEntity _createFreshEntity(int entityId)
 	{
-		return new SuspendedEntity(MutableEntity.create(entityId).freeze(), List.of());
+		return new SuspendedEntity(MutableEntity.createForTest(entityId).freeze(), List.of());
 	}
 
 	private TickRunner _createTestRunner()
