@@ -102,7 +102,7 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 					(0 == address.y()) ? BASE.y() : (32 + BASE.y()),
 					(0 == address.z()) ? BASE.z() : (32 + BASE.z())
 			);
-			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, baseOffset);
+			List<IMutationBlock> immediateMutations = structure.applyToCuboid(data, baseOffset, Structure.REPLACE_ALL);
 			mutations = immediateMutations.stream()
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()

@@ -14,6 +14,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Item;
 
 
@@ -25,6 +26,7 @@ import com.jeffdisher.october.types.Item;
 public class Structure
 {
 	public static final int CUBOID_EDGE_SIZE = 32;
+	public static final short REPLACE_ALL = -1;
 	private final short[][] _allLayerBlocks;
 	private final int _width;
 
@@ -60,9 +62,11 @@ public class Structure
 	 * 
 	 * @param cuboid The cuboid to modify.
 	 * @param baseOffset The base offset where the structure will be applied (relative to the base of the cuboid).
+	 * @param replaceTypeMask If >=0, only blocks with this type number will be replaced (pass -1 to replace
+	 * everything).
 	 * @return The mutations which must be applied to this cuboid to finish the load.
 	 */
-	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation baseOffset)
+	public List<IMutationBlock> applyToCuboid(CuboidData cuboid, AbsoluteLocation baseOffset, short replaceTypeMask)
 	{
 		int sizeX = _width;
 		int sizeY = _getYSize();
@@ -142,23 +146,28 @@ public class Structure
 					// -1 means "ignore".
 					if (value >= 0)
 					{
-						// Lighting updates are handled somewhat specially (not just as a simple mutation - since they
-						// are so common, they are specially optimized).  Therefore, we will just handle lighting
-						// updates and growth mutation requirements the same way:  Make the block air and return a
-						// replace block mutation.
-						Item rawItem = items.ITEMS_BY_TYPE[value];
-						Block block = blocks.fromItem(rawItem);
-						boolean needsLightUpdate = (lights.getLightEmission(block) > 0);
-						boolean needsGrowth = (plants.growthDivisor(block) > 0);
 						AbsoluteLocation thisBlock = baseCuboidLocation.getRelative(writeX + a, writeY + b, writeZ + c);
-						if (needsLightUpdate || needsGrowth)
+						BlockAddress blockAddress = thisBlock.getBlockAddress();
+						// We will only replace this if it is the mast type or there is no mask type.
+						if ((replaceTypeMask < 0) || (replaceTypeMask == cuboid.getData15(AspectRegistry.BLOCK, blockAddress)))
 						{
-							cuboid.setData15(AspectRegistry.BLOCK, thisBlock.getBlockAddress(), replacementBlock);
-							mutations.add(new MutationBlockOverwrite(thisBlock, block));
-						}
-						else
-						{
-							cuboid.setData15(AspectRegistry.BLOCK, thisBlock.getBlockAddress(), value);
+							// Lighting updates are handled somewhat specially (not just as a simple mutation - since they
+							// are so common, they are specially optimized).  Therefore, we will just handle lighting
+							// updates and growth mutation requirements the same way:  Make the block air and return a
+							// replace block mutation.
+							Item rawItem = items.ITEMS_BY_TYPE[value];
+							Block block = blocks.fromItem(rawItem);
+							boolean needsLightUpdate = (lights.getLightEmission(block) > 0);
+							boolean needsGrowth = (plants.growthDivisor(block) > 0);
+							if (needsLightUpdate || needsGrowth)
+							{
+								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
+								mutations.add(new MutationBlockOverwrite(thisBlock, block));
+							}
+							else
+							{
+								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, value);
+							}
 						}
 					}
 				}

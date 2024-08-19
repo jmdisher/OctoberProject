@@ -48,7 +48,7 @@ public class TestStructureLoader
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
 		Assert.assertTrue(changes.isEmpty());
 		
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)4, (byte)5, (byte)6)));
@@ -78,7 +78,7 @@ public class TestStructureLoader
 		Assert.assertEquals(new AbsoluteLocation(5, 3, 3), structure.totalVolume());
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
 		Assert.assertTrue(changes.isEmpty());
 		
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
@@ -109,14 +109,14 @@ public class TestStructureLoader
 		
 		// Offset with the positive edge.
 		AbsoluteLocation target = new AbsoluteLocation(30, 30, 30);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
 		Assert.assertTrue(changes.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 		
 		// Offset with the negative edge.
 		AbsoluteLocation negativeTarget = target.getRelative(-32, -32, -32);
-		changes = structure.applyToCuboid(cuboid, negativeTarget);
+		changes = structure.applyToCuboid(cuboid, negativeTarget, Structure.REPLACE_ALL);
 		Assert.assertTrue(changes.isEmpty());
 		Assert.assertEquals(STONE_BRICK.item().number(), cuboid.getData15(AspectRegistry.BLOCK, negativeTarget.getRelative(2, 2, 2).getBlockAddress()));
 	}
@@ -132,7 +132,7 @@ public class TestStructureLoader
 		Structure structure = loader.loadFromStrings(zLayers);
 		
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
-		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
 		// We expect 3 things here with x-offsets: +1, +5, +9.
 		AbsoluteLocation wait1 = target.getRelative(1, 0, 0);
 		AbsoluteLocation wait2 = target.getRelative(5, 0, 0);
@@ -147,5 +147,56 @@ public class TestStructureLoader
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait1.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait2.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, wait3.getBlockAddress()));
+	}
+
+	@Test
+	public void oreNode()
+	{
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		String[] zLayers = new String[] {""
+				+ "A A\n"
+				+ "III\n"
+				+ "A A\n"
+				, ""
+				+ " I \n"
+				+ "III\n"
+				+ " I \n"
+				, ""
+				+ "A A\n"
+				+ "III\n"
+				+ "A A\n"
+		};
+		// Create a cuboid where only the bottom layer is stone but the rest is air.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		short stoneBlockValue = ENV.items.getItemById("op.stone").number();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, (byte)0), stoneBlockValue);
+			}
+		}
+		Structure structure = loader.loadFromStrings(zLayers);
+		
+		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
+		short airValue = ENV.special.AIR.item().number();
+		short coalOreValue = ENV.items.getItemById("op.coal_ore").number();
+		short ironOreValue = ENV.items.getItemById("op.iron_ore").number();
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, stoneBlockValue);
+		Assert.assertTrue(changes.isEmpty());
+		for (byte z = 1; z < Structure.CUBOID_EDGE_SIZE; ++z)
+		{
+			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			{
+				for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+				{
+					Assert.assertEquals(airValue, cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z)));
+				}
+			}
+		}
+		Assert.assertEquals(coalOreValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(ironOreValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 	}
 }
