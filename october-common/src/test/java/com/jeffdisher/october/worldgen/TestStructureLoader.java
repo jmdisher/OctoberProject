@@ -199,4 +199,29 @@ public class TestStructureLoader
 		Assert.assertEquals(coalOreValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertEquals(ironOreValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress()));
 	}
+
+	@Test
+	public void treeParts()
+	{
+		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
+		String[] zLayers = new String[] {""
+				+ "T \n"
+				+ "  \n"
+				, ""
+				+ "EE\n"
+				+ "EE\n"
+		};
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Structure structure = loader.loadFromStrings(zLayers);
+		
+		// Load into the base of the cuboid and see that only the stone blocks have been replaced but the air left unchanged.
+		short logValue = ENV.items.getItemById("op.log").number();
+		short leafValue = ENV.items.getItemById("op.leaf").number();
+		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
+		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
+		Assert.assertTrue(changes.isEmpty());
+		Assert.assertEquals(logValue, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(leafValue, cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 1).getBlockAddress()));
+	}
 }

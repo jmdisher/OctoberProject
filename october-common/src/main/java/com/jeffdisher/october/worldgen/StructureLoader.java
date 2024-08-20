@@ -1,5 +1,7 @@
 package com.jeffdisher.october.worldgen;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.BlockAspect;
@@ -35,6 +37,8 @@ public class StructureLoader
 	public static final char C_CARROT   = 'C';
 	public static final char C_COAL_ORE = 'A';
 	public static final char C_IRON_ORE = 'I';
+	public static final char C_TREE_LOG = 'T';
+	public static final char C_TREE_LEAF= 'E';
 
 	private final Map<Character, Block> _lookup;
 
@@ -46,16 +50,19 @@ public class StructureLoader
 	 */
 	public StructureLoader(ItemRegistry items, BlockAspect blocks)
 	{
-		_lookup = Map.of(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))
-				, C_WATER, blocks.fromItem(items.getItemById("op.water_source"))
-				, C_BRICK, blocks.fromItem(items.getItemById("op.stone_brick"))
-				, C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))
-				, C_SEEDLING, blocks.fromItem(items.getItemById("op.wheat_seedling"))
-				, C_SAPLING, blocks.fromItem(items.getItemById("op.sapling"))
-				, C_CARROT, blocks.fromItem(items.getItemById("op.carrot_seedling"))
-				, C_COAL_ORE, blocks.fromItem(items.getItemById("op.coal_ore"))
-				, C_IRON_ORE, blocks.fromItem(items.getItemById("op.iron_ore"))
-		);
+		Map<Character, Block> temp = new HashMap<>();
+		Assert.assertTrue(null == temp.put(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))));
+		Assert.assertTrue(null == temp.put(C_WATER, blocks.fromItem(items.getItemById("op.water_source"))));
+		Assert.assertTrue(null == temp.put(C_BRICK, blocks.fromItem(items.getItemById("op.stone_brick"))));
+		Assert.assertTrue(null == temp.put(C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))));
+		Assert.assertTrue(null == temp.put(C_SEEDLING, blocks.fromItem(items.getItemById("op.wheat_seedling"))));
+		Assert.assertTrue(null == temp.put(C_SAPLING, blocks.fromItem(items.getItemById("op.sapling"))));
+		Assert.assertTrue(null == temp.put(C_CARROT, blocks.fromItem(items.getItemById("op.carrot_seedling"))));
+		Assert.assertTrue(null == temp.put(C_COAL_ORE, blocks.fromItem(items.getItemById("op.coal_ore"))));
+		Assert.assertTrue(null == temp.put(C_IRON_ORE, blocks.fromItem(items.getItemById("op.iron_ore"))));
+		Assert.assertTrue(null == temp.put(C_TREE_LOG, blocks.fromItem(items.getItemById("op.log"))));
+		Assert.assertTrue(null == temp.put(C_TREE_LEAF, blocks.fromItem(items.getItemById("op.leaf"))));
+		_lookup = Collections.unmodifiableMap(temp);
 	}
 
 	/**
