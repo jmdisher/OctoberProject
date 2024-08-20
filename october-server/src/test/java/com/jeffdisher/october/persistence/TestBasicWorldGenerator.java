@@ -115,6 +115,8 @@ public class TestBasicWorldGenerator
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
 		short coalNumber = ENV.items.getItemById("op.coal_ore").number();
 		short ironNumber = ENV.items.getItemById("op.iron_ore").number();
+		short logNumber = ENV.items.getItemById("op.log").number();
+		short leafNumber = ENV.items.getItemById("op.leaf").number();
 		short airNumber = ENV.items.getItemById("op.air").number();
 		// We will just verify that this has air above stone with a dirt layer between.
 		int minDirt = Integer.MAX_VALUE;
@@ -122,6 +124,8 @@ public class TestBasicWorldGenerator
 		int dirtCount = 0;
 		int coalCount = 0;
 		int ironCount = 0;
+		int logCount = 0;
+		int leafCount = 0;
 		for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 		{
 			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
@@ -154,7 +158,18 @@ public class TestBasicWorldGenerator
 					}
 					else
 					{
-						Assert.assertEquals(airNumber, number);
+						if (logNumber == number)
+						{
+							logCount += 1;
+						}
+						else if (leafNumber == number)
+						{
+							leafCount += 1;
+						}
+						else
+						{
+							Assert.assertEquals(airNumber, number);
+						}
 					}
 				}
 			}
@@ -164,6 +179,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, dirtCount);
 		Assert.assertEquals(4, coalCount);
 		Assert.assertEquals(0, ironCount);
+		Assert.assertEquals(17, logCount);
+		Assert.assertEquals(24, leafCount);
 	}
 
 	@Test
@@ -190,19 +207,19 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)-1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32721, 20, 27);
+		_checkBlockTypes(data, 32721, 20, 27, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
 		address = new CuboidAddress((short)5, (short)1, (short)0);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32756, 12, 0);
+		_checkBlockTypes(data, 32756, 12, 0, 0, 0, 0);
 		
 		// This one is too deep for either.
 		address = new CuboidAddress((short)5, (short)1, (short)-5);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32768, 0, 0);
+		_checkBlockTypes(data, 32768, 0, 0, 0, 0, 0);
 	}
 
 	@Test
@@ -221,16 +238,33 @@ public class TestBasicWorldGenerator
 		}
 	}
 
-
-	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron)
+	@Test
+	public void forestCuboid() throws Throwable
 	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)-9, (short)0));
+		CuboidData cuboid = suspended.cuboid();
+		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 18, 24);
+	}
+
+
+	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf)
+	{
+		short airNumber = ENV.items.getItemById("op.air").number();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		short coalNumber = ENV.items.getItemById("op.coal_ore").number();
 		short ironNumber = ENV.items.getItemById("op.iron_ore").number();
+		short dirtNumber = ENV.items.getItemById("op.dirt").number();
+		short logNumber = ENV.items.getItemById("op.log").number();
+		short leafNumber = ENV.items.getItemById("op.leaf").number();
 		
 		int stoneCount = 0;
 		int coalCount = 0;
 		int ironCount = 0;
+		int dirtCount = 0;
+		int logCount = 0;
+		int leafCount = 0;
 		for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
 		{
 			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
@@ -238,7 +272,11 @@ public class TestBasicWorldGenerator
 				for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 				{
 					short value = data.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
-					if (stoneNumber == value)
+					if (airNumber == value)
+					{
+						// We don't count the air.
+					}
+					else if (stoneNumber == value)
 					{
 						stoneCount += 1;
 					}
@@ -249,6 +287,18 @@ public class TestBasicWorldGenerator
 					else if (ironNumber == value)
 					{
 						ironCount += 1;
+					}
+					else if (logNumber == value)
+					{
+						logCount += 1;
+					}
+					else if (leafNumber == value)
+					{
+						leafCount += 1;
+					}
+					else if (dirtNumber == value)
+					{
+						dirtCount += 1;
 					}
 					else
 					{
@@ -261,5 +311,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(stone, stoneCount);
 		Assert.assertEquals(coal, coalCount);
 		Assert.assertEquals(iron, ironCount);
+		Assert.assertEquals(dirt, dirtCount);
+		Assert.assertEquals(log, logCount);
+		Assert.assertEquals(leaf, leafCount);
 	}
 }

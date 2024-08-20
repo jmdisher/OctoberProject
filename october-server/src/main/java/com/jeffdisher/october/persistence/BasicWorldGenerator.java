@@ -56,6 +56,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public static final int SHIFT_XCENTRE = 21;
 	public static final int WATER_Z_LEVEL = 0;
 
+	public static final char FOREST_CODE = 'R';
 	public static final _Biome[] BIOMES = {
 			new _Biome("Deep Ocean 2"
 					, 'D'
@@ -90,7 +91,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					, 0
 			),
 			new _Biome("Forest"
-					, 'R'
+					, FOREST_CODE
 					, 0
 			),
 			new _Biome("Swamp"
@@ -149,6 +150,20 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			+ "III\n"
 			+ "III\n"
 	};
+	public static final int FOREST_TREE_COUNT = 6;
+	public static final String[] BASIC_TREE = new String[] {""
+			+ "   \n"
+			+ " T \n"
+			+ "   \n"
+			, ""
+			+ "   \n"
+			+ " T \n"
+			+ "   \n"
+			, ""
+			+ " E \n"
+			+ "ETE\n"
+			+ " E \n"
+	};
 
 	private final Environment _env;
 	private final int _seed;
@@ -156,6 +171,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	private final Block _blockDirt;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
+	private final Structure _basicTree;
 
 	/**
 	 * Creates the world generator.
@@ -174,6 +190,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
 		_ironNode = loader.loadFromStrings(IRON_NODE);
+		_basicTree = loader.loadFromStrings(BASIC_TREE);
 	}
 
 	@Override
@@ -181,7 +198,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
-		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		_SubField subField = new _SubField(seeds, 0, 0);
+		int[][] heightMap = _generateHeightMapForCuboidColumn(subField);
 		int minHeight = 0;
 		int maxHeight = Integer.MAX_VALUE;
 		int totalHeight = 0;
@@ -260,8 +278,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			}
 		}
 		
-		// Generate the ore nodes.
-		_generateOreNodes(address, data, seeds);
+		// Generate the ore nodes and other structures (including trees).
+		_generateOreNodesAndStructures(subField, address, data);
 		
 		// TODO:  Add surface flora.
 		// TODO:  Add spawned creatures.
@@ -417,7 +435,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public void test_generateOreNodes(CuboidAddress address, CuboidData data)
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
-		_generateOreNodes(address, data, seeds);
+		_generateOreNodesAndStructures(new _SubField(seeds, 0, 0), address, data);
 	}
 
 
@@ -605,23 +623,43 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return rawHeight + offset;
 	}
 
-	private void _generateOreNodes(CuboidAddress address, CuboidData data, _SeedField seeds)
+	private void _generateOreNodesAndStructures(_SubField subField, CuboidAddress address, CuboidData data)
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
 		AbsoluteLocation base = address.getBase();
+		short airNumber = _env.special.AIR.item().number();
 		for (int y = -1; y <= 1; ++y)
 		{
 			for (int x = -1; x <= 1; ++x)
 			{
 				CuboidAddress sideAddress = address.getRelative(x, y, 0);
-				int cuboidSeed = seeds.get(x, y);
+				_SubField relField = subField.relativeField(x, y);
+				int cuboidSeed = relField.get(0, 0);
 				AbsoluteLocation sideBase = sideAddress.getBase();
 				int relativeBaseX = sideBase.x() - base.x();
 				int relativeBaseY = sideBase.y() - base.y();
 				int targetCuboidBaseZ = base.z();
 				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
 				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
+				
+				// If this is a forest, also generate random trees.
+				int biome = _buildBiomeFromSeeds5x5(relField);
+				if (FOREST_CODE == BIOMES[biome].code)
+				{
+					int[][] heightMap = _generateHeightMapForCuboidColumn(relField);
+					Random random = new Random(cuboidSeed);
+					for (int i = 0; i < FOREST_TREE_COUNT; ++i)
+					{
+						int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+						int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+						// Choose the block above the dirt.
+						int absoluteZ = heightMap[relativeY][relativeY] + 1;
+						// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
+						AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
+						_basicTree.applyToCuboid(data, relativeBase, airNumber);
+					}
+				}
 			}
 		}
 	}
@@ -647,12 +685,12 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	{
 		public static _SeedField buildSeedField5x5(int seed, short cuboidX, short cuboidY)
 		{
-			int[][] seeds = new int[7][7];
-			for (int y = -3; y <= 3; ++y)
+			int[][] seeds = new int[9][9];
+			for (int y = -4; y <= 4; ++y)
 			{
-				for (int x = -3; x <= 3; ++x)
+				for (int x = -4; x <= 4; ++x)
 				{
-					seeds[3 + y][3 + x] = _deterministicRandom(seed, cuboidX + x, cuboidY + y);
+					seeds[4 + y][4 + x] = _deterministicRandom(seed, cuboidX + x, cuboidY + y);
 				}
 			}
 			return new _SeedField(seeds);
@@ -662,12 +700,12 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		
 		private _SeedField(int[][] seeds)
 		{
-			Assert.assertTrue(7 == seeds.length);
+			Assert.assertTrue(9 == seeds.length);
 			_seeds = seeds;
 		}
 		public int get(int relX, int relY)
 		{
-			return _seeds[3 + relY][3 + relX];
+			return _seeds[4 + relY][4 + relX];
 		}
 	}
 
