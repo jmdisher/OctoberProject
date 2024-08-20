@@ -180,7 +180,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
-		int[][] heightMap = _generateHeightMapForCuboidColumn(address.x(), address.y());
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
+		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
 		int minHeight = 0;
 		int maxHeight = Integer.MAX_VALUE;
 		int totalHeight = 0;
@@ -260,7 +261,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		}
 		
 		// Generate the ore nodes.
-		_generateOreNodes(address, data);
+		_generateOreNodes(address, data, seeds);
 		
 		// TODO:  Add surface flora.
 		// TODO:  Add spawned creatures.
@@ -284,7 +285,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 */
 	public EntityLocation getDefaultSpawnLocation()
 	{
-		int[][] heightMap = _generateHeightMapForCuboidColumn((short)0, (short)0);
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, (short)0, (short)0);
+		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
 		// Find the largest value here and spawn there (note that this may not be in the zero-z cuboid).
 		int maxZ = Integer.MIN_VALUE;
 		int targetX = -1;
@@ -359,7 +361,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
 		int[][] yCentres = new int[3][3];
 		int[][] xCentres = new int[3][3];
-		_buildCentreField3x3(seeds, yCentres, xCentres);
+		_buildCentreField3x3(new _SubField(seeds, 0, 0), yCentres, xCentres);
 		
 		return new BlockAddress((byte)xCentres[1][1], (byte)yCentres[1][1], (byte)0);
 	}
@@ -402,7 +404,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 */
 	public int[][] test_getHeightMap(short cuboidX, short cuboidY)
 	{
-		return _generateHeightMapForCuboidColumn(cuboidX, cuboidY);
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
+		return _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
 	}
 
 	/**
@@ -413,22 +416,21 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 */
 	public void test_generateOreNodes(CuboidAddress address, CuboidData data)
 	{
-		_generateOreNodes(address, data);
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
+		_generateOreNodes(address, data, seeds);
 	}
 
 
-	private int[][] _generateHeightMapForCuboidColumn(short cuboidX, short cuboidY)
+	private int[][] _generateHeightMapForCuboidColumn(_SubField subField)
 	{
 		// Note that we need to consider "biome" and "cuboid centre height" which requires that we generate the seed values for 5x5 cuboids around this one.
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		
 		// centres
 		int[][] yCentres = new int[3][3];
 		int[][] xCentres = new int[3][3];
-		_buildCentreField3x3(seeds, yCentres, xCentres);
+		_buildCentreField3x3(subField, yCentres, xCentres);
 		
 		// Note that the peak height is a combination of the 3x3 average peak height and the 5x5 average biome value.
-		int thisPeak = _peakWithinBiome(new _SubField(seeds, 0, 0));
+		int thisPeak = _peakWithinBiome(subField);
 		int thisPeakY = yCentres[1][1];
 		int thisPeakX = xCentres[1][1];
 		int[][] heightMapForCuboidColumn = new int[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
@@ -443,7 +445,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				}
 				else
 				{
-					height = _findHeight(seeds, yCentres, xCentres, y, x);
+					height = _findHeight(subField, yCentres, xCentres, y, x);
 				}
 				heightMapForCuboidColumn[y][x] = height;
 			}
@@ -502,7 +504,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return (MASK_XCENTRE & i) >> SHIFT_XCENTRE;
 	}
 
-	private int _findHeight(_SeedField seeds, int[][] yCentres, int[][] xCentres, int thisY, int thisX)
+	private int _findHeight(_SubField subField, int[][] yCentres, int[][] xCentres, int thisY, int thisX)
 	{
 		// We only want to average the heights of the 3 nearest peaks (if we average all 9, we get subtle breaks along cuboid boundaries which will look bad).
 		double[] closestDistances = new double[] { 100.0, 100.0, 100.0 };
@@ -512,7 +514,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		{
 			for (int x = -1; x <= 1; ++x)
 			{
-				int peak = _peakWithinBiome(new _SubField(seeds, x, y));
+				int peak = _peakWithinBiome(subField.relativeField(x, y));
 				int yC = yCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * y);
 				int xC = xCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * x);
 				int dY = thisY - yC;
@@ -580,13 +582,13 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return biome;
 	}
 
-	private void _buildCentreField3x3(_SeedField seeds, int[][] yCentres, int[][] xCentres)
+	private void _buildCentreField3x3(_SubField subField, int[][] yCentres, int[][] xCentres)
 	{
 		for (int y = -1; y <= 1; ++y)
 		{
 			for (int x = -1; x <= 1; ++x)
 			{
-				int seed = seeds.get(x, y);
+				int seed = subField.get(x, y);
 				int cY = _yCentre(seed);
 				yCentres[1 + y][1 + x] = cY;
 				int cX = _xCentre(seed);
@@ -603,7 +605,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return rawHeight + offset;
 	}
 
-	private void _generateOreNodes(CuboidAddress address, CuboidData data)
+	private void _generateOreNodes(CuboidAddress address, CuboidData data, _SeedField seeds)
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
@@ -613,7 +615,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			for (int x = -1; x <= 1; ++x)
 			{
 				CuboidAddress sideAddress = address.getRelative(x, y, 0);
-				int cuboidSeed = _deterministicRandom(_seed, sideAddress.x(), sideAddress.y());
+				int cuboidSeed = seeds.get(x, y);
 				AbsoluteLocation sideBase = sideAddress.getBase();
 				int relativeBaseX = sideBase.x() - base.x();
 				int relativeBaseY = sideBase.y() - base.y();
@@ -680,6 +682,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			_field = field;
 			_relX = relX;
 			_relY = relY;
+		}
+		public _SubField relativeField(int relX, int relY)
+		{
+			return new _SubField(_field, _relX + relX, _relY + relY);
 		}
 		public int get(int relX, int relY)
 		{
