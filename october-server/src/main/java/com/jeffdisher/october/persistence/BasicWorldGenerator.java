@@ -56,23 +56,71 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public static final int SHIFT_XCENTRE = 21;
 	public static final int WATER_Z_LEVEL = 0;
 
-	public static final int[] BIOME_HEIGHT_OFFSET = {
-			-200,
-			-100,
-			-50,
-			-20,
-			-10,
-			-10,
-			0,
-			0,
-			0,
-			0,
-			10,
-			10,
-			20,
-			50,
-			100,
-			200,
+	public static final _Biome[] BIOMES = {
+			new _Biome("Deep Ocean 2"
+					, 'D'
+					, -200
+			),
+			new _Biome("Deep Ocean"
+					, 'D'
+					, -100
+			),
+			new _Biome("Ocean 2"
+					, 'O'
+					, -50
+			),
+			new _Biome("Ocean"
+					, 'O'
+					, -20
+			),
+			new _Biome("Coast 2"
+					, 'C'
+					, -10
+			),
+			new _Biome("Coast"
+					, 'C'
+					, -10
+			),
+			new _Biome("Field"
+					, 'F'
+					, 0
+			),
+			new _Biome("Meadow"
+					, 'E'
+					, 0
+			),
+			new _Biome("Forest"
+					, 'R'
+					, 0
+			),
+			new _Biome("Swamp"
+					, 'S'
+					, 0
+			),
+			new _Biome("Foothills"
+					, 'h'
+					, 10
+			),
+			new _Biome("Foothills 2"
+					, 'h'
+					, 10
+			),
+			new _Biome("Hills"
+					, 'H'
+					, 20
+			),
+			new _Biome("Hills 2"
+					, 'H'
+					, 50
+			),
+			new _Biome("Mountain"
+					, 'M'
+					, 100
+			),
+			new _Biome("Mountain 2"
+					, 'M'
+					, 200
+			),
 	};
 
 	public static final int COAL_NODES_PER_CUBOID_COLUMN = 4;
@@ -281,6 +329,22 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
 		_SubField subField = new _SubField(seeds, 0, 0);
 		return _buildBiomeFromSeeds5x5(subField);
+	}
+
+	/**
+	 * Used by tests:  Returns the biome character code for the given cuboid X/Y address.  This is only useful for
+	 * creating visual depictions of biome distribution.
+	 * 
+	 * @param cuboidX The cuboid X address.
+	 * @param cuboidY The cuboid Y address.
+	 * @return The biome code of this cuboid.
+	 */
+	public char test_getBiomeCode(short cuboidX, short cuboidY)
+	{
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
+		_SubField subField = new _SubField(seeds, 0, 0);
+		int biome = _buildBiomeFromSeeds5x5(subField);
+		return BIOMES[biome].code;
 	}
 
 	/**
@@ -535,7 +599,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	{
 		int rawHeight = _buildHeightTotal(subField);
 		int biome = _buildBiomeFromSeeds5x5(subField);
-		int offset = BIOME_HEIGHT_OFFSET[biome];
+		int offset = BIOMES[biome].heightOffset;
 		return rawHeight + offset;
 	}
 
@@ -622,4 +686,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			return _field.get(_relX + relX, _relY + relY);
 		}
 	}
+
+	private static record _Biome(String name
+			, char code
+			, int heightOffset
+	)
+	{}
 }

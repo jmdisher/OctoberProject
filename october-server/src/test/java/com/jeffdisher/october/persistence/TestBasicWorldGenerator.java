@@ -205,6 +205,22 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(data, 32768, 0, 0);
 	}
 
+	@Test
+	public void buildBiomeMap() throws Throwable
+	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		for (short y = -10; y <= 10; ++y)
+		{
+			for (short x = -10; x <= 10; ++x)
+			{
+				char code = generator.test_getBiomeCode(x, y);
+				System.out.print(code);
+			}
+			System.out.println();
+		}
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron)
 	{
