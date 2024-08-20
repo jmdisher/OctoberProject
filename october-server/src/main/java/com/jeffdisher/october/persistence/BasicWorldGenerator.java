@@ -3,6 +3,7 @@ package com.jeffdisher.october.persistence;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.function.BiFunction;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -19,6 +20,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.worldgen.StructureLoader;
 
 
 /**
@@ -72,10 +74,40 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			100,
 			200,
 	};
+
+	public static final int COAL_NODES_PER_CUBOID_COLUMN = 4;
+	public static final int COAL_MIN_Z = -50;
+	public static final int COAL_MAX_Z = 20;
+	public static final String[] COAL_NODE = new String[] {""
+			+ "AA\n"
+			+ "AA\n"
+			, ""
+			+ "AA\n"
+			+ "AA\n"
+	};
+	public static final int IRON_NODES_PER_CUBOID_COLUMN = 2;
+	public static final int IRON_MIN_Z = -100;
+	public static final int IRON_MAX_Z = -10;
+	public static final String[] IRON_NODE = new String[] {""
+			+ "III\n"
+			+ "III\n"
+			+ "III\n"
+			, ""
+			+ "III\n"
+			+ "III\n"
+			+ "III\n"
+			, ""
+			+ "III\n"
+			+ "III\n"
+			+ "III\n"
+	};
+
 	private final Environment _env;
 	private final int _seed;
 	private final Block _blockStone;
 	private final Block _blockDirt;
+	private final Structure _coalNode;
+	private final Structure _ironNode;
 
 	/**
 	 * Creates the world generator.
@@ -90,6 +122,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		
 		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
+		
+		StructureLoader loader = new StructureLoader(env.items, env.blocks);
+		_coalNode = loader.loadFromStrings(COAL_NODE);
+		_ironNode = loader.loadFromStrings(IRON_NODE);
 	}
 
 	@Override
@@ -175,7 +211,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			}
 		}
 		
-		// TODO:  Add ore and flora.
+		// Generate the ore nodes.
+		_generateOreNodes(address, data);
+		
+		// TODO:  Add surface flora.
 		// TODO:  Add spawned creatures.
 		List<CreatureEntity> entities = List.of();
 		// TODO:  Add flora mutations.
@@ -300,6 +339,17 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public int[][] test_getHeightMap(short cuboidX, short cuboidY)
 	{
 		return _generateHeightMapForCuboidColumn(cuboidX, cuboidY);
+	}
+
+	/**
+	 * Used by tests:  Populates the given data, at address, with expected  ore nodes.
+	 * 
+	 * @param address The cuboid address.
+	 * @param data The cuboid data.
+	 */
+	public void test_generateOreNodes(CuboidAddress address, CuboidData data)
+	{
+		_generateOreNodes(address, data);
 	}
 
 
@@ -487,6 +537,43 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		int biome = _buildBiomeFromSeeds5x5(subField);
 		int offset = BIOME_HEIGHT_OFFSET[biome];
 		return rawHeight + offset;
+	}
+
+	private void _generateOreNodes(CuboidAddress address, CuboidData data)
+	{
+		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
+		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
+		AbsoluteLocation base = address.getBase();
+		for (int y = -1; y <= 1; ++y)
+		{
+			for (int x = -1; x <= 1; ++x)
+			{
+				CuboidAddress sideAddress = address.getRelative(x, y, 0);
+				int cuboidSeed = _deterministicRandom(_seed, sideAddress.x(), sideAddress.y());
+				AbsoluteLocation sideBase = sideAddress.getBase();
+				int relativeBaseX = sideBase.x() - base.x();
+				int relativeBaseY = sideBase.y() - base.y();
+				int targetCuboidBaseZ = base.z();
+				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
+				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
+			}
+		}
+	}
+
+	private void _applyOreNodes(CuboidData data, int cuboidSeed, int relativeBaseX, int relativeBaseY, int targetCuboidBaseZ, int tries, int minZ, int maxZ, Structure node)
+	{
+		short stoneNumber = _blockStone.item().number();
+		int range = maxZ - minZ;
+		Random random = new Random(cuboidSeed);
+		for (int i = 0; i < tries; ++i)
+		{
+			int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+			int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+			int absoluteZ = random.nextInt(range) + minZ;
+			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
+			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
+			node.applyToCuboid(data, relativeBase, stoneNumber);
+		}
 	}
 
 
