@@ -179,7 +179,7 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, dirtCount);
 		Assert.assertEquals(4, coalCount);
 		Assert.assertEquals(0, ironCount);
-		Assert.assertEquals(17, logCount);
+		Assert.assertEquals(12, logCount);
 		Assert.assertEquals(24, leafCount);
 	}
 
@@ -245,7 +245,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 18, 24, 0);
+		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0);
 	}
 
 	@Test
@@ -266,8 +266,8 @@ public class TestBasicWorldGenerator
 		// We know that this cuboid has a gully in a field biome so it will contain wheat.
 		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		// This is a large field (55 in gully + 2).
-		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 2);
+		// This is a large field (55 in gully + 4).
+		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4);
 	}
 
 

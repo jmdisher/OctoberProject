@@ -157,10 +157,6 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			+ " T \n"
 			+ "   \n"
 			, ""
-			+ "   \n"
-			+ " T \n"
-			+ "   \n"
-			, ""
 			+ " E \n"
 			+ "ETE\n"
 			+ " E \n"
@@ -675,9 +671,16 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 						int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 						int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 						// Choose the block above the dirt.
-						int absoluteZ = heightMap[relativeY][relativeY] + 1;
+						int absoluteZ = heightMap[relativeY][relativeX] + 1;
+						// The tree is a 3x3 structure with the tree in the middle so step back by one.
 						// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
-						AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
+						AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
+						// Make sure that these are over dirt.
+						AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
+						if (dirtLocation.getCuboidAddress().equals(address))
+						{
+							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+						}
 						_basicTree.applyToCuboid(data, relativeBase, airNumber);
 					}
 				}
@@ -738,13 +741,18 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
-				int relativeZ = heightMap[relativeY][relativeY] - cuboidBottomZ + 1;
+				int relativeZ = heightMap[relativeY][relativeX] - cuboidBottomZ + 1;
 				if ((relativeZ >= 0) && (relativeZ < Structure.CUBOID_EDGE_SIZE))
 				{
 					BlockAddress address = new BlockAddress((byte)relativeX, (byte)relativeY, (byte)relativeZ);
 					short original = data.getData15(AspectRegistry.BLOCK, address);
 					if (blockToReplace == original)
 					{
+						// Make sure that these are over dirt.
+						if (address.z() > 0)
+						{
+							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, new BlockAddress(address.x(), address.y(), (byte)(address.z() - 1))));
+						}
 						data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
 					}
 				}
