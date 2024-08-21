@@ -1412,7 +1412,7 @@ public class TestTickRunner
 		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newLocation = new EntityLocation(location.x(), location.y(), location.z());
+		mutable.newLocation = location.toEntityLocation();
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
@@ -1585,7 +1585,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
-		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
+		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
 		CreatureEntity creature = CreatureEntity.create(creatureId, EntityType.COW, entityLocation, (byte)15);
 		
@@ -1647,7 +1647,7 @@ public class TestTickRunner
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
-		EntityLocation entityLocation = new EntityLocation(spawn.x(), spawn.y(), spawn.z());
+		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
 		CreatureEntity creature = CreatureEntity.create(creatureId, EntityType.COW, entityLocation, (byte)15);
 		

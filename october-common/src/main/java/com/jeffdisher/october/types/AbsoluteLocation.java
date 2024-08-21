@@ -19,4 +19,9 @@ public final record AbsoluteLocation(int x, int y, int z)
 	{
 		return new AbsoluteLocation(x + rx, y + ry, z + rz);
 	}
+
+	public final EntityLocation toEntityLocation()
+	{
+		return new EntityLocation(this.x, this.y, this.z);
+	}
 }

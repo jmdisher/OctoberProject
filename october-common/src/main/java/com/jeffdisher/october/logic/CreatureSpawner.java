@@ -138,7 +138,7 @@ public class CreatureSpawner
 		CreatureEntity spawned;
 		if (null != goodSpawningLocation)
 		{
-			EntityLocation location = new EntityLocation(goodSpawningLocation.x(), goodSpawningLocation.y(), goodSpawningLocation.z());
+			EntityLocation location = goodSpawningLocation.toEntityLocation();
 			
 			// For now, we only dynamically spawn orcs.
 			EntityVolume creatureVolume = EntityConstants.VOLUME_ORC;

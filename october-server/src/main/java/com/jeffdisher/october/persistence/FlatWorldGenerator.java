@@ -14,7 +14,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
@@ -115,11 +114,11 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 			entities = (0 == address.z())
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
 							, EntityType.COW
-							, new EntityLocation(baseOfCuboid.x(), baseOfCuboid.y(), baseOfCuboid.z())
+							, baseOfCuboid.toEntityLocation()
 							, (byte)100
 						), CreatureEntity.create(creatureIdAssigner.next()
 							, EntityType.COW
-							, new EntityLocation(baseOfCuboid.x() + 5, baseOfCuboid.y() + 5, baseOfCuboid.z())
+							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
 							, (byte)100
 					))
 					: List.of()
