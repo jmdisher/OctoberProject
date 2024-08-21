@@ -1,10 +1,7 @@
 package com.jeffdisher.october.types;
 
-import java.util.function.Consumer;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
@@ -89,7 +86,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer)
+	public void handleEntityDeath(TickProcessingContext context)
 	{
 		// For now, just drop wheat item for all creatures.
 		// TODO:  Define this drop loot table in data.
@@ -109,7 +106,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		default:
 			throw Assert.unreachable();
 		}
-		mutationConsumer.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
+		context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		this.newHealth = 0;
 	}
 

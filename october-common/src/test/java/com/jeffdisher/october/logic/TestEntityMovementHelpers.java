@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -12,7 +11,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -293,7 +291,7 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer)
+		public void handleEntityDeath(TickProcessingContext context)
 		{
 			throw new AssertionError("Not in test");
 		}

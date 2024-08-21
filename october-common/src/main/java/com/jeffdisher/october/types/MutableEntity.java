@@ -1,11 +1,8 @@
 package com.jeffdisher.october.types;
 
-import java.util.function.Consumer;
-
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
-import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
@@ -213,7 +210,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer)
+	public void handleEntityDeath(TickProcessingContext context)
 	{
 		// Drop their inventory.
 		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(EntityType.PLAYER));
@@ -222,12 +219,12 @@ public class MutableEntity implements IMutablePlayerEntity
 			Items stackable = this.newInventory.getStackForKey(key);
 			NonStackableItem nonStackable = this.newInventory.getNonStackableForKey(key);
 			Assert.assertTrue((null != stackable) != (null != nonStackable));
-			mutationConsumer.accept(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+			context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 		}
 		
 		// Respawn them.
 		this.newInventory.clearInventory(null);
-		this.newLocation = MutableEntity.TESTING_LOCATION;
+		this.newLocation = context.config.worldSpawn.toEntityLocation();
 		this.newHealth = MutableEntity.DEFAULT_HEALTH;
 		this.newFood = MutableEntity.DEFAULT_FOOD;
 		// Wipe all the hotbar slots.

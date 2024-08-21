@@ -101,7 +101,7 @@ public class EntityChangeTakeDamage<T extends IMutableMinimalEntity> implements 
 			else
 			{
 				// The entity is dead so "respawn" them by resetting fields and dropping inventory onto the ground.
-				newEntity.handleEntityDeath((IMutationBlock mutation) -> context.mutationSink.next(mutation));
+				newEntity.handleEntityDeath(context);
 			}
 			didApply = true;
 		}

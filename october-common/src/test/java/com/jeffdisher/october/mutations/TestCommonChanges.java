@@ -766,6 +766,8 @@ public class TestCommonChanges
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, STONE);
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		WorldConfig worldConfig = new WorldConfig();
+		worldConfig.worldSpawn = new AbsoluteLocation(1, 2, 3);
 		TickProcessingContext context = new TickProcessingContext(0L
 				, (AbsoluteLocation location) ->
 				{
@@ -800,7 +802,7 @@ public class TestCommonChanges
 				, null
 				, null
 				, null
-				, new WorldConfig()
+				, worldConfig
 				, 100L
 		);
 		
@@ -815,7 +817,7 @@ public class TestCommonChanges
 		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
-		Assert.assertEquals(MutableEntity.TESTING_LOCATION, target.newLocation);
+		Assert.assertEquals(worldConfig.worldSpawn.toEntityLocation(), target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 	}
 

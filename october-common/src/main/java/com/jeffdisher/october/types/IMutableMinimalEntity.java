@@ -1,9 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.function.Consumer;
-
-import com.jeffdisher.october.mutations.IMutationBlock;
-
 
 /**
  * The mutable interface for a an entity representing a player.
@@ -45,7 +41,7 @@ public interface IMutableMinimalEntity
 	 * This will drop anything related to the entity and handle either respawning or cleaning up resources associated
 	 * with them.
 	 */
-	void handleEntityDeath(Consumer<IMutationBlock> mutationConsumer);
+	void handleEntityDeath(TickProcessingContext context);
 
 	/**
 	 * This is part of the minimal interface since players have a concept of energy but other creatures don't.
