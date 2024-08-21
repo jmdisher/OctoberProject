@@ -34,12 +34,17 @@ public class ServerMain
 				// We will just use the flat world generator since it should be populated with what we need for testing.
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
-				ResourceLoader.populateWorldConfig(worldDirectory, config);
+				boolean didLoadConfig = ResourceLoader.populateWorldConfig(worldDirectory, config);
 				BasicWorldGenerator worldGen = new BasicWorldGenerator(env, config.basicSeed);
-				EntityLocation spawnLocation = worldGen.getDefaultSpawnLocation();
+				if (!didLoadConfig)
+				{
+					// There is no config so ask the world-gen for the default spawn.
+					EntityLocation spawnLocation = worldGen.getDefaultSpawnLocation();
+					config.worldSpawn = spawnLocation.getBlockLocation();
+				}
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
 						, worldGen
-						, spawnLocation
+						, new EntityLocation(config.worldSpawn.x(), config.worldSpawn.y(), config.worldSpawn.z())
 				);
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK

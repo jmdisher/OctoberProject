@@ -473,6 +473,7 @@ public class TestResourceLoader
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
+				+ "world_spawn\t5,6,7\n"
 		;
 		Files.writeString(configFile.toPath(), fileToWrite);
 		loader = new ResourceLoader(resourceDirectory, null, null);
@@ -480,6 +481,7 @@ public class TestResourceLoader
 		ResourceLoader.populateWorldConfig(resourceDirectory, config);
 		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 		Assert.assertEquals(-465342154, config.basicSeed);
+		Assert.assertEquals(new AbsoluteLocation(5, 6, 7), config.worldSpawn);
 		loader.shutdown();
 	}
 

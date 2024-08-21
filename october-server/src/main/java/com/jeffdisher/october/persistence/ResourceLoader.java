@@ -257,10 +257,12 @@ public class ResourceLoader
 	 * 
 	 * @param saveDirectory The directory where the world data is stored.
 	 * @param config A WorldConfig object to modify.
+	 * @return True if the config was loaded from disk or false if the default was left untouched.
 	 * @throws IOException There was a problem loading the file.
 	 */
-	public static void populateWorldConfig(File saveDirectory, WorldConfig config) throws IOException
+	public static boolean populateWorldConfig(File saveDirectory, WorldConfig config) throws IOException
 	{
+		boolean didLoad = false;
 		File configFile = _getConfigFile(saveDirectory);
 		if (configFile.exists())
 		{
@@ -277,7 +279,9 @@ public class ResourceLoader
 				throw Assert.unexpected(e);
 			}
 			config.loadOverrides(overrides);
+			didLoad = true;
 		}
+		return didLoad;
 	}
 
 	/**
