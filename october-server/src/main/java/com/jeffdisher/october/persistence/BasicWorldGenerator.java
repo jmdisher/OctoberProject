@@ -58,6 +58,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 
 	public static final char FOREST_CODE = 'R';
 	public static final char FIELD_CODE = 'F';
+	public static final char MEADOW_CODE = 'E';
 	public static final _Biome[] BIOMES = {
 			new _Biome("Deep Ocean 2"
 					, 'D'
@@ -88,7 +89,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					, 0
 			),
 			new _Biome("Meadow"
-					, 'E'
+					, MEADOW_CODE
 					, 0
 			),
 			new _Biome("Forest"
@@ -162,12 +163,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			+ " E \n"
 	};
 	public static final int FIELD_WHEAT_COUNT = 4;
+	public static final int FIELD_CARROT_COUNT = 3;
 
 	private final Environment _env;
 	private final int _seed;
 	private final Block _blockStone;
 	private final Block _blockDirt;
 	private final Block _blockWheatMature;
+	private final Block _blockCarrotMature;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
@@ -186,6 +189,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
+		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
@@ -706,11 +710,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 
 	private void _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, int[][] heightMap, _Biome biome)
 	{
-		if (FIELD_CODE == biome.code)
+		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
 		{
 			// We only want to replace air (since this could be under water).
 			short blockToReplace = _env.special.AIR.item().number();
-			short blockToAdd = _blockWheatMature.item().number();
+			short blockToAdd = (FIELD_CODE == biome.code)
+					? _blockWheatMature.item().number()
+					: _blockCarrotMature.item().number()
+			;
 			int cuboidBottomZ = cuboidBase.z();
 			
 			// We will generate wheat in a field biome in 2 ways:  A few random placements and a fully-saturated gully.
@@ -736,7 +743,11 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			
 			// Now, inject a few random ones.
 			Random random = new Random(cuboidSeed);
-			for (int i = 0; i < FIELD_WHEAT_COUNT; ++i)
+			int count = (FIELD_CODE == biome.code)
+					? FIELD_WHEAT_COUNT
+					: FIELD_CARROT_COUNT
+			;
+			for (int i = 0; i < count; ++i)
 			{
 				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);

@@ -207,19 +207,19 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)-1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32721, 20, 27, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32721, 20, 27, 0, 0, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
 		address = new CuboidAddress((short)5, (short)1, (short)0);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32756, 12, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32756, 12, 0, 0, 0, 0, 0, 0);
 		
 		// This one is too deep for either.
 		address = new CuboidAddress((short)5, (short)1, (short)-5);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32768, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32768, 0, 0, 0, 0, 0, 0, 0);
 	}
 
 	@Test
@@ -245,7 +245,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0);
+		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
 	}
 
 	@Test
@@ -267,11 +267,23 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a large field (55 in gully + 4).
-		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4);
+		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
+	}
+
+	@Test
+	public void carrotField() throws Throwable
+	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		// We know that this cuboid has a gully in a meadow biome so it will contain carrots.
+		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-9, (short)-5, (short)0));
+		CuboidData cuboid = suspended.cuboid();
+		// This is a small field (3 in gully + 3).
+		_checkBlockTypes(cuboid, 9129, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
 	}
 
 
-	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat)
+	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
 	{
 		short airNumber = ENV.items.getItemById("op.air").number();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
@@ -281,6 +293,7 @@ public class TestBasicWorldGenerator
 		short logNumber = ENV.items.getItemById("op.log").number();
 		short leafNumber = ENV.items.getItemById("op.leaf").number();
 		short wheatNumber = ENV.items.getItemById("op.wheat_mature").number();
+		short carrotNumber = ENV.items.getItemById("op.carrot_mature").number();
 		
 		int stoneCount = 0;
 		int coalCount = 0;
@@ -289,6 +302,7 @@ public class TestBasicWorldGenerator
 		int logCount = 0;
 		int leafCount = 0;
 		int wheatCount = 0;
+		int carrotCount = 0;
 		for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
 		{
 			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
@@ -328,6 +342,10 @@ public class TestBasicWorldGenerator
 					{
 						wheatCount += 1;
 					}
+					else if (carrotNumber == value)
+					{
+						carrotCount += 1;
+					}
 					else
 					{
 						Assert.fail();
@@ -343,5 +361,6 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(log, logCount);
 		Assert.assertEquals(leaf, leafCount);
 		Assert.assertEquals(wheat, wheatCount);
+		Assert.assertEquals(carrot, carrotCount);
 	}
 }
