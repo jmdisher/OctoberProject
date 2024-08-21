@@ -1,6 +1,7 @@
 package com.jeffdisher.october.persistence;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -17,6 +18,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
@@ -164,6 +166,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	};
 	public static final int FIELD_WHEAT_COUNT = 4;
 	public static final int FIELD_CARROT_COUNT = 3;
+	public static final int HERD_SIZE = 5;
 
 	private final Environment _env;
 	private final int _seed;
@@ -286,12 +289,31 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		_generateOreNodesAndStructures(subField, address, data);
 		
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
+		int cuboidSeed = subField.get(0, 0);
 		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
-		_generateFlora(data, cuboidBase, subField.get(0, 0), heightMap, biome);
+		EntityType herdTypeToSpawn = _generateFlora(data, cuboidBase, cuboidSeed, heightMap, biome);
 		
-		// TODO:  Add spawned creatures.
-		List<CreatureEntity> entities = List.of();
-		// TODO:  Add flora mutations.
+		// Spawn any creatures associated with this cuboid.
+		List<CreatureEntity> entities = new ArrayList<>();
+		if (null != herdTypeToSpawn)
+		{
+			// We don't often do herd spawning so we will try 5 times in random locations on the surface.
+			Random random = new Random(cuboidSeed);
+			for (int i = 0; i < HERD_SIZE; ++i)
+			{
+				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				// Choose the block above the dirt.
+				int relativeZ = heightMap[relativeY][relativeX] - cuboidBase.z() + 1;
+				entities.add(CreatureEntity.create(creatureIdAssigner.next()
+						, EntityType.COW
+						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
+						, (byte)100
+				));
+			}
+		}
+		
+		// We don't currently require any mutations for anything we spawned.
 		List<ScheduledMutation> mutations = List.of();
 		
 		return new SuspendedCuboid<CuboidData>(data
@@ -708,8 +730,9 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		}
 	}
 
-	private void _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, int[][] heightMap, _Biome biome)
+	private EntityType _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, int[][] heightMap, _Biome biome)
 	{
+		EntityType typeToSpawn = null;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
 		{
 			// We only want to replace air (since this could be under water).
@@ -722,6 +745,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			
 			// We will generate wheat in a field biome in 2 ways:  A few random placements and a fully-saturated gully.
 			// First, check the gully.
+			boolean didFillGully = false;
 			int gullyDepth = _findGully(heightMap);
 			if (gullyDepth > 0)
 			{
@@ -737,6 +761,8 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					if ((z >= cuboidBottomZ) && (z < cuboidTopExclusive))
 					{
 						_replaceLayer(data, (byte)(z - cuboidBottomZ), blockToReplace, blockToAdd);
+						// We were able to generate something here.
+						didFillGully = true;
 					}
 				}
 			}
@@ -768,7 +794,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					}
 				}
 			}
+			
+			// If this is a field, and we could fill a gully, spawn a small herd of cows in the centre of the cuboid.
+			if ((FIELD_CODE == biome.code) && didFillGully)
+			{
+				typeToSpawn = EntityType.COW;
+			}
 		}
+		return typeToSpawn;
 	}
 
 	private int _findGully(int[][] heightMap)

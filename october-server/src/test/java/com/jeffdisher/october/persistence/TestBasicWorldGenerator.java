@@ -1,5 +1,7 @@
 package com.jeffdisher.october.persistence;
 
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -8,9 +10,11 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -264,10 +268,23 @@ public class TestBasicWorldGenerator
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		// We know that this cuboid has a gully in a field biome so it will contain wheat.
-		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)9, (short)0));
-		CuboidData cuboid = suspended.cuboid();
+		// (this will spawn cows so make sure we have an ID assigner).
+		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
+		SuspendedCuboid<CuboidData> suspended = generator.apply(creatureIdAssigner, new CuboidAddress((short)-10, (short)9, (short)0));
+		
+		// Verify the wheat field.
 		// This is a large field (55 in gully + 4).
+		CuboidData cuboid = suspended.cuboid();
 		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
+		
+		// Verify that cows are spawned.
+		List<CreatureEntity> creatures = suspended.creatures();
+		Assert.assertEquals(5, creatures.size());
+		Assert.assertEquals(new EntityLocation(-302.0f, 299.0f, 6.0f), creatures.get(0).location());
+		Assert.assertEquals(new EntityLocation(-314.0f, 295.0f, 6.0f), creatures.get(1).location());
+		Assert.assertEquals(new EntityLocation(-307.0f, 301.0f, 6.0f), creatures.get(2).location());
+		Assert.assertEquals(new EntityLocation(-312.0f, 298.0f, 6.0f), creatures.get(3).location());
+		Assert.assertEquals(new EntityLocation(-316.0f, 313.0f, 6.0f), creatures.get(4).location());
 	}
 
 	@Test
