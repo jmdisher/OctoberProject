@@ -33,31 +33,66 @@ public class ConsoleHandler
 		_ConsoleState state = new _ConsoleState(monitoringAgent);
 		while (state.canContinue)
 		{
-			String line = reader.readLine();
-			String[] fragments = line.split(" ");
-			String first = fragments[0];
-			if (first.startsWith("!"))
+			_readAndProcessOneLine(out, reader, state);
+		}
+		out.println("Shutting down...");
+	}
+
+	/**
+	 * Processes commands (on the calling thread) until a shutdown command is received or the calling thread is
+	 * interrupted.
+	 * Note that this is path has a 10ms latency on processing commands, compared to the non-interruptable version, so
+	 * it should only be used when needed, such as when reading stdin (as this read cannot be interrupted in a portable
+	 * way).
+	 * 
+	 * @param in The input stream.
+	 * @param out The output stream.
+	 * @param monitoringAgent The shared agent structure which collects information from the rest of the system.
+	 * @throws IOException If there was an error reading the input.
+	 * @throws InterruptedException If this thread was interrupted.
+	 */
+	public static void readUntilStopInterruptable(InputStream in, PrintStream out, MonitoringAgent monitoringAgent) throws IOException, InterruptedException
+	{
+		// We will read lines until we get a stop command.
+		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+		_ConsoleState state = new _ConsoleState(monitoringAgent);
+		while (state.canContinue)
+		{
+			while (0 == in.available())
 			{
-				String name = first.substring(1);
-				String[] params = new String[fragments.length - 1];
-				System.arraycopy(fragments, 1, params, 0, params.length);
-				try
-				{
-					_Command command = _Command.valueOf(name.toUpperCase());
-					command.handler.run(out, state, params);
-				}
-				catch (IllegalArgumentException e)
-				{
-					out.println("Command \"" + name + "\" unknown");
-					_usage(out);
-				}
+				Thread.sleep(10L);
 			}
-			else
+			_readAndProcessOneLine(out, reader, state);
+		}
+		out.println("Shutting down...");
+	}
+
+
+	private static void _readAndProcessOneLine(PrintStream out, BufferedReader reader, _ConsoleState state) throws IOException
+	{
+		String line = reader.readLine();
+		String[] fragments = line.split(" ");
+		String first = fragments[0];
+		if (first.startsWith("!"))
+		{
+			String name = first.substring(1);
+			String[] params = new String[fragments.length - 1];
+			System.arraycopy(fragments, 1, params, 0, params.length);
+			try
 			{
+				_Command command = _Command.valueOf(name.toUpperCase());
+				command.handler.run(out, state, params);
+			}
+			catch (IllegalArgumentException e)
+			{
+				out.println("Command \"" + name + "\" unknown");
 				_usage(out);
 			}
 		}
-		out.println("Shutting down...");
+		else
+		{
+			_usage(out);
+		}
 	}
 
 	private static void _usage(PrintStream out)
