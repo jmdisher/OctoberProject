@@ -57,6 +57,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public static final int WATER_Z_LEVEL = 0;
 
 	public static final char FOREST_CODE = 'R';
+	public static final char FIELD_CODE = 'F';
 	public static final _Biome[] BIOMES = {
 			new _Biome("Deep Ocean 2"
 					, 'D'
@@ -83,7 +84,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					, -10
 			),
 			new _Biome("Field"
-					, 'F'
+					, FIELD_CODE
 					, 0
 			),
 			new _Biome("Meadow"
@@ -164,11 +165,13 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			+ "ETE\n"
 			+ " E \n"
 	};
+	public static final int FIELD_WHEAT_COUNT = 4;
 
 	private final Environment _env;
 	private final int _seed;
 	private final Block _blockStone;
 	private final Block _blockDirt;
+	private final Block _blockWheatMature;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
@@ -186,6 +189,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		
 		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
+		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
@@ -281,7 +285,10 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		// Generate the ore nodes and other structures (including trees).
 		_generateOreNodesAndStructures(subField, address, data);
 		
-		// TODO:  Add surface flora.
+		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
+		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
+		_generateFlora(data, cuboidBase, subField.get(0, 0), heightMap, biome);
+		
 		// TODO:  Add spawned creatures.
 		List<CreatureEntity> entities = List.of();
 		// TODO:  Add flora mutations.
@@ -436,6 +443,20 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
 		_generateOreNodesAndStructures(new _SubField(seeds, 0, 0), address, data);
+	}
+
+	/**
+	 * Used by tests:  Finds the depth of the gully in this cuboid (0 if there isn't one).
+	 * 
+	 * @param cuboidX The cuboid X address.
+	 * @param cuboidY The cuboid Y address.
+	 * @return The depth of the gully in this cuboid.
+	 */
+	public int test_getGullyDepth(short cuboidX, short cuboidY)
+	{
+		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
+		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		return _findGully(heightMap);
 	}
 
 
@@ -677,6 +698,109 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
 			node.applyToCuboid(data, relativeBase, stoneNumber);
+		}
+	}
+
+	private void _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, int[][] heightMap, _Biome biome)
+	{
+		if (FIELD_CODE == biome.code)
+		{
+			// We only want to replace air (since this could be under water).
+			short blockToReplace = _env.special.AIR.item().number();
+			short blockToAdd = _blockWheatMature.item().number();
+			int cuboidBottomZ = cuboidBase.z();
+			
+			// We will generate wheat in a field biome in 2 ways:  A few random placements and a fully-saturated gully.
+			// First, check the gully.
+			int gullyDepth = _findGully(heightMap);
+			if (gullyDepth > 0)
+			{
+				// See if this applies to this cuboid.
+				int gullyBase = _getLowestHeight(heightMap);
+				// The "gullyBase" is the dirt, but we want to replace the block above that, filling in gullyDepth layers, so see if those are in range.
+				int bottomLayerToChange = gullyBase + 1;
+				int topLayerToChange = gullyBase + gullyDepth;
+				int cuboidTopExclusive = cuboidBottomZ + Structure.CUBOID_EDGE_SIZE;
+				
+				for (int z = bottomLayerToChange; z <= topLayerToChange; ++z)
+				{
+					if ((z >= cuboidBottomZ) && (z < cuboidTopExclusive))
+					{
+						_replaceLayer(data, (byte)(z - cuboidBottomZ), blockToReplace, blockToAdd);
+					}
+				}
+			}
+			
+			// Now, inject a few random ones.
+			Random random = new Random(cuboidSeed);
+			for (int i = 0; i < FIELD_WHEAT_COUNT; ++i)
+			{
+				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				// Choose the block above the dirt.
+				int relativeZ = heightMap[relativeY][relativeY] - cuboidBottomZ + 1;
+				if ((relativeZ >= 0) && (relativeZ < Structure.CUBOID_EDGE_SIZE))
+				{
+					BlockAddress address = new BlockAddress((byte)relativeX, (byte)relativeY, (byte)relativeZ);
+					short original = data.getData15(AspectRegistry.BLOCK, address);
+					if (blockToReplace == original)
+					{
+						data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+					}
+				}
+			}
+		}
+	}
+
+	private int _findGully(int[][] heightMap)
+	{
+		// A gully is a point in the cuboid lower than the perimeter of the cuboid.
+		int minGully = Integer.MAX_VALUE;
+		int minPerimeter = Integer.MAX_VALUE;
+		int edge = Structure.CUBOID_EDGE_SIZE - 1;
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = heightMap[y][x];
+				minGully = Math.min(minGully, height);
+				if ((0 == y) || (edge == y) || (0 == x) || (edge == x))
+				{
+					// This is the perimeter.
+					minPerimeter = Math.min(minPerimeter, height);
+				}
+			}
+		}
+		return minPerimeter - minGully;
+	}
+
+	private int _getLowestHeight(int[][] heightMap)
+	{
+		int min = Integer.MAX_VALUE;
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = heightMap[y][x];
+				min = Math.min(min, height);
+			}
+		}
+		return min;
+	}
+
+	private void _replaceLayer(CuboidData data, byte z, short blockToReplace, short blockToAdd)
+	{
+		for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				BlockAddress address = new BlockAddress(x, y, z);
+				short original = data.getData15(AspectRegistry.BLOCK, address);
+				if (blockToReplace == original)
+				{
+					data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+				}
+			}
 		}
 	}
 
