@@ -10,7 +10,9 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
 public class TestConsoleHandler
@@ -102,5 +104,24 @@ public class TestConsoleHandler
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
 		Assert.assertArrayEquals("one two three \nShutting down...\n".getBytes(), out.toByteArray());
+	}
+
+	@Test
+	public void operatorSetCreative() throws Throwable
+	{
+		// The basic use-case where we just stop, inline.
+		InputStream in = new ByteArrayInputStream("!set_mode 123 creative\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		boolean[] didCheck = new boolean[1];
+		monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
+			Assert.assertEquals(123, clientId);
+			Assert.assertNotNull(command);
+			didCheck[0] = true;
+		});
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didCheck[0]);
 	}
 }

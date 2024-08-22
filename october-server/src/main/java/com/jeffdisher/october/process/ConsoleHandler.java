@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -200,6 +201,53 @@ public class ConsoleHandler
 			else
 			{
 				out.println("You must specify at least 1 ID");
+			}
+		}),
+		SET_MODE((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <client_id> <creative/survival>.
+			if (2 == parameters.length)
+			{
+				int clientId = -1;
+				try
+				{
+					clientId = Integer.parseInt(parameters[0]);
+				}
+				catch (IllegalArgumentException e)
+				{
+					// If the ID isn't a number.
+				}
+				
+				String mode = parameters[1].toUpperCase();
+				boolean setCreative;
+				if ("CREATIVE".equals(mode))
+				{
+					setCreative = true;
+				}
+				else if ("SURVIVAL".equals(mode))
+				{
+					setCreative = false;
+				}
+				else
+				{
+					clientId = -1;
+					setCreative = false;
+				}
+				
+				if (clientId > 0)
+				{
+					// Pass in the operator command.
+					MonitoringAgent monitoringAgent = state.monitoringAgent;
+					EntityChangeOperatorSetCreative command = new EntityChangeOperatorSetCreative(setCreative);
+					monitoringAgent.getCommandSink().submit(clientId, command);
+				}
+				else
+				{
+					out.println("Usage:  <client_id> <CREATIVE/SURVIVAL>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <client_id> <CREATIVE/SURVIVAL>");
 			}
 		}),
 		;

@@ -3,8 +3,10 @@ package com.jeffdisher.october.server;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -19,6 +21,7 @@ public class MonitoringAgent
 	private final Map<Integer, NetworkLayer.PeerToken> _connectedClientTokens = new HashMap<>();
 	private volatile NetworkServer<?> _network;
 	private volatile TickRunner.Snapshot _lastSnapshot;
+	private volatile OperatorCommandSink _commandSink;
 
 	public void setNetwork(NetworkServer<?> network)
 	{
@@ -51,6 +54,16 @@ public class MonitoringAgent
 		return _network;
 	}
 
+	public void setOperatorCommandSink(OperatorCommandSink sink)
+	{
+		_commandSink = sink;
+	}
+
+	public OperatorCommandSink getCommandSink()
+	{
+		return _commandSink;
+	}
+
 	public synchronized Map<Integer, String> getClientsCopy()
 	{
 		return new HashMap<>(_connectedClientIds);
@@ -64,5 +77,11 @@ public class MonitoringAgent
 	public TickRunner.Snapshot getLastSnapshot()
 	{
 		return _lastSnapshot;
+	}
+
+
+	public static interface OperatorCommandSink
+	{
+		void submit(int clientId, IMutationEntity<IMutablePlayerEntity> command);
 	}
 }

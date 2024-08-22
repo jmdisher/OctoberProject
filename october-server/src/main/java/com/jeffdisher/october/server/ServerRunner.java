@@ -107,6 +107,9 @@ public class ServerRunner
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
+		_monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
+			_tickRunner.enqueueOperatorMutation(clientId, command);
+		});
 		
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		_tickAdvancer = new _TickAdvancer();
