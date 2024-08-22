@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.net.NetworkLayer;
@@ -76,8 +78,19 @@ public class ConsoleHandler
 		if (first.startsWith("!"))
 		{
 			String name = first.substring(1);
-			String[] params = new String[fragments.length - 1];
-			System.arraycopy(fragments, 1, params, 0, params.length);
+			
+			// Drop any empty string fragments.
+			List<String> nonEmpty = new ArrayList<>();
+			for (int i = 1; i < fragments.length; ++i)
+			{
+				String fragment = fragments[i];
+				if (fragment.length() > 0)
+				{
+					nonEmpty.add(fragment);
+				}
+			}
+			String[] params = nonEmpty.toArray((int size) -> new String[size]);
+			
 			try
 			{
 				_Command command = _Command.valueOf(name.toUpperCase());

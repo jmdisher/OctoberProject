@@ -91,4 +91,16 @@ public class TestConsoleHandler
 		background.join();
 		Assert.assertArrayEquals(new byte[0], out.toByteArray());
 	}
+
+	@Test
+	public void echoCollapseParameters() throws Throwable
+	{
+		// The basic use-case where we just stop, inline.
+		InputStream in = new ByteArrayInputStream("!echo one two      three\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+		Assert.assertArrayEquals("one two three \nShutting down...\n".getBytes(), out.toByteArray());
+	}
 }
