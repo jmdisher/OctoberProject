@@ -49,6 +49,8 @@ import com.jeffdisher.october.utils.MessageQueue;
  */
 public class ResourceLoader
 {
+	public static final int VERSION_CUBOID = 0;
+	public static final int VERSION_ENTITY = 0;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -362,6 +364,11 @@ public class ResourceLoader
 		{
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
+			
+			// Verify the version is one we can understand (we will just fail with an assertion, for now, since we can't proceed).
+			int version = buffer.getInt();
+			Assert.assertTrue(VERSION_CUBOID == version);
+			
 			CuboidData cuboid = CuboidData.createEmpty(address);
 			Object state = cuboid.deserializeResumable(null, buffer);
 			// There should be no resumable state since the file is complete.
@@ -410,6 +417,10 @@ public class ResourceLoader
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		
+		// Write the version header.
+		_backround_serializationBuffer.putInt(VERSION_CUBOID);
+		
 		IReadOnlyCuboidData cuboid = data.cuboid();
 		List<ScheduledMutation> mutations = data.mutations();
 		List<CreatureEntity> entities = data.creatures();
@@ -477,6 +488,11 @@ public class ResourceLoader
 		{
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
+			
+			// Verify the version is one we can understand (we will just fail with an assertion, for now, since we can't proceed).
+			int version = buffer.getInt();
+			Assert.assertTrue(VERSION_ENTITY == version);
+			
 			Entity entity = CodecHelpers.readEntity(buffer);
 			
 			// Now, load any suspended changes.
@@ -506,6 +522,10 @@ public class ResourceLoader
 	{
 		// Serialize the entire entity into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
+		
+		// Write the version header.
+		_backround_serializationBuffer.putInt(VERSION_ENTITY);
+		
 		Entity entity = suspended.entity();
 		List<ScheduledChange> changes = suspended.changes();
 		CodecHelpers.writeEntity(_backround_serializationBuffer, entity);
