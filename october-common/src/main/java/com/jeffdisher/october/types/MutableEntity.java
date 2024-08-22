@@ -91,6 +91,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public byte newFood;
 	public int newBreath;
 	public int newEnergyDeficit;
+	public boolean isCreativeMode;
 
 	private MutableEntity(Entity original)
 	{
@@ -106,6 +107,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newFood = original.food();
 		this.newBreath = original.breath();
 		this.newEnergyDeficit = original.energyDeficit();
+		this.isCreativeMode = original.isCreativeMode();
 	}
 
 	@Override
@@ -307,6 +309,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public void setCreativeMode(boolean enableCreative)
+	{
+		this.isCreativeMode = enableCreative;
+	}
+
+	@Override
 	public void applyEnergyCost(TickProcessingContext context, int cost)
 	{
 		// Apply the energy cost using the logic in the periodic entity.
@@ -351,7 +359,7 @@ public class MutableEntity implements IMutablePlayerEntity
 			}
 		}
 		Entity newInstance = new Entity(_original.id()
-				, _original.isCreativeMode()
+				, this.isCreativeMode
 				, this.newLocation
 				, this.newVelocity
 				, _original.blocksPerTickSpeed()

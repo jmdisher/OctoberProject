@@ -1830,6 +1830,24 @@ public class TestCommonChanges
 		Assert.assertEquals(1, pick);
 	}
 
+	@Test
+	public void setCreative() throws Throwable
+	{
+		// Create an entity in survival mode, change them to creative and back.
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
+		Assert.assertFalse(newEntity.freeze().isCreativeMode());
+		
+		EntityChangeOperatorSetCreative set = new EntityChangeOperatorSetCreative(true);
+		Assert.assertTrue(set.applyChange(holder.context, newEntity));
+		Assert.assertTrue(newEntity.freeze().isCreativeMode());
+		
+		EntityChangeOperatorSetCreative clear = new EntityChangeOperatorSetCreative(false);
+		Assert.assertTrue(clear.applyChange(holder.context, newEntity));
+		Assert.assertFalse(newEntity.freeze().isCreativeMode());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

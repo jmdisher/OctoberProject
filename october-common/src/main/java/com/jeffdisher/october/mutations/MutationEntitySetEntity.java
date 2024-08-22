@@ -42,6 +42,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 		newEntity.newHealth = _entity.health();
 		newEntity.newFood = _entity.food();
 		newEntity.newBreath = _entity.breath();
+		newEntity.isCreativeMode = _entity.isCreativeMode();
 	}
 
 	@Override
