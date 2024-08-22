@@ -24,28 +24,43 @@ public class EntityCollection
 		_creatures = creatures;
 	}
 
-	public void walkPlayersInRange(EntityLocation centre, float maxRange, Consumer<Entity> consumer)
+	public int walkPlayersInRange(EntityLocation centre, float maxRange, Consumer<Entity> consumer)
 	{
+		int found = 0;
 		for (Entity player : _players)
 		{
-			_checkInstance(centre, player.location(), maxRange, consumer, player);
+			boolean isInRange = _checkInstance(centre, player.location(), maxRange, consumer, player);
+			if (isInRange)
+			{
+				found += 1;
+			}
 		}
+		return found;
 	}
 
-	public void walkCreaturesInRange(EntityLocation centre, float maxRange, Consumer<CreatureEntity> consumer)
+	public int walkCreaturesInRange(EntityLocation centre, float maxRange, Consumer<CreatureEntity> consumer)
 	{
+		int found = 0;
 		for (CreatureEntity creature : _creatures)
 		{
-			_checkInstance(centre, creature.location(), maxRange, consumer, creature);
+			boolean isInRange = _checkInstance(centre, creature.location(), maxRange, consumer, creature);
+			if (isInRange)
+			{
+				found += 1;
+			}
 		}
+		return found;
 	}
 
 
-	private static <T> void _checkInstance(EntityLocation centre, EntityLocation location, float maxRange, Consumer<T> consumer, T target)
+	private static <T> boolean _checkInstance(EntityLocation centre, EntityLocation location, float maxRange, Consumer<T> consumer, T target)
 	{
+		boolean isInRange = false;
 		if ((SpatialHelpers.distanceBetween(centre, location)) <= maxRange)
 		{
 			consumer.accept(target);
+			isInRange = true;
 		}
+		return isInRange;
 	}
 }

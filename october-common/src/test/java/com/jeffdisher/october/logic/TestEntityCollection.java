@@ -22,8 +22,10 @@ public class TestEntityCollection
 		Collection<CreatureEntity> creatures = Set.of();
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
-		collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
-		collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
+		Assert.assertEquals(0, count);
+		count = collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		Assert.assertEquals(0, count);
 	}
 
 	@Test
@@ -33,8 +35,10 @@ public class TestEntityCollection
 		Collection<CreatureEntity> creatures = Set.of(_buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f)));
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
-		collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
-		collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
+		Assert.assertEquals(0, count);
+		count = collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		Assert.assertEquals(0, count);
 	}
 
 	@Test
@@ -49,8 +53,10 @@ public class TestEntityCollection
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		int[] counts = new int[2];
-		collection.walkPlayersInRange(centre, 3.0f, (Entity player) -> counts[0] += 1);
-		collection.walkCreaturesInRange(centre, 3.0f, (CreatureEntity creature) -> counts[1] += 1);
+		int count = collection.walkPlayersInRange(centre, 3.0f, (Entity player) -> counts[0] += 1);
+		Assert.assertEquals(2, count);
+		count = collection.walkCreaturesInRange(centre, 3.0f, (CreatureEntity creature) -> counts[1] += 1);
+		Assert.assertEquals(2, count);
 		
 		Assert.assertEquals(2, counts[0]);
 		Assert.assertEquals(2, counts[1]);
