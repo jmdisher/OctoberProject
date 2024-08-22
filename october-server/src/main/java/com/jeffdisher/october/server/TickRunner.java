@@ -424,12 +424,14 @@ public class TickRunner
 					, config
 					, _millisPerTick
 			);
+			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values());
 			
 			// We will have the first thread attempt the monster spawning algorithm.
 			CreatureEntity spawned = null;
 			if (TEST_SPAWNING_ENABLED && thisThread.handleNextWorkUnit())
 			{
 				spawned = CreatureSpawner.trySpawnCreature(context
+						, entityCollection
 						, materials.completedCuboids
 						, materials.completedCreatures
 				);
@@ -439,7 +441,7 @@ public class TickRunner
 			CreatureProcessor.CreatureGroup creatureGroup = CreatureProcessor.processCreatureGroupParallel(thisThread
 					, materials.completedCreatures
 					, context
-					, new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values())
+					, entityCollection
 					, materials.creatureChanges
 			);
 			// There is always a returned group (even if it has no content).

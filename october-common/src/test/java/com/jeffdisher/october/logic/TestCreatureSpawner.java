@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -18,6 +19,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -50,6 +52,7 @@ public class TestCreatureSpawner
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(), Set.of())
 				, completedCuboids
 				, Map.of()
 		);
@@ -86,6 +89,7 @@ public class TestCreatureSpawner
 				, 100L
 		);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(), Set.of())
 				, completedCuboids
 				, Map.of()
 		);
@@ -99,6 +103,7 @@ public class TestCreatureSpawner
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = _buildTestWorld();
 		TickProcessingContext context = _createContext(completedCuboids, 1);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(), Set.of())
 				, completedCuboids
 				, Map.of()
 		);
@@ -120,6 +125,23 @@ public class TestCreatureSpawner
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(), Set.of())
+				, completedCuboids
+				, Map.of()
+		);
+		Assert.assertNull(entity);
+	}
+
+	@Test
+	public void singleCuboidNearPlayer()
+	{
+		// Use the same approach as singleCuboid, so we know where the spawn should happen, but put a player near them so that the spawn will fail.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)5, (byte)1), STONE.item().number());
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
+		TickProcessingContext context = _createContext(completedCuboids, 5);
+		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(MutableEntity.createForTest(1).freeze()), Set.of())
 				, completedCuboids
 				, Map.of()
 		);

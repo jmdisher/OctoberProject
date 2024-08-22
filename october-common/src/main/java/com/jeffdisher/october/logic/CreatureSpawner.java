@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -24,14 +25,21 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class CreatureSpawner
 {
 	/**
+	 * The distance around a player where no new hostile mobs will spawn.
+	 */
+	public static final float SPAWN_DENIAL_RANGE = 16.0f;
+
+	/**
 	 * Attempts to spawn a single creature by randomly selecting a spawning location in the given world.
 	 * 
 	 * @param context The context for the current tick.
+	 * @param existingEntities The existing entities in the world as of this tick.
 	 * @param completedCuboids The map of all cuboids from the previous tick.
 	 * @param completedCreatures The map of all creatures from the previous tick.
 	 * @return The new entity or null if spawning was aborted.
 	 */
 	public static CreatureEntity trySpawnCreature(TickProcessingContext context
+			, EntityCollection existingEntities
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<Integer, CreatureEntity> completedCreatures
 	)
@@ -48,7 +56,7 @@ public class CreatureSpawner
 			
 			if (null != cuboid)
 			{
-				spawned = _spawnInCuboid(context, cuboid);
+				spawned = _spawnInCuboid(context, existingEntities, cuboid);
 			}
 			else
 			{
@@ -95,7 +103,10 @@ public class CreatureSpawner
 		;
 	}
 
-	private static CreatureEntity _spawnInCuboid(TickProcessingContext context, IReadOnlyCuboidData cuboid)
+	private static CreatureEntity _spawnInCuboid(TickProcessingContext context
+			, EntityCollection existingEntities
+			, IReadOnlyCuboidData cuboid
+	)
 	{
 		// Pick a random location in this cuboid.
 		byte x = (byte)context.randomInt.applyAsInt(32);
@@ -133,6 +144,15 @@ public class CreatureSpawner
 		if (Difficulty.PEACEFUL == context.config.difficulty)
 		{
 			goodSpawningLocation = null;
+		}
+		
+		// Check to make sure that this location isn't too close to a player.
+		if (null != goodSpawningLocation)
+		{
+			if (existingEntities.walkPlayersInRange(goodSpawningLocation.toEntityLocation(), SPAWN_DENIAL_RANGE, (Entity ignored) -> {}) > 0)
+			{
+				goodSpawningLocation = null;
+			}
 		}
 		
 		CreatureEntity spawned;
