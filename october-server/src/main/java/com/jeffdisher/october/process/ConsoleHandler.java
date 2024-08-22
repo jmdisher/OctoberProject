@@ -10,11 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 
 
@@ -191,16 +194,11 @@ public class ConsoleHandler
 				NetworkServer<?> network = monitoringAgent.getNetwork();
 				for (String param : parameters)
 				{
-					NetworkLayer.PeerToken token = null;
-					try
-					{
-						int clientId = Integer.parseInt(param);
-						token = monitoringAgent.getTokenForClient(clientId);
-					}
-					catch (IllegalArgumentException e)
-					{
-						// If the ID isn't a number.
-					}
+					int clientId = _readInt(parameters[0], -1);
+					NetworkLayer.PeerToken token = (clientId > 0)
+							? monitoringAgent.getTokenForClient(clientId)
+							: null
+					;
 					
 					if (null != token)
 					{
@@ -221,16 +219,7 @@ public class ConsoleHandler
 			// We expect <client_id> <creative/survival>.
 			if (2 == parameters.length)
 			{
-				int clientId = -1;
-				try
-				{
-					clientId = Integer.parseInt(parameters[0]);
-				}
-				catch (IllegalArgumentException e)
-				{
-					// If the ID isn't a number.
-				}
-				
+				int clientId = _readInt(parameters[0], -1);
 				String mode = parameters[1].toUpperCase();
 				boolean setCreative;
 				if ("CREATIVE".equals(mode))
@@ -292,6 +281,37 @@ public class ConsoleHandler
 				out.println("Usage:  <peaceful/hostile>");
 			}
 		}),
+		TP((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <client_id> <x> <y> <z>.
+			if (4 == parameters.length)
+			{
+				int clientId = _readInt(parameters[0], -1);
+				int x = _readInt(parameters[1], Integer.MIN_VALUE);
+				int y = _readInt(parameters[2], Integer.MIN_VALUE);
+				int z = _readInt(parameters[3], Integer.MIN_VALUE);
+				
+				if ((-1 != clientId)
+						&& (Integer.MIN_VALUE != x)
+						&& (Integer.MIN_VALUE != y)
+						&& (Integer.MIN_VALUE != z)
+				)
+				{
+					// Pass in the operator command.
+					MonitoringAgent monitoringAgent = state.monitoringAgent;
+					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
+					EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(location);
+					monitoringAgent.getCommandSink().submit(clientId, command);
+				}
+				else
+				{
+					out.println("Usage:  <client_id> <x> <y> <z>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <client_id> <x> <y> <z>");
+			}
+		}),
 		;
 		
 		public final _CommandHandler handler;
@@ -299,6 +319,20 @@ public class ConsoleHandler
 		private _Command(_CommandHandler handler)
 		{
 			this.handler = handler;
+		}
+		
+		private static int _readInt(String value, int defaultValue)
+		{
+			int read = defaultValue;
+			try
+			{
+				read = Integer.parseInt(value);
+			}
+			catch (IllegalArgumentException e)
+			{
+				// Not a valid int.
+			}
+			return read;
 		}
 	}
 }

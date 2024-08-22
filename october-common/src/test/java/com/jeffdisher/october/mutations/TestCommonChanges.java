@@ -1848,6 +1848,21 @@ public class TestCommonChanges
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
 	}
 
+	@Test
+	public void teleport() throws Throwable
+	{
+		// Create an entity in survival mode, change them to creative and back.
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.freeze().location());
+		
+		EntityLocation destination = new EntityLocation(15.5f, -50.0f, 11.0f);
+		EntityChangeOperatorSetLocation set = new EntityChangeOperatorSetLocation(destination);
+		Assert.assertTrue(set.applyChange(holder.context, newEntity));
+		Assert.assertEquals(destination, newEntity.freeze().location());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

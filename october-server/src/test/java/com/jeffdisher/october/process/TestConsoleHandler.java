@@ -141,4 +141,23 @@ public class TestConsoleHandler
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 	}
+
+	@Test
+	public void operatorTeleport() throws Throwable
+	{
+		// Just verify that the call is sent.
+		InputStream in = new ByteArrayInputStream("!tp 123 5 -6 12\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		boolean[] didCheck = new boolean[1];
+		monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
+			Assert.assertEquals(123, clientId);
+			Assert.assertNotNull(command);
+			didCheck[0] = true;
+		});
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didCheck[0]);
+	}
 }
