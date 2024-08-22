@@ -14,6 +14,8 @@ import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
+import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.WorldConfig;
 
 
 /**
@@ -27,13 +29,18 @@ public class ConsoleHandler
 	 * @param in The input stream.
 	 * @param out The output stream.
 	 * @param monitoringAgent The shared agent structure which collects information from the rest of the system.
+	 * @param mutableSharedConfig The shared config object used by the system (changes will immediately take effect).
 	 * @throws IOException If there was an error reading the input.
 	 */
-	public static void readUntilStop(InputStream in, PrintStream out, MonitoringAgent monitoringAgent) throws IOException
+	public static void readUntilStop(InputStream in
+			, PrintStream out
+			, MonitoringAgent monitoringAgent
+			, WorldConfig mutableSharedConfig
+	) throws IOException
 	{
 		// We will read lines until we get a stop command.
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-		_ConsoleState state = new _ConsoleState(monitoringAgent);
+		_ConsoleState state = new _ConsoleState(monitoringAgent, mutableSharedConfig);
 		while (state.canContinue)
 		{
 			_readAndProcessOneLine(out, reader, state);
@@ -51,14 +58,19 @@ public class ConsoleHandler
 	 * @param in The input stream.
 	 * @param out The output stream.
 	 * @param monitoringAgent The shared agent structure which collects information from the rest of the system.
+	 * @param mutableSharedConfig The shared config object used by the system (changes will immediately take effect).
 	 * @throws IOException If there was an error reading the input.
 	 * @throws InterruptedException If this thread was interrupted.
 	 */
-	public static void readUntilStopInterruptable(InputStream in, PrintStream out, MonitoringAgent monitoringAgent) throws IOException, InterruptedException
+	public static void readUntilStopInterruptable(InputStream in
+			, PrintStream out
+			, MonitoringAgent monitoringAgent
+			, WorldConfig mutableSharedConfig
+	) throws IOException, InterruptedException
 	{
 		// We will read lines until we get a stop command.
 		BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-		_ConsoleState state = new _ConsoleState(monitoringAgent);
+		_ConsoleState state = new _ConsoleState(monitoringAgent, mutableSharedConfig);
 		while (state.canContinue)
 		{
 			while (0 == in.available())
@@ -119,9 +131,11 @@ public class ConsoleHandler
 	{
 		public boolean canContinue = true;
 		public final MonitoringAgent monitoringAgent;
-		public _ConsoleState(MonitoringAgent monitoringAgent)
+		public final WorldConfig mutableSharedConfig;
+		public _ConsoleState(MonitoringAgent monitoringAgent, WorldConfig mutableSharedConfig)
 		{
 			this.monitoringAgent = monitoringAgent;
+			this.mutableSharedConfig = mutableSharedConfig;
 		}
 	}
 
@@ -248,6 +262,34 @@ public class ConsoleHandler
 			else
 			{
 				out.println("Usage:  <client_id> <CREATIVE/SURVIVAL>");
+			}
+		}),
+		SET_DIFFICULTY((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <peaceful/hostile>.
+			if (1 == parameters.length)
+			{
+				String mode = parameters[0].toUpperCase();
+				Difficulty target;
+				try
+				{
+					target = Difficulty.valueOf(mode);
+				}
+				catch (IllegalArgumentException e)
+				{
+					target = Difficulty.ERROR;
+				}
+				if (Difficulty.ERROR != target)
+				{
+					state.mutableSharedConfig.difficulty = target;
+				}
+				else
+				{
+					out.println("Usage:  <peaceful/hostile>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <peaceful/hostile>");
 			}
 		}),
 		;

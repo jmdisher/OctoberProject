@@ -8,6 +8,8 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * A container of the configuration options for a world, designed to be persisted as part of the world directory.
+ * WARNING:  This is a shared mutable instance so care must be taken when modifying fields (marked volatile to make
+ * this clear).
  */
 public class WorldConfig
 {
@@ -15,32 +17,32 @@ public class WorldConfig
 	 * Difficulty currently describes whether or not hostile creatures can exist in the world.
 	 */
 	public static final String KEY_DIFFICULTY = "difficulty";
-	public Difficulty difficulty;
+	public volatile Difficulty difficulty;
 
 	/**
 	 * When determining if anything should be spawned, this number is used as a vague target per cuboid.
 	 */
 	public static final String KEY_HOSTILES_PER_CUBOID_TARGET = "hostiles_per_cuboid_target";
-	public int hostilesPerCuboidTarget;
+	public volatile int hostilesPerCuboidTarget;
 
 	/**
 	 * When spawning in a specific cuboid, we will abort the spawn attempt if there are more than this many entities in
 	 * that specific cuboid.
 	 */
 	public static final String KEY_HOSTILES_PER_CUBOID_LIMIT = "hostiles_per_cuboid_limit";
-	public int hostilesPerCuboidLimit;
+	public volatile int hostilesPerCuboidLimit;
 
 	/**
 	 * The seed value to use when configuring BasicWorldGenerator.  It is just a 32-bit int.
 	 */
 	public static final String KEY_BASIC_SEED = "basic_seed";
-	public int basicSeed;
+	public volatile int basicSeed;
 
 	/**
 	 * The world spawn is where a player will first spawn in the world or will re-respawn after death.
 	 */
 	public static final String KEY_WORLD_SPAWN = "world_spawn";
-	public AbsoluteLocation worldSpawn;
+	public volatile AbsoluteLocation worldSpawn;
 
 	/**
 	 * Creates a world config with all default options.

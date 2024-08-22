@@ -54,7 +54,7 @@ public class ServerMain
 						, config
 				);
 				// Hand over control to the ConsoleHandler.  Once it returns, we can shut down.
-				ConsoleHandler.readUntilStop(System.in, System.out, monitoringAgent);
+				ConsoleHandler.readUntilStop(System.in, System.out, monitoringAgent, config);
 				// We returned, so we can stop the ServerProcess.
 				process.stop();
 				// Everything has stopped so now write-back the config.

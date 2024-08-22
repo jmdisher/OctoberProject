@@ -12,7 +12,9 @@ import org.junit.Test;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.WorldConfig;
 
 
 public class TestConsoleHandler
@@ -25,7 +27,7 @@ public class TestConsoleHandler
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 	}
 
@@ -42,7 +44,7 @@ public class TestConsoleHandler
 			try
 			{
 				startLatch.countDown();
-				ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+				ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 			}
 			catch (IOException e)
 			{
@@ -71,7 +73,7 @@ public class TestConsoleHandler
 			try
 			{
 				startLatch.countDown();
-				ConsoleHandler.readUntilStopInterruptable(in, printer, monitoringAgent);
+				ConsoleHandler.readUntilStopInterruptable(in, printer, monitoringAgent, new WorldConfig());
 			}
 			catch (IOException e)
 			{
@@ -102,7 +104,7 @@ public class TestConsoleHandler
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("one two three \nShutting down...\n".getBytes(), out.toByteArray());
 	}
 
@@ -120,8 +122,23 @@ public class TestConsoleHandler
 			Assert.assertNotNull(command);
 			didCheck[0] = true;
 		});
-		ConsoleHandler.readUntilStop(in, printer, monitoringAgent);
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didCheck[0]);
+	}
+
+	@Test
+	public void operatorSetDifficulty() throws Throwable
+	{
+		// The basic use-case where we just stop, inline.
+		InputStream in = new ByteArrayInputStream("!set_difficulty peaceful\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		WorldConfig config = new WorldConfig();
+		Assert.assertEquals(Difficulty.HOSTILE, config.difficulty);
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 	}
 }
