@@ -84,6 +84,7 @@ public class TickRunner
 	private final Map<Integer, PerEntitySharedAccess> _entitySharedAccess;
 	private List<SuspendedEntity> _newEntities;
 	private List<Integer> _departedEntityIds;
+	private List<_OperatorMutationWrapper> _operatorMutations;
 	
 	// Ivars which are related to the interlock where the threads merge partial results and wait to start again.
 	private TickMaterials _thisTickMaterials;
@@ -307,6 +308,35 @@ public class TickRunner
 			_sharedDataLock.unlock();
 		}
 		return didAdd;
+	}
+
+	/**
+	 * Enqueues a locally-originating (server console) mutation to change the given entityId for scheduling in the next
+	 * tick.
+	 * 
+	 * @param entityId The entity where the change should be scheduled.
+	 * @param change The change to schedule.
+	 */
+	public void enqueueOperatorMutation(int entityId, IMutationEntity<IMutablePlayerEntity> change)
+	{
+		// The entity might be missing, but the ID should be positive.
+		Assert.assertTrue(entityId > 0);
+		// Operator events all take 0 ms.
+		Assert.assertTrue(0L == change.getTimeCostMillis());
+		
+		_sharedDataLock.lock();
+		try
+		{
+			if (null == _operatorMutations)
+			{
+				_operatorMutations = new ArrayList<>();
+			}
+			_operatorMutations.add(new _OperatorMutationWrapper(entityId, change));
+		}
+		finally
+		{
+			_sharedDataLock.unlock();
+		}
 	}
 
 	/**
@@ -626,6 +656,7 @@ public class TickRunner
 				Set<CuboidAddress> cuboidsToDrop;
 				List<SuspendedEntity> newEntities;
 				List<Integer> removedEntityIds;
+				List<_OperatorMutationWrapper> operatorMutations;
 				Map<Integer, List<ScheduledChange>> newEntityChanges = new HashMap<>();
 				Map<Integer, Long> newCommitLevels = new HashMap<>();
 				
@@ -640,6 +671,8 @@ public class TickRunner
 					_newEntities = null;
 					removedEntityIds = _departedEntityIds;
 					_departedEntityIds = null;
+					operatorMutations = _operatorMutations;
+					_operatorMutations = null;
 					
 					// We need to do some scheduling work under this lock.
 					for (Map.Entry<Integer, PerEntitySharedAccess> entry : _entitySharedAccess.entrySet())
@@ -730,6 +763,24 @@ public class TickRunner
 							old = nextTickChanges.put(id, new ArrayList<>(changes));
 							// This must not already be present (this was just created above here).
 							Assert.assertTrue(null == old);
+						}
+					}
+				}
+				
+				// Add any operator mutations.
+				if (null != operatorMutations)
+				{
+					for (_OperatorMutationWrapper wrapper : operatorMutations)
+					{
+						if (nextCrowdState.containsKey(wrapper.entityId))
+						{
+							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
+							if (null == mutableChanges)
+							{
+								mutableChanges = new ArrayList<>();
+								nextTickChanges.put(wrapper.entityId, mutableChanges);
+							}
+							mutableChanges.add(new ScheduledChange(wrapper.mutation, 0L));
 						}
 					}
 				}
@@ -1081,6 +1132,11 @@ public class TickRunner
 	 * A wrapper over the IMutationEntity to store commit level data.
 	 */
 	private static record _EntityMutationWrapper(IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel) {}
+
+	/**
+	 * A wrapper over the IMutationEntity with associated entity ID.
+	 */
+	private static record _OperatorMutationWrapper(int entityId, IMutationEntity<IMutablePlayerEntity> mutation) {}
 
 	/**
 	 * A wrapper over the per-thread partial data which we hand-off at synchronization.

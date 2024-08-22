@@ -25,6 +25,7 @@ import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
@@ -1831,6 +1832,42 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void operatorSetCreative()
+	{
+		// Define an entity and show that we can set their creative flag with an operator command.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		
+		// Create a tick runner with a single cuboid and get it running.
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, List.of(), List.of()))
+				, null
+				, List.of(_createFreshEntity(entityId))
+				, null
+		);
+		runner.start();
+		
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertFalse(snapshot.completedEntities().get(entityId).isCreativeMode());
+		
+		// Enqueue the operator command, run the tick, and observe this change.
+		runner.enqueueOperatorMutation(entityId, new EntityChangeOperatorSetCreative(true));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertTrue(snapshot.completedEntities().get(entityId).isCreativeMode());
+		
+		// Verify that it can be cleared.
+		runner.enqueueOperatorMutation(entityId, new EntityChangeOperatorSetCreative(false));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertFalse(snapshot.completedEntities().get(entityId).isCreativeMode());
 		
 		runner.shutdown();
 	}
