@@ -378,6 +378,35 @@ public class OctreeShort implements IOctree
 	}
 
 	@Override
+	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
+	{
+		short skip = ((Short)valueToSkip).shortValue();
+		@SuppressWarnings("unchecked")
+		IWalkerCallback<Short> castCallback = (IWalkerCallback<Short>) callback;
+		if (null != _topLevelTrees)
+		{
+			// Walk the sub-trees.
+			byte size = 16;
+			for (int i = 0; i < _topLevelTrees.length; ++i)
+			{
+				byte x = (byte)((i & 0x4) * 4);
+				byte y = (byte)((i & 0x2) * 8);
+				byte z = (byte)((i & 0x1) * 16);
+				_walkData(ByteBuffer.wrap(_topLevelTrees[i]), x, y, z, size, castCallback, skip);
+			}
+		}
+		else
+		{
+			// Just use the inline value.
+			if (skip != _inlineCompact)
+			{
+				byte size = 32;
+				castCallback.visit(new BlockAddress((byte)0, (byte)0, (byte)0), new BlockAddress(size, size, size), _inlineCompact);
+			}
+		}
+	}
+
+	@Override
 	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
 		// NOTE:  For serializing, we just pass an Integer back:  Just the offset where we need to resume copying.
@@ -587,6 +616,37 @@ public class OctreeShort implements IOctree
 						out.println(indent + "( subtree " + i + ", " + j + ", " + k);
 						_walkTree(out, indent + "\t", buffer);
 						out.println(indent + ") subtree " + i + ", " + j + ", " + k);
+					}
+				}
+			}
+		}
+	}
+
+	private void _walkData(ByteBuffer buffer, byte x, byte y, byte z, byte size, IWalkerCallback<Short> callback, short valueToSkip)
+	{
+		short oldValue = _loadHeader(buffer);
+		if (oldValue >= 0)
+		{
+			// Inline tree.
+			if (oldValue != valueToSkip)
+			{
+				callback.visit(new BlockAddress(x, y, z), new BlockAddress(size, size, size), oldValue);
+			}
+		}
+		else
+		{
+			// Walk subtrees.
+			byte subSize = (byte)(size / 2);
+			for (byte i = 0; i < 2; ++i)
+			{
+				for (byte j = 0; j < 2; ++j)
+				{
+					for (byte k = 0; k < 2; ++k)
+					{
+						byte subX = (byte)(x + (i * subSize));
+						byte subY = (byte)(y + (j * subSize));
+						byte subZ = (byte)(z + (k * subSize));
+						_walkData(buffer, subX, subY, subZ, subSize, callback, valueToSkip);
 					}
 				}
 			}

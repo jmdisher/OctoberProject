@@ -65,6 +65,30 @@ public class OctreeObject implements IOctree
 	}
 
 	@Override
+	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
+	{
+		// In this implementation, it is only appropriate to skip null values (since we can't evaluate equality and have no other use-case).
+		Assert.assertTrue(null == valueToSkip);
+		
+		BlockAddress size = new BlockAddress((byte)1, (byte)1, (byte)1);
+		for (Map.Entry<Short, Object> elt : _data.entrySet())
+		{
+			short hash = elt.getKey();
+			Object value = elt.getValue();
+			if (valueToSkip != value)
+			{
+				// Extract the location from the hash and issue the callback.
+				byte x = (byte)((hash >> 10) & 0x1F);
+				byte y = (byte)((hash >> 5) & 0x1F);
+				byte z = (byte)((hash) & 0x1F);
+				@SuppressWarnings("unchecked")
+				T castValue = (T) value;
+				callback.visit(new BlockAddress(x, y, z), size, castValue);
+			}
+		}
+	}
+
+	@Override
 	public Object serializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec)
 	{
 		int keysToSkip = (null != lastCallState)

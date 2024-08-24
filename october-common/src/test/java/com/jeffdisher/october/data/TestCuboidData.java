@@ -132,4 +132,19 @@ public class TestCuboidData
 		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(2, inv.getCount(STONE_ITEM));
 	}
+
+	@Test
+	public void walkBlocks()
+	{
+		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
+		
+		input.walkData(AspectRegistry.BLOCK, (BlockAddress base, BlockAddress size, Short value) -> {
+			Assert.assertEquals(testAddress, base);
+			Assert.assertEquals(new BlockAddress((byte)1, (byte)1, (byte)1), size);
+			Assert.assertEquals(1, value.shortValue());
+		}, ENV.special.AIR.item().number());
+	}
 }

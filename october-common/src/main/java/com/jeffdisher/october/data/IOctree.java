@@ -29,6 +29,16 @@ public interface IOctree
 	<T> void setData(BlockAddress address, T value);
 
 	/**
+	 * Walks the tree, issuing callbacks for every data entry found (in no particular order), so long as it isn't
+	 * valueToSkip.
+	 * 
+	 * @param <T> The data type.
+	 * @param callback The callback to use for every tree entry walked.
+	 * @param valueToSkip The callback will be skipped if the value equals this.
+	 */
+	<T> void walkData(IWalkerCallback<T> callback, T valueToSkip);
+
+	/**
 	 * Called to request serialization of the octree.  An implementation is expected to serialize as much as it can into
 	 * the given buffer, passing back any state to resume the serialization if it fills up.  It returns null when fully
 	 * serialized.
@@ -51,4 +61,23 @@ public interface IOctree
 	 * @return The state to resume on the next call, or null if the deserialization was completed.
 	 */
 	Object deserializeResumable(Object lastCallState, ByteBuffer buffer, IAspectCodec<?> codec);
+
+	/**
+	 * Used to receive callbacks from the walkData() calls.  Note that this will receive callbacks for all data,
+	 * although the size parameter may indicate that multiple calls have been batched together.
+	 * 
+	 * @param <T> The value type
+	 */
+	public interface IWalkerCallback<T>
+	{
+		/**
+		 * Called when visiting a data node in the underlying tree (note that the data nodes never overlap).  Note that
+		 * the size parameter may indicate that all the values, rooted at base, within that size volume are the same.
+		 * 
+		 * @param base The block address of the data value or where the value starts.
+		 * @param size The size of the volume where the value applies.
+		 * @param value The value in this location.
+		 */
+		void visit(BlockAddress base, BlockAddress size, T value);
+	}
 }

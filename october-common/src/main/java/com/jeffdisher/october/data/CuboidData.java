@@ -106,6 +106,12 @@ public class CuboidData implements IReadOnlyCuboidData
 	}
 
 	@Override
+	public <T> void walkData(Aspect<T, ?> type, IOctree.IWalkerCallback<T> callback, T valueToSkip)
+	{
+		_data[type.index()].walkData(callback, valueToSkip);
+	}
+
+	@Override
 	public Object serializeResumable(Object lastCallState, ByteBuffer buffer)
 	{
 		// Our implementation requires some minimum buffer size.

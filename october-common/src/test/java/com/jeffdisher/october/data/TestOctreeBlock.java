@@ -138,6 +138,15 @@ public class TestOctreeBlock
 		}
 		endStore = System.currentTimeMillis();
 		System.out.println("Verify total took " + (endStore -startStore) + " millis");
+		
+		// Also check the walking callback.
+		int[] count = new int[] {0};
+		test.walkData((BlockAddress base, BlockAddress size, Short ignored) -> {
+			count[0] += 1;
+		}, value);
+		long endWalk = System.currentTimeMillis();
+		System.out.println("Callback walk took " + (endWalk - endStore) + " millis");
+		Assert.assertEquals(32 * 32 * 32 -1, count[0]);
 	}
 
 	@Test
@@ -234,6 +243,113 @@ public class TestOctreeBlock
 		}
 		endStore = System.currentTimeMillis();
 		System.out.println("Verify total took " + (endStore -startStore) + " millis");
+	}
+
+	@Test
+	public void walkByte()
+	{
+		// Put a few values into a byte octree and observe the walker callbacks.
+		byte start = 0;
+		OctreeByte test = OctreeByte.create(start);
+		for (int x = 0; x < 2; ++x)
+		{
+			for (int y = 0; y < 2; ++y)
+			{
+				for (int z = 0; z < 2; ++z)
+				{
+					test.setData(new BlockAddress((byte)(2 + x), (byte)(2 + y), (byte)(2 + z)), (byte)1);
+				}
+			}
+		}
+		test.setData(new BlockAddress((byte)18, (byte)29, (byte)7), (byte)2);
+		
+		BlockAddress[] bases = new BlockAddress[] {
+				new BlockAddress((byte)2, (byte)2, (byte)2),
+				new BlockAddress((byte)18, (byte)29, (byte)7),
+		};
+		BlockAddress[] sizes = new BlockAddress[] {
+				new BlockAddress((byte)2, (byte)2, (byte)2),
+				new BlockAddress((byte)1, (byte)1, (byte)1),
+		};
+		byte[] values = new byte[] {
+				1,
+				2,
+		};
+		int[] cursor = new int[] {0};
+		test.walkData((BlockAddress base, BlockAddress size, Byte value) -> {
+			int index = cursor[0];
+			cursor[0] += 1;
+			Assert.assertEquals(bases[index], base);
+			Assert.assertEquals(sizes[index], size);
+			Assert.assertEquals(values[index], value.byteValue());
+		}, start);
+	}
+
+	@Test
+	public void walkShort()
+	{
+		// Put a few values into a short octree and observe the walker callbacks.
+		short start = 0;
+		OctreeShort test = OctreeShort.create(start);
+		for (int x = 0; x < 4; ++x)
+		{
+			for (int y = 0; y < 4; ++y)
+			{
+				for (int z = 0; z < 4; ++z)
+				{
+					test.setData(new BlockAddress((byte)(28 + x), (byte)(28 + y), (byte)(28 + z)), (short)1);
+				}
+			}
+		}
+		test.setData(new BlockAddress((byte)0, (byte)0, (byte)0), (short)2);
+		
+		BlockAddress[] bases = new BlockAddress[] {
+				new BlockAddress((byte)0, (byte)0, (byte)0),
+				new BlockAddress((byte)28, (byte)28, (byte)28),
+		};
+		BlockAddress[] sizes = new BlockAddress[] {
+				new BlockAddress((byte)1, (byte)1, (byte)1),
+				new BlockAddress((byte)4, (byte)4, (byte)4),
+		};
+		short[] values = new short[] {
+				2,
+				1,
+		};
+		int[] cursor = new int[] {0};
+		test.walkData((BlockAddress base, BlockAddress size, Short value) -> {
+			int index = cursor[0];
+			cursor[0] += 1;
+			Assert.assertEquals(bases[index], base);
+			Assert.assertEquals(sizes[index], size);
+			Assert.assertEquals(values[index], value.shortValue());
+		}, start);
+	}
+
+	@Test
+	public void walkObject()
+	{
+		// Put a few instances into the object tree and walk them.
+		OctreeObject test = OctreeObject.create();
+		test.setData(new BlockAddress((byte)28, (byte)29, (byte)7), Integer.valueOf(1));
+		test.setData(new BlockAddress((byte)0, (byte)0, (byte)0), Integer.valueOf(2));
+		
+		BlockAddress[] bases = new BlockAddress[] {
+				new BlockAddress((byte)0, (byte)0, (byte)0),
+				new BlockAddress((byte)28, (byte)29, (byte)7),
+		};
+		BlockAddress sizes = new BlockAddress((byte)1, (byte)1, (byte)1);
+		int[] values = new int[] {
+				2,
+				1,
+		};
+		int[] cursor = new int[] {0};
+		test.walkData((BlockAddress base, BlockAddress size, Integer value) -> {
+			int index = cursor[0];
+			cursor[0] += 1;
+			Assert.assertEquals(bases[index], base);
+			Assert.assertEquals(sizes, size);
+			Assert.assertEquals(values[index], value.intValue());
+		}, null);
 	}
 
 
