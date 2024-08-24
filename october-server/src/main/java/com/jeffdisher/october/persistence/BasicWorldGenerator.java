@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -206,22 +207,21 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
 		_SubField subField = new _SubField(seeds, 0, 0);
-		int[][] heightMap = _generateHeightMapForCuboidColumn(subField);
+		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(subField);
 		int minHeight = 0;
 		int maxHeight = Integer.MAX_VALUE;
 		int totalHeight = 0;
-		int count = 0;
-		for (int[] row : heightMap)
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int height : row)
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
+				int height = heightMap.getHeight(x, y);
 				minHeight = Math.min(minHeight, height);
 				maxHeight = Math.max(maxHeight, height);
 				totalHeight += height;
-				count += 1;
 			}
 		}
-		Assert.assertTrue((Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE) == count);
+		int count = Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE;
 		int averageHeight = totalHeight / count;
 		AbsoluteLocation cuboidBase = address.getBase();
 		int cuboidZ = cuboidBase.z();
@@ -257,7 +257,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		{
 			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
-				int height = heightMap[y][x];
+				int height = heightMap.getHeight(x, y);
 				for (int z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
 				{
 					int thisZ = cuboidZ + z;
@@ -304,7 +304,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
-				int relativeZ = heightMap[relativeY][relativeX] - cuboidBase.z() + 1;
+				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
 						, EntityType.COW
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
@@ -333,7 +333,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public EntityLocation getDefaultSpawnLocation()
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, (short)0, (short)0);
-		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
 		// Find the largest value here and spawn there (note that this may not be in the zero-z cuboid).
 		int maxZ = Integer.MIN_VALUE;
 		int targetX = -1;
@@ -342,7 +342,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		{
 			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
-				int height = heightMap[y][x];
+				int height = heightMap.getHeight(x, y);
 				if (height > maxZ)
 				{
 					maxZ = height;
@@ -447,9 +447,9 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	 * 
 	 * @param cuboidX The cuboid X address.
 	 * @param cuboidY The cuboid Y address.
-	 * @return The height map of this cuboid (y-major addressing).
+	 * @return The height map of this cuboid.
 	 */
-	public int[][] test_getHeightMap(short cuboidX, short cuboidY)
+	public ColumnHeightMap test_getHeightMap(short cuboidX, short cuboidY)
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
 		return _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
@@ -477,12 +477,12 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public int test_getGullyDepth(short cuboidX, short cuboidY)
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		int[][] heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
 		return _findGully(heightMap);
 	}
 
 
-	private int[][] _generateHeightMapForCuboidColumn(_SubField subField)
+	private ColumnHeightMap _generateHeightMapForCuboidColumn(_SubField subField)
 	{
 		// Note that we need to consider "biome" and "cuboid centre height" which requires that we generate the seed values for 5x5 cuboids around this one.
 		// centres
@@ -511,7 +511,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				heightMapForCuboidColumn[y][x] = height;
 			}
 		}
-		return heightMapForCuboidColumn;
+		return ColumnHeightMap.wrap(heightMapForCuboidColumn);
 	}
 
 	private static int _deterministicRandom(int seed, int x, int y)
@@ -690,14 +690,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				int biome = _buildBiomeFromSeeds5x5(relField);
 				if (FOREST_CODE == BIOMES[biome].code)
 				{
-					int[][] heightMap = _generateHeightMapForCuboidColumn(relField);
+					ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(relField);
 					Random random = new Random(cuboidSeed);
 					for (int i = 0; i < FOREST_TREE_COUNT; ++i)
 					{
 						int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 						int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 						// Choose the block above the dirt.
-						int absoluteZ = heightMap[relativeY][relativeX] + 1;
+						int absoluteZ = heightMap.getHeight(relativeX, relativeY) + 1;
 						// The tree is a 3x3 structure with the tree in the middle so step back by one.
 						// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 						AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
@@ -730,7 +730,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		}
 	}
 
-	private EntityType _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, int[][] heightMap, _Biome biome)
+	private EntityType _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
 	{
 		EntityType typeToSpawn = null;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
@@ -778,7 +778,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
-				int relativeZ = heightMap[relativeY][relativeX] - cuboidBottomZ + 1;
+				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBottomZ + 1;
 				if ((relativeZ >= 0) && (relativeZ < Structure.CUBOID_EDGE_SIZE))
 				{
 					BlockAddress address = new BlockAddress((byte)relativeX, (byte)relativeY, (byte)relativeZ);
@@ -804,7 +804,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return typeToSpawn;
 	}
 
-	private int _findGully(int[][] heightMap)
+	private int _findGully(ColumnHeightMap heightMap)
 	{
 		// A gully is a point in the cuboid lower than the perimeter of the cuboid.
 		int minGully = Integer.MAX_VALUE;
@@ -814,7 +814,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		{
 			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
-				int height = heightMap[y][x];
+				int height = heightMap.getHeight(x, y);
 				minGully = Math.min(minGully, height);
 				if ((0 == y) || (edge == y) || (0 == x) || (edge == x))
 				{
@@ -826,14 +826,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return minPerimeter - minGully;
 	}
 
-	private int _getLowestHeight(int[][] heightMap)
+	private int _getLowestHeight(ColumnHeightMap heightMap)
 	{
 		int min = Integer.MAX_VALUE;
 		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 			{
-				int height = heightMap[y][x];
+				int height = heightMap.getHeight(x, y);
 				min = Math.min(min, height);
 			}
 		}

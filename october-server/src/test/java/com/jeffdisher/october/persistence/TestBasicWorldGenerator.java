@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -45,8 +46,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(new BlockAddress((byte)5, (byte)9, (byte)0), generator.test_getCentre((short)0, (short)0));
 		Assert.assertEquals(7, generator.test_getRawPeak((short)0, (short)0));
 		Assert.assertEquals(7, generator.test_getAdjustedPeak((short)0, (short)0));
-		int[][] heightMap = generator.test_getHeightMap((short)0, (short)0);
-		Assert.assertEquals(8, heightMap[0][0]);
+		ColumnHeightMap heightMap = generator.test_getHeightMap((short)0, (short)0);
+		Assert.assertEquals(8, heightMap.getHeight(0, 0));
 	}
 
 	@Test
@@ -54,7 +55,7 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		int[][][][] region = new int[3][3][][];
+		ColumnHeightMap[][] region = new ColumnHeightMap[3][3];
 		for (short y = -1; y <= 1; ++y)
 		{
 			for (short x = -1; x <= 1; ++x)
@@ -69,7 +70,7 @@ public class TestBasicWorldGenerator
 				AbsoluteLocation loc = new AbsoluteLocation(x, y, 0);
 				CuboidAddress cuboid = loc.getCuboidAddress();
 				BlockAddress block = loc.getBlockAddress();
-				System.out.print(Integer.toHexString(region[cuboid.y() + 1][cuboid.x() + 1][block.y()][block.x()]));
+				System.out.print(Integer.toHexString(region[cuboid.y() + 1][cuboid.x() + 1].getHeight(block.x(), block.y())));
 			}
 			System.out.println();
 		}
