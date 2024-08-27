@@ -22,6 +22,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -250,12 +251,12 @@ public class TestServerStateManager
 		public List<SuspendedEntity> loadedEntities = new ArrayList<>();
 		public List<SuspendedCuboid<CuboidData>> loadedCuboids = new ArrayList<>();
 		public Map<Integer, Long> lastFinishedCommitPerClient = new HashMap<>();
-		public Set<SuspendedCuboid<IReadOnlyCuboidData>> cuboidsToWrite = new HashSet<>();
+		public Set<PackagedCuboid> cuboidsToWrite = new HashSet<>();
 		public Set<SuspendedEntity> entitiesToWrite = new HashSet<>();
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
 		
 		@Override
-		public void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities)
+		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
 		{
 			Assert.assertFalse(this.cuboidsToWrite.removeAll(cuboids));
 			this.cuboidsToWrite.addAll(cuboids);

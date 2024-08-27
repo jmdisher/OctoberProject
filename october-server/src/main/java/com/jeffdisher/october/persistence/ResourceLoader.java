@@ -237,12 +237,12 @@ public class ResourceLoader
 	 * @param cuboids The cuboids (and any suspended mutations) to write.
 	 * @param entities The entities (and any suspended mutations) to write.
 	 */
-	public void writeBackToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities)
+	public void writeBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
 	{
 		// This one should only be called if there are some to write.
 		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
 		_queue.enqueue(() -> {
-			for (SuspendedCuboid<IReadOnlyCuboidData> cuboid : cuboids)
+			for (PackagedCuboid cuboid : cuboids)
 			{
 				_background_writeCuboidToDisk(cuboid);
 			}
@@ -413,7 +413,7 @@ public class ResourceLoader
 		return result;
 	}
 
-	private void _background_writeCuboidToDisk(SuspendedCuboid<IReadOnlyCuboidData> data)
+	private void _background_writeCuboidToDisk(PackagedCuboid data)
 	{
 		// Serialize the entire cuboid into memory and write it out.
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());

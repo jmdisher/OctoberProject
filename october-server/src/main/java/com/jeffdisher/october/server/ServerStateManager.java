@@ -24,6 +24,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -165,7 +166,7 @@ public class ServerStateManager
 					(CuboidAddress address) -> snapshot.completedCuboids().get(address)
 			).toList();
 			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(cuboidsToPackage);
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
+			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
 			List<Entity> entitiesToPackage = removedClients.stream().map(
 					(Integer id) -> snapshot.completedEntities().get(id)
 			).toList();
@@ -217,7 +218,7 @@ public class ServerStateManager
 		{
 			// We need to package up the cuboids with any suspended operations.
 			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids);
-			Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = _packageCuboidsForUnloading(_completedCuboids, creaturesToUnload);
+			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids, creaturesToUnload);
 			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities);
 			_callouts.resources_writeToDisk(cuboidResources, entityResources);
 		}
@@ -449,9 +450,9 @@ public class ServerStateManager
 		return creaturesToUnload;
 	}
 
-	private Collection<SuspendedCuboid<IReadOnlyCuboidData>> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage, Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload)
+	private Collection<PackagedCuboid> _packageCuboidsForUnloading(Collection<IReadOnlyCuboidData> cuboidsToPackage, Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload)
 	{
-		Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboidResources = new ArrayList<>();
+		Collection<PackagedCuboid> cuboidResources = new ArrayList<>();
 		for (IReadOnlyCuboidData cuboid : cuboidsToPackage)
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
@@ -461,7 +462,7 @@ public class ServerStateManager
 			{
 				suspended = List.of();
 			}
-			cuboidResources.add(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, entities, suspended));
+			cuboidResources.add(new PackagedCuboid(cuboid, entities, suspended));
 		}
 		return cuboidResources;
 	}
@@ -486,7 +487,7 @@ public class ServerStateManager
 	public static interface ICallouts
 	{
 		// ResourceLoader.
-		void resources_writeToDisk(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids, Collection<SuspendedEntity> entities);
+		void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities);
 		void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids

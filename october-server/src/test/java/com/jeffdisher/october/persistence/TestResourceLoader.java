@@ -16,7 +16,6 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -137,7 +136,7 @@ public class TestResourceLoader
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		// Modify a block and write this back.
 		loaded.setData15(AspectRegistry.BLOCK, block, STONE_ITEM.number());
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of())), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -215,7 +214,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)))), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -297,7 +296,7 @@ public class TestResourceLoader
 		CuboidData loaded = _waitForOne(loader);
 		// Create a mutation which targets this and save it back with the cuboid.
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(new AbsoluteLocation(32, 0, 0), STONE);
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)))), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of(new ScheduledMutation(mutation, 0L)))), List.of());
 		// (the shutdown will wait for the queue to drain)
 		loader.shutdown();
 		
@@ -313,7 +312,7 @@ public class TestResourceLoader
 		Assert.assertEquals(airAddress, suspended.cuboid().getCuboidAddress());
 		Assert.assertEquals(1, suspended.mutations().size());
 		Assert.assertTrue(suspended.mutations().get(0).mutation() instanceof MutationBlockOverwrite);
-		loader.writeBackToDisk(List.of(new SuspendedCuboid<>(suspended.cuboid(), List.of(), List.of())), List.of());
+		loader.writeBackToDisk(List.of(new PackagedCuboid(suspended.cuboid(), List.of(), List.of())), List.of());
 		loader.shutdown();
 		
 		// Verify that the file has been truncated.
@@ -386,7 +385,7 @@ public class TestResourceLoader
 		
 		// Re-save these to disk.
 		loader.writeBackToDisk(List.of(
-				new SuspendedCuboid<>(cuboids.get(0).cuboid(), List.of(), List.of(
+				new PackagedCuboid(cuboids.get(0).cuboid(), List.of(), List.of(
 						new ScheduledMutation(ephemeralMutation, 0L),
 						new ScheduledMutation(persistentMutation, 0L)
 				))
@@ -440,7 +439,7 @@ public class TestResourceLoader
 		Assert.assertEquals(0, generated.mutations().size());
 		
 		// Save this back.
-		Collection<SuspendedCuboid<IReadOnlyCuboidData>> toWrite = List.of(new SuspendedCuboid<IReadOnlyCuboidData>(generated.cuboid(), generated.creatures(), generated.mutations()));
+		Collection<PackagedCuboid> toWrite = List.of(new PackagedCuboid(generated.cuboid(), generated.creatures(), generated.mutations()));
 		loader.writeBackToDisk(toWrite, List.of());
 		
 		// Now, re-load this within the same loader and observe that the ID has updated.
