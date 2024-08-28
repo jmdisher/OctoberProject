@@ -22,6 +22,7 @@ import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -168,7 +169,9 @@ public class ResourceLoader
 						if (_preLoaded.containsKey(address))
 						{
 							// We will "consume" this since we will load from disk on the next call.
-							data = new SuspendedCuboid<>(_preLoaded.remove(address)
+							CuboidData preloaded = _preLoaded.remove(address);
+							data = new SuspendedCuboid<>(preloaded
+									, HeightMapHelpers.buildHeightMap(preloaded)
 									, List.of()
 									, List.of()
 							);
@@ -396,7 +399,11 @@ public class ResourceLoader
 			
 			// This should be fully read.
 			Assert.assertTrue(!buffer.hasRemaining());
+			
+			// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+			CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 			result = new SuspendedCuboid<>(cuboid
+					, heightMap
 					, creatures
 					, suspended
 			);

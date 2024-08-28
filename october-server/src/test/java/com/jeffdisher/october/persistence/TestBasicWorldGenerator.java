@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -131,11 +132,13 @@ public class TestBasicWorldGenerator
 		int ironCount = 0;
 		int logCount = 0;
 		int leafCount = 0;
+		CuboidHeightMap heightMap = suspended.heightMap();
 		for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
 		{
 			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
 			{
 				boolean foundDirt = false;
+				byte highestNonAir = CuboidHeightMap.UNKNOWN_HEIGHT;
 				for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
 				{
 					short number = cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
@@ -176,7 +179,12 @@ public class TestBasicWorldGenerator
 							Assert.assertEquals(airNumber, number);
 						}
 					}
+					if (airNumber != number)
+					{
+						highestNonAir = z;
+					}
 				}
+				Assert.assertEquals(highestNonAir, heightMap.getHightestSolidBlock(x, y));
 			}
 		}
 		Assert.assertEquals(7, minDirt);

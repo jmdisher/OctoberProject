@@ -22,6 +22,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.persistence.HeightMapHelpers;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -132,7 +133,9 @@ public class TestServerStateManager
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
-		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(callouts.requestedCuboidAddresses.iterator().next(), ENV.special.AIR)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(callouts.requestedCuboidAddresses.iterator().next(), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<CuboidData>(cuboid
+				, HeightMapHelpers.buildHeightMap(cuboid)
 				, List.of()
 				, List.of()
 		));

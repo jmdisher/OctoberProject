@@ -16,6 +16,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -37,6 +38,7 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestResourceLoader
@@ -334,9 +336,14 @@ public class TestResourceLoader
 		File worldDirectory = DIRECTORY.newFolder();
 		MutationBlockOverwrite test = new MutationBlockOverwrite(new AbsoluteLocation(1, 2, 3), STONE);
 		ResourceLoader loader = new ResourceLoader(worldDirectory, (CreatureIdAssigner assigner, CuboidAddress address) -> {
-			return new SuspendedCuboid<CuboidData>(CuboidGenerator.createFilledCuboid(address, ENV.special.AIR), List.of(), List.of(
-					new ScheduledMutation(test, 100L)
-			));
+			CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+			return new SuspendedCuboid<CuboidData>(cuboid
+					, HeightMapHelpers.buildHeightMap(cuboid)
+					, List.of()
+					, List.of(
+							new ScheduledMutation(test, 100L)
+					)
+			);
 		}, null);
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(new CuboidAddress((short)1, (short)2, (short)3)), List.of());
@@ -374,6 +381,16 @@ public class TestResourceLoader
 		}
 		Assert.assertEquals(1, cuboids.size());
 		Assert.assertEquals(1, entities.size());
+		
+		// Verify the height map.
+		CuboidHeightMap height = cuboids.get(0).heightMap();
+		for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+		{
+			for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			{
+				Assert.assertEquals(CuboidHeightMap.UNKNOWN_HEIGHT, height.getHightestSolidBlock(x, y));
+			}
+		}
 		
 		// Create the entity changes we want.
 		MutationEntityStoreToInventory persistentChange  = new MutationEntityStoreToInventory(new Items(STONE.item(), 2), null);

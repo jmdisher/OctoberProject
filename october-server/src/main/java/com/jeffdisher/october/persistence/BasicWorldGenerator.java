@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -286,7 +287,12 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		}
 		
 		// Generate the ore nodes and other structures (including trees).
-		_generateOreNodesAndStructures(subField, address, data);
+		CuboidHeightMap cuboidLocalMap = _generateOreNodesAndStructures(subField, address, data);
+		if (null == cuboidLocalMap)
+		{
+			// Generate the default map from the column.
+			cuboidLocalMap = _extractFromColumn(heightMap, cuboidZ);
+		}
 		
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int cuboidSeed = subField.get(0, 0);
@@ -317,6 +323,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		List<ScheduledMutation> mutations = List.of();
 		
 		return new SuspendedCuboid<CuboidData>(data
+				, cuboidLocalMap
 				, entities
 				, mutations
 		);
@@ -464,6 +471,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public void test_generateOreNodes(CuboidAddress address, CuboidData data)
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
+		// (we ignore the updated height map)
 		_generateOreNodesAndStructures(new _SubField(seeds, 0, 0), address, data);
 	}
 
@@ -666,12 +674,14 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		return rawHeight + offset;
 	}
 
-	private void _generateOreNodesAndStructures(_SubField subField, CuboidAddress address, CuboidData data)
+	// Returns non-null if this generation changed the height map for this cuboid (returns the new map).
+	private CuboidHeightMap _generateOreNodesAndStructures(_SubField subField, CuboidAddress address, CuboidData data)
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
 		AbsoluteLocation base = address.getBase();
 		short airNumber = _env.special.AIR.item().number();
+		CuboidHeightMap newMap = null;
 		for (int y = -1; y <= 1; ++y)
 		{
 			for (int x = -1; x <= 1; ++x)
@@ -709,9 +719,15 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 						}
 						_basicTree.applyToCuboid(data, relativeBase, airNumber);
 					}
+					// We generated trees into this so update the cuboid height map.
+					if ((0 == x) && (0 == y))
+					{
+						newMap = HeightMapHelpers.buildHeightMap(data);
+					}
 				}
 			}
 		}
+		return newMap;
 	}
 
 	private void _applyOreNodes(CuboidData data, int cuboidSeed, int relativeBaseX, int relativeBaseY, int targetCuboidBaseZ, int tries, int minZ, int maxZ, Structure node)
@@ -854,6 +870,37 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 				}
 			}
 		}
+	}
+
+	private static CuboidHeightMap _extractFromColumn(ColumnHeightMap column, int baseZ)
+	{
+		byte[][] localMap = new byte[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int absoluteHeight = column.getHeight(x, y);
+				int local = absoluteHeight - baseZ;
+				byte localHeight;
+				if (local > Structure.CUBOID_EDGE_SIZE)
+				{
+					// NOTE:  Here we assume that the world is solid below the column height map (only true for the current state of this world generator).
+					localHeight = Structure.CUBOID_EDGE_SIZE - 1;
+				}
+				else if (local >= 0)
+				{
+					// This is within our cuboid so we know the height.
+					localHeight = (byte)local;
+				}
+				else
+				{
+					// If the actual height is below this cuboid, we are clearly empty.
+					localHeight = CuboidHeightMap.UNKNOWN_HEIGHT;
+				}
+				localMap[y][x] = localHeight;
+			}
+		}
+		return CuboidHeightMap.wrap(localMap);
 	}
 
 

@@ -194,7 +194,7 @@ public class ServerStateManager
 		// Push any required data into the TickRunner before we kick-off the tick.
 		// We need to run through these to make them the read-only variants for the TickRunner.
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newCuboids.stream().map(
-				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.creatures(), readWrite.mutations())
+				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.heightMap(), readWrite.creatures(), readWrite.mutations())
 		).toList();
 		
 		// Feed in any new data from the network.

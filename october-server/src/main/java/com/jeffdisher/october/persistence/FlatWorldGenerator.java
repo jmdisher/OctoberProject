@@ -6,6 +6,7 @@ import java.util.function.BiFunction;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -66,6 +67,8 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 		Environment env = Environment.getShared();
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
 		CuboidData data;
+		// The height map will have a single value until we consider adding structures.
+		byte heightMapValue;
 		if (address.z() < (short)0)
 		{
 			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.stone")));
@@ -77,11 +80,17 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 			Block waterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
 			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)6, (byte)6, (byte)31), waterSource.item().number());
 			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)7, (byte)7, (byte)31), waterSource.item().number());
+			heightMapValue = 31;
 		}
 		else
 		{
 			data = CuboidGenerator.createFilledCuboid(address, env.blocks.fromItem(env.items.getItemById("op.air")));
+			heightMapValue = CuboidHeightMap.UNKNOWN_HEIGHT;
 		}
+		
+		// Fill the height map based on this initial value (we might modify it with structure generation later).
+		byte[][] rawHeight = HeightMapHelpers.createUniformHeightMap(heightMapValue);
+		
 		// See if this is a cuboid where we want to generate our structure (it is in the 8 cuboids around the origin).
 		List<CreatureEntity> entities;
 		List<ScheduledMutation> mutations;
@@ -106,6 +115,9 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 					.map((IMutationBlock mutation) -> new ScheduledMutation(mutation, 0L))
 					.toList()
 			;
+			
+			// Walk the octree structure to update the height map.
+			HeightMapHelpers.populateHeightMap(rawHeight, data);
 		}
 		else
 		{
@@ -125,11 +137,14 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 			;
 			mutations = List.of();
 		}
+		CuboidHeightMap heightMap = CuboidHeightMap.wrap(rawHeight);
 		return new SuspendedCuboid<CuboidData>(data
+				, heightMap
 				, entities
 				, mutations
 		);
 	}
+
 
 	private static void _fillPlane(CuboidData data, byte z, Block block)
 	{
