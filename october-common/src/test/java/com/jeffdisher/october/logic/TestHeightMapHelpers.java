@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.types.BlockAddress;
@@ -110,5 +111,34 @@ public class TestHeightMapHelpers
 		}
 		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE - 5, airCount);
 		Assert.assertEquals(5, stoneCount);
+	}
+
+	@Test
+	public void mergeToOneColumnMap() throws Throwable
+	{
+		// Populate a cuboid with some values and observe the expected height map.
+		CuboidAddress low = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress high = new CuboidAddress((short)0, (short)0, (short)1);
+		int lowZ = low.getBase().z();
+		int highZ = high.getBase().z();
+		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
+		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)10), stoneNumber);
+		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)10), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)12), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)2), stoneNumber);
+		
+		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
+		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
+		ColumnHeightMap column = ColumnHeightMap.build()
+				.consume(bottomMap, lowZ)
+				.consume(topMap, highZ)
+				.freeze()
+		;
+		Assert.assertEquals(Integer.MIN_VALUE, column.getHeight(3, 3));
+		Assert.assertEquals(lowZ + 10, column.getHeight(1, 1));
+		Assert.assertEquals(highZ + 2, column.getHeight(2, 2));
+		Assert.assertEquals(highZ + 12, column.getHeight(10, 10));
 	}
 }
