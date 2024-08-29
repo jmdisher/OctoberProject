@@ -496,9 +496,9 @@ public class TickRunner
 
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
 			, Consumer<Snapshot> tickCompletionListener
-			, Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState
-			, Map<Integer, Entity> mutableCrowdState
-			, Map<Integer, CreatureEntity> mutableCreatureState
+			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<Integer, Entity> completedCrowdState
+			, Map<Integer, CreatureEntity> completedCreatureState
 			, _PartialHandoffData perThreadData
 			
 			// Data related to internal statistics generated at the end of the previous tick and passed back in.
@@ -530,6 +530,12 @@ public class TickRunner
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
 			Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
+			
+			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
+			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
+			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(completedCuboids);
+			Map<Integer, Entity> mutableCrowdState = new HashMap<>(completedCrowdState);
+			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(completedCreatureState);
 			
 			for (int i = 0; i < _partial.length; ++i)
 			{
@@ -608,17 +614,19 @@ public class TickRunner
 			long millisTickParallelPhase = (startMillisPostamble - timeMillisPreambleEnd);
 			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
 			
+			// ***************** Tick ends here *********************
+			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
 			Snapshot completedTick = new Snapshot(_nextTick
 					// completedEntities
-					, Collections.unmodifiableMap(mutableCrowdState)
+					, Map.copyOf(mutableCrowdState)
 					// commitLevels
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					// completedCuboids
-					, Collections.unmodifiableMap(mutableWorldState)
+					, Map.copyOf(mutableWorldState)
 					// completedCreatures
-					, Collections.unmodifiableMap(mutableCreatureState)
+					, Map.copyOf(mutableCreatureState)
 					
 					// updatedEntities
 					, Collections.unmodifiableMap(updatedEntities)
@@ -640,15 +648,16 @@ public class TickRunner
 					, committedEntityMutationCount
 					, committedCuboidMutationCount
 			);
+			
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
 			tickCompletionListener.accept(completedTick);
 			
 			// This is the point where we will block for the next tick to be requested.
 			_acknowledgeTickCompleteAndWaitForNext(completedTick);
 			
+			// ***************** Tick starts here *********************
+			
 			long startMillisPreamble = System.currentTimeMillis();
-			mutableWorldState = null;
-			mutableCrowdState = null;
 			
 			// We woke up so either run the next tick or exit (if the next tick was set negative, it means exit).
 			if (_nextTick > 0)
@@ -707,17 +716,9 @@ public class TickRunner
 					_sharedDataLock.unlock();
 				}
 				
-				// Put together the materials for this tick, starting with the new mutable world state and new mutations.
-				Map<CuboidAddress, IReadOnlyCuboidData> nextWorldState = new HashMap<>();
-				Map<Integer, Entity> nextCrowdState = new HashMap<>();
-				Map<Integer, CreatureEntity> nextCreatureState = new HashMap<>();
+				// We now update our mutable collections for the materials to use in the next tick.
 				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
 				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
-				
-				// We don't currently have any "removal" concept so just start with a copy of what we created last tick.
-				nextWorldState.putAll(_snapshot.completedCuboids);
-				nextCrowdState.putAll(_snapshot.completedEntities);
-				nextCreatureState.putAll(_snapshot.completedCreatures);
 				
 				// Add in anything new.
 				Set<CuboidAddress> cuboidsLoadedThisTick = new HashSet<>();
@@ -727,14 +728,14 @@ public class TickRunner
 					{
 						IReadOnlyCuboidData cuboid = suspended.cuboid();
 						CuboidAddress address = cuboid.getCuboidAddress();
-						Object old = nextWorldState.put(address, cuboid);
+						Object old = mutableWorldState.put(address, cuboid);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
 						
 						// Load any creatures associated with this cuboid.
 						for (CreatureEntity creature : suspended.creatures())
 						{
-							nextCreatureState.put(creature.id(), creature);
+							mutableCreatureState.put(creature.id(), creature);
 						}
 						
 						// Add any suspended mutations which came with the cuboid.
@@ -754,7 +755,7 @@ public class TickRunner
 					{
 						Entity entity = suspended.entity();
 						int id = entity.id();
-						Object old = nextCrowdState.put(id, entity);
+						Object old = mutableCrowdState.put(id, entity);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
 						
@@ -774,7 +775,7 @@ public class TickRunner
 				{
 					for (_OperatorMutationWrapper wrapper : operatorMutations)
 					{
-						if (nextCrowdState.containsKey(wrapper.entityId))
+						if (mutableCrowdState.containsKey(wrapper.entityId))
 						{
 							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
 							if (null == mutableChanges)
@@ -802,13 +803,13 @@ public class TickRunner
 				{
 					for (CuboidAddress address : cuboidsToDrop)
 					{
-						IReadOnlyCuboidData old = nextWorldState.remove(address);
+						Object old = mutableWorldState.remove(address);
 						// This must already be present.
 						Assert.assertTrue(null != old);
 						
 						// Remove any creatures in this cuboid.
 						// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
-						Iterator<Map.Entry<Integer, CreatureEntity>> expensive = nextCreatureState.entrySet().iterator();
+						Iterator<Map.Entry<Integer, CreatureEntity>> expensive = mutableCreatureState.entrySet().iterator();
 						while (expensive.hasNext())
 						{
 							Map.Entry<Integer, CreatureEntity> one = expensive.next();
@@ -827,7 +828,7 @@ public class TickRunner
 				{
 					for (int entityId : removedEntityIds)
 					{
-						Entity old = nextCrowdState.remove(entityId);
+						Entity old = mutableCrowdState.remove(entityId);
 						// This must have been present.
 						Assert.assertTrue(null != old);
 					}
@@ -847,14 +848,14 @@ public class TickRunner
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 				for (CuboidAddress key : nextTickMutations.keySet())
 				{
-					if (!nextWorldState.containsKey(key))
+					if (!mutableWorldState.containsKey(key))
 					{
 						System.out.println("WARNING: missing cuboid " + key);
 					}
 				}
 				for (Integer id : nextTickChanges.keySet())
 				{
-					if (!nextCrowdState.containsKey(id))
+					if (!mutableCrowdState.containsKey(id))
 					{
 						System.out.println("WARNING: missing entity " + id);
 					}
@@ -905,10 +906,10 @@ public class TickRunner
 				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
-						, nextWorldState
-						, nextCrowdState
+						, Collections.unmodifiableMap(mutableWorldState)
+						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures
-						, nextCreatureState
+						, Collections.unmodifiableMap(mutableCreatureState)
 						
 						, nextTickMutations
 						, nextTickChanges
