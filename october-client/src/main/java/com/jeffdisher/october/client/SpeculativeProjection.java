@@ -12,11 +12,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -72,12 +74,14 @@ public class SpeculativeProjection
 	
 	private Entity _thisShadowEntity;
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
+	private final Map<CuboidAddress, CuboidHeightMap> _shadowHeightMap;
 	private final Map<Integer, PartialEntity> _shadowCrowd;
 	
 	// Note that we don't keep a projection of the crowd since we never apply speculative operations to them.
 	// So, we keep a projected version of the local entity and just fall-back to the shadow data for any read-only operations.
 	private Entity _projectedLocalEntity;
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
+	private Map<CuboidAddress, CuboidHeightMap> _projectedHeightMap;
 	public final Function<AbsoluteLocation, BlockProxy> projectionBlockLoader;
 	
 	private final List<_SpeculativeWrapper> _speculativeChanges;
@@ -99,9 +103,11 @@ public class SpeculativeProjection
 		
 		// The initial states start as empty and are populated by the server.
 		_shadowWorld = new HashMap<>();
+		_shadowHeightMap = new HashMap<>();
 		_shadowCrowd = new HashMap<>();
 		
 		_projectedWorld = new HashMap<>();
+		_projectedHeightMap = new HashMap<>();
 		this.projectionBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			IReadOnlyCuboidData cuboid = _projectedWorld.get(address);
@@ -169,6 +175,7 @@ public class SpeculativeProjection
 		// Before applying the updates, add the new data.
 		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((PartialEntity entity) -> entity.id(), (PartialEntity entity) -> entity)));
 		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
+		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
@@ -228,6 +235,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _shadowWorld
+				, _shadowHeightMap
 				, context
 				, mutationsToRun
 				, modifiedBlocksByCuboidAddress
@@ -244,10 +252,12 @@ public class SpeculativeProjection
 		}
 		_shadowCrowd.putAll(entitiesChangedInTick);
 		_shadowWorld.putAll(fragment.stateFragment());
+		_shadowHeightMap.putAll(fragment.heightFragment());
 		
 		// Remove before moving on to our projection.
 		_shadowCrowd.keySet().removeAll(removedEntities);
 		_shadowWorld.keySet().removeAll(removedCuboids);
+		_shadowHeightMap.keySet().removeAll(removedCuboids);
 		
 		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (and we will add to this as we apply our local updates.
 		// Note that these are all immutable so instance comparison is sufficient.
@@ -265,6 +275,7 @@ public class SpeculativeProjection
 		// Rebuild our projection from these collections.
 		boolean isFirstRun = (null == _projectedLocalEntity);
 		_projectedWorld = new HashMap<>(_shadowWorld);
+		_projectedHeightMap = new HashMap<>(_shadowHeightMap);
 		Entity previousLocalEntity = _projectedLocalEntity;
 		_projectedLocalEntity = _thisShadowEntity;
 		
@@ -580,6 +591,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedWorld
+				, _projectedHeightMap
 				, context
 				, innerMutations
 				, modifiedBlocksByCuboidAddress
@@ -588,6 +600,7 @@ public class SpeculativeProjection
 				, cuboidsLoadedThisTick
 		);
 		_projectedWorld.putAll(innerFragment.stateFragment());
+		_projectedHeightMap.putAll(innerFragment.heightFragment());
 		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
 	}
 

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -42,6 +43,7 @@ public class WorldProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
+	 * @param cuboidHeightMaps The map of read-only per-cuboid height maps.
 	 * @param context The context used for running changes.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
@@ -55,6 +57,7 @@ public class WorldProcessor
 	 */
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
+			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 			, TickProcessingContext context
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
@@ -65,6 +68,7 @@ public class WorldProcessor
 	{
 		long millisSinceLastTick = context.millisPerTick;
 		Map<CuboidAddress, IReadOnlyCuboidData> fragment = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> fragmentHeights = new HashMap<>();
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
@@ -166,6 +170,9 @@ public class WorldProcessor
 					}
 					fragment.put(key, mutable);
 					
+					// TODO:  Update the maps in response to these changes instead of just passing these through.
+					fragmentHeights.put(key, cuboidHeightMaps.get(key));
+					
 					// Add the change descriptions for this cuboid.
 					blockChangesByCuboid.put(key, updateMutations);
 				}
@@ -174,6 +181,7 @@ public class WorldProcessor
 		
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
+				, fragmentHeights
 				, notYetReadyMutations
 				, blockChangesByCuboid
 				, committedMutationCount
@@ -310,6 +318,7 @@ public class WorldProcessor
 
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
+			, Map<CuboidAddress, CuboidHeightMap> heightFragment
 			, List<ScheduledMutation> notYetReadyMutations
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount

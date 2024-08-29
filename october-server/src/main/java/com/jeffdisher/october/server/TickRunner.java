@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.BlockChangeDescription;
@@ -380,9 +381,10 @@ public class TickRunner
 				, tickCompletionListener
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				, Collections.emptyMap()
 				// mutableCreatureState
 				, Collections.emptyMap()
-				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), List.of(), Map.of(), 0)
+				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
 						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of(), List.of())
 						, null
@@ -459,6 +461,7 @@ public class TickRunner
 			long startWorld = System.currentTimeMillis();
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
+					, materials.cuboidHeightMaps
 					, context
 					, materials.mutationsToRun
 					, materials.modifiedBlocksByCuboidAddress
@@ -477,6 +480,7 @@ public class TickRunner
 			materials = _mergeTickStateAndWaitForNext(thisThread
 					, tickCompletionListener
 					, materials.completedCuboids
+					, materials.cuboidHeightMaps
 					, materials.completedEntities
 					, materials.completedCreatures
 					, new _PartialHandoffData(fragment
@@ -497,6 +501,7 @@ public class TickRunner
 	private TickMaterials _mergeTickStateAndWaitForNext(ProcessorElement elt
 			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMap
 			, Map<Integer, Entity> completedCrowdState
 			, Map<Integer, CreatureEntity> completedCreatureState
 			, _PartialHandoffData perThreadData
@@ -534,6 +539,7 @@ public class TickRunner
 			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
 			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(completedCuboids);
+			Map<CuboidAddress, CuboidHeightMap> mutableHeightMap = new HashMap<>(completedCuboidHeightMap);
 			Map<Integer, Entity> mutableCrowdState = new HashMap<>(completedCrowdState);
 			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(completedCreatureState);
 			
@@ -543,6 +549,7 @@ public class TickRunner
 				
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
 				mutableWorldState.putAll(fragment.world.stateFragment());
+				mutableHeightMap.putAll(fragment.world.heightFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
 				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
@@ -731,6 +738,8 @@ public class TickRunner
 						Object old = mutableWorldState.put(address, cuboid);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
+						old = mutableHeightMap.put(address, suspended.heightMap());
+						Assert.assertTrue(null == old);
 						
 						// Load any creatures associated with this cuboid.
 						for (CreatureEntity creature : suspended.creatures())
@@ -805,6 +814,8 @@ public class TickRunner
 					{
 						Object old = mutableWorldState.remove(address);
 						// This must already be present.
+						Assert.assertTrue(null != old);
+						old = mutableHeightMap.remove(address);
 						Assert.assertTrue(null != old);
 						
 						// Remove any creatures in this cuboid.
@@ -907,6 +918,7 @@ public class TickRunner
 				
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
+						, Collections.unmodifiableMap(mutableHeightMap)
 						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
@@ -1088,6 +1100,7 @@ public class TickRunner
 	private static record TickMaterials(long thisGameTick
 			// Read-only versions of the cuboids produced by the previous tick (by address).
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 			// Read-only versions of the Entities produced by the previous tick (by ID).
 			, Map<Integer, Entity> completedEntities
 			// Read-only versions of the creatures from the previous tick (by ID).
