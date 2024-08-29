@@ -1,14 +1,22 @@
 package com.jeffdisher.october.logic;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.worldgen.Structure;
 
 
 /**
  * Static helpers related to height map creation and manipulation.
+ * These are pulled out here mostly just to make the unit testing easier.
  */
 public class HeightMapHelpers
 {
@@ -46,6 +54,33 @@ public class HeightMapHelpers
 		byte[][] rawMap = _createUniformHeightMap(CuboidHeightMap.UNKNOWN_HEIGHT);
 		_populateHeightMap(rawMap, cuboid);
 		return CuboidHeightMap.wrap(rawMap);
+	}
+
+	/**
+	 * Merges all of the given per-cuboid CuboidHeightMap instances into per-column ColumnHeightMap instances.
+	 * 
+	 * @param perCuboid The CuboidHeightMap instances, addressed by CuboidAddress.
+	 * @return The merged result as ColumnHeightMap instances addressed by CuboidColumnAddress.
+	 */
+	public static Map<CuboidColumnAddress, ColumnHeightMap> buildColumnMaps(Map<CuboidAddress, CuboidHeightMap> perCuboid)
+	{
+		Map<CuboidColumnAddress, ColumnHeightMap.Builder> builders = new HashMap<>();
+		for (Map.Entry<CuboidAddress, CuboidHeightMap> elt : perCuboid.entrySet())
+		{
+			CuboidAddress address = elt.getKey();
+			CuboidColumnAddress column = address.getColumn();
+			ColumnHeightMap.Builder builder = builders.get(column);
+			if (null == builder)
+			{
+				builder = ColumnHeightMap.build();
+				builders.put(column, builder);
+			}
+			builder.consume(elt.getValue(), address.getBase().z());
+		}
+		return builders.entrySet().stream().collect(Collectors.toUnmodifiableMap(
+				(Map.Entry<CuboidColumnAddress, ColumnHeightMap.Builder> elt) -> elt.getKey()
+				, (Map.Entry<CuboidColumnAddress, ColumnHeightMap.Builder> elt) -> elt.getValue().freeze()
+		));
 	}
 
 
