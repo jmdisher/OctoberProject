@@ -1,4 +1,4 @@
-package com.jeffdisher.october.persistence;
+package com.jeffdisher.october.logic;
 
 import org.junit.AfterClass;
 import org.junit.Assert;

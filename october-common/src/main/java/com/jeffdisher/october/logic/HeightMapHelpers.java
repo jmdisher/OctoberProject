@@ -1,4 +1,4 @@
-package com.jeffdisher.october.persistence;
+package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.CuboidHeightMap;
