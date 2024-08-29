@@ -163,6 +163,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				// No completedCuboids.
 				, Collections.emptyMap()
+				, Collections.emptyMap()
 				// No completedCreatures.
 				, Collections.emptyMap()
 				
@@ -632,6 +633,7 @@ public class TickRunner
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					// completedCuboids
 					, Map.copyOf(mutableWorldState)
+					, Map.copyOf(mutableHeightMap)
 					// completedCreatures
 					, Map.copyOf(mutableCreatureState)
 					
@@ -1074,6 +1076,8 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			// TODO:  Remove this once we replace it with ColumnHeightMap.
+			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMaps
 			, Map<Integer, CreatureEntity> completedCreatures
 			
 			// Change-only resources.

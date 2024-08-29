@@ -17,6 +17,7 @@ import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
@@ -506,6 +507,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		Assert.assertNotNull(snapshotRef[0]);
 		Assert.assertEquals(0, snapshotRef[0].completedCuboids().size());
+		Assert.assertEquals(0, snapshotRef[0].completedCuboidHeightMaps().size());
 		
 		// Run the tick so that it applies the new load.
 		runner.startNextTick();
@@ -513,7 +515,9 @@ public class TestTickRunner
 		Assert.assertNotNull(snapshotRef[0]);
 		// We should see 2 cuboids.
 		Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = snapshotRef[0].completedCuboids();
+		Map<CuboidAddress, CuboidHeightMap> initialCuboidHeights = snapshotRef[0].completedCuboidHeightMaps();
 		Assert.assertEquals(2, initialCuboids.size());
+		Assert.assertEquals(2, initialCuboidHeights.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
 		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
@@ -524,14 +528,18 @@ public class TestTickRunner
 		Assert.assertNotNull(snapshotRef[0]);
 		// This should be the same size.
 		Map<CuboidAddress, IReadOnlyCuboidData> laterCuboids = snapshotRef[0].completedCuboids();
+		Map<CuboidAddress, CuboidHeightMap> laterCuboidHeights = snapshotRef[0].completedCuboidHeightMaps();
 		Assert.assertEquals(2, laterCuboids.size());
+		Assert.assertEquals(2, laterCuboidHeights.size());
 		
 		runner.shutdown();
 		
 		// Verify that the target cuboid is a new instance.
 		Assert.assertTrue(initialCuboids.get(targetAddress) != laterCuboids.get(targetAddress));
+		Assert.assertTrue(initialCuboidHeights.get(targetAddress) != laterCuboidHeights.get(targetAddress));
 		// Verify that the unchanged cuboid is the same instance.
 		Assert.assertTrue(initialCuboids.get(constantAddress) == laterCuboids.get(constantAddress));
+		Assert.assertTrue(initialCuboidHeights.get(constantAddress) == laterCuboidHeights.get(constantAddress));
 	}
 
 	@Test

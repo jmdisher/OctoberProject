@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.mutations.IEntityUpdate;
@@ -103,6 +104,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 				, _convertToEntityMap(changes.newEntities())
 				, _convertToCuboidMap(changes.newCuboids())
+				, _convertToCuboidHeightMap(changes.newCuboids())
 		);
 		
 		// Verify that we see the surrounding cuboid load requests on the next tick.
@@ -130,6 +132,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 				, Collections.emptyMap()
 				, snapshot.completedCuboids()
+				, snapshot.completedCuboidHeightMaps()
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
@@ -151,6 +154,7 @@ public class TestServerStateManager
 		snapshot = _modifySnapshot(snapshot
 				, snapshot.completedEntities()
 				, _convertToCuboidMap(changes.newCuboids())
+				, _convertToCuboidHeightMap(changes.newCuboids())
 		);
 		
 		// In another call, it should appear as unloaded.
@@ -176,6 +180,7 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				, Collections.emptyMap()
 				
 				, Collections.emptyMap()
 				, Collections.emptyMap()
@@ -197,12 +202,14 @@ public class TestServerStateManager
 	private TickRunner.Snapshot _modifySnapshot(TickRunner.Snapshot snapshot
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMaps
 	)
 	{
 		return new TickRunner.Snapshot(snapshot.tickNumber()
 				, completedEntities
 				, snapshot.commitLevels()
 				, completedCuboids
+				, completedCuboidHeightMaps
 				, snapshot.completedCreatures()
 				
 				, snapshot.updatedEntities()
@@ -232,6 +239,18 @@ public class TestServerStateManager
 			completedCuboids.put(cuboid.getCuboidAddress(), cuboid);
 		}
 		return completedCuboids;
+	}
+
+	private Map<CuboidAddress, CuboidHeightMap> _convertToCuboidHeightMap(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids)
+	{
+		Map<CuboidAddress, CuboidHeightMap> completedMaps = new HashMap<>();
+		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
+		{
+			IReadOnlyCuboidData cuboid = suspended.cuboid();
+			Assert.assertTrue(suspended.mutations().isEmpty());
+			completedMaps.put(cuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(cuboid));
+		}
+		return completedMaps;
 	}
 
 	private Map<Integer, Entity> _convertToEntityMap(Collection<SuspendedEntity> entities)

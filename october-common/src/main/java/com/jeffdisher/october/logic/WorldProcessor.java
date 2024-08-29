@@ -170,8 +170,8 @@ public class WorldProcessor
 					}
 					fragment.put(key, mutable);
 					
-					// TODO:  Update the maps in response to these changes instead of just passing these through.
-					fragmentHeights.put(key, cuboidHeightMaps.get(key));
+					// For now, we will regenerate the maps in this case but we may want to update more precisely.
+					fragmentHeights.put(key, HeightMapHelpers.buildHeightMap(mutable));
 					
 					// Add the change descriptions for this cuboid.
 					blockChangesByCuboid.put(key, updateMutations);
