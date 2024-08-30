@@ -93,7 +93,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -110,7 +110,7 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid))
 				, List.of()
@@ -148,7 +148,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Commit the first 2, one at a time, and then the last ones at the same time.
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone1))
@@ -163,7 +163,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(6, speculativeCount);
 		Assert.assertEquals(7 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone2))
@@ -178,7 +178,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(5, speculativeCount);
 		Assert.assertEquals(7 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
-		speculativeCount = projector.applyChangesForServerTick(3L
+		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, localEntityChangesToCommit
@@ -194,7 +194,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Now, unload.
-		speculativeCount = projector.applyChangesForServerTick(4L
+		speculativeCount = projector.applyChangesForServerTick(6L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -217,7 +217,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -237,7 +237,7 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(cuboid0, cuboid1)
 				, List.of()
@@ -263,7 +263,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Commit the other one.
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone0))
@@ -280,7 +280,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Unload the other.
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -303,7 +303,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -322,7 +322,7 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
 				, List.of()
@@ -348,7 +348,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone0))
@@ -366,7 +366,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone1))
@@ -383,7 +383,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
-		speculativeCount = projector.applyChangesForServerTick(3L
+		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -406,7 +406,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -425,7 +425,7 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
 				, List.of()
@@ -450,7 +450,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone0))
@@ -466,7 +466,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.changeCount);
 		
 		// Commit the other one normally.
-		speculativeCount = projector.applyChangesForServerTick(1L
+		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone1))
@@ -481,7 +481,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(0, listener.changeCount);
 		
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -504,7 +504,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -523,7 +523,7 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(cuboid)
 				, List.of()
@@ -554,7 +554,7 @@ public class TestSpeculativeProjection
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Commit the first, then the second, making sure that things make sense at every point.
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone1))
@@ -571,7 +571,7 @@ public class TestSpeculativeProjection
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(lone2))
@@ -589,7 +589,7 @@ public class TestSpeculativeProjection
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
 		
 		// Now, unload.
-		speculativeCount = projector.applyChangesForServerTick(3L
+		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -617,7 +617,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.createForTest(entityId1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		projector.setThisEntity(mutable.freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of(PartialEntity.fromEntity(MutableEntity.createForTest(entityId2).freeze()))
 				, Collections.emptyList()
 				, List.of()
@@ -644,7 +644,7 @@ public class TestSpeculativeProjection
 		Assert.assertTrue(otherEntity == listener.otherEntityStates.get(entityId2));
 		
 		// Commit this and make sure the values are still correct.
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(send))
@@ -658,7 +658,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		// NOTE:  The other half of the transfer is going to be run against the second entity, on the server, but we
 		// just see the partial update, on the client (if even that - the server may realize there is no change).
-		speculativeCount = projector.applyChangesForServerTick(2L
+		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -689,7 +689,7 @@ public class TestSpeculativeProjection
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		long currentTimeMillis = 1L;
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(cuboid)
 				, List.of()
@@ -728,7 +728,7 @@ public class TestSpeculativeProjection
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(blockBreak))
@@ -749,7 +749,7 @@ public class TestSpeculativeProjection
 		
 		// Commit the second part and make sure the change is still there.
 		currentTimeMillis += 100L;
-		speculativeCount = projector.applyChangesForServerTick(1L
+		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(blockBreak))
@@ -778,7 +778,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
 				, List.of()
@@ -811,7 +811,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
 		
 		// Now, absorb a change from the server where neither change is present but the first has been considered.
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -838,7 +838,7 @@ public class TestSpeculativeProjection
 		int entityId = 1;
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -873,7 +873,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, inv.getCount(LOG_ITEM));
 		Assert.assertEquals(2, inv.getCount(PLANK_ITEM));
 		
-		int speculativeCount = projector.applyChangesForServerTick(1L
+		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(new EntityMutationWrapper(load), new EntityMutationWrapper(craft))
@@ -902,7 +902,7 @@ public class TestSpeculativeProjection
 		Entity entity = mutable.freeze();
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
 		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -957,7 +957,7 @@ public class TestSpeculativeProjection
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
 				, List.of()
@@ -999,7 +999,7 @@ public class TestSpeculativeProjection
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR)
 						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE))
@@ -1080,7 +1080,7 @@ public class TestSpeculativeProjection
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).addStackable(STONE_BRICK_ITEM, 4).finish();
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, Collections.emptyList()
 				, List.of()
@@ -1122,7 +1122,7 @@ public class TestSpeculativeProjection
 		int stoneKey = inv.getIdOfStackableType(STONE_ITEM);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
 		projector.setThisEntity(MutableEntity.createForTest(localEntityId).freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(cuboid)
 				, List.of()
@@ -1148,7 +1148,7 @@ public class TestSpeculativeProjection
 		
 		// Apply the commit from the server and show it still works.
 		currentTimeMillis += 100L;
-		int speculative = projector.applyChangesForServerTick(1L
+		int speculative = projector.applyChangesForServerTick(2L
 				, List.of()
 				, List.of()
 				, List.of(new EntityMutationWrapper(request))
@@ -1171,7 +1171,7 @@ public class TestSpeculativeProjection
 		// Apply another 2 ticks, each with the correct part of the multi-step change and verify that the values still match.
 		MutationBlockExtractItems extract = new MutationBlockExtractItems(location, blockInventoryKey, countRequested, Inventory.INVENTORY_ASPECT_INVENTORY, localEntityId);
 		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(2L
+		speculative = projector.applyChangesForServerTick(3L
 				, List.of()
 				, List.of()
 				, List.of(new EntityMutationWrapper(request))
@@ -1189,7 +1189,7 @@ public class TestSpeculativeProjection
 		
 		MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(STONE_ITEM, 1), null);
 		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(3L
+		speculative = projector.applyChangesForServerTick(4L
 				, List.of()
 				, List.of()
 				, List.of(new EntityMutationWrapper(store))
@@ -1206,7 +1206,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
 		
 		currentTimeMillis += 100L;
-		speculative = projector.applyChangesForServerTick(4L
+		speculative = projector.applyChangesForServerTick(5L
 				, List.of()
 				, List.of()
 				, List.of()
@@ -1238,7 +1238,7 @@ public class TestSpeculativeProjection
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		Entity entity = mutable.freeze();
 		projector.setThisEntity(entity);
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR)
 						, CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE))
@@ -1319,7 +1319,7 @@ public class TestSpeculativeProjection
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), dirt.item().number());
 		long currentTimeMillis = 1L;
 		projector.setThisEntity(mutable.freeze());
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(cuboid)
 				, List.of()
@@ -1359,7 +1359,7 @@ public class TestSpeculativeProjection
 		mutable.setFood((byte)0);
 		projector.setThisEntity(mutable.freeze());
 		
-		projector.applyChangesForServerTick(0L
+		projector.applyChangesForServerTick(1L
 				, List.of()
 				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
 				, List.of()
@@ -1471,6 +1471,7 @@ public class TestSpeculativeProjection
 		public Entity authoritativeEntityState = null;
 		public Entity thisEntityState = null;
 		public Map<Integer, PartialEntity> otherEntityStates = new HashMap<>();
+		public long lastTickCompleted = 0L;
 		
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
@@ -1524,6 +1525,12 @@ public class TestSpeculativeProjection
 		{
 			PartialEntity old = this.otherEntityStates.remove(id);
 			Assert.assertNull(old);
+		}
+		@Override
+		public void tickDidComplete(long gameTick)
+		{
+			Assert.assertTrue(gameTick > this.lastTickCompleted);
+			this.lastTickCompleted = gameTick;
 		}
 	}
 }

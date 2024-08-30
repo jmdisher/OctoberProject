@@ -459,6 +459,11 @@ public class ClientRunner
 			Assert.assertTrue(_assignedEntityId != id);
 			_projectionListener.otherEntityDidUnload(id);
 		}
+		@Override
+		public void tickDidComplete(long gameTick)
+		{
+			_projectionListener.tickDidComplete(gameTick);
+		}
 	}
 
 	/**

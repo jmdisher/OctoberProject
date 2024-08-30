@@ -363,6 +363,7 @@ public class SpeculativeProjection
 		{
 			_listener.cuboidDidUnload(address);
 		}
+		_listener.tickDidComplete(gameTick);
 		
 		return _speculativeChanges.size();
 	}
@@ -737,6 +738,13 @@ public class SpeculativeProjection
 		 * @param id The ID of the entity to unload.
 		 */
 		void otherEntityDidUnload(int id);
+		
+		/**
+		 * Called when a game tick from the server has been fully processed.
+		 * 
+		 * @param gameTick The tick number (this is monotonic).
+		 */
+		void tickDidComplete(long gameTick);
 	}
 
 	private static record _SpeculativeWrapper(long commitLevel

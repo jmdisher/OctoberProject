@@ -396,6 +396,7 @@ public class TestProcesses
 		private Entity _thisEntity = null;
 		public final Map<Integer, PartialEntity> otherEntities = new HashMap<>();
 		public int assignedEntityId;
+		public long lastTickCompleted = 0L;
 		
 		public Entity getLocalEntity()
 		{
@@ -463,6 +464,12 @@ public class TestProcesses
 		{
 			Object old = this.otherEntities.remove(id);
 			Assert.assertNotNull(old);
+		}
+		@Override
+		public void tickDidComplete(long gameTick)
+		{
+			Assert.assertTrue(gameTick > this.lastTickCompleted);
+			this.lastTickCompleted = gameTick;
 		}
 	}
 }

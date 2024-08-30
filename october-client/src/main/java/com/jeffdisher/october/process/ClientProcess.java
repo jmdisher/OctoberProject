@@ -496,6 +496,13 @@ public class ClientProcess
 				_listener.otherEntityDidUnload(id);
 			});
 		}
+		@Override
+		public void tickDidComplete(long gameTick)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.tickDidComplete(gameTick);
+			});
+		}
 	}
 
 	// Note that these calls are issued on the thread which calls into the ClientRunner, meaning the thread we are treating as "main", from the user.
@@ -606,5 +613,11 @@ public class ClientProcess
 		 * @param id The ID of the entity to unload.
 		 */
 		void otherEntityDidUnload(int id);
+		/**
+		 * Called when a game tick from the server has been fully processed.
+		 * 
+		 * @param gameTick The tick number (this is monotonic).
+		 */
+		void tickDidComplete(long gameTick);
 	}
 }

@@ -455,6 +455,7 @@ public class TestClientRunner
 		public Map<Integer, PartialEntity> otherEnties = new HashMap<>();
 		public int allEntityChangeCount = 0;
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
+		public long lastTickCompleted = 0L;
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
 		{
@@ -510,6 +511,12 @@ public class TestClientRunner
 		{
 			Assert.assertTrue(this.otherEnties.containsKey(id));
 			this.otherEnties.remove(id);
+		}
+		@Override
+		public void tickDidComplete(long gameTick)
+		{
+			Assert.assertTrue(gameTick > this.lastTickCompleted);
+			this.lastTickCompleted = gameTick;
 		}
 		public BlockProxy readBlock(AbsoluteLocation block)
 		{
