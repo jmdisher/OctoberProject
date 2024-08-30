@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BasicBlockProxyCache;
@@ -29,6 +30,7 @@ import com.jeffdisher.october.logic.CreatureProcessor;
 import com.jeffdisher.october.logic.CreatureSpawner;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -41,6 +43,7 @@ import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -633,7 +636,7 @@ public class TickRunner
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					// completedCuboids
 					, Map.copyOf(mutableWorldState)
-					, Map.copyOf(mutableHeightMap)
+					, HeightMapHelpers.buildColumnMaps(mutableHeightMap)
 					// completedCreatures
 					, Map.copyOf(mutableCreatureState)
 					
@@ -1076,8 +1079,7 @@ public class TickRunner
 			, Map<Integer, Long> commitLevels
 			// Read-only cuboids from the previous tick, resolved by address.
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
-			// TODO:  Remove this once we replace it with ColumnHeightMap.
-			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMaps
+			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			, Map<Integer, CreatureEntity> completedCreatures
 			
 			// Change-only resources.

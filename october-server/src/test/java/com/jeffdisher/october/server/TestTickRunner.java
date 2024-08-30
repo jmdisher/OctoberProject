@@ -16,8 +16,8 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
@@ -46,6 +46,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -56,6 +57,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestTickRunner
@@ -490,6 +492,8 @@ public class TestTickRunner
 		);
 		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
+		CuboidColumnAddress column = targetAddress.getColumn();
+		Assert.assertEquals(column, constantAddress.getColumn());
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(_buildAirCuboid(targetAddress)
 					, _buildAirCuboid(constantAddress)
@@ -507,7 +511,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		Assert.assertNotNull(snapshotRef[0]);
 		Assert.assertEquals(0, snapshotRef[0].completedCuboids().size());
-		Assert.assertEquals(0, snapshotRef[0].completedCuboidHeightMaps().size());
+		Assert.assertEquals(0, snapshotRef[0].completedHeightMaps().size());
 		
 		// Run the tick so that it applies the new load.
 		runner.startNextTick();
@@ -515,9 +519,9 @@ public class TestTickRunner
 		Assert.assertNotNull(snapshotRef[0]);
 		// We should see 2 cuboids.
 		Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = snapshotRef[0].completedCuboids();
-		Map<CuboidAddress, CuboidHeightMap> initialCuboidHeights = snapshotRef[0].completedCuboidHeightMaps();
+		Map<CuboidColumnAddress, ColumnHeightMap> initialHeights = snapshotRef[0].completedHeightMaps();
 		Assert.assertEquals(2, initialCuboids.size());
-		Assert.assertEquals(2, initialCuboidHeights.size());
+		Assert.assertEquals(1, initialHeights.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
 		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
@@ -528,18 +532,17 @@ public class TestTickRunner
 		Assert.assertNotNull(snapshotRef[0]);
 		// This should be the same size.
 		Map<CuboidAddress, IReadOnlyCuboidData> laterCuboids = snapshotRef[0].completedCuboids();
-		Map<CuboidAddress, CuboidHeightMap> laterCuboidHeights = snapshotRef[0].completedCuboidHeightMaps();
+		Map<CuboidColumnAddress, ColumnHeightMap> laterHeights = snapshotRef[0].completedHeightMaps();
 		Assert.assertEquals(2, laterCuboids.size());
-		Assert.assertEquals(2, laterCuboidHeights.size());
+		Assert.assertEquals(1, laterHeights.size());
 		
 		runner.shutdown();
 		
 		// Verify that the target cuboid is a new instance.
 		Assert.assertTrue(initialCuboids.get(targetAddress) != laterCuboids.get(targetAddress));
-		Assert.assertTrue(initialCuboidHeights.get(targetAddress) != laterCuboidHeights.get(targetAddress));
+		Assert.assertTrue(1 == _mismatchCount(initialHeights.get(column), laterHeights.get(column)));
 		// Verify that the unchanged cuboid is the same instance.
 		Assert.assertTrue(initialCuboids.get(constantAddress) == laterCuboids.get(constantAddress));
-		Assert.assertTrue(initialCuboidHeights.get(constantAddress) == laterCuboidHeights.get(constantAddress));
 	}
 
 	@Test
@@ -1964,5 +1967,23 @@ public class TestTickRunner
 	private SuspendedCuboid<IReadOnlyCuboidData> _packageCuboid(CuboidData cuboid)
 	{
 		return new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of());
+	}
+
+	private int _mismatchCount(ColumnHeightMap one, ColumnHeightMap two)
+	{
+		int count = 0;
+		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			{
+				int heightOne = one.getHeight(x, y);
+				int heightTwo = two.getHeight(x, y);
+				if (heightOne != heightTwo)
+				{
+					count += 1;
+				}
+			}
+		}
+		return count;
 	}
 }
