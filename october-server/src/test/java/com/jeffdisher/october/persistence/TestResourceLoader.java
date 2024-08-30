@@ -488,9 +488,11 @@ public class TestResourceLoader
 		File configFile = new File(resourceDirectory, "config.tablist");
 		String rawData = Files.readString(configFile.toPath());
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
+		Assert.assertTrue(rawData.contains("ticks_per_day\t1000\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"
+				+ "ticks_per_day\t2000\n"
 		;
 		Files.writeString(configFile.toPath(), fileToWrite);
 		loader = new ResourceLoader(resourceDirectory, null, null);
@@ -499,6 +501,7 @@ public class TestResourceLoader
 		Assert.assertEquals(Difficulty.PEACEFUL, config.difficulty);
 		Assert.assertEquals(-465342154, config.basicSeed);
 		Assert.assertEquals(new AbsoluteLocation(5, 6, 7), config.worldSpawn);
+		Assert.assertEquals(2000, config.ticksPerDay);
 		loader.shutdown();
 	}
 

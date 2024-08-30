@@ -45,6 +45,12 @@ public class WorldConfig
 	public volatile AbsoluteLocation worldSpawn;
 
 	/**
+	 * The number of ticks per day (must be > 0).
+	 */
+	public static final String KEY_TICKS_PER_DAY = "ticks_per_day";
+	public volatile int ticksPerDay;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -55,6 +61,8 @@ public class WorldConfig
 		// We default the seed to a random int.
 		this.basicSeed = new Random().nextInt();
 		this.worldSpawn = new AbsoluteLocation(0, 0, 0);
+		// We currently run at 1 tick per 100ms so this will give us 100 seconds in a day.
+		this.ticksPerDay = 1000;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -86,6 +94,11 @@ public class WorldConfig
 					, Integer.parseInt(parts[2])
 			);
 		}
+		if (overrides.containsKey(KEY_TICKS_PER_DAY))
+		{
+			this.ticksPerDay = Integer.parseInt(overrides.get(KEY_TICKS_PER_DAY));
+			Assert.assertTrue(this.ticksPerDay > 0);
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -97,6 +110,7 @@ public class WorldConfig
 				, KEY_HOSTILES_PER_CUBOID_LIMIT, Integer.toString(this.hostilesPerCuboidLimit)
 				, KEY_BASIC_SEED, Integer.toString(this.basicSeed)
 				, KEY_WORLD_SPAWN, worldSpawn
+				, KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay)
 		);
 	}
 }
