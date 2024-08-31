@@ -63,21 +63,21 @@ public class TestNetworkLayer
 		
 		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfiguration(1, 100L));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(1));
 		buffer.flip();
 		client.write(buffer);
 		
-		server.sendMessage(tokenHolder[0], new Packet_ServerSendConfiguration(2, 100L));
+		server.sendMessage(tokenHolder[0], new Packet_ServerSendClientId(2));
 		
 		// Verify that we received both.
 		receiveLatch.await();
-		Assert.assertEquals(1, ((Packet_ServerSendConfiguration) holder[0]).clientId);
+		Assert.assertEquals(1, ((Packet_ServerSendClientId) holder[0]).clientId);
 		
 		buffer.clear();
 		client.read(buffer);
 		buffer.flip();
 		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Assert.assertEquals(2, ((Packet_ServerSendConfiguration) clientRead).clientId);
+		Assert.assertEquals(2, ((Packet_ServerSendClientId) clientRead).clientId);
 		
 		// Close the client and verify that the server sees the disconnect.
 		client.close();
@@ -132,21 +132,21 @@ public class TestNetworkLayer
 		
 		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfiguration(1, 100L));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(1));
 		buffer.flip();
 		server.write(buffer);
 		
-		client.sendMessage(tokenHolder[0], new Packet_ServerSendConfiguration(2, 100L));
+		client.sendMessage(tokenHolder[0], new Packet_ServerSendClientId(2));
 		
 		// Verify that we received both.
 		receiveLatch.await();
-		Assert.assertEquals(1, ((Packet_ServerSendConfiguration) holder[0]).clientId);
+		Assert.assertEquals(1, ((Packet_ServerSendClientId) holder[0]).clientId);
 		
 		buffer.clear();
 		server.read(buffer);
 		buffer.flip();
 		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Assert.assertEquals(2, ((Packet_ServerSendConfiguration) clientRead).clientId);
+		Assert.assertEquals(2, ((Packet_ServerSendClientId) clientRead).clientId);
 		
 		// Shut down everything.
 		client.stop();

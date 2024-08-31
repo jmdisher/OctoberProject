@@ -22,7 +22,7 @@ public class PacketCodec
 	static
 	{
 		Packet_ClientSendDescription.register(_CODEC_TABLE);
-		Packet_ServerSendConfiguration.register(_CODEC_TABLE);
+		Packet_ServerSendClientId.register(_CODEC_TABLE);
 		Packet_Chat.register(_CODEC_TABLE);
 		Packet_CuboidStart.register(_CODEC_TABLE);
 		Packet_CuboidFragment.register(_CODEC_TABLE);

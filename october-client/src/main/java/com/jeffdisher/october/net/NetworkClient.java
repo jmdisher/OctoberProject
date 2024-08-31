@@ -76,8 +76,8 @@ public class NetworkClient
 					{
 						// We are expected to consume this as the completion of the handshake.
 						// This MUST be the ID assignment (the actual ID isn't relevant, just the message).
-						Assert.assertTrue(PacketType.SERVER_SEND_CONFIGURATION == packet.type);
-						Packet_ServerSendConfiguration safe = (Packet_ServerSendConfiguration) packet;
+						Assert.assertTrue(PacketType.SERVER_SEND_CLIENT_ID == packet.type);
+						Packet_ServerSendClientId safe = (Packet_ServerSendClientId) packet;
 						int assignedId = safe.clientId;
 						_token.setHandshakeCompleted(assignedId);
 						// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.

@@ -76,9 +76,7 @@ public class NetworkServer<L>
 								state.data = description.data;
 								
 								// Send out description and consider the handshake completed.
-								// TODO:  Pass this in as some kind of configuration once we care about that - this is mostly just to show that we can pass config data here.
-								long millisPerTick = 100L;
-								_network.sendMessage(token, new Packet_ServerSendConfiguration(description.clientId, millisPerTick));
+								_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId));
 							}
 							else
 							{

@@ -176,7 +176,7 @@ public class TestNetworkServer
 		client.read(buffer);
 		buffer.flip();
 		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_ServerSendConfiguration assign = (Packet_ServerSendConfiguration) packet;
+		Packet_ServerSendClientId assign = (Packet_ServerSendClientId) packet;
 		client.close();
 		return assign.clientId;
 	}
@@ -197,7 +197,7 @@ public class TestNetworkServer
 		client.read(buffer);
 		buffer.flip();
 		Packet packet = PacketCodec.parseAndSeekFlippedBuffer(buffer);
-		Packet_ServerSendConfiguration assign = (Packet_ServerSendConfiguration) packet;
+		Packet_ServerSendClientId assign = (Packet_ServerSendClientId) packet;
 		Assert.assertNotNull(assign);
 		return client;
 	}

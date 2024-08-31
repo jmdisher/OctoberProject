@@ -195,7 +195,7 @@ public class TestNetworkClient
 		
 		// Send out response.
 		buffer.clear();
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfiguration(clientId, 100L));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(clientId));
 		buffer.flip();
 		connection.write(buffer);
 		return connection;

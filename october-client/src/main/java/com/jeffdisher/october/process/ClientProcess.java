@@ -407,6 +407,11 @@ public class ClientProcess
 				Packet_RemoveCuboid safe = (Packet_RemoveCuboid)packet;
 				_messagesToClientRunner.removeCuboid(safe.address);
 			}
+			else
+			{
+				// If this is something unknown, there is a missing handler here.
+				throw Assert.unreachable();
+			}
 		}
 		@Override
 		public void serverDisconnected()

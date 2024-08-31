@@ -9,9 +9,9 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Sent by the server to complete the handshake (it will disconnect the client if it doesn't like the data).
  */
-public class Packet_ServerSendConfiguration extends Packet
+public class Packet_ServerSendClientId extends Packet
 {
-	public static final PacketType TYPE = PacketType.SERVER_SEND_CONFIGURATION;
+	public static final PacketType TYPE = PacketType.SERVER_SEND_CLIENT_ID;
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
@@ -19,28 +19,22 @@ public class Packet_ServerSendConfiguration extends Packet
 			// We want the client's ID (so we can identify their Entity).
 			int id = buffer.getInt();
 			Assert.assertTrue(id > 0);
-			// Also, see what the tick rate is.
-			long millisPerTick = buffer.getLong();
-			Assert.assertTrue(millisPerTick > 0L);
-			return new Packet_ServerSendConfiguration(id, millisPerTick);
+			return new Packet_ServerSendClientId(id);
 		};
 	}
 
 
 	public final int clientId;
-	public final long millisPerTick;
 
-	public Packet_ServerSendConfiguration(int id, long millisPerTick)
+	public Packet_ServerSendClientId(int id)
 	{
 		super(TYPE);
 		this.clientId = id;
-		this.millisPerTick = millisPerTick;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		buffer.putInt(this.clientId);
-		buffer.putLong(this.millisPerTick);
 	}
 }

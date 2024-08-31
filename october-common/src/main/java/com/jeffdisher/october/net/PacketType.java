@@ -12,7 +12,7 @@ public enum PacketType
 	/**
 	 * Send from the server to the client in response to CLIENT_SENT_DESCRIPTION to complete handshake (or disconnects).
 	 */
-	SERVER_SEND_CONFIGURATION,
+	SERVER_SEND_CLIENT_ID,
 	
 	/**
 	 * Sent both to/from server, but the ID is ignored when sent TO the server.
