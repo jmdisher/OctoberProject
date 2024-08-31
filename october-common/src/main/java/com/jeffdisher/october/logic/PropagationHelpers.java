@@ -186,6 +186,33 @@ public class PropagationHelpers
 		}
 	}
 
+	/**
+	 * Used to determine the fraction of sky light to apply, given the time of day (in the range [0.0 .. 1.0]).
+	 * This is put here since other light-related helpers are here.
+	 * 
+	 * @param gameTick The current game tick.
+	 * @param ticksPerDay How many ticks exist within one full "day".
+	 * @return The fraction of sky light for this time of day.
+	 */
+	public static float skyLightMultiplier(long gameTick, long ticksPerDay)
+	{
+		return _skyLightMultiplier(gameTick, ticksPerDay);
+	}
+
+	/**
+	 * Finds the physical light value to apply to sky-exposed blocks given the time of day (in the range [0..15]).
+	 * This is put here since other light-related helpers are here.
+	 * 
+	 * @param gameTick The current game tick.
+	 * @param ticksPerDay How many ticks exist within one full "day".
+	 * @return The light value to apply to sky-exposed blocks.
+	 */
+	public static byte currentSkyLightValue(long gameTick, long ticksPerDay)
+	{
+		float multiplier = _skyLightMultiplier(gameTick, ticksPerDay);
+		return (byte)((float)LightAspect.MAX_LIGHT * multiplier);
+	}
+
 
 	private static Set<AbsoluteLocation> _runCommonFlood(Environment env
 			, _ILightAccess accessor
@@ -402,6 +429,12 @@ public class PropagationHelpers
 				}
 			}
 		}
+	}
+
+	private static float _skyLightMultiplier(long gameTick, long ticksPerDay)
+	{
+		long step = gameTick % ticksPerDay;
+		return (float)Math.abs(step - (ticksPerDay / 2)) / (float)(ticksPerDay / 2);
 	}
 
 

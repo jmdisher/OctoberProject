@@ -439,6 +439,7 @@ public class TickRunner
 				spawned = CreatureSpawner.trySpawnCreature(context
 						, entityCollection
 						, materials.completedCuboids
+						, materials.completedHeightMaps
 						, materials.completedCreatures
 				);
 			}
@@ -621,6 +622,7 @@ public class TickRunner
 						.toList();
 				resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
 			}
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(mutableHeightMap);
 			long endMillisPostamble = System.currentTimeMillis();
 			long millisTickParallelPhase = (startMillisPostamble - timeMillisPreambleEnd);
 			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
@@ -636,7 +638,7 @@ public class TickRunner
 					, Collections.unmodifiableMap(combinedCommitLevels)
 					// completedCuboids
 					, Map.copyOf(mutableWorldState)
-					, HeightMapHelpers.buildColumnMaps(mutableHeightMap)
+					, completedHeightMaps
 					// completedCreatures
 					, Map.copyOf(mutableCreatureState)
 					
@@ -921,9 +923,12 @@ public class TickRunner
 				long endMillisPreamble = System.currentTimeMillis();
 				long millisInNextTickPreamble = endMillisPreamble - startMillisPreamble;
 				
+				// WARNING:  completedHeightMaps does NOT include the new height maps loaded after the previous tick finished!
+				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
 						, Collections.unmodifiableMap(mutableHeightMap)
+						, completedHeightMaps
 						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
@@ -1107,6 +1112,7 @@ public class TickRunner
 			// Read-only versions of the cuboids produced by the previous tick (by address).
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
+			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			// Read-only versions of the Entities produced by the previous tick (by ID).
 			, Map<Integer, Entity> completedEntities
 			// Read-only versions of the creatures from the previous tick (by ID).

@@ -4,12 +4,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -35,12 +38,14 @@ public class CreatureSpawner
 	 * @param context The context for the current tick.
 	 * @param existingEntities The existing entities in the world as of this tick.
 	 * @param completedCuboids The map of all cuboids from the previous tick.
+	 * @param completedHeightMaps The per-column height maps from the previous tick.
 	 * @param completedCreatures The map of all creatures from the previous tick.
 	 * @return The new entity or null if spawning was aborted.
 	 */
 	public static CreatureEntity trySpawnCreature(TickProcessingContext context
 			, EntityCollection existingEntities
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 			, Map<Integer, CreatureEntity> completedCreatures
 	)
 	{
@@ -56,7 +61,16 @@ public class CreatureSpawner
 			
 			if (null != cuboid)
 			{
-				spawned = _spawnInCuboid(context, existingEntities, cuboid);
+				ColumnHeightMap heightMap = completedHeightMaps.get(cuboid.getCuboidAddress().getColumn());
+				if (null != heightMap)
+				{
+					spawned = _spawnInCuboid(context, existingEntities, cuboid, heightMap);
+				}
+				else
+				{
+					// Note that the height map isn't always up to date so it may not yet be generated for this cuboid.
+					spawned = null;
+				}
 			}
 			else
 			{
@@ -106,6 +120,7 @@ public class CreatureSpawner
 	private static CreatureEntity _spawnInCuboid(TickProcessingContext context
 			, EntityCollection existingEntities
 			, IReadOnlyCuboidData cuboid
+			, ColumnHeightMap heightMap
 	)
 	{
 		// Pick a random location in this cuboid.
@@ -119,6 +134,7 @@ public class CreatureSpawner
 		// We want to slide down through this cuboid until we reach solid ground.
 		int baseZ = cuboidBase.z();
 		Environment env = Environment.getShared();
+		byte skyLightValue = PropagationHelpers.currentSkyLightValue(context.currentTick, context.config.ticksPerDay);
 		AbsoluteLocation goodSpawningLocation = null;
 		while ((null == goodSpawningLocation) && (checkSpawningLocation.z() >= baseZ))
 		{
@@ -129,10 +145,30 @@ public class CreatureSpawner
 					? env.blocks.isSolid(base.getBlock())
 					: false
 			;
-			boolean isDark = ((byte)0 == context.previousBlockLookUp.apply(checkSpawningLocation).getLight());
-			if (isSolid && isDark)
+			if (isSolid)
 			{
-				goodSpawningLocation = checkSpawningLocation;
+				byte blockLight = context.previousBlockLookUp.apply(checkSpawningLocation).getLight();
+				// IF the spawning base is the highest block in the column, then apply the sky light.
+				byte skyLight = (baseLocation.z() == (heightMap.getHeight(x, y)))
+						? skyLightValue
+						: 0
+				;
+				byte sum = (byte)(blockLight + skyLight);
+				byte totalLight = (sum > LightAspect.MAX_LIGHT)
+						? LightAspect.MAX_LIGHT
+						: sum
+				;
+				boolean isDark = ((byte)0 == totalLight);
+				
+				// We only spawn in the dark.
+				if (isDark)
+				{
+					goodSpawningLocation = checkSpawningLocation;
+				}
+				else
+				{
+					checkSpawningLocation = baseLocation;
+				}
 			}
 			else
 			{
