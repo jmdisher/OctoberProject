@@ -27,6 +27,7 @@ import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -407,6 +408,11 @@ public class ClientProcess
 				Packet_RemoveCuboid safe = (Packet_RemoveCuboid)packet;
 				_messagesToClientRunner.removeCuboid(safe.address);
 			}
+			else if (packet instanceof Packet_ServerSendConfigUpdate)
+			{
+				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate)packet;
+				_messagesToClientRunner.receivedConfigUpdate(safe.ticksPerDay);
+			}
 			else
 			{
 				// If this is something unknown, there is a missing handler here.
@@ -527,6 +533,13 @@ public class ClientProcess
 				_listener.connectionClosed();
 			});
 		}
+		@Override
+		public void configUpdated(int ticksPerDay)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.configUpdated(ticksPerDay);
+			});
+		}
 	}
 
 	private static class _LockingList
@@ -624,5 +637,11 @@ public class ClientProcess
 		 * @param gameTick The tick number (this is monotonic).
 		 */
 		void tickDidComplete(long gameTick);
+		/**
+		 * The server's config options were changed or it is announcing these right after connection.
+		 * 
+		 * @param ticksPerDay The number of ticks in a fully day cycle.
+		 */
+		void configUpdated(int ticksPerDay);
 	}
 }

@@ -24,6 +24,7 @@ import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -40,6 +41,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ServerProcess
 {
+	private final WorldConfig _sharedConfigInstance;
 	private final Map<Integer, ClientBuffer> _clientsById;
 	private final Set<Integer> _partialDisconnectIds;
 	private final ServerRunner _server;
@@ -71,6 +73,7 @@ public class ServerProcess
 			, WorldConfig config
 	) throws IOException
 	{
+		_sharedConfigInstance = config;
 		_clientsById = new HashMap<>();
 		_partialDisconnectIds = new HashSet<>();
 		// We will assume that ServerRunner will shut down the cuboidLoader for us.
@@ -145,6 +148,12 @@ public class ServerProcess
 			_clientsById.put(hash, buffer);
 			_serverListener.clientConnected(hash, token, name);
 			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
+			
+			// In a last step, before we return, we want to pre-seed the ClientBuffer with configuration data.
+			Packet_ServerSendConfigUpdate configPacket = new Packet_ServerSendConfigUpdate(_sharedConfigInstance.ticksPerDay);
+			boolean mustNotBeReady = buffer.shouldImmediatelySendPacket(configPacket);
+			// We are interjecting before the state machine starts changing so we assume that this isn't ready to send.
+			Assert.assertTrue(!mustNotBeReady);
 		}
 		return result;
 	}

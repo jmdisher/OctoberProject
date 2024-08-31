@@ -117,5 +117,12 @@ public interface IClientAdapter
 		 * @param latestLocalCommitIncluded The most recent change commit from this client included in the tick.
 		 */
 		void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded);
+		/**
+		 * Called when the server sends us a config update message.  Note that this is typically the first message
+		 * received immediately after connection but can arrive at any time.
+		 * 
+		 * @param ticksPerDay The number of ticks in a full day cycle.
+		 */
+		void receivedConfigUpdate(int ticksPerDay);
 	}
 }

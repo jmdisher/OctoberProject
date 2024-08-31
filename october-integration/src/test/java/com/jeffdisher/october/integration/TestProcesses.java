@@ -327,6 +327,10 @@ public class TestProcesses
 		client1.disconnect();
 		client2.disconnect();
 		server.stop();
+		
+		// Verify that we did see a config update packet at some point here.
+		Assert.assertEquals(1000, listener1.ticksPerDay);
+		Assert.assertEquals(1000, listener2.ticksPerDay);
 	}
 
 	@Test
@@ -377,6 +381,9 @@ public class TestProcesses
 			client.runPendingCalls(currentTimeMillis);
 		}
 		server.stop();
+		
+		// Verify that we did see a config update packet at some point here.
+		Assert.assertEquals(1000, listener.ticksPerDay);
 	}
 
 
@@ -397,6 +404,7 @@ public class TestProcesses
 		public final Map<Integer, PartialEntity> otherEntities = new HashMap<>();
 		public int assignedEntityId;
 		public long lastTickCompleted = 0L;
+		public int ticksPerDay;
 		
 		public Entity getLocalEntity()
 		{
@@ -470,6 +478,11 @@ public class TestProcesses
 		{
 			Assert.assertTrue(gameTick > this.lastTickCompleted);
 			this.lastTickCompleted = gameTick;
+		}
+		@Override
+		public void configUpdated(int ticksPerDay)
+		{
+			this.ticksPerDay = ticksPerDay;
 		}
 	}
 }

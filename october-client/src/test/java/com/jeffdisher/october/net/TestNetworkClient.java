@@ -41,8 +41,8 @@ public class TestNetworkClient
 			@Override
 			public void packetReceived(Packet packet)
 			{
-				// Should not happen in this test.
-				Assert.fail();
+				// This should only be the initial config update packet after handshake.
+				Assert.assertTrue(packet instanceof Packet_ServerSendConfigUpdate);
 			}
 			@Override
 			public void serverDisconnected()
@@ -91,8 +91,8 @@ public class TestNetworkClient
 			@Override
 			public void packetReceived(Packet packet)
 			{
-				// Should not happen in this test.
-				Assert.fail();
+				// This should only be the initial config update packet after handshake.
+				Assert.assertTrue(packet instanceof Packet_ServerSendConfigUpdate);
 			}
 			@Override
 			public void serverDisconnected()
@@ -152,8 +152,8 @@ public class TestNetworkClient
 			@Override
 			public void packetReceived(Packet packet)
 			{
-				// Should not happen in this test.
-				Assert.fail();
+				// This should only be the initial config update packet after handshake.
+				Assert.assertTrue(packet instanceof Packet_ServerSendConfigUpdate);
 			}
 			@Override
 			public void serverDisconnected()
@@ -196,6 +196,9 @@ public class TestNetworkClient
 		// Send out response.
 		buffer.clear();
 		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(clientId));
+		// We immediately send a config update after the ID so sythesize that, too.
+		int ticksPerDay = 1000;
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfigUpdate(ticksPerDay));
 		buffer.flip();
 		connection.write(buffer);
 		return connection;

@@ -71,6 +71,11 @@ public enum PacketType
 	 * Contains an IBlockStateUpdate object.  These are only send from server to client.
 	 */
 	BLOCK_STATE_UPDATE,
+	/**
+	 * Sent by the server to describe basic config variables to the client.  This happens early-on to send the current
+	 * config but also later if the config changes.
+	 */
+	SERVER_SEND_CONFIG_UPDATE,
 	
 	END_OF_LIST,
 }

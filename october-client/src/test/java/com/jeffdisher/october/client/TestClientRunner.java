@@ -68,9 +68,12 @@ public class TestClientRunner
 		// Connect them.
 		int clientId = 1;
 		network.client.adapterConnected(clientId);
+		int ticksPerDay = 1000;
+		network.client.receivedConfigUpdate(ticksPerDay);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Assert.assertEquals(ticksPerDay, clientListener.ticksPerDay);
 		
 		// Send them an entity.
 		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
@@ -528,6 +531,7 @@ public class TestClientRunner
 	private static class ClientListener implements ClientRunner.IListener
 	{
 		public int assignedLocalEntityId = 0;
+		public int ticksPerDay = 0;
 		@Override
 		public void clientDidConnectAndLogin(int assignedLocalEntityId)
 		{
@@ -539,6 +543,11 @@ public class TestClientRunner
 		{
 			Assert.assertNotEquals(0, this.assignedLocalEntityId);
 			this.assignedLocalEntityId = 0;
+		}
+		@Override
+		public void configUpdated(int ticksPerDay)
+		{
+			this.ticksPerDay = ticksPerDay;
 		}
 	}
 }

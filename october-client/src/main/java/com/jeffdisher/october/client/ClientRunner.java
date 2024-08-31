@@ -389,6 +389,13 @@ public class ClientRunner
 				);
 			});
 		}
+		@Override
+		public void receivedConfigUpdate(int ticksPerDay)
+		{
+			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
+				_clientListener.configUpdated(ticksPerDay);
+			});
+		}
 	}
 
 	private class LockedList
@@ -485,5 +492,11 @@ public class ClientRunner
 		 * client side).  This would mean a server-initiated disconnect or a more general connection timeout.
 		 */
 		void clientDisconnected();
+		/**
+		 * The server's config options were changed or it is announcing these right after connection.
+		 * 
+		 * @param ticksPerDay The number of ticks in a fully day cycle.
+		 */
+		void configUpdated(int ticksPerDay);
 	}
 }
