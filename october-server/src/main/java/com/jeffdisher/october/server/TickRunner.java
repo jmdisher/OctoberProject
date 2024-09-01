@@ -386,6 +386,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
+				, Collections.emptyMap()
 				// mutableCreatureState
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), 0)
@@ -486,6 +487,7 @@ public class TickRunner
 					, tickCompletionListener
 					, materials.completedCuboids
 					, materials.cuboidHeightMaps
+					, materials.completedHeightMaps
 					, materials.completedEntities
 					, materials.completedCreatures
 					, new _PartialHandoffData(fragment
@@ -507,6 +509,7 @@ public class TickRunner
 			, Consumer<Snapshot> tickCompletionListener
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<CuboidAddress, CuboidHeightMap> completedCuboidHeightMap
+			, Map<CuboidColumnAddress, ColumnHeightMap> completedColumnHeightMaps
 			, Map<Integer, Entity> completedCrowdState
 			, Map<Integer, CreatureEntity> completedCreatureState
 			, _PartialHandoffData perThreadData
@@ -544,7 +547,7 @@ public class TickRunner
 			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
 			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
 			Map<CuboidAddress, IReadOnlyCuboidData> mutableWorldState = new HashMap<>(completedCuboids);
-			Map<CuboidAddress, CuboidHeightMap> mutableHeightMap = new HashMap<>(completedCuboidHeightMap);
+			Map<CuboidAddress, CuboidHeightMap> mergedChangedHeightMaps = new HashMap<>();
 			Map<Integer, Entity> mutableCrowdState = new HashMap<>(completedCrowdState);
 			Map<Integer, CreatureEntity> mutableCreatureState = new HashMap<>(completedCreatureState);
 			
@@ -554,7 +557,7 @@ public class TickRunner
 				
 				// Collect the end results into the combined world and crowd for the snapshot (note that these are all replacing existing keys).
 				mutableWorldState.putAll(fragment.world.stateFragment());
-				mutableHeightMap.putAll(fragment.world.heightFragment());
+				mergedChangedHeightMaps.putAll(fragment.world.heightFragment());
 				// Similarly, collect the results of the changed entities for the snapshot.
 				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
@@ -622,7 +625,11 @@ public class TickRunner
 						.toList();
 				resultantBlockChangesByCuboid.put(perCuboid.getKey(), list);
 			}
-			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(mutableHeightMap);
+			Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.rebuildColumnMaps(completedColumnHeightMaps
+					, completedCuboidHeightMap
+					, mergedChangedHeightMaps
+					, mutableWorldState.keySet()
+			);
 			long endMillisPostamble = System.currentTimeMillis();
 			long millisTickParallelPhase = (startMillisPostamble - timeMillisPreambleEnd);
 			long millisTickPostamble = (endMillisPostamble - startMillisPostamble);
@@ -731,6 +738,8 @@ public class TickRunner
 				}
 				
 				// We now update our mutable collections for the materials to use in the next tick.
+				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(completedCuboidHeightMap);
+				nextTickMutableHeightMaps.putAll(mergedChangedHeightMaps);
 				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
 				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
 				
@@ -745,7 +754,7 @@ public class TickRunner
 						Object old = mutableWorldState.put(address, cuboid);
 						// This must not already be present.
 						Assert.assertTrue(null == old);
-						old = mutableHeightMap.put(address, suspended.heightMap());
+						old = nextTickMutableHeightMaps.put(address, suspended.heightMap());
 						Assert.assertTrue(null == old);
 						
 						// Load any creatures associated with this cuboid.
@@ -822,7 +831,7 @@ public class TickRunner
 						Object old = mutableWorldState.remove(address);
 						// This must already be present.
 						Assert.assertTrue(null != old);
-						old = mutableHeightMap.remove(address);
+						old = nextTickMutableHeightMaps.remove(address);
 						Assert.assertTrue(null != old);
 						
 						// Remove any creatures in this cuboid.
@@ -927,7 +936,7 @@ public class TickRunner
 				// (this is done to avoid the cost of rebuilding the maps since the column height maps are not guaranteed to be fully accurate)
 				_thisTickMaterials = new TickMaterials(_nextTick
 						, Collections.unmodifiableMap(mutableWorldState)
-						, Collections.unmodifiableMap(mutableHeightMap)
+						, Collections.unmodifiableMap(nextTickMutableHeightMaps)
 						, completedHeightMaps
 						, Collections.unmodifiableMap(mutableCrowdState)
 						// completedCreatures

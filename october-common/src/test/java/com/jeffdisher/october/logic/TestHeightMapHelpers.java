@@ -184,4 +184,69 @@ public class TestHeightMapHelpers
 		Assert.assertEquals(Integer.MIN_VALUE, isolated.getHeight(3, 3));
 		Assert.assertEquals(distinctZ + 1, isolated.getHeight(1, 1));
 	}
+
+	@Test
+	public void rebuildHeightMap() throws Throwable
+	{
+		// Use the height map rebuild helper to handle changes across a few columns.
+		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		CuboidData x0z0 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData x0z1 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)1), ENV.special.AIR);
+		CuboidData x1z0 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.special.AIR);
+		CuboidData x1z1 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)1), ENV.special.AIR);
+		
+		// Seed some initial data.
+		x0z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), stoneNumber);
+		x0z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)2, (byte)1), stoneNumber);
+		x1z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)3, (byte)1), stoneNumber);
+		x1z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)4, (byte)1), stoneNumber);
+		
+		Map<CuboidAddress, CuboidHeightMap> initialCuboids = Map.of(
+				x0z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z0)
+				, x0z1.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z1)
+				, x1z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x1z0)
+				, x1z1.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x1z1)
+		);
+		Map<CuboidColumnAddress, ColumnHeightMap> first = HeightMapHelpers.rebuildColumnMaps(Map.of()
+				, initialCuboids
+				, Map.of()
+				, initialCuboids.keySet()
+		);
+		Assert.assertEquals(2, first.size());
+		Assert.assertEquals(1, first.get(x0z0.getCuboidAddress().getColumn()).getHeight(1, 1));
+		Assert.assertEquals(33, first.get(x0z0.getCuboidAddress().getColumn()).getHeight(1, 2));
+		Assert.assertEquals(1, first.get(x1z0.getCuboidAddress().getColumn()).getHeight(1, 3));
+		Assert.assertEquals(33, first.get(x1z0.getCuboidAddress().getColumn()).getHeight(1, 4));
+		
+		// Make a few small changes and rebuild the maps - overlap under and over existing height.
+		x0z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)2, (byte)1), stoneNumber);
+		x1z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)3, (byte)1), stoneNumber);
+		Map<CuboidAddress, CuboidHeightMap> changedCuboids = Map.of(
+				x0z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z0)
+				, x1z1.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x1z1)
+		);
+		Map<CuboidColumnAddress, ColumnHeightMap> second = HeightMapHelpers.rebuildColumnMaps(first
+				, initialCuboids
+				, changedCuboids
+				, initialCuboids.keySet()
+		);
+		Assert.assertEquals(2, second.size());
+		Assert.assertEquals(1, second.get(x0z0.getCuboidAddress().getColumn()).getHeight(1, 1));
+		Assert.assertEquals(33, second.get(x0z0.getCuboidAddress().getColumn()).getHeight(1, 2));
+		Assert.assertEquals(33, second.get(x1z0.getCuboidAddress().getColumn()).getHeight(1, 3));
+		Assert.assertEquals(33, second.get(x1z0.getCuboidAddress().getColumn()).getHeight(1, 4));
+		
+		// Unload 1 column.
+		Map<CuboidAddress, CuboidHeightMap> remainingCuboids = Map.of(
+				x0z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z0)
+				, x0z1.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z1)
+		);
+		Map<CuboidColumnAddress, ColumnHeightMap> third = HeightMapHelpers.rebuildColumnMaps(second
+				, remainingCuboids
+				, Map.of()
+				, remainingCuboids.keySet()
+		);
+		Assert.assertEquals(1, third.size());
+		Assert.assertTrue(second.get(x0z0.getCuboidAddress().getColumn()) == third.get(x0z0.getCuboidAddress().getColumn()));
+	}
 }
