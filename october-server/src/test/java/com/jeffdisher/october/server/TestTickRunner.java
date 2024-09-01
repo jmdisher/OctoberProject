@@ -171,7 +171,7 @@ public class TestTickRunner
 		// Use extra threads here to stress further.
 		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, null
-				, null
+				, (int bound) -> 0
 				, (TickRunner.Snapshot completed) -> {}
 				, new WorldConfig()
 		);
@@ -486,7 +486,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, null
-				, null
+				, (int bound) -> 0
 				, snapshotListener
 				, new WorldConfig()
 		);
@@ -1350,7 +1350,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, null
-				, (int bound) -> randomHolder[0]
+				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
 				, new WorldConfig()
 		);
@@ -1422,7 +1422,7 @@ public class TestTickRunner
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, null
-				, (int bound) -> randomHolder[0]
+				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
 				, new WorldConfig()
 		);
