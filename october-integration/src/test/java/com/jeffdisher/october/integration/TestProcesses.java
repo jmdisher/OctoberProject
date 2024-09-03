@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeMove;
@@ -426,13 +427,13 @@ public class TestProcesses
 			assignedEntityId = -1;
 		}
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			Object old = this.cuboids.put(cuboid.getCuboidAddress(), cuboid);
 			Assert.assertNull(old);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			Object old = this.cuboids.put(cuboid.getCuboidAddress(), cuboid);
 			Assert.assertNotNull(old);

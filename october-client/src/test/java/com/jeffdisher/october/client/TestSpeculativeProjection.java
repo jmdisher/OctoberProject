@@ -17,6 +17,7 @@ import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
@@ -124,6 +125,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Apply a few local mutations.
 		IMutationBlock mutation1 = new ReplaceBlockMutation(new AbsoluteLocation(0, 1, 0), ENV.special.AIR.item().number(), STONE_ITEM.number());
@@ -146,6 +148,8 @@ public class TestSpeculativeProjection
 		}
 		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
+		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
 		
 		// Commit the first 2, one at a time, and then the last ones at the same time.
 		int speculativeCount = projector.applyChangesForServerTick(3L
@@ -163,6 +167,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(6, speculativeCount);
 		Assert.assertEquals(7 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
+		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -178,6 +184,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(5, speculativeCount);
 		Assert.assertEquals(7 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
+		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
 		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -192,6 +200,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(7 + 1 + 1 + 1, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
+		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
 		
 		// Now, unload.
 		speculativeCount = projector.applyChangesForServerTick(6L
@@ -261,6 +271,7 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(32, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Commit the other one.
 		int speculativeCount = projector.applyChangesForServerTick(3L
@@ -346,6 +357,7 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(lone1);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(32, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
 		int speculativeCount = projector.applyChangesForServerTick(3L
@@ -713,6 +725,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(STONE_ITEM.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 500, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
+		Assert.assertEquals(31, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Allow time to pass in the local environment apply the second stage of the change.
 		currentTimeMillis += 200L;
@@ -725,6 +738,7 @@ public class TestSpeculativeProjection
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().getCount(STONE.item()));
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
+		Assert.assertEquals(31, listener.lastHeightMap.getHeight(0, 0));
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
@@ -973,6 +987,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Apply the local change.
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
@@ -982,6 +997,7 @@ public class TestSpeculativeProjection
 		// (verify that it fails if we try to run it again.
 		long commit2 = projector.applyLocalChange(place);
 		Assert.assertEquals(0, commit2);
+		Assert.assertEquals(1, listener.lastHeightMap.getHeight(1, 1));
 	}
 
 	@Test
@@ -1037,6 +1053,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(craftingTable, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().getCount(STONE_ITEM));
 		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
+		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 1));
 		
 		// Complete the craft and check the proxy.
 		craft = new EntityChangeCraftInBlock(location, null, 100L);
@@ -1058,6 +1075,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_BRICK_ITEM));
+		Assert.assertEquals(-1, listener.lastHeightMap.getHeight(1, 1));
 		
 		Inventory entityInventory = listener.authoritativeEntityState.inventory();
 		Assert.assertEquals(2, entityInventory.sortedKeys().size());
@@ -1467,6 +1485,7 @@ public class TestSpeculativeProjection
 		public int changeCount = 0;
 		public int unloadCount = 0;
 		public IReadOnlyCuboidData lastData = null;
+		public ColumnHeightMap lastHeightMap = null;
 		public int entityChangeCount = 0;
 		public Entity authoritativeEntityState = null;
 		public Entity thisEntityState = null;
@@ -1474,16 +1493,18 @@ public class TestSpeculativeProjection
 		public long lastTickCompleted = 0L;
 		
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			this.loadCount += 1;
 			this.lastData = cuboid;
+			this.lastHeightMap = heightMap;
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			this.changeCount += 1;
 			this.lastData = cuboid;
+			this.lastHeightMap = heightMap;
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

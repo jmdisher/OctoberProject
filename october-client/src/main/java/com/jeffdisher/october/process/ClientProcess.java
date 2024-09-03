@@ -9,6 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.SpeculativeProjection;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -452,17 +453,17 @@ public class ClientProcess
 	private class _ProjectionListener implements SpeculativeProjection.IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidLoad(cuboid);
+				_listener.cuboidDidLoad(cuboid, heightMap);
 			});
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidChange(cuboid);
+				_listener.cuboidDidChange(cuboid, heightMap);
 			});
 		}
 		@Override
@@ -582,14 +583,16 @@ public class ClientProcess
 		 * Called when a new cuboid is loaded (may have been previously unloaded but not currently loaded).
 		 * 
 		 * @param cuboid The read-only cuboid data.
+		 * @param heightMap The height map for this cuboid's column.
 		 */
-		void cuboidDidLoad(IReadOnlyCuboidData cuboid);
+		void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
 		/**
 		 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
 		 * 
 		 * @param cuboid The read-only cuboid data.
+		 * @param heightMap The height map for this cuboid's column.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

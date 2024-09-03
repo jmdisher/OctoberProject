@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
@@ -460,14 +461,14 @@ public class TestClientRunner
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
 		public long lastTickCompleted = 0L;
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertFalse(this.loadedCuboids.containsKey(cuboidAddress));
 			this.loadedCuboids.put(cuboidAddress, cuboid);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertTrue(this.loadedCuboids.containsKey(cuboidAddress));

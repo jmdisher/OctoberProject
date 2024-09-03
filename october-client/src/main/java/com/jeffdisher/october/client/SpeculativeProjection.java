@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BasicBlockProxyCache;
@@ -31,6 +32,7 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -328,6 +330,10 @@ public class SpeculativeProjection
 			_applyFollowUp(modifiedCuboidAddresses, followUp);
 		}
 		
+		// We don't keep the height maps, only generating them for the cuboids we need to notify.
+		Set<CuboidColumnAddress> columnsToGenerate = addedCuboids.stream().map((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress().getColumn()).collect(Collectors.toUnmodifiableSet());
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = _buildProjectedColumnMaps(columnsToGenerate);
+		
 		// Notify the listener of was added.
 		if (isFirstRun)
 		{
@@ -343,14 +349,14 @@ public class SpeculativeProjection
 		}
 		for (IReadOnlyCuboidData cuboid : addedCuboids)
 		{
-			_listener.cuboidDidLoad(cuboid);
+			_listener.cuboidDidLoad(cuboid, columnHeightMaps.get(cuboid.getCuboidAddress().getColumn()));
 		}
 		
 		// Use the common path to describe what was changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
 		Set<Integer> otherEntitiesChanges = new HashSet<>(entitiesChangedInTick.keySet());
 		otherEntitiesChanges.remove(_localEntityId);
-		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
+		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -403,7 +409,7 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyChanges(Set.of(), modifiedCuboidAddresses, _thisShadowEntity, changedLocalEntity, Set.of());
+		_notifyChanges(Set.of(), modifiedCuboidAddresses, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -434,12 +440,18 @@ public class SpeculativeProjection
 		if (null != updated)
 		{
 			_projectedLocalEntity = updated;
-			_notifyChanges(Set.of(), Set.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
+			_notifyChanges(Set.of(), Set.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
 		}
 	}
 
 
-	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses, Set<CuboidAddress> changedCuboidAddresses, Entity authoritativeLocalEntity, Entity updatedLocalEntity, Set<Integer> otherEntityIds)
+	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses
+			, Set<CuboidAddress> changedCuboidAddresses
+			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
+			, Entity authoritativeLocalEntity
+			, Entity updatedLocalEntity
+			, Set<Integer> otherEntityIds
+	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		for (CuboidAddress address : changedCuboidAddresses)
@@ -460,9 +472,21 @@ public class SpeculativeProjection
 				cuboidsToReport.put(address, _projectedWorld.get(address));
 			}
 		}
+		
+		// Generate any of the missing columns.
+		Set<CuboidColumnAddress> missingColumns = cuboidsToReport.keySet().stream()
+				.map((CuboidAddress address) -> address.getColumn())
+				.filter((CuboidColumnAddress column) -> !knownHeightMaps.containsKey(column))
+				.collect(Collectors.toUnmodifiableSet())
+		;
+		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = _buildProjectedColumnMaps(missingColumns);
+		Map<CuboidColumnAddress, ColumnHeightMap> allHeightMaps = new HashMap<>();
+		allHeightMaps.putAll(knownHeightMaps);
+		allHeightMaps.putAll(addedHeightMaps);
+		
 		for (IReadOnlyCuboidData data : cuboidsToReport.values())
 		{
-			_listener.cuboidDidChange(data);
+			_listener.cuboidDidChange(data, allHeightMaps.get(data.getCuboidAddress().getColumn()));
 		}
 		if (null != updatedLocalEntity)
 		{
@@ -682,6 +706,16 @@ public class SpeculativeProjection
 		return context;
 	}
 
+	private Map<CuboidColumnAddress, ColumnHeightMap> _buildProjectedColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)
+	{
+		Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = _projectedHeightMap.entrySet().stream()
+				.filter((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> columnsToGenerate.contains(entry.getKey().getColumn()))
+				.collect(Collectors.toMap((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getValue()))
+		;
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(mapsToCoalesce);
+		return columnHeightMaps;
+	}
+
 
 	public static interface IProjectionListener
 	{
@@ -689,14 +723,16 @@ public class SpeculativeProjection
 		 * Called when a new cuboid is loaded (may have been previously unloaded but not currently loaded).
 		 * 
 		 * @param cuboid The read-only cuboid data.
+		 * @param heightMap The height map for this cuboid's column.
 		 */
-		void cuboidDidLoad(IReadOnlyCuboidData cuboid);
+		void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
 		/**
 		 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
 		 * 
 		 * @param cuboid The read-only cuboid data.
+		 * @param heightMap The height map for this cuboid's column.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

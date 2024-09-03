@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.LongConsumer;
 
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
@@ -418,16 +419,16 @@ public class ClientRunner
 	private class LocalProjection implements SpeculativeProjection.IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidLoad(cuboid);
+			_projectionListener.cuboidDidLoad(cuboid, heightMap);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidChange(cuboid);
+			_projectionListener.cuboidDidChange(cuboid, heightMap);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
