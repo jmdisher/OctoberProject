@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.IOException;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.persistence.BasicWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -57,7 +59,15 @@ public class ServerMain
 				ConsoleHandler.readUntilStop(System.in, System.out, monitoringAgent, config);
 				// We returned, so we can stop the ServerProcess.
 				process.stop();
-				// Everything has stopped so now write-back the config.
+				// Look at how many ticks were run.
+				TickRunner.Snapshot lastSnapshot = monitoringAgent.getLastSnapshot();
+				long ticksRun = (null != lastSnapshot)
+						? lastSnapshot.tickNumber()
+						: 0L
+				;
+				// Adjust the config's day start so that it will sync up with the time of day when ending.
+				config.dayStartTick = (int)PropagationHelpers.resumableStartTick(ticksRun, config.ticksPerDay, config.dayStartTick);
+				// We can now re-write the config.
 				cuboidLoader.storeWorldConfig(config);
 				System.out.println("Exiting normally");
 				Environment.clearSharedInstance();

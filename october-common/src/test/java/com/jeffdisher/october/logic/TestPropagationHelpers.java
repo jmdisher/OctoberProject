@@ -340,6 +340,27 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0.02f, endMultiplier, 0.01f);
 	}
 
+	@Test
+	public void saveOutAndRestoreDay()
+	{
+		// Show how we use the dayStartTick to make the day/night cycle continuous across restarts.
+		long ticksPerDay = 100L;
+		long dayStartTick = 0L;
+		
+		float multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
+		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.8f, multiplier, 0.01f);
+		dayStartTick = PropagationHelpers.resumableStartTick(10L, ticksPerDay, dayStartTick);
+		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.8f, multiplier, 0.01f);
+		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		dayStartTick = PropagationHelpers.resumableStartTick(10L, ticksPerDay, dayStartTick);
+		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+	}
+
 
 	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
 	{

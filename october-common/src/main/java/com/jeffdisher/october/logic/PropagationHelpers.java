@@ -215,6 +215,19 @@ public class PropagationHelpers
 		return (byte)((float)LightAspect.MAX_LIGHT * multiplier);
 	}
 
+	/**
+	 * A helper to calculate the new dayStartTick after running for some time.
+	 * 
+	 * @param ticksRun The ticks run in this session.
+	 * @param ticksPerDay The number of ticks per day.
+	 * @param previousDayStartOffset The previous tick start offset.
+	 * @return The new day start offset.
+	 */
+	public static long resumableStartTick(long ticksRun, long ticksPerDay, long previousDayStartOffset)
+	{
+		return ((ticksPerDay + previousDayStartOffset - ticksRun) % ticksPerDay);
+	}
+
 
 	private static Set<AbsoluteLocation> _runCommonFlood(Environment env
 			, _ILightAccess accessor
