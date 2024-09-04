@@ -51,6 +51,12 @@ public class WorldConfig
 	public volatile int ticksPerDay;
 
 	/**
+	 * The tick within a day where the day "starts" (must be >= 0).
+	 */
+	public static final String KEY_DAY_START_TICK = "day_start_tick";
+	public volatile int dayStartTick;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -63,6 +69,8 @@ public class WorldConfig
 		this.worldSpawn = new AbsoluteLocation(0, 0, 0);
 		// We currently run at 1 tick per 100ms so this will give us 100 seconds in a day.
 		this.ticksPerDay = 1000;
+		// Default to 0 as the start tick (the brightest part of the day).
+		this.dayStartTick = 0;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -99,6 +107,11 @@ public class WorldConfig
 			this.ticksPerDay = Integer.parseInt(overrides.get(KEY_TICKS_PER_DAY));
 			Assert.assertTrue(this.ticksPerDay > 0);
 		}
+		if (overrides.containsKey(KEY_DAY_START_TICK))
+		{
+			this.dayStartTick = Integer.parseInt(overrides.get(KEY_DAY_START_TICK));
+			Assert.assertTrue(this.dayStartTick >= 0);
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -111,6 +124,7 @@ public class WorldConfig
 				, KEY_BASIC_SEED, Integer.toString(this.basicSeed)
 				, KEY_WORLD_SPAWN, worldSpawn
 				, KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay)
+				, KEY_DAY_START_TICK, Integer.toString(this.dayStartTick)
 		);
 	}
 }

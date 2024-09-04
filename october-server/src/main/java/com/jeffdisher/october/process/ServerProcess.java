@@ -150,7 +150,9 @@ public class ServerProcess
 			result = new NetworkServer.ConnectingClientDescription<>(hash, buffer);
 			
 			// In a last step, before we return, we want to pre-seed the ClientBuffer with configuration data.
-			Packet_ServerSendConfigUpdate configPacket = new Packet_ServerSendConfigUpdate(_sharedConfigInstance.ticksPerDay);
+			Packet_ServerSendConfigUpdate configPacket = new Packet_ServerSendConfigUpdate(_sharedConfigInstance.ticksPerDay
+					, _sharedConfigInstance.dayStartTick
+			);
 			boolean mustNotBeReady = buffer.shouldImmediatelySendPacket(configPacket);
 			// We are interjecting before the state machine starts changing so we assume that this isn't ready to send.
 			Assert.assertTrue(!mustNotBeReady);

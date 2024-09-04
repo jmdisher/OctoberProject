@@ -391,10 +391,10 @@ public class ClientRunner
 			});
 		}
 		@Override
-		public void receivedConfigUpdate(int ticksPerDay)
+		public void receivedConfigUpdate(int ticksPerDay, int dayStartTick)
 		{
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
-				_clientListener.configUpdated(ticksPerDay);
+				_clientListener.configUpdated(ticksPerDay, dayStartTick);
 			});
 		}
 	}
@@ -497,7 +497,8 @@ public class ClientRunner
 		 * The server's config options were changed or it is announcing these right after connection.
 		 * 
 		 * @param ticksPerDay The number of ticks in a fully day cycle.
+		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
-		void configUpdated(int ticksPerDay);
+		void configUpdated(int ticksPerDay, int dayStartTick);
 	}
 }

@@ -198,7 +198,8 @@ public class TestNetworkClient
 		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(clientId));
 		// We immediately send a config update after the ID so sythesize that, too.
 		int ticksPerDay = 1000;
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfigUpdate(ticksPerDay));
+		int dayStartTick = 0;
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendConfigUpdate(ticksPerDay, dayStartTick));
 		buffer.flip();
 		connection.write(buffer);
 		return connection;

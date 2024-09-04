@@ -122,7 +122,8 @@ public interface IClientAdapter
 		 * received immediately after connection but can arrive at any time.
 		 * 
 		 * @param ticksPerDay The number of ticks in a full day cycle.
+		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
-		void receivedConfigUpdate(int ticksPerDay);
+		void receivedConfigUpdate(int ticksPerDay, int dayStartTick);
 	}
 }

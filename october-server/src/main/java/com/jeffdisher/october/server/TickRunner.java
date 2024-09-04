@@ -433,7 +433,7 @@ public class TickRunner
 						int highestBlock = map.getHeight(blockAddress.x(), blockAddress.y());
 						// If this is the highest block, return the light, otherwise 0.
 						byte skyLight = (blockLocation.z() == highestBlock)
-								? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, config.ticksPerDay)
+								? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, config.ticksPerDay, config.dayStartTick)
 								: 0
 						;
 						return skyLight;

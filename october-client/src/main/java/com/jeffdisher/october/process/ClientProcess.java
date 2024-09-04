@@ -412,7 +412,7 @@ public class ClientProcess
 			else if (packet instanceof Packet_ServerSendConfigUpdate)
 			{
 				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate)packet;
-				_messagesToClientRunner.receivedConfigUpdate(safe.ticksPerDay);
+				_messagesToClientRunner.receivedConfigUpdate(safe.ticksPerDay, safe.dayStartTick);
 			}
 			else
 			{
@@ -535,10 +535,10 @@ public class ClientProcess
 			});
 		}
 		@Override
-		public void configUpdated(int ticksPerDay)
+		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.configUpdated(ticksPerDay);
+				_listener.configUpdated(ticksPerDay, dayStartTick);
 			});
 		}
 	}
@@ -644,7 +644,8 @@ public class ClientProcess
 		 * The server's config options were changed or it is announcing these right after connection.
 		 * 
 		 * @param ticksPerDay The number of ticks in a fully day cycle.
+		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
-		void configUpdated(int ticksPerDay);
+		void configUpdated(int ticksPerDay, int dayStartTick);
 	}
 }

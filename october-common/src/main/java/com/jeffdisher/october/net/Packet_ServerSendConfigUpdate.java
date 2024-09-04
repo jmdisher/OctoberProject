@@ -18,22 +18,27 @@ public class Packet_ServerSendConfigUpdate extends Packet
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
 			int ticksPerDay = buffer.getInt();
 			Assert.assertTrue(ticksPerDay > 0);
-			return new Packet_ServerSendConfigUpdate(ticksPerDay);
+			int dayStartTick = buffer.getInt();
+			Assert.assertTrue(dayStartTick >= 0);
+			return new Packet_ServerSendConfigUpdate(ticksPerDay, dayStartTick);
 		};
 	}
 
 
 	public final int ticksPerDay;
+	public final int dayStartTick;
 
-	public Packet_ServerSendConfigUpdate(int ticksPerDay)
+	public Packet_ServerSendConfigUpdate(int ticksPerDay, int dayStartTick)
 	{
 		super(TYPE);
 		this.ticksPerDay = ticksPerDay;
+		this.dayStartTick = dayStartTick;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		buffer.putInt(this.ticksPerDay);
+		buffer.putInt(this.dayStartTick);
 	}
 }

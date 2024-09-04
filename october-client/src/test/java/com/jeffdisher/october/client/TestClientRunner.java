@@ -70,7 +70,7 @@ public class TestClientRunner
 		int clientId = 1;
 		network.client.adapterConnected(clientId);
 		int ticksPerDay = 1000;
-		network.client.receivedConfigUpdate(ticksPerDay);
+		network.client.receivedConfigUpdate(ticksPerDay, 0);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -546,7 +546,7 @@ public class TestClientRunner
 			this.assignedLocalEntityId = 0;
 		}
 		@Override
-		public void configUpdated(int ticksPerDay)
+		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 			this.ticksPerDay = ticksPerDay;
 		}

@@ -481,7 +481,7 @@ public class TestProcesses
 			this.lastTickCompleted = gameTick;
 		}
 		@Override
-		public void configUpdated(int ticksPerDay)
+		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 			this.ticksPerDay = ticksPerDay;
 		}

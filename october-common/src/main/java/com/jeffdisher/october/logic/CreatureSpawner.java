@@ -134,7 +134,7 @@ public class CreatureSpawner
 		// We want to slide down through this cuboid until we reach solid ground.
 		int baseZ = cuboidBase.z();
 		Environment env = Environment.getShared();
-		byte skyLightValue = PropagationHelpers.currentSkyLightValue(context.currentTick, context.config.ticksPerDay);
+		byte skyLightValue = PropagationHelpers.currentSkyLightValue(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
 		AbsoluteLocation goodSpawningLocation = null;
 		while ((null == goodSpawningLocation) && (checkSpawningLocation.z() >= baseZ))
 		{

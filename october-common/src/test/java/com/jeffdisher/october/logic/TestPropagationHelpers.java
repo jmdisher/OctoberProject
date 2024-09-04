@@ -300,6 +300,46 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0, new BlockProxy(finalWire.getBlockAddress(), cuboid).getLogic());
 	}
 
+	@Test
+	public void skyLightValues()
+	{
+		// Just shows what the sky light or multiplier is at different times of day.
+		long ticksPerDay = 100L;
+		long start = 0L;
+		long middle = ticksPerDay / 2;
+		long end = ticksPerDay - 1L;
+		
+		// The default value shows the day starting at the brightest point.
+		long startTickOffset = 0L;
+		byte startValue = PropagationHelpers.currentSkyLightValue(start, ticksPerDay, startTickOffset);
+		float startMultiplier = PropagationHelpers.skyLightMultiplier(start, ticksPerDay, startTickOffset);
+		byte middleValue = PropagationHelpers.currentSkyLightValue(middle, ticksPerDay, startTickOffset);
+		float middleMultiplier = PropagationHelpers.skyLightMultiplier(middle, ticksPerDay, startTickOffset);
+		byte endValue = PropagationHelpers.currentSkyLightValue(end, ticksPerDay, startTickOffset);
+		float endMultiplier = PropagationHelpers.skyLightMultiplier(end, ticksPerDay, startTickOffset);
+		Assert.assertEquals((byte)15, startValue);
+		Assert.assertEquals(1.0f, startMultiplier, 0.01f);
+		Assert.assertEquals((byte)0, middleValue);
+		Assert.assertEquals(0.0f, middleMultiplier, 0.01f);
+		Assert.assertEquals((byte)14, endValue);
+		Assert.assertEquals(0.98f, endMultiplier, 0.01f);
+		
+		// Verify that this inverts correctly when the day starts half-way through.
+		startTickOffset = 50L;
+		startValue = PropagationHelpers.currentSkyLightValue(start, ticksPerDay, startTickOffset);
+		startMultiplier = PropagationHelpers.skyLightMultiplier(start, ticksPerDay, startTickOffset);
+		middleValue = PropagationHelpers.currentSkyLightValue(middle, ticksPerDay, startTickOffset);
+		middleMultiplier = PropagationHelpers.skyLightMultiplier(middle, ticksPerDay, startTickOffset);
+		endValue = PropagationHelpers.currentSkyLightValue(end, ticksPerDay, startTickOffset);
+		endMultiplier = PropagationHelpers.skyLightMultiplier(end, ticksPerDay, startTickOffset);
+		Assert.assertEquals((byte)0, startValue);
+		Assert.assertEquals(0.0f, startMultiplier, 0.01f);
+		Assert.assertEquals((byte)15, middleValue);
+		Assert.assertEquals(1.0f, middleMultiplier, 0.01f);
+		Assert.assertEquals((byte)0, endValue);
+		Assert.assertEquals(0.02f, endMultiplier, 0.01f);
+	}
+
 
 	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
 	{

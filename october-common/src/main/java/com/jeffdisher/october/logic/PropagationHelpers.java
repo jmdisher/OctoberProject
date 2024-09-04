@@ -192,11 +192,12 @@ public class PropagationHelpers
 	 * 
 	 * @param gameTick The current game tick.
 	 * @param ticksPerDay How many ticks exist within one full "day".
+	 * @param dayStartOffset The point in ticksPerDay interval where the day "starts".
 	 * @return The fraction of sky light for this time of day.
 	 */
-	public static float skyLightMultiplier(long gameTick, long ticksPerDay)
+	public static float skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
-		return _skyLightMultiplier(gameTick, ticksPerDay);
+		return _skyLightMultiplier(gameTick, ticksPerDay, dayStartOffset);
 	}
 
 	/**
@@ -205,11 +206,12 @@ public class PropagationHelpers
 	 * 
 	 * @param gameTick The current game tick.
 	 * @param ticksPerDay How many ticks exist within one full "day".
+	 * @param dayStartOffset The point in ticksPerDay interval where the day "starts".
 	 * @return The light value to apply to sky-exposed blocks.
 	 */
-	public static byte currentSkyLightValue(long gameTick, long ticksPerDay)
+	public static byte currentSkyLightValue(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
-		float multiplier = _skyLightMultiplier(gameTick, ticksPerDay);
+		float multiplier = _skyLightMultiplier(gameTick, ticksPerDay, dayStartOffset);
 		return (byte)((float)LightAspect.MAX_LIGHT * multiplier);
 	}
 
@@ -431,10 +433,13 @@ public class PropagationHelpers
 		}
 	}
 
-	private static float _skyLightMultiplier(long gameTick, long ticksPerDay)
+	private static float _skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
-		long step = gameTick % ticksPerDay;
-		return (float)Math.abs(step - (ticksPerDay / 2)) / (float)(ticksPerDay / 2);
+		// The dayStartOffset is usually 0, but is set to the offset into ticksPerDay where we should reposition the start of the day.
+		long step = (gameTick + ticksPerDay - dayStartOffset) % ticksPerDay;
+		// We actually need the light strength to cycle back and forth, not loop, so make this an abs function over half the day length.
+		long ticksPerHalfDay = ticksPerDay / 2;
+		return (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
 	}
 
 
