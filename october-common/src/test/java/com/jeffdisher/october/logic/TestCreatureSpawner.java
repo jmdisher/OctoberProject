@@ -19,6 +19,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -99,24 +100,19 @@ public class TestCreatureSpawner
 		int randomValue = 5;
 		WorldConfig config = new WorldConfig();
 		config.difficulty = Difficulty.PEACEFUL;
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> {
-					IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
-					return (null != oneCuboid)
-							? new BlockProxy(location.getBlockAddress(), oneCuboid)
-							: null
-					;
-				}
-				, null
-				, null
-				, null
-				, null
-				, (int bound) -> (bound > randomValue)
-					? randomValue
-					: (bound - 1)
-				, config
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+						IReadOnlyCuboidData oneCuboid = completedCuboids.get(location.getCuboidAddress());
+						return (null != oneCuboid)
+								? new BlockProxy(location.getBlockAddress(), oneCuboid)
+								: null
+						;
+					}, null)
+				.boundedRandom(randomValue)
+				.config(config)
+				.finish()
+		;
+		
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Set.of(), Set.of())
 				, completedCuboids
@@ -204,24 +200,19 @@ public class TestCreatureSpawner
 
 	private static TickProcessingContext _createContextWithTick(long gameTick, Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
 	{
-		TickProcessingContext context = new TickProcessingContext(gameTick
-				, (AbsoluteLocation location) -> {
-					IReadOnlyCuboidData cuboid = world.get(location.getCuboidAddress());
-					return (null != cuboid)
-							? new BlockProxy(location.getBlockAddress(), cuboid)
-							: null
-					;
-				}
-				, null
-				, null
-				, null
-				, new CreatureIdAssigner()
-				, (int bound) -> (bound > randomValue)
-					? randomValue
-					: (bound - 1)
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(gameTick)
+				.lookups((AbsoluteLocation location) -> {
+						IReadOnlyCuboidData cuboid = world.get(location.getCuboidAddress());
+						return (null != cuboid)
+								? new BlockProxy(location.getBlockAddress(), cuboid)
+								: null
+						;
+					}, null)
+				.assigner(new CreatureIdAssigner())
+				.boundedRandom(randomValue)
+				.finish()
+		;
 		return context;
 	}
 

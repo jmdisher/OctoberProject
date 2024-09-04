@@ -29,6 +29,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
@@ -99,10 +100,9 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
-		TickProcessingContext context = new TickProcessingContext(1
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid)
-				, null
-				, new IMutationSink() {
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
+				.sinks(new IMutationSink() {
 					@Override
 					public void next(IMutationBlock mutation)
 					{
@@ -113,13 +113,9 @@ public class TestCreatureProcessor
 					public void future(IMutationBlock mutation, long millisToDelay)
 					{
 						Assert.fail();
-					}}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+					}}, null)
+				.finish()
+		;
 		EntityChangeTakeDamage<IMutableCreatureEntity> change = new EntityChangeTakeDamage<>(BodyPart.FEET, (byte)120);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -628,22 +624,18 @@ public class TestCreatureProcessor
 			Map<Integer, MinimalEntity> minimalEntitiesById = Map.of(waterTarget.id(), MinimalEntity.fromEntity(waterTarget)
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
-			TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
-					, (AbsoluteLocation location) -> {
-						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? new BlockProxy(location.getBlockAddress(), cuboid)
-							: null
-						;
-					}
-					, (Integer id) -> minimalEntitiesById.get(id)
-					, null
-					, null
-					, null
+			TickProcessingContext context = ContextBuilder.build()
+					.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.lookups((AbsoluteLocation location) -> {
+							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+								? new BlockProxy(location.getBlockAddress(), cuboid)
+								: null
+							;
+						}, (Integer id) -> minimalEntitiesById.get(id))
 					// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-					, (int bound) -> 1
-					, new WorldConfig()
-					, millisPerTick
-			);
+					.fixedRandom(1)
+					.finish()
+			;
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
@@ -692,22 +684,18 @@ public class TestCreatureProcessor
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		for (int i = 0; i < 11; ++i)
 		{
-			TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
-					, (AbsoluteLocation location) -> {
-						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-							? new BlockProxy(location.getBlockAddress(), cuboid)
-							: null
-						;
-					}
-					, null
-					, null
-					, null
-					, null
+			TickProcessingContext context = ContextBuilder.build()
+					.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.lookups((AbsoluteLocation location) -> {
+							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+								? new BlockProxy(location.getBlockAddress(), cuboid)
+								: null
+							;
+						}, null)
 					// We return a fixed "0" for the random generator to make sure that we select a reasonable plan for all tests.
-					, (int bound) -> 0
-					, new WorldConfig()
-					, millisPerTick
-			);
+					.fixedRandom(0)
+					.finish()
+			;
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
@@ -750,90 +738,68 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;
-		TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
-				, (AbsoluteLocation location) -> {
-					return ((short)-1 == location.z())
-						? new BlockProxy(location.getBlockAddress(), stoneCuboid)
-						: new BlockProxy(location.getBlockAddress(), airCuboid)
-					;
-				}
-				, null
-				, null
-				, null
-				, null
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.lookups((AbsoluteLocation location) -> {
+						return ((short)-1 == location.z())
+							? new BlockProxy(location.getBlockAddress(), stoneCuboid)
+							: new BlockProxy(location.getBlockAddress(), airCuboid)
+						;
+					} , null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-				, (int bound) -> 1
-				, config
-				, millisPerTick
-		);
+				.fixedRandom(1)
+				.config(config)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
 		long millisPerTick = 100L;
-		TickProcessingContext context = new TickProcessingContext(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick
-				, (AbsoluteLocation location) -> {
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.lookups((AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
-						? new BlockProxy(location.getBlockAddress(), cuboid)
-						: null
-					;
-				}
-				, null
-				, null
-				, null
-				, null
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+						;
+					} , null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
-				, (int bound) -> 1
-				, new WorldConfig()
-				, millisPerTick
-		);
+				.fixedRandom(1)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _updateContextWithCreatures(TickProcessingContext existing, Collection<CreatureEntity> creatures, IChangeSink newChangeSink, CreatureIdAssigner idAssigner)
 	{
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1L
-				, existing.previousBlockLookUp
-				, (Integer id) -> minimal.get(id)
-				, null
-				, newChangeSink
-				, idAssigner
-				, existing.randomInt
-				, existing.config
-				, existing.millisPerTick
-		);
+		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
+				.lookups(existing.previousBlockLookUp, (Integer id) -> minimal.get(id))
+				.sinks(null, newChangeSink)
+				.assigner(idAssigner)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
 	{
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + (OrcStateMachine.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick)
-				, existing.previousBlockLookUp
-				, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null
-				, null
-				, null
-				, null
-				, existing.randomInt
-				, existing.config
-				, existing.millisPerTick
-		);
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (OrcStateMachine.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick))
+				.lookups(existing.previousBlockLookUp, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null)
+				.sinks(null, null)
+				.assigner(null)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _updateContextForTick(TickProcessingContext existing)
 	{
-		TickProcessingContext context = new TickProcessingContext(existing.currentTick + 1
-				, existing.previousBlockLookUp
-				, existing.previousEntityLookUp
-				, existing.mutationSink
-				, existing.newChangeSink
-				, existing.idAssigner
-				, existing.randomInt
-				, existing.config
-				, existing.millisPerTick
-		);
+		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
+				.finish()
+		;
 		return context;
 	}
 

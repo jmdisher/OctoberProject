@@ -2,7 +2,6 @@ package com.jeffdisher.october.creatures;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -15,6 +14,7 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -24,7 +24,6 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 
 
 public class TestOrcStateMachine
@@ -180,31 +179,18 @@ public class TestOrcStateMachine
 		};
 		long millisPerTick = 100L;
 		long tickNumber = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / millisPerTick;
-		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(tickNumber
-				, null
-				, previousEntityLookUp
-				, null
-				, changes
-				, assigner
-				, (int bound) -> random.nextInt(bound)
-				, new WorldConfig()
-				, millisPerTick
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(tickNumber)
+				.lookups(null, previousEntityLookUp)
+				.sinks(null, changes)
+				.assigner(assigner)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _advanceTick(TickProcessingContext context, long ticksToAdvance)
 	{
-		return new TickProcessingContext(context.currentTick + ticksToAdvance
-				, context.previousBlockLookUp
-				, context.previousEntityLookUp
-				, context.mutationSink
-				, context.newChangeSink
-				, context.idAssigner
-				, context.randomInt
-				, context.config
-				, context.millisPerTick
-		);
+		return ContextBuilder.nextTick(context, ticksToAdvance).finish();
 	}
 }

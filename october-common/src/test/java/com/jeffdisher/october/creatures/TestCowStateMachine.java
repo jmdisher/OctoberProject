@@ -15,6 +15,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -23,7 +24,6 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 
 
 public class TestCowStateMachine
@@ -183,16 +183,12 @@ public class TestCowStateMachine
 				messageAcceptor.accept(targetCreatureId, change);
 			}
 		};
-		TickProcessingContext context = new TickProcessingContext(1L
-				, null
-				, previousEntityLookUp
-				, null
-				, changes
-				, assigner
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(null, previousEntityLookUp)
+				.sinks(null, changes)
+				.assigner(assigner)
+				.finish()
+		;
 		return context;
 	}
 }

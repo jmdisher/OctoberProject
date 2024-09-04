@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -23,6 +22,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -115,16 +115,10 @@ public class TestCommonChanges
 		float speed = EntityConstants.SPEED_PLAYER;
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> null, null)
+				.finish()
+		;
 		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
@@ -582,27 +576,22 @@ public class TestCommonChanges
 		proxy.writeBack(cuboid);
 		
 		List<IMutationBlock> blockHolder = new ArrayList<>();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						blockHolder.add(mutation);
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							blockHolder.add(mutation);
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					}, null)
+				.finish()
+		;
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutationEntityPushItems push1 = new MutationEntityPushItems(targetLocation, mutable1.newInventory.getIdOfStackableType(STONE_ITEM), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -706,35 +695,29 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
-		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
-				, null
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-					{
-						Assert.assertNull(changeHolder[0]);
-						targetHolder[0] = targetEntityId;
-						changeHolder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, (int bound) -> random.nextInt(bound)
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+						@Override
+						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+						{
+							Assert.assertNull(changeHolder[0]);
+							targetHolder[0] = targetEntityId;
+							changeHolder[0] = change;
+						}
+						@Override
+						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					})
+				.finish()
+		;
 		
 		// Check the miss.
 		Assert.assertFalse(new EntityChangeAttackEntity(missId).applyChange(context, attacker));
@@ -768,43 +751,39 @@ public class TestCommonChanges
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		WorldConfig worldConfig = new WorldConfig();
 		worldConfig.worldSpawn = new AbsoluteLocation(1, 2, 3);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) ->
-				{
-					CuboidAddress address = location.getCuboidAddress();
-					BlockAddress block = location.getBlockAddress();
-					BlockProxy proxy;
-					if (address.equals(airAddress))
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) ->
 					{
-						proxy = new BlockProxy(block, airCuboid);
-					}
-					else
-					{
-						Assert.assertTrue(address.equals(stoneAddress));
-						proxy = new BlockProxy(block, stoneCuboid);
-					}
-					return proxy;
-				}
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, null
-				, null
-				, worldConfig
-				, 100L
-		);
+						CuboidAddress address = location.getCuboidAddress();
+						BlockAddress block = location.getBlockAddress();
+						BlockProxy proxy;
+						if (address.equals(airAddress))
+						{
+							proxy = new BlockProxy(block, airCuboid);
+						}
+						else
+						{
+							Assert.assertTrue(address.equals(stoneAddress));
+							proxy = new BlockProxy(block, stoneCuboid);
+						}
+						return proxy;
+					}, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.assertNull(blockHolder[0]);
+							blockHolder[0] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					}, null)
+				.config(worldConfig)
+				.finish()
+		;
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);
@@ -842,35 +821,29 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
-		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId))
-				, null
-				, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-					{
-						Assert.assertNull(changeHolder[0]);
-						targetHolder[0] = targetEntityId;
-						changeHolder[0] = change;
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, (int bound) -> random.nextInt(bound)
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+						@Override
+						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+						{
+							Assert.assertNull(changeHolder[0]);
+							targetHolder[0] = targetEntityId;
+							changeHolder[0] = change;
+						}
+						@Override
+						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					})
+				.finish()
+		;
 		
 		// Check that the sword durability changed and that we scheduled the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
@@ -891,16 +864,10 @@ public class TestCommonChanges
 	public void entityPeriodic()
 	{
 		CommonChangeSink changeSink = new CommonChangeSink();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, null
-				, null
-				, changeSink
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.sinks(null, changeSink)
+				.finish()
+		;
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
@@ -1304,20 +1271,14 @@ public class TestCommonChanges
 				, (byte) 100
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
-		Random random = new Random();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, (Integer id) -> {
-					Assert.assertEquals(targetId, id.intValue());
-					return MinimalEntity.fromCreature(creature);
-				}
-				, null
-				, changeSink
-				, null
-				, (int bound) -> random.nextInt(bound)
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(null, (Integer id) -> {
+						Assert.assertEquals(targetId, id.intValue());
+						return MinimalEntity.fromCreature(creature);
+					})
+				.sinks(null, changeSink)
+				.finish()
+		;
 		
 		// Attack and verify that we see damage come through the creature path.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
@@ -1369,19 +1330,14 @@ public class TestCommonChanges
 				, (byte) 100
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
-		TickProcessingContext context = new TickProcessingContext(0L
-				, null
-				, (Integer id) -> {
-					Assert.assertEquals(targetId, id.intValue());
-					return MinimalEntity.fromCreature(creature);
-				}
-				, null
-				, changeSink
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(null, (Integer id) -> {
+						Assert.assertEquals(targetId, id.intValue());
+						return MinimalEntity.fromCreature(creature);
+					})
+				.sinks(null, changeSink)
+				.finish()
+		;
 		
 		// Feed the creature and verify that we see the apply scheduled.
 		Assert.assertTrue(new EntityChangeUseSelectedItemOnEntity(targetId).applyChange(context, entity));
@@ -1877,51 +1833,33 @@ public class TestCommonChanges
 	{
 		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone)
-				, null
-				, null
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _createSingleCuboidContext(CuboidData cuboid)
 	{
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> {
-					return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
-							? new BlockProxy(location.getBlockAddress(), cuboid)
-							: null
-					;
-				}
-				, null
-				, null
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+						return (location.getCuboidAddress().equals(cuboid.getCuboidAddress()))
+								? new BlockProxy(location.getBlockAddress(), cuboid)
+								: null
+						;
+					}, null)
+				.finish()
+		;
 		return context;
 	}
 
 	private static TickProcessingContext _createNextTick(TickProcessingContext context, long millisInTick)
 	{
-		return new TickProcessingContext(context.currentTick + 1L
-				, context.previousBlockLookUp
-				, context.previousEntityLookUp
-				, context.mutationSink
-				, context.newChangeSink
-				, context.idAssigner
-				, context.randomInt
-				, context.config
-				, millisInTick
-		);
+		return ContextBuilder.nextTick(context, 1L)
+				.millisPerTick(millisInTick)
+				.finish()
+		;
 	}
 
 	private void _runMutationInContext(CuboidData cuboid, _ContextHolder holder, Block expectedBlock)
@@ -1973,46 +1911,41 @@ public class TestCommonChanges
 		
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
 		{
-			Random random = new Random();
-			this.context = new TickProcessingContext(0L
-					, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-					, null
-					, allowBlockMutation ? new TickProcessingContext.IMutationSink() {
-						@Override
-						public void next(IMutationBlock mutation)
-						{
-							Assert.assertNull(_ContextHolder.this.mutation);
-							_ContextHolder.this.mutation = mutation;
-						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
-					} : null
-					, allowEntityChange ? new TickProcessingContext.IChangeSink() {
-						@Override
-						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-						{
-							Assert.assertNull(_ContextHolder.this.change);
-							_ContextHolder.this.change = change;
-						}
-						@Override
-						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
-						@Override
-						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-						{
-							Assert.fail("Not expected in tets");
-						}
-					} : null
-					, null
-					, (int bound) -> random.nextInt(bound)
-					, new WorldConfig()
-					, 100L
-			);
+			this.context = ContextBuilder.build()
+					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
+							@Override
+							public void next(IMutationBlock mutation)
+							{
+								Assert.assertNull(_ContextHolder.this.mutation);
+								_ContextHolder.this.mutation = mutation;
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not expected in tets");
+							}
+						} : null
+						, allowEntityChange ? new TickProcessingContext.IChangeSink() {
+							@Override
+							public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+							{
+								Assert.assertNull(_ContextHolder.this.change);
+								_ContextHolder.this.change = change;
+							}
+							@Override
+							public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+							{
+								Assert.fail("Not expected in tets");
+							}
+							@Override
+							public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+							{
+								Assert.fail("Not expected in tets");
+							}
+						} : null)
+					.finish()
+			;
 		}
 	}
 }

@@ -17,6 +17,7 @@ import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
@@ -24,7 +25,6 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -183,20 +183,11 @@ public class TestCreatureLogic
 
 	private static TickProcessingContext _createContext(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, int random)
 	{
-		TickProcessingContext context = new TickProcessingContext(1L
-				, previousBlockLookUp
-				, null
-				, null
-				, null
-				, null
-				, (int limit) -> {
-					// We will assert that the limit is greater than our number to verify it isn't unexpected.
-					Assert.assertTrue(limit > random);
-					return random;
-				}
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(previousBlockLookUp, null)
+				.fixedRandom(random)
+				.finish()
+		;
 		return context;
 	}
 

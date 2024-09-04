@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -199,16 +200,10 @@ public class TestEntityMovementHelpers
 					: new BlockProxy(block, CuboidGenerator.createFilledCuboid(address, STONE))
 			;
 		};
-		return new TickProcessingContext(1L
-				, previousBlockLookUp
-				, null
-				, null
-				, null
-				, null
-				, null
-				, null
-				, 100L
-		);
+		return ContextBuilder.build()
+				.lookups(previousBlockLookUp, null)
+				.finish()
+		;
 	}
 
 	private boolean _allowMovement(TickProcessingContext context, _Entity entity, long millisInMotion)

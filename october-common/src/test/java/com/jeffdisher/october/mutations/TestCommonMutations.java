@@ -16,6 +16,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -25,7 +26,6 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -62,21 +62,15 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> {
-					return cuboidAddress.equals(location.getCuboidAddress())
-							? new BlockProxy(location.getBlockAddress(), cuboid)
-							: null
-					;
-				}
-				, null
-				, null
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+						return cuboidAddress.equals(location.getCuboidAddress())
+								? new BlockProxy(location.getBlockAddress(), cuboid)
+								: null
+						;
+					}, null)
+				.finish()
+		;
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -211,26 +205,21 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_WEAK.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid)
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					}, null)
+				.finish()
+		;
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
@@ -263,30 +252,25 @@ public class TestCommonMutations
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		IMutationBlock[] holder = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						// We should see a delayed growth mutation.
-						Assert.assertEquals(10000L, millisToDelay);
-						Assert.assertNull(holder[0]);
-						holder[0] = mutation;
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							// We should see a delayed growth mutation.
+							Assert.assertEquals(10000L, millisToDelay);
+							Assert.assertNull(holder[0]);
+							holder[0] = mutation;
+						}
+					}, null)
+				.finish()
+		;
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -307,27 +291,22 @@ public class TestCommonMutations
 		
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.fail("Not expected in tets");
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						// We ignore this.
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							// We ignore this.
+						}
+					}, null)
+				.finish()
+		;
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
@@ -359,28 +338,23 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, sink.getBlockAddress(), chest.item().number());
 		
 		IMutationBlock[] outMutation = new IMutationBlock[1];
-		TickProcessingContext context = new TickProcessingContext(1L
-				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(outMutation[0]);
-						outMutation[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.assertNull(outMutation[0]);
+							outMutation[0] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					}, null)
+				.finish()
+		;
 		
 		MutationBlockPushToBlock mutation = new MutationBlockPushToBlock(source, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY, sink);
 		MutableBlockProxy sourceProxy = new MutableBlockProxy(source, cuboid);
@@ -426,48 +400,44 @@ public class TestCommonMutations
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
-			return new TickProcessingContext(1L
-					, (AbsoluteLocation blockLocation) -> {
-						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
-					}
-					, null
-					, new TickProcessingContext.IMutationSink() {
-						@Override
-						public void next(IMutationBlock mutation)
-						{
-							ProcessingSinks.this.nextMutation = mutation;
+			return ContextBuilder.build()
+					.lookups((AbsoluteLocation blockLocation) -> {
+							return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+						}, null)
+					.sinks(new TickProcessingContext.IMutationSink() {
+							@Override
+							public void next(IMutationBlock mutation)
+							{
+								ProcessingSinks.this.nextMutation = mutation;
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not expected in tets");
+							}
 						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
-					}
-					, new TickProcessingContext.IChangeSink() {
-						@Override
-						public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-						{
-							Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
-							Assert.assertNull(ProcessingSinks.this.nextChange);
-							ProcessingSinks.this.nextTargetEntityId = targetEntityId;
-							ProcessingSinks.this.nextChange = change;
-						}
-						@Override
-						public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
-						@Override
-						public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-						{
-							Assert.fail("Not expected in tets");
-						}
-					}
-					, null
-					, null
-					, new WorldConfig()
-					, 100L
-			);
+						, new TickProcessingContext.IChangeSink() {
+							@Override
+							public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+							{
+								Assert.assertEquals(0, ProcessingSinks.this.nextTargetEntityId);
+								Assert.assertNull(ProcessingSinks.this.nextChange);
+								ProcessingSinks.this.nextTargetEntityId = targetEntityId;
+								ProcessingSinks.this.nextChange = change;
+							}
+							@Override
+							public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+							{
+								Assert.fail("Not expected in tets");
+							}
+							@Override
+							public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+							{
+								Assert.fail("Not expected in tets");
+							}
+						})
+					.finish()
+			;
 		}
 	}
 }

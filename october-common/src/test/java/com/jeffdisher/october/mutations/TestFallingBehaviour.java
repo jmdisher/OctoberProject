@@ -13,13 +13,13 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -222,12 +222,12 @@ public class TestFallingBehaviour
 		// Use a new context with a new cuboid to show that the items fall if updated now.
 		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
-		context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: cuboidAddress1.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid1) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
+		context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
+						? new BlockProxy(location.getBlockAddress(), cuboid)
+						: cuboidAddress1.equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid1) : null
+					, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public void next(IMutationBlock mutation)
 						{
@@ -239,13 +239,9 @@ public class TestFallingBehaviour
 						{
 							Assert.fail("Not expected in tets");
 						}
-					}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+					}, null)
+				.finish()
+		;
 		proxy = new MutableBlockProxy(targetLocation, cuboid);
 		Assert.assertTrue(update.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
@@ -309,28 +305,23 @@ public class TestFallingBehaviour
 
 	private static TickProcessingContext _createTestContext(CuboidData cuboid, IMutationBlock[] blockHolder)
 	{
-		TickProcessingContext context = new TickProcessingContext(0L
-				, (AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null
-				, null
-				, new TickProcessingContext.IMutationSink() {
-					@Override
-					public void next(IMutationBlock mutation)
-					{
-						Assert.assertNull(blockHolder[0]);
-						blockHolder[0] = mutation;
-					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						Assert.fail("Not expected in tets");
-					}
-				}
-				, null
-				, null
-				, null
-				, new WorldConfig()
-				, 100L
-		);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.assertNull(blockHolder[0]);
+							blockHolder[0] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not expected in tets");
+						}
+					}, null)
+				.finish()
+		;
 		return context;
 	}
 }
