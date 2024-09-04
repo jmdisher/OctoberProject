@@ -108,13 +108,20 @@ public class ServerRunner
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
-		_monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
-			_tickRunner.enqueueOperatorMutation(clientId, command);
-		});
 		
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		_tickAdvancer = new _TickAdvancer();
 		_stateManager = new ServerStateManager(new _Callouts());
+		
+		// Register our various attachments into the monitoring agent.
+		_monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
+			_tickRunner.enqueueOperatorMutation(clientId, command);
+		});
+		_monitoringAgent.setConfigBroadcastRequester(() -> {
+			_messages.enqueue(() -> {
+				_stateManager.broadcastConfig(config);
+			});
+		});
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
 		_background.start();
@@ -346,6 +353,11 @@ public class ServerRunner
 		public void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)
 		{
 			_network.sendEndOfTick(clientId, tickNumber, latestLocalCommitIncluded);
+		}
+		@Override
+		public void network_sendConfig(int clientId, WorldConfig config)
+		{
+			_network.sendConfig(clientId, config);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

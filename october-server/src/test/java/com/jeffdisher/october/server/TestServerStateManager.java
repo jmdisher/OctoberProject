@@ -33,6 +33,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -355,6 +356,11 @@ public class TestServerStateManager
 		{
 			// For now, just track the commit number.
 			this.lastFinishedCommitPerClient.put(clientId, latestLocalCommitIncluded);
+		}
+		@Override
+		public void network_sendConfig(int clientId, WorldConfig config)
+		{
+			throw new AssertionError("network_sendConfig");
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

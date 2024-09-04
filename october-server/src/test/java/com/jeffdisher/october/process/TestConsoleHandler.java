@@ -160,4 +160,19 @@ public class TestConsoleHandler
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didCheck[0]);
 	}
+
+	@Test
+	public void setDayLength() throws Throwable
+	{
+		// Just verify that the call is sent.
+		InputStream in = new ByteArrayInputStream("!set_day_length 100\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		boolean[] didBroadcast = new boolean[1];
+		monitoringAgent.setConfigBroadcastRequester(() -> didBroadcast[0] = true);
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didBroadcast[0]);
+	}
 }

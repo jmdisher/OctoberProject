@@ -447,6 +447,41 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void configBroadcast() throws Throwable
+	{
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		WorldConfig config = new WorldConfig();
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, config
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		
+		// We need to attach a single client.
+		int clientId1 = 1;
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "name");
+		Entity entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// Now, we can request a broadcast.
+		monitoringAgent.requestConfigBroadcast();
+		WorldConfig foundConfig = network.waitForConfig();
+		
+		// This config should be the same one we passed in (the shared instance).
+		Assert.assertTrue(config == foundConfig);
+		
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
@@ -468,6 +503,7 @@ public class TestServerRunner
 		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
 		public long lastTick = 0L;
+		public WorldConfig config = null;
 		
 		// Internal interlock related to disconnect acks.
 		private int _pendingDisconnect = 0;
@@ -558,6 +594,15 @@ public class TestServerRunner
 				this.lastTick = tickNumber;
 				this.notifyAll();
 			}
+		}
+		@Override
+		public synchronized void sendConfig(int clientId, WorldConfig config)
+		{
+			// For now, we will assume that there is only one client for tests using this callback
+			Assert.assertNotNull(config);
+			Assert.assertNull(this.config);
+			this.config = config;
+			this.notifyAll();
 		}
 		@Override
 		public synchronized void disconnectClient(int clientId)
@@ -680,6 +725,14 @@ public class TestServerRunner
 			this.clientCuboidRemovedCount.remove(clientId);
 			_pendingDisconnect = 0;
 			this.notifyAll();
+		}
+		public synchronized WorldConfig waitForConfig() throws InterruptedException
+		{
+			while (null == this.config)
+			{
+				this.wait();
+			}
+			return this.config;
 		}
 	}
 }

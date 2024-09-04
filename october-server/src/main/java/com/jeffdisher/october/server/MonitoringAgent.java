@@ -22,6 +22,7 @@ public class MonitoringAgent
 	private volatile NetworkServer<?> _network;
 	private volatile TickRunner.Snapshot _lastSnapshot;
 	private volatile OperatorCommandSink _commandSink;
+	private volatile Runnable _configBroadcastRequester;
 
 	public void setNetwork(NetworkServer<?> network)
 	{
@@ -62,6 +63,16 @@ public class MonitoringAgent
 	public OperatorCommandSink getCommandSink()
 	{
 		return _commandSink;
+	}
+
+	public void setConfigBroadcastRequester(Runnable configBroadcastRequester)
+	{
+		_configBroadcastRequester = configBroadcastRequester;
+	}
+
+	public void requestConfigBroadcast()
+	{
+		_configBroadcastRequester.run();
 	}
 
 	public synchronized Map<Integer, String> getClientsCopy()

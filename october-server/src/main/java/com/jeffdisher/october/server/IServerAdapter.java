@@ -9,6 +9,7 @@ import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.WorldConfig;
 
 
 /**
@@ -105,6 +106,13 @@ public interface IServerAdapter
 	 * @param latestLocalCommitIncluded The latest local commit from the client which is included in this tick.
 	 */
 	void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
+	/**
+	 * Sends a config update packet to the given clientId, derived from the given config.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param config The config object (although this is a shared instance the receiver likely has).
+	 */
+	void sendConfig(int clientId, WorldConfig config);
 	/**
 	 * Disconnects the given client.  Note that the implementation may still send messages from them, after this call,
 	 * but will seek to disconnect them.

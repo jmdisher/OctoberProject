@@ -33,6 +33,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
+import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -209,6 +210,14 @@ public class ServerStateManager
 		}
 		
 		return new TickChanges(readOnlyCuboids, orphanedCuboids, newEntities, removedClients);
+	}
+
+	public void broadcastConfig(WorldConfig config)
+	{
+		for (Integer clientId : _connectedClients.keySet())
+		{
+			_callouts.network_sendConfig(clientId, config);
+		}
 	}
 
 	public void shutdown()
@@ -505,6 +514,7 @@ public class ServerStateManager
 		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
 		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
 		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
+		void network_sendConfig(int clientId, WorldConfig config);
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);

@@ -361,6 +361,12 @@ public class ServerProcess
 			}
 		}
 		@Override
+		public void sendConfig(int clientId, WorldConfig config)
+		{
+			Packet_ServerSendConfigUpdate packet = new Packet_ServerSendConfigUpdate(config.ticksPerDay, config.dayStartTick);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
 		public void disconnectClient(int clientId)
 		{
 			// We just pass this along since we will handle any state update when we see the disconnected callback (so there is only one relevant path).

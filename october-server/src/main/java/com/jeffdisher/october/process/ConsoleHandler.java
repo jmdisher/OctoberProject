@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.net.NetworkLayer;
@@ -310,6 +311,41 @@ public class ConsoleHandler
 			else
 			{
 				out.println("Usage:  <client_id> <x> <y> <z>");
+			}
+		}),
+		SET_DAY_LENGTH((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <tick_count>.
+			if (1 == parameters.length)
+			{
+				int ticksPerDay = _readInt(parameters[0], Integer.MIN_VALUE);
+				if (ticksPerDay > 0)
+				{
+					// Update the config and broadcast the change to the clients.
+					state.mutableSharedConfig.ticksPerDay = ticksPerDay;
+					state.monitoringAgent.requestConfigBroadcast();
+				}
+				else
+				{
+					out.println("Usage:  <tick_count>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <tick_count>");
+			}
+		}),
+		RESET_DAY((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect no parameters.
+			if (0 == parameters.length)
+			{
+				// We will reset the day start time based on the current tick value and broadcast the change.
+				long currentGameTick = state.monitoringAgent.getLastSnapshot().tickNumber();
+				state.mutableSharedConfig.dayStartTick = (int)PropagationHelpers.resumableStartTick(currentGameTick, state.mutableSharedConfig.ticksPerDay, state.mutableSharedConfig.dayStartTick);
+				state.monitoringAgent.requestConfigBroadcast();
+			}
+			else
+			{
+				out.println("Error:  No parameters expected");
 			}
 		}),
 		;
