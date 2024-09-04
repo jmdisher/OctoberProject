@@ -32,6 +32,7 @@ import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
@@ -41,6 +42,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -424,6 +426,18 @@ public class TickRunner
 					, (Integer entityId) -> (entityId > 0)
 						? MinimalEntity.fromEntity(thisTickMaterials.completedEntities.get(entityId))
 						: MinimalEntity.fromCreature(thisTickMaterials.completedCreatures.get(entityId))
+					, (AbsoluteLocation blockLocation) -> {
+						CuboidColumnAddress column = blockLocation.getCuboidAddress().getColumn();
+						BlockAddress blockAddress = blockLocation.getBlockAddress();
+						ColumnHeightMap map = thisTickMaterials.completedHeightMaps.get(column);
+						int highestBlock = map.getHeight(blockAddress.x(), blockAddress.y());
+						// If this is the highest block, return the light, otherwise 0.
+						byte skyLight = (blockLocation.z() == highestBlock)
+								? PropagationHelpers.currentSkyLightValue(thisTickMaterials.thisGameTick, config.ticksPerDay)
+								: 0
+						;
+						return skyLight;
+					}
 					, newMutationSink
 					, newChangeSink
 					, _idAssigner

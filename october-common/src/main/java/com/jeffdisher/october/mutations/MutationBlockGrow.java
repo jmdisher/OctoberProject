@@ -20,6 +20,7 @@ public class MutationBlockGrow implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.GROW;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
+	public static final byte MIN_LIGHT = 5;
 
 	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -59,8 +60,10 @@ public class MutationBlockGrow implements IMutationBlock
 			if (!canGrow)
 			{
 				// See if the random generator says we should grow this tick or try again later.
+				// We will only bother if the block is lit.
+				boolean isLit = (newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.apply(_location) >= MIN_LIGHT);
 				int randomBits = context.randomInt.applyAsInt(growthDivisor);
-				canGrow = (1 == randomBits);
+				canGrow = isLit && (1 == randomBits);
 			}
 			if (canGrow)
 			{

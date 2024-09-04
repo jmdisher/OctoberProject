@@ -693,6 +693,7 @@ public class SpeculativeProjection
 				, (Integer entityId) -> (_localEntityId == entityId)
 					? MinimalEntity.fromEntity(_thisShadowEntity)
 					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+				, null
 				, newMutationSink
 				, newChangeSink
 				// We never spawn creatures on the client so no ID assigner.

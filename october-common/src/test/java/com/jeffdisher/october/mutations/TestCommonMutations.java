@@ -16,6 +16,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -389,6 +390,68 @@ public class TestCommonMutations
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(lampOn, proxy.getBlock());
+	}
+
+	@Test
+	public void wheatGrowth()
+	{
+		// We will place a wheat seedling and run a MutationBlockGrow mutation against it to verify it checks the right things with/without light.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)0), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), wheatSeedling.item().number());
+		
+		// First, we want to make sure that the wheat fails to grow due to darkness.
+		long[] delayContainer = new long[1];
+		MutationBlockGrow[] container = new MutationBlockGrow[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
+				.sinks(new TickProcessingContext.IMutationSink() {
+							@Override
+							public void next(IMutationBlock mutation)
+							{
+								Assert.fail("Not expected in tets");
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.assertEquals(0L, delayContainer[0]);
+								Assert.assertNull(container[0]);
+								delayContainer[0] = millisToDelay;
+								container[0] = (MutationBlockGrow) mutation;
+							}
+						}
+						, null)
+				.fixedRandom(1)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockGrow mutation = new MutationBlockGrow(target, false);
+		boolean didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
+		Assert.assertNotNull(container[0]);
+		
+		// Now, show that it works if there is light.
+		delayContainer[0] = 0L;
+		container[0] = null;
+		context = ContextBuilder.nextTick(context, 1L)
+				.skyLight((AbsoluteLocation blockLocation) -> MutationBlockGrow.MIN_LIGHT)
+				.finish()
+		;
+		didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(wheatYoung, proxy.getBlock());
+		Assert.assertEquals(MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
+		Assert.assertNotNull(container[0]);
 	}
 
 

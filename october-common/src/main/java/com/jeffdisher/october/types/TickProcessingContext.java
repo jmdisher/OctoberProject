@@ -35,6 +35,13 @@ public class TickProcessingContext
 	public final Function<Integer, MinimalEntity> previousEntityLookUp;
 
 	/**
+	 * Looks up the sky light landing on the block at the given location as of the previous tick.
+	 * Note that this means the sky light will account for the current time of day as well as the height map, such that
+	 * only the highest non-air block in the z-column will return non-0 (everything above and below is always 0).
+	 */
+	public final Function<AbsoluteLocation, Byte> skyLight;
+
+	/**
 	 * The consumer of any new block mutations produced as a side-effect of this operation (will be scheduled in a
 	 * future tick - never this one).
 	 */
@@ -66,6 +73,7 @@ public class TickProcessingContext
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
+			, Function<AbsoluteLocation, Byte> skyLight
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
 			, CreatureIdAssigner idAssigner
@@ -77,6 +85,7 @@ public class TickProcessingContext
 		this.currentTick = currentTick;
 		this.previousBlockLookUp = previousBlockLookUp;
 		this.previousEntityLookUp = previousEntityLookUp;
+		this.skyLight = skyLight;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
 		this.idAssigner = idAssigner;

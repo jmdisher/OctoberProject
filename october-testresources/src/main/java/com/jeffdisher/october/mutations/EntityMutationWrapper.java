@@ -29,6 +29,7 @@ public class EntityMutationWrapper implements IEntityUpdate
 		TickProcessingContext override = new TickProcessingContext(context.currentTick
 				, context.previousBlockLookUp
 				, context.previousEntityLookUp
+				, context.skyLight
 				, context.mutationSink
 				, context.newChangeSink
 				, context.idAssigner

@@ -41,6 +41,7 @@ public class FakeBlockUpdate
 		TickProcessingContext context = new TickProcessingContext(0L
 				, previousBlockLookUp
 				, null
+				, null
 				, new TickProcessingContext.IMutationSink()
 				{
 					@Override
