@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -174,6 +175,31 @@ public class TestServerStateManager
 		manager.shutdown();
 	}
 
+	@Test
+	public void disconnectWhileReadable()
+	{
+		// Connect a client, mark them as readable, then disconnect them, finally end a tick.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		int clientId = 1;
+		manager.clientConnected(clientId);
+		boolean[] connectedRef = new boolean[] {true};
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// We need to setup the callouts to not fully satisfy this.
+		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(null, 1L);
+		callouts.peekHandler = (Packet_MutationEntityFromClient toRemove) -> {
+			Assert.assertTrue(connectedRef[0]);
+			return packet;
+		};
+		
+		manager.clientReadReady(clientId);
+		manager.clientDisconnected(clientId);
+		connectedRef[0] = false;
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -279,6 +305,8 @@ public class TestServerStateManager
 		public Set<PackagedCuboid> cuboidsToWrite = new HashSet<>();
 		public Set<SuspendedEntity> entitiesToWrite = new HashSet<>();
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
+		public Function<Packet_MutationEntityFromClient, Packet_MutationEntityFromClient> peekHandler = null;
+		public boolean didEnqueue = false;
 		
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
@@ -309,7 +337,7 @@ public class TestServerStateManager
 		@Override
 		public Packet_MutationEntityFromClient network_peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
 		{
-			throw new AssertionError("networkPeekOrRemoveNextMutationFromClient");
+			return peekHandler.apply(toRemove);
 		}
 		@Override
 		public void network_sendFullEntity(int clientId, Entity entity)
@@ -365,7 +393,7 @@ public class TestServerStateManager
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
-			throw new AssertionError("runnerEnqueueEntityChange");
+			return this.didEnqueue;
 		}
 	}
 }

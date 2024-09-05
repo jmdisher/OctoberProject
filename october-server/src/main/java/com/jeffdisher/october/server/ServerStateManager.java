@@ -92,6 +92,8 @@ public class ServerStateManager
 		_connectedClients.remove(clientId);
 		// We also want to add them to the list of clients which must be unloaded in the logic engine.
 		_removedClients.add(clientId);
+		// Make sure that we won't try to read this.
+		_clientsToRead.remove(clientId);
 		System.out.println("Client disconnected: " + clientId);
 	}
 
@@ -170,6 +172,9 @@ public class ServerStateManager
 			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
 			List<Entity> entitiesToPackage = removedClients.stream().map(
 					(Integer id) -> snapshot.completedEntities().get(id)
+			).filter(
+					// Note that these entities might be missing if they disconnect before they appear in a snapshot (very unusual but can happen in unit tests).
+					(Entity entity) -> (null != entity)
 			).toList();
 			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
 			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
