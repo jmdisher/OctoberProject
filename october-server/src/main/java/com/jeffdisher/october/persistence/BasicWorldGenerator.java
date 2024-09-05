@@ -60,6 +60,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	public static final int MASK_XCENTRE = 0x03E00000;
 	public static final int SHIFT_XCENTRE = 21;
 	public static final int WATER_Z_LEVEL = 0;
+	public static final int STONE_PEAK_Z_LEVEL = 16;
 
 	public static final char FOREST_CODE = 'R';
 	public static final char FIELD_CODE = 'F';
@@ -131,7 +132,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			),
 	};
 
-	public static final int COAL_NODES_PER_CUBOID_COLUMN = 4;
+	public static final int COAL_NODES_PER_CUBOID_COLUMN = 10;
 	public static final int COAL_MIN_Z = -50;
 	public static final int COAL_MAX_Z = 20;
 	public static final String[] COAL_NODE = new String[] {""
@@ -141,7 +142,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 			+ "AA\n"
 			+ "AA\n"
 	};
-	public static final int IRON_NODES_PER_CUBOID_COLUMN = 2;
+	public static final int IRON_NODES_PER_CUBOID_COLUMN = 10;
 	public static final int IRON_MIN_Z = -100;
 	public static final int IRON_MAX_Z = -10;
 	public static final String[] IRON_NODE = new String[] {""
@@ -276,8 +277,17 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 					}
 					else
 					{
-						// This is dirt since it IS the top.
-						blockToWrite = _blockDirt;
+						// We want to make sure that peaks generate without dirt on them so we apply this extra check.
+						if (thisZ >= STONE_PEAK_Z_LEVEL)
+						{
+							// Stone peak.
+							blockToWrite = _blockStone;
+						}
+						else
+						{
+							// Dirt surface.
+							blockToWrite = _blockDirt;
+						}
 					}
 					if (blockToWrite != defaultBlock)
 					{

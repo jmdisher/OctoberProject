@@ -220,13 +220,13 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)-1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32721, 20, 27, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32643, 44, 81, 0, 0, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
 		address = new CuboidAddress((short)5, (short)1, (short)0);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32756, 12, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32736, 32, 0, 0, 0, 0, 0, 0);
 		
 		// This one is too deep for either.
 		address = new CuboidAddress((short)5, (short)1, (short)-5);
@@ -258,7 +258,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6055, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
+		_checkBlockTypes(cuboid, 6039, 16, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
 	}
 
 	@Test
@@ -284,7 +284,7 @@ public class TestBasicWorldGenerator
 		// Verify the wheat field.
 		// This is a large field (55 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 5078, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
+		_checkBlockTypes(cuboid, 5066, 12, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
