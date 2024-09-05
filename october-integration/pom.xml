@@ -43,4 +43,37 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<!--  We create a stand-alone jar for each of our test and utility programs. -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>AutoWalkingClient</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>AutoWalkingClient</finalName>
+							<archive>
+								<manifest>
+									<mainClass>com.jeffdisher.october.integration.AutoWalkingClient</mainClass>
+								</manifest>
+							</archive>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

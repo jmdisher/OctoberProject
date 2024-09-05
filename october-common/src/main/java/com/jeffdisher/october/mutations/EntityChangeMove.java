@@ -97,7 +97,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	{
 		boolean didApply = false;
 		
-		if ((_millisInMotion > 0) && (_millisInMotion <= LIMIT_COST_MILLIS) && (Direction.ERROR != _direction))
+		if ((_millisInMotion > 0) && (_millisInMotion <= LIMIT_COST_MILLIS))
 		{
 			// Find our speed and determine the components of movement.
 			float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
@@ -121,7 +121,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 				xComponent = -1.0f;
 				yComponent = 0.0f;
 				break;
-			case ERROR:
 			default:
 				throw Assert.unreachable();
 			}
@@ -165,7 +164,6 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 	 */
 	public static enum Direction
 	{
-		ERROR,
 		NORTH,
 		EAST,
 		SOUTH,
