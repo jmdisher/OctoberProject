@@ -330,8 +330,8 @@ public class TestProcesses
 		server.stop();
 		
 		// Verify that we did see a config update packet at some point here.
-		Assert.assertEquals(1000, listener1.ticksPerDay);
-		Assert.assertEquals(1000, listener2.ticksPerDay);
+		Assert.assertEquals(WorldConfig.DEFAULT_TICKS_PER_DAY, listener1.ticksPerDay);
+		Assert.assertEquals(WorldConfig.DEFAULT_TICKS_PER_DAY, listener2.ticksPerDay);
 	}
 
 	@Test
@@ -384,7 +384,7 @@ public class TestProcesses
 		server.stop();
 		
 		// Verify that we did see a config update packet at some point here.
-		Assert.assertEquals(1000, listener.ticksPerDay);
+		Assert.assertEquals(WorldConfig.DEFAULT_TICKS_PER_DAY, listener.ticksPerDay);
 	}
 
 

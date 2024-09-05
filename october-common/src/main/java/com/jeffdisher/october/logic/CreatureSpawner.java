@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 /**
@@ -124,55 +125,74 @@ public class CreatureSpawner
 	)
 	{
 		// Pick a random location in this cuboid.
-		byte x = (byte)context.randomInt.applyAsInt(32);
-		byte y = (byte)context.randomInt.applyAsInt(32);
-		byte z = (byte)context.randomInt.applyAsInt(32);
+		byte x = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
+		byte y = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
+		byte z = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
 		
+		// We will first skip past any blocks which are clearly above the height map.
+		int highestBlockZ = heightMap.getHeight(x, y);
 		AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
-		AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, z);
+		int baseZ = cuboidBase.z();
+		int thisAttemptZ = baseZ + z;
+		thisAttemptZ = Math.min(thisAttemptZ, highestBlockZ + 1);
+		AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, (byte)(thisAttemptZ - baseZ));
 		
 		// We want to slide down through this cuboid until we reach solid ground.
-		int baseZ = cuboidBase.z();
 		Environment env = Environment.getShared();
 		byte skyLightValue = PropagationHelpers.currentSkyLightValue(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
 		AbsoluteLocation goodSpawningLocation = null;
 		while ((null == goodSpawningLocation) && (checkSpawningLocation.z() >= baseZ))
 		{
-			// See if this location is on a solid block, in the dark, and permits spawning.
-			AbsoluteLocation baseLocation = checkSpawningLocation.getRelative(0, 0, -1);
-			BlockProxy base = context.previousBlockLookUp.apply(baseLocation);
-			boolean isSolid = (null != base)
-					? env.blocks.isSolid(base.getBlock())
-					: false
-			;
-			if (isSolid)
+			// We need to check not just the spawning location but the block under.
+			AbsoluteLocation blockUnderLocation = checkSpawningLocation.getRelative(0, 0, -1);
+			
+			// Make sure that this is an air block.
+			BlockProxy thisBlock = context.previousBlockLookUp.apply(checkSpawningLocation);
+			boolean isAirBlock = (env.special.AIR == thisBlock.getBlock());
+			if (isAirBlock)
 			{
-				byte blockLight = context.previousBlockLookUp.apply(checkSpawningLocation).getLight();
-				// IF the spawning base is the highest block in the column, then apply the sky light.
-				byte skyLight = (baseLocation.z() == (heightMap.getHeight(x, y)))
-						? skyLightValue
-						: 0
+				// See if we are spawning on a solid block.
+				BlockProxy base = context.previousBlockLookUp.apply(blockUnderLocation);
+				boolean isBaseSolid = (null != base)
+						? env.blocks.isSolid(base.getBlock())
+						: false
 				;
-				byte sum = (byte)(blockLight + skyLight);
-				byte totalLight = (sum > LightAspect.MAX_LIGHT)
-						? LightAspect.MAX_LIGHT
-						: sum
-				;
-				boolean isDark = ((byte)0 == totalLight);
-				
-				// We only spawn in the dark.
-				if (isDark)
+				if (isBaseSolid)
 				{
-					goodSpawningLocation = checkSpawningLocation;
+					// We now need to check the lighting (using the sum of block light and sky light).
+					byte blockLight = thisBlock.getLight();
+					byte skyLight = (blockUnderLocation.z() == highestBlockZ)
+							? skyLightValue
+							: 0
+					;
+					byte sum = (byte)(blockLight + skyLight);
+					byte totalLight = (sum > LightAspect.MAX_LIGHT)
+							? LightAspect.MAX_LIGHT
+							: sum
+					;
+					boolean isDark = ((byte)0 == totalLight);
+					
+					if (isDark)
+					{
+						// This is dark so we can spawn.
+						goodSpawningLocation = checkSpawningLocation;
+					}
+					else
+					{
+						// Too dark so keep sliding down.
+						checkSpawningLocation = blockUnderLocation;
+					}
 				}
 				else
 				{
-					checkSpawningLocation = baseLocation;
+					// Keep going down and see if we find a solid block somewhere else.
+					checkSpawningLocation = blockUnderLocation;
 				}
 			}
 			else
 			{
-				checkSpawningLocation = baseLocation;
+				// This isn't something we can spawn in so keep shifting down.
+				checkSpawningLocation = blockUnderLocation;
 			}
 		}
 		

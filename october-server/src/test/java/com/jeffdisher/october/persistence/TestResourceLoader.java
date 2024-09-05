@@ -488,7 +488,7 @@ public class TestResourceLoader
 		File configFile = new File(resourceDirectory, "config.tablist");
 		String rawData = Files.readString(configFile.toPath());
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
-		Assert.assertTrue(rawData.contains("ticks_per_day\t1000\n"));
+		Assert.assertTrue(rawData.contains("ticks_per_day\t12000\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"

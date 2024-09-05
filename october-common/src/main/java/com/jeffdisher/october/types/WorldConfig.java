@@ -48,6 +48,10 @@ public class WorldConfig
 	 * The number of ticks per day (must be > 0).
 	 */
 	public static final String KEY_TICKS_PER_DAY = "ticks_per_day";
+	/**
+	 * We currently run at 1 tick per 100ms so this will give us 20 minutes in a day.
+	 */
+	public static final int DEFAULT_TICKS_PER_DAY = 12_000;
 	public volatile int ticksPerDay;
 
 	/**
@@ -67,8 +71,7 @@ public class WorldConfig
 		// We default the seed to a random int.
 		this.basicSeed = new Random().nextInt();
 		this.worldSpawn = new AbsoluteLocation(0, 0, 0);
-		// We currently run at 1 tick per 100ms so this will give us 100 seconds in a day.
-		this.ticksPerDay = 1000;
+		this.ticksPerDay = DEFAULT_TICKS_PER_DAY;
 		// Default to 0 as the start tick (the brightest part of the day).
 		this.dayStartTick = 0;
 	}

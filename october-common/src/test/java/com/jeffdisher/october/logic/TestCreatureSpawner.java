@@ -188,14 +188,20 @@ public class TestCreatureSpawner
 
 	private static TickProcessingContext _createSunnyContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
 	{
-		// We will pick tick 1000 since it will be bright.
-		return _createContextWithTick(1000L, world, randomValue);
+		// We will pick tick 0 since it will be bright.
+		WorldConfig defaults = new WorldConfig();
+		long startTick = 0L;
+		Assert.assertEquals((byte)15, PropagationHelpers.currentSkyLightValue(startTick, defaults.ticksPerDay, defaults.dayStartTick));
+		return _createContextWithTick(startTick, world, randomValue);
 	}
 
 	private static TickProcessingContext _createContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
 	{
 		// By default, we will use darkest time of day.
-		return _createContextWithTick(500L, world, randomValue);
+		WorldConfig defaults = new WorldConfig();
+		long startTick = defaults.ticksPerDay / 2;
+		Assert.assertEquals((byte)0, PropagationHelpers.currentSkyLightValue(startTick, defaults.ticksPerDay, defaults.dayStartTick));
+		return _createContextWithTick(startTick, world, randomValue);
 	}
 
 	private static TickProcessingContext _createContextWithTick(long gameTick, Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
