@@ -1,7 +1,6 @@
 package com.jeffdisher.october.persistence;
 
 import java.util.List;
-import java.util.function.BiFunction;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -16,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
@@ -26,7 +26,7 @@ import com.jeffdisher.october.worldgen.StructureLoader;
  * A relatively simple world generator, designed to include the basic block types supported.
  * We also drop other miscellaneous items to make testing easier in the 0,0,0 cuboid.
  */
-public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> 
+public class FlatWorldGenerator implements IWorldGenerator
 {
 	// We want to generate a basic starting structure around the world centre.  For now, we just build that from a static string.
 	public static final String[] STRUCTURE = new String[] {""
@@ -63,7 +63,7 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 	}
 
 	@Override
-	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		Environment env = Environment.getShared();
 		// We will store the block types in the negative z blocks, but leave the non-negative blocks full or air.
@@ -144,6 +144,12 @@ public class FlatWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboid
 				, entities
 				, mutations
 		);
+	}
+
+	@Override
+	public EntityLocation getDefaultSpawnLocation()
+	{
+		return new EntityLocation(0.0f, 0.0f, 0.0f);
 	}
 
 

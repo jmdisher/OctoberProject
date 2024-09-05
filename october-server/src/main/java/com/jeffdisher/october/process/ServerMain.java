@@ -6,6 +6,8 @@ import java.io.IOException;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.persistence.BasicWorldGenerator;
+import com.jeffdisher.october.persistence.FlatWorldGenerator;
+import com.jeffdisher.october.persistence.IWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
@@ -37,7 +39,18 @@ public class ServerMain
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
 				boolean didLoadConfig = ResourceLoader.populateWorldConfig(worldDirectory, config);
-				BasicWorldGenerator worldGen = new BasicWorldGenerator(env, config.basicSeed);
+				IWorldGenerator worldGen;
+				switch (config.worldGeneratorName)
+				{
+				case BASIC:
+					worldGen = new BasicWorldGenerator(env, config.basicSeed);
+					break;
+				case FLAT:
+					worldGen = new FlatWorldGenerator(true);
+					break;
+					default:
+						throw Assert.unreachable();
+				}
 				if (!didLoadConfig)
 				{
 					// There is no config so ask the world-gen for the default spawn.

@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiFunction;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
@@ -61,7 +60,7 @@ public class ResourceLoader
 	public static final float ENTITY_DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 
 	private final File _saveDirectory;
-	private final BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> _cuboidGenerator;
+	private final IWorldGenerator _cuboidGenerator;
 	private final EntityLocation _playerSpawnLocation;
 	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
@@ -77,7 +76,7 @@ public class ResourceLoader
 	private Collection<SuspendedEntity> _shared_resolvedEntities;
 
 	public ResourceLoader(File saveDirectory
-			, BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> cuboidGenerator
+			, IWorldGenerator cuboidGenerator
 			, EntityLocation playerSpawnLocation
 	)
 	{
@@ -179,7 +178,7 @@ public class ResourceLoader
 						}
 						else if (null != _cuboidGenerator)
 						{
-							data = _cuboidGenerator.apply(this.creatureIdAssigner, address);
+							data = _cuboidGenerator.generateCuboid(this.creatureIdAssigner, address);
 						}
 					}
 					// If we found anything, return it.

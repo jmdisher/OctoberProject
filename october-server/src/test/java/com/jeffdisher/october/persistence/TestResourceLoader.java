@@ -336,15 +336,24 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		MutationBlockOverwrite test = new MutationBlockOverwrite(new AbsoluteLocation(1, 2, 3), STONE);
-		ResourceLoader loader = new ResourceLoader(worldDirectory, (CreatureIdAssigner assigner, CuboidAddress address) -> {
-			CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-			return new SuspendedCuboid<CuboidData>(cuboid
-					, HeightMapHelpers.buildHeightMap(cuboid)
-					, List.of()
-					, List.of(
-							new ScheduledMutation(test, 100L)
-					)
-			);
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new IWorldGenerator() {
+			@Override
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			{
+				CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+				return new SuspendedCuboid<CuboidData>(cuboid
+						, HeightMapHelpers.buildHeightMap(cuboid)
+						, List.of()
+						, List.of(
+								new ScheduledMutation(test, 100L)
+						)
+				);
+			}
+			@Override
+			public EntityLocation getDefaultSpawnLocation()
+			{
+				throw new AssertionError("Not in test");
+			}
 		}, null);
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(new CuboidAddress((short)1, (short)2, (short)3)), List.of());
@@ -493,6 +502,7 @@ public class TestResourceLoader
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"
 				+ "ticks_per_day\t2000\n"
+				+ "world_generator_name\tBASIC\n"
 		;
 		Files.writeString(configFile.toPath(), fileToWrite);
 		loader = new ResourceLoader(resourceDirectory, null, null);
@@ -502,6 +512,7 @@ public class TestResourceLoader
 		Assert.assertEquals(-465342154, config.basicSeed);
 		Assert.assertEquals(new AbsoluteLocation(5, 6, 7), config.worldSpawn);
 		Assert.assertEquals(2000, config.ticksPerDay);
+		Assert.assertEquals(WorldConfig.WorldGeneratorName.BASIC, config.worldGeneratorName);
 		loader.shutdown();
 	}
 

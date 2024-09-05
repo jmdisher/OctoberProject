@@ -61,6 +61,13 @@ public class WorldConfig
 	public volatile int dayStartTick;
 
 	/**
+	 * We use some special constants for this, describing the name of the generator:  "BASIC", "FLAT".
+	 * BASIC should always be used in actual play but FLAT is provided for some testing cases.
+	 */
+	public static final String KEY_WORLD_GENERATOR_NAME = "world_generator_name";
+	public volatile WorldGeneratorName worldGeneratorName;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -74,6 +81,7 @@ public class WorldConfig
 		this.ticksPerDay = DEFAULT_TICKS_PER_DAY;
 		// Default to 0 as the start tick (the brightest part of the day).
 		this.dayStartTick = 0;
+		this.worldGeneratorName = WorldGeneratorName.BASIC;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -115,6 +123,10 @@ public class WorldConfig
 			this.dayStartTick = Integer.parseInt(overrides.get(KEY_DAY_START_TICK));
 			Assert.assertTrue(this.dayStartTick >= 0);
 		}
+		if (overrides.containsKey(KEY_WORLD_GENERATOR_NAME))
+		{
+			this.worldGeneratorName = WorldGeneratorName.valueOf(overrides.get(KEY_WORLD_GENERATOR_NAME));
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -128,6 +140,14 @@ public class WorldConfig
 				, KEY_WORLD_SPAWN, worldSpawn
 				, KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay)
 				, KEY_DAY_START_TICK, Integer.toString(this.dayStartTick)
+				, KEY_WORLD_GENERATOR_NAME, this.worldGeneratorName.name()
 		);
+	}
+
+
+	public static enum WorldGeneratorName
+	{
+		BASIC,
+		FLAT,
 	}
 }

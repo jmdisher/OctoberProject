@@ -115,7 +115,7 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)0, (short)0, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)0, (short)0, (short)0));
 		CuboidData cuboid = suspended.cuboid();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
@@ -256,7 +256,7 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-10, (short)-9, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
 		_checkBlockTypes(cuboid, 6039, 16, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
 	}
@@ -279,7 +279,7 @@ public class TestBasicWorldGenerator
 		// We know that this cuboid has a gully in a field biome so it will contain wheat.
 		// (this will spawn cows so make sure we have an ID assigner).
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
-		SuspendedCuboid<CuboidData> suspended = generator.apply(creatureIdAssigner, new CuboidAddress((short)-10, (short)9, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, new CuboidAddress((short)-10, (short)9, (short)0));
 		
 		// Verify the wheat field.
 		// This is a large field (55 in gully + 4).
@@ -302,7 +302,7 @@ public class TestBasicWorldGenerator
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		// We know that this cuboid has a gully in a meadow biome so it will contain carrots.
-		SuspendedCuboid<CuboidData> suspended = generator.apply(null, new CuboidAddress((short)-9, (short)-5, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-9, (short)-5, (short)0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a small field (3 in gully + 3).
 		_checkBlockTypes(cuboid, 9129, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);

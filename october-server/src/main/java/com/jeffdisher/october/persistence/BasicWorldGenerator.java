@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.BiFunction;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -49,7 +48,7 @@ import com.jeffdisher.october.worldgen.StructureLoader;
  * more traditional noise-based generator.  For now, it allows for a smooth terrain which is at least not repetitive or
  * manually defined.
  */
-public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, CuboidAddress, SuspendedCuboid<CuboidData>> 
+public class BasicWorldGenerator implements IWorldGenerator
 {
 	public static final int MASK_HEIGHT  = 0x00000F00;
 	public static final int SHIFT_HEIGHT  = 8;
@@ -205,7 +204,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 	}
 
 	@Override
-	public SuspendedCuboid<CuboidData> apply(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
@@ -340,14 +339,7 @@ public class BasicWorldGenerator implements BiFunction<CreatureIdAssigner, Cuboi
 		);
 	}
 
-	/**
-	 * This just returns a "reasonable" spawn location in the world but where the target starting location is is handled
-	 * purely internally.
-	 * Currently, this just returns a location in the 0,0 column which is standing on the ground where the world
-	 * would be generated (since it cannot account for changes since the world was generated).
-	 * 
-	 * @return The location where new entities can be reasonably spawned.
-	 */
+	@Override
 	public EntityLocation getDefaultSpawnLocation()
 	{
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, (short)0, (short)0);
