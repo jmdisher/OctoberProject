@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.utils.Assert;
 
@@ -71,6 +72,7 @@ public class NetworkLayer
 	private final IListener _listener;
 	private final Selector _selector;
 	private final IdentityHashMap<PeerToken, _PeerState> _connectedPeers;
+	private final ReentrantLock _lock;
 
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
@@ -96,6 +98,7 @@ public class NetworkLayer
 		_listener = listener;
 		_selector = Selector.open();
 		_connectedPeers = new IdentityHashMap<>();
+		_lock = new ReentrantLock();
 		
 		// Initialize shared data.
 		_keepRunning = true;
@@ -187,16 +190,24 @@ public class NetworkLayer
 	 * @param peer The target of the message.
 	 * @param packet The message to serialize and send.
 	 */
-	public synchronized void sendMessage(PeerToken peer, Packet packet)
+	public void sendMessage(PeerToken peer, Packet packet)
 	{
-		// This should only be enqueued if we there was nothing there and we notified them.
-		if (null == _shared_outgoingPackets)
+		try
 		{
-			_shared_outgoingPackets = new IdentityHashMap<>();
+			_lock.lock();
+			// This should only be enqueued if we there was nothing there and we notified them.
+			if (null == _shared_outgoingPackets)
+			{
+				_shared_outgoingPackets = new IdentityHashMap<>();
+			}
+			Assert.assertTrue(!_shared_outgoingPackets.containsKey(peer));
+			_shared_outgoingPackets.put(peer, packet);
+			_selector.wakeup();
 		}
-		Assert.assertTrue(!_shared_outgoingPackets.containsKey(peer));
-		_shared_outgoingPackets.put(peer, packet);
-		_selector.wakeup();
+		finally
+		{
+			_lock.unlock();
+		}
 	}
 
 	/**
@@ -205,20 +216,28 @@ public class NetworkLayer
 	 * 
 	 * @param peer The target of the message.
 	 */
-	public synchronized List<Packet> receiveMessages(PeerToken peer)
+	public List<Packet> receiveMessages(PeerToken peer)
 	{
-		// This should only be called if there are packets to receive.
-		List<Packet> packets = _shared_incomingPackets.remove(peer);
-		Assert.assertTrue(packets.size() > 0);
-		
-		// We need to record that this peer should start reading again.
-		if (null == _shared_resumeReads)
+		try
 		{
-			_shared_resumeReads = new HashSet<>();
+			_lock.lock();
+			// This should only be called if there are packets to receive.
+			List<Packet> packets = _shared_incomingPackets.remove(peer);
+			Assert.assertTrue(packets.size() > 0);
+			
+			// We need to record that this peer should start reading again.
+			if (null == _shared_resumeReads)
+			{
+				_shared_resumeReads = new HashSet<>();
+			}
+			_shared_resumeReads.add(peer);
+			_selector.wakeup();
+			return packets;
 		}
-		_shared_resumeReads.add(peer);
-		_selector.wakeup();
-		return packets;
+		finally
+		{
+			_lock.unlock();
+		}
 	}
 
 	/**
@@ -226,14 +245,22 @@ public class NetworkLayer
 	 * 
 	 * @param token The peer to disconnect.
 	 */
-	public synchronized void disconnectPeer(PeerToken token)
+	public void disconnectPeer(PeerToken token)
 	{
-		if (null == _shared_disconnectRequests)
+		try
 		{
-			_shared_disconnectRequests = new LinkedList<>();
+			_lock.lock();
+			if (null == _shared_disconnectRequests)
+			{
+				_shared_disconnectRequests = new LinkedList<>();
+			}
+			_shared_disconnectRequests.add(token);
+			_selector.wakeup();
 		}
-		_shared_disconnectRequests.add(token);
-		_selector.wakeup();
+		finally
+		{
+			_lock.unlock();
+		}
 	}
 
 
@@ -257,8 +284,11 @@ public class NetworkLayer
 			IdentityHashMap<PeerToken, Packet> packetsToSerialize;
 			Queue<PeerToken> peersToDisconnect;
 			Set<PeerToken> readsToResume;
-			synchronized (this)
+			// We want to notify the listener outside of the lock so we build this list.
+			List<PeerToken> peersToNotify = new ArrayList<>();
+			try
 			{
+				_lock.lock();
 				packetsToSerialize = _shared_outgoingPackets;
 				_shared_outgoingPackets = null;
 				peersToDisconnect = _shared_disconnectRequests;
@@ -275,11 +305,20 @@ public class NetworkLayer
 						Assert.assertTrue(!_shared_incomingPackets.containsKey(peer));
 						_shared_incomingPackets.put(peer, elt.getValue());
 						// We also want to notify that they have data to read.
-						// (we could walk this outside of the monitor but avoiding the redundant walk is probably better)
-						_listener.peerReadyForRead(peer);
+						peersToNotify.add(peer);
 					}
 				}
 			}
+			finally
+			{
+				_lock.unlock();
+			}
+			// Notify any readable listeners.
+			for (PeerToken peer : peersToNotify)
+			{
+				_listener.peerReadyForRead(peer);
+			}
+			
 			// Re-enable reads.
 			if (null != readsToResume)
 			{
