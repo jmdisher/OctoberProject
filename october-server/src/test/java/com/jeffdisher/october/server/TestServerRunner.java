@@ -14,9 +14,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
@@ -27,9 +31,13 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
+import com.jeffdisher.october.persistence.IWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
@@ -43,6 +51,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestServerRunner
@@ -390,7 +399,9 @@ public class TestServerRunner
 	{
 		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
+		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
+		_SkyBlockGenerator cuboidGenerator = new _SkyBlockGenerator();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		WorldConfig config = new WorldConfig();
 		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
@@ -411,12 +422,9 @@ public class TestServerRunner
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
-		// Verify that we see the appropriate creatures - we expect 18 cows (2 for each surface cuboid around us).
-		for (int i = -2; i >= -18; i -= 1)
-		{
-			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
-			Assert.assertEquals(EntityType.COW, creature.type());
-		}
+		// We expect to see a cow.
+		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
+		Assert.assertEquals(EntityType.COW, cow.type());
 		
 		// Disconnect.
 		server.clientDisconnected(clientId1);
@@ -430,17 +438,15 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// NOTE:  In the future, this may not be a valid check since this assumes that they are renumbered since they are being reloaded.
-		for (int i = -19; i >= -36; --i)
-		{
-			PartialEntity creature = network.waitForPeerEntity(clientId1, i);
-			Assert.assertEquals(EntityType.COW, creature.type());
-		}
+		cow = network.waitForPeerEntity(clientId1, -2);
+		Assert.assertEquals(EntityType.COW, cow.type());
+		
 		// We shouldn't see any other entities (no duplicated creature state).
-		Assert.assertEquals(18, network.clientPartialEntities.get(clientId1).size());
+		Assert.assertEquals(1, network.clientPartialEntities.get(clientId1).size());
 		
 		// Verify that the monitoring agent sees consistent data.
 		Assert.assertEquals(1, monitoringAgent.getClientsCopy().size());
-		Assert.assertEquals(18, monitoringAgent.getLastSnapshot().completedCreatures().size());
+		Assert.assertEquals(1, monitoringAgent.getLastSnapshot().completedCreatures().size());
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);
@@ -733,6 +739,47 @@ public class TestServerRunner
 				this.wait();
 			}
 			return this.config;
+		}
+	}
+
+	private static class _SkyBlockGenerator implements IWorldGenerator
+	{
+		@Override
+		public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+		{
+			// We will only give meaningful shape to the cuboid at 0,0,0.
+			SuspendedCuboid<CuboidData> data;
+			if (new CuboidAddress((short)0, (short)0, (short)0).equals(address))
+			{
+				// An air cuboid with a layer of stone at the bottom.
+				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+				for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+				{
+					for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+					{
+						raw.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte) 0), STONE.item().number());
+					}
+				}
+				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
+				CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
+						, EntityType.COW
+						, new EntityLocation (30.0f, 0.0f, 1.0f)
+						, (byte)100
+				);
+				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of());
+			}
+			else
+			{
+				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
+				data = new SuspendedCuboid<>(raw, heightMap, List.of(), List.of());
+			}
+			return data;
+		}
+		@Override
+		public EntityLocation getDefaultSpawnLocation()
+		{
+			return new EntityLocation(0.0f, 0.0f, 1.0f);
 		}
 	}
 }
