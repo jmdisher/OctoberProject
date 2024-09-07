@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -400,7 +402,7 @@ public class TestServerRunner
 		// Connect a client, observe the creatures, then reconnect to see that they have been reloaded with new IDs but that there is the same number.
 		TestAdapter network = new TestAdapter();
 		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
-		_SkyBlockGenerator cuboidGenerator = new _SkyBlockGenerator();
+		_SkyBlockGenerator cuboidGenerator = new _SkyBlockGenerator(null);
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		WorldConfig config = new WorldConfig();
@@ -485,6 +487,74 @@ public class TestServerRunner
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);
+		runner.shutdown();
+	}
+
+	@Test
+	public void entityVisibilityRange() throws Throwable
+	{
+		// We want to connect 2 clients and teleport them between different isolated cuboids, showing what comes in/out of visiblity.
+		TestAdapter network = new TestAdapter();
+		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
+		CuboidAddress otherIsland = new CuboidAddress((short)10, (short)10, (short)10);
+		_SkyBlockGenerator cuboidGenerator = new _SkyBlockGenerator(otherIsland);
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, MutableEntity.TESTING_LOCATION);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		WorldConfig config = new WorldConfig();
+		// We use peaceful here so that the behaviour is deterministic (no dynamic spawning).
+		config.difficulty = Difficulty.PEACEFUL;
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, config
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		
+		// Connect 1.
+		int clientId1 = 1;
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "client1");
+		Entity entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// Connect 2.
+		int clientId2 = 2;
+		network.prepareForClient(clientId2);
+		server.clientConnected(clientId2, null, "client2");
+		Entity entity2 = network.waitForThisEntity(clientId2);
+		Assert.assertNotNull(entity2);
+		
+		// We expect them both to see a cow and the other client.
+		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId1, -1).type());
+		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
+		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId2, -1).type());
+		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
+		
+		// Now, teleport one of the entities to the other island.
+		EntityLocation islandBase = otherIsland.getBase().toEntityLocation();
+		EntityLocation teleportTarget = new EntityLocation(islandBase.x() + 1.0f, islandBase.y() + 1.0f, islandBase.z() + 1.0f);
+		EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(teleportTarget);
+		monitoringAgent.getCommandSink().submit(clientId2, command);
+		
+		// Wait for the old entities to disappear and the new cow to appear.
+		network.waitForEntityRemoval(clientId2, -1);
+		network.waitForEntityRemoval(clientId2, clientId1);
+		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId2, -2).type());
+		network.waitForEntityRemoval(clientId1, clientId2);
+		
+		// Move the other entity to this same location and observe the updates from their perspective.
+		monitoringAgent.getCommandSink().submit(clientId1, command);
+		network.waitForEntityRemoval(clientId1, -1);
+		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId1, -2).type());
+		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
+		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
+		
+		server.clientDisconnected(clientId1);
+		server.clientDisconnected(clientId2);
+		network.resetClient(clientId1);
+		network.resetClient(clientId2);
 		runner.shutdown();
 	}
 
@@ -744,12 +814,21 @@ public class TestServerRunner
 
 	private static class _SkyBlockGenerator implements IWorldGenerator
 	{
+		private final Set<CuboidAddress> _islands;
+		public _SkyBlockGenerator(CuboidAddress extraIsland)
+		{
+			CuboidAddress origin = new CuboidAddress((short)0, (short)0, (short)0);
+			_islands = (null != extraIsland)
+					? Set.of(origin, extraIsland)
+					: Set.of(origin)
+			;
+		}
 		@Override
 		public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 		{
 			// We will only give meaningful shape to the cuboid at 0,0,0.
 			SuspendedCuboid<CuboidData> data;
-			if (new CuboidAddress((short)0, (short)0, (short)0).equals(address))
+			if (_islands.contains(address))
 			{
 				// An air cuboid with a layer of stone at the bottom.
 				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
@@ -761,9 +840,10 @@ public class TestServerRunner
 					}
 				}
 				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
+				EntityLocation base = address.getBase().toEntityLocation();
 				CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
 						, EntityType.COW
-						, new EntityLocation (30.0f, 0.0f, 1.0f)
+						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, (byte)100
 				);
 				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of());

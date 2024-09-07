@@ -12,11 +12,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -44,6 +47,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class ServerStateManager
 {
+	/**
+	 * Entities further than this distance away (horizontal sums, for now) are not visible to the clients.
+	 */
+	public static final float ENTITY_VISIBLE_DISTANCE = 50.0f;
+
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
 	private final Queue<Integer> _newClients;
@@ -314,7 +322,18 @@ public class ServerStateManager
 				_callouts.network_sendPartialEntity(clientId, partial);
 			}
 		};
-		_sendNewAndUpdatedEntities(state, seenEntityHandler, unseenEntityHandler, snapshot.completedEntities(), snapshot.updatedEntities());
+		IntConsumer movedAwayHandler = (int entityId) -> {
+			_callouts.network_removeEntity(clientId, entityId);
+		};
+		Function<Entity, EntityLocation> entityLocationFetcher = (Entity entity) -> entity.location();
+		_sendNewAndUpdatedEntities(state
+				, seenEntityHandler
+				, unseenEntityHandler
+				, movedAwayHandler
+				, snapshot.completedEntities()
+				, snapshot.updatedEntities()
+				, entityLocationFetcher
+		);
 		
 		Consumer<CreatureEntity> seenCreatureHandler = (CreatureEntity entity) -> {
 			// Creatures are always partial.
@@ -327,7 +346,15 @@ public class ServerStateManager
 			PartialEntity partial = PartialEntity.fromCreature(entity);
 			_callouts.network_sendPartialEntity(clientId, partial);
 		};
-		_sendNewAndUpdatedEntities(state, seenCreatureHandler, unseenCreatureHandler, snapshot.completedCreatures(), snapshot.visiblyChangedCreatures());
+		Function<CreatureEntity, EntityLocation> creatureLocationFetcher = (CreatureEntity entity) -> entity.location();
+		_sendNewAndUpdatedEntities(state
+				, seenCreatureHandler
+				, unseenCreatureHandler
+				, movedAwayHandler
+				, snapshot.completedCreatures()
+				, snapshot.visiblyChangedCreatures()
+				, creatureLocationFetcher
+		);
 		// Remove any extra entities which have since departed.
 		Set<Integer> allEntityIds = new HashSet<>(snapshot.completedEntities().keySet());
 		allEntityIds.addAll(snapshot.completedCreatures().keySet());
@@ -349,26 +376,40 @@ public class ServerStateManager
 	private <E> void _sendNewAndUpdatedEntities(ClientState state
 			, Consumer<E> seenHandler
 			, Consumer<E> unseenHandler
+			, IntConsumer movedAwayHandler
 			, Map<Integer, E> completed
 			, Map<Integer, E> updated
+			, Function<E, EntityLocation> locationFetcher
 	)
 	{
 		for (Map.Entry<Integer, E> entry : completed.entrySet())
 		{
 			int entityId = entry.getKey();
+			E entity = entry.getValue();
+			EntityLocation location = locationFetcher.apply(entity);
+			float distance = SpatialHelpers.distanceBetween(state.location, location);
 			if (state.knownEntities.contains(entityId))
 			{
-				// We know this entity so generate the update for this client.
-				E newEntity = updated.get(entityId);
-				if (null != newEntity)
+				// See if they are too far away.
+				if (distance > ENTITY_VISIBLE_DISTANCE)
 				{
-					seenHandler.accept(newEntity);
+					// This is too far away so discard it.
+					movedAwayHandler.accept(entityId);
+					state.knownEntities.remove(entityId);
+				}
+				else
+				{
+					// We know this entity so generate the update for this client.
+					E newEntity = updated.get(entityId);
+					if (null != newEntity)
+					{
+						seenHandler.accept(newEntity);
+					}
 				}
 			}
-			else
+			else if (distance <= ENTITY_VISIBLE_DISTANCE)
 			{
-				// We don't know this entity so send them.
-				E entity = entry.getValue();
+				// We don't know this entity, and they are close by, so send them.
 				unseenHandler.accept(entity);
 				state.knownEntities.add(entityId);
 			}
