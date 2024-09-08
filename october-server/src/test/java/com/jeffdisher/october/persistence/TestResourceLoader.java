@@ -498,11 +498,13 @@ public class TestResourceLoader
 		String rawData = Files.readString(configFile.toPath());
 		Assert.assertTrue(rawData.contains("difficulty\tHOSTILE\n"));
 		Assert.assertTrue(rawData.contains("ticks_per_day\t12000\n"));
+		Assert.assertTrue(rawData.contains("should_synthesize_updates_on_load\tfalse\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"
 				+ "ticks_per_day\t2000\n"
 				+ "world_generator_name\tBASIC\n"
+				+ "should_synthesize_updates_on_load\ttrue\n"
 		;
 		Files.writeString(configFile.toPath(), fileToWrite);
 		loader = new ResourceLoader(resourceDirectory, null, null);
@@ -513,6 +515,7 @@ public class TestResourceLoader
 		Assert.assertEquals(new AbsoluteLocation(5, 6, 7), config.worldSpawn);
 		Assert.assertEquals(2000, config.ticksPerDay);
 		Assert.assertEquals(WorldConfig.WorldGeneratorName.BASIC, config.worldGeneratorName);
+		Assert.assertTrue(config.shouldSynthesizeUpdatesOnLoad);
 		loader.shutdown();
 	}
 

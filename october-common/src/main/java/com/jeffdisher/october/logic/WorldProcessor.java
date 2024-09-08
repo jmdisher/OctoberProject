@@ -100,15 +100,19 @@ public class WorldProcessor
 					return proxy;
 				};
 				
-				// First, handle block updates.
-				committedMutationCount += _synthesizeAndRunBlockUpdates(processor
-						, lazyMutableBlockCache
-						, context
-						, oldState
-						, modifiedBlocksByCuboidAddress
-						, worldMap.keySet()
-						, cuboidsLoadedThisTick
-				);
+				// We will run any synthetic update events related to cuboid loading if that is enabled.
+				// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
+				if (context.config.shouldSynthesizeUpdatesOnLoad)
+				{
+					committedMutationCount += _synthesizeAndRunBlockUpdates(processor
+							, lazyMutableBlockCache
+							, context
+							, oldState
+							, modifiedBlocksByCuboidAddress
+							, worldMap.keySet()
+							, cuboidsLoadedThisTick
+					);
+				}
 				
 				// Now run the normal mutations.
 				List<ScheduledMutation> mutations = mutationsToRun.get(key);

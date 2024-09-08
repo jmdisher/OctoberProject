@@ -886,7 +886,9 @@ public class TestTickRunner
 	{
 		// Create a single cuboid and load some items into a block.
 		// Verify that nothing happens until we change a block adjacent to it, and then it updates.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
 		// We need an entity to generate the change which will trigger the update.
@@ -1010,7 +1012,9 @@ public class TestTickRunner
 	{
 		// Create a world with a single cuboid with some items in the bottom block and run a tick.
 		// Then, load another cuboid below it and observe that the items fall into the new cuboid.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
@@ -1051,7 +1055,9 @@ public class TestTickRunner
 	public void waterFlowsIntoAirCuboid()
 	{
 		// Create a cuboid of water sources, run a tick, then load a cuboud of air below it and observe the water flow.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
@@ -1100,7 +1106,9 @@ public class TestTickRunner
 	public void waterCascade1()
 	{
 		// Create a single cascade cuboid, add a dirt block and water source in the top level, break the block, wait until the water completes flowing.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
 		CuboidData cascade = _buildCascade(new CuboidAddress((short)-3, (short)-4, (short)-5));
@@ -1147,7 +1155,9 @@ public class TestTickRunner
 	public void waterCascade8()
 	{
 		// Create 8 cascade cuboids in a cube, add a dirt block and water source at the top-centre of these, break the block and wait until the water completes flowing.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
 		CuboidAddress startAddress = new CuboidAddress((short)-3, (short)-4, (short)-5);
@@ -1204,7 +1214,9 @@ public class TestTickRunner
 	{
 		// We want to verify that block updates don't happen for things like damage updates so we place a water source,
 		// a gap, and a stone, then incrementally break it.  We should only see the update once the block breaks.
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		CuboidAddress address = new CuboidAddress((short)-3, (short)-4, (short)-5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
@@ -1519,7 +1531,9 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), DIRT_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		
-		TickRunner runner = _createTestRunner();
+		WorldConfig config = new WorldConfig();
+		config.shouldSynthesizeUpdatesOnLoad = true;
+		TickRunner runner = _createTestRunnerWithConfig(config);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(location.x() + 1, location.y(), location.z());
@@ -1944,6 +1958,12 @@ public class TestTickRunner
 
 	private TickRunner _createTestRunner()
 	{
+		// We use the default config for most tests.
+		return _createTestRunnerWithConfig(new WorldConfig());
+	}
+
+	private TickRunner _createTestRunnerWithConfig(WorldConfig config)
+	{
 		// We want to disable spawning for most of these tests.
 		TickRunner.TEST_SPAWNING_ENABLED = false;
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
@@ -1953,7 +1973,7 @@ public class TestTickRunner
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
-				, new WorldConfig()
+				, config
 		);
 		return runner;
 	}

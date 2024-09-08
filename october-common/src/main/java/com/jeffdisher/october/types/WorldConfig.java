@@ -68,6 +68,17 @@ public class WorldConfig
 	public volatile WorldGeneratorName worldGeneratorName;
 
 	/**
+	 * True if we should synthesize block updates for all blocks adjacent to a cuboid load boundary.
+	 * This is disabled by default since it is incredibly expensive and rarely relevant.  Enabling this can avoid "world
+	 * stitching inconsistencies" caused by the world being segmented into cuboids (water not updating across a cuboid
+	 * boundary, etc).
+	 * In the future, we will replace this very heavy-weight mechanism with a more precise one where boundary events
+	 * opt-in for this treatment, instead of applying it to all.
+	 */
+	public static final String KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD = "should_synthesize_updates_on_load";
+	public volatile boolean shouldSynthesizeUpdatesOnLoad;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -82,6 +93,8 @@ public class WorldConfig
 		// Default to 0 as the start tick (the brightest part of the day).
 		this.dayStartTick = 0;
 		this.worldGeneratorName = WorldGeneratorName.BASIC;
+		// We default to no synthetic updates as they wash out all performance analysis attempts.
+		this.shouldSynthesizeUpdatesOnLoad = false;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -127,6 +140,10 @@ public class WorldConfig
 		{
 			this.worldGeneratorName = WorldGeneratorName.valueOf(overrides.get(KEY_WORLD_GENERATOR_NAME));
 		}
+		if (overrides.containsKey(KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD))
+		{
+			this.shouldSynthesizeUpdatesOnLoad = Boolean.parseBoolean(overrides.get(KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD));
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -141,6 +158,7 @@ public class WorldConfig
 				, KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay)
 				, KEY_DAY_START_TICK, Integer.toString(this.dayStartTick)
 				, KEY_WORLD_GENERATOR_NAME, this.worldGeneratorName.name()
+				, KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD, Boolean.toString(this.shouldSynthesizeUpdatesOnLoad)
 		);
 	}
 
