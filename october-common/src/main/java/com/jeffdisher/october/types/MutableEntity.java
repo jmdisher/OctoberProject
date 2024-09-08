@@ -257,7 +257,11 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void setHealth(byte health)
 	{
-		this.newHealth = health;
+		// We can't change food, health, or breath in creative mode.
+		if (!this.isCreativeMode)
+		{
+			this.newHealth = health;
+		}
 	}
 
 	@Override
@@ -269,7 +273,11 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void setFood(byte food)
 	{
-		this.newFood = food;
+		// We can't change food, health, or breath in creative mode.
+		if (!this.isCreativeMode)
+		{
+			this.newFood = food;
+		}
 	}
 
 	@Override
@@ -281,7 +289,11 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void setBreath(int breath)
 	{
-		this.newBreath = breath;
+		// We can't change food, health, or breath in creative mode.
+		if (!this.isCreativeMode)
+		{
+			this.newBreath = breath;
+		}
 	}
 
 	@Override

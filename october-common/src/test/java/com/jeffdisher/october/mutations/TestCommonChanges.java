@@ -1819,6 +1819,65 @@ public class TestCommonChanges
 		Assert.assertEquals(destination, newEntity.freeze().location());
 	}
 
+	@Test
+	public void ignoreHealthInCreative() throws Throwable
+	{
+		// Create an entity in creative mode and verify that it ignores changes to health, food, and breath.
+		int entityId = 1;
+		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
+		byte health = MutableEntity.DEFAULT_HEALTH / 2;
+		byte food = MutableEntity.DEFAULT_FOOD / 2;
+		int breath = EntityConstants.MAX_BREATH / 2;
+		Entity original = new Entity(entityId
+				, true
+				, new EntityLocation(0.0f, 0.0f, 10.0f)
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, MutableEntity.DEFAULT_BLOCKS_PER_TICK_SPEED
+				, inventory
+				, new int[Entity.HOTBAR_SIZE]
+				, 0
+				, new NonStackableItem[BodyPart.values().length]
+				, null
+				, health
+				, food
+				, breath
+				, 0
+		);
+		
+		// Try to change these values and verify that nothing happens.
+		MutableEntity localMutable = MutableEntity.existing(original);
+		localMutable.setBreath(1);
+		localMutable.setFood((byte)1);
+		localMutable.setHealth((byte)1);
+		Assert.assertTrue(original == localMutable.freeze());
+		
+		// Periodic change should also not change anything even if we set a high energy deficit.
+		TickProcessingContext context = ContextBuilder.build()
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+					}})
+				.finish()
+		;
+		EntityChangePeriodic periodic = new EntityChangePeriodic();
+		localMutable.setEnergyDeficit(10 * EntityChangePeriodic.ENERGY_PER_FOOD);
+		periodic.applyChange(context, localMutable);
+		Entity end = localMutable.freeze();
+		Assert.assertEquals(9050, end.energyDeficit());
+		Assert.assertEquals(health, end.health());
+		Assert.assertEquals(food, end.food());
+		Assert.assertEquals(breath, end.breath());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
