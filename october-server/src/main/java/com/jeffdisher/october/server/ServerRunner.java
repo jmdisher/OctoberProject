@@ -197,7 +197,7 @@ public class ServerRunner
 		public void clientConnected(int clientId, NetworkLayer.PeerToken token, String name)
 		{
 			_messages.enqueue(() -> {
-				_stateManager.clientConnected(clientId);
+				_stateManager.clientConnected(clientId, name);
 				
 				_monitoringAgent.clientConnected(clientId, token, name);
 			});
@@ -358,6 +358,16 @@ public class ServerRunner
 		public void network_sendConfig(int clientId, WorldConfig config)
 		{
 			_network.sendConfig(clientId, config);
+		}
+		@Override
+		public void network_sendClientJoined(int clientId, int joinedClientId, String name)
+		{
+			_network.sendClientJoined(clientId, joinedClientId, name);
+		}
+		@Override
+		public void network_sendClientLeft(int clientId, int leftClientId)
+		{
+			_network.sendClientLeft(clientId, leftClientId);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

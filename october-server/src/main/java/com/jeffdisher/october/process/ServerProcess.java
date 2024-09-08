@@ -18,6 +18,8 @@ import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
@@ -364,6 +366,18 @@ public class ServerProcess
 		public void sendConfig(int clientId, WorldConfig config)
 		{
 			Packet_ServerSendConfigUpdate packet = new Packet_ServerSendConfigUpdate(config.ticksPerDay, config.dayStartTick);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendClientJoined(int clientId, int joinedClientId, String name)
+		{
+			Packet_ClientJoined packet = new Packet_ClientJoined(joinedClientId, name);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendClientLeft(int clientId, int leftClientId)
+		{
+			Packet_ClientLeft packet = new Packet_ClientLeft(leftClientId);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

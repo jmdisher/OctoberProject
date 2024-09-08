@@ -132,5 +132,13 @@ public class AutoWalkingClient
 		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 		}
+		@Override
+		public void otherClientLeft(int clientId)
+		{
+		}
+		@Override
+		public void otherClientJoined(int clientId, String name)
+		{
+		}
 	}
 }

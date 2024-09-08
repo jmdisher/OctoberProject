@@ -83,7 +83,8 @@ public class TestServerStateManager
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
 		int clientId = 1;
-		manager.clientConnected(clientId);
+		String clientName = "client";
+		manager.clientConnected(clientId, clientName);
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
@@ -182,7 +183,8 @@ public class TestServerStateManager
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
 		int clientId = 1;
-		manager.clientConnected(clientId);
+		String clientName = "client";
+		manager.clientConnected(clientId, clientName);
 		boolean[] connectedRef = new boolean[] {true};
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		manager.setupNextTickAfterCompletion(snapshot);
@@ -197,6 +199,38 @@ public class TestServerStateManager
 		manager.clientReadReady(clientId);
 		manager.clientDisconnected(clientId);
 		connectedRef[0] = false;
+		manager.setupNextTickAfterCompletion(snapshot);
+	}
+
+	@Test
+	public void twoClientsSeeEachOther()
+	{
+		// We just want to connect 2 clients and verify that they see each other join and the first one to disconnect is seen.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		int clientId2 = 2;
+		String clientName2 = "client2";
+		manager.clientConnected(clientId1, clientName1);
+		manager.clientConnected(clientId2, clientName2);
+		
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId1).freeze(), List.of()));
+		callouts.loadedEntities.add(new SuspendedEntity(MutableEntity.createForTest(clientId2).freeze(), List.of()));
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.joinedClients.get(clientId1).size());
+		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
+		Assert.assertEquals(clientName2, callouts.joinedClients.get(clientId1).get(clientId2));
+		Assert.assertEquals(clientName1, callouts.joinedClients.get(clientId2).get(clientId1));
+		
+		manager.clientDisconnected(clientId1);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, callouts.joinedClients.get(clientId2).size());
+		
+		manager.clientDisconnected(clientId2);
 		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
@@ -307,6 +341,7 @@ public class TestServerStateManager
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
 		public Function<Packet_MutationEntityFromClient, Packet_MutationEntityFromClient> peekHandler = null;
 		public boolean didEnqueue = false;
+		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
 		
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
@@ -389,6 +424,25 @@ public class TestServerStateManager
 		public void network_sendConfig(int clientId, WorldConfig config)
 		{
 			throw new AssertionError("network_sendConfig");
+		}
+		@Override
+		public void network_sendClientJoined(int clientId, int joinedClientId, String name)
+		{
+			Map<Integer, String> clients = this.joinedClients.get(clientId);
+			if (null == clients)
+			{
+				clients = new HashMap<>();
+				this.joinedClients.put(clientId, clients);
+			}
+			Object old = clients.put(joinedClientId, name);
+			Assert.assertNull(old);
+		}
+		@Override
+		public void network_sendClientLeft(int clientId, int leftClientId)
+		{
+			Map<Integer, String> clients = this.joinedClients.get(clientId);
+			Object old = clients.remove(leftClientId);
+			Assert.assertNotNull(old);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

@@ -284,6 +284,8 @@ public class TestServerRunner
 		network.prepareForClient(clientId2);
 		server.clientConnected(clientId1, null, "name1");
 		server.clientConnected(clientId2, null, "name2");
+		Assert.assertEquals("name2", network.waitForClientJoin(clientId1, clientId2));
+		Assert.assertEquals("name1", network.waitForClientJoin(clientId2, clientId1));
 		Entity entity1_1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1_1);
 		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
@@ -294,6 +296,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity2_2);
 		server.clientDisconnected(1);
 		network.resetClient(1);
+		network.waitForClientLeave(clientId2, clientId1);
 		
 		// For them to disappear.
 		network.waitForEntityRemoval(clientId2, clientId1);
@@ -578,6 +581,7 @@ public class TestServerRunner
 		public final Map<Integer, List<Object>> clientUpdates = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
+		public final Map<Integer, Map<Integer, String>> clientConnectedNames = new HashMap<>();
 		public long lastTick = 0L;
 		public WorldConfig config = null;
 		
@@ -681,6 +685,22 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
+		public synchronized void sendClientJoined(int clientId, int joinedClientId, String name)
+		{
+			Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+			Assert.assertFalse(thisClient.containsKey(joinedClientId));
+			thisClient.put(joinedClientId, name);
+			this.notifyAll();
+		}
+		@Override
+		public synchronized void sendClientLeft(int clientId, int leftClientId)
+		{
+			Map<Integer, String> thisClient = this.clientConnectedNames.get(clientId);
+			Assert.assertTrue(thisClient.containsKey(leftClientId));
+			thisClient.remove(leftClientId);
+			this.notifyAll();
+		}
+		@Override
 		public synchronized void disconnectClient(int clientId)
 		{
 		}
@@ -719,11 +739,13 @@ public class TestServerRunner
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidAddedCount.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidRemovedCount.containsKey(clientId));
+			Assert.assertFalse(this.clientConnectedNames.containsKey(clientId));
 			this.packets.put(clientId, new LinkedList<>());
 			this.clientPartialEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
 			this.clientCuboidAddedCount.put(clientId, 0);
 			this.clientCuboidRemovedCount.put(clientId, 0);
+			this.clientConnectedNames.put(clientId, new HashMap<>());
 		}
 		public synchronized Entity waitForThisEntity(int clientId) throws InterruptedException
 		{
@@ -799,6 +821,7 @@ public class TestServerRunner
 			this.clientUpdates.remove(clientId);
 			this.clientCuboidAddedCount.remove(clientId);
 			this.clientCuboidRemovedCount.remove(clientId);
+			this.clientConnectedNames.remove(clientId);
 			_pendingDisconnect = 0;
 			this.notifyAll();
 		}
@@ -809,6 +832,21 @@ public class TestServerRunner
 				this.wait();
 			}
 			return this.config;
+		}
+		public synchronized String waitForClientJoin(int clientId, int otherClient) throws InterruptedException
+		{
+			while (!this.clientConnectedNames.get(clientId).containsKey(otherClient))
+			{
+				this.wait();
+			}
+			return this.clientConnectedNames.get(clientId).get(otherClient);
+		}
+		public synchronized void waitForClientLeave(int clientId, int otherClient) throws InterruptedException
+		{
+			while (this.clientConnectedNames.get(clientId).containsKey(otherClient))
+			{
+				this.wait();
+			}
 		}
 	}
 

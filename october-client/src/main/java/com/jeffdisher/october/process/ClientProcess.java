@@ -22,6 +22,8 @@ import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
+import com.jeffdisher.october.net.Packet_ClientJoined;
+import com.jeffdisher.october.net.Packet_ClientLeft;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
@@ -414,6 +416,16 @@ public class ClientProcess
 				Packet_ServerSendConfigUpdate safe = (Packet_ServerSendConfigUpdate)packet;
 				_messagesToClientRunner.receivedConfigUpdate(safe.ticksPerDay, safe.dayStartTick);
 			}
+			else if (packet instanceof Packet_ClientJoined)
+			{
+				Packet_ClientJoined safe = (Packet_ClientJoined)packet;
+				_messagesToClientRunner.receivedOtherClientJoined(safe.clientId, safe.clientName);
+			}
+			else if (packet instanceof Packet_ClientLeft)
+			{
+				Packet_ClientLeft safe = (Packet_ClientLeft)packet;
+				_messagesToClientRunner.receivedOtherClientLeft(safe.clientId);
+			}
 			else
 			{
 				// If this is something unknown, there is a missing handler here.
@@ -541,6 +553,20 @@ public class ClientProcess
 				_listener.configUpdated(ticksPerDay, dayStartTick);
 			});
 		}
+		@Override
+		public void otherClientJoined(int clientId, String name)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.otherClientJoined(clientId, name);
+			});
+		}
+		@Override
+		public void otherClientLeft(int clientId)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.otherClientLeft(clientId);
+			});
+		}
 	}
 
 	private static class _LockingList
@@ -647,5 +673,18 @@ public class ClientProcess
 		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
 		void configUpdated(int ticksPerDay, int dayStartTick);
+		/**
+		 * Called when the server tells us another client has connected (or was connected when we joined).
+		 * 
+		 * @param clientId The ID of the other client.
+		 * @param name The name of the other client.
+		 */
+		void otherClientJoined(int clientId, String name);
+		/**
+		 * Called when the server tells us another client has disconnected.
+		 * 
+		 * @param clientId The ID of the other client.
+		 */
+		void otherClientLeft(int clientId);
 	}
 }

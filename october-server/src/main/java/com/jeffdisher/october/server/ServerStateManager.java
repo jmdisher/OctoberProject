@@ -54,9 +54,10 @@ public class ServerStateManager
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
-	private final Queue<Integer> _newClients;
+	private final Map<Integer, String> _newClients;
 	private final Queue<Integer> _removedClients;
 	private final Set<Integer> _clientsToRead;
+	private final Map<Integer, String> _clientsPendingLoad;
 
 	// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
 	private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
@@ -72,9 +73,10 @@ public class ServerStateManager
 	{
 		_callouts = callouts;
 		_connectedClients = new HashMap<>();
-		_newClients = new LinkedList<>();
+		_newClients = new HashMap<>();
 		_removedClients = new LinkedList<>();
 		_clientsToRead = new HashSet<>();
+		_clientsPendingLoad = new HashMap<>();
 		
 		_requestedCuboids = new HashSet<>();
 		_completedCuboids = Collections.emptySet();
@@ -84,13 +86,13 @@ public class ServerStateManager
 		_completedCreatures = Collections.emptySet();
 	}
 
-	public void clientConnected(int clientId)
+	public void clientConnected(int clientId, String name)
 	{
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(clientId > 0);
 		
 		// Add this to the list of new clients (we will send them the snapshot and inject them after the the current tick is done tick).
-		_newClients.add(clientId);
+		_newClients.put(clientId, name);
 		System.out.println("Client connected: " + clientId);
 	}
 
@@ -103,6 +105,12 @@ public class ServerStateManager
 		// Make sure that we won't try to read this.
 		_clientsToRead.remove(clientId);
 		System.out.println("Client disconnected: " + clientId);
+		
+		// Notify the other clients that they left.
+		for (Integer existingClient : _connectedClients.keySet())
+		{
+			_callouts.network_sendClientLeft(existingClient, clientId);
+		}
 	}
 
 	public void clientReadReady(int clientId)
@@ -191,9 +199,10 @@ public class ServerStateManager
 		// Request any missing cuboids or new entities and see what we got back from last time.
 		Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
 		Collection<SuspendedEntity> newEntities = new ArrayList<>();
-		_callouts.resources_getAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients);
+		_callouts.resources_getAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients.keySet());
 		_requestedCuboids.addAll(cuboidsToLoad);
 		// We have requested the clients so drop this, now.
+		_clientsPendingLoad.putAll(_newClients);
 		_newClients.clear();
 		
 		// Walk through any new clients, adding them to the world.
@@ -202,7 +211,25 @@ public class ServerStateManager
 			// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
 			// This client is now connected and can receive events.
 			Entity newEntity = suspended.entity();
-			_connectedClients.put(newEntity.id(), new ClientState(newEntity.location()));
+			int clientId = newEntity.id();
+			String clientName = _clientsPendingLoad.remove(clientId);
+			Assert.assertTrue(null != clientName);
+			
+			// Notify the other clients that they joined and tell them about the other clients.
+			for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
+			{
+				int existingClientId = existingClient.getKey();
+				String existingClientName = existingClient.getValue().name;
+				Assert.assertTrue(null != existingClientName);
+				
+				// Tell the old client about the new client.
+				_callouts.network_sendClientJoined(existingClientId, clientId, clientName);
+				// Tell the new client about the old client.
+				_callouts.network_sendClientJoined(clientId, existingClientId, existingClientName);
+			}
+			
+			// We can now add them to the fully-connected clients.
+			_connectedClients.put(clientId, new ClientState(clientName, newEntity.location()));
 		}
 		
 		// Push any required data into the TickRunner before we kick-off the tick.
@@ -561,6 +588,8 @@ public class ServerStateManager
 		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
 		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
 		void network_sendConfig(int clientId, WorldConfig config);
+		void network_sendClientJoined(int clientId, int joinedClientId, String name);
+		void network_sendClientLeft(int clientId, int leftClientId);
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
@@ -574,14 +603,16 @@ public class ServerStateManager
 
 	private static final class ClientState
 	{
+		private final String name;
 		public EntityLocation location;
 		
 		// The data we think that this client already has.  These are used for determining what they should be told to load/drop as well as filtering updates to what they can apply.
 		public final Set<Integer> knownEntities;
 		public final Set<CuboidAddress> knownCuboids;
 		
-		public ClientState(EntityLocation initialLocation)
+		public ClientState(String name, EntityLocation initialLocation)
 		{
+			this.name = name;
 			this.location = initialLocation;
 			
 			// Create empty containers for what this client has observed.

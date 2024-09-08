@@ -36,6 +36,8 @@ public class PacketCodec
 		Packet_RemoveCuboid.register(_CODEC_TABLE);
 		Packet_BlockStateUpdate.register(_CODEC_TABLE);
 		Packet_ServerSendConfigUpdate.register(_CODEC_TABLE);
+		Packet_ClientJoined.register(_CODEC_TABLE);
+		Packet_ClientLeft.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

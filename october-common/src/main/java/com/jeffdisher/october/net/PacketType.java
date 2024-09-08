@@ -76,6 +76,14 @@ public enum PacketType
 	 * config but also later if the config changes.
 	 */
 	SERVER_SEND_CONFIG_UPDATE,
+	/**
+	 * Sent by the server to notify all clients when a new client has joined.
+	 */
+	CLIENT_JOINED,
+	/**
+	 * Sent by the server to notify all clients when a client has left.
+	 */
+	CLIENT_LEFT,
 	
 	END_OF_LIST,
 }

@@ -397,6 +397,20 @@ public class ClientRunner
 				_clientListener.configUpdated(ticksPerDay, dayStartTick);
 			});
 		}
+		@Override
+		public void receivedOtherClientJoined(int clientId, String name)
+		{
+			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
+				_clientListener.otherClientJoined(clientId, name);
+			});
+		}
+		@Override
+		public void receivedOtherClientLeft(int clientId)
+		{
+			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
+				_clientListener.otherClientLeft(clientId);
+			});
+		}
 	}
 
 	private class LockedList
@@ -500,5 +514,18 @@ public class ClientRunner
 		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
 		void configUpdated(int ticksPerDay, int dayStartTick);
+		/**
+		 * Called when the server tells us another client has connected (or was connected when we joined).
+		 * 
+		 * @param clientId The ID of the other client.
+		 * @param name The name of the other client.
+		 */
+		void otherClientJoined(int clientId, String name);
+		/**
+		 * Called when the server tells us another client has disconnected.
+		 * 
+		 * @param clientId The ID of the other client.
+		 */
+		void otherClientLeft(int clientId);
 	}
 }

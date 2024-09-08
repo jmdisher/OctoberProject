@@ -125,5 +125,18 @@ public interface IClientAdapter
 		 * @param dayStartTick The tick offset into ticksPerDay where the day "starts".
 		 */
 		void receivedConfigUpdate(int ticksPerDay, int dayStartTick);
+		/**
+		 * Called when the server tells us another client has connected (or was connected when we joined).
+		 * 
+		 * @param clientId The ID of the other client.
+		 * @param name The name of the other client.
+		 */
+		void receivedOtherClientJoined(int clientId, String name);
+		/**
+		 * Called when the server tells us another client has disconnected.
+		 * 
+		 * @param clientId The ID of the other client.
+		 */
+		void receivedOtherClientLeft(int clientId);
 	}
 }

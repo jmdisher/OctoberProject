@@ -533,6 +533,7 @@ public class TestClientRunner
 	{
 		public int assignedLocalEntityId = 0;
 		public int ticksPerDay = 0;
+		public final Map<Integer, String> otherClients = new HashMap<>();
 		@Override
 		public void clientDidConnectAndLogin(int assignedLocalEntityId)
 		{
@@ -549,6 +550,18 @@ public class TestClientRunner
 		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 			this.ticksPerDay = ticksPerDay;
+		}
+		@Override
+		public void otherClientJoined(int clientId, String name)
+		{
+			Assert.assertFalse(this.otherClients.containsKey(clientId));
+			this.otherClients.put(clientId, name);
+		}
+		@Override
+		public void otherClientLeft(int clientId)
+		{
+			Assert.assertTrue(this.otherClients.containsKey(clientId));
+			this.otherClients.remove(clientId);
 		}
 	}
 }

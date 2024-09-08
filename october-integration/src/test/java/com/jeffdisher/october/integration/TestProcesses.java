@@ -406,6 +406,7 @@ public class TestProcesses
 		public int assignedEntityId;
 		public long lastTickCompleted = 0L;
 		public int ticksPerDay;
+		public final Map<Integer, String> otherClients = new HashMap<>();
 		
 		public Entity getLocalEntity()
 		{
@@ -484,6 +485,18 @@ public class TestProcesses
 		public void configUpdated(int ticksPerDay, int dayStartTick)
 		{
 			this.ticksPerDay = ticksPerDay;
+		}
+		@Override
+		public void otherClientJoined(int clientId, String name)
+		{
+			Object old = this.otherClients.put(clientId, name);
+			Assert.assertNull(old);
+		}
+		@Override
+		public void otherClientLeft(int clientId)
+		{
+			Object old = this.otherClients.remove(clientId);
+			Assert.assertNotNull(old);
 		}
 	}
 }

@@ -114,6 +114,21 @@ public interface IServerAdapter
 	 */
 	void sendConfig(int clientId, WorldConfig config);
 	/**
+	 * Notifies the given clientId that a new client has joined (or was present when clientId joined).
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param joinedClientId The ID of the new client.
+	 * @param name The name of the new client.
+	 */
+	void sendClientJoined(int clientId, int joinedClientId, String name);
+	/**
+	 * Notifies the given clientId that another client has left.
+	 * 
+	 * @param clientId The ID of the client (as assigned by the adapter implementation).
+	 * @param leftClientId The ID of the other client.
+	 */
+	void sendClientLeft(int clientId, int leftClientId);
+	/**
 	 * Disconnects the given client.  Note that the implementation may still send messages from them, after this call,
 	 * but will seek to disconnect them.
 	 * 
