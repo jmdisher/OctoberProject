@@ -67,6 +67,7 @@ public class TestNetworkServer
 	@Test
 	public void chat() throws IOException
 	{
+		// Note that we only use Packet_SendChatMessage here since it is "some message type" for the test but the server internals will use it differently.
 		int port = 3000;
 		@SuppressWarnings("unchecked")
 		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
@@ -104,7 +105,7 @@ public class TestNetworkServer
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.
-					Packet_Chat chat = (Packet_Chat) packet;
+					Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
 					_messagesFor1.add(chat.message);
 					_handle();
 				}
@@ -115,7 +116,7 @@ public class TestNetworkServer
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_Chat(2, message));
+					holder[0].sendMessage(_firstPeer, new Packet_SendChatMessage(2, message));
 				}
 			}
 		}, port);
@@ -130,7 +131,7 @@ public class TestNetworkServer
 		{
 			String message = "Chat " + i;
 			ByteBuffer buffer = ByteBuffer.allocate(16);
-			PacketCodec.serializeToBuffer(buffer, new Packet_Chat(0, message));
+			PacketCodec.serializeToBuffer(buffer, new Packet_SendChatMessage(0, message));
 			buffer.flip();
 			int written = client2.write(buffer);
 			Assert.assertEquals(written, buffer.limit());
@@ -148,7 +149,7 @@ public class TestNetworkServer
 			buffer.compact();
 			if (null != packet)
 			{
-				Packet_Chat chat = (Packet_Chat) packet;
+				Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
 				String expectedMessage = "Chat " + next;
 				Assert.assertEquals(expectedMessage, chat.message);
 				next += 1;

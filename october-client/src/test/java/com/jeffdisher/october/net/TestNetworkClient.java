@@ -167,10 +167,11 @@ public class TestNetworkClient
 		latch.await();
 		
 		// Now, flood the network, lock-step with ready notifications.
+		// Note that we only use Packet_SendChatMessage here since it is "some message type" for the test but the server internals will use it differently.
 		for (int i = 0; i < 10000; ++i)
 		{
 			sync.waitFor();
-			client1.sendMessage(new Packet_Chat(1, ""));
+			client1.sendMessage(new Packet_SendChatMessage(1, ""));
 		}
 		
 		connection1.close();

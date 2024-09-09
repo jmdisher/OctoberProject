@@ -3,6 +3,10 @@ package com.jeffdisher.october.net;
 
 public enum PacketType
 {
+	/**
+	 * Note that we normally don't need an explicit error type (since we can just use null - this isn't C), but this
+	 * type is typically decoded from a data stream where 0 is a common uninitialized value in case there is a bug.
+	 */
 	ERROR,
 	
 	/**
@@ -14,10 +18,6 @@ public enum PacketType
 	 */
 	SERVER_SEND_CLIENT_ID,
 	
-	/**
-	 * Sent both to/from server, but the ID is ignored when sent TO the server.
-	 */
-	CHAT,
 	/**
 	 * Sent when we will start sending cuboid data to a client.  This puts the receiver into a mode where it can start
 	 * processing CUBOID_FRAGMENT messages.  The receiver knows when it has received the last fragment.
@@ -84,6 +84,10 @@ public enum PacketType
 	 * Sent by the server to notify all clients when a client has left.
 	 */
 	CLIENT_LEFT,
+	/**
+	 * Sent by the client to the server.
+	 */
+	SEND_CHAT_MESSAGE,
 	
 	END_OF_LIST,
 }

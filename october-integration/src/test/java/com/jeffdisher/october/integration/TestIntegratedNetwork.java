@@ -23,7 +23,7 @@ import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
-import com.jeffdisher.october.net.Packet_Chat;
+import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.types.BlockAddress;
@@ -81,6 +81,7 @@ public class TestIntegratedNetwork
 	@Test
 	public void chat() throws Throwable
 	{
+		// Note that we only use Packet_SendChatMessage here since it is "some message type" for the test but the server internals will use it differently.
 		int port = 3000;
 		@SuppressWarnings("unchecked")
 		NetworkServer<NetworkLayer.PeerToken>[] holder = new NetworkServer[1];
@@ -118,7 +119,7 @@ public class TestIntegratedNetwork
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.
-					Packet_Chat chat = (Packet_Chat) packet;
+					Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
 					_messagesFor1.add(chat.message);
 					_handle();
 				}
@@ -129,7 +130,7 @@ public class TestIntegratedNetwork
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_Chat("Client 2".hashCode(), message));
+					holder[0].sendMessage(_firstPeer, new Packet_SendChatMessage("Client 2".hashCode(), message));
 				}
 			}
 		}, port);
@@ -195,7 +196,7 @@ public class TestIntegratedNetwork
 		{
 			readyBarrier.await();
 			String message = "Chat " + i;
-			client2.sendMessage(new Packet_Chat(0, message));
+			client2.sendMessage(new Packet_SendChatMessage(0, message));
 		}
 		// Wait for this to finish sending.
 		readyBarrier.await();
@@ -205,7 +206,7 @@ public class TestIntegratedNetwork
 		for (int i = 0; i < 10; ++i)
 		{
 			Packet packet = handoff.load();
-			Packet_Chat chat = (Packet_Chat) packet;
+			Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
 			String expectedMessage = "Chat " + i;
 			Assert.assertEquals(expectedMessage, chat.message);
 		}

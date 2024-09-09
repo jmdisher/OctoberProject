@@ -4,34 +4,37 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 
-public class Packet_Chat extends Packet
+/**
+ * Sent by a client to the server.  The target ID must be non-negative and 0 means "everyone".
+ */
+public class Packet_SendChatMessage extends Packet
 {
-	public static final PacketType TYPE = PacketType.CHAT;
+	public static final PacketType TYPE = PacketType.SEND_CHAT_MESSAGE;
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
 		opcodeTable[TYPE.ordinal()] = (ByteBuffer buffer) -> {
-			int id = buffer.getInt();
+			int targetId = buffer.getInt();
 			String message = CodecHelpers.readString(buffer);
-			return new Packet_Chat(id, message);
+			return new Packet_SendChatMessage(targetId, message);
 		};
 	}
 
 
-	public final int clientId;
+	public final int targetId;
 	public final String message;
 
-	public Packet_Chat(int id, String message)
+	public Packet_SendChatMessage(int targetId, String message)
 	{
 		super(TYPE);
-		this.clientId = id;
+		this.targetId = targetId;
 		this.message = message;
 	}
 
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		buffer.putInt(this.clientId);
+		buffer.putInt(this.targetId);
 		CodecHelpers.writeString(buffer, this.message);
 	}
 }

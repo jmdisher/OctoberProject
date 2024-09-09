@@ -23,7 +23,6 @@ public class PacketCodec
 	{
 		Packet_ClientSendDescription.register(_CODEC_TABLE);
 		Packet_ServerSendClientId.register(_CODEC_TABLE);
-		Packet_Chat.register(_CODEC_TABLE);
 		Packet_CuboidStart.register(_CODEC_TABLE);
 		Packet_CuboidFragment.register(_CODEC_TABLE);
 		Packet_Entity.register(_CODEC_TABLE);
@@ -38,6 +37,7 @@ public class PacketCodec
 		Packet_ServerSendConfigUpdate.register(_CODEC_TABLE);
 		Packet_ClientJoined.register(_CODEC_TABLE);
 		Packet_ClientLeft.register(_CODEC_TABLE);
+		Packet_SendChatMessage.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
