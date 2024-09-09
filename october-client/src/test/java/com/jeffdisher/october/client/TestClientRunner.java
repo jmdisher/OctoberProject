@@ -451,6 +451,11 @@ public class TestClientRunner
 			this.toSend = change;
 			this.commitLevel = commitLevel;
 		}
+		@Override
+		public void sendChatMessage(int targetClientId, String message)
+		{
+			throw new AssertionError("sendChatMessage");
+		}
 	}
 
 	private static class TestProjection implements SpeculativeProjection.IProjectionListener

@@ -219,6 +219,19 @@ public class ClientRunner
 	}
 
 	/**
+	 * Sends a chat message to targetId.
+	 * 
+	 * @param targetId The ID of the target client (0 to mean "all").
+	 * @param message The message to send.
+	 */
+	public void sentChatMessage(int targetId, String message)
+	{
+		Assert.assertTrue(targetId >= 0);
+		Assert.assertTrue(null != message);
+		_network.sendChatMessage(targetId, message);
+	}
+
+	/**
 	 * Requests that this client disconnect from the server.
 	 */
 	public void disconnect()

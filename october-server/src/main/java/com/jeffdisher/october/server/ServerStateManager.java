@@ -28,6 +28,7 @@ import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
@@ -329,12 +330,19 @@ public class ServerStateManager
 	{
 		boolean didHandle;
 		
+		// We know that there are only 2 packet types currently passed through to this point.
 		// TODO:  Find a more elegant way to restrict this in the future - maybe different sub-interfaces, or something.
 		if (packet instanceof Packet_MutationEntityFromClient)
 		{
 			Packet_MutationEntityFromClient mutation = (Packet_MutationEntityFromClient) packet;
 			// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
 			didHandle = _callouts.runner_enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
+		}
+		else if (packet instanceof Packet_SendChatMessage)
+		{
+			Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
+			_relayChatMessage(chat.targetId, clientId, chat.message);
+			didHandle = true;
 		}
 		else
 		{

@@ -390,7 +390,7 @@ public class TestProcesses
 	@Test
 	public void basicChatSystem() throws Throwable
 	{
-		// Verify that the server can send messages to the clients.
+		// We need 2 clients and we want to verify that messages arrive at the correct targets.
 		long[] currentTimeMillis = new long[] { 1000L };
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
@@ -415,11 +415,20 @@ public class TestProcesses
 		_ClientListener listener2 = new _ClientListener();
 		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2");
 		client2.waitForLocalEntity(currentTimeMillis[0]);
-		client2.waitForClientId();
+		int clientId2 = client2.waitForClientId();
 		
-		// We now want to send 2 messages to test the cases:
+		// We now want to send 4 messages to test the cases:
+		// -from 1 to 2
+		// -from 2 to 0 (all)
 		// -from 0 (console) to 1
 		// -from 0 (console) to 0 (all)
+		String message1 = "Message from 1 to 2";
+		client1.sentChatMessage(clientId2, message1);
+		Assert.assertEquals(_combineMessage(clientId1, message1), _waitForChat(client2, listener2));
+		String message2 = "Message from 2 to 0";
+		client2.sentChatMessage(0, message2);
+		Assert.assertEquals(_combineMessage(clientId2, message2), _waitForChat(client1, listener1));
+		Assert.assertEquals(_combineMessage(clientId2, message2), _waitForChat(client2, listener2));
 		String message3 = "Message 0 to 1";
 		monitoringAgent.sendChatMessage(clientId1, message3);
 		Assert.assertEquals(_combineMessage(0, message3), _waitForChat(client1, listener1));

@@ -31,6 +31,7 @@ import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
+import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
@@ -250,6 +251,17 @@ public class ClientProcess
 		_runPendingCallbacks();
 	}
 
+	/**
+	 * Sends a chat message to targetId.
+	 * 
+	 * @param targetId The ID of the target client (0 to mean "all").
+	 * @param message The message to send.
+	 */
+	public void sentChatMessage(int targetId, String message)
+	{
+		_clientRunner.sentChatMessage(targetId, message);
+	}
+
 
 	private void _background_bufferPacket(Packet packet)
 	{
@@ -463,6 +475,14 @@ public class ClientProcess
 		public void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
+			_background_bufferPacket(packet);
+		}
+		@Override
+		public void sendChatMessage(int targetClientId, String message)
+		{
+			Assert.assertTrue(targetClientId >= 0);
+			Assert.assertTrue(null != message);
+			Packet_SendChatMessage packet = new Packet_SendChatMessage(targetClientId, message);
 			_background_bufferPacket(packet);
 		}
 	}

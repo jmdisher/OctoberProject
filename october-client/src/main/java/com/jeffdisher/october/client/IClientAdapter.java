@@ -38,6 +38,13 @@ public interface IClientAdapter
 	 * @param commitLevel The client's local commit level represented by this change.
 	 */
 	void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
+	/**
+	 * Sends the message to the given client ID via the server.
+	 * 
+	 * @param targetClientId The ID of the target client (0 for "everyone").
+	 * @param message The message.
+	 */
+	void sendChatMessage(int targetClientId, String message);
 
 
 	/**
