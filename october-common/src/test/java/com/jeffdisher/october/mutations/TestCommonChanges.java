@@ -1878,6 +1878,35 @@ public class TestCommonChanges
 		Assert.assertEquals(breath, end.breath());
 	}
 
+	@Test
+	public void almostBrokenToolCreative() throws Throwable
+	{
+		// Break a block with a tool with 1 durability, while in creative mode, to observe it does NOT break and only takes one hit.
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
+		newEntity.isCreativeMode = true;
+		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
+		// We assume that this is 1.
+		newEntity.setSelectedKey(1);
+		
+		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE_ITEM.number());
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// Do the break with only 1 ms, as it should break instantly.
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)1);
+		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		// We should still see the item in the inventory.
+		Assert.assertEquals(1, newEntity.getSelectedKey());
+		Assert.assertEquals(1, newEntity.newInventory.freeze().getNonStackableForKey(1).durability());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

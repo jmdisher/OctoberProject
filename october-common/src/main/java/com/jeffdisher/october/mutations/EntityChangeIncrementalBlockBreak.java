@@ -82,23 +82,32 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 					? selected.type()
 					: null
 			;
-			int speedMultiplier;
-			if (env.blocks.getBlockMaterial(proxy.getBlock()) == env.tools.toolTargetMaterial(selectedItem))
+			// We will apply max damage if creative, otherwise we will consider the tool and material.
+			short damageToApply;
+			if (newEntity.isCreativeMode())
 			{
-				// The tool material matches so set the multiplier.
-				speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+				damageToApply = Short.MAX_VALUE;
 			}
 			else
 			{
-				// This doesn't match so use the default of 1.
-				speedMultiplier = 1;
+				int speedMultiplier;
+				if (env.blocks.getBlockMaterial(proxy.getBlock()) == env.tools.toolTargetMaterial(selectedItem))
+				{
+					// The tool material matches so set the multiplier.
+					speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
+				}
+				else
+				{
+					// This doesn't match so use the default of 1.
+					speedMultiplier = 1;
+				}
+				damageToApply = (short)(speedMultiplier * _millisToApply);
 			}
-			short damageToApply = (short)(speedMultiplier * _millisToApply);
 			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.getId());
 			context.mutationSink.next(mutation);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
-			if (null != selected)
+			if ((null != selected) && !newEntity.isCreativeMode())
 			{
 				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)

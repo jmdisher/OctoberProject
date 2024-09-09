@@ -35,5 +35,7 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 
 	void setEnergyDeficit(int deficit);
 
+	boolean isCreativeMode();
+
 	void setCreativeMode(boolean enableCreative);
 }

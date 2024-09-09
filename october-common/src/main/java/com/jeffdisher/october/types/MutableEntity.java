@@ -321,6 +321,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public boolean isCreativeMode()
+	{
+		return this.isCreativeMode;
+	}
+
+	@Override
 	public void setCreativeMode(boolean enableCreative)
 	{
 		this.isCreativeMode = enableCreative;
