@@ -13,7 +13,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
-import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -310,9 +310,9 @@ public class ServerRunner
 			_loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, out_loadedEntities, requestedCuboids, requestedEntityIds);
 		}
 		@Override
-		public Packet_MutationEntityFromClient network_peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		public Packet network_peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove)
 		{
-			return _network.peekOrRemoveNextMutationFromClient(clientId, toRemove);
+			return _network.peekOrRemoveNextPacketFromClient(clientId, toRemove);
 		}
 		@Override
 		public void network_sendFullEntity(int clientId, Entity entity)

@@ -24,7 +24,6 @@ import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
-import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
@@ -289,11 +288,9 @@ public class ServerProcess
 			_serverReady(listener);
 		}
 		@Override
-		public Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		public Packet peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove)
 		{
-			// The only packets which are currently sent after the handshake are entity mutations.
-			return (Packet_MutationEntityFromClient) _peekOrRemoveNextMutationFromClient(clientId, toRemove);
-			
+			return _peekOrRemoveNextMutationFromClient(clientId, toRemove);
 		}
 		@Override
 		public void sendFullEntity(int clientId, Entity entity)

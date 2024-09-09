@@ -31,6 +31,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
+import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.IWorldGenerator;
@@ -596,7 +597,7 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public synchronized Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		public synchronized Packet peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove)
 		{
 			Queue<Packet_MutationEntityFromClient> queue = this.packets.get(clientId);
 			if (null != toRemove)

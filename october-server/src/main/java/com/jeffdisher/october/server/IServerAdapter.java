@@ -5,7 +5,7 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
-import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -38,7 +38,7 @@ public interface IServerAdapter
 	 * @param toRemove If non-null, removes the next packet, checks that it matches, and discards it.
 	 * @return The next packet in the list (null if empty).
 	 */
-	Packet_MutationEntityFromClient peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove);
+	Packet peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove);
 	/**
 	 * Sends a full entity to a given client.
 	 * 

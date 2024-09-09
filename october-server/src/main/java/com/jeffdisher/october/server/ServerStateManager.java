@@ -26,6 +26,7 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
+import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -303,26 +304,46 @@ public class ServerStateManager
 	private boolean _drainPacketsIntoRunner(int clientId)
 	{
 		// Consume as many of these mutations as we can fit into the TickRunner.
-		Packet_MutationEntityFromClient mutation = _callouts.network_peekOrRemoveNextMutationFromClient(clientId, null);
-		Assert.assertTrue(null != mutation);
-		// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
-		boolean didAdd = _callouts.runner_enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
-		while (didAdd)
+		Packet packet = _callouts.network_peekOrRemoveNextPacketFromClient(clientId, null);
+		// We are calling this in response to readability so this cannot be null.
+		Assert.assertTrue(null != packet);
+		
+		boolean didHandle = _handleIncomingPacket(clientId, packet);
+		while (didHandle)
 		{
-			mutation = _callouts.network_peekOrRemoveNextMutationFromClient(clientId, mutation);
-			if (null != mutation)
+			packet = _callouts.network_peekOrRemoveNextPacketFromClient(clientId, packet);
+			if (null != packet)
 			{
-				didAdd = _callouts.runner_enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
+				didHandle = _handleIncomingPacket(clientId, packet);
 			}
 			else
 			{
-				didAdd = false;
+				didHandle = false;
 			}
 		}
 		// If we didn't consume everything, there is still more to read.
-		return (null != mutation);
+		return (null != packet);
 	}
-	
+
+	private boolean _handleIncomingPacket(int clientId, Packet packet)
+	{
+		boolean didHandle;
+		
+		// TODO:  Find a more elegant way to restrict this in the future - maybe different sub-interfaces, or something.
+		if (packet instanceof Packet_MutationEntityFromClient)
+		{
+			Packet_MutationEntityFromClient mutation = (Packet_MutationEntityFromClient) packet;
+			// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
+			didHandle = _callouts.runner_enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
+		}
+		else
+		{
+			// This means that a new message type made its way to the server.
+			throw Assert.unreachable();
+		}
+		return didHandle;
+	}
+
 	private void _sendEntityUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
 	{
 		// Add any entities this client hasn't seen.
@@ -600,7 +621,7 @@ public class ServerStateManager
 		);
 		
 		// IServerAdapter.
-		Packet_MutationEntityFromClient network_peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove);
+		Packet network_peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove);
 		void network_sendFullEntity(int clientId, Entity entity);
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
 		void network_removeEntity(int clientId, int entityId);

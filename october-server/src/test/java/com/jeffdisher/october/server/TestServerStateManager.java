@@ -24,6 +24,7 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -191,7 +192,7 @@ public class TestServerStateManager
 		
 		// We need to setup the callouts to not fully satisfy this.
 		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(null, 1L);
-		callouts.peekHandler = (Packet_MutationEntityFromClient toRemove) -> {
+		callouts.peekHandler = (Packet toRemove) -> {
 			Assert.assertTrue(connectedRef[0]);
 			return packet;
 		};
@@ -339,7 +340,7 @@ public class TestServerStateManager
 		public Set<PackagedCuboid> cuboidsToWrite = new HashSet<>();
 		public Set<SuspendedEntity> entitiesToWrite = new HashSet<>();
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
-		public Function<Packet_MutationEntityFromClient, Packet_MutationEntityFromClient> peekHandler = null;
+		public Function<Packet, Packet> peekHandler = null;
 		public boolean didEnqueue = false;
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
 		
@@ -370,7 +371,7 @@ public class TestServerStateManager
 			this.loadedEntities.clear();
 		}
 		@Override
-		public Packet_MutationEntityFromClient network_peekOrRemoveNextMutationFromClient(int clientId, Packet_MutationEntityFromClient toRemove)
+		public Packet network_peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove)
 		{
 			return peekHandler.apply(toRemove);
 		}
