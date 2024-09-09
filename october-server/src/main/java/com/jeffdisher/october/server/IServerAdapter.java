@@ -129,6 +129,14 @@ public interface IServerAdapter
 	 */
 	void sendClientLeft(int clientId, int leftClientId);
 	/**
+	 * Delivers a message from senderId to clientId.
+	 * 
+	 * @param clientId The ID of the client to receive the message (must be >0).
+	 * @param senderId The ID of the client which send the message (must be >=0 as 0 means "console").
+	 * @param message The message to send.
+	 */
+	void sendChatMessage(int clientId, int senderId, String message);
+	/**
 	 * Disconnects the given client.  Note that the implementation may still send messages from them, after this call,
 	 * but will seek to disconnect them.
 	 * 

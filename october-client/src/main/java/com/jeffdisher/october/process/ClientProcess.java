@@ -27,6 +27,7 @@ import com.jeffdisher.october.net.Packet_ClientLeft;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
@@ -426,6 +427,11 @@ public class ClientProcess
 				Packet_ClientLeft safe = (Packet_ClientLeft)packet;
 				_messagesToClientRunner.receivedOtherClientLeft(safe.clientId);
 			}
+			else if (packet instanceof Packet_ReceiveChatMessage)
+			{
+				Packet_ReceiveChatMessage safe = (Packet_ReceiveChatMessage)packet;
+				_messagesToClientRunner.receivedChatMessage(safe.sourceId, safe.message);
+			}
 			else
 			{
 				// If this is something unknown, there is a missing handler here.
@@ -567,6 +573,13 @@ public class ClientProcess
 				_listener.otherClientLeft(clientId);
 			});
 		}
+		@Override
+		public void receivedChatMessage(int senderId, String message)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.receivedChatMessage(senderId, message);
+			});
+		}
 	}
 
 	private static class _LockingList
@@ -686,5 +699,12 @@ public class ClientProcess
 		 * @param clientId The ID of the other client.
 		 */
 		void otherClientLeft(int clientId);
+		/**
+		 * Called when the server relays a chat message from another client.
+		 * 
+		 * @param senderId The ID of the other client (0 for "server console").
+		 * @param message The message.
+		 */
+		void receivedChatMessage(int senderId, String message);
 	}
 }

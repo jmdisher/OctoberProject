@@ -563,5 +563,10 @@ public class TestClientRunner
 			Assert.assertTrue(this.otherClients.containsKey(clientId));
 			this.otherClients.remove(clientId);
 		}
+		@Override
+		public void receivedChatMessage(int senderId, String message)
+		{
+			throw new AssertionError("chatMessage");
+		}
 	}
 }

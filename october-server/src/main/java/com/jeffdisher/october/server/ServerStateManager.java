@@ -260,6 +260,12 @@ public class ServerStateManager
 		}
 	}
 
+	public void sendConsoleMessage(int targetId, String message)
+	{
+		int consoleId = 0;
+		_relayChatMessage(targetId, consoleId, message);
+	}
+
 	public void shutdown()
 	{
 		// Finish any remaining write-back.
@@ -565,6 +571,23 @@ public class ServerStateManager
 		return entityResources;
 	}
 
+	public void _relayChatMessage(int targetId, int senderId, String message)
+	{
+		// We interpret 0 as "all" but otherwise just make sure that they are here.
+		// (note that this is allowed to silently fail due to network races, etc).
+		if (0 == targetId)
+		{
+			for (Integer clientId : _connectedClients.keySet())
+			{
+				_callouts.network_sendChatMessage(clientId, senderId, message);
+			}
+		}
+		else if (_connectedClients.containsKey(targetId))
+		{
+			_callouts.network_sendChatMessage(targetId, senderId, message);
+		}
+	}
+
 
 	public static interface ICallouts
 	{
@@ -590,6 +613,7 @@ public class ServerStateManager
 		void network_sendConfig(int clientId, WorldConfig config);
 		void network_sendClientJoined(int clientId, int joinedClientId, String name);
 		void network_sendClientLeft(int clientId, int leftClientId);
+		void network_sendChatMessage(int clientId, int senderId, String message);
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);

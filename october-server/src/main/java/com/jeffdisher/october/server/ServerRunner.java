@@ -122,6 +122,11 @@ public class ServerRunner
 				_stateManager.broadcastConfig(config);
 			});
 		});
+		_monitoringAgent.setChatSink((int targetId, String message) -> {
+			_messages.enqueue(() -> {
+				_stateManager.sendConsoleMessage(targetId, message);
+			});
+		});
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
 		_background.start();
@@ -368,6 +373,11 @@ public class ServerRunner
 		public void network_sendClientLeft(int clientId, int leftClientId)
 		{
 			_network.sendClientLeft(clientId, leftClientId);
+		}
+		@Override
+		public void network_sendChatMessage(int clientId, int senderId, String message)
+		{
+			_network.sendChatMessage(clientId, senderId, message);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

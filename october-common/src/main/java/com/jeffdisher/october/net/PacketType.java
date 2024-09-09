@@ -88,6 +88,10 @@ public enum PacketType
 	 * Sent by the client to the server.
 	 */
 	SEND_CHAT_MESSAGE,
+	/**
+	 * Sent by the server to the client.
+	 */
+	RECEIVE_CHAT_MESSAGE,
 	
 	END_OF_LIST,
 }

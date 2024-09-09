@@ -701,6 +701,11 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
+		public void sendChatMessage(int clientId, int senderId, String message)
+		{
+			throw new AssertionError("sendChatMessage");
+		}
+		@Override
 		public synchronized void disconnectClient(int clientId)
 		{
 		}

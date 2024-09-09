@@ -20,10 +20,11 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_ClientJoined;
 import com.jeffdisher.october.net.Packet_ClientLeft;
-import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
@@ -378,6 +379,12 @@ public class ServerProcess
 		public void sendClientLeft(int clientId, int leftClientId)
 		{
 			Packet_ClientLeft packet = new Packet_ClientLeft(leftClientId);
+			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendChatMessage(int clientId, int senderId, String message)
+		{
+			Packet_ReceiveChatMessage packet = new Packet_ReceiveChatMessage(senderId, message);
 			_bufferPacket(clientId, packet);
 		}
 		@Override

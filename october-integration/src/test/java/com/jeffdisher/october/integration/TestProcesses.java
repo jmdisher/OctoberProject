@@ -387,6 +387,55 @@ public class TestProcesses
 		Assert.assertEquals(WorldConfig.DEFAULT_TICKS_PER_DAY, listener.ticksPerDay);
 	}
 
+	@Test
+	public void basicChatSystem() throws Throwable
+	{
+		// Verify that the server can send messages to the clients.
+		long[] currentTimeMillis = new long[] { 1000L };
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
+		
+		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
+				, cuboidLoader
+				, () -> currentTimeMillis[0]
+				, monitoringAgent
+				, new WorldConfig()
+		);
+		
+		// Create the first client.
+		_ClientListener listener1 = new _ClientListener();
+		ClientProcess client1 = new ClientProcess(listener1, InetAddress.getLocalHost(), PORT, "Client 1");
+		client1.waitForLocalEntity(currentTimeMillis[0]);
+		int clientId1 = client1.waitForClientId();
+		
+		// Create the second client.
+		_ClientListener listener2 = new _ClientListener();
+		ClientProcess client2 = new ClientProcess(listener2, InetAddress.getLocalHost(), PORT, "Client 2");
+		client2.waitForLocalEntity(currentTimeMillis[0]);
+		client2.waitForClientId();
+		
+		// We now want to send 2 messages to test the cases:
+		// -from 0 (console) to 1
+		// -from 0 (console) to 0 (all)
+		String message3 = "Message 0 to 1";
+		monitoringAgent.sendChatMessage(clientId1, message3);
+		Assert.assertEquals(_combineMessage(0, message3), _waitForChat(client1, listener1));
+		String message4 = "Message from 0 to 0";
+		monitoringAgent.sendChatMessage(0, message4);
+		Assert.assertEquals(_combineMessage(0, message4), _waitForChat(client1, listener1));
+		Assert.assertEquals(_combineMessage(0, message4), _waitForChat(client2, listener2));
+		
+		// Now, wait for the involved parties to see the expected messages.
+		
+		// We are done.
+		client1.disconnect();
+		client2.disconnect();
+		server.stop();
+	}
+
 
 	// We want to compare locations with 0.01 precision, since small rounding errors are unavoidable with floats but
 	// aren't a problem, so we use this helper.
@@ -395,6 +444,24 @@ public class TestProcesses
 		Assert.assertEquals(expected.x(), test.x(), 0.01f);
 		Assert.assertEquals(expected.y(), test.y(), 0.01f);
 		Assert.assertEquals(expected.z(), test.z(), 0.01f);
+	}
+
+	private static String _waitForChat(ClientProcess client, _ClientListener listener) throws InterruptedException
+	{
+		while (null == listener.lastMessage)
+		{
+			long millis = 10L;
+			Thread.sleep(millis);
+			client.runPendingCalls(System.currentTimeMillis());
+		}
+		String message = listener.lastMessage;
+		listener.lastMessage = null;
+		return message;
+	}
+
+	private static String _combineMessage(int senderId, String message)
+	{
+		return senderId + ": " + message;
 	}
 
 
@@ -407,6 +474,7 @@ public class TestProcesses
 		public long lastTickCompleted = 0L;
 		public int ticksPerDay;
 		public final Map<Integer, String> otherClients = new HashMap<>();
+		public String lastMessage;
 		
 		public Entity getLocalEntity()
 		{
@@ -497,6 +565,12 @@ public class TestProcesses
 		{
 			Object old = this.otherClients.remove(clientId);
 			Assert.assertNotNull(old);
+		}
+		@Override
+		public void receivedChatMessage(int senderId, String message)
+		{
+			Assert.assertNull(this.lastMessage);
+			this.lastMessage = _combineMessage(senderId, message);
 		}
 	}
 }

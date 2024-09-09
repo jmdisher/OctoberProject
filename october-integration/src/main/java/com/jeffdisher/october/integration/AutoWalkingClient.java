@@ -74,6 +74,7 @@ public class AutoWalkingClient
 
 	private static class _Listener implements ClientProcess.IListener
 	{
+		public int thisAssignedId;
 		public boolean isConnected;
 		public Entity thisEntity;
 		
@@ -81,6 +82,7 @@ public class AutoWalkingClient
 		public void connectionEstablished(int assignedEntityId)
 		{
 			System.out.println("Connected as " + assignedEntityId);
+			this.thisAssignedId = assignedEntityId;
 			this.isConnected = true;
 		}
 		@Override
@@ -139,6 +141,14 @@ public class AutoWalkingClient
 		@Override
 		public void otherClientJoined(int clientId, String name)
 		{
+		}
+		@Override
+		public void receivedChatMessage(int senderId, String message)
+		{
+			if (senderId != this.thisAssignedId)
+			{
+				System.out.println("Chat from " + senderId + ": " + message);
+			}
 		}
 	}
 }

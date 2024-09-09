@@ -445,6 +445,11 @@ public class TestServerStateManager
 			Assert.assertNotNull(old);
 		}
 		@Override
+		public void network_sendChatMessage(int clientId, int senderId, String message)
+		{
+			throw new AssertionError("network_sendChatMessage");
+		}
+		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return this.didEnqueue;

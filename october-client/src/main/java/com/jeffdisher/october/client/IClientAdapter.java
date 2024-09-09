@@ -138,5 +138,12 @@ public interface IClientAdapter
 		 * @param clientId The ID of the other client.
 		 */
 		void receivedOtherClientLeft(int clientId);
+		/**
+		 * Called when we receive a chat message from another client.
+		 * 
+		 * @param senderId The ID of the client which sent the message (0 means "server console").
+		 * @param message The message.
+		 */
+		void receivedChatMessage(int senderId, String message);
 	}
 }

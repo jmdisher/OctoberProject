@@ -411,6 +411,13 @@ public class ClientRunner
 				_clientListener.otherClientLeft(clientId);
 			});
 		}
+		@Override
+		public void receivedChatMessage(int senderId, String message)
+		{
+			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
+				_clientListener.receivedChatMessage(senderId, message);
+			});
+		}
 	}
 
 	private class LockedList
@@ -527,5 +534,12 @@ public class ClientRunner
 		 * @param clientId The ID of the other client.
 		 */
 		void otherClientLeft(int clientId);
+		/**
+		 * Called when the server relays a chat message from another client.
+		 * 
+		 * @param senderId The ID of the other client (0 for "server console").
+		 * @param message The message.
+		 */
+		void receivedChatMessage(int senderId, String message);
 	}
 }
