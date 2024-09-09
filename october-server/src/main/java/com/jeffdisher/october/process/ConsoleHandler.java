@@ -181,13 +181,6 @@ public class ConsoleHandler
 			out.println("\tCuboids: " + cuboidCount);
 			out.println("\tCreatures: " + creatureCount);
 		}),
-		ECHO((PrintStream out, _ConsoleState state, String[] parameters) -> {
-			for (String param : parameters)
-			{
-				out.print(param + " ");
-			}
-			out.println();
-		}),
 		DISCONNECT((PrintStream out, _ConsoleState state, String[] parameters) -> {
 			if (parameters.length > 0)
 			{
@@ -348,6 +341,43 @@ public class ConsoleHandler
 				out.println("Error:  No parameters expected");
 			}
 		}),
+		MESSAGE((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We treat the first parameter as the target ID number but the rest are just joined with a space and sent.
+			if (parameters.length >= 2)
+			{
+				int targetId = Integer.parseInt(parameters[0]);
+				String name = state.monitoringAgent.getClientsCopy().get(targetId);
+				String message = _joinList(1, parameters);
+				// The actual message must not be empty.
+				if (!message.isEmpty() && (null != name))
+				{
+					state.monitoringAgent.getCommandSink().sendChatMessage(targetId, message);
+					out.println("Message to " + name + ": "+ message);
+				}
+				else
+				{
+					out.println("Usage:  <target_id> message...");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <target_id> message...");
+			}
+		}),
+		BROADCAST((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// Just join the parameters with spaces and send them.
+			String message = _joinList(0, parameters);
+			// The actual message must not be empty.
+			if (!message.isEmpty())
+			{
+				state.monitoringAgent.getCommandSink().sendChatMessage(0, message);
+				out.println("Broadcast: "+ message);
+			}
+			else
+			{
+				out.println("Usage:  message...");
+			}
+		}),
 		;
 		
 		public final _CommandHandler handler;
@@ -369,6 +399,16 @@ public class ConsoleHandler
 				// Not a valid int.
 			}
 			return read;
+		}
+		
+		private static String _joinList(int start, String[] list)
+		{
+			String message = list[start];
+			for (int i = (start + 1); i < list.length; ++i)
+			{
+				message += " " + list[i];
+			}
+			return message;
 		}
 	}
 }

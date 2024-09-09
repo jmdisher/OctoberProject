@@ -97,18 +97,6 @@ public class TestConsoleHandler
 	}
 
 	@Test
-	public void echoCollapseParameters() throws Throwable
-	{
-		// The basic use-case where we just stop, inline.
-		InputStream in = new ByteArrayInputStream("!echo one two      three\n!stop\n".getBytes());
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		PrintStream printer = new PrintStream(out);
-		MonitoringAgent monitoringAgent = new MonitoringAgent();
-		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
-		Assert.assertArrayEquals("one two three \nShutting down...\n".getBytes(), out.toByteArray());
-	}
-
-	@Test
 	public void operatorSetCreative() throws Throwable
 	{
 		// The basic use-case where we just stop, inline.
@@ -221,5 +209,77 @@ public class TestConsoleHandler
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didBroadcast[0]);
+	}
+
+	@Test
+	public void messageBehaviour() throws Throwable
+	{
+		// The basic use-case where we just stop, inline.
+		InputStream in = new ByteArrayInputStream(("!message 1 one message\n"
+				+ "!message 2 two message\n"
+				+ "!stop\n"
+		).getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		monitoringAgent.clientConnected(1, null, "Client");
+		String[] outMessage = new String[1];
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				throw new AssertionError("submitEntityMutation");
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				throw new AssertionError("requestConfigBroadcast");
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				Assert.assertEquals(1, targetId);
+				Assert.assertNull(outMessage[0]);
+				outMessage[0] = message;
+			}
+		});
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
+		Assert.assertArrayEquals("Message to Client: one message\nUsage:  <target_id> message...\nShutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertEquals("one message", outMessage[0]);
+	}
+
+	@Test
+	public void broadcastCollapseParameters() throws Throwable
+	{
+		// The basic use-case where we just stop, inline.
+		InputStream in = new ByteArrayInputStream("!broadcast one two      three\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		String[] outMessage = new String[1];
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				throw new AssertionError("submitEntityMutation");
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				throw new AssertionError("requestConfigBroadcast");
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				Assert.assertEquals(0, targetId);
+				Assert.assertNull(outMessage[0]);
+				outMessage[0] = message;
+			}
+		});
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
+		Assert.assertArrayEquals("Broadcast: one two three\nShutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertEquals("one two three", outMessage[0]);
 	}
 }
