@@ -430,10 +430,10 @@ public class TestProcesses
 		Assert.assertEquals(_combineMessage(clientId2, message2), _waitForChat(client1, listener1));
 		Assert.assertEquals(_combineMessage(clientId2, message2), _waitForChat(client2, listener2));
 		String message3 = "Message 0 to 1";
-		monitoringAgent.sendChatMessage(clientId1, message3);
+		monitoringAgent.getCommandSink().sendChatMessage(clientId1, message3);
 		Assert.assertEquals(_combineMessage(0, message3), _waitForChat(client1, listener1));
 		String message4 = "Message from 0 to 0";
-		monitoringAgent.sendChatMessage(0, message4);
+		monitoringAgent.getCommandSink().sendChatMessage(0, message4);
 		Assert.assertEquals(_combineMessage(0, message4), _waitForChat(client1, listener1));
 		Assert.assertEquals(_combineMessage(0, message4), _waitForChat(client2, listener2));
 		

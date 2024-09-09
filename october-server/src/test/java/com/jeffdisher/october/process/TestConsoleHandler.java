@@ -117,10 +117,25 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didCheck = new boolean[1];
-		monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
-			Assert.assertEquals(123, clientId);
-			Assert.assertNotNull(command);
-			didCheck[0] = true;
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				Assert.assertEquals(123, clientId);
+				Assert.assertNotNull(command);
+				didCheck[0] = true;
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				throw new AssertionError("requestConfigBroadcast");
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				throw new AssertionError("sendChatMessage");
+			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
@@ -151,10 +166,25 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didCheck = new boolean[1];
-		monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
-			Assert.assertEquals(123, clientId);
-			Assert.assertNotNull(command);
-			didCheck[0] = true;
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				Assert.assertEquals(123, clientId);
+				Assert.assertNotNull(command);
+				didCheck[0] = true;
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				throw new AssertionError("requestConfigBroadcast");
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				throw new AssertionError("sendChatMessage");
+			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
@@ -170,7 +200,24 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didBroadcast = new boolean[1];
-		monitoringAgent.setConfigBroadcastRequester(() -> didBroadcast[0] = true);
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				throw new AssertionError("submitEntityMutation");
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				didBroadcast[0] = true;
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				throw new AssertionError("sendChatMessage");
+			}
+		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didBroadcast[0]);

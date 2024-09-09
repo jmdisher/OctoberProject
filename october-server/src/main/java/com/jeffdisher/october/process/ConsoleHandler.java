@@ -242,7 +242,7 @@ public class ConsoleHandler
 					// Pass in the operator command.
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
 					EntityChangeOperatorSetCreative command = new EntityChangeOperatorSetCreative(setCreative);
-					monitoringAgent.getCommandSink().submit(clientId, command);
+					monitoringAgent.getCommandSink().submitEntityMutation(clientId, command);
 				}
 				else
 				{
@@ -301,7 +301,7 @@ public class ConsoleHandler
 					MonitoringAgent monitoringAgent = state.monitoringAgent;
 					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
 					EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(location);
-					monitoringAgent.getCommandSink().submit(clientId, command);
+					monitoringAgent.getCommandSink().submitEntityMutation(clientId, command);
 				}
 				else
 				{
@@ -322,7 +322,7 @@ public class ConsoleHandler
 				{
 					// Update the config and broadcast the change to the clients.
 					state.mutableSharedConfig.ticksPerDay = ticksPerDay;
-					state.monitoringAgent.requestConfigBroadcast();
+					state.monitoringAgent.getCommandSink().requestConfigBroadcast();
 				}
 				else
 				{
@@ -341,7 +341,7 @@ public class ConsoleHandler
 				// We will reset the day start time based on the current tick value and broadcast the change.
 				long currentGameTick = state.monitoringAgent.getLastSnapshot().tickNumber();
 				state.mutableSharedConfig.dayStartTick = (int)PropagationHelpers.resumableStartTick(currentGameTick, state.mutableSharedConfig.ticksPerDay, state.mutableSharedConfig.dayStartTick);
-				state.monitoringAgent.requestConfigBroadcast();
+				state.monitoringAgent.getCommandSink().requestConfigBroadcast();
 			}
 			else
 			{

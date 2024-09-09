@@ -22,8 +22,6 @@ public class MonitoringAgent
 	private volatile NetworkServer<?> _network;
 	private volatile TickRunner.Snapshot _lastSnapshot;
 	private volatile OperatorCommandSink _commandSink;
-	private volatile Runnable _configBroadcastRequester;
-	private volatile ChatMessageSink _chatSink;
 
 	public void setNetwork(NetworkServer<?> network)
 	{
@@ -66,21 +64,6 @@ public class MonitoringAgent
 		return _commandSink;
 	}
 
-	public void setConfigBroadcastRequester(Runnable configBroadcastRequester)
-	{
-		_configBroadcastRequester = configBroadcastRequester;
-	}
-
-	public void requestConfigBroadcast()
-	{
-		_configBroadcastRequester.run();
-	}
-
-	public void setChatSink(ChatMessageSink chatSink)
-	{
-		_chatSink = chatSink;
-	}
-
 	public synchronized Map<Integer, String> getClientsCopy()
 	{
 		return new HashMap<>(_connectedClientIds);
@@ -96,22 +79,11 @@ public class MonitoringAgent
 		return _lastSnapshot;
 	}
 
-	public void sendChatMessage(int targetId, String message)
-	{
-		Assert.assertTrue(targetId >= 0);
-		Assert.assertTrue(null != message);
-		
-		_chatSink.sendChatMessage(targetId, message);
-	}
-
 
 	public static interface OperatorCommandSink
 	{
-		void submit(int clientId, IMutationEntity<IMutablePlayerEntity> command);
-	}
-
-	public static interface ChatMessageSink
-	{
+		void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command);
+		void requestConfigBroadcast();
 		void sendChatMessage(int targetId, String message);
 	}
 }

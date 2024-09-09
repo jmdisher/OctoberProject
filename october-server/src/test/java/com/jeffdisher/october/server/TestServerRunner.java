@@ -483,7 +483,7 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// Now, we can request a broadcast.
-		monitoringAgent.requestConfigBroadcast();
+		monitoringAgent.getCommandSink().requestConfigBroadcast();
 		WorldConfig foundConfig = network.waitForConfig();
 		
 		// This config should be the same one we passed in (the shared instance).
@@ -540,7 +540,7 @@ public class TestServerRunner
 		EntityLocation islandBase = otherIsland.getBase().toEntityLocation();
 		EntityLocation teleportTarget = new EntityLocation(islandBase.x() + 1.0f, islandBase.y() + 1.0f, islandBase.z() + 1.0f);
 		EntityChangeOperatorSetLocation command = new EntityChangeOperatorSetLocation(teleportTarget);
-		monitoringAgent.getCommandSink().submit(clientId2, command);
+		monitoringAgent.getCommandSink().submitEntityMutation(clientId2, command);
 		
 		// Wait for the old entities to disappear and the new cow to appear.
 		network.waitForEntityRemoval(clientId2, -1);
@@ -549,7 +549,7 @@ public class TestServerRunner
 		network.waitForEntityRemoval(clientId1, clientId2);
 		
 		// Move the other entity to this same location and observe the updates from their perspective.
-		monitoringAgent.getCommandSink().submit(clientId1, command);
+		monitoringAgent.getCommandSink().submitEntityMutation(clientId1, command);
 		network.waitForEntityRemoval(clientId1, -1);
 		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId1, -2).type());
 		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());

@@ -114,18 +114,23 @@ public class ServerRunner
 		_stateManager = new ServerStateManager(new _Callouts());
 		
 		// Register our various attachments into the monitoring agent.
-		_monitoringAgent.setOperatorCommandSink((int clientId, IMutationEntity<IMutablePlayerEntity> command) -> {
-			_tickRunner.enqueueOperatorMutation(clientId, command);
-		});
-		_monitoringAgent.setConfigBroadcastRequester(() -> {
-			_messages.enqueue(() -> {
+		_monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				_tickRunner.enqueueOperatorMutation(clientId, command);
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
 				_stateManager.broadcastConfig(config);
-			});
-		});
-		_monitoringAgent.setChatSink((int targetId, String message) -> {
-			_messages.enqueue(() -> {
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
 				_stateManager.sendConsoleMessage(targetId, message);
-			});
+			}
 		});
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
