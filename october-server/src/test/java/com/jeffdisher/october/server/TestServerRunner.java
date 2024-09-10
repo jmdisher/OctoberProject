@@ -22,14 +22,15 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
-import com.jeffdisher.october.mutations.EntityChangeTrickleInventory;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
@@ -48,8 +49,8 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -192,7 +193,18 @@ public class TestServerRunner
 		// Send a basic dependent change to verify that the ServerRunner's internal calls are unwrapped correctly.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
-		_loadDefaultMap(cuboidLoader);
+		
+		// Fill the cuboid with chests and put some items into one, so we can pull them out.
+		CuboidAddress addressAir = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboidAir = CuboidGenerator.createFilledCuboid(addressAir, ENV.special.AIR);
+		cuboidLoader.preload(cuboidAir);
+		CuboidAddress addressChest = new CuboidAddress((short)0, (short)0, (short)-1);
+		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
+		CuboidData cuboidChest = CuboidGenerator.createFilledCuboid(addressChest, chest);
+		cuboidLoader.preload(cuboidChest);
+		
+		Inventory inventory = Inventory.start(ENV.stations.getNormalInventorySize(chest)).addStackable(STONE.item(), 2).finish();
+		cuboidChest.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)31), inventory);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
@@ -208,15 +220,21 @@ public class TestServerRunner
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
 		
-		// Trickle in a few items to observe them showing up.
-		network.receiveFromClient(clientId, new EntityChangeTrickleInventory(new Items(STONE_ITEM, 3)), 1L);
+		// Wait until the cuboids are loaded.
+		network.waitForCuboidAddedCount(clientId, 2);
 		
+		// Pick these from the inventory and observe that they appear 2 ticks later.
+		// We will assume the inventory key is 1.
+		int blockInventoryKey = 1;
+		network.receiveFromClient(clientId, new MutationEntityRequestItemPickUp(new AbsoluteLocation(0, 0, -1), blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		
+		// The first tick won't change anything (as requesting inventory doesn't change the entity).
+		// The second will change the block (extracting from the inventory).
+		// The third will change the entity (receiving the items).
 		Object change0 = network.waitForUpdate(clientId, 0);
-		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		Assert.assertTrue(change0 instanceof MutationBlockSetBlock);
 		Object change1 = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
-		Object change2 = network.waitForUpdate(clientId, 2);
-		Assert.assertTrue(change2 instanceof MutationEntitySetEntity);
 		
 		runner.shutdown();
 	}
@@ -376,10 +394,10 @@ public class TestServerRunner
 		server.clientConnected(clientId1, null, "name");
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
-		Assert.assertEquals(0, entity1.inventory().sortedKeys().size());
+		Assert.assertEquals(0, entity1.hotbarIndex());
 		
-		// Change something - we will add items to the inventory.
-		network.receiveFromClient(clientId1, new EntityChangeTrickleInventory(new Items(STONE_ITEM, 1)), 1L);
+		// Change something - just change the selected hotbar slot.
+		network.receiveFromClient(clientId1, new EntityChangeChangeHotbarSlot(1), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
@@ -393,7 +411,7 @@ public class TestServerRunner
 		server.clientConnected(clientId1, null, "name");
 		entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
-		Assert.assertEquals(1, entity1.inventory().sortedKeys().size());
+		Assert.assertEquals(1, entity1.hotbarIndex());
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);

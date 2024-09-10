@@ -24,6 +24,7 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
@@ -191,7 +192,7 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 		
 		// We need to setup the callouts to not fully satisfy this.
-		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(null, 1L);
+		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(new MutationEntitySelectItem(1), 1L);
 		callouts.peekHandler = (Packet toRemove) -> {
 			Assert.assertTrue(connectedRef[0]);
 			return packet;

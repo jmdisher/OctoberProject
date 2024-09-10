@@ -1,10 +1,13 @@
 package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationEntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -14,6 +17,28 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 public class Packet_MutationEntityFromClient extends Packet
 {
 	public static final PacketType TYPE = PacketType.MUTATION_ENTITY_FROM_CLIENT;
+	/**
+	 * The white-list of entity changes which can come directly from a client (since some are internal-only).
+	 */
+	public static final Set<MutationEntityType> ALLOWED_TYPES = Set.of(
+			MutationEntityType.MOVE,
+			MutationEntityType.JUMP,
+			MutationEntityType.SWIM,
+			MutationEntityType.BLOCK_PLACE,
+			MutationEntityType.CRAFT,
+			MutationEntityType.SELECT_ITEM,
+			MutationEntityType.ITEMS_REQUEST_PUSH,
+			MutationEntityType.ITEMS_REQUEST_PULL,
+			MutationEntityType.INCREMENTAL_BREAK_BLOCK,
+			MutationEntityType.CRAFT_IN_BLOCK,
+			MutationEntityType.ATTACK_ENTITY,
+			MutationEntityType.USE_SELECTED_ITEM_ON_SELF,
+			MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK,
+			MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY,
+			MutationEntityType.CHANGE_HOTBAR_SLOT,
+			MutationEntityType.SWAP_ARMOUR,
+			MutationEntityType.SET_BLOCK_LOGIC_STATE
+	);
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
@@ -31,6 +56,10 @@ public class Packet_MutationEntityFromClient extends Packet
 	public Packet_MutationEntityFromClient(IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel)
 	{
 		super(TYPE);
+		
+		// We can only send mutations over the wire which are the kind which can actively originate within the client (not internal state changing calls).
+		Assert.assertTrue(ALLOWED_TYPES.contains(mutation.getType()));
+		
 		this.mutation = mutation;
 		this.commitLevel = commitLevel;
 	}
