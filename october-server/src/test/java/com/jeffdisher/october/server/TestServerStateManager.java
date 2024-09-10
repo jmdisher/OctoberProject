@@ -253,12 +253,14 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				
 				// Information related to tick behaviour and performance statistics.
-				, 0L
-				, 0L
-				, 0L
-				, null
-				, 0
-				, 0
+				, new TickRunner.TickStats(0L
+						, 0L
+						, 0L
+						, 0L
+						, null
+						, 0
+						, 0
+				)
 		);
 	}
 
@@ -268,6 +270,7 @@ public class TestServerStateManager
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
 	)
 	{
+		TickRunner.TickStats stats = snapshot.stats();
 		return new TickRunner.Snapshot(snapshot.tickNumber()
 				, completedEntities
 				, snapshot.commitLevels()
@@ -283,12 +286,7 @@ public class TestServerStateManager
 				, snapshot.scheduledEntityMutations()
 				
 				// Information related to tick behaviour and performance statistics.
-				, snapshot.millisTickPreamble()
-				, snapshot.millisTickParallelPhase()
-				, snapshot.millisTickPostamble()
-				, snapshot.threadStats()
-				, snapshot.committedEntityMutationCount()
-				, snapshot.committedCuboidMutationCount()
+				, stats
 		);
 	}
 

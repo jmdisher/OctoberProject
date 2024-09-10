@@ -172,7 +172,8 @@ public class ConsoleHandler
 			MonitoringAgent monitoringAgent = state.monitoringAgent;
 			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
 			long tickNumber = snapshot.tickNumber();
-			long processMillis = snapshot.millisTickPreamble() + snapshot.millisTickParallelPhase() + snapshot.millisTickPostamble();
+			TickRunner.TickStats stats = snapshot.stats();
+			long processMillis = stats.millisTickPreamble() + stats.millisTickParallelPhase() + stats.millisTickPostamble();
 			int entityCount = snapshot.completedEntities().size();
 			int cuboidCount = snapshot.completedCuboids().size();
 			int creatureCount = snapshot.completedCreatures().size();

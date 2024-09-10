@@ -7,7 +7,6 @@ import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -286,23 +285,14 @@ public class ServerRunner
 			_tickRunner.startNextTick();
 			
 			// Check if this needs to be logged.
-			long preamble = snapshot.millisTickPreamble();
-			long parallel = snapshot.millisTickParallelPhase();
-			long postamble = snapshot.millisTickPostamble();
+			TickRunner.TickStats stats = snapshot.stats();
+			long preamble = stats.millisTickPreamble();
+			long parallel = stats.millisTickParallelPhase();
+			long postamble = stats.millisTickPostamble();
 			long tickTime = preamble + parallel + postamble;
 			if (tickTime > _millisPerTick)
 			{
-				System.out.println("Log for slow (" + tickTime + " ms) tick " + snapshot.tickNumber());
-				System.out.println("\tPreamble: " + preamble + " ms");
-				System.out.println("\tParallel: " + parallel + " ms");
-				for (ProcessorElement.PerThreadStats thread : snapshot.threadStats())
-				{
-					System.out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, Creatures: " + thread.millisInCreatureProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
-					System.out.println("\t\tEntities processed: " + thread.entitiesProcessed() + ", changes processed " + thread.entityChangesProcessed());
-					System.out.println("\t\tCreatures processed: " + thread.creaturesProcessed() + ", changes processed " + thread.creatureChangesProcessed());
-					System.out.println("\t\tCuboids processed: " + thread.cuboidsProcessed() + ", mutations processed " + thread.cuboidMutationsProcessed() + ", updates processed " + thread.cuboidBlockupdatesProcessed());
-				}
-				System.out.println("\tPostamble: " + postamble + " ms");
+				stats.writeToStream(System.out);
 			}
 		}
 	}

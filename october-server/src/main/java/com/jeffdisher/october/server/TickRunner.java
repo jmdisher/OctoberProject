@@ -1,5 +1,6 @@
 package com.jeffdisher.october.server;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -185,12 +186,14 @@ public class TickRunner
 				, Collections.emptyMap()
 				
 				// Information related to tick behaviour and performance statistics.
-				, 0L
-				, 0L
-				, 0L
-				, null
-				, 0
-				, 0
+				, new TickStats(0L
+						, 0L
+						, 0L
+						, 0L
+						, null
+						, 0
+						, 0
+				)
 		);
 		for (Thread thread : _threads)
 		{
@@ -676,12 +679,14 @@ public class TickRunner
 					, Collections.unmodifiableMap(snapshotEntityMutations)
 					
 					// Stats.
-					, millisInTickPreamble
-					, millisTickParallelPhase
-					, millisTickPostamble
-					, _threadStats.clone()
-					, committedEntityMutationCount
-					, committedCuboidMutationCount
+					, new TickStats(_nextTick
+						, millisInTickPreamble
+						, millisTickParallelPhase
+						, millisTickPostamble
+						, _threadStats.clone()
+						, committedEntityMutationCount
+						, committedCuboidMutationCount
+					)
 			);
 			
 			// We want to pass this to a listener before we synchronize to avoid calling out under monitor.
@@ -1121,15 +1126,37 @@ public class TickRunner
 			, Map<Integer, List<ScheduledChange>> scheduledEntityMutations
 			// Note that the creature changes aren't included here since they are not serialized.
 			
-			// Information related to tick behaviour and performance statistics.
+			, TickStats stats
+	)
+	{}
+
+	public static record TickStats(long tickNumber
 			, long millisTickPreamble
 			, long millisTickParallelPhase
 			, long millisTickPostamble
 			, ProcessorElement.PerThreadStats[] threadStats
 			, int committedEntityMutationCount
 			, int committedCuboidMutationCount
-	)
-	{}
+	) {
+		public void writeToStream(PrintStream out)
+		{
+			long preamble = this.millisTickPreamble;
+			long parallel = this.millisTickParallelPhase;
+			long postamble = this.millisTickPostamble;
+			long tickTime = preamble + parallel + postamble;
+			out.println("Log for slow (" + tickTime + " ms) tick " + this.tickNumber);
+			out.println("\tPreamble: " + preamble + " ms");
+			out.println("\tParallel: " + parallel + " ms");
+			for (ProcessorElement.PerThreadStats thread : this.threadStats)
+			{
+				out.println("\t-Crowd: " + thread.millisInCrowdProcessor() + " ms, Creatures: " + thread.millisInCreatureProcessor() + " ms, World: " + thread.millisInWorldProcessor() + " ms");
+				out.println("\t\tEntities processed: " + thread.entitiesProcessed() + ", changes processed " + thread.entityChangesProcessed());
+				out.println("\t\tCreatures processed: " + thread.creaturesProcessed() + ", changes processed " + thread.creatureChangesProcessed());
+				out.println("\t\tCuboids processed: " + thread.cuboidsProcessed() + ", mutations processed " + thread.cuboidMutationsProcessed() + ", updates processed " + thread.cuboidBlockupdatesProcessed());
+			}
+			out.println("\tPostamble: " + postamble + " ms");
+		}
+	}
 
 	private static record TickMaterials(long thisGameTick
 			// Read-only versions of the cuboids produced by the previous tick (by address).

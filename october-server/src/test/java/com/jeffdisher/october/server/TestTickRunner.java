@@ -126,7 +126,7 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		runner.shutdown();
 		
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 	}
 
 	@Test
@@ -160,9 +160,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(1, snap1.committedCuboidMutationCount());
-		Assert.assertEquals(6, snap2.committedCuboidMutationCount());
-		Assert.assertEquals(36, snap3.committedCuboidMutationCount());
+		Assert.assertEquals(1, snap1.stats().committedCuboidMutationCount());
+		Assert.assertEquals(6, snap2.stats().committedCuboidMutationCount());
+		Assert.assertEquals(36, snap3.stats().committedCuboidMutationCount());
 	}
 
 	@Test
@@ -205,9 +205,9 @@ public class TestTickRunner
 		runner.shutdown();
 		
 		// 1 + 6 + 36 = 43.
-		Assert.assertEquals(1, snap1.committedCuboidMutationCount());
-		Assert.assertEquals(6, snap2.committedCuboidMutationCount());
-		Assert.assertEquals(36, snap3.committedCuboidMutationCount());
+		Assert.assertEquals(1, snap1.stats().committedCuboidMutationCount());
+		Assert.assertEquals(6, snap2.stats().committedCuboidMutationCount());
+		Assert.assertEquals(36, snap3.stats().committedCuboidMutationCount());
 	}
 
 	@Test
@@ -332,11 +332,11 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		// -after tick 2, the mutation will have been committed
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		
 		// Shutdown and observe expected results.
 		runner.shutdown();
@@ -431,13 +431,13 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Run another tick to see the underlying block change applied.
 		// We should see the commit and the change to the damage value.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(STONE, proxy1.getBlock());
 		Assert.assertEquals((short) 500, proxy1.getDamage());
@@ -450,12 +450,12 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Run the second tick to see the block change.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy2 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(ENV.special.AIR, proxy2.getBlock());
 		Assert.assertEquals((short) 0, proxy2.getDamage());
@@ -739,7 +739,7 @@ public class TestTickRunner
 		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, plankKey, 2, Inventory.INVENTORY_ASPECT_FUEL), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.committedEntityMutationCount());
+		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockStoreItems);
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(1).mutation() instanceof MutationBlockStoreItems);
@@ -747,7 +747,7 @@ public class TestTickRunner
 		// Run the next tick to see the craft scheduled.
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
-		Assert.assertEquals(2, snap.committedCuboidMutationCount());
+		Assert.assertEquals(2, snap.stats().committedCuboidMutationCount());
 		// We should see the two calls to accept the items.
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		BlockProxy proxy = new BlockProxy(block, snap.completedCuboids().get(address));
@@ -774,7 +774,7 @@ public class TestTickRunner
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
-			Assert.assertEquals(1, snap.committedCuboidMutationCount());
+			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 			Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
@@ -797,7 +797,7 @@ public class TestTickRunner
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		
-		Assert.assertEquals(1, snap.committedCuboidMutationCount());
+		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 		Assert.assertTrue(snap.scheduledBlockMutations().get(address).get(0).mutation() instanceof MutationBlockFurnaceCraft);
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
@@ -813,7 +813,7 @@ public class TestTickRunner
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
-			Assert.assertEquals(1, snap.committedCuboidMutationCount());
+			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 			Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
 		}
@@ -1321,11 +1321,11 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(2, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(2, snapshot.stats().committedEntityMutationCount());
 		
 		snapshot = runner.waitForPreviousTick();
 		// Here, we should see the block types changed but not yet the light.
-		Assert.assertEquals(2, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(2, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(2, snapshot.resultantBlockChangesByCuboid().get(address).size());
 		Assert.assertEquals(LANTERN_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, lanternLocation.getBlockAddress()));
 		Assert.assertEquals(STONE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
@@ -1385,11 +1385,11 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		snapshot = runner.waitForPreviousTick();
 		// We should see the sapling for one tick before it grows.
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(SAPLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
@@ -1457,11 +1457,11 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
@@ -1553,30 +1553,30 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		snapshot = runner.waitForPreviousTick();
 		// We should see the seed for one tick before it grows.
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, creak the dirt block.
 		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(dirtLocation, (short)100), 2L);
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Run another tick and see the dirt break but not yet the seedling.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Run another tick and see the seedling break.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// The item should be in the entity inventory, not the ground.
@@ -1589,7 +1589,7 @@ public class TestTickRunner
 		// Run another tick to see the seed drop into this inventory.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, dirtLocation.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
 		Assert.assertEquals(1, blockInventory.getCount(WHEAT_SEED_ITEM));
@@ -1639,7 +1639,7 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		snapshot = runner.waitForPreviousTick();
 		
 		// We should see the creature take damage.
@@ -1652,7 +1652,7 @@ public class TestTickRunner
 		
 		// (run an extra tick to unwrap the entity change)
 		snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		snapshot = runner.waitForPreviousTick();
 		
 		// We should see the creature is now gone.
@@ -1662,7 +1662,7 @@ public class TestTickRunner
 		// Run another tick and we should see their drops.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(1, snapshot.committedCuboidMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, spawn.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
 		Assert.assertEquals(1, blockInventory.getCount(ENV.items.getItemById("op.beef")));
@@ -1750,7 +1750,7 @@ public class TestTickRunner
 		
 		// (run an extra tick to apply the change to the block)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// At the end of this next tick, we should see the switch state changed, but not yet the lamp.
 		snapshot = runner.startNextTick();
@@ -1822,7 +1822,7 @@ public class TestTickRunner
 		
 		// (run an extra tick to apply the change to the block)
 		TickRunner.Snapshot snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// At the end of this next tick, we should see the switch state changed.
 		snapshot = runner.startNextTick();
@@ -1845,7 +1845,7 @@ public class TestTickRunner
 		
 		// (run an extra tick to apply the change to the block)
 		snapshot = runner.startNextTick();
-		Assert.assertEquals(1, snapshot.committedEntityMutationCount());
+		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// At the end of this next tick, we should see the wire broken but no logic changes.
 		snapshot = runner.startNextTick();
