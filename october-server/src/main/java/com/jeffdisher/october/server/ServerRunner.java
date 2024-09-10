@@ -109,7 +109,6 @@ public class ServerRunner
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
 		
-		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		_tickAdvancer = new _TickAdvancer();
 		_stateManager = new ServerStateManager(new _Callouts());
 		
@@ -171,30 +170,40 @@ public class ServerRunner
 
 	private void _backgroundMain()
 	{
-		long currentTime = _currentTimeMillisProvider.getAsLong();
-		long millisToWait = _nextTickMillis - currentTime;
-		while (millisToWait <= 0L)
-		{
-			System.out.println("WARNING:  Dropping tick on startup!");
-			_nextTickMillis += _millisPerTick;
-			millisToWait = _nextTickMillis - currentTime;
-		}
-		Runnable next = _messages.pollForNext(millisToWait, _scheduledAdvancer);
+		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
+		Runnable next = _messages.pollForNext(_millisPerTick, _scheduledAdvancer);
 		while (null != next)
 		{
 			next.run();
 			// If we are ready to schedule the tick advancer, find out when.
+			long millisToWait;
 			if (null != _scheduledAdvancer)
 			{
-				currentTime = _currentTimeMillisProvider.getAsLong();
+				long currentTime = _currentTimeMillisProvider.getAsLong();
 				millisToWait = _nextTickMillis - currentTime;
-				while (millisToWait <= 0L)
+				if (millisToWait > 0)
 				{
-					// This was already due so skip to the next.
-					System.out.println("WARNING:  Dropping tick!");
-					_nextTickMillis += _millisPerTick;
-					millisToWait = _nextTickMillis - currentTime;
+					// This is the normal behaviour - we have a tick to schedule (the TickTunner is idle) but we don't want to run it yet.
 				}
+				else
+				{
+					if (millisToWait < -_millisPerTick)
+					{
+						// We only want to log that we are dropping a tick if we are more than 1 tick behind since ticks are never scheduled ahead-of-time.
+						System.out.println("WARNING:  Dropping tick!");
+						_nextTickMillis += _millisPerTick;
+					}
+					// In any case, we are ready to run this so do it now, not even going through the message queue.
+					_scheduledAdvancer.run();
+					// This should have cleared the instance variable.
+					Assert.assertTrue(null == _scheduledAdvancer);
+					// Since we ran the action, just go back to waiting without limit.
+					millisToWait = 0L;
+				}
+			}
+			else
+			{
+				millisToWait = 0L;
 			}
 			next = _messages.pollForNext(millisToWait, _scheduledAdvancer);
 		}
