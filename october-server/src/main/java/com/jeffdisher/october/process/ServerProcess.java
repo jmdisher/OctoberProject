@@ -14,7 +14,8 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
-import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_EndOfTick;
 import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
@@ -174,14 +175,14 @@ public class ServerProcess
 
 	private synchronized void _sendNextPacket(ClientBuffer buffer)
 	{
-		Packet next = buffer.removeOutgoingPacketForWriteableClient();
+		PacketFromServer next = buffer.removeOutgoingPacketForWriteableClient();
 		if (null != next)
 		{
 			_network.sendMessage(buffer.token, next);
 		}
 	}
 
-	private synchronized void _bufferPacket(int clientId, Packet packet)
+	private synchronized void _bufferPacket(int clientId, PacketFromServer packet)
 	{
 		ClientBuffer buffer = _clientsById.get(clientId);
 		if (null == buffer)
@@ -235,9 +236,9 @@ public class ServerProcess
 		}
 	}
 
-	private synchronized Packet _peekOrRemoveNextMutationFromClient(int clientId, Packet toRemove)
+	private synchronized PacketFromClient _peekOrRemoveNextMutationFromClient(int clientId, PacketFromClient toRemove)
 	{
-		Packet packet;
+		PacketFromClient packet;
 		ClientBuffer buffer = _clientsById.get(clientId);
 		if (null == buffer)
 		{
@@ -288,7 +289,7 @@ public class ServerProcess
 			_serverReady(listener);
 		}
 		@Override
-		public Packet peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove)
+		public PacketFromClient peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
 		{
 			return _peekOrRemoveNextMutationFromClient(clientId, toRemove);
 		}
@@ -316,7 +317,7 @@ public class ServerProcess
 			// Serialize the entire cuboid.
 			// Note that this may be too expensive to do on the server's thread.
 			CuboidCodec.Serializer serializer = new CuboidCodec.Serializer(cuboid);
-			Packet packet = serializer.getNextPacket();
+			PacketFromServer packet = serializer.getNextPacket();
 			while (null != packet)
 			{
 				_bufferPacket(clientId, packet);

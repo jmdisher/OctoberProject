@@ -8,7 +8,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.net.NetworkLayer;
-import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.PacketType;
@@ -26,7 +25,7 @@ public class TestClientBuffer
 		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
 		boolean isNewlyReadable = buffer.becameReadableAfterNetworkReady();
 		Assert.assertTrue(isNewlyReadable);
-		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
+		PacketFromClient newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
 		Assert.assertNotNull(newPacket);
 	}
 
@@ -35,7 +34,7 @@ public class TestClientBuffer
 	{
 		// Buffer something and show that we try to send it when the buffer becomes writeable.
 		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
-		Packet out = buffer.removeOutgoingPacketForWriteableClient();
+		PacketFromServer out = buffer.removeOutgoingPacketForWriteableClient();
 		Assert.assertNull(out);
 		boolean shouldSend = buffer.shouldImmediatelySendPacket(new _OutPacket());
 		Assert.assertTrue(shouldSend);
@@ -49,7 +48,7 @@ public class TestClientBuffer
 		// -set it is readable
 		Assert.assertTrue(buffer.becameReadableAfterNetworkReady());
 		// -read the packet
-		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
+		PacketFromClient newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
 		Assert.assertNotNull(newPacket);
 		// -set it readable (no callout since we didn't yet consume)
 		Assert.assertFalse(buffer.becameReadableAfterNetworkReady());

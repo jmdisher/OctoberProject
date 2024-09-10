@@ -2,8 +2,8 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketCodec;
+import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 
@@ -26,9 +26,9 @@ public class CuboidCodec
 			_cuboid = input;
 		}
 		
-		public Packet getNextPacket()
+		public PacketFromServer getNextPacket()
 		{
-			Packet ret;
+			PacketFromServer ret;
 			if (_isDone)
 			{
 				// We are finished so just return null.

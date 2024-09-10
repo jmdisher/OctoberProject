@@ -27,6 +27,7 @@ import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.persistence.PackagedCuboid;
@@ -305,7 +306,7 @@ public class ServerStateManager
 	private boolean _drainPacketsIntoRunner(int clientId)
 	{
 		// Consume as many of these mutations as we can fit into the TickRunner.
-		Packet packet = _callouts.network_peekOrRemoveNextPacketFromClient(clientId, null);
+		PacketFromClient packet = _callouts.network_peekOrRemoveNextPacketFromClient(clientId, null);
 		// We are calling this in response to readability so this cannot be null.
 		Assert.assertTrue(null != packet);
 		
@@ -629,7 +630,7 @@ public class ServerStateManager
 		);
 		
 		// IServerAdapter.
-		Packet network_peekOrRemoveNextPacketFromClient(int clientId, Packet toRemove);
+		PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
 		void network_sendFullEntity(int clientId, Entity entity);
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
 		void network_removeEntity(int clientId, int entityId);

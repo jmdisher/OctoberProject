@@ -101,7 +101,7 @@ public class TestNetworkServer
 			@Override
 			public void networkReadReady(NetworkLayer.PeerToken token)
 			{
-				List<Packet> packets = holder[0].readBufferedPackets(token);
+				List<PacketFromClient> packets = holder[0].readBufferedPackets(token);
 				for (Packet packet : packets)
 				{
 					// We only expect chat messages.

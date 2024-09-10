@@ -13,7 +13,7 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkServer<L>
 {
 	private final IListener<L> _listener;
-	private final NetworkLayer _network;
+	private final NetworkLayer<PacketFromClient, PacketFromServer> _network;
 
 	/**
 	 * Creates a new server, returning once the port is bound.
@@ -62,8 +62,8 @@ public class NetworkServer<L>
 				else
 				{
 					// This MUST be the client's introduction (and nothing else).
-					List<Packet> messages = _network.receiveMessages(token);
-					Packet packet = messages.get(0);
+					List<PacketFromClient> messages = _network.receiveMessages(token);
+					PacketFromClient packet = messages.get(0);
 					if ((1 == messages.size()) && (PacketType.CLIENT_SEND_DESCRIPTION == packet.type))
 					{
 						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
@@ -122,7 +122,7 @@ public class NetworkServer<L>
 	 * @param token The token of a specific attached client.
 	 * @param packet The message to send.
 	 */
-	public void sendMessage(NetworkLayer.PeerToken token, Packet packet)
+	public void sendMessage(NetworkLayer.PeerToken token, PacketFromServer packet)
 	{
 		_network.sendMessage(token, packet);
 	}
@@ -134,7 +134,7 @@ public class NetworkServer<L>
 	 * @param token The token of a specific attached client.
 	 * @return The list of packets buffered from them.
 	 */
-	public List<Packet> readBufferedPackets(NetworkLayer.PeerToken token)
+	public List<PacketFromClient> readBufferedPackets(NetworkLayer.PeerToken token)
 	{
 		return _network.receiveMessages(token);
 	}

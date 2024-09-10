@@ -27,8 +27,10 @@ import com.jeffdisher.october.utils.Assert;
  * acceptor socket.
  * It internally runs on a background thread and all callbacks issued through the IListener interface are issued on that
  * thread so they are expected to return quickly.
+ * @param <IN> The incoming packet type.
+ * @param <OUT> The outgoing packet type.
  */
-public class NetworkLayer
+public class NetworkLayer<IN extends Packet, OUT extends Packet>
 {
 	// The buffer must be large enough to hold precisely 1 packet.
 	public static final int BUFFER_SIZE_BYTES = PacketCodec.MAX_PACKET_BYTES;
@@ -43,12 +45,12 @@ public class NetworkLayer
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static  NetworkLayer startListening(IListener listener, int port) throws IOException
+	public static NetworkLayer<PacketFromClient, PacketFromServer> startListening(IListener listener, int port) throws IOException
 	{
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
 		socket.bind(address);
-		return new NetworkLayer(listener, socket, null);
+		return new NetworkLayer<>(PacketFromClient.class, listener, socket, null);
 	}
 
 	/**
@@ -61,13 +63,14 @@ public class NetworkLayer
 	 * @return The network layer abstraction.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public static  NetworkLayer connectToServer(IListener listener, InetAddress host, int port) throws IOException
+	public static NetworkLayer<PacketFromServer, PacketFromClient> connectToServer(IListener listener, InetAddress host, int port) throws IOException
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port));
-		return new NetworkLayer(listener, null, client);
+		return new NetworkLayer<>(PacketFromServer.class, listener, null, client);
 	}
 
 
+	private final Class<IN> _inClass;
 	private final Thread _internalThread;
 	private final IListener _listener;
 	private final Selector _selector;
@@ -76,8 +79,8 @@ public class NetworkLayer
 
 	// Data related to the hand-off between internal and background threads.
 	private boolean _keepRunning;
-	private IdentityHashMap<PeerToken, Packet> _shared_outgoingPackets;
-	private final IdentityHashMap<PeerToken, List<Packet>> _shared_incomingPackets;
+	private IdentityHashMap<PeerToken, OUT> _shared_outgoingPackets;
+	private final IdentityHashMap<PeerToken, List<IN>> _shared_incomingPackets;
 	private Set<PeerToken> _shared_resumeReads;
 	private Queue<PeerToken> _shared_disconnectRequests;
 	
@@ -85,10 +88,13 @@ public class NetworkLayer
 	private final ServerSocketChannel _acceptorSocket;
 	private final SelectionKey _acceptorKey;
 
-	private NetworkLayer(IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
+	private NetworkLayer(Class<IN> inClass, IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
 	{
 		// We can only be running in server mode OR client mode.
 		Assert.assertTrue((null != serverSocket) != (null != clientSocket));
+		
+		// We need the incoming class for casting.
+		_inClass = inClass;
 		
 		// Set up the selector and add input types.
 		
@@ -190,7 +196,7 @@ public class NetworkLayer
 	 * @param peer The target of the message.
 	 * @param packet The message to serialize and send.
 	 */
-	public void sendMessage(PeerToken peer, Packet packet)
+	public void sendMessage(PeerToken peer, OUT packet)
 	{
 		try
 		{
@@ -216,13 +222,13 @@ public class NetworkLayer
 	 * 
 	 * @param peer The target of the message.
 	 */
-	public List<Packet> receiveMessages(PeerToken peer)
+	public List<IN> receiveMessages(PeerToken peer)
 	{
 		try
 		{
 			_lock.lock();
 			// This should only be called if there are packets to receive.
-			List<Packet> packets = _shared_incomingPackets.remove(peer);
+			List<IN> packets = _shared_incomingPackets.remove(peer);
 			Assert.assertTrue(packets.size() > 0);
 			
 			// We need to record that this peer should start reading again.
@@ -276,12 +282,12 @@ public class NetworkLayer
 				throw Assert.unexpected(e);
 			}
 			// We are often just woken up to update the set of interested operations so this may be empty.
-			Map<PeerToken, List<Packet>> peersAwaitingRead = null;
+			Map<PeerToken, List<IN>> peersAwaitingRead = null;
 			if (selectedKeyCount > 0) {
 				peersAwaitingRead = _backgroundProcessSelectedKeys();
 			}
 			// Check the handoff map.
-			IdentityHashMap<PeerToken, Packet> packetsToSerialize;
+			IdentityHashMap<PeerToken, OUT> packetsToSerialize;
 			Queue<PeerToken> peersToDisconnect;
 			Set<PeerToken> readsToResume;
 			// We want to notify the listener outside of the lock so we build this list.
@@ -299,7 +305,7 @@ public class NetworkLayer
 				if (null != peersAwaitingRead)
 				{
 					// We want to pass back the packets we read, but we also want to prove that we didn't read from something already awaiting read.
-					for (Map.Entry<PeerToken, List<Packet>> elt : peersAwaitingRead.entrySet())
+					for (Map.Entry<PeerToken, List<IN>> elt : peersAwaitingRead.entrySet())
 					{
 						PeerToken peer = elt.getKey();
 						Assert.assertTrue(!_shared_incomingPackets.containsKey(peer));
@@ -345,7 +351,7 @@ public class NetworkLayer
 			// Now, send any outgoing packets.
 			if (null != packetsToSerialize)
 			{
-				for (Map.Entry<PeerToken, Packet> elt : packetsToSerialize.entrySet())
+				for (Map.Entry<PeerToken, OUT> elt : packetsToSerialize.entrySet())
 				{
 					_PeerState client = _connectedPeers.get(elt.getKey());
 					// The peer may have disconnected.
@@ -353,7 +359,7 @@ public class NetworkLayer
 					{
 						// This should already be empty.
 						Assert.assertTrue(0 == client.outgoing.position());
-						Packet packet = elt.getValue();
+						OUT packet = elt.getValue();
 						_backgroundSerializePacket(client, packet);
 					}
 				}
@@ -372,9 +378,9 @@ public class NetworkLayer
 		_connectedPeers.clear();
 	}
 
-	private Map<PeerToken, List<Packet>> _backgroundProcessSelectedKeys()
+	private Map<PeerToken, List<IN>> _backgroundProcessSelectedKeys()
 	{
-		Map<PeerToken, List<Packet>> peersWaitingOnPacketRead = new IdentityHashMap<>();
+		Map<PeerToken, List<IN>> peersWaitingOnPacketRead = new IdentityHashMap<>();
 		Set<SelectionKey> keys = _selector.selectedKeys();
 		for (SelectionKey key : keys)
 		{
@@ -391,7 +397,7 @@ public class NetworkLayer
 				// See what operation we wanted to perform.
 				boolean shouldClose = false;
 				if (key.isReadable()) {
-					List<Packet> parsedPacketsFromRead = _backgroundProcessReadableKey(key, state);
+					List<IN> parsedPacketsFromRead = _backgroundProcessReadableKey(key, state);
 					// This list is often empty but null means a failure.
 					shouldClose = (null == parsedPacketsFromRead);
 					// See if this should be communicated back as waiting for packet read.
@@ -452,7 +458,7 @@ public class NetworkLayer
 		_listener.peerConnected(newClient);
 	}
 
-	private List<Packet> _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
+	private List<IN> _backgroundProcessReadableKey(SelectionKey key, _PeerState state)
 	{
 		// Read the available bytes into our local buffer.
 		boolean didRead = false;
@@ -475,18 +481,18 @@ public class NetworkLayer
 		}
 		
 		// We will return non-null if we succeeded in the read and it will contain packets if we should stop reading until consumed.
-		List<Packet> packets = null;
+		List<IN> packets = null;
 		if (didRead)
 		{
 			// See if we can parse the data in the buffer.
 			state.incoming.flip();
 			
 			packets = new ArrayList<>();
-			Packet packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
+			IN packet = _inClass.cast(PacketCodec.parseAndSeekFlippedBuffer(state.incoming));
 			while (null != packet)
 			{
 				packets.add(packet);
-				packet = PacketCodec.parseAndSeekFlippedBuffer(state.incoming);
+				packet = _inClass.cast(PacketCodec.parseAndSeekFlippedBuffer(state.incoming));
 			}
 			state.incoming.compact();
 			
@@ -540,7 +546,7 @@ public class NetworkLayer
 		return didWrite;
 	}
 
-	private void _backgroundSerializePacket(_PeerState client, Packet packet)
+	private void _backgroundSerializePacket(_PeerState client, OUT packet)
 	{
 		PacketCodec.serializeToBuffer(client.outgoing, packet);
 		client.key.interestOps(client.key.interestOps() | SelectionKey.OP_WRITE);

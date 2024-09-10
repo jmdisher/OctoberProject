@@ -25,8 +25,9 @@ public class TestNetworkLayer
 		Packet[] holder = new Packet[1];
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
-		NetworkLayer[] internal = new NetworkLayer[1];
-		NetworkLayer server = NetworkLayer.startListening(new NetworkLayer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkLayer<PacketFromClient, PacketFromServer>[] internal = new NetworkLayer[1];
+		NetworkLayer<PacketFromClient, PacketFromServer> server = NetworkLayer.startListening(new NetworkLayer.IListener()
 		{
 			@Override
 			public void peerConnected(NetworkLayer.PeerToken token)
@@ -48,7 +49,7 @@ public class TestNetworkLayer
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				List<Packet> packets = internal[0].receiveMessages(token);
+				List<PacketFromClient> packets = internal[0].receiveMessages(token);
 				Assert.assertEquals(1, packets.size());
 				Assert.assertNull(holder[0]);
 				holder[0] = packets.get(0);
@@ -98,8 +99,9 @@ public class TestNetworkLayer
 		Packet[] holder = new Packet[1];
 		CountDownLatch receiveLatch = new CountDownLatch(1);
 		
-		NetworkLayer[] internal = new NetworkLayer[1];
-		NetworkLayer client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
+		@SuppressWarnings("unchecked")
+		NetworkLayer<PacketFromServer, PacketFromClient>[] internal = new NetworkLayer[1];
+		NetworkLayer<PacketFromServer, PacketFromClient> client = NetworkLayer.connectToServer(new NetworkLayer.IListener()
 		{
 			@Override
 			public void peerConnected(NetworkLayer.PeerToken token)
@@ -120,7 +122,7 @@ public class TestNetworkLayer
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				List<Packet> packets = internal[0].receiveMessages(token);
+				List<PacketFromServer> packets = internal[0].receiveMessages(token);
 				Assert.assertEquals(1, packets.size());
 				Assert.assertNull(holder[0]);
 				holder[0] = packets.get(0);

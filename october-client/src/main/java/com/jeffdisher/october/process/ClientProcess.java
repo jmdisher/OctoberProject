@@ -17,6 +17,7 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_EndOfTick;
@@ -65,7 +66,7 @@ public class ClientProcess
 	// Network buffer state.
 	private final ReentrantLock _networkBufferLock;
 	private boolean _networkReady;
-	private final Queue<Packet> _outgoing;
+	private final Queue<PacketFromClient> _outgoing;
 
 	/**
 	 * Creates and starts up a new client process.  Returns once the connection is established, but before the handshake
@@ -263,7 +264,7 @@ public class ClientProcess
 	}
 
 
-	private void _background_bufferPacket(Packet packet)
+	private void _background_bufferPacket(PacketFromClient packet)
 	{
 		_networkBufferLock.lock();
 		try
@@ -296,7 +297,7 @@ public class ClientProcess
 			}
 			else
 			{
-				Packet packet = _outgoing.poll();
+				PacketFromClient packet = _outgoing.poll();
 				_client.sendMessage(packet);
 			}
 		}

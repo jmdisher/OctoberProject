@@ -14,7 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkClient
 {
 	private final IListener _listener;
-	private final NetworkLayer _network;
+	private final NetworkLayer<PacketFromServer, PacketFromClient> _network;
 	private _State _token;
 
 	/**
@@ -63,7 +63,7 @@ public class NetworkClient
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
 			{
-				List<Packet> packets = _network.receiveMessages(token);
+				List<PacketFromServer> packets = _network.receiveMessages(token);
 				Assert.assertTrue(!packets.isEmpty());
 				for (Packet packet : packets)
 				{
@@ -113,7 +113,7 @@ public class NetworkClient
 	 * 
 	 * @param packet The message to send.
 	 */
-	public void sendMessage(Packet packet)
+	public void sendMessage(PacketFromClient packet)
 	{
 		// We need to wait for handshake before trying to use the client.
 		Assert.assertTrue(_token.didFinishHandshake());

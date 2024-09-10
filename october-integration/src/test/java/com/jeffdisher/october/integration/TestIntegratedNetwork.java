@@ -23,6 +23,8 @@ import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
@@ -116,8 +118,8 @@ public class TestIntegratedNetwork
 			@Override
 			public void networkReadReady(NetworkLayer.PeerToken token)
 			{
-				List<Packet> packets = holder[0].readBufferedPackets(token);
-				for (Packet packet : packets)
+				List<PacketFromClient> packets = holder[0].readBufferedPackets(token);
+				for (PacketFromClient packet : packets)
 				{
 					// We only expect chat messages.
 					Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
@@ -251,7 +253,7 @@ public class TestIntegratedNetwork
 		Packet_CuboidFragment frag1 = (Packet_CuboidFragment) serializer.getNextPacket();
 		Packet_CuboidFragment frag2 = (Packet_CuboidFragment) serializer.getNextPacket();
 		Assert.assertNull(serializer.getNextPacket());
-		Packet[] outgoing = new Packet[] { start, frag1, frag2 };
+		PacketFromServer[] outgoing = new PacketFromServer[] { start, frag1, frag2 };
 		
 		// Now, create a server, connect a client to it, and send the data to the client and make sure it arrives correctly.
 		int port = 3000;
