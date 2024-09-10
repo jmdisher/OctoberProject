@@ -116,7 +116,7 @@ public class TestNetworkServer
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_SendChatMessage(2, message));
+					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage(2, message));
 				}
 			}
 		}, port);
@@ -149,7 +149,7 @@ public class TestNetworkServer
 			buffer.compact();
 			if (null != packet)
 			{
-				Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
+				Packet_ReceiveChatMessage chat = (Packet_ReceiveChatMessage) packet;
 				String expectedMessage = "Chat " + next;
 				Assert.assertEquals(expectedMessage, chat.message);
 				next += 1;

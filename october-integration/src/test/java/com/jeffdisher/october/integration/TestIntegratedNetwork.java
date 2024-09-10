@@ -26,6 +26,7 @@ import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
+import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 
@@ -130,7 +131,7 @@ public class TestIntegratedNetwork
 				{
 					String message = _messagesFor1.remove(0);
 					_isReady1 = false;
-					holder[0].sendMessage(_firstPeer, new Packet_SendChatMessage("Client 2".hashCode(), message));
+					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
 				}
 			}
 		}, port);
@@ -206,7 +207,7 @@ public class TestIntegratedNetwork
 		for (int i = 0; i < 10; ++i)
 		{
 			Packet packet = handoff.load();
-			Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
+			Packet_ReceiveChatMessage chat = (Packet_ReceiveChatMessage) packet;
 			String expectedMessage = "Chat " + i;
 			Assert.assertEquals(expectedMessage, chat.message);
 		}

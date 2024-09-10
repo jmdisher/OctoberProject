@@ -24,7 +24,7 @@ public class TestClientBuffer
 		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
 		boolean isNewlyReadable = buffer.becameReadableAfterNetworkReady();
 		Assert.assertTrue(isNewlyReadable);
-		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _Packet()));
+		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
 		Assert.assertNotNull(newPacket);
 	}
 
@@ -35,7 +35,7 @@ public class TestClientBuffer
 		ClientBuffer buffer = new ClientBuffer(new _Token(), 1);
 		Packet out = buffer.removeOutgoingPacketForWriteableClient();
 		Assert.assertNull(out);
-		boolean shouldSend = buffer.shouldImmediatelySendPacket(new _Packet());
+		boolean shouldSend = buffer.shouldImmediatelySendPacket(new _OutPacket());
 		Assert.assertTrue(shouldSend);
 	}
 
@@ -47,12 +47,12 @@ public class TestClientBuffer
 		// -set it is readable
 		Assert.assertTrue(buffer.becameReadableAfterNetworkReady());
 		// -read the packet
-		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _Packet()));
+		Packet newPacket = buffer.peekOrRemoveNextPacket(null, () -> List.of(new _InPacket()));
 		Assert.assertNotNull(newPacket);
 		// -set it readable (no callout since we didn't yet consume)
 		Assert.assertFalse(buffer.becameReadableAfterNetworkReady());
 		// -try to remove and read
-		newPacket = buffer.peekOrRemoveNextPacket(newPacket, () -> List.of(new _Packet()));
+		newPacket = buffer.peekOrRemoveNextPacket(newPacket, () -> List.of(new _InPacket()));
 		// -verify we see a valid packet
 		Assert.assertNotNull(newPacket);
 	}
@@ -73,9 +73,22 @@ public class TestClientBuffer
 		}
 	}
 
-	private static class _Packet extends Packet
+	private static class _InPacket extends Packet
 	{
-		public _Packet()
+		public _InPacket()
+		{
+			super(PacketType.ERROR);
+		}
+		@Override
+		public void serializeToBuffer(ByteBuffer buffer)
+		{
+			Assert.fail("Note part of the test");
+		}
+	}
+
+	private static class _OutPacket extends Packet
+	{
+		public _OutPacket()
 		{
 			super(PacketType.ERROR);
 		}
