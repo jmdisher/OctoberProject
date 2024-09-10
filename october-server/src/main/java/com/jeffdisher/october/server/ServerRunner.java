@@ -66,6 +66,7 @@ public class ServerRunner
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
 	private _TickAdvancer _scheduledAdvancer;
 	private final ServerStateManager _stateManager;
+	private MonitoringAgent.Sampler _currentSampler;
 
 	// Note that the runner takes ownership of CuboidLoader and will shut it down.
 	public ServerRunner(long millisPerTick
@@ -129,6 +130,14 @@ public class ServerRunner
 			{
 				_stateManager.sendConsoleMessage(targetId, message);
 			}
+			@Override
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				_messages.enqueue(() -> {
+					Assert.assertTrue(null == _currentSampler);
+					_currentSampler = sampler;
+				});
+			}
 		});
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.
@@ -171,9 +180,10 @@ public class ServerRunner
 	{
 		_nextTickMillis = _currentTimeMillisProvider.getAsLong() + _millisPerTick;
 		Runnable next = _messages.pollForNext(_millisPerTick, _scheduledAdvancer);
+		long nanosAfterRun = 0L;
 		while (null != next)
 		{
-			next.run();
+			nanosAfterRun = _runAndSample(next, nanosAfterRun);
 			// If we are ready to schedule the tick advancer, find out when.
 			long millisToWait;
 			if (null != _scheduledAdvancer)
@@ -193,7 +203,7 @@ public class ServerRunner
 						_nextTickMillis += _millisPerTick;
 					}
 					// In any case, we are ready to run this so do it now, not even going through the message queue.
-					_scheduledAdvancer.run();
+					nanosAfterRun = _runAndSample(_scheduledAdvancer, nanosAfterRun);
 					// This should have cleared the instance variable.
 					Assert.assertTrue(null == _scheduledAdvancer);
 					// Since we ran the action, just go back to waiting without limit.
@@ -206,6 +216,20 @@ public class ServerRunner
 			}
 			next = _messages.pollForNext(millisToWait, _scheduledAdvancer);
 		}
+	}
+
+	private long _runAndSample(Runnable next, long nanosAfterRun)
+	{
+		long nanosBeforeRun = System.nanoTime();
+		next.run();
+		long nanosWaitingForTask = (nanosBeforeRun - nanosAfterRun);
+		nanosAfterRun = System.nanoTime();
+		if (null != _currentSampler)
+		{
+			long nanosRunningTask = (nanosAfterRun - nanosBeforeRun);
+			_currentSampler.consumeTaskSample(nanosWaitingForTask, nanosRunningTask);
+		}
+		return nanosAfterRun;
 	}
 
 
@@ -293,6 +317,14 @@ public class ServerRunner
 			if (tickTime > _millisPerTick)
 			{
 				stats.writeToStream(System.out);
+			}
+			if (null != _currentSampler)
+			{
+				boolean shouldRetire = _currentSampler.shouldRetireAfterTickSample(stats);
+				if (shouldRetire)
+				{
+					_currentSampler = null;
+				}
 			}
 		}
 	}

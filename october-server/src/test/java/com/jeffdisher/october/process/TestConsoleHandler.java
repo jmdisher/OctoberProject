@@ -124,6 +124,11 @@ public class TestConsoleHandler
 			{
 				throw new AssertionError("sendChatMessage");
 			}
+			@Override
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
+			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
@@ -173,6 +178,10 @@ public class TestConsoleHandler
 			{
 				throw new AssertionError("sendChatMessage");
 			}
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
+			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
@@ -204,6 +213,10 @@ public class TestConsoleHandler
 			public void sendChatMessage(int targetId, String message)
 			{
 				throw new AssertionError("sendChatMessage");
+			}
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -243,6 +256,10 @@ public class TestConsoleHandler
 				Assert.assertNull(outMessage[0]);
 				outMessage[0] = message;
 			}
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
+			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Message to Client: one message\nUsage:  <target_id> message...\nShutting down...\n".getBytes(), out.toByteArray());
@@ -276,6 +293,10 @@ public class TestConsoleHandler
 				Assert.assertEquals(0, targetId);
 				Assert.assertNull(outMessage[0]);
 				outMessage[0] = message;
+			}
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());

@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -378,6 +379,21 @@ public class ConsoleHandler
 			{
 				out.println("Usage:  message...");
 			}
+		}),
+		SAMPLE((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			out.println("Collecting sample for " + MonitoringAgent.Sampler.TICK_SAMPLE_SIZE + " ticks...");
+			MonitoringAgent.Sampler sampler = new MonitoringAgent.Sampler();
+			state.monitoringAgent.getCommandSink().installSampler(sampler);
+			try
+			{
+				sampler.waitForSample();
+			}
+			catch (InterruptedException e)
+			{
+				// This is not expected in our system.
+				throw Assert.unexpected(e);
+			}
+			sampler.logToStream(out);
 		}),
 		;
 		
