@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
  * Contains a specific IEntityUpdate instance.
  * This is coming from the server so it includes the associated entity ID.
  */
-public class Packet_EntityUpdateFromServer extends Packet
+public class Packet_EntityUpdateFromServer extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.ENTITY_UPDATE_FROM_SERVER;
 

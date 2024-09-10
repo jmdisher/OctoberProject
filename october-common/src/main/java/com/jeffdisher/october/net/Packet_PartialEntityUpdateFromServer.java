@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
  * Contains a specific IPartialEntityUpdate instance.
  * This is coming from the server so it includes the associated entity ID.
  */
-public class Packet_PartialEntityUpdateFromServer extends Packet
+public class Packet_PartialEntityUpdateFromServer extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.PARTIAL_ENTITY_UPDATE_FROM_SERVER;
 

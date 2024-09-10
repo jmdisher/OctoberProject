@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Sent by a client to the server.  The target ID must be non-negative and 0 means "everyone".
  */
-public class Packet_SendChatMessage extends Packet
+public class Packet_SendChatMessage extends PacketFromClient
 {
 	public static final PacketType TYPE = PacketType.SEND_CHAT_MESSAGE;
 

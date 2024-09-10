@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Contains the information to describe the end of a server-side logical tick.
  */
-public class Packet_EndOfTick extends Packet
+public class Packet_EndOfTick extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.END_OF_TICK;
 

@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Sent by the server to a client.  The source ID is always non-negative and 0 means "from the server console".
  */
-public class Packet_ReceiveChatMessage extends Packet
+public class Packet_ReceiveChatMessage extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.RECEIVE_CHAT_MESSAGE;
 

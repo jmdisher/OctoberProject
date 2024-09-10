@@ -6,7 +6,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.types.CuboidAddress;
 
 
-public class Packet_RemoveCuboid extends Packet
+public class Packet_RemoveCuboid extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.REMOVE_CUBOID;
 

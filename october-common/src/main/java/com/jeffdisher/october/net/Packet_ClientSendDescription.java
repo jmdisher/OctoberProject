@@ -11,7 +11,7 @@ import com.jeffdisher.october.utils.Assert;
  * It includes the client's supported protocol version, the name, and potentially anything else the client wants to
  * require the server handle.
  */
-public class Packet_ClientSendDescription extends Packet
+public class Packet_ClientSendDescription extends PacketFromClient
 {
 	public static final PacketType TYPE = PacketType.CLIENT_SEND_DESCRIPTION;
 

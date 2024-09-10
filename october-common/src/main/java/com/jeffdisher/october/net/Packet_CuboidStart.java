@@ -10,7 +10,7 @@ import com.jeffdisher.october.types.CuboidAddress;
  * Sent before the cuboid data in order to provide basic cuboid information (address or other small meta-data) and to
  * put the receiver into a state where it can process the following CUBOID_FRAGMENT packets.
  */
-public class Packet_CuboidStart extends Packet
+public class Packet_CuboidStart extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.CUBOID_START;
 

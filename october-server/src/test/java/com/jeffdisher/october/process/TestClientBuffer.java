@@ -9,6 +9,8 @@ import org.junit.Test;
 
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.Packet;
+import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.PacketType;
 
 
@@ -73,7 +75,7 @@ public class TestClientBuffer
 		}
 	}
 
-	private static class _InPacket extends Packet
+	private static class _InPacket extends PacketFromClient
 	{
 		public _InPacket()
 		{
@@ -86,7 +88,7 @@ public class TestClientBuffer
 		}
 	}
 
-	private static class _OutPacket extends Packet
+	private static class _OutPacket extends PacketFromServer
 	{
 		public _OutPacket()
 		{

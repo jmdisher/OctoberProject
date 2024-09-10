@@ -10,7 +10,7 @@ import java.util.function.Function;
  * Most cuboids only need to send one or these the worst-case short data is roughly 71 kB, and object data could also be
  * large, hence multiple may be used.
  */
-public class Packet_CuboidFragment extends Packet
+public class Packet_CuboidFragment extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.CUBOID_FRAGMENT;
 

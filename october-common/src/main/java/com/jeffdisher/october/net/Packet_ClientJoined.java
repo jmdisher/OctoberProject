@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Sent to all clients when a new client connects.
  */
-public class Packet_ClientJoined extends Packet
+public class Packet_ClientJoined extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.CLIENT_JOINED;
 

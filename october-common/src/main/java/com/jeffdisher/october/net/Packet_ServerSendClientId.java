@@ -9,7 +9,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Sent by the server to complete the handshake (it will disconnect the client if it doesn't like the data).
  */
-public class Packet_ServerSendClientId extends Packet
+public class Packet_ServerSendClientId extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.SERVER_SEND_CLIENT_ID;
 

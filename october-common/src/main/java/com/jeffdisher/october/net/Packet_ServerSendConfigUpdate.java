@@ -9,7 +9,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Sent by the server to communicate the initial or updated server configuration to the client.
  */
-public class Packet_ServerSendConfigUpdate extends Packet
+public class Packet_ServerSendConfigUpdate extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.SERVER_SEND_CONFIG_UPDATE;
 

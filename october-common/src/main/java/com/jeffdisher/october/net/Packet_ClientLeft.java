@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * Sent to all clients when an existing client disconnects.
  */
-public class Packet_ClientLeft extends Packet
+public class Packet_ClientLeft extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.CLIENT_LEFT;
 

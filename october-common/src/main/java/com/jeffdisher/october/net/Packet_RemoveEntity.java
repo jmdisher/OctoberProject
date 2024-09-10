@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 
-public class Packet_RemoveEntity extends Packet
+public class Packet_RemoveEntity extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.REMOVE_ENTITY;
 

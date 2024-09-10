@@ -6,7 +6,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.types.Entity;
 
 
-public class Packet_Entity extends Packet
+public class Packet_Entity extends PacketFromServer
 {
 	public static final PacketType TYPE = PacketType.ENTITY;
 
