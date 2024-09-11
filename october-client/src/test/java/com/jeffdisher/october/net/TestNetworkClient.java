@@ -180,6 +180,68 @@ public class TestNetworkClient
 		client1.stop();
 	}
 
+	@Test
+	public void corruptPacket() throws IOException
+	{
+		// Show what happens when we receive a corrupt packet from the client.
+		int port = 3000;
+		// We want to fake up a server.
+		InetSocketAddress address = new InetSocketAddress(port);
+		ServerSocketChannel server = ServerSocketChannel.open();
+		server.bind(address);
+		
+		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test");
+		SocketChannel connection1 = _serverHandshake(server, 1);
+		
+		// Fill the socket with corrupt data (something which looks like a small but invalid packet):  size 0x10, ordinal 0.
+		// (if this is too large, we will just wait for the rest of it).
+		ByteBuffer buffer = ByteBuffer.allocate(64);
+		buffer.putShort((short)0x10);
+		buffer.put((byte)0);
+		buffer.flip();
+		// (we want to write the full buffer)
+		buffer.limit(buffer.capacity());
+		connection1.write(buffer);
+		
+		// Try to read since we should see the disconnect.
+		buffer.clear();
+		int sizeRead = connection1.read(buffer);
+		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.close();
+		client1.stop();
+	}
+
+	@Test
+	public void deniedPacket() throws IOException
+	{
+		// Show what happens when we receive a "from server" packet from the client.
+		int port = 3000;
+		// We want to fake up a server.
+		InetSocketAddress address = new InetSocketAddress(port);
+		ServerSocketChannel server = ServerSocketChannel.open();
+		server.bind(address);
+		
+		NetworkClient client1 = new NetworkClient(new _ClientListener(), InetAddress.getLocalHost(), port, "test");
+		SocketChannel connection1 = _serverHandshake(server, 1);
+		
+		// We will send the "send chat" packet, since that is only intended to be TO a client, not from one.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		PacketCodec.serializeToBuffer(buffer, new Packet_SendChatMessage(0, "message"));
+		buffer.flip();
+		connection1.write(buffer);
+		
+		// Try to read since we should see the disconnect.
+		buffer.clear();
+		int sizeRead = connection1.read(buffer);
+		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.close();
+		client1.stop();
+	}
+
 
 	private SocketChannel _serverHandshake(ServerSocketChannel server, int clientId) throws IOException, UnknownHostException
 	{
@@ -223,6 +285,26 @@ public class TestNetworkClient
 				this.wait();
 			}
 			_shouldRelease = false;
+		}
+	}
+
+	private static class _ClientListener implements NetworkClient.IListener
+	{
+		@Override
+		public void handshakeCompleted(int assignedId)
+		{
+		}
+		@Override
+		public void networkReady()
+		{
+		}
+		@Override
+		public void packetReceived(Packet packet)
+		{
+		}
+		@Override
+		public void serverDisconnected()
+		{
 		}
 	}
 }

@@ -14,6 +14,9 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.mutations.EntityChangePeriodic;
+import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
+
 
 public class TestNetworkServer
 {
@@ -160,6 +163,95 @@ public class TestNetworkServer
 		server.stop();
 	}
 
+	@Test
+	public void corruptPacket() throws IOException
+	{
+		// Show what happens when we receive a corrupt packet from the client.
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		
+		// Connect a client.
+		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
+		
+		// Fill the socket with corrupt data (something which looks like a small but invalid packet):  size 0x10, ordinal 0.
+		// (if this is too large, we will just wait for the rest of it).
+		ByteBuffer buffer = ByteBuffer.allocate(64);
+		buffer.putShort((short)0x10);
+		buffer.put((byte)0);
+		buffer.flip();
+		// (we want to write the full buffer)
+		buffer.limit(buffer.capacity());
+		client1.write(buffer);
+		
+		// Try to read since we should see the disconnect.
+		buffer.clear();
+		int sizeRead = client1.read(buffer);
+		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.stop();
+	}
+
+	@Test
+	public void deniedPacket() throws IOException
+	{
+		// Show what happens when we receive a "from server" packet from the client.
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		
+		// Connect a client.
+		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
+		
+		// We will send the "receive chat" packet, since that is only intended to be TO a client, not from one.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		PacketCodec.serializeToBuffer(buffer, new Packet_ReceiveChatMessage(0, "message"));
+		buffer.flip();
+		client1.write(buffer);
+		
+		// Try to read since we should see the disconnect.
+		buffer.clear();
+		int sizeRead = client1.read(buffer);
+		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.stop();
+	}
+
+	@Test
+	public void deniedMutation() throws IOException
+	{
+		// Show what happens when we receive a restricted mutation from a client.
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		
+		// Connect a client.
+		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
+		
+		// We will send EntityChangePeriodic, since it is internal only, but can be serialized.
+		// (this requires that we manually build the buffer, since the code normally rejects this).
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		buffer.position(PacketCodec.HEADER_BYTES);
+		MutationEntityCodec.serializeToBuffer(buffer, new EntityChangePeriodic());
+		buffer.putLong(1L);
+		int size = buffer.position();
+		
+		buffer.position(0);
+		buffer.putShort((short)size);
+		buffer.put((byte) Packet_MutationEntityFromClient.TYPE.ordinal());
+		buffer.position(size);
+		
+		buffer.flip();
+		client1.write(buffer);
+		
+		// Try to read since we should see the disconnect.
+		buffer.clear();
+		int sizeRead = client1.read(buffer);
+		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.stop();
+	}
+
 
 	private int _runClient(int port, String name) throws IOException, UnknownHostException
 	{
@@ -201,5 +293,27 @@ public class TestNetworkServer
 		Packet_ServerSendClientId assign = (Packet_ServerSendClientId) packet;
 		Assert.assertNotNull(assign);
 		return client;
+	}
+
+
+	private static class _ServerListener implements NetworkServer.IListener<NetworkLayer.PeerToken>
+	{
+		@Override
+		public ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+		{
+			return new NetworkServer.ConnectingClientDescription<>(name.hashCode(), token);
+		}
+		@Override
+		public void userLeft(NetworkLayer.PeerToken data)
+		{
+		}
+		@Override
+		public void networkWriteReady(NetworkLayer.PeerToken data)
+		{
+		}
+		@Override
+		public void networkReadReady(NetworkLayer.PeerToken data)
+		{
+		}
 	}
 }

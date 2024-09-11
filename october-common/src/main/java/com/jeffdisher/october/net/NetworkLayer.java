@@ -396,19 +396,27 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 				
 				// See what operation we wanted to perform.
 				boolean shouldClose = false;
-				if (key.isReadable()) {
-					List<IN> parsedPacketsFromRead = _backgroundProcessReadableKey(key, state);
-					// This list is often empty but null means a failure.
-					shouldClose = (null == parsedPacketsFromRead);
-					// See if this should be communicated back as waiting for packet read.
-					if ((null != parsedPacketsFromRead) && !parsedPacketsFromRead.isEmpty())
-					{
-						peersWaitingOnPacketRead.put(state, parsedPacketsFromRead);
+				try
+				{
+					if (key.isReadable()) {
+						List<IN> parsedPacketsFromRead = _backgroundProcessReadableKey(key, state);
+						// This list is often empty but null means a failure.
+						shouldClose = (null == parsedPacketsFromRead);
+						// See if this should be communicated back as waiting for packet read.
+						if ((null != parsedPacketsFromRead) && !parsedPacketsFromRead.isEmpty())
+						{
+							peersWaitingOnPacketRead.put(state, parsedPacketsFromRead);
+						}
+					}
+					if (key.isWritable()) {
+						boolean didWrite = _backgroundProcessWritableKey(key, state);
+						shouldClose = !didWrite;
 					}
 				}
-				if (key.isWritable()) {
-					boolean didWrite = _backgroundProcessWritableKey(key, state);
-					shouldClose = !didWrite;
+				catch (Throwable t)
+				{
+					// If _anything_ went wrong, close the connection.
+					shouldClose = true;
 				}
 				if (shouldClose)
 				{
