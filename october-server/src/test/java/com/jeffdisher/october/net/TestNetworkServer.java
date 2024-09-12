@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.LongSupplier;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,6 +22,8 @@ import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
 
 public class TestNetworkServer
 {
+	public static final LongSupplier TIME_SUPPLIER = () -> 1L;
+
 	@Test
 	public void basicHandshakeDisconnect() throws IOException
 	{
@@ -53,7 +57,7 @@ public class TestNetworkServer
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, port);
+		}, TIME_SUPPLIER, port);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -122,7 +126,7 @@ public class TestNetworkServer
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage(2, message));
 				}
 			}
-		}, port);
+		}, TIME_SUPPLIER, port);
 		holder[0] = server;
 		
 		// Connect both client.
@@ -168,7 +172,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a corrupt packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -197,7 +201,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a "from server" packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -222,7 +226,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a restricted mutation from a client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -247,6 +251,43 @@ public class TestNetworkServer
 		buffer.clear();
 		int sizeRead = client1.read(buffer);
 		Assert.assertEquals(-1, sizeRead);
+		
+		// Shut down.
+		server.stop();
+	}
+
+	@Test
+	public void timeoutOnHandshake() throws Throwable
+	{
+		// Show what happens when we wait for too long before sending the initial handshake message.
+		long[] time = new long[] {1L};
+		CountDownLatch latch = new CountDownLatch(1);
+		LongSupplier timeSupplier = () -> {
+			// This request will race against the main thread so use a latch to make sure that the first time has been requested.
+			long timeToReturn = time[0];;
+			latch.countDown();
+			return timeToReturn;
+		};
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port);
+		
+		// Open a socket.
+		SocketChannel socket = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		latch.await();
+		
+		// Advance time for the timeout.
+		time[0] += NetworkServer.DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS;
+		
+		// Now connect the client, since that should cause the timeout to be checked.
+		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
+		
+		// Verify that reading the socket shows it is closed.
+		ByteBuffer buffer = ByteBuffer.allocate(64);
+		int read = socket.read(buffer);
+		Assert.assertEquals(-1, read);
+		
+		// Now, just close the other connection.
+		client1.close();
 		
 		// Shut down.
 		server.stop();

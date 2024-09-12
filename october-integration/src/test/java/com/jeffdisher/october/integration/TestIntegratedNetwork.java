@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.LongSupplier;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,6 +36,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 
 public class TestIntegratedNetwork
 {
+	public static final LongSupplier TIME_SUPPLIER = () -> 1L;
+
 	@Test
 	public void basicHandshakeDisconnect() throws Throwable
 	{
@@ -69,7 +72,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, port);
+		}, TIME_SUPPLIER, port);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -136,7 +139,7 @@ public class TestIntegratedNetwork
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
 				}
 			}
-		}, port);
+		}, TIME_SUPPLIER, port);
 		holder[0] = server;
 		
 		// Connect both clients.
@@ -287,7 +290,7 @@ public class TestIntegratedNetwork
 				// We don't expect this in these tests.
 				Assert.fail();
 			}
-		}, port);
+		}, TIME_SUPPLIER, port);
 		holder[0] = server;
 		
 		// Connect the client.

@@ -1,7 +1,10 @@
 package com.jeffdisher.october.net;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 import com.jeffdisher.october.utils.Assert;
 
@@ -12,17 +15,27 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class NetworkServer<L>
 {
+	/**
+	 * We will default to 1 second for the handshake.
+	 */
+	public static final long DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS = 1_000L;
+
 	private final IListener<L> _listener;
 	private final NetworkLayer<PacketFromClient, PacketFromServer> _network;
+
+	// This collection is owned by the network background thread.
+	// We add to it whenever a new connection arrive.  That is also the only point where we walk the list (to avoid extra work in the critical path for this rare case).
+	private final List<_AwaitingHandshake> _awaitingHandshakes = new ArrayList<>();
 
 	/**
 	 * Creates a new server, returning once the port is bound.
 	 * 
 	 * @param listener The listener which will receive callbacks related to the server (on the network thread).
+	 * @param currentTimeMillisProvider Returns the current system time, in milliseconds.
 	 * @param port The port which should be bound for accepting incoming connections.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkServer(IListener<L> listener, int port) throws IOException
+	public NetworkServer(IListener<L> listener, LongSupplier currentTimeMillisProvider, int port) throws IOException
 	{
 		_listener = listener;
 		
@@ -33,6 +46,14 @@ public class NetworkServer<L>
 			{
 				// Create the empty state.
 				token.setData(new _ClientState<L>());
+				
+				// Do we need to clean up any connections?
+				long currentTimeMillis = currentTimeMillisProvider.getAsLong();
+				_cleanupAwaitingHandshake(currentTimeMillis);
+				
+				// Add this to the list awaiting handshakes.
+				long limitTimeMillis = currentTimeMillis + DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS;
+				_awaitingHandshakes.add(new _AwaitingHandshake(limitTimeMillis, token));
 			}
 			@Override
 			public void peerDisconnected(NetworkLayer.PeerToken token)
@@ -41,6 +62,8 @@ public class NetworkServer<L>
 				if (null != state.data)
 				{
 					_listener.userLeft(state.data);
+					// We will also clear the data so we know that this was disconnected.
+					state.data = null;
 				}
 			}
 			@Override
@@ -104,6 +127,43 @@ public class NetworkServer<L>
 			private _ClientState<L> _downcastData(NetworkLayer.PeerToken token)
 			{
 				return (_ClientState<L>) token.getData();
+			}
+			private void _cleanupAwaitingHandshake(long currentTimeMillis)
+			{
+				if (!_awaitingHandshakes.isEmpty())
+				{
+					boolean keepWalking = true;
+					Iterator<_AwaitingHandshake> walker = _awaitingHandshakes.iterator();
+					while (keepWalking && walker.hasNext())
+					{
+						_AwaitingHandshake current = walker.next();
+						if (current.limitTimeMillis <= currentTimeMillis)
+						{
+							// See if we should disconnect this or if they proceeded correctly.
+							_ClientState<L> state = _downcastData(current.token);
+							if (null == state.data)
+							{
+								// Not fully connected so disconnect.
+								// Even if there is a pending handshake, right now, we will still disconnect so we will
+								// see them connect and disconnect since disconnect callbacks always arrive, even if we
+								// initiated.
+								System.err.println("Client timeout awaiting handshake");
+								_network.disconnectPeer(current.token);
+							}
+							else
+							{
+								// This is connected so we just drop it from this list.
+							}
+							// Either way, we are done tracking this.
+							walker.remove();
+						}
+						else
+						{
+							// These are sorted by time so just end.
+							keepWalking = false;
+						}
+					}
+				}
 			}
 		}, port);
 	}
@@ -193,4 +253,8 @@ public class NetworkServer<L>
 		// This value is set non-null after a successful handshake and joining.
 		public T data;
 	}
+
+	private static record _AwaitingHandshake(long limitTimeMillis
+			, NetworkLayer.PeerToken token
+	) {}
 }
