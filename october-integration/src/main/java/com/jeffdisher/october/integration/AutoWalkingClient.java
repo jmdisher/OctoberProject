@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
 
@@ -25,7 +26,7 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * A testing program which joins a world and will then wait for a message from the server to tell it what to do.  This
  * command takes the form "ACTION DIRECTION":
- * -ACTION is one of "WALK", "BREAK", or "PLACE".
+ * -ACTION is one of "WALK", "BREAK", "BRICK", or "LANTERN".
  * -DIRECTION is one of the cardinal directions
  * Once receiving this command, the client will begin walking in that direction and potentially breaking or placing
  * blocks behind it, as it moves.
@@ -105,7 +106,12 @@ public class AutoWalkingClient
 		
 		// Select the block (note that this assumes that we are in creative mode).
 		Block stoneBrick = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.stone_brick"));
-		MutationEntitySelectItem select = new MutationEntitySelectItem(stoneBrick.item().number());
+		Block lantern = env.blocks.getAsPlaceableBlock(env.items.getItemById("op.lantern"));
+		Item toSelect = (_Action.LANTERN == command.action)
+				? lantern.item()
+				: stoneBrick.item()
+		;
+		MutationEntitySelectItem select = new MutationEntitySelectItem(toSelect.number());
 		client.sendAction(select, System.currentTimeMillis());
 		
 		// We can now run the loop.
@@ -132,7 +138,8 @@ public class AutoWalkingClient
 				case BREAK:
 					client.hitBlock(lastBlock.getRelative(0, 0, -1), currentTimeMillis);
 					break;
-				case PLACE:
+				case BRICK:
+				case LANTERN:
 					client.sendAction(new MutationPlaceSelectedBlock(lastBlock, lastBlock), currentTimeMillis);
 					break;
 					default:
@@ -262,7 +269,8 @@ public class AutoWalkingClient
 	{
 		WALK,
 		BREAK,
-		PLACE,
+		BRICK,
+		LANTERN,
 	}
 
 	private static record _Command(_Action action

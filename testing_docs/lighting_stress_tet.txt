@@ -1,0 +1,48 @@
+A stress test of the lighting updates (using 8 bots):
+
+rm -f world/cuboid_* world/entity_* && \
+java -jar october-server/target/october-server-0.0-SNAPSHOT-jar-with-dependencies.jar  9999
+
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot0 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot1 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot2 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot3 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot4 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot5 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot6 > /dev/null & \
+java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot7 > /dev/null &
+
+
+First, start the bots placing lanterns.
+!set_mode 3029833 creative
+!set_mode 3029834 creative
+!set_mode 3029835 creative
+!set_mode 3029836 creative
+
+!tp 3029833 0 15 0
+!tp 3029834 15 0 0
+!tp 3029835 0 -15 0
+!tp 3029836 -15 0 0
+
+!message 3029833 LANTERN NORTH
+!message 3029834 LANTERN EAST
+!message 3029835 LANTERN SOUTH
+!message 3029836 LANTERN WEST
+
+Wait a second before starting the next bots:
+!set_mode 3029837 creative
+!set_mode 3029838 creative
+!set_mode 3029839 creative
+!set_mode 3029840 creative
+
+!tp 3029837 0 15 1
+!tp 3029838 15 0 1
+!tp 3029839 0 -15 1
+!tp 3029840 -15 0 1
+
+!message 3029837 BREAK NORTH
+!message 3029838 BREAK EAST
+!message 3029839 BREAK SOUTH
+!message 3029840 BREAK WEST
+
+

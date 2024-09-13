@@ -5,7 +5,7 @@ Just a basic example of how to use the auto-walker for some basic testing:
 4)  Start the client:  java -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot0
 5)  Set the mode:  !set_mode 3029833 CREATIVE
 6)  Move the client to a starting location:  !tp 3029833 15 0 0
-7)  Give the client the command:  !message 3029833 PLACE EAST
+7)  Give the client the command:  !message 3029833 BRICK EAST
 8)  Run this until "!stop"
 
 So, to bring that all together with an example which can be repeated (assuming the config has been created):
@@ -29,8 +29,8 @@ OTHER TERMINAL 3:  java -jar october-integration/target/AutoWalkingClient-jar-wi
 !tp 3029835 0 -15 0
 !tp 3029836 -15 0 0
 
-!message 3029833 PLACE NORTH
-!message 3029834 PLACE EAST
+!message 3029833 BRICK NORTH
+!message 3029834 BRICK EAST
 !message 3029835 BREAK SOUTH
 !message 3029836 BREAK WEST
 
