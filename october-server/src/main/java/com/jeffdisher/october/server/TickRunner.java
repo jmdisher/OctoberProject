@@ -22,7 +22,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
@@ -51,6 +50,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -420,7 +420,7 @@ public class TickRunner
 				;
 			};
 			// WARNING:  This block cache is used for everything this thread does and we may want to provide a flushing mechanism.
-			BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(loader);
+			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
 			CommonMutationSink newMutationSink = new CommonMutationSink();
 			CommonChangeSink newChangeSink = new CommonChangeSink();
 			

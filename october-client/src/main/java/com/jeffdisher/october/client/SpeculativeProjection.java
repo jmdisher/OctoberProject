@@ -15,7 +15,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.BasicBlockProxyCache;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -35,6 +34,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutablePartialEntity;
@@ -687,7 +687,7 @@ public class SpeculativeProjection
 			, long millisPerTick
 	)
 	{
-		BasicBlockProxyCache cachingLoader = new BasicBlockProxyCache(this.projectionBlockLoader);
+		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(this.projectionBlockLoader);
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)

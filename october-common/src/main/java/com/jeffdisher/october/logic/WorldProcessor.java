@@ -17,8 +17,8 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -86,19 +86,9 @@ public class WorldProcessor
 				// We can't be told to operate on something which isn't in the state.
 				Assert.assertTrue(null != oldState);
 				// We will accumulate changing blocks and determine if we need to write any back at the end.
-				Map<BlockAddress, MutableBlockProxy> proxies = new HashMap<>();
-				Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache = (AbsoluteLocation location) -> {
-					// We should only ask about local addresses.
-					Assert.assertTrue(key.equals(location.getCuboidAddress()));
-					BlockAddress block = location.getBlockAddress();
-					MutableBlockProxy proxy = proxies.get(block);
-					if (null == proxy)
-					{
-						proxy = new MutableBlockProxy(location, oldState);
-						proxies.put(block, proxy);
-					}
-					return proxy;
-				};
+				LazyLocationCache<MutableBlockProxy> lazyMutableBlockCache = new LazyLocationCache<>(
+						(AbsoluteLocation location) ->  new MutableBlockProxy(location, oldState)
+				);
 				
 				// We will run any synthetic update events related to cuboid loading if that is enabled.
 				// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
@@ -155,7 +145,7 @@ public class WorldProcessor
 				);
 				
 				// Return the old instance if nothing changed.
-				List<MutableBlockProxy> proxiesToWrite = proxies.values().stream().filter(
+				List<MutableBlockProxy> proxiesToWrite = lazyMutableBlockCache.getCachedValues().stream().filter(
 						(MutableBlockProxy proxy) -> proxy.didChange()
 				).toList();
 				if (!proxiesToWrite.isEmpty())
