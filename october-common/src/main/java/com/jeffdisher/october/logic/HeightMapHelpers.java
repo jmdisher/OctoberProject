@@ -145,13 +145,13 @@ public class HeightMapHelpers
 
 	private static void _populateHeightMap(byte[][] heightMap, IReadOnlyCuboidData cuboid)
 	{
-		cuboid.walkData(AspectRegistry.BLOCK, (BlockAddress base, BlockAddress size, Short value) -> {
+		cuboid.walkData(AspectRegistry.BLOCK, (BlockAddress base, byte size, Short value) -> {
 			byte baseX = base.x();
 			byte baseY = base.y();
-			byte highestZ = (byte)(base.z() + size.z() - 1);
-			for (int y = 0; y < size.y(); ++y)
+			byte highestZ = (byte)(base.z() + size - 1);
+			for (int y = 0; y < size; ++y)
 			{
-				for (int x = 0; x < size.x(); ++x)
+				for (int x = 0; x < size; ++x)
 				{
 					byte entry = heightMap[baseY + y][baseX + x];
 					heightMap[baseY + y][baseX + x] = (byte)Math.max(entry, highestZ);

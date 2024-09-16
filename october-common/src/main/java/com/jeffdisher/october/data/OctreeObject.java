@@ -70,7 +70,7 @@ public class OctreeObject implements IOctree
 		// In this implementation, it is only appropriate to skip null values (since we can't evaluate equality and have no other use-case).
 		Assert.assertTrue(null == valueToSkip);
 		
-		BlockAddress size = new BlockAddress((byte)1, (byte)1, (byte)1);
+		byte size = 1;
 		for (Map.Entry<Short, Object> elt : _data.entrySet())
 		{
 			short hash = elt.getKey();

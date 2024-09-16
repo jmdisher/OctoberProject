@@ -141,7 +141,7 @@ public class TestOctreeBlock
 		
 		// Also check the walking callback.
 		int[] count = new int[] {0};
-		test.walkData((BlockAddress base, BlockAddress size, Short ignored) -> {
+		test.walkData((BlockAddress base, byte size, Short ignored) -> {
 			count[0] += 1;
 		}, value);
 		long endWalk = System.currentTimeMillis();
@@ -267,16 +267,16 @@ public class TestOctreeBlock
 				new BlockAddress((byte)2, (byte)2, (byte)2),
 				new BlockAddress((byte)18, (byte)29, (byte)7),
 		};
-		BlockAddress[] sizes = new BlockAddress[] {
-				new BlockAddress((byte)2, (byte)2, (byte)2),
-				new BlockAddress((byte)1, (byte)1, (byte)1),
+		byte[] sizes = new byte[] {
+				(byte)2,
+				(byte)1,
 		};
 		byte[] values = new byte[] {
 				1,
 				2,
 		};
 		int[] cursor = new int[] {0};
-		test.walkData((BlockAddress base, BlockAddress size, Byte value) -> {
+		test.walkData((BlockAddress base, byte size, Byte value) -> {
 			int index = cursor[0];
 			cursor[0] += 1;
 			Assert.assertEquals(bases[index], base);
@@ -307,16 +307,16 @@ public class TestOctreeBlock
 				new BlockAddress((byte)0, (byte)0, (byte)0),
 				new BlockAddress((byte)28, (byte)28, (byte)28),
 		};
-		BlockAddress[] sizes = new BlockAddress[] {
-				new BlockAddress((byte)1, (byte)1, (byte)1),
-				new BlockAddress((byte)4, (byte)4, (byte)4),
+		byte[] sizes = new byte[] {
+				(byte)1,
+				(byte)4,
 		};
 		short[] values = new short[] {
 				2,
 				1,
 		};
 		int[] cursor = new int[] {0};
-		test.walkData((BlockAddress base, BlockAddress size, Short value) -> {
+		test.walkData((BlockAddress base, byte size, Short value) -> {
 			int index = cursor[0];
 			cursor[0] += 1;
 			Assert.assertEquals(bases[index], base);
@@ -337,13 +337,13 @@ public class TestOctreeBlock
 				new BlockAddress((byte)0, (byte)0, (byte)0),
 				new BlockAddress((byte)28, (byte)29, (byte)7),
 		};
-		BlockAddress sizes = new BlockAddress((byte)1, (byte)1, (byte)1);
+		byte sizes = (byte)1;
 		int[] values = new int[] {
 				2,
 				1,
 		};
 		int[] cursor = new int[] {0};
-		test.walkData((BlockAddress base, BlockAddress size, Integer value) -> {
+		test.walkData((BlockAddress base, byte size, Integer value) -> {
 			int index = cursor[0];
 			cursor[0] += 1;
 			Assert.assertEquals(bases[index], base);

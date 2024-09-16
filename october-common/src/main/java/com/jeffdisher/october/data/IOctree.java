@@ -75,9 +75,9 @@ public interface IOctree
 		 * the size parameter may indicate that all the values, rooted at base, within that size volume are the same.
 		 * 
 		 * @param base The block address of the data value or where the value starts.
-		 * @param size The size of the volume where the value applies.
+		 * @param size The size of the volume where the value applies (applies to all dimensions).
 		 * @param value The value in this location.
 		 */
-		void visit(BlockAddress base, BlockAddress size, T value);
+		void visit(BlockAddress base, byte size, T value);
 	}
 }

@@ -401,7 +401,7 @@ public class OctreeShort implements IOctree
 			if (skip != _inlineCompact)
 			{
 				byte size = 32;
-				castCallback.visit(new BlockAddress((byte)0, (byte)0, (byte)0), new BlockAddress(size, size, size), _inlineCompact);
+				castCallback.visit(new BlockAddress((byte)0, (byte)0, (byte)0), size, _inlineCompact);
 			}
 		}
 	}
@@ -630,7 +630,7 @@ public class OctreeShort implements IOctree
 			// Inline tree.
 			if (oldValue != valueToSkip)
 			{
-				callback.visit(new BlockAddress(x, y, z), new BlockAddress(size, size, size), oldValue);
+				callback.visit(new BlockAddress(x, y, z), size, oldValue);
 			}
 		}
 		else

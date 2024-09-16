@@ -141,9 +141,9 @@ public class TestCuboidData
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		
-		input.walkData(AspectRegistry.BLOCK, (BlockAddress base, BlockAddress size, Short value) -> {
+		input.walkData(AspectRegistry.BLOCK, (BlockAddress base, byte size, Short value) -> {
 			Assert.assertEquals(testAddress, base);
-			Assert.assertEquals(new BlockAddress((byte)1, (byte)1, (byte)1), size);
+			Assert.assertEquals((byte)1, size);
 			Assert.assertEquals(1, value.shortValue());
 		}, ENV.special.AIR.item().number());
 	}
