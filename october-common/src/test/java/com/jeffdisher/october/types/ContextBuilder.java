@@ -40,7 +40,7 @@ public class ContextBuilder
 	public long currentTick;
 	public Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
-	public Function<AbsoluteLocation, Byte> skyLight;
+	public IByteLookup<AbsoluteLocation> skyLight;
 	public IMutationSink mutationSink;
 	public IChangeSink newChangeSink;
 	public CreatureIdAssigner idAssigner;
@@ -74,7 +74,7 @@ public class ContextBuilder
 		return this;
 	}
 
-	public ContextBuilder skyLight(Function<AbsoluteLocation, Byte> skyLight)
+	public ContextBuilder skyLight(IByteLookup<AbsoluteLocation> skyLight)
 	{
 		this.skyLight = skyLight;
 		return this;

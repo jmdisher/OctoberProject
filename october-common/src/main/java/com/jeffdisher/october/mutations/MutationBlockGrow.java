@@ -61,7 +61,7 @@ public class MutationBlockGrow implements IMutationBlock
 			{
 				// See if the random generator says we should grow this tick or try again later.
 				// We will only bother if the block is lit.
-				boolean isLit = (newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.apply(_location) >= MIN_LIGHT);
+				boolean isLit = (newBlock.getLight() >= MIN_LIGHT) || (context.skyLight.lookup(_location) >= MIN_LIGHT);
 				int randomBits = context.randomInt.applyAsInt(growthDivisor);
 				canGrow = isLit && (1 == randomBits);
 			}

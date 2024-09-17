@@ -20,6 +20,7 @@ import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.IByteLookup;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -73,7 +74,7 @@ public class TestLightBringer
 			final byte thisSourceLight = i;
 			source.setLight(thisSourceLight);
 			source.writeBack(cuboid);
-			LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+			IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 			{
 				return centre.equals(location)
 						? thisSourceLight
@@ -96,7 +97,7 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -205,7 +206,7 @@ public class TestLightBringer
 		Assert.assertNull(cuboid.serializeResumable(null, buffer));
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -252,10 +253,10 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// We will use the light values from the cuboid but a fixed high opacity.
-		LightBringer.IByteLookup opacity = (AbsoluteLocation location) -> 4;
+		IByteLookup<AbsoluteLocation> opacity = (AbsoluteLocation location) -> 4;
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -323,7 +324,7 @@ public class TestLightBringer
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> opacity = (AbsoluteLocation location) ->
 		{
 			// We will say that only the centre z-level is not fully opaque but say that south or west directions are more opaque.
 			byte value = LightAspect.MAX_LIGHT;
@@ -343,7 +344,7 @@ public class TestLightBringer
 		};
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -390,7 +391,7 @@ public class TestLightBringer
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		AbsoluteLocation strongLocation = centre.getRelative(-1, 0, 0);
 		AbsoluteLocation dimLocation = centre.getRelative(1, 0, 0);
-		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> opacity = (AbsoluteLocation location) ->
 		{
 			// We will say that the entire cuboid is opaque, other than this single z-level.
 			return (centre.getBlockAddress().z() == location.getBlockAddress().z())
@@ -400,7 +401,7 @@ public class TestLightBringer
 		};
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -448,7 +449,7 @@ public class TestLightBringer
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		LightBringer.IByteLookup opacity = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> opacity = (AbsoluteLocation location) ->
 		{
 			// We will say that the entire cuboid is opaque, other than this single z-level.
 			return (centre.getBlockAddress().z() == location.getBlockAddress().z())
@@ -458,7 +459,7 @@ public class TestLightBringer
 		};
 		
 		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
-		LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 		{
 			return sources.containsKey(location)
 					? sources.get(location)
@@ -587,20 +588,20 @@ public class TestLightBringer
 	{
 		private final CuboidData _cuboid;
 		private final Map<AbsoluteLocation, BlockProxy> _cache;
-		public final LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) -> 
+		public final IByteLookup<AbsoluteLocation> lightLookup = (AbsoluteLocation location) -> 
 		{
 			BlockProxy proxy = _readOrPopulateCache(location);
 			return (null != proxy)
 					? proxy.getLight()
-					: LightBringer.IByteLookup.NOT_FOUND
+					: IByteLookup.NOT_FOUND
 			;
 		};
-		public final LightBringer.IByteLookup opacityLookup = (AbsoluteLocation location) -> 
+		public final IByteLookup<AbsoluteLocation> opacityLookup = (AbsoluteLocation location) -> 
 		{
 			BlockProxy proxy = _readOrPopulateCache(location);
 			return (null != proxy)
 					? ENV.lighting.getOpacity(proxy.getBlock())
-					: LightBringer.IByteLookup.NOT_FOUND
+					: IByteLookup.NOT_FOUND
 			;
 		};
 		public _OneCuboidLookupCache(CuboidData cuboid)

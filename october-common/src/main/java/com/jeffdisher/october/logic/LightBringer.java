@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.IByteLookup;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -31,9 +32,9 @@ public class LightBringer
 	 * @param toRemove The list of light sources to remove.
 	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Byte> batchProcessLight(IByteLookup lightLookup
-			, IByteLookup opacityLookup
-			, IByteLookup sourceLookup
+	public static Map<AbsoluteLocation, Byte> batchProcessLight(IByteLookup<AbsoluteLocation> lightLookup
+			, IByteLookup<AbsoluteLocation> opacityLookup
+			, IByteLookup<AbsoluteLocation> sourceLookup
 			, List<Light> toAdd
 			, List<Light> toRemove
 	)
@@ -220,21 +221,6 @@ public class LightBringer
 	}
 
 
-	/**
-	 * We use this instead of the generalized Function<> just to avoid gratuitous wrapping/unwrapping.
-	 */
-	public static interface IByteLookup
-	{
-		public static final byte NOT_FOUND = -1;
-		/**
-		 * Looks up the corresponding byte value at the given location, returning -1 if it can't be found.
-		 * 
-		 * @param location The location to lookup.
-		 * @return The byte value at that location or -1 if not found.
-		 */
-		byte lookup(AbsoluteLocation location);
-	}
-
 	public static record Light(AbsoluteLocation location, byte level)
 	{}
 
@@ -243,12 +229,12 @@ public class LightBringer
 
 	private static class _BlockDataOverlay
 	{
-		private final IByteLookup _lightLookup;
-		private final IByteLookup _opacityLookup;
-		private final IByteLookup _sourceLookup;
+		private final IByteLookup<AbsoluteLocation> _lightLookup;
+		private final IByteLookup<AbsoluteLocation> _opacityLookup;
+		private final IByteLookup<AbsoluteLocation> _sourceLookup;
 		private final Map<AbsoluteLocation, Byte> _changedValues;
 		
-		public _BlockDataOverlay(IByteLookup lightLookup, IByteLookup opacityLookup, IByteLookup sourceLookup)
+		public _BlockDataOverlay(IByteLookup<AbsoluteLocation> lightLookup, IByteLookup<AbsoluteLocation> opacityLookup, IByteLookup<AbsoluteLocation> sourceLookup)
 		{
 			_lightLookup = lightLookup;
 			_opacityLookup = opacityLookup;

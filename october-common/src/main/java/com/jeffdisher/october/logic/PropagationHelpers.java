@@ -19,6 +19,7 @@ import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.IByteLookup;
 
 
 /**
@@ -69,7 +70,7 @@ public class PropagationHelpers
 				BlockProxy proxy = lazyGlobalCache.apply(location);
 				return (null != proxy)
 						? proxy.getLight()
-						: LightBringer.IByteLookup.NOT_FOUND
+						: IByteLookup.NOT_FOUND
 				;
 			}
 			@Override
@@ -129,7 +130,7 @@ public class PropagationHelpers
 				BlockProxy proxy = lazyGlobalCache.apply(location);
 				return (null != proxy)
 						? proxy.getLogic()
-						: LightBringer.IByteLookup.NOT_FOUND
+						: IByteLookup.NOT_FOUND
 				;
 			}
 			@Override
@@ -257,7 +258,7 @@ public class PropagationHelpers
 		Set<AbsoluteLocation> changedLocations = new HashSet<>();
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
-			LightBringer.IByteLookup lightLookup = (AbsoluteLocation location) ->
+			IByteLookup<AbsoluteLocation> lightLookup = (AbsoluteLocation location) ->
 			{
 				Byte overlayValue = lightValueOverlay.get(location);
 				byte value;
@@ -271,20 +272,20 @@ public class PropagationHelpers
 				}
 				return value;
 			};
-			LightBringer.IByteLookup opacityLookup = (AbsoluteLocation location) ->
+			IByteLookup<AbsoluteLocation> opacityLookup = (AbsoluteLocation location) ->
 			{
 				BlockProxy proxy = lazyGlobalCache.apply(location);
 				return (null != proxy)
 						? accessor.getOpacityForBlock(proxy.getBlock())
-						: LightBringer.IByteLookup.NOT_FOUND
+						: IByteLookup.NOT_FOUND
 				;
 			};
-			LightBringer.IByteLookup sourceLookup = (AbsoluteLocation location) ->
+			IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
 			{
 				BlockProxy proxy = lazyGlobalCache.apply(location);
 				return (null != proxy)
 						? accessor.getEmissionForBlock(proxy.getBlock())
-						: LightBringer.IByteLookup.NOT_FOUND
+						: IByteLookup.NOT_FOUND
 				;
 			};
 			Map<AbsoluteLocation, Byte> lightChanges = LightBringer.batchProcessLight(lightLookup
