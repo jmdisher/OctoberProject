@@ -293,6 +293,33 @@ public class TestNetworkServer
 		server.stop();
 	}
 
+	@Test
+	public void unknownVersion() throws Throwable
+	{
+		// We will check what happens when we pass an unknown version on connect.
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
+		
+		// Connect a client.
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		
+		// Send the first step of the handshake.
+		int bogusVersion = Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION + 1;
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(bogusVersion, "version fail"));
+		buffer.flip();
+		client.write(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		// Verify that reading the socket shows it is closed.
+		buffer = ByteBuffer.allocate(64);
+		int read = client.read(buffer);
+		Assert.assertEquals(-1, read);
+		
+		// Shut down.
+		server.stop();
+	}
+
 
 	private int _runClient(int port, String name) throws IOException, UnknownHostException
 	{
@@ -300,7 +327,7 @@ public class TestNetworkServer
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		
 		// Send the first step of the handshake.
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, name));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());
@@ -321,7 +348,7 @@ public class TestNetworkServer
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		
 		// Send the first step of the handshake.
-		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(0, name));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, name));
 		buffer.flip();
 		client.write(buffer);
 		Assert.assertFalse(buffer.hasRemaining());

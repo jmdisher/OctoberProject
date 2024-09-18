@@ -97,7 +97,7 @@ public class NetworkClient
 		Assert.assertTrue(null != _token);
 		
 		// The connection starts writable so kick-off the handshake.
-		_network.sendMessage(_token.token, new Packet_ClientSendDescription(0, clientName));
+		_network.sendMessage(_token.token, new Packet_ClientSendDescription(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, clientName));
 	}
 
 	/**

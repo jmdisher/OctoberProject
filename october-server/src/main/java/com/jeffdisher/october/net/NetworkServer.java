@@ -90,7 +90,7 @@ public class NetworkServer<L>
 					if ((1 == messages.size()) && (PacketType.CLIENT_SEND_DESCRIPTION == packet.type))
 					{
 						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
-						if (0 == safe.version)
+						if (Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION == safe.version)
 						{
 							// Make sure that we can resolve this user (and that they aren't already here).
 							ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name);
@@ -111,7 +111,7 @@ public class NetworkServer<L>
 						else
 						{
 							// Unknown version so just disconnect them.
-							System.err.println("Client requested unknown protocol version: " + safe.version);
+							System.err.println("Client requested unsupported protocol version: " + safe.version);
 							_network.disconnectPeer(token);
 						}
 					}

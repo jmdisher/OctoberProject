@@ -14,6 +14,7 @@ import com.jeffdisher.october.utils.Assert;
 public class Packet_ClientSendDescription extends PacketFromClient
 {
 	public static final PacketType TYPE = PacketType.CLIENT_SEND_DESCRIPTION;
+	public static final int NETWORK_PROTOCOL_VERSION = 0;
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
