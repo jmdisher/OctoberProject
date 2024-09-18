@@ -1,7 +1,7 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -30,7 +30,7 @@ public class ColumnHeightMap
 	 */
 	public static Builder build()
 	{
-		int[][] yMajor = new int[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
+		int[][] yMajor = new int[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
 		for (int y = 0; y < yMajor.length; ++y)
 		{
 			int[] row = yMajor[y];
@@ -60,9 +60,9 @@ public class ColumnHeightMap
 	public int getHeight(int x, int y)
 	{
 		Assert.assertTrue(x >= 0);
-		Assert.assertTrue(x < Structure.CUBOID_EDGE_SIZE);
+		Assert.assertTrue(x < Encoding.CUBOID_EDGE_SIZE);
 		Assert.assertTrue(y >= 0);
-		Assert.assertTrue(y < Structure.CUBOID_EDGE_SIZE);
+		Assert.assertTrue(y < Encoding.CUBOID_EDGE_SIZE);
 		return _yMajorMap[y][x];
 	}
 
@@ -86,10 +86,10 @@ public class ColumnHeightMap
 		 */
 		public Builder consume(CuboidHeightMap cuboid, int zBase)
 		{
-			for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
 				int[] targetRow = _mutableYMajorData[y];
-				for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+				for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 				{
 					byte incoming = cuboid.getHightestSolidBlock(x, y);
 					int value = (CuboidHeightMap.UNKNOWN_HEIGHT == incoming)

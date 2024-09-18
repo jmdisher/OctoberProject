@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
 import com.jeffdisher.october.worldgen.StructureLoader;
@@ -213,9 +214,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int minHeight = 0;
 		int maxHeight = Integer.MAX_VALUE;
 		int totalHeight = 0;
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
 				minHeight = Math.min(minHeight, height);
@@ -223,7 +224,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				totalHeight += height;
 			}
 		}
-		int count = Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE;
+		int count = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE;
 		int averageHeight = totalHeight / count;
 		AbsoluteLocation cuboidBase = address.getBase();
 		int cuboidZ = cuboidBase.z();
@@ -255,12 +256,12 @@ public class BasicWorldGenerator implements IWorldGenerator
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, defaultBlock);
 		
 		// Now, walk the height map and make any required adjustments.
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
-				for (int z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
+				for (int z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 				{
 					int thisZ = cuboidZ + z;
 					Block blockToWrite;
@@ -317,8 +318,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			Random random = new Random(cuboidSeed);
 			for (int i = 0; i < HERD_SIZE; ++i)
 			{
-				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
-				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
@@ -348,9 +349,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int maxZ = Integer.MIN_VALUE;
 		int targetX = -1;
 		int targetY = -1;
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
 				if (height > maxZ)
@@ -505,10 +506,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int thisPeak = _peakWithinBiome(subField);
 		int thisPeakY = yCentres[1][1];
 		int thisPeakX = xCentres[1][1];
-		int[][] heightMapForCuboidColumn = new int[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		int[][] heightMapForCuboidColumn = new int[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height;
 				if ((thisPeakY == y) && (thisPeakX == x))
@@ -587,8 +588,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			for (int x = -1; x <= 1; ++x)
 			{
 				int peak = _peakWithinBiome(subField.relativeField(x, y));
-				int yC = yCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * y);
-				int xC = xCentres[1 + y][1 + x] + (Structure.CUBOID_EDGE_SIZE * x);
+				int yC = yCentres[1 + y][1 + x] + (Encoding.CUBOID_EDGE_SIZE * y);
+				int xC = xCentres[1 + y][1 + x] + (Encoding.CUBOID_EDGE_SIZE * x);
 				int dY = thisY - yC;
 				int dX = thisX - xC;
 				int distanceSquare = (dY * dY) + (dX * dX);
@@ -707,8 +708,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 					Random random = new Random(cuboidSeed);
 					for (int i = 0; i < FOREST_TREE_COUNT; ++i)
 					{
-						int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
-						int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+						int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 						// Choose the block above the dirt.
 						int absoluteZ = heightMap.getHeight(relativeX, relativeY) + 1;
 						// The tree is a 3x3 structure with the tree in the middle so step back by one.
@@ -740,8 +741,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 		Random random = new Random(cuboidSeed);
 		for (int i = 0; i < tries; ++i)
 		{
-			int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
-			int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 			int absoluteZ = random.nextInt(range) + minZ;
 			// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 			AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX, relativeBaseY + relativeY, absoluteZ - targetCuboidBaseZ);
@@ -773,7 +774,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				// The "gullyBase" is the dirt, but we want to replace the block above that, filling in gullyDepth layers, so see if those are in range.
 				int bottomLayerToChange = gullyBase + 1;
 				int topLayerToChange = gullyBase + gullyDepth;
-				int cuboidTopExclusive = cuboidBottomZ + Structure.CUBOID_EDGE_SIZE;
+				int cuboidTopExclusive = cuboidBottomZ + Encoding.CUBOID_EDGE_SIZE;
 				
 				for (int z = bottomLayerToChange; z <= topLayerToChange; ++z)
 				{
@@ -794,11 +795,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 			;
 			for (int i = 0; i < count; ++i)
 			{
-				int relativeX = random.nextInt(Structure.CUBOID_EDGE_SIZE);
-				int relativeY = random.nextInt(Structure.CUBOID_EDGE_SIZE);
+				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBottomZ + 1;
-				if ((relativeZ >= 0) && (relativeZ < Structure.CUBOID_EDGE_SIZE))
+				if ((relativeZ >= 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
 				{
 					BlockAddress address = new BlockAddress((byte)relativeX, (byte)relativeY, (byte)relativeZ);
 					short original = data.getData15(AspectRegistry.BLOCK, address);
@@ -828,10 +829,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// A gully is a point in the cuboid lower than the perimeter of the cuboid.
 		int minGully = Integer.MAX_VALUE;
 		int minPerimeter = Integer.MAX_VALUE;
-		int edge = Structure.CUBOID_EDGE_SIZE - 1;
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		int edge = Encoding.CUBOID_EDGE_SIZE - 1;
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
 				minGully = Math.min(minGully, height);
@@ -848,9 +849,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private int _getLowestHeight(ColumnHeightMap heightMap)
 	{
 		int min = Integer.MAX_VALUE;
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
 				min = Math.min(min, height);
@@ -861,9 +862,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 
 	private void _replaceLayer(CuboidData data, byte z, short blockToReplace, short blockToAdd)
 	{
-		for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				BlockAddress address = new BlockAddress(x, y, z);
 				short original = data.getData15(AspectRegistry.BLOCK, address);
@@ -877,18 +878,18 @@ public class BasicWorldGenerator implements IWorldGenerator
 
 	private static CuboidHeightMap _extractFromColumn(ColumnHeightMap column, int baseZ)
 	{
-		byte[][] localMap = new byte[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		byte[][] localMap = new byte[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int absoluteHeight = column.getHeight(x, y);
 				int local = absoluteHeight - baseZ;
 				byte localHeight;
-				if (local > Structure.CUBOID_EDGE_SIZE)
+				if (local > Encoding.CUBOID_EDGE_SIZE)
 				{
 					// NOTE:  Here we assume that the world is solid below the column height map (only true for the current state of this world generator).
-					localHeight = Structure.CUBOID_EDGE_SIZE - 1;
+					localHeight = Encoding.CUBOID_EDGE_SIZE - 1;
 				}
 				else if (local >= 0)
 				{

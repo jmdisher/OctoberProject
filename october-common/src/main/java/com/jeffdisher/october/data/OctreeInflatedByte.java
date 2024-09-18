@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -87,18 +87,18 @@ public class OctreeInflatedByte implements IOctree
 			// We are setting a value so we might need to build arrays.
 			if (null == _zyxData)
 			{
-				_zyxData = new byte[Structure.CUBOID_EDGE_SIZE][][];
+				_zyxData = new byte[Encoding.CUBOID_EDGE_SIZE][][];
 			}
 			byte[][] yxData = _zyxData[z];
 			if (null == yxData)
 			{
-				yxData = new byte[Structure.CUBOID_EDGE_SIZE][];
+				yxData = new byte[Encoding.CUBOID_EDGE_SIZE][];
 				_zyxData[z] = yxData;
 			}
 			byte[] xData = yxData[y];
 			if (null == xData)
 			{
-				xData = new byte[Structure.CUBOID_EDGE_SIZE];
+				xData = new byte[Encoding.CUBOID_EDGE_SIZE];
 				yxData[y] = xData;
 			}
 			xData[x] = correct;
@@ -269,14 +269,14 @@ public class OctreeInflatedByte implements IOctree
 		{
 			if (null == ourState)
 			{
-				_zyxData = new byte[Structure.CUBOID_EDGE_SIZE][][];
+				_zyxData = new byte[Encoding.CUBOID_EDGE_SIZE][][];
 			}
 			for (byte i = zIndex; i < top; ++i)
 			{
 				if (buffer.remaining() >= 35)
 				{
 					byte index = buffer.get();
-					byte[][] yxData = new byte[Structure.CUBOID_EDGE_SIZE][];
+					byte[][] yxData = new byte[Encoding.CUBOID_EDGE_SIZE][];
 					_zyxData[index] = yxData;
 					byte yMax = buffer.get();
 					
@@ -285,7 +285,7 @@ public class OctreeInflatedByte implements IOctree
 						if (buffer.remaining() >= 33)
 						{
 							byte inner = buffer.get();
-							byte[] xData = new byte[Structure.CUBOID_EDGE_SIZE];
+							byte[] xData = new byte[Encoding.CUBOID_EDGE_SIZE];
 							yxData[inner] = xData;
 							
 							buffer.get(xData);
@@ -314,13 +314,13 @@ public class OctreeInflatedByte implements IOctree
 		byte[][][] clone;
 		if (null != _zyxData)
 		{
-			clone = new byte[Structure.CUBOID_EDGE_SIZE][][];
+			clone = new byte[Encoding.CUBOID_EDGE_SIZE][][];
 			for (int z = 0; z < clone.length; ++z)
 			{
 				byte[][] originalY = _zyxData[z];
 				if (null != originalY)
 				{
-					byte[][] inner = new byte[Structure.CUBOID_EDGE_SIZE][];
+					byte[][] inner = new byte[Encoding.CUBOID_EDGE_SIZE][];
 					
 					for (int y = 0; y < originalY.length; ++y)
 					{

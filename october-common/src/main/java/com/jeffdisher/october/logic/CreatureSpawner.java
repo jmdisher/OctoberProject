@@ -20,7 +20,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -125,9 +125,9 @@ public class CreatureSpawner
 	)
 	{
 		// Pick a random location in this cuboid.
-		byte x = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
-		byte y = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
-		byte z = (byte)context.randomInt.applyAsInt(Structure.CUBOID_EDGE_SIZE);
+		byte x = (byte)context.randomInt.applyAsInt(Encoding.CUBOID_EDGE_SIZE);
+		byte y = (byte)context.randomInt.applyAsInt(Encoding.CUBOID_EDGE_SIZE);
+		byte z = (byte)context.randomInt.applyAsInt(Encoding.CUBOID_EDGE_SIZE);
 		
 		// We will first skip past any blocks which are clearly above the height map.
 		int highestBlockZ = heightMap.getHeight(x, y);

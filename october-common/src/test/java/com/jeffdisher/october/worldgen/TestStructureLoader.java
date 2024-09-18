@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestStructureLoader
@@ -170,9 +171,9 @@ public class TestStructureLoader
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		short stoneBlockValue = ENV.items.getItemById("op.stone").number();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-		for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, (byte)0), stoneBlockValue);
 			}
@@ -186,11 +187,11 @@ public class TestStructureLoader
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, stoneBlockValue);
 		Assert.assertTrue(changes.isEmpty());
-		for (byte z = 1; z < Structure.CUBOID_EDGE_SIZE; ++z)
+		for (byte z = 1; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 		{
-			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
-				for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+				for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 				{
 					Assert.assertEquals(airValue, cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z)));
 				}

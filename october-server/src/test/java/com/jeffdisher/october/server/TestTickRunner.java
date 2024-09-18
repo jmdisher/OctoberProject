@@ -56,8 +56,8 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestTickRunner
@@ -1992,9 +1992,9 @@ public class TestTickRunner
 	private int _mismatchCount(ColumnHeightMap one, ColumnHeightMap two)
 	{
 		int count = 0;
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int heightOne = one.getHeight(x, y);
 				int heightTwo = two.getHeight(x, y);

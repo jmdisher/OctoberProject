@@ -15,8 +15,8 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestHeightMapHelpers
@@ -97,9 +97,9 @@ public class TestHeightMapHelpers
 		CuboidHeightMap map = HeightMapHelpers.buildHeightMap(cuboid);
 		int airCount = 0;
 		int stoneCount = 0;
-		for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+		for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 		{
-			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
 				byte height = map.getHightestSolidBlock(x, y);
 				if (CuboidHeightMap.UNKNOWN_HEIGHT == height)
@@ -112,7 +112,7 @@ public class TestHeightMapHelpers
 				}
 			}
 		}
-		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE - 5, airCount);
+		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 5, airCount);
 		Assert.assertEquals(5, stoneCount);
 	}
 

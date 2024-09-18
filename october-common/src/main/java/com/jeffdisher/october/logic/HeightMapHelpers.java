@@ -12,7 +12,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
-import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -132,10 +132,10 @@ public class HeightMapHelpers
 
 	private static byte[][] _createUniformHeightMap(byte heightMapValue)
 	{
-		byte[][] rawHeight = new byte[Structure.CUBOID_EDGE_SIZE][Structure.CUBOID_EDGE_SIZE];
-		for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+		byte[][] rawHeight = new byte[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				rawHeight[y][x] = heightMapValue;
 			}

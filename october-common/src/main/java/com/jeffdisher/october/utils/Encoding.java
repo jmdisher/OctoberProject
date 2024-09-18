@@ -3,6 +3,10 @@ package com.jeffdisher.october.utils;
 
 public class Encoding
 {
+	/**
+	 * Every cuboid is a 32x32x32 region of addressable cubes.
+	 */
+	public static final int CUBOID_EDGE_SIZE = 32;
 	// 32x32x32 cuboid region since means shift by 5 (/32).
 	public static int CUBOID_SHIFT = 5;
 	// The low 5 bits of the absolute address is the block address within a cuboid.

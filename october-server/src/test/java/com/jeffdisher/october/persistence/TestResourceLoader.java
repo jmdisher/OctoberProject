@@ -38,8 +38,8 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestResourceLoader
@@ -394,9 +394,9 @@ public class TestResourceLoader
 		
 		// Verify the height map.
 		CuboidHeightMap height = cuboids.get(0).heightMap();
-		for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+		for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 		{
-			for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
 				Assert.assertEquals(CuboidHeightMap.UNKNOWN_HEIGHT, height.getHightestSolidBlock(x, y));
 			}

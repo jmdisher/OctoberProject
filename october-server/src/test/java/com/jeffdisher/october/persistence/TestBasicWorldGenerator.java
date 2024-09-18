@@ -19,8 +19,8 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestBasicWorldGenerator
@@ -133,13 +133,13 @@ public class TestBasicWorldGenerator
 		int logCount = 0;
 		int leafCount = 0;
 		CuboidHeightMap heightMap = suspended.heightMap();
-		for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+		for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 		{
-			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
 				boolean foundDirt = false;
 				byte highestNonAir = CuboidHeightMap.UNKNOWN_HEIGHT;
-				for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
+				for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 				{
 					short number = cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
 					if (!foundDirt)
@@ -189,7 +189,7 @@ public class TestBasicWorldGenerator
 		}
 		Assert.assertEquals(7, minDirt);
 		Assert.assertEquals(9, maxDirt);
-		Assert.assertEquals(Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, dirtCount);
+		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, dirtCount);
 		Assert.assertEquals(4, coalCount);
 		Assert.assertEquals(0, ironCount);
 		Assert.assertEquals(12, logCount);
@@ -258,7 +258,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6039, 16, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
+		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
 	}
 
 	@Test
@@ -284,7 +284,7 @@ public class TestBasicWorldGenerator
 		// Verify the wheat field.
 		// This is a large field (55 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 5066, 12, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
+		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -305,7 +305,7 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-9, (short)-5, (short)0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a small field (3 in gully + 3).
-		_checkBlockTypes(cuboid, 9129, 0, 0, Structure.CUBOID_EDGE_SIZE * Structure.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
+		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
 	}
 
 
@@ -329,11 +329,11 @@ public class TestBasicWorldGenerator
 		int leafCount = 0;
 		int wheatCount = 0;
 		int carrotCount = 0;
-		for (byte z = 0; z < Structure.CUBOID_EDGE_SIZE; ++z)
+		for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 		{
-			for (byte y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+			for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
-				for (byte x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+				for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 				{
 					short value = data.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
 					if (airNumber == value)

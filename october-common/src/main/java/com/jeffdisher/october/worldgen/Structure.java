@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -25,7 +26,6 @@ import com.jeffdisher.october.types.Item;
  */
 public class Structure
 {
-	public static final int CUBOID_EDGE_SIZE = 32;
 	public static final short REPLACE_ALL = -1;
 	private final short[][] _allLayerBlocks;
 	private final int _width;
@@ -81,13 +81,13 @@ public class Structure
 		{
 			readX = 0;
 			writeX = baseX;
-			countX = Math.min(sizeX, CUBOID_EDGE_SIZE - writeX);
+			countX = Math.min(sizeX, Encoding.CUBOID_EDGE_SIZE - writeX);
 		}
 		else
 		{
 			readX = -baseX;
 			writeX = 0;
-			countX = Math.min(sizeX - readX, CUBOID_EDGE_SIZE);
+			countX = Math.min(sizeX - readX, Encoding.CUBOID_EDGE_SIZE);
 		}
 		
 		int readY;
@@ -98,13 +98,13 @@ public class Structure
 		{
 			readY = 0;
 			writeY = baseY;
-			countY = Math.min(sizeY, CUBOID_EDGE_SIZE - writeY);
+			countY = Math.min(sizeY, Encoding.CUBOID_EDGE_SIZE - writeY);
 		}
 		else
 		{
 			readY = -baseY;
 			writeY = 0;
-			countY = Math.min(sizeY - readY, CUBOID_EDGE_SIZE);
+			countY = Math.min(sizeY - readY, Encoding.CUBOID_EDGE_SIZE);
 		}
 		
 		int readZ;
@@ -115,13 +115,13 @@ public class Structure
 		{
 			readZ = 0;
 			writeZ = baseZ;
-			countZ = Math.min(sizeZ, CUBOID_EDGE_SIZE - writeZ);
+			countZ = Math.min(sizeZ, Encoding.CUBOID_EDGE_SIZE - writeZ);
 		}
 		else
 		{
 			readZ = -baseZ;
 			writeZ = 0;
-			countZ = Math.min(sizeZ - readZ, CUBOID_EDGE_SIZE);
+			countZ = Math.min(sizeZ - readZ, Encoding.CUBOID_EDGE_SIZE);
 		}
 		
 		// Now we can copy, bearing in mind that we need to synthesize events to run after loading.

@@ -54,8 +54,8 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
 
 
 public class TestServerRunner
@@ -894,9 +894,9 @@ public class TestServerRunner
 			{
 				// An air cuboid with a layer of stone at the bottom.
 				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
-				for (int y = 0; y < Structure.CUBOID_EDGE_SIZE; ++y)
+				for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 				{
-					for (int x = 0; x < Structure.CUBOID_EDGE_SIZE; ++x)
+					for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 					{
 						raw.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte) 0), STONE.item().number());
 					}

@@ -1,7 +1,7 @@
 package com.jeffdisher.october.data;
 
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.worldgen.Structure;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -43,9 +43,9 @@ public class CuboidHeightMap
 	public byte getHightestSolidBlock(int x, int y)
 	{
 		Assert.assertTrue(x >= 0);
-		Assert.assertTrue(x < Structure.CUBOID_EDGE_SIZE);
+		Assert.assertTrue(x < Encoding.CUBOID_EDGE_SIZE);
 		Assert.assertTrue(y >= 0);
-		Assert.assertTrue(y < Structure.CUBOID_EDGE_SIZE);
+		Assert.assertTrue(y < Encoding.CUBOID_EDGE_SIZE);
 		return _yMajorMap[y][x];
 	}
 }
