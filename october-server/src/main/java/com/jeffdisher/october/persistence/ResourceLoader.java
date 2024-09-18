@@ -50,7 +50,10 @@ import com.jeffdisher.october.utils.MessageQueue;
  */
 public class ResourceLoader
 {
-	public static final int VERSION_CUBOID = 0;
+	/**
+	 * Version 0 was used in v1.0-pre4 and earlier, no longer supported (pre-releases have no migration support).
+	 */
+	public static final int VERSION_CUBOID = 1;
 	public static final int VERSION_ENTITY = 0;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 

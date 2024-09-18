@@ -8,7 +8,7 @@ import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
-import com.jeffdisher.october.data.OctreeByte;
+import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.types.CraftOperation;
@@ -91,10 +91,10 @@ public class AspectRegistry
 	/**
 	 * Block "light value".  This is usually 0 ("dark") but can be as high as 15.
 	 */
-	public static final Aspect<Byte, OctreeByte> LIGHT = registerAspect(Byte.class
-			, OctreeByte.class
-			, () -> OctreeByte.empty()
-			, (OctreeByte original) -> {
+	public static final Aspect<Byte, OctreeInflatedByte> LIGHT = registerAspect(Byte.class
+			, OctreeInflatedByte.class
+			, () -> OctreeInflatedByte.empty()
+			, (OctreeInflatedByte original) -> {
 				return original.cloneData();
 			}
 			// IAspectCodec only exists for OctreeObject types.
@@ -104,10 +104,10 @@ public class AspectRegistry
 	 * Block "logic value".  This is usually 0 ("off") but can be as high as 15.
 	 * This is specifically for things like switches and logic wire.
 	 */
-	public static final Aspect<Byte, OctreeByte> LOGIC = registerAspect(Byte.class
-			, OctreeByte.class
-			, () -> OctreeByte.empty()
-			, (OctreeByte original) -> {
+	public static final Aspect<Byte, OctreeInflatedByte> LOGIC = registerAspect(Byte.class
+			, OctreeInflatedByte.class
+			, () -> OctreeInflatedByte.empty()
+			, (OctreeInflatedByte original) -> {
 				return original.cloneData();
 			}
 			// IAspectCodec only exists for OctreeObject types.
