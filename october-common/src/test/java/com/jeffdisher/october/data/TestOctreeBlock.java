@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.BlockAddress;
@@ -350,6 +351,44 @@ public class TestOctreeBlock
 			Assert.assertEquals(sizes, size);
 			Assert.assertEquals(values[index], value.intValue());
 		}, null);
+	}
+
+	@Test
+	public void inflatedByte()
+	{
+		OctreeInflatedByte empty = OctreeInflatedByte.empty();
+		Aspect<Byte, OctreeInflatedByte> aspect = new Aspect<>(0
+				, Byte.class
+				, OctreeInflatedByte.class
+				, () -> OctreeInflatedByte.empty()
+				, (OctreeInflatedByte original) -> {
+					return original.cloneData();
+				}
+				, null
+		);
+		BlockAddress blockAddress = new BlockAddress((byte)14, (byte)15, (byte)16);
+		Assert.assertEquals((byte)0, empty.getData(aspect, blockAddress).byteValue());
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Object state = empty.serializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		
+		buffer.flip();
+		Assert.assertEquals(1, buffer.remaining());
+		OctreeInflatedByte test = OctreeInflatedByte.empty();
+		state = test.deserializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		
+		buffer.clear();
+		test.setData(blockAddress, (byte)5);
+		state = test.serializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		buffer.flip();
+		Assert.assertEquals(36, buffer.remaining());
+		OctreeInflatedByte test2 = OctreeInflatedByte.empty();
+		state = test2.deserializeResumable(null, buffer, null);
+		Assert.assertNull(state);
+		Assert.assertEquals((byte)5, test2.getData(aspect, blockAddress).byteValue());
+		Assert.assertEquals((byte)0, test2.getData(aspect, new BlockAddress((byte)13, (byte)14, (byte)15)).byteValue());
 	}
 
 
