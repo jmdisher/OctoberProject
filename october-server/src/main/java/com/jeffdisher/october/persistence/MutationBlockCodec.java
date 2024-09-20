@@ -6,8 +6,9 @@ import java.util.function.Function;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
+import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
-import com.jeffdisher.october.mutations.MutationBlockGrow;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
@@ -37,10 +38,11 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockCraft.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockFurnaceCraft.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockFurnaceCraft.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockUpdate.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockUpdate.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockGrow.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockGrow.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockForceGrow.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockForceGrow.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockReplace.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockReplace.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPushToBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPushToBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLogicChange.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPeriodic.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

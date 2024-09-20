@@ -277,7 +277,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertTrue(holder[0] instanceof MutationBlockGrow);
+		Assert.assertTrue(holder[0] instanceof MutationBlockPeriodic);
 	}
 
 	@Test
@@ -406,7 +406,7 @@ public class TestCommonMutations
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		long[] delayContainer = new long[1];
-		MutationBlockGrow[] container = new MutationBlockGrow[1];
+		MutationBlockPeriodic[] container = new MutationBlockPeriodic[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation blockLocation) -> {
 						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
@@ -424,7 +424,7 @@ public class TestCommonMutations
 								Assert.assertEquals(0L, delayContainer[0]);
 								Assert.assertNull(container[0]);
 								delayContainer[0] = millisToDelay;
-								container[0] = (MutationBlockGrow) mutation;
+								container[0] = (MutationBlockPeriodic) mutation;
 							}
 						}
 						, null)
@@ -432,12 +432,12 @@ public class TestCommonMutations
 				.finish()
 		;
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		MutationBlockGrow mutation = new MutationBlockGrow(target, false);
+		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
 		Assert.assertNotNull(container[0]);
 		
 		// Now, show that it works if there is light.
@@ -451,7 +451,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
-		Assert.assertEquals(MutationBlockGrow.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
 		Assert.assertNotNull(container[0]);
 	}
 

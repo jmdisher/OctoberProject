@@ -123,7 +123,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 			{
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
-			context.mutationSink.next(new MutationBlockGrow(_target, true));
+			context.mutationSink.next(new MutationBlockForceGrow(_target));
 			didApply = true;
 		}
 		return didApply;

@@ -12,29 +12,27 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * Attempts to apply "growth" to the given block, potentially replacing it with a mature plant or scheduling a future
- * growth operation.
+ * Applies a mutation to a given location in response to a call into schedulePeriodicMutation() (in
+ * TickProcessingContext).
+ * An example use-case of this is plant growth, as this is scheduled periodically.
  */
-public class MutationBlockGrow implements IMutationBlock
+public class MutationBlockPeriodic implements IMutationBlock
 {
-	public static final MutationBlockType TYPE = MutationBlockType.GROW;
+	public static final MutationBlockType TYPE = MutationBlockType.PERIODIC;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
 
-	public static MutationBlockGrow deserializeFromBuffer(ByteBuffer buffer)
+	public static MutationBlockPeriodic deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		boolean forceGrow = CodecHelpers.readBoolean(buffer);
-		return new MutationBlockGrow(location, forceGrow);
+		return new MutationBlockPeriodic(location);
 	}
 
 
 	private final AbsoluteLocation _location;
-	private final boolean _forceGrow;
 
-	public MutationBlockGrow(AbsoluteLocation location, boolean forceGrow)
+	public MutationBlockPeriodic(AbsoluteLocation location)
 	{
 		_location = location;
-		_forceGrow = forceGrow;
 	}
 
 	@Override
@@ -52,17 +50,11 @@ public class MutationBlockGrow implements IMutationBlock
 		Block block = newBlock.getBlock();
 		if (PlantHelpers.canGrow(env, block))
 		{
-			if (_forceGrow)
+			boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, _location, newBlock, block);
+			
+			if (shouldReschedule)
 			{
-				PlantHelpers.performForcedGrow(env, context, _location, newBlock, block);
-			}
-			else
-			{
-				boolean shouldReschedule = PlantHelpers.shouldRescheduleAfterPlantPeriodic(env, context, _location, newBlock, block);
-				if (shouldReschedule)
-				{
-					context.mutationSink.future(this, MILLIS_BETWEEN_GROWTH_CALLS);
-				}
+				context.mutationSink.future(this, MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
 		}
@@ -79,7 +71,6 @@ public class MutationBlockGrow implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
-		CodecHelpers.writeBoolean(buffer, _forceGrow);
 	}
 
 	@Override
