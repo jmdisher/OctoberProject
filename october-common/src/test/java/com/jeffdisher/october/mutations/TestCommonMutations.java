@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -443,7 +444,7 @@ public class TestCommonMutations
 		delayContainer[0] = 0L;
 		container[0] = null;
 		context = ContextBuilder.nextTick(context, 1L)
-				.skyLight((AbsoluteLocation blockLocation) -> MutationBlockGrow.MIN_LIGHT)
+				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
 				.finish()
 		;
 		didApply = mutation.applyMutation(context, proxy);
