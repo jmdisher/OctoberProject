@@ -371,9 +371,13 @@ public class ResourceLoader
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
 			
-			// Verify the version is one we can understand (we will just fail with an assertion, for now, since we can't proceed).
+			// Verify the version is one we can understand (we will just raise a fatal error since we don't support
+			// multiple versions yet - non-current pre-release are NOT supported).
 			int version = buffer.getInt();
-			Assert.assertTrue(VERSION_CUBOID == version);
+			if (VERSION_CUBOID != version)
+			{
+				throw new RuntimeException("UNSUPPORTED STORAGE VERSION:  Non-current pre-release data is not supported");
+			}
 			
 			CuboidData cuboid = CuboidData.createEmpty(address);
 			Object state = cuboid.deserializeResumable(null, buffer);
@@ -499,9 +503,13 @@ public class ResourceLoader
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
 			
-			// Verify the version is one we can understand (we will just fail with an assertion, for now, since we can't proceed).
+			// Verify the version is one we can understand (we will just raise a fatal error since we don't support
+			// multiple versions yet - non-current pre-release are NOT supported).
 			int version = buffer.getInt();
-			Assert.assertTrue(VERSION_ENTITY == version);
+			if (VERSION_ENTITY != version)
+			{
+				throw new RuntimeException("UNSUPPORTED STORAGE VERSION:  Non-current pre-release data is not supported");
+			}
 			
 			Entity entity = CodecHelpers.readEntity(buffer);
 			
