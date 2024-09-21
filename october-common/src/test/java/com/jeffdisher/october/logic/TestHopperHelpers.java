@@ -78,11 +78,6 @@ public class TestHopperHelpers
 						{
 							outMutations.add(mutation);
 						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
 					}, null)
 				.finish()
 		;

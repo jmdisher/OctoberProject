@@ -21,12 +21,6 @@ public class CommonMutationSink implements TickProcessingContext.IMutationSink
 		_exportedMutations.add(new ScheduledMutation(mutation, 0L));
 	}
 
-	@Override
-	public void future(IMutationBlock mutation, long millisToDelay)
-	{
-		_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
-	}
-
 	/**
 	 * Removes the collected exported mutations, invalidating the receiver as a result.
 	 * 

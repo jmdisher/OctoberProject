@@ -48,11 +48,6 @@ public class FakeBlockUpdate
 					public void next(IMutationBlock mutation)
 					{
 					}
-					@Override
-					public void future(IMutationBlock mutation, long millisToDelay)
-					{
-						throw Assert.unreachable();
-					}
 				}
 			, new TickProcessingContext.IChangeSink() {
 				@Override

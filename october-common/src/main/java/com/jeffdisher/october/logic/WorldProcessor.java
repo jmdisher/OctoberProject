@@ -14,6 +14,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -106,6 +107,7 @@ public class WorldProcessor
 				
 				// Now run the normal mutations.
 				List<ScheduledMutation> mutations = mutationsToRun.get(key);
+				Map<AbsoluteLocation, Long> periodicNotReadyByLocation = new HashMap<>();
 				if (null != mutations)
 				{
 					for (ScheduledMutation scheduledMutations : mutations)
@@ -128,7 +130,7 @@ public class WorldProcessor
 							{
 								updatedMillis = 0L;
 							}
-							notYetReadyMutations.add(new ScheduledMutation(mutation, updatedMillis));
+							periodicNotReadyByLocation.put(mutation.getAbsoluteLocation(), updatedMillis);
 						}
 					}
 				}
@@ -173,11 +175,22 @@ public class WorldProcessor
 				
 				// Write back any of the updated periodic events.
 				List<MutableBlockProxy> proxiesWithScheduledMutations = lazyMutableBlockCache.getCachedValues().stream().filter(
-						(MutableBlockProxy proxy) -> (null != proxy.future)
+						(MutableBlockProxy proxy) -> (proxy.periodicDelayMillis > 0L)
 				).toList();
 				for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
 				{
-					context.mutationSink.future(proxy.future.mutation(), proxy.future.millisUntilReady());
+					AbsoluteLocation location = proxy.absoluteLocation;
+					long existing = periodicNotReadyByLocation.containsKey(location)
+							? periodicNotReadyByLocation.get(location)
+							: Long.MAX_VALUE
+					;
+					long updated = Math.min(proxy.periodicDelayMillis, existing);
+					periodicNotReadyByLocation.put(location, updated);
+				}
+				for (Map.Entry<AbsoluteLocation, Long> periodic : periodicNotReadyByLocation.entrySet())
+				{
+					MutationBlockPeriodic mutation = new MutationBlockPeriodic(periodic.getKey());
+					notYetReadyMutations.add(new ScheduledMutation(mutation, periodic.getValue()));
 				}
 			}
 		}

@@ -214,11 +214,6 @@ public class TestCommonMutations
 						public void next(IMutationBlock mutation)
 						{
 						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
-						}
 					}, null)
 				.finish()
 		;
@@ -261,11 +256,6 @@ public class TestCommonMutations
 						{
 							Assert.fail("Not expected in test");
 						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in test");
-						}
 					}, null)
 				.finish()
 		;
@@ -273,7 +263,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertTrue(proxy.future.mutation() instanceof MutationBlockPeriodic);
+		Assert.assertEquals(10000L, proxy.periodicDelayMillis);
 	}
 
 	@Test
@@ -296,11 +286,6 @@ public class TestCommonMutations
 						public void next(IMutationBlock mutation)
 						{
 							Assert.fail("Not expected in tets");
-						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							// We ignore this.
 						}
 					}, null)
 				.finish()
@@ -344,11 +329,6 @@ public class TestCommonMutations
 						{
 							Assert.assertNull(outMutation[0]);
 							outMutation[0] = mutation;
-						}
-						@Override
-						public void future(IMutationBlock mutation, long millisToDelay)
-						{
-							Assert.fail("Not expected in tets");
 						}
 					}, null)
 				.finish()
@@ -412,11 +392,6 @@ public class TestCommonMutations
 							{
 								Assert.fail("Not expected in test");
 							}
-							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
-							{
-								Assert.fail("Not expected in test");
-							}
 						}
 						, null)
 				.fixedRandom(1)
@@ -428,11 +403,10 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.future.millisUntilReady());
-		Assert.assertNotNull(proxy.future.mutation());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
 		
 		// Now, show that it works if there is light.
-		proxy.future = null;
+		proxy.periodicDelayMillis = 0L;
 		context = ContextBuilder.nextTick(context, 1L)
 				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
 				.finish()
@@ -441,8 +415,52 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.future.millisUntilReady());
-		Assert.assertNotNull(proxy.future.mutation());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+	}
+
+	@Test
+	public void futureSchedulingDetail()
+	{
+		// We will just show how requesting a future update deals with the cases where there already is one.
+		// We should always result in the "soonest" being kept.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)0), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), wheatSeedling.item().number());
+		
+		// First, we want to make sure that the wheat fails to grow due to darkness.
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
+				.fixedRandom(1)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
+		boolean didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		
+		// Now change the update delay to a later one and observe that re-running this will cause it to update it.
+		proxy.periodicDelayMillis = 2 * MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS;
+		didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		
+		// We can also show that a sooner value will not be updated.
+		proxy.periodicDelayMillis = MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / 2;
+		didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(wheatSeedling, proxy.getBlock());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / 2, proxy.periodicDelayMillis);
 	}
 
 
@@ -463,11 +481,6 @@ public class TestCommonMutations
 							public void next(IMutationBlock mutation)
 							{
 								ProcessingSinks.this.nextMutation = mutation;
-							}
-							@Override
-							public void future(IMutationBlock mutation, long millisToDelay)
-							{
-								Assert.fail("Not expected in tets");
 							}
 						}
 						, new TickProcessingContext.IChangeSink() {
