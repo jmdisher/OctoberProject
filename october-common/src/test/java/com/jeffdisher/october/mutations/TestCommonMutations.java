@@ -253,22 +253,18 @@ public class TestCommonMutations
 		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
 		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
-		IMutationBlock[] holder = new IMutationBlock[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public void next(IMutationBlock mutation)
 						{
-							Assert.fail("Not expected in tets");
+							Assert.fail("Not expected in test");
 						}
 						@Override
 						public void future(IMutationBlock mutation, long millisToDelay)
 						{
-							// We should see a delayed growth mutation.
-							Assert.assertEquals(10000L, millisToDelay);
-							Assert.assertNull(holder[0]);
-							holder[0] = mutation;
+							Assert.fail("Not expected in test");
 						}
 					}, null)
 				.finish()
@@ -277,7 +273,7 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertTrue(holder[0] instanceof MutationBlockPeriodic);
+		Assert.assertTrue(proxy.future.mutation() instanceof MutationBlockPeriodic);
 	}
 
 	@Test
@@ -405,8 +401,6 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), wheatSeedling.item().number());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
-		long[] delayContainer = new long[1];
-		MutationBlockPeriodic[] container = new MutationBlockPeriodic[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation blockLocation) -> {
 						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
@@ -416,15 +410,12 @@ public class TestCommonMutations
 							@Override
 							public void next(IMutationBlock mutation)
 							{
-								Assert.fail("Not expected in tets");
+								Assert.fail("Not expected in test");
 							}
 							@Override
 							public void future(IMutationBlock mutation, long millisToDelay)
 							{
-								Assert.assertEquals(0L, delayContainer[0]);
-								Assert.assertNull(container[0]);
-								delayContainer[0] = millisToDelay;
-								container[0] = (MutationBlockPeriodic) mutation;
+								Assert.fail("Not expected in test");
 							}
 						}
 						, null)
@@ -437,12 +428,11 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
-		Assert.assertNotNull(container[0]);
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.future.millisUntilReady());
+		Assert.assertNotNull(proxy.future.mutation());
 		
 		// Now, show that it works if there is light.
-		delayContainer[0] = 0L;
-		container[0] = null;
+		proxy.future = null;
 		context = ContextBuilder.nextTick(context, 1L)
 				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
 				.finish()
@@ -451,8 +441,8 @@ public class TestCommonMutations
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
-		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, delayContainer[0]);
-		Assert.assertNotNull(container[0]);
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.future.millisUntilReady());
+		Assert.assertNotNull(proxy.future.mutation());
 	}
 
 

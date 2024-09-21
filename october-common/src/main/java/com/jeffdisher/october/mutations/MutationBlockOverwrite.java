@@ -88,7 +88,7 @@ public class MutationBlockOverwrite implements IMutationBlock
 				
 				if (env.plants.growthDivisor(newType) > 0)
 				{
-					context.mutationSink.future(new MutationBlockPeriodic(_location), MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS);
+					newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
 				didApply = true;
 			}

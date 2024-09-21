@@ -76,4 +76,12 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * @param state The state object to set.
 	 */
 	void setEphemeralState(Object state);
+	/**
+	 * Requests a MutationBlockPeriodic mutation be run against this block's location after at least millisToDelay have
+	 * passed.  Note that, if there is already a mutation scheduled for this location, only the one with the earliest
+	 * due time will be honoured.
+	 * 
+	 * @param millisToDelay Milliseconds to delay before running the mutation (must be positive).
+	 */
+	void requestFutureMutation(long millisToDelay);
 }

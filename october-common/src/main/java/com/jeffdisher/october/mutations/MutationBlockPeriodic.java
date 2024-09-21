@@ -54,7 +54,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 			
 			if (shouldReschedule)
 			{
-				context.mutationSink.future(this, MILLIS_BETWEEN_GROWTH_CALLS);
+				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
 		}

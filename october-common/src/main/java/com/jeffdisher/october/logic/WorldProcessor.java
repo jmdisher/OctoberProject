@@ -170,6 +170,15 @@ public class WorldProcessor
 					// Add the change descriptions for this cuboid.
 					blockChangesByCuboid.put(key, updateMutations);
 				}
+				
+				// Write back any of the updated periodic events.
+				List<MutableBlockProxy> proxiesWithScheduledMutations = lazyMutableBlockCache.getCachedValues().stream().filter(
+						(MutableBlockProxy proxy) -> (null != proxy.future)
+				).toList();
+				for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
+				{
+					context.mutationSink.future(proxy.future.mutation(), proxy.future.millisUntilReady());
+				}
 			}
 		}
 		

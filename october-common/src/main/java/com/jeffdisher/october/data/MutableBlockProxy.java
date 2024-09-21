@@ -7,6 +7,8 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -35,6 +37,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 
 	private Block _cachedBlock;
 	private Object _ephemeralState;
+
+	public ScheduledMutation future;
 
 	public MutableBlockProxy(AbsoluteLocation absoluteLocation, IReadOnlyCuboidData data)
 	{
@@ -268,6 +272,15 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public void setEphemeralState(Object state)
 	{
 		_ephemeralState = state;
+	}
+
+	@Override
+	public void requestFutureMutation(long millisToDelay)
+	{
+		Assert.assertTrue(millisToDelay > 0L);
+		
+		Assert.assertTrue(null == this.future);
+		this.future = new ScheduledMutation(new MutationBlockPeriodic(this.absoluteLocation), millisToDelay);
 	}
 
 	/**
