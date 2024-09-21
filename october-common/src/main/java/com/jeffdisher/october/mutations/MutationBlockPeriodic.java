@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.PlantHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -20,6 +21,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 {
 	public static final MutationBlockType TYPE = MutationBlockType.PERIODIC;
 	public static final long MILLIS_BETWEEN_GROWTH_CALLS = 10_000L;
+	public static final long MILLIS_BETWEEN_HOPPER_CALLS = 1_000L;
 
 	public static MutationBlockPeriodic deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -57,6 +59,11 @@ public class MutationBlockPeriodic implements IMutationBlock
 				newBlock.requestFutureMutation(MILLIS_BETWEEN_GROWTH_CALLS);
 			}
 			didApply = true;
+		}
+		else if (HopperHelpers.isHopper(_location, newBlock))
+		{
+			HopperHelpers.tryProcessHopper(context, _location, newBlock);
+			newBlock.requestFutureMutation(MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		return didApply;
 	}

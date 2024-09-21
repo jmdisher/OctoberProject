@@ -109,7 +109,10 @@ public class MutationBlockUpdate implements IMutationBlock
 		}
 		
 		// Handle the case where this might be a hopper.
-		HopperHelpers.tryProcessHopper(context, _blockLocation, newBlock);
+		if (!didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
+		{
+			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
+		}
 		return didApply;
 	}
 

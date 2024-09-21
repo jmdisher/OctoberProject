@@ -110,9 +110,9 @@ public class MutationBlockStoreItems implements IMutationBlock
 		}
 		
 		// Handle the case where this might be a hopper.
-		if (didApply)
+		if (didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
 		{
-			HopperHelpers.tryProcessHopper(context, _blockLocation, newBlock);
+			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		return didApply;
 	}

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -92,6 +93,12 @@ public class MutationBlockOverwrite implements IMutationBlock
 				}
 				didApply = true;
 			}
+		}
+		
+		// Handle the case where this might be a hopper.
+		if (didApply && HopperHelpers.isHopper(_location, newBlock))
+		{
+			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		return didApply;
 	}

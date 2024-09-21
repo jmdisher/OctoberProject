@@ -463,6 +463,35 @@ public class TestCommonMutations
 		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / 2, proxy.periodicDelayMillis);
 	}
 
+	@Test
+	public void blockUpdateHopper()
+	{
+		// Show that a block update delivered to a hopper will cause it to schedule an update event.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper_down"));
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)0), STONE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), hopper.item().number());
+		
+		// First, we want to make sure that the wheat fails to grow due to darkness.
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.skyLight((AbsoluteLocation blockLocation) -> (byte)0)
+				.fixedRandom(1)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockUpdate update = new MutationBlockUpdate(target);
+		boolean didApply = update.applyMutation(context, proxy);
+		// This should cause no change.
+		Assert.assertFalse(didApply);
+		Assert.assertFalse(proxy.didChange());
+		Assert.assertEquals(hopper, proxy.getBlock());
+		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS, proxy.periodicDelayMillis);
+	}
+
 
 	private static class ProcessingSinks
 	{

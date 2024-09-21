@@ -28,6 +28,12 @@ public class HopperHelpers
 	public static final String HOPPER_EAST  = "op.hopper_east";
 	public static final String HOPPER_WEST  = "op.hopper_west";
 
+	public static boolean isHopper(AbsoluteLocation hopperLocation, IMutableBlockProxy hopperBlock)
+	{
+		AbsoluteLocation sinkLocation = _sinkLocationIfHopper(hopperLocation, hopperBlock);
+		return (null != sinkLocation);
+	}
+
 	public static void tryProcessHopper(TickProcessingContext context, AbsoluteLocation hopperLocation, IMutableBlockProxy hopperBlock)
 	{
 		// First, check if this block is a type of hopper.
