@@ -337,6 +337,11 @@ public class ServerRunner
 			_loader.writeBackToDisk(cuboids, entities);
 		}
 		@Override
+		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+		{
+			_loader.tryWriteBackToDisk(cuboids, entities);
+		}
+		@Override
 		public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids

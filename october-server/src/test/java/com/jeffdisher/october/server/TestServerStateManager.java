@@ -122,6 +122,9 @@ public class TestServerStateManager
 		Assert.assertTrue(callouts.requestedEntityIds.isEmpty());
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
 		Assert.assertEquals(0L, callouts.lastFinishedCommitPerClient.get(clientId).longValue());
+		Assert.assertTrue(callouts.cuboidsToTryWrite.isEmpty());
+		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
+		Assert.assertEquals(1, callouts.entitiesToTryWrite.iterator().next().entity().id());
 		
 		// Disconnect the client and see the entity unload.
 		manager.clientDisconnected(clientId);
@@ -236,6 +239,79 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
+	@Test
+	public void periodicWriteBack()
+	{
+		// Create a snapshot with an entity and some cuboids, showing what write-backs are requested based on different situations and tick numbers.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		int clientId = 1;
+		manager.clientConnected(clientId, "client");
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		
+		// We need to run a tick so that the client load request is made.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.requestedEntityIds.size());
+		
+		// Allow the client load to be acknowledged.
+		Entity entity = MutableEntity.createForTest(clientId).freeze();
+		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		CuboidAddress near = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near, ENV.special.AIR);
+		CuboidAddress far = new CuboidAddress((short)10, (short)0, (short)0);
+		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far, ENV.special.AIR);
+		snapshot = _modifySnapshot(snapshot
+				, Map.of(1, entity)
+				, Map.of(
+						near, nearCuboid,
+						far, farCuboid
+				)
+				, Map.of(
+						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze(),
+						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far.z()).freeze()
+				)
+		);
+		
+		// Note that we will try to unload far and write-back everything else due to the tick number.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsToWrite.size());
+		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
+		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
+		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
+		callouts.cuboidsToWrite.clear();
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
+		snapshot = _modifySnapshot(snapshot
+				, Map.of(1, entity)
+				, Map.of(
+						near, nearCuboid
+				)
+				, Map.of(
+						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze()
+				)
+		);
+		
+		// The next tick shouldn't do anything.
+		snapshot = _advanceSnapshot(snapshot, 1L);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
+		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
+		Assert.assertTrue(callouts.cuboidsToTryWrite.isEmpty());
+		Assert.assertTrue(callouts.entitiesToTryWrite.isEmpty());
+		
+		// If we cue up to the next flush tick, we should see the existing data written.
+		snapshot = _advanceSnapshot(snapshot, ServerStateManager.FORCE_FLUSH_TICK_FREQUENCY - 1L);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
+		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
+		Assert.assertEquals(1, callouts.cuboidsToTryWrite.size());
+		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
+		
+		manager.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -277,6 +353,28 @@ public class TestServerStateManager
 				, snapshot.commitLevels()
 				, completedCuboids
 				, completedHeightMaps
+				, snapshot.completedCreatures()
+				
+				, snapshot.updatedEntities()
+				, snapshot.resultantBlockChangesByCuboid()
+				, snapshot.visiblyChangedCreatures()
+				
+				, snapshot.scheduledBlockMutations()
+				, snapshot.scheduledEntityMutations()
+				
+				// Information related to tick behaviour and performance statistics.
+				, stats
+		);
+	}
+
+	private TickRunner.Snapshot _advanceSnapshot(TickRunner.Snapshot snapshot, long count)
+	{
+		TickRunner.TickStats stats = snapshot.stats();
+		return new TickRunner.Snapshot(snapshot.tickNumber() + count
+				, snapshot.completedEntities()
+				, snapshot.commitLevels()
+				, snapshot.completedCuboids()
+				, snapshot.completedHeightMaps()
 				, snapshot.completedCreatures()
 				
 				, snapshot.updatedEntities()
@@ -338,6 +436,8 @@ public class TestServerStateManager
 		public Map<Integer, Long> lastFinishedCommitPerClient = new HashMap<>();
 		public Set<PackagedCuboid> cuboidsToWrite = new HashSet<>();
 		public Set<SuspendedEntity> entitiesToWrite = new HashSet<>();
+		public Set<PackagedCuboid> cuboidsToTryWrite = new HashSet<>();
+		public Set<SuspendedEntity> entitiesToTryWrite = new HashSet<>();
 		public Set<Integer> fullEntitiesSent = new HashSet<>();
 		public Function<PacketFromClient, PacketFromClient> peekHandler = null;
 		public boolean didEnqueue = false;
@@ -350,6 +450,14 @@ public class TestServerStateManager
 			this.cuboidsToWrite.addAll(cuboids);
 			Assert.assertFalse(this.entitiesToWrite.removeAll(entities));
 			this.entitiesToWrite.addAll(entities);
+		}
+		@Override
+		public void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+		{
+			Assert.assertFalse(this.cuboidsToTryWrite.removeAll(cuboids));
+			this.cuboidsToTryWrite.addAll(cuboids);
+			Assert.assertFalse(this.entitiesToTryWrite.removeAll(entities));
+			this.entitiesToTryWrite.addAll(entities);
 		}
 		@Override
 		public void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
@@ -392,7 +500,7 @@ public class TestServerStateManager
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
-			throw new AssertionError("networkSendCuboid");
+			// Note that this is called by periodicWriteBack, but we aren't verifying the results in that test.
 		}
 		@Override
 		public void network_removeCuboid(int clientId, CuboidAddress address)

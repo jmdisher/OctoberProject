@@ -54,6 +54,10 @@ public class ServerStateManager
 	 * Entities further than this distance away (horizontal sums, for now) are not visible to the clients.
 	 */
 	public static final float ENTITY_VISIBLE_DISTANCE = 50.0f;
+	/**
+	 * How often, in terms of ticks, that the remaining (not being unloaded) resources are written to disk.
+	 */
+	public static final int FORCE_FLUSH_TICK_FREQUENCY = 100;
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
@@ -197,6 +201,12 @@ public class ServerStateManager
 			).toList();
 			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
 			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
+		}
+		
+		// Package up anything else which is loaded and pass them off to the resource loader for best-efforts eventual serialization (these may be ignored if the loader is busy).
+		if (0 == (snapshot.tickNumber() % FORCE_FLUSH_TICK_FREQUENCY))
+		{
+			_writeRemainingToDisk(snapshot, orphanedCuboids, removedClients);
 		}
 		
 		// Request any missing cuboids or new entities and see what we got back from last time.
@@ -618,11 +628,34 @@ public class ServerStateManager
 		}
 	}
 
+	private void _writeRemainingToDisk(TickRunner.Snapshot snapshot, Set<CuboidAddress> orphanedCuboids, Collection<Integer> removedClients)
+	{
+		Map<CuboidAddress, IReadOnlyCuboidData> remainingCuboids = new HashMap<>(snapshot.completedCuboids());
+		remainingCuboids.keySet().removeAll(orphanedCuboids);
+		Map<Integer, Entity> remainingEntities = new HashMap<>(snapshot.completedEntities());
+		remainingEntities.keySet().removeAll(removedClients);
+		
+		if (!remainingCuboids.isEmpty() || !remainingEntities.isEmpty())
+		{
+			Map<CuboidAddress, List<CreatureEntity>> remainingCreatures = _findCreaturesToUnload(remainingCuboids.values());
+			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(remainingCuboids.values(), remainingCreatures);
+			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(remainingEntities.values());
+			_callouts.resources_tryWriteToDisk(saveCuboids, saveEntities);
+		}
+	}
+
 
 	public static interface ICallouts
 	{
 		// ResourceLoader.
 		void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities);
+		/**
+		 * Similar to resources_writeToDisk but this call is allowed to silently fail, so long as it does so atomically.
+		 * 
+		 * @param cuboids Cuboids which are remaining loaded.
+		 * @param entities Entities which are remaining loaded.
+		 */
+		void resources_tryWriteToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities);
 		void resources_getAndRequestBackgroundLoad(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
 				, Collection<SuspendedEntity> out_loadedEntities
 				, Collection<CuboidAddress> requestedCuboids

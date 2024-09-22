@@ -78,6 +78,10 @@ public class ResourceLoader
 	private Collection<SuspendedCuboid<CuboidData>> _shared_resolvedCuboids;
 	private Collection<SuspendedEntity> _shared_resolvedEntities;
 
+	// Technically shared between the foreground and background thread but only updated to true by the foreground and
+	// false by the background so it can be safely handled as a normal variable with volatile.
+	private volatile boolean _isAttemptedWritePending;
+
 	public ResourceLoader(File saveDirectory
 			, IWorldGenerator cuboidGenerator
 			, EntityLocation playerSpawnLocation
@@ -257,6 +261,27 @@ public class ResourceLoader
 				_background_writeEntityToDisk(entity);
 			}
 		});
+	}
+
+	public void tryWriteBackToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
+	{
+		// This one should only be called if there are some to write.
+		Assert.assertTrue(!cuboids.isEmpty() || !entities.isEmpty());
+		if (!_isAttemptedWritePending)
+		{
+			_isAttemptedWritePending = true;
+			_queue.enqueue(() -> {
+				for (PackagedCuboid cuboid : cuboids)
+				{
+					_background_writeCuboidToDisk(cuboid);
+				}
+				for (SuspendedEntity entity : entities)
+				{
+					_background_writeEntityToDisk(entity);
+				}
+				_isAttemptedWritePending = false;
+			});
+		}
 	}
 
 	/**
