@@ -57,7 +57,7 @@ public class ServerStateManager
 	/**
 	 * How often, in terms of ticks, that the remaining (not being unloaded) resources are written to disk.
 	 */
-	public static final int FORCE_FLUSH_TICK_FREQUENCY = 100;
+	public static final int FORCE_FLUSH_TICK_FREQUENCY = 1000;
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;

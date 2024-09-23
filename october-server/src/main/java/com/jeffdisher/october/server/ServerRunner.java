@@ -45,8 +45,9 @@ public class ServerRunner
 	public static final int FAKE_CLIENT_ID = 0;
 	/**
 	 * The number of milliseconds in a tick in the standard configuration.
+	 * 50 ms/tick is 20 ticks/sec.
 	 */
-	public static final long DEFAULT_MILLIS_PER_TICK = 100L;
+	public static final long DEFAULT_MILLIS_PER_TICK = 50L;
 
 	// General and configuration variables.
 	private final long _millisPerTick;
