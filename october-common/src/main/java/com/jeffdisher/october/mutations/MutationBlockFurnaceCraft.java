@@ -42,9 +42,7 @@ public class MutationBlockFurnaceCraft implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		// TODO:  Stop using this constant once we pass this tick time through the context.
-		long craftMillisRemaining = 100L;
-		CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(Environment.getShared(), newBlock, craftMillisRemaining);
+		CraftingBlockSupport.FuelledResult result = CraftingBlockSupport.runFuelled(Environment.getShared(), newBlock, context.millisPerTick);
 		if (result.shouldReschedule())
 		{
 			context.mutationSink.next(new MutationBlockFurnaceCraft(_blockLocation));

@@ -267,13 +267,13 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId, 2);
 		
 		// Watch the entity fall as a result of implicit changes.
-		Object change0 = network.waitForUpdate(clientId, 0);
+		Object change0 = network.waitForUpdate(clientId, 1);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		MutableEntity mutable = MutableEntity.existing(entity);
 		((MutationEntitySetEntity)change0).applyToEntity(null, mutable);
 		Assert.assertTrue(mutable.newLocation.z() < start.z());
 		EntityLocation first = mutable.newLocation;
-		Object change1 = network.waitForUpdate(clientId, 1);
+		Object change1 = network.waitForUpdate(clientId, 2);
 		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
 		((MutationEntitySetEntity)change1).applyToEntity(null, mutable);
 		Assert.assertTrue(mutable.newLocation.z() < first.z());

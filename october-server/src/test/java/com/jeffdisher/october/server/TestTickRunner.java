@@ -33,6 +33,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -62,6 +63,7 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestTickRunner
 {
+	public static final long MILLIS_PER_TICK = 10L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item STONE_BRICK_ITEM;
@@ -169,7 +171,7 @@ public class TestTickRunner
 	public void shockwaveMultiCuboids()
 	{
 		// Use extra threads here to stress further.
-		TickRunner runner = new TickRunner(8, ServerRunner.DEFAULT_MILLIS_PER_TICK
+		TickRunner runner = new TickRunner(8, MILLIS_PER_TICK
 				, null
 				, (int bound) -> 0
 				, (TickRunner.Snapshot completed) -> {}
@@ -422,15 +424,12 @@ public class TestTickRunner
 		// Schedule the first step.
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
-		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, break1, commit1);
+		long nextCommit = 1L;
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
 		
-		// We now run the tick.
-		// (note that this will commit the entity change but not the block change)
-		runner.startNextTick();
+		// Wait for the tick and observe the results.
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit1, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(nextCommit - 1L, snapshot.commitLevels().get(entityId).longValue());
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Run another tick to see the underlying block change applied.
@@ -443,13 +442,11 @@ public class TestTickRunner
 		Assert.assertEquals((short) 500, proxy1.getDamage());
 		Assert.assertNull(proxy1.getInventory());
 		
-		// Now, enqueue the second hit to finish the break.
-		EntityChangeIncrementalBlockBreak break2 = new EntityChangeIncrementalBlockBreak(changeLocation1, (short) 100);
-		long commit2 = 2L;
-		runner.enqueueEntityChange(entityId, break2, commit2);
-		runner.startNextTick();
+		// Now, enqueue the remaining hits to finish the break.
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
+		
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(commit2, snapshot.commitLevels().get(entityId).longValue());
+		Assert.assertEquals(nextCommit - 1L, snapshot.commitLevels().get(entityId).longValue());
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Run the second tick to see the block change.
@@ -484,7 +481,7 @@ public class TestTickRunner
 			snapshotRef[0] = completed;
 		};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, MILLIS_PER_TICK
 				, null
 				, (int bound) -> 0
 				, snapshotListener
@@ -554,7 +551,7 @@ public class TestTickRunner
 			snapshotRef[0] = completed;
 		};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, MILLIS_PER_TICK
 				, null
 				, null
 				, snapshotListener
@@ -708,7 +705,11 @@ public class TestTickRunner
 	public void furnaceLoadAndCraft()
 	{
 		// Create a cuboid of furnaces, load one with fuel and ingredients, and watch it craft.
-		int burnMillisPlank = ENV.fuel.millisOfFuel(PLANK_ITEM);
+		int burnPlankMillis = ENV.fuel.millisOfFuel(PLANK_ITEM);
+		long burnPlankTicks = burnPlankMillis / MILLIS_PER_TICK;
+		long craftCharcoalMillis = ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
+		long craftCharcoalTicks = craftCharcoalMillis / MILLIS_PER_TICK;
+		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		TickRunner runner = _createTestRunner();
@@ -754,23 +755,23 @@ public class TestTickRunner
 		Assert.assertEquals(3, proxy.getInventory().getCount(LOG_ITEM));
 		Assert.assertEquals(2, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
 		
-		// Loop until the craft is done.
+		// Loop until 1 tick before the end of the craft.
 		int burnedMillis = 0;
 		int craftedMillis = 0;
 		int logCount = 3;
 		int plankCount = 1;
-		for (int i = 1; i < 30; ++i)
+		for (int i = 1; i < (3 * craftCharcoalTicks); ++i)
 		{
-			if (0 == (i % 10))
+			if (0 == (i % craftCharcoalTicks))
 			{
 				logCount -= 1;
 			}
-			if (21 == i)
+			if ((burnPlankTicks + 1) == i)
 			{
 				plankCount -= 1;
 			}
-			burnedMillis = (burnedMillis + (int)ServerRunner.DEFAULT_MILLIS_PER_TICK) % burnMillisPlank;
-			craftedMillis = (craftedMillis + (int)ServerRunner.DEFAULT_MILLIS_PER_TICK) % 1000;
+			burnedMillis = (burnedMillis + (int)MILLIS_PER_TICK) % burnPlankMillis;
+			craftedMillis = (craftedMillis + (int)MILLIS_PER_TICK) % 1000;
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
@@ -779,21 +780,22 @@ public class TestTickRunner
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 			Assert.assertEquals(logCount, proxy.getInventory().getCount(LOG_ITEM));
 			Assert.assertEquals(plankCount, proxy.getFuel().fuelInventory().getCount(PLANK_ITEM));
-			if (0 != (i % 20))
+			if (0 != (i % burnPlankTicks))
 			{
-				Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
+				Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
 				Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
 			}
 			else
 			{
 				Assert.assertNull(proxy.getFuel().currentFuel());
 			}
-			if (0 != (i % 10))
+			if (0 != (i % craftCharcoalTicks))
 			{
 				Assert.assertEquals(craftedMillis, proxy.getCrafting().completedMillis());
 			}
 		}
-		burnedMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		// Run the last tick to finish things.
+		burnedMillis += MILLIS_PER_TICK;
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		
@@ -802,20 +804,21 @@ public class TestTickRunner
 		proxy = new BlockProxy(block, snap.completedCuboids().get(address));
 		Assert.assertEquals(0, proxy.getInventory().getCount(LOG_ITEM));
 		Assert.assertEquals(3, proxy.getInventory().getCount(CHARCOAL_ITEM));
-		Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
+		Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
 		Assert.assertEquals(PLANK_ITEM, proxy.getFuel().currentFuel());
 		Assert.assertNull(proxy.getCrafting());
 		
 		// Now, wait for the fuel to finish.
-		for (int i = 0; i < 10; ++i)
+		int ticksToFinishBurn = (int)((burnPlankMillis - burnedMillis) / MILLIS_PER_TICK);
+		for (int i = 0; i < ticksToFinishBurn; ++i)
 		{
-			burnedMillis += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			burnedMillis += MILLIS_PER_TICK;
 			runner.startNextTick();
 			snap = runner.waitForPreviousTick();
 			
 			Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 			proxy = new BlockProxy(block, snap.completedCuboids().get(address));
-			Assert.assertEquals(burnedMillis, burnMillisPlank - proxy.getFuel().millisFuelled());
+			Assert.assertEquals(burnedMillis, burnPlankMillis - proxy.getFuel().millisFuelled());
 		}
 		Assert.assertEquals(0, proxy.getFuel().millisFuelled());
 		Assert.assertNull(proxy.getFuel().currentFuel());
@@ -1120,6 +1123,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(plug.x(), plug.y(), plug.z() + 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		mutable.isCreativeMode = true;
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of()))
 				, null
@@ -1132,7 +1136,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)100), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)10), 1L);
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		
@@ -1241,30 +1245,28 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Send an incremental update to break the stone, but only partially.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)50), 1L);
-		runner.startNextTick();
+		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, stoneLocation, (short)50);
 		snapshot = runner.waitForPreviousTick();
-		// (we should see the update scheduled, but no change).
+		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		
 		// Let that mutation apply and verify the updated damage but no other change.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		// (we should see the update scheduled, but no change).
+		// (we should see the damage change go through).
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		Assert.assertEquals((short)50, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
 		
 		// Apply the second break attempt, which should break it.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(stoneLocation, (short)50), 1L);
-		runner.startNextTick();
+		_applyIncrementalBreaks(runner, nextCommit, entityId, stoneLocation, (short)50);
 		snapshot = runner.waitForPreviousTick();
-		// (we should see the update scheduled, but no change).
+		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
+		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		
 		// Let that mutation apply and verify that the block is broken (we won't see the update apply until the next tick).
@@ -1360,7 +1362,7 @@ public class TestTickRunner
 		
 		int[] randomHolder = new int[] {0};
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, MILLIS_PER_TICK
 				, null
 				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
@@ -1392,10 +1394,11 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(SAPLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
-		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
+		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
 		// Then, there will be 1 growth attempt, but we set the random provider to 0 so it will fail.  Then we will see another 100 ticks pass.
 		randomHolder[0] = 0;
-		for (int i = 0; i < 201; ++i)
+		int ticksBetweenGrowthCalls = (int)(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
+		for (int i = 0; i < (2 * ticksBetweenGrowthCalls + 1); ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
@@ -1424,6 +1427,7 @@ public class TestTickRunner
 	public void wheatGrowth()
 	{
 		// Plant a seed and watch it grow.
+		int ticksBetweenGrowthCalls = (int)(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
 		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
@@ -1432,7 +1436,7 @@ public class TestTickRunner
 		int[] randomHolder = new int[] {0};
 		TickRunner.TEST_SPAWNING_ENABLED = false;
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, MILLIS_PER_TICK
 				, null
 				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
@@ -1464,10 +1468,10 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
-		// The last call will have enqueued a growth tick so we want to skip ahead 100 ticks to see the growth.
+		// The last call will have enqueued a growth tick so we want to skip ahead 500 ticks to see the growth.
 		// We will just set the random number to 1 to easily watch it go through all phases.
 		randomHolder[0] = 1;
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < ticksBetweenGrowthCalls; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
@@ -1480,8 +1484,8 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().get(address).size());
 		Assert.assertEquals(WHEAT_YOUNG_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
-		// Wait another 100 ticks to see the next growth.
-		for (int i = 0; i < 100; ++i)
+		// Wait another 500 ticks to see the next growth.
+		for (int i = 0; i < ticksBetweenGrowthCalls; ++i)
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
@@ -1495,12 +1499,9 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_MATURE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Break the mature crop and check the inventory dropped.
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(location, (short) 100);
-		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, break1, commit1);
+		_applyIncrementalBreaks(runner, 1L, entityId, location, (short)20);
 		
-		// Run a tick for the unwrap, another to break the block, then a third to save to the entity, before checking the inventories.
-		runner.startNextTick();
+		// Finish the tick for the unwrap, another to break the block, then a third to save to the entity, before checking the inventories.
 		snapshot = runner.waitForPreviousTick();
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -1548,7 +1549,9 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
+		long nextCommit = 1L;
+		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), nextCommit);
+		nextCommit += 1L;
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1561,8 +1564,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, creak the dirt block.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(dirtLocation, (short)100), 2L);
-		runner.startNextTick();
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, dirtLocation, (short)100);
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
@@ -1692,19 +1694,19 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		runner.startNextTick();
 		
-		// After this other tick, we should see the entity being available.
-		TickRunner.Snapshot snapshot = runner.startNextTick();
+		// Pass some time and observe the creature movement.
+		TickRunner.Snapshot snapshot = _passSomeTime(runner, 100L);
 		
 		// See where the entity is.
 		CreatureEntity updated = snapshot.completedCreatures().get(creatureId);
 		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.951f), updated.location());
-		Assert.assertEquals(-0.98f, updated.velocity().z(), 0.01f);
+		Assert.assertEquals(-1.0f, updated.velocity().z(), 0.01f);
 		
-		// Run another tick and see it move.
-		snapshot = runner.startNextTick();
+		// Pass some more time and see it move.
+		snapshot = _passSomeTime(runner, 100L);
 		updated = snapshot.completedCreatures().get(creatureId);
 		Assert.assertEquals(new EntityLocation(224.0f, 262.0f, 294.804f), updated.location());
-		Assert.assertEquals(-1.96f, updated.velocity().z(), 0.01f);
+		Assert.assertEquals(-2.0f, updated.velocity().z(), 0.01f);
 		
 		runner.shutdown();
 	}
@@ -1805,6 +1807,7 @@ public class TestTickRunner
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
+		mutable.isCreativeMode = true;
 		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
 				)
@@ -1839,7 +1842,7 @@ public class TestTickRunner
 		
 		// Break one of these wires.
 		runner.waitForPreviousTick();
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location, (short) 100);
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location, (short) 10);
 		runner.enqueueEntityChange(entityId, break1, 2L);
 		runner.startNextTick();
 		
@@ -1969,7 +1972,7 @@ public class TestTickRunner
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
 		Random random = new Random();
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
-				, ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, MILLIS_PER_TICK
 				, null
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
@@ -2005,5 +2008,32 @@ public class TestTickRunner
 			}
 		}
 		return count;
+	}
+
+	private long _applyIncrementalBreaks(TickRunner runner, long nextCommit, int entityId, AbsoluteLocation changeLocation, short millisOfBreak)
+	{
+		short millisRemaining = millisOfBreak;
+		while (millisRemaining > 0)
+		{
+			short timeToApply = (short) Math.min(MILLIS_PER_TICK, millisRemaining);
+			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, timeToApply);
+			runner.enqueueEntityChange(entityId, break1, nextCommit);
+			nextCommit += 1L;
+			runner.startNextTick();
+			millisRemaining -= timeToApply;
+		}
+		return nextCommit;
+	}
+
+	private TickRunner.Snapshot _passSomeTime(TickRunner runner, long minMillisToPass)
+	{
+		TickRunner.Snapshot snapshot = null;
+		long millisRemaining = minMillisToPass;
+		while (millisRemaining > 0L)
+		{
+			snapshot = runner.startNextTick();
+			millisRemaining -= MILLIS_PER_TICK;
+		}
+		return snapshot;
 	}
 }

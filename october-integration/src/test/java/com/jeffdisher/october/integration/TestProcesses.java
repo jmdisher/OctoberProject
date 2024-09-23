@@ -23,7 +23,6 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.MonitoringAgent;
-import com.jeffdisher.october.server.ServerRunner;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -40,7 +39,7 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestProcesses
 {
 	public static final int PORT = 5678;
-	public static final long MILLIS_PER_TICK = 100L;
+	public static final long MILLIS_PER_TICK = 20L;
 	public static final LongSupplier TIME_SUPPLIER = () -> System.currentTimeMillis();
 
 	@ClassRule
@@ -267,60 +266,66 @@ public class TestProcesses
 		while (1 != listener1.otherEntities.size())
 		{
 			client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
-			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		while (1 != listener2.otherEntities.size())
 		{
 			client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
+		
+		// Reset the time intervals for the clients.
+		client1.doNothing(currentTimeMillis[0]);
+		client2.doNothing(currentTimeMillis[0]);
+		currentTimeMillis[0] += MILLIS_PER_TICK;
 		
 		// Both of these clients need to move and then we can verify that both sides can see the correct outcome.
 		// (we want this to be multiple steps, so we queue those up now)
 		EntityLocation startLocation = listener1.getLocalEntity().location();
 		EntityLocation location1 = startLocation;
 		EntityLocation location2 = startLocation;
+		// We will manually account for movement based on the limit per tick.
+		float horizontalDistancePerTick = EntityConstants.SPEED_PLAYER * (float)MILLIS_PER_TICK / 1000.0f;
 		for (int i = 0; i < 5; ++i)
 		{
-			// We can walk 0.4 horizontally in a single tick.
-			location1 = new EntityLocation(location1.x() + 0.4f, location1.y(), location1.z());
-			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			location1 = new EntityLocation(location1.x() + horizontalDistancePerTick, location1.y(), location1.z());
+			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client1.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis[0]);
 			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
-			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
 		for (int i = 0; i < 5; ++i)
 		{
-			location2 = new EntityLocation(location2.x(), location2.y() - 0.4f, location2.z());
+			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
 			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
-			currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		
 		// The client flushes network operations after receiving end of tick, so let at least one tick pass for both so they flush.
 		serverTickNumber = server.waitForTicksToPass(1L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		currentTimeMillis[0] += MILLIS_PER_TICK;
 		
 		// Because this will always leave one tick of slack on the line, consume it before counting the ticks to see our changes.
 		serverTickNumber = server.waitForTicksToPass(1L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		currentTimeMillis[0] += MILLIS_PER_TICK;
 		
 		// We expect the first client to take an extra 5 ticks to be processed while the second takes a further 5.
 		serverTickNumber = server.waitForTicksToPass(5L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		currentTimeMillis[0] += MILLIS_PER_TICK;
 		_compareLocation(location1, listener1.getLocalEntity().location());
 		_compareLocation(location1, listener2.otherEntities.get(clientId1).location());
 		
 		serverTickNumber = server.waitForTicksToPass(5L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += ServerRunner.DEFAULT_MILLIS_PER_TICK;
+		currentTimeMillis[0] += MILLIS_PER_TICK;
 		_compareLocation(location2, listener1.otherEntities.get(clientId2).location());
 		_compareLocation(location2, listener2.getLocalEntity().location());
 		
