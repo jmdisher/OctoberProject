@@ -1,0 +1,425 @@
+Basic movement and placement of 100 bots.
+
+
+Start server:
+
+rm -f world/cuboid_* world/entity_* && \
+java -Xmx64m -jar october-server/target/october-server-0.0-SNAPSHOT-jar-with-dependencies.jar  9999
+
+
+Wait until the server starts and then start the clients:
+
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot000 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot001 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot002 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot003 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot004 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot005 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot006 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot007 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot008 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot009 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot010 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot011 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot012 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot013 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot014 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot015 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot016 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot017 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot018 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot019 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot020 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot021 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot022 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot023 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot024 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot025 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot026 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot027 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot028 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot029 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot030 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot031 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot032 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot033 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot034 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot035 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot036 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot037 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot038 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot039 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot040 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot041 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot042 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot043 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot044 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot045 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot046 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot047 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot048 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot049 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot050 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot051 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot052 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot053 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot054 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot055 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot056 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot057 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot058 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot059 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot060 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot061 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot062 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot063 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot064 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot065 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot066 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot067 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot068 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot069 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot070 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot071 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot072 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot073 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot074 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot075 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot076 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot077 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot078 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot079 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot080 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot081 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot082 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot083 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot084 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot085 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot086 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot087 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot088 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot089 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot090 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot091 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot092 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot093 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot094 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot095 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot096 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot097 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot098 > /dev/null & \
+java -Xmx8m -jar october-integration/target/AutoWalkingClient-jar-with-dependencies.jar  127.0.0.1 9999 bot099 > /dev/null & \
+true
+
+
+Wait until 100 clients show up in !list_clients, then configure them:
+
+!set_mode 1383296115 creative
+!set_mode 1383296114 creative
+!set_mode 1383296119 creative
+!set_mode 1383296118 creative
+!set_mode 1383296117 creative
+!set_mode 1383296116 creative
+!set_mode 1383296123 creative
+!set_mode 1383296122 creative
+!set_mode 1383296121 creative
+!set_mode 1383296120 creative
+!set_mode 1383296083 creative
+!set_mode 1383296087 creative
+!set_mode 1383296086 creative
+!set_mode 1383296085 creative
+!set_mode 1383296084 creative
+!set_mode 1383296091 creative
+!set_mode 1383296090 creative
+!set_mode 1383296089 creative
+!set_mode 1383296088 creative
+!set_mode 1383296092 creative
+!set_mode 1383296055 creative
+!set_mode 1383296054 creative
+!set_mode 1383296053 creative
+!set_mode 1383296052 creative
+!set_mode 1383296059 creative
+!set_mode 1383296058 creative
+!set_mode 1383296057 creative
+!set_mode 1383296056 creative
+!set_mode 1383296061 creative
+!set_mode 1383296060 creative
+!set_mode 1383296023 creative
+!set_mode 1383296022 creative
+!set_mode 1383296021 creative
+!set_mode 1383296027 creative
+!set_mode 1383296026 creative
+!set_mode 1383296025 creative
+!set_mode 1383296024 creative
+!set_mode 1383296030 creative
+!set_mode 1383296029 creative
+!set_mode 1383296028 creative
+!set_mode 1383296243 creative
+!set_mode 1383296242 creative
+!set_mode 1383296241 creative
+!set_mode 1383296240 creative
+!set_mode 1383296247 creative
+!set_mode 1383295991 creative
+!set_mode 1383295990 creative
+!set_mode 1383296246 creative
+!set_mode 1383296245 creative
+!set_mode 1383296244 creative
+!set_mode 1383295995 creative
+!set_mode 1383295994 creative
+!set_mode 1383295993 creative
+!set_mode 1383295992 creative
+!set_mode 1383295999 creative
+!set_mode 1383295998 creative
+!set_mode 1383295997 creative
+!set_mode 1383295996 creative
+!set_mode 1383295968 creative
+!set_mode 1383296239 creative
+!set_mode 1383296238 creative
+!set_mode 1383296211 creative
+!set_mode 1383296210 creative
+!set_mode 1383296209 creative
+!set_mode 1383296208 creative
+!set_mode 1383295959 creative
+!set_mode 1383296215 creative
+!set_mode 1383296214 creative
+!set_mode 1383296213 creative
+!set_mode 1383296212 creative
+!set_mode 1383295963 creative
+!set_mode 1383295962 creative
+!set_mode 1383295961 creative
+!set_mode 1383295960 creative
+!set_mode 1383296216 creative
+!set_mode 1383295967 creative
+!set_mode 1383295966 creative
+!set_mode 1383295965 creative
+!set_mode 1383295964 creative
+!set_mode 1383296207 creative
+!set_mode 1383296179 creative
+!set_mode 1383296178 creative
+!set_mode 1383296177 creative
+!set_mode 1383296176 creative
+!set_mode 1383296183 creative
+!set_mode 1383296182 creative
+!set_mode 1383296181 creative
+!set_mode 1383296180 creative
+!set_mode 1383296185 creative
+!set_mode 1383296184 creative
+!set_mode 1383296147 creative
+!set_mode 1383296146 creative
+!set_mode 1383296145 creative
+!set_mode 1383296151 creative
+!set_mode 1383296150 creative
+!set_mode 1383296149 creative
+!set_mode 1383296148 creative
+!set_mode 1383296154 creative
+!set_mode 1383296153 creative
+!set_mode 1383296152 creative
+
+
+The clients can be teleported at the same time:
+
+!tp 1383296115 0 10 0
+!tp 1383296114 0 20 0
+!tp 1383296119 0 30 0
+!tp 1383296118 0 40 0
+!tp 1383296117 0 50 0
+!tp 1383296116 0 60 0
+!tp 1383296123 0 70 0
+!tp 1383296122 0 80 0
+!tp 1383296121 0 90 0
+!tp 1383296120 0 100 0
+!tp 1383296083 0 110 0
+!tp 1383296087 0 120 0
+!tp 1383296086 0 130 0
+!tp 1383296085 0 140 0
+!tp 1383296084 0 150 0
+!tp 1383296091 0 160 0
+!tp 1383296090 0 170 0
+!tp 1383296089 0 180 0
+!tp 1383296088 0 190 0
+!tp 1383296092 0 200 0
+!tp 1383296055 0 210 0
+!tp 1383296054 0 220 0
+!tp 1383296053 0 230 0
+!tp 1383296052 0 240 0
+!tp 1383296059 0 250 0
+!tp 1383296058 0 260 0
+!tp 1383296057 0 270 0
+!tp 1383296056 0 280 0
+!tp 1383296061 0 290 0
+!tp 1383296060 0 300 0
+!tp 1383296023 0 310 0
+!tp 1383296022 0 320 0
+!tp 1383296021 0 330 0
+!tp 1383296027 0 340 0
+!tp 1383296026 0 350 0
+!tp 1383296025 0 360 0
+!tp 1383296024 0 370 0
+!tp 1383296030 0 380 0
+!tp 1383296029 0 390 0
+!tp 1383296028 0 400 0
+!tp 1383296243 0 410 0
+!tp 1383296242 0 420 0
+!tp 1383296241 0 430 0
+!tp 1383296240 0 440 0
+!tp 1383296247 0 450 0
+!tp 1383295991 0 460 0
+!tp 1383295990 0 470 0
+!tp 1383296246 0 480 0
+!tp 1383296245 0 490 0
+!tp 1383296244 0 500 0
+!tp 1383295995 0 510 0
+!tp 1383295994 0 520 0
+!tp 1383295993 0 530 0
+!tp 1383295992 0 540 0
+!tp 1383295999 0 550 0
+!tp 1383295998 0 560 0
+!tp 1383295997 0 570 0
+!tp 1383295996 0 580 0
+!tp 1383295968 0 590 0
+!tp 1383296239 0 600 0
+!tp 1383296238 0 610 0
+!tp 1383296211 0 620 0
+!tp 1383296210 0 630 0
+!tp 1383296209 0 640 0
+!tp 1383296208 0 650 0
+!tp 1383295959 0 660 0
+!tp 1383296215 0 670 0
+!tp 1383296214 0 680 0
+!tp 1383296213 0 690 0
+!tp 1383296212 0 700 0
+!tp 1383295963 0 710 0
+!tp 1383295962 0 720 0
+!tp 1383295961 0 730 0
+!tp 1383295960 0 740 0
+!tp 1383296216 0 750 0
+!tp 1383295967 0 760 0
+!tp 1383295966 0 770 0
+!tp 1383295965 0 780 0
+!tp 1383295964 0 790 0
+!tp 1383296207 0 800 0
+!tp 1383296179 0 810 0
+!tp 1383296178 0 820 0
+!tp 1383296177 0 830 0
+!tp 1383296176 0 840 0
+!tp 1383296183 0 850 0
+!tp 1383296182 0 860 0
+!tp 1383296181 0 870 0
+!tp 1383296180 0 880 0
+!tp 1383296185 0 890 0
+!tp 1383296184 0 900 0
+!tp 1383296147 0 910 0
+!tp 1383296146 0 920 0
+!tp 1383296145 0 930 0
+!tp 1383296151 0 940 0
+!tp 1383296150 0 950 0
+!tp 1383296149 0 960 0
+!tp 1383296148 0 970 0
+!tp 1383296154 0 980 0
+!tp 1383296153 0 990 0
+!tp 1383296152 0 1000 0
+
+
+A few seconds later, these messages can be sent to start the client movements:
+
+!message 1383296115 BRICK EAST
+!message 1383296114 BRICK EAST
+!message 1383296119 BRICK EAST
+!message 1383296118 BRICK EAST
+!message 1383296117 BRICK EAST
+!message 1383296116 BRICK EAST
+!message 1383296123 BRICK EAST
+!message 1383296122 BRICK EAST
+!message 1383296121 BRICK EAST
+!message 1383296120 BRICK EAST
+!message 1383296083 BRICK EAST
+!message 1383296087 BRICK EAST
+!message 1383296086 BRICK EAST
+!message 1383296085 BRICK EAST
+!message 1383296084 BRICK EAST
+!message 1383296091 BRICK EAST
+!message 1383296090 BRICK EAST
+!message 1383296089 BRICK EAST
+!message 1383296088 BRICK EAST
+!message 1383296092 BRICK EAST
+!message 1383296055 BRICK EAST
+!message 1383296054 BRICK EAST
+!message 1383296053 BRICK EAST
+!message 1383296052 BRICK EAST
+!message 1383296059 BRICK EAST
+!message 1383296058 BRICK EAST
+!message 1383296057 BRICK EAST
+!message 1383296056 BRICK EAST
+!message 1383296061 BRICK EAST
+!message 1383296060 BRICK EAST
+!message 1383296023 BRICK EAST
+!message 1383296022 BRICK EAST
+!message 1383296021 BRICK EAST
+!message 1383296027 BRICK EAST
+!message 1383296026 BRICK EAST
+!message 1383296025 BRICK EAST
+!message 1383296024 BRICK EAST
+!message 1383296030 BRICK EAST
+!message 1383296029 BRICK EAST
+!message 1383296028 BRICK EAST
+!message 1383296243 BRICK EAST
+!message 1383296242 BRICK EAST
+!message 1383296241 BRICK EAST
+!message 1383296240 BRICK EAST
+!message 1383296247 BRICK EAST
+!message 1383295991 BRICK EAST
+!message 1383295990 BRICK EAST
+!message 1383296246 BRICK EAST
+!message 1383296245 BRICK EAST
+!message 1383296244 BRICK EAST
+!message 1383295995 BRICK EAST
+!message 1383295994 BRICK EAST
+!message 1383295993 BRICK EAST
+!message 1383295992 BRICK EAST
+!message 1383295999 BRICK EAST
+!message 1383295998 BRICK EAST
+!message 1383295997 BRICK EAST
+!message 1383295996 BRICK EAST
+!message 1383295968 BRICK EAST
+!message 1383296239 BRICK EAST
+!message 1383296238 BRICK EAST
+!message 1383296211 BRICK EAST
+!message 1383296210 BRICK EAST
+!message 1383296209 BRICK EAST
+!message 1383296208 BRICK EAST
+!message 1383295959 BRICK EAST
+!message 1383296215 BRICK EAST
+!message 1383296214 BRICK EAST
+!message 1383296213 BRICK EAST
+!message 1383296212 BRICK EAST
+!message 1383295963 BRICK EAST
+!message 1383295962 BRICK EAST
+!message 1383295961 BRICK EAST
+!message 1383295960 BRICK EAST
+!message 1383296216 BRICK EAST
+!message 1383295967 BRICK EAST
+!message 1383295966 BRICK EAST
+!message 1383295965 BRICK EAST
+!message 1383295964 BRICK EAST
+!message 1383296207 BRICK EAST
+!message 1383296179 BRICK EAST
+!message 1383296178 BRICK EAST
+!message 1383296177 BRICK EAST
+!message 1383296176 BRICK EAST
+!message 1383296183 BRICK EAST
+!message 1383296182 BRICK EAST
+!message 1383296181 BRICK EAST
+!message 1383296180 BRICK EAST
+!message 1383296185 BRICK EAST
+!message 1383296184 BRICK EAST
+!message 1383296147 BRICK EAST
+!message 1383296146 BRICK EAST
+!message 1383296145 BRICK EAST
+!message 1383296151 BRICK EAST
+!message 1383296150 BRICK EAST
+!message 1383296149 BRICK EAST
+!message 1383296148 BRICK EAST
+!message 1383296154 BRICK EAST
+!message 1383296153 BRICK EAST
+!message 1383296152 BRICK EAST
+

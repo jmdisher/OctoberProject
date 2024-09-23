@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.function.LongSupplier;
 
 import org.junit.Assert;
@@ -318,6 +319,78 @@ public class TestNetworkServer
 		
 		// Shut down.
 		server.stop();
+	}
+
+	@Test
+	public void heavyThreadSaturation() throws Throwable
+	{
+		// We will start 100 threads and make them all attempt a basic connect and handshake at the same time to see that they all make it through.
+		int threadCount = 100;
+		int[] joinLeaveCounts = new int[2];
+		CountDownLatch closeLatch = new CountDownLatch(threadCount);
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new NetworkServer.IListener<>()
+		{
+			@Override
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			{
+				joinLeaveCounts[0] += 1;
+				return new NetworkServer.ConnectingClientDescription<>(joinLeaveCounts[0], token);
+			}
+			@Override
+			public void userLeft(NetworkLayer.PeerToken token)
+			{
+				joinLeaveCounts[1] += 1;
+				closeLatch.countDown();
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.PeerToken token)
+			{
+				// We aren't acting on this in our test.
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token)
+			{
+				// Should not happen in this test.
+				Assert.fail();
+			}
+		}, TIME_SUPPLIER, port);
+		
+		CyclicBarrier connectBarrier = new CyclicBarrier(threadCount);
+		CyclicBarrier endBarrier = new CyclicBarrier(threadCount);
+		Thread[] clients = new Thread[threadCount];
+		for (int i = 0; i < threadCount; ++i)
+		{
+			String name = "Client " + i;
+			clients[i] = new Thread(() -> {
+				try
+				{
+					connectBarrier.await();
+					SocketChannel client = _connectAndHandshakeClient(port, name);
+					endBarrier.await();
+					client.close();
+				}
+				catch (Throwable t)
+				{
+					t.printStackTrace();
+					// If this error happens, we want to see it.
+					System.exit(1);
+				}
+			});
+		}
+		for (int i = 0; i < threadCount; ++i)
+		{
+			clients[i].start();
+		}
+		for (int i = 0; i < threadCount; ++i)
+		{
+			clients[i].join();
+		}
+		closeLatch.await();
+		server.stop();
+		
+		Assert.assertEquals(threadCount, joinLeaveCounts[0]);
+		Assert.assertEquals(threadCount, joinLeaveCounts[1]);
 	}
 
 

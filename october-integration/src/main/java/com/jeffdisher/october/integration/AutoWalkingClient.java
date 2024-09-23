@@ -93,6 +93,11 @@ public class AutoWalkingClient
 				command = _parseCommand(listener.lastCommandFromServer);
 			}
 		}
+		// If we didn't get a command, just disconnect.
+		if (null == command)
+		{
+			client.disconnect();
+		}
 		return (null != command)
 				? new _Packaged(listener, client, command)
 				: null

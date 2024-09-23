@@ -16,9 +16,10 @@ import com.jeffdisher.october.utils.Assert;
 public class NetworkServer<L>
 {
 	/**
-	 * We will default to 1 second for the handshake.
+	 * We will default to 10 second for the handshake since some stress tests may take longer than 1 second for hundreds
+	 * of clients to fully connect.
 	 */
-	public static final long DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS = 1_000L;
+	public static final long DEFAULT_NEW_CONNECTION_TIMEOUT_MILLIS = 10_000L;
 
 	private final IListener<L> _listener;
 	private final NetworkLayer<PacketFromClient, PacketFromServer> _network;
