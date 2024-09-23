@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -1434,13 +1435,14 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
-		TickRunner.TEST_SPAWNING_ENABLED = false;
+		WorldConfig config = new WorldConfig();
+		config.difficulty = Difficulty.PEACEFUL;
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
 				, null
 				, (int bound) -> randomHolder[0] % bound
 				, (TickRunner.Snapshot completed) -> {}
-				, new WorldConfig()
+				, config
 		);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
@@ -1968,7 +1970,7 @@ public class TestTickRunner
 	private TickRunner _createTestRunnerWithConfig(WorldConfig config)
 	{
 		// We want to disable spawning for most of these tests.
-		TickRunner.TEST_SPAWNING_ENABLED = false;
+		config.difficulty = Difficulty.PEACEFUL;
 		Consumer<TickRunner.Snapshot> snapshotListener = (TickRunner.Snapshot completed) -> {};
 		Random random = new Random();
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT

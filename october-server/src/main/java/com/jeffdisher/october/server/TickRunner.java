@@ -72,11 +72,6 @@ public class TickRunner
 	 */
 	public static final int PENDING_ACTION_LIMIT = 20;
 
-	/**
-	 * Set false by some tests to disable dynamic creature spawning but this is normally true.
-	 */
-	public static boolean TEST_SPAWNING_ENABLED = true;
-
 	private final SyncPoint _syncPoint;
 	private final Thread[] _threads;
 	private final long _millisPerTick;
@@ -452,7 +447,7 @@ public class TickRunner
 			
 			// We will have the first thread attempt the monster spawning algorithm.
 			CreatureEntity spawned = null;
-			if (TEST_SPAWNING_ENABLED && thisThread.handleNextWorkUnit())
+			if (thisThread.handleNextWorkUnit())
 			{
 				spawned = CreatureSpawner.trySpawnCreature(context
 						, entityCollection
