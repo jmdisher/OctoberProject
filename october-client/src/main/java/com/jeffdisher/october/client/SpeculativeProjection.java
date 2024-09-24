@@ -401,18 +401,9 @@ public class SpeculativeProjection
 			, List<MutationBlockSetBlock> cuboidUpdates
 	)
 	{
-		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
-		
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
-		// It doesn't matter how much time we allot for these mutations since they are just state updates.
-		long millisPerTick = 0L;
-		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink, millisPerTick);
-		
-		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(context, entityUpdates);
-		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(context, partialEntityUpdates);
-		WorldProcessor.ProcessedFragment fragment = _applyCuboidUpdatesToShadowState(context, cuboidUpdates);
+		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(entityUpdates);
+		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(partialEntityUpdates);
+		WorldProcessor.ProcessedFragment fragment = _applyCuboidUpdatesToShadowState(gameTick, cuboidUpdates);
 		_UpdateTuple shadowUpdates = new _UpdateTuple(updatedShadowEntity
 				, entitiesChangedInTick
 				, fragment.stateFragment()
@@ -421,7 +412,7 @@ public class SpeculativeProjection
 		return shadowUpdates;
 	}
 
-	private Entity _applyLocalEntityUpdatesToShadowState(TickProcessingContext context, List<IEntityUpdate> entityUpdates)
+	private Entity _applyLocalEntityUpdatesToShadowState(List<IEntityUpdate> entityUpdates)
 	{
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;
@@ -433,7 +424,7 @@ public class SpeculativeProjection
 			MutableEntity mutable = MutableEntity.existing(entityToChange);
 			for (IEntityUpdate update : entityUpdates)
 			{
-				update.applyToEntity(context, mutable);
+				update.applyToEntity(mutable);
 			}
 			Entity frozen = mutable.freeze();
 			if (entityToChange != frozen)
@@ -444,7 +435,7 @@ public class SpeculativeProjection
 		return updatedShadowEntity;
 	}
 
-	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(TickProcessingContext context, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates)
+	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates)
 	{
 		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
 		for (Map.Entry<Integer, List<IPartialEntityUpdate>> elt : partialEntityUpdates.entrySet())
@@ -456,7 +447,7 @@ public class SpeculativeProjection
 			MutablePartialEntity mutable = MutablePartialEntity.existing(partialEntityToChange);
 			for (IPartialEntityUpdate update : elt.getValue())
 			{
-				update.applyToEntity(context, mutable);
+				update.applyToEntity(mutable);
 			}
 			PartialEntity frozen = mutable.freeze();
 			if (partialEntityToChange != frozen)
@@ -467,8 +458,17 @@ public class SpeculativeProjection
 		return entitiesChangedInTick;
 	}
 
-	private WorldProcessor.ProcessedFragment _applyCuboidUpdatesToShadowState(TickProcessingContext context, List<MutationBlockSetBlock> cuboidUpdates)
+	private WorldProcessor.ProcessedFragment _applyCuboidUpdatesToShadowState(long gameTick, List<MutationBlockSetBlock> cuboidUpdates)
 	{
+		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
+		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
+		
+		CommonMutationSink newMutationSink = new CommonMutationSink();
+		CommonChangeSink newChangeSink = new CommonChangeSink();
+		// It doesn't matter how much time we allot for these mutations since they are just state updates.
+		long millisPerTick = 0L;
+		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink, millisPerTick);
+		
 		// Split the incoming mutations into the expected map shape.
 		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
 		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());

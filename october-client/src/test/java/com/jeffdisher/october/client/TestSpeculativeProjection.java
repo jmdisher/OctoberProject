@@ -1412,8 +1412,8 @@ public class TestSpeculativeProjection
 		
 		// Now, absorb the first 2 changes from the server so we force follow-ups to be evaluated in a way which allows them to bunch up.
 		MutableEntity authoritativeMutable = MutableEntity.existing(listener.authoritativeEntityState);
-		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move1).applyToEntity(null, authoritativeMutable);
-		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move2).applyToEntity(null, authoritativeMutable);
+		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move1).applyToEntity(authoritativeMutable);
+		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move2).applyToEntity(authoritativeMutable);
 		
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()

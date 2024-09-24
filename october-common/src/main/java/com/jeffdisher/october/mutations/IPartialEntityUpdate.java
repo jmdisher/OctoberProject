@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.types.MutablePartialEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -15,10 +14,9 @@ public interface IPartialEntityUpdate
 	/**
 	 * Applies the receiver to the given newEntity.
 	 * 
-	 * @param context Only provided for some testing resources - not generally useful to these objects.
 	 * @param newEntity The partial entity which should be updated by the receiver.
 	 */
-	void applyToEntity(TickProcessingContext context, MutablePartialEntity newEntity);
+	void applyToEntity(MutablePartialEntity newEntity);
 
 	/**
 	 * @return The type for serializing the entity over the network.

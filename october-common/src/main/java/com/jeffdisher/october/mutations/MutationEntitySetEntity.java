@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -30,7 +29,7 @@ public class MutationEntitySetEntity implements IEntityUpdate
 	}
 
 	@Override
-	public void applyToEntity(TickProcessingContext context, MutableEntity newEntity)
+	public void applyToEntity(MutableEntity newEntity)
 	{
 		newEntity.newInventory.clearInventory(_entity.inventory());
 		newEntity.newLocation = _entity.location();
