@@ -691,6 +691,7 @@ public class TestCommonChanges
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
@@ -812,6 +813,7 @@ public class TestCommonChanges
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
 				.sinks(null, new TickProcessingContext.IChangeSink() {
 						@Override
@@ -898,7 +900,10 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(bread, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		newEntity.newFood = 90;
-		TickProcessingContext context = _createSimpleContext();
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
+				.finish()
+		;
 		
 		// We will fail to eat the log.
 		EntityChangeUseSelectedItemOnSelf eat = new EntityChangeUseSelectedItemOnSelf();
@@ -1064,7 +1069,9 @@ public class TestCommonChanges
 		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
-		// Try to place the water source.
+		// Try to place the water source - note that this should fail unless we clear the last special action time.
+		Assert.assertFalse(exchange.applyChange(holder.context, newEntity));
+		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		replace = (MutationBlockReplace) holder.mutation;
@@ -1262,6 +1269,7 @@ public class TestCommonChanges
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
 				.lookups(null, (Integer id) -> {
 						Assert.assertEquals(targetId, id.intValue());
 						return MinimalEntity.fromCreature(creature);
@@ -1321,6 +1329,7 @@ public class TestCommonChanges
 		);
 		CommonChangeSink changeSink = new CommonChangeSink();
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
 				.lookups(null, (Integer id) -> {
 						Assert.assertEquals(targetId, id.intValue());
 						return MinimalEntity.fromCreature(creature);
@@ -1992,6 +2001,7 @@ public class TestCommonChanges
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
 		{
 			this.context = ContextBuilder.build()
+					.tick(5L)
 					.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 					.sinks(allowBlockMutation ? new TickProcessingContext.IMutationSink() {
 							@Override

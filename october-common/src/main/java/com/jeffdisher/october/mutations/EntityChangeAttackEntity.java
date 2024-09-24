@@ -27,6 +27,7 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.ATTACK_ENTITY;
+	public static final long ATTACK_COOLDOWN_MILLIS = 500L;
 
 	public static EntityChangeAttackEntity deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -48,17 +49,21 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 	@Override
 	public long getTimeCostMillis()
 	{
-		// TODO:  Make this a real cost.
+		// This has no cost since it isn't considered a primary action (like walking or crafting).
+		// This is a secondary action, meaning it can be done while performing certain kinds of primary actions (like walking).
 		return 0L;
 	}
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
+		// First, we want to make sure that we are not still busy doing something else.
+		boolean isReady = ((newEntity.getLastSpecialActionMillis() + ATTACK_COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
+		
 		// Check that the target is in range.  We will use block breaking distance.
 		boolean isInRange;
 		MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
-		if (null != targetEntity)
+		if (isReady && (null != targetEntity))
 		{
 			// The target is loaded so check the distances.
 			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), EntityConstants.getVolume(targetEntity.type()));
@@ -70,7 +75,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		}
 		else
 		{
-			// Not loaded so just say no.
+			// Not loaded or not ready to strike.
 			isInRange = false;
 		}
 		if (isInRange)
@@ -135,6 +140,9 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			
 			// Attacking expends a lot of energy.
 			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, EntityChangePeriodic.ENERGY_COST_ATTACK);
+			
+			// Rate-limit us by updating the special action time.
+			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
 		}
 		return isInRange;
 	}

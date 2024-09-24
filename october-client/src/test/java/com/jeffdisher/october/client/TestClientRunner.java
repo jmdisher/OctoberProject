@@ -17,6 +17,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -426,6 +427,51 @@ public class TestClientRunner
 		}
 		// Compare this walked distance to what we have experimentally verified.
 		Assert.assertEquals(new EntityLocation(21.0f, 0.0f, 0.0f), projection.thisEntity.location());
+	}
+
+	@Test
+	public void cooldownOnEating() throws Throwable
+	{
+		// We will try to eat multiple pieces of bread, showing that there is a cooldown period between such "use" operations.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		network.client.adapterConnected(clientId);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Item bread = ENV.items.getItemById("op.bread");
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newInventory.addAllItems(bread, 2);
+		int itemKey = mutable.newInventory.getIdOfStackableType(bread);
+		mutable.setSelectedKey(itemKey);
+		Entity startEntity = mutable.freeze();
+		network.client.receivedFullEntity(startEntity);
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
+		// We will just make one of the cuboids out of crafting tables to give us somewhere to craft.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Eat the bread, showing that it worked.
+		EntityChangeUseSelectedItemOnSelf eatChange = new EntityChangeUseSelectedItemOnSelf();
+		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(bread));
+		
+		// Show that another attempt fails.
+		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(bread));
+		
+		// Unless we pass some time.
+		currentTimeMillis += EntityChangeUseSelectedItemOnSelf.COOLDOWN_MILLIS;
+		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		Assert.assertEquals(0, projection.thisEntity.inventory().getCount(bread));
 	}
 
 

@@ -1626,7 +1626,7 @@ public class TestTickRunner
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newLocation = new EntityLocation(spawn.x() + 1, spawn.y(), spawn.z());
+		mutable.newLocation = entityLocation;
 		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), 1000));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
@@ -1637,6 +1637,11 @@ public class TestTickRunner
 				, null
 		);
 		runner.start();
+		// Skip a few ticks until the system has warmed up to the point where we can use a weapon.
+		for (int i = 0; i < (EntityChangeAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
+		{
+			runner.startNextTick();
+		}
 		runner.waitForPreviousTick();
 		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 1L);
 		runner.startNextTick();
@@ -1651,6 +1656,11 @@ public class TestTickRunner
 		Assert.assertEquals((byte)5, updated.health());
 		
 		// Hitting them again should cause them to de-spawn and drop items.
+		for (int i = 0; i < (EntityChangeAttackEntity.ATTACK_COOLDOWN_MILLIS / MILLIS_PER_TICK); ++i)
+		{
+			runner.startNextTick();
+		}
+		runner.waitForPreviousTick();
 		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 2L);
 		runner.startNextTick();
 		

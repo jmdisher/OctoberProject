@@ -27,6 +27,7 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 	public static final String BUCKET_EMPTY = "op.bucket_empty";
 	public static final String BUCKET_WATER = "op.bucket_water";
 	public static final String FERTILIZER = "op.fertilizer";
+	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -75,6 +76,51 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
+	{
+		// First, we want to make sure that we are not still busy doing something else.
+		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
+		
+		boolean didApply = false;
+		if (isReady)
+		{
+			didApply = _apply(context, newEntity);
+			
+			if (didApply)
+			{
+				// Rate-limit us by updating the special action time.
+				newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
+			}
+		}
+		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		return TYPE;
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+		CodecHelpers.writeAbsoluteLocation(buffer, _target);
+	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// The target may have changed.
+		return false;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Use selected item on block " + _target;
+	}
+
+
+	private boolean _apply(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		int selectedKey = newEntity.getSelectedKey();
@@ -127,30 +173,5 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 			didApply = true;
 		}
 		return didApply;
-	}
-
-	@Override
-	public MutationEntityType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
-	public void serializeToBuffer(ByteBuffer buffer)
-	{
-		CodecHelpers.writeAbsoluteLocation(buffer, _target);
-	}
-
-	@Override
-	public boolean canSaveToDisk()
-	{
-		// The target may have changed.
-		return false;
-	}
-
-	@Override
-	public String toString()
-	{
-		return "Use selected item on block " + _target;
 	}
 }

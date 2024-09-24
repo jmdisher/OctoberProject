@@ -18,6 +18,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_SELF;
+	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnSelf deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -50,6 +51,50 @@ public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutab
 
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
+	{
+		// First, we want to make sure that we are not still busy doing something else.
+		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
+		
+		boolean didApply = false;
+		if (isReady)
+		{
+			didApply = _apply(newEntity);
+			
+			if (didApply)
+			{
+				// Rate-limit us by updating the special action time.
+				newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
+			}
+		}
+		return didApply;
+	}
+
+	@Override
+	public MutationEntityType getType()
+	{
+		return TYPE;
+	}
+
+	@Override
+	public void serializeToBuffer(ByteBuffer buffer)
+	{
+	}
+
+	@Override
+	public boolean canSaveToDisk()
+	{
+		// Common case.
+		return true;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Use selected item on self";
+	}
+
+
+	private boolean _apply(IMutablePlayerEntity newEntity)
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
@@ -84,29 +129,5 @@ public class EntityChangeUseSelectedItemOnSelf implements IMutationEntity<IMutab
 			newEntity.setCurrentCraftingOperation(null);
 		}
 		return didApply;
-	}
-
-	@Override
-	public MutationEntityType getType()
-	{
-		return TYPE;
-	}
-
-	@Override
-	public void serializeToBuffer(ByteBuffer buffer)
-	{
-	}
-
-	@Override
-	public boolean canSaveToDisk()
-	{
-		// Common case.
-		return true;
-	}
-
-	@Override
-	public String toString()
-	{
-		return "Use selected item on self";
 	}
 }

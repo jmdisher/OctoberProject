@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY;
+	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnEntity deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -58,6 +59,9 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
+		// First, we want to make sure that we are not still busy doing something else.
+		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
+		
 		// Get the current selected item.
 		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
@@ -70,7 +74,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 		EntityType entityType = (null != target) ? target.type() : null;
 		
 		boolean didApply = false;
-		if (CreatureLogic.canUseOnEntity(itemType, entityType))
+		if (isReady && CreatureLogic.canUseOnEntity(itemType, entityType))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.
@@ -83,6 +87,9 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 			// Pass this to the entity.
 			context.newChangeSink.creature(_entityId, new EntityChangeApplyItemToCreature(itemType));
 			didApply = true;
+			
+			// Rate-limit us by updating the special action time.
+			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
 		}
 		return didApply;
 	}
