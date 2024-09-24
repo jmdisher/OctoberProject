@@ -148,6 +148,7 @@ public class CodecHelpers
 		byte food = buffer.get();
 		int breath = buffer.getInt();
 		int energyDeficit = buffer.getInt();
+		long ephemeral_lastSpecialActionMillis = 0L;
 		
 		return new Entity(id
 				, isCreativeMode
@@ -163,6 +164,7 @@ public class CodecHelpers
 				, food
 				, breath
 				, energyDeficit
+				, ephemeral_lastSpecialActionMillis
 		);
 	}
 

@@ -1719,6 +1719,7 @@ public class TestCommonChanges
 				, MutableEntity.DEFAULT_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
+				, 0L
 		);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
@@ -1832,6 +1833,7 @@ public class TestCommonChanges
 				, food
 				, breath
 				, 0
+				, 0L
 		);
 		
 		// Try to change these values and verify that nothing happens.

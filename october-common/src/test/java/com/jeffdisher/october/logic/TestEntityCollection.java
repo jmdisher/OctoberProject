@@ -79,6 +79,7 @@ public class TestEntityCollection
 				, (byte)0
 				, EntityConstants.MAX_BREATH
 				, 0
+				, 0L
 		);
 	}
 

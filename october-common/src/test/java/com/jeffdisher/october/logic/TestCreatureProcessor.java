@@ -826,6 +826,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, EntityConstants.MAX_BREATH
 				, 0
+				, 0L
 		);
 	}
 

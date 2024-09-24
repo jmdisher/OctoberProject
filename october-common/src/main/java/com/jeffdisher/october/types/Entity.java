@@ -31,6 +31,9 @@ public record Entity(int id
 		, int breath
 		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
 		, int energyDeficit
+		
+		// ***** Values below this point are considered ephemeral and local:  They are not persisted, nor send over the network.
+		, long ephemeral_lastSpecialActionMillis
 )
 {
 	public static final int HOTBAR_SIZE = 9;
@@ -59,6 +62,7 @@ public record Entity(int id
 				, (byte)0
 				, EntityConstants.MAX_BREATH
 				, 0
+				, 0L
 		);
 	}
 }

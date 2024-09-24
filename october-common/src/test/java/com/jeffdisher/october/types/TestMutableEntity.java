@@ -84,6 +84,20 @@ public class TestMutableEntity
 		Assert.assertTrue(input == output);
 	}
 
+	@Test
+	public void ephermalSpecialAction()
+	{
+		// Shows that the ephemeral special action time will cause a new instance to be created, even though it isn't persisted or sent over the network.
+		Entity input = _buildTestEntity();
+		MutableEntity mutable = MutableEntity.existing(input);
+		Assert.assertEquals(0L, mutable.getLastSpecialActionMillis());
+		mutable.setLastSpecialActionMillis(1L);
+		Assert.assertEquals(1L, mutable.getLastSpecialActionMillis());
+		Entity output = mutable.freeze();
+		
+		Assert.assertTrue(input != output);
+	}
+
 
 	private static Entity _buildTestEntity()
 	{

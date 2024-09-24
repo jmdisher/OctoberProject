@@ -71,6 +71,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, DEFAULT_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
+				, 0L
 		);
 		return new MutableEntity(entity);
 	}
@@ -92,6 +93,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public int newBreath;
 	public int newEnergyDeficit;
 	public boolean isCreativeMode;
+	public long ephemeral_lastSpecialActionMillis;
 
 	private MutableEntity(Entity original)
 	{
@@ -108,6 +110,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newBreath = original.breath();
 		this.newEnergyDeficit = original.energyDeficit();
 		this.isCreativeMode = original.isCreativeMode();
+		this.ephemeral_lastSpecialActionMillis = original.ephemeral_lastSpecialActionMillis();
 	}
 
 	@Override
@@ -339,6 +342,18 @@ public class MutableEntity implements IMutablePlayerEntity
 		EntityChangePeriodic.useEnergyAllowingDamage(context, this, cost);
 	}
 
+	@Override
+	public long getLastSpecialActionMillis()
+	{
+		return this.ephemeral_lastSpecialActionMillis;
+	}
+
+	@Override
+	public void setLastSpecialActionMillis(long millis)
+	{
+		this.ephemeral_lastSpecialActionMillis = millis;
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
@@ -390,6 +405,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newFood
 				, this.newBreath
 				, this.newEnergyDeficit
+				, this.ephemeral_lastSpecialActionMillis
 		);
 		// See if these are identical.
 		return _original.equals(newInstance)

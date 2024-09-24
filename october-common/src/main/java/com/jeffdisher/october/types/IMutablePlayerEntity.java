@@ -38,4 +38,8 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 	boolean isCreativeMode();
 
 	void setCreativeMode(boolean enableCreative);
+
+	long getLastSpecialActionMillis();
+
+	void setLastSpecialActionMillis(long millis);
 }
