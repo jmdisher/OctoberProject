@@ -17,7 +17,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.mutations.EntityMutationWrapper;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -170,10 +169,10 @@ public class TestClientRunner
 		Assert.assertTrue(1L == network.commitLevel);
 		
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
-		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
+		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -188,10 +187,10 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
 		Assert.assertTrue(2L == network.commitLevel);
-		network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
+		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -422,7 +421,7 @@ public class TestClientRunner
 			runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
 			afterMove = projection.thisEntity.location();
 			Assert.assertNotNull(network.toSend);
-			network.client.receivedEntityUpdate(clientId, new EntityMutationWrapper(network.toSend));
+			network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 			network.toSend = null;
 		}
 		// Compare this walked distance to what we have experimentally verified.
@@ -461,6 +460,7 @@ public class TestClientRunner
 	private static class TestProjection implements SpeculativeProjection.IProjectionListener
 	{
 		public Entity thisEntity = null;
+		public Entity authoritativeEntity = null;
 		public Map<Integer, PartialEntity> otherEnties = new HashMap<>();
 		public int allEntityChangeCount = 0;
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
@@ -490,6 +490,7 @@ public class TestClientRunner
 			Assert.assertFalse(this.otherEnties.containsKey(id));
 			Assert.assertNull(this.thisEntity);
 			this.thisEntity = authoritativeEntity;
+			this.authoritativeEntity = authoritativeEntity;
 		}
 		@Override
 		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
@@ -498,6 +499,7 @@ public class TestClientRunner
 			Assert.assertFalse(this.otherEnties.containsKey(id));
 			Assert.assertNotNull(this.thisEntity);
 			this.thisEntity = projectedEntity;
+			this.authoritativeEntity = authoritativeEntity;
 			this.allEntityChangeCount += 1;
 		}
 		@Override

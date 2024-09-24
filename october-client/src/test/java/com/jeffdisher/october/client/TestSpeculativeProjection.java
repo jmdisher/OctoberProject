@@ -29,14 +29,13 @@ import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
-import com.jeffdisher.october.mutations.EntityMutationWrapper;
-import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -135,15 +134,13 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(lone1);
 		long commit2 = projector.applyLocalChange(lone2);
 		List<MutationBlockSetBlock> mutationsToCommit = new ArrayList<>();
-		List<IEntityUpdate> localEntityChangesToCommit = new LinkedList<>();
 		long[] commitNumbers = new long[5];
 		for (int i = 0; i < commitNumbers.length; ++i)
 		{
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
 			IMutationBlock mutation = new ReplaceBlockMutation(location, ENV.special.AIR.item().number(), STONE_ITEM.number());
 			EntityChangeMutation entityChange = new EntityChangeMutation(mutation);
-			localEntityChangesToCommit.add(new EntityMutationWrapper(entityChange));
-			mutationsToCommit.add(FakeBlockUpdate.applyUpdate(cuboid, mutation));
+			mutationsToCommit.add(FakeUpdateFactories.blockUpdate(cuboid, mutation));
 			commitNumbers[i] = projector.applyLocalChange(entityChange);
 		}
 		Assert.assertEquals(7, listener.changeCount);
@@ -155,9 +152,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone1))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -172,9 +169,9 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone2))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, mutation2))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -189,7 +186,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, localEntityChangesToCommit
+				, List.of()
 				, Map.of()
 				, mutationsToCommit
 				, Collections.emptyList()
@@ -277,9 +274,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone0))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
@@ -363,9 +360,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone0))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -381,9 +378,9 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone1))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid1, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -465,9 +462,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone0))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -481,9 +478,9 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone1))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid1, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -569,7 +566,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone1))
+				, List.of()
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -586,9 +583,9 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(lone2))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -606,7 +603,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Collections.emptyMap()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, mutation2))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation2))
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
@@ -659,7 +656,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(send))
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, send))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -745,9 +742,9 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(blockBreak))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 500, entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 500, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -766,9 +763,9 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(blockBreak))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -890,7 +887,7 @@ public class TestSpeculativeProjection
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(load), new EntityMutationWrapper(craft))
+				, List.of()
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1169,7 +1166,7 @@ public class TestSpeculativeProjection
 		int speculative = projector.applyChangesForServerTick(2L
 				, List.of()
 				, List.of()
-				, List.of(new EntityMutationWrapper(request))
+				, List.of()
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1192,9 +1189,9 @@ public class TestSpeculativeProjection
 		speculative = projector.applyChangesForServerTick(3L
 				, List.of()
 				, List.of()
-				, List.of(new EntityMutationWrapper(request))
+				, List.of()
 				, Map.of()
-				, List.of(FakeBlockUpdate.applyUpdate(cuboid, extract))
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, extract))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -1210,7 +1207,7 @@ public class TestSpeculativeProjection
 		speculative = projector.applyChangesForServerTick(4L
 				, List.of()
 				, List.of()
-				, List.of(new EntityMutationWrapper(store))
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, store))
 				, Map.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1377,9 +1374,10 @@ public class TestSpeculativeProjection
 		mutable.setFood((byte)0);
 		projector.setThisEntity(mutable.freeze());
 		
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		projector.applyChangesForServerTick(1L
 				, List.of()
-				, List.of(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR))
+				, List.of(cuboid)
 				, List.of()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -1413,10 +1411,14 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
 		
 		// Now, absorb the first 2 changes from the server so we force follow-ups to be evaluated in a way which allows them to bunch up.
+		MutableEntity authoritativeMutable = MutableEntity.existing(listener.authoritativeEntityState);
+		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move1).applyToEntity(null, authoritativeMutable);
+		FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move2).applyToEntity(null, authoritativeMutable);
+		
 		int speculativeCount = projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(move1), new EntityMutationWrapper(move2))
+				, List.of(new MutationEntitySetEntity(authoritativeMutable.freeze()))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
@@ -1432,7 +1434,7 @@ public class TestSpeculativeProjection
 		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
-				, List.of(new EntityMutationWrapper(move3))
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(cuboid.getCuboidAddress(), cuboid), authoritativeMutable.freeze(), move3))
 				, Collections.emptyMap()
 				, Collections.emptyList()
 				, Collections.emptyList()
