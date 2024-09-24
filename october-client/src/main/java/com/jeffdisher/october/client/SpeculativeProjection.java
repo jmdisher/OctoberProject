@@ -13,8 +13,10 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -189,7 +191,7 @@ public class SpeculativeProjection
 		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(gameTick, entityUpdates, partialEntityUpdates, cuboidUpdates);
+		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(entityUpdates, partialEntityUpdates, cuboidUpdates);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -395,19 +397,24 @@ public class SpeculativeProjection
 
 
 
-	private _UpdateTuple _applyUpdatesToShadowState(long gameTick
-			, List<IEntityUpdate> entityUpdates
+	private _UpdateTuple _applyUpdatesToShadowState(List<IEntityUpdate> entityUpdates
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 	)
 	{
 		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(entityUpdates);
 		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(partialEntityUpdates);
-		WorldProcessor.ProcessedFragment fragment = _applyCuboidUpdatesToShadowState(gameTick, cuboidUpdates);
+		
+		Map<CuboidAddress, IReadOnlyCuboidData> updatedCuboids = new HashMap<>();
+		Map<CuboidAddress, CuboidHeightMap> updatedMaps = new HashMap<>();
+		_applyCuboidUpdatesToShadowState(updatedCuboids
+				, updatedMaps
+				, cuboidUpdates
+		);
 		_UpdateTuple shadowUpdates = new _UpdateTuple(updatedShadowEntity
 				, entitiesChangedInTick
-				, fragment.stateFragment()
-				, fragment.heightFragment()
+				, updatedCuboids
+				, updatedMaps
 		);
 		return shadowUpdates;
 	}
@@ -458,35 +465,46 @@ public class SpeculativeProjection
 		return entitiesChangedInTick;
 	}
 
-	private WorldProcessor.ProcessedFragment _applyCuboidUpdatesToShadowState(long gameTick, List<MutationBlockSetBlock> cuboidUpdates)
+	private void _applyCuboidUpdatesToShadowState(Map<CuboidAddress, IReadOnlyCuboidData> out_updatedCuboids
+			, Map<CuboidAddress, CuboidHeightMap> out_updatedMaps
+			, List<MutationBlockSetBlock> cuboidUpdates
+	)
 	{
-		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		// NOTE:  We must apply these in the same order they are in the TickRunner:  IEntityUpdate BEFORE IMutationBlock.
+		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
 		
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
-		// It doesn't matter how much time we allot for these mutations since they are just state updates.
-		long millisPerTick = 0L;
-		TickProcessingContext context = _createContext(gameTick, newMutationSink, newChangeSink, millisPerTick);
-		
-		// Split the incoming mutations into the expected map shape.
-		List<IMutationBlock> cuboidMutations = cuboidUpdates.stream().map((MutationBlockSetBlock update) -> new BlockUpdateWrapper(update)).collect(Collectors.toList());
-		Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun = _createMutationMap(cuboidMutations, _shadowWorld.keySet());
-		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
-		Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = Map.of();
-		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
-		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
-		WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
-				, _shadowWorld
-				, _shadowHeightMap
-				, context
-				, mutationsToRun
-				, modifiedBlocksByCuboidAddress
-				, potentialLightChangesByCuboid
-				, potentialLogicChangesByCuboid
-				, cuboidsLoadedThisTick
-		);
-		return fragment;
+		// NOTE:  This logic is similar to WorldProcessor but partially-duplicated here to avoid all the other requirements of the WorldProcessor or redundant operations it would perform.
+		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : updatesToApply.entrySet())
+		{
+			Set<AbsoluteLocation> existingUpdates = new HashSet<>();
+			CuboidAddress address = entry.getKey();
+			IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
+			
+			// We will lazily create the mutable version, only if something needs to be written-back (since some updates, at least in tests, are meaningless).
+			CuboidData mutableCuboid = null;
+			for (MutationBlockSetBlock update : entry.getValue())
+			{
+				AbsoluteLocation location = update.getAbsoluteLocation();
+				// We expect only one update per location - if this fails, we need to update this algorithm (although the current plan is just to make a single update parameterized).
+				boolean didAdd = existingUpdates.add(location);
+				Assert.assertTrue(didAdd);
+				
+				MutableBlockProxy proxy = new MutableBlockProxy(location, readOnly);
+				update.applyState(proxy);
+				if (proxy.didChange())
+				{
+					if (null == mutableCuboid)
+					{
+						mutableCuboid = CuboidData.mutableClone(readOnly);
+					}
+					proxy.writeBack(mutableCuboid);
+				}
+			}
+			if (null != mutableCuboid)
+			{
+				out_updatedCuboids.put(address, mutableCuboid);
+				out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));
+			}
+		}
 	}
 
 	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses
@@ -631,6 +649,26 @@ public class SpeculativeProjection
 			}
 		}
 		return mutationsToRun;
+	}
+
+	private Map<CuboidAddress, List<MutationBlockSetBlock>> _createUpdateMap(List<MutationBlockSetBlock> updates, Set<CuboidAddress> loadedCuboids)
+	{
+		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesByCuboid = new HashMap<>();
+		for (MutationBlockSetBlock update : updates)
+		{
+			CuboidAddress address = update.getAbsoluteLocation().getCuboidAddress();
+			// If the server sent us an update, we MUST have it loaded.
+			Assert.assertTrue(loadedCuboids.contains(address));
+			
+			List<MutationBlockSetBlock> queue = updatesByCuboid.get(address);
+			if (null == queue)
+			{
+				queue = new LinkedList<>();
+				updatesByCuboid.put(address, queue);
+			}
+			queue.add(update);
+		}
+		return updatesByCuboid;
 	}
 
 	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, _SpeculativeConsequences followUp)
