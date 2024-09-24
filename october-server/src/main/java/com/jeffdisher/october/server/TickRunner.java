@@ -419,6 +419,8 @@ public class TickRunner
 			CommonMutationSink newMutationSink = new CommonMutationSink();
 			CommonChangeSink newChangeSink = new CommonChangeSink();
 			
+			// On the server, we just generate the tick time as purely abstract monotonic value.
+			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
 			TickProcessingContext context = new TickProcessingContext(materials.thisGameTick
 					, cachingLoader
 					, (Integer entityId) -> (entityId > 0)
@@ -442,6 +444,7 @@ public class TickRunner
 					, _random
 					, config
 					, _millisPerTick
+					, currentTickTimeMillis
 			);
 			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values());
 			

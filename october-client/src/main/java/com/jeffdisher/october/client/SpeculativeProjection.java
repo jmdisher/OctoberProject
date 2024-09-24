@@ -244,7 +244,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, wrapper.change, wrapper.commitLevel);
+				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, wrapper.change, wrapper.commitLevel, wrapper.currentTickTimeMillis);
 				// If this was applied, re-add the new wrapper.
 				if (null != appliedWrapper)
 				{
@@ -333,9 +333,10 @@ public class SpeculativeProjection
 	 * Note that this will internally account for time passing if the change takes more than 0 milliseconds.
 	 * 
 	 * @param change The entity change to apply.
+	 * @param currentTickTimeMillis The current time, in milliseconds.
 	 * @return The local commit number for this change, 0L if it failed to applied and should be rejected.
 	 */
-	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change)
+	public long applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTickTimeMillis)
 	{
 		// Create the new commit number although we will reverse this if we can merge.
 		long commitNumber = _nextLocalCommitNumber;
@@ -346,7 +347,7 @@ public class SpeculativeProjection
 		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
 		
 		// Attempt to apply the change.
-		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, change, commitNumber);
+		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, change, commitNumber, currentTickTimeMillis);
 		if (null != appliedWrapper)
 		{
 			_speculativeChanges.add(appliedWrapper);
@@ -369,8 +370,9 @@ public class SpeculativeProjection
 	 * entity.
 	 * 
 	 * @param millisToPass The number of milliseconds to allow to pass.
+	 * @param currentTickTimeMillis The current time, in milliseconds.
 	 */
-	public void fakePassTime(long millisToPass)
+	public void fakePassTime(long millisToPass, long currentTickTimeMillis)
 	{
 		// We will just fake the end of tick with no other changes.
 		// We will ignore any follow-up mutations or changes.
@@ -380,6 +382,7 @@ public class SpeculativeProjection
 				, newMutationSink
 				, newChangeSink
 				, millisToPass
+				, currentTickTimeMillis
 		);
 		
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
@@ -561,7 +564,7 @@ public class SpeculativeProjection
 	}
 
 	// Note that we populate modifiedCuboids with cuboids changed by this change but only the local entity could change (others are all read-only).
-	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, IMutationEntity<IMutablePlayerEntity> change, long commitNumber)
+	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, IMutationEntity<IMutablePlayerEntity> change, long commitNumber, long currentTickTimeMillis)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -575,6 +578,7 @@ public class SpeculativeProjection
 				, newMutationSink
 				, newChangeSink
 				, millisecondsBeforeChange
+				, currentTickTimeMillis
 		);
 		
 		Entity[] changedProjectedEntity = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, List.of(change));
@@ -607,6 +611,7 @@ public class SpeculativeProjection
 					, innerNewMutationSink
 					, innerNewChangeSink
 					, millisPerTick
+					, currentTickTimeMillis
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
@@ -625,7 +630,7 @@ public class SpeculativeProjection
 		
 		// Since we only provided a since entity change, return success if it passed.
 		return changeDidPass
-				? new _SpeculativeWrapper(commitNumber, change, followUpTicks)
+				? new _SpeculativeWrapper(commitNumber, change, followUpTicks, currentTickTimeMillis)
 				: null
 		;
 	}
@@ -677,10 +682,13 @@ public class SpeculativeProjection
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
 		long millisPerTick = 0L;
+		// The follow-up doesn't worry about current time since it is being synthetically run in a "future tick".
+		long currentTickTimeMillis = 0L;
 		TickProcessingContext innerContext = _createContext(gameTick
 				, innerNewMutationSink
 				, innerNewChangeSink
 				, millisPerTick
+				, currentTickTimeMillis
 		);
 		
 		// We ignore the results of these.
@@ -767,6 +775,7 @@ public class SpeculativeProjection
 			, CommonMutationSink newMutationSink
 			, CommonChangeSink newChangeSink
 			, long millisPerTick
+			, long currentTickTimeMillis 
 	)
 	{
 		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(this.projectionBlockLoader);
@@ -785,6 +794,7 @@ public class SpeculativeProjection
 				// By default, we run in hostile mode.
 				, new WorldConfig()
 				, millisPerTick
+				, currentTickTimeMillis
 		);
 		return context;
 	}
@@ -869,6 +879,7 @@ public class SpeculativeProjection
 	private static record _SpeculativeWrapper(long commitLevel
 			, IMutationEntity<IMutablePlayerEntity> change
 			, List<_SpeculativeConsequences> followUpTicks
+			, long currentTickTimeMillis
 	) {}
 
 	private static record _SpeculativeConsequences(List<IMutationEntity<IMutablePlayerEntity>> exportedChanges, List<IMutationBlock> exportedMutations)

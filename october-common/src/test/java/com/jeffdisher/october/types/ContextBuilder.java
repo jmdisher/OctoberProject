@@ -139,6 +139,7 @@ public class ContextBuilder
 				, this.randomInt
 				, this.config
 				, this.millisPerTick
+				, (this.currentTick * this.millisPerTick)
 		);
 	}
 }

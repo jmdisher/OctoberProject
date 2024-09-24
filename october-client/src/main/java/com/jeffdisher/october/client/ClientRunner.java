@@ -85,7 +85,7 @@ public class ClientRunner
 	public void commonApplyEntityAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
 		// Some of these events take no real time so we just pass them through, no matter how much time has passed.
-		_applyLocalChange(change);
+		_applyLocalChange(change, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -120,7 +120,7 @@ public class ClientRunner
 		if (millisToApply > TIME_GATE_MILLIS)
 		{
 			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
-			_applyLocalChange(hit);
+			_applyLocalChange(hit, currentTimeMillis);
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;
 		}
@@ -144,7 +144,7 @@ public class ClientRunner
 			
 			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
 			EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(millisFree, 1.0f, direction);
-			_applyLocalChange(moveChange);
+			_applyLocalChange(moveChange, currentTimeMillis);
 			
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;
@@ -186,7 +186,7 @@ public class ClientRunner
 		{
 			// We will account for how much time we have waited since the last action.
 			EntityChangeCraftInBlock craftOperation = new EntityChangeCraftInBlock(block, operation, millisToApply);
-			_applyLocalChange(craftOperation);
+			_applyLocalChange(craftOperation, currentTimeMillis);
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;
 		}
@@ -211,7 +211,7 @@ public class ClientRunner
 			else
 			{
 				// Nothing is happening so just account for time passing.
-				_projection.fakePassTime(millisToApply);
+				_projection.fakePassTime(millisToApply, currentTimeMillis);
 			}
 			_lastCallMillis = currentTimeMillis;
 		}
@@ -249,9 +249,9 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IMutationEntity<IMutablePlayerEntity> change)
+	private void _applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
-		long localCommit = _projection.applyLocalChange(change);
+		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
 		if (localCommit > 0L)
 		{
 			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
@@ -266,7 +266,7 @@ public class ClientRunner
 		// We will account for how much time we have waited since the last action.
 		long millisToApply = (currentTimeMillis - _lastCallMillis);
 		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
-		_applyLocalChange(craftOperation);
+		_applyLocalChange(craftOperation, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 	}
 

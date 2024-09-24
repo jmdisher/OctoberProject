@@ -70,6 +70,13 @@ public class TickProcessingContext
 	 */
 	public final long millisPerTick;
 
+	/**
+	 * The time of the tick, in millis.  Note that this shouldn't be considered wall-clock time (although it could be),
+	 * nor should any value based on it be persisted, as it is allowed to reset or skip arbitrary amounts of time
+	 * between server restarts.
+	 */
+	public final long currentTickTimeMillis;
+
 	public TickProcessingContext(long currentTick
 			, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
 			, Function<Integer, MinimalEntity> previousEntityLookUp
@@ -80,6 +87,7 @@ public class TickProcessingContext
 			, IntUnaryOperator randomInt
 			, WorldConfig config
 			, long millisPerTick
+			, long currentTickTimeMillis
 	)
 	{
 		this.currentTick = currentTick;
@@ -92,6 +100,7 @@ public class TickProcessingContext
 		this.randomInt = randomInt;
 		this.config = config;
 		this.millisPerTick = millisPerTick;
+		this.currentTickTimeMillis = currentTickTimeMillis;
 	}
 
 
