@@ -3,3 +3,6 @@
 .classpath
 bin/
 bintest/
+
+# "world" is the default directory name for game state so this is often present during integration testing.
+/world/
