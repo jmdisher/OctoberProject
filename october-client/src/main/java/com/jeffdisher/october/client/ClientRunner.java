@@ -287,7 +287,7 @@ public class ClientRunner
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
 		
 		@Override
-		public void adapterConnected(int assignedId)
+		public void adapterConnected(int assignedId, long millisPerTick)
 		{
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// We create the projection here.

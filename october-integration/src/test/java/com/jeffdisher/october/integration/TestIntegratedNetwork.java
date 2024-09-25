@@ -37,6 +37,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 public class TestIntegratedNetwork
 {
 	public static final LongSupplier TIME_SUPPLIER = () -> 1L;
+	public static final long MILLIS_PER_TICK = 100L;
 
 	@Test
 	public void basicHandshakeDisconnect() throws Throwable
@@ -72,7 +73,7 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -139,7 +140,7 @@ public class TestIntegratedNetwork
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
 				}
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		holder[0] = server;
 		
 		// Connect both clients.
@@ -147,7 +148,7 @@ public class TestIntegratedNetwork
 		NetworkClient client1 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId)
+			public void handshakeCompleted(int assignedId, long millisPerTick)
 			{
 			}
 			@Override
@@ -170,7 +171,7 @@ public class TestIntegratedNetwork
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId)
+			public void handshakeCompleted(int assignedId, long millisPerTick)
 			{
 			}
 			@Override
@@ -290,7 +291,7 @@ public class TestIntegratedNetwork
 				// We don't expect this in these tests.
 				Assert.fail();
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		holder[0] = server;
 		
 		// Connect the client.
@@ -300,7 +301,7 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
-			public void handshakeCompleted(int assignedId)
+			public void handshakeCompleted(int assignedId, long millisPerTick)
 			{
 			}
 			@Override
@@ -350,7 +351,7 @@ public class TestIntegratedNetwork
 		NetworkClient client = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId)
+			public void handshakeCompleted(int assignedId, long millisPerTick)
 			{
 			}
 			@Override

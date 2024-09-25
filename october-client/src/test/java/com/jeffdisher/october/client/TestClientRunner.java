@@ -37,6 +37,7 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestClientRunner
 {
+	public static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item LOG_ITEM;
@@ -68,7 +69,7 @@ public class TestClientRunner
 		
 		// Connect them.
 		int clientId = 1;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		int ticksPerDay = 1000;
 		network.client.receivedConfigUpdate(ticksPerDay, 0);
 		runner.runPendingCalls(currentTimeMillis);
@@ -104,7 +105,7 @@ public class TestClientRunner
 		// Connect them.
 		long currentTimeMillis = 100L;
 		int clientId = 1;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -143,7 +144,7 @@ public class TestClientRunner
 		int clientId = 1;
 		long currentTimeMillis = 1000L;
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -216,7 +217,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -256,7 +257,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -295,7 +296,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -350,7 +351,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -398,7 +399,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
@@ -441,7 +442,7 @@ public class TestClientRunner
 		// Connect them and send a default entity and basic cuboid.
 		int clientId = 1;
 		long currentTimeMillis = 100L;
-		network.client.adapterConnected(clientId);
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);

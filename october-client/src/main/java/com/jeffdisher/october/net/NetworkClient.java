@@ -80,8 +80,7 @@ public class NetworkClient
 						Packet_ServerSendClientId safe = (Packet_ServerSendClientId) packet;
 						int assignedId = safe.clientId;
 						_token.setHandshakeCompleted(assignedId);
-						// TODO:  Do something with safe.millisPerTick or replace it with the actual config data, when we care.
-						_listener.handshakeCompleted(assignedId);
+						_listener.handshakeCompleted(assignedId, safe.millisPerTick);
 						
 						// See if the network is ready yet (since there was likely a race here).
 						if (_token.networkIsReady)
@@ -146,8 +145,9 @@ public class NetworkClient
 		 * Called when the handshake with the server is complete.  Note that the network isn't yet ready for write.
 		 * 
 		 * @param assignedId The ID the server assigned to this client's entity.
+		 * @param millisPerTick The server's tick rate.
 		 */
-		void handshakeCompleted(int assignedId);
+		void handshakeCompleted(int assignedId, long millisPerTick);
 		/**
 		 * Called when the network is free to send more messages to the server.  Note that this is first called once the
 		 * handshake with the server is complete.

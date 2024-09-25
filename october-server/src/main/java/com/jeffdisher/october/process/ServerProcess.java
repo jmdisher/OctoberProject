@@ -89,7 +89,7 @@ public class ServerProcess
 		);
 		// The server passes its listener back within the constructor so we should see that, now.
 		Assert.assertTrue(null != _serverListener);
-		_network = new NetworkServer<ClientBuffer>(new _NetworkListener(), currentTimeMillisProvider, port);
+		_network = new NetworkServer<ClientBuffer>(new _NetworkListener(), currentTimeMillisProvider, port, millisPerTick);
 		monitoringAgent.setNetwork(_network);
 	}
 

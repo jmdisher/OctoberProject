@@ -348,9 +348,9 @@ public class ClientProcess
 		private CuboidCodec.Deserializer _deserializer = null;
 		
 		@Override
-		public void handshakeCompleted(int assignedId)
+		public void handshakeCompleted(int assignedId, long millisPerTick)
 		{
-			_messagesToClientRunner.adapterConnected(assignedId);
+			_messagesToClientRunner.adapterConnected(assignedId, millisPerTick);
 			_background_setClientId(assignedId);
 		}
 		@Override

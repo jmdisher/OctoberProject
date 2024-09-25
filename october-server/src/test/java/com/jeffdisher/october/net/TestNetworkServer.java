@@ -24,6 +24,7 @@ import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
 public class TestNetworkServer
 {
 	public static final LongSupplier TIME_SUPPLIER = () -> 1L;
+	public static final long MILLIS_PER_TICK = 100L;
 
 	@Test
 	public void basicHandshakeDisconnect() throws IOException
@@ -58,7 +59,7 @@ public class TestNetworkServer
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -127,7 +128,7 @@ public class TestNetworkServer
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage(2, message));
 				}
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		holder[0] = server;
 		
 		// Connect both client.
@@ -173,7 +174,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a corrupt packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -202,7 +203,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a "from server" packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -227,7 +228,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a restricted mutation from a client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -270,7 +271,7 @@ public class TestNetworkServer
 			return timeToReturn;
 		};
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port, MILLIS_PER_TICK);
 		
 		// Open a socket.
 		SocketChannel socket = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -299,7 +300,7 @@ public class TestNetworkServer
 	{
 		// We will check what happens when we pass an unknown version on connect.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		// Connect a client.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -354,7 +355,7 @@ public class TestNetworkServer
 				// Should not happen in this test.
 				Assert.fail();
 			}
-		}, TIME_SUPPLIER, port);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		CyclicBarrier connectBarrier = new CyclicBarrier(threadCount);
 		CyclicBarrier endBarrier = new CyclicBarrier(threadCount);

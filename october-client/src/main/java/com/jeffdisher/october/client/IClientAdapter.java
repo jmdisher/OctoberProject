@@ -56,8 +56,9 @@ public interface IClientAdapter
 		 * Called when the connection to the server has been established and the client has been given an ID.
 		 * 
 		 * @param assignedId The client ID assigned by the server.
+		 * @param millisPerTick The server's tick rate.
 		 */
-		void adapterConnected(int assignedId);
+		void adapterConnected(int assignedId, long millisPerTick);
 		/**
 		 * Called when the connection to the server has closed or failed to establish, in the first place.
 		 */

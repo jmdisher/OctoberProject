@@ -34,9 +34,10 @@ public class NetworkServer<L>
 	 * @param listener The listener which will receive callbacks related to the server (on the network thread).
 	 * @param currentTimeMillisProvider Returns the current system time, in milliseconds.
 	 * @param port The port which should be bound for accepting incoming connections.
+	 * @param serverMillisPerTick The number of milliseconds per tick for this server instance.
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkServer(IListener<L> listener, LongSupplier currentTimeMillisProvider, int port) throws IOException
+	public NetworkServer(IListener<L> listener, LongSupplier currentTimeMillisProvider, int port, long serverMillisPerTick) throws IOException
 	{
 		_listener = listener;
 		
@@ -100,7 +101,7 @@ public class NetworkServer<L>
 								state.data = description.data;
 								
 								// Send out description and consider the handshake completed.
-								_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId));
+								_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick));
 							}
 							else
 							{
