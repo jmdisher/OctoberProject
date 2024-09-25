@@ -80,6 +80,7 @@ public class SpeculativeProjection
 	private final int _localEntityId;
 	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
+	private final long _serverMillisPerTick;
 	
 	private Entity _thisShadowEntity;
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
@@ -106,13 +107,15 @@ public class SpeculativeProjection
 	 * 
 	 * @param localEntityId The ID of the local entity where all local changes will be applied.
 	 * @param listener The listener for updates to the local projection.
+	 * @param serverMillisPerTick The number of millis the server will wait for each tick (for emulating future ticks).
 	 */
-	public SpeculativeProjection(int localEntityId, IProjectionListener listener)
+	public SpeculativeProjection(int localEntityId, IProjectionListener listener, long serverMillisPerTick)
 	{
 		Assert.assertTrue(null != listener);
 		_localEntityId = localEntityId;
 		_singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_listener = listener;
+		_serverMillisPerTick = serverMillisPerTick;
 		
 		// The initial states start as empty and are populated by the server.
 		_shadowWorld = new HashMap<>();
@@ -606,11 +609,10 @@ public class SpeculativeProjection
 			
 			CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 			CommonChangeSink innerNewChangeSink = new CommonChangeSink();
-			long millisPerTick = 0L;
 			TickProcessingContext innerContext = _createContext(gameTick
 					, innerNewMutationSink
 					, innerNewChangeSink
-					, millisPerTick
+					, _serverMillisPerTick
 					, currentTickTimeMillis
 			);
 			
@@ -681,13 +683,12 @@ public class SpeculativeProjection
 		long gameTick = 0L;
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
 		CommonChangeSink innerNewChangeSink = new CommonChangeSink();
-		long millisPerTick = 0L;
 		// The follow-up doesn't worry about current time since it is being synthetically run in a "future tick".
 		long currentTickTimeMillis = 0L;
 		TickProcessingContext innerContext = _createContext(gameTick
 				, innerNewMutationSink
 				, innerNewChangeSink
-				, millisPerTick
+				, _serverMillisPerTick
 				, currentTickTimeMillis
 		);
 		

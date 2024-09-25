@@ -293,7 +293,7 @@ public class ClientRunner
 				// We create the projection here.
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_assignedEntityId = assignedId;
-				_projection = new SpeculativeProjection(assignedId, new LocalProjection());
+				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
 				_lastCallMillis = currentTimeMillis;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);

@@ -59,6 +59,7 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 public class TestSpeculativeProjection
 {
+	public static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Item STONE_BRICK_ITEM;
@@ -91,7 +92,7 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, but then adding them as "committed" causes no problem.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(1L
 				, List.of()
@@ -223,7 +224,7 @@ public class TestSpeculativeProjection
 		// Test that unloading a cuboid with local mutations correctly purges them but can go on to commit other things.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(1L
 				, List.of()
@@ -311,7 +312,7 @@ public class TestSpeculativeProjection
 		// We want to test that adding a few mutations as speculative, and then committing a few conflicts to make sure that we drop the speculative mutaions which fail.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -416,7 +417,7 @@ public class TestSpeculativeProjection
 		// We want to apply a few mutations which themselves cause secondary mutations, and observe what happens when some commit versus conflict.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -515,7 +516,7 @@ public class TestSpeculativeProjection
 		// Test that we can apply inventory changes to speculative mutation.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -624,7 +625,7 @@ public class TestSpeculativeProjection
 		// Test that we can enqueue new entity changes from within an entity change.
 		CountingListener listener = new CountingListener();
 		int entityId1 = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId1, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId1, listener, MILLIS_PER_TICK);
 		
 		// We need 2 entities for this but we will give one some items.
 		int entityId2 = 2;
@@ -698,7 +699,7 @@ public class TestSpeculativeProjection
 		// Test that we can use the block breaking change as 2 changes, seeing the change of state applied by each.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
@@ -793,7 +794,7 @@ public class TestSpeculativeProjection
 		// We want to test that 2 move changes, where the first is rejected by the server, but the second is still applied locally.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -854,7 +855,7 @@ public class TestSpeculativeProjection
 		Craft logToPlanks = ENV.crafting.getCraftById("op.log_to_planks");
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -920,7 +921,7 @@ public class TestSpeculativeProjection
 		int stoneKey = mutable.newInventory.getIdOfStackableType(STONE_ITEM);
 		mutable.setSelectedKey(stoneKey);
 		Entity entity = mutable.freeze();
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		projector.setThisEntity(entity);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(1L
@@ -972,7 +973,7 @@ public class TestSpeculativeProjection
 		// Make sure that the speculative projection will prevent us from placing the same block down twice.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
@@ -1015,7 +1016,7 @@ public class TestSpeculativeProjection
 		Craft stoneToStoneBrick = ENV.crafting.getCraftById("op.stone_to_stone_brick");
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(localEntityId);
 		mutable.newInventory.addAllItems(CRAFTING_TABLE_ITEM, 1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
@@ -1101,7 +1102,7 @@ public class TestSpeculativeProjection
 		Craft stoneBricksToFurnace = ENV.crafting.getCraftById("op.stone_bricks_to_furnace");
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newInventory.addAllItems(STONE_BRICK_ITEM, 4);
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).addStackable(STONE_BRICK_ITEM, 4).finish();
@@ -1143,7 +1144,7 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
 		long currentTimeMillis = 1000L;
-		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
 		Inventory inv = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
@@ -1256,7 +1257,7 @@ public class TestSpeculativeProjection
 	{
 		CountingListener listener = new CountingListener();
 		int localEntityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
 		MutableEntity mutable = MutableEntity.createForTest(localEntityId);
 		mutable.newInventory.addAllItems(FURNACE_ITEM, 1);
 		mutable.newInventory.addAllItems(PLANK_ITEM, 1);
@@ -1340,7 +1341,7 @@ public class TestSpeculativeProjection
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 100);
 		Assert.assertTrue(stored < 100);
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
 		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
@@ -1381,7 +1382,7 @@ public class TestSpeculativeProjection
 		// This verifies that the follow-up mutations are handled correctly in the SpeculativeProjection.
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
-		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
 		// Make sure that they are starving.
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
