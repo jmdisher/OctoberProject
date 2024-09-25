@@ -175,6 +175,9 @@ public class CraftingBlockSupport
 				}
 				else
 				{
+					// Clear any existing crafting state (since this is the case where we detect abort due to exhausted fuel).
+					newBlock.setCrafting(null);
+					
 					// We are done so stop scheduling.
 					shouldReschedule = false;
 				}

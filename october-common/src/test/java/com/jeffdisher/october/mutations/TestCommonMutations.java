@@ -19,12 +19,15 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -490,6 +493,68 @@ public class TestCommonMutations
 		Assert.assertFalse(proxy.didChange());
 		Assert.assertEquals(hopper, proxy.getBlock());
 		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS, proxy.periodicDelayMillis);
+	}
+
+	@Test
+	public void furnaceExhaustFuel()
+	{
+		// Create a furnace and load its inventory and fuel, but not enough fuel to complete the craft, and verify that it fails.
+		AbsoluteLocation target = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.items.getItemById("op.furnace").number());
+		Item log = ENV.items.getItemById("op.log");
+		Inventory inv = Inventory.start(50).addStackable(log, 1).finish();
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), inv);
+		MutationBlockFurnaceCraft[] holder = new MutationBlockFurnaceCraft[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							holder[0] = (MutationBlockFurnaceCraft) mutation;
+						}
+					}, null)
+				.finish()
+		;
+		
+		// We store the fuel in to kick this off the normal way.
+		MutationBlockStoreItems storeFuel = new MutationBlockStoreItems(target, new Items(ENV.items.getItemById("op.sapling"), 1), null, Inventory.INVENTORY_ASPECT_FUEL);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(storeFuel.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
+		// This shouldn't yet be using the fuel, but it should be present.
+		FuelState fuel = proxy.getFuel();
+		Assert.assertEquals(0, fuel.millisFuelled());
+		Assert.assertEquals(1, fuel.fuelInventory().currentEncumbrance);
+		CraftOperation runningCraft = proxy.getCrafting();
+		Assert.assertNull(runningCraft);
+		
+		// Now apply the craft call (this should need to be done 5 times with the current configuration).
+		for (int i = 0; i < 5; ++i)
+		{
+			MutationBlockFurnaceCraft craft = holder[0];
+			holder[0] = null;
+			proxy = new MutableBlockProxy(target, cuboid);
+			Assert.assertTrue(craft.applyMutation(context, proxy));
+			Assert.assertTrue(proxy.didChange());
+			proxy.writeBack(cuboid);
+			
+			fuel = proxy.getFuel();
+			runningCraft = proxy.getCrafting();
+		}
+		
+		// Now we should be done with fuel and the crafting should abort without completing the craft.
+		fuel = proxy.getFuel();
+		Assert.assertEquals(0, fuel.millisFuelled());
+		Assert.assertEquals(0, fuel.fuelInventory().currentEncumbrance);
+		Assert.assertNull(holder[0]);
+		runningCraft = proxy.getCrafting();
+		Assert.assertNull(runningCraft);
+		inv = proxy.getInventory();
+		Assert.assertEquals(1, inv.getCount(log));
 	}
 
 
