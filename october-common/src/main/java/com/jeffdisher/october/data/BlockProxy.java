@@ -109,6 +109,35 @@ public class BlockProxy implements IBlockProxy
 		return _getData7(AspectRegistry.LOGIC);
 	}
 
+	/**
+	 * Checks if the receiver and the given other are backed by the same aspect values.  Note that this depends on the
+	 * underlying aspect value type implementing .equals(), which most don't, so changes to this type instance will
+	 * cause this to return false.  This shouldn't generally be an issue if they originated from the same base data due
+	 * to the copy-on-write design.
+	 * 
+	 * @param other The other proxy.
+	 * @return True if all the aspects match.
+	 */
+	public boolean doAspectsMatch(BlockProxy other)
+	{
+		boolean doesMatch = (_address.equals(other._address) && (_cachedBlock == other._cachedBlock));
+		for (Aspect<?, ?> aspect : AspectRegistry.ALL_ASPECTS)
+		{
+			if (!doesMatch)
+			{
+				break;
+			}
+			if (aspect != AspectRegistry.BLOCK)
+			{
+				Object one = _data.getDataSpecial(aspect, _address);
+				Object two = other._data.getDataSpecial(aspect, other._address);
+				// NOTE:  Most actual object types don't implement this .equals() check (Inventory, for example).
+				doesMatch = (one == two) || ((null != one) && (null != two) && one.equals(two));
+			}
+		}
+		return doesMatch;
+	}
+
 
 	private short _getData15(Aspect<Short, ?> type)
 	{

@@ -10,7 +10,9 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -146,5 +148,52 @@ public class TestCuboidData
 			Assert.assertEquals((byte)1, size);
 			Assert.assertEquals(1, value.shortValue());
 		}, ENV.special.AIR.item().number());
+	}
+
+	@Test
+	public void compareProxies()
+	{
+		BlockAddress testAddress = new BlockAddress((byte)10, (byte)11, (byte)12);
+		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidData base = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CuboidData test = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		
+		test.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setData15(AspectRegistry.BLOCK, testAddress, (short)0);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		Inventory i1 = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
+		test.setDataSpecial(AspectRegistry.INVENTORY, testAddress, i1);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setDataSpecial(AspectRegistry.INVENTORY, testAddress, null);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		test.setData15(AspectRegistry.DAMAGE, testAddress, (short)100);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setData15(AspectRegistry.DAMAGE, testAddress, (short)0);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		CraftOperation c1 = new CraftOperation(null, 100L);
+		test.setDataSpecial(AspectRegistry.CRAFTING, testAddress, c1);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setDataSpecial(AspectRegistry.CRAFTING, testAddress, null);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		FuelState f1 = new FuelState(100, STONE_ITEM, i1);
+		test.setDataSpecial(AspectRegistry.FUELLED, testAddress, f1);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setDataSpecial(AspectRegistry.FUELLED, testAddress, null);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		test.setData7(AspectRegistry.LIGHT, testAddress, (byte)10);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setData7(AspectRegistry.LIGHT, testAddress, (byte)0);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		
+		test.setData7(AspectRegistry.LOGIC, testAddress, (byte)10);
+		Assert.assertFalse(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
+		test.setData7(AspectRegistry.LOGIC, testAddress, (byte)0);
+		Assert.assertTrue(new BlockProxy(testAddress, base).doAspectsMatch(new BlockProxy(testAddress, test)));
 	}
 }
