@@ -17,6 +17,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -239,7 +240,7 @@ public class SpeculativeProjection
 			_followUpTicks.remove(0);
 		}
 		
-		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
 		List<_SpeculativeWrapper> previous = new ArrayList<>(_speculativeChanges);
 		_speculativeChanges.clear();
 		for (_SpeculativeWrapper wrapper : previous)
@@ -247,7 +248,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, wrapper.change, wrapper.commitLevel, wrapper.currentTickTimeMillis);
+				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, wrapper.change, wrapper.commitLevel, wrapper.currentTickTimeMillis);
 				// If this was applied, re-add the new wrapper.
 				if (null != appliedWrapper)
 				{
@@ -281,7 +282,7 @@ public class SpeculativeProjection
 		for (int i = 0; i < _followUpTicks.size(); ++i)
 		{
 			_SpeculativeConsequences followUp = _followUpTicks.get(i);
-			_applyFollowUp(modifiedCuboidAddresses, followUp);
+			_applyFollowUp(modifiedBlocksByCuboid, followUp);
 		}
 		
 		// ***** By this point, the projected state has been replaced so we need to determine what to send to the listener
@@ -310,7 +311,7 @@ public class SpeculativeProjection
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
 		Set<Integer> otherEntitiesChanges = new HashSet<>(shadowUpdates.entitiesChangedInTick.keySet());
 		otherEntitiesChanges.remove(_localEntityId);
-		_notifyChanges(revertedCuboidAddresses, modifiedCuboidAddresses, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
+		_notifyChanges(revertedCuboidAddresses, modifiedBlocksByCuboid, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -347,10 +348,10 @@ public class SpeculativeProjection
 		
 		// Create the tracking for modifications.
 		Entity previousLocalEntity = _projectedLocalEntity;
-		Set<CuboidAddress> modifiedCuboidAddresses = new HashSet<>();
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
 		
 		// Attempt to apply the change.
-		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedCuboidAddresses, change, commitNumber, currentTickTimeMillis);
+		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, change, commitNumber, currentTickTimeMillis);
 		if (null != appliedWrapper)
 		{
 			_speculativeChanges.add(appliedWrapper);
@@ -364,7 +365,7 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyChanges(Set.of(), modifiedCuboidAddresses, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
+		_notifyChanges(Set.of(), modifiedBlocksByCuboid, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -397,7 +398,7 @@ public class SpeculativeProjection
 		if (null != updated)
 		{
 			_projectedLocalEntity = updated;
-			_notifyChanges(Set.of(), Set.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
+			_notifyChanges(Set.of(), Map.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
 		}
 	}
 
@@ -514,7 +515,7 @@ public class SpeculativeProjection
 	}
 
 	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses
-			, Set<CuboidAddress> changedCuboidAddresses
+			, Map<CuboidAddress, List<AbsoluteLocation>> changedBlocksByCuboid
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
 			, Entity authoritativeLocalEntity
 			, Entity updatedLocalEntity
@@ -522,7 +523,7 @@ public class SpeculativeProjection
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
-		for (CuboidAddress address : changedCuboidAddresses)
+		for (CuboidAddress address : changedBlocksByCuboid.keySet())
 		{
 			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
 			// Remember that these are copy-on-write so we can just instance-compare.
@@ -567,7 +568,7 @@ public class SpeculativeProjection
 	}
 
 	// Note that we populate modifiedCuboids with cuboids changed by this change but only the local entity could change (others are all read-only).
-	private _SpeculativeWrapper _forwardApplySpeculative(Set<CuboidAddress> modifiedCuboids, IMutationEntity<IMutablePlayerEntity> change, long commitNumber, long currentTickTimeMillis)
+	private _SpeculativeWrapper _forwardApplySpeculative(Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid, IMutationEntity<IMutablePlayerEntity> change, long commitNumber, long currentTickTimeMillis)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -617,7 +618,7 @@ public class SpeculativeProjection
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
-			_applyFollowUpBlockMutations(innerContext, modifiedCuboids, exportedMutations);
+			_applyFollowUpBlockMutations(innerContext, modifiedBlocksByCuboid, exportedMutations);
 			_applyFollowUpEntityMutations(innerContext, exportedChanges);
 			
 			// Coalesce the results of these (again, only for this entity).
@@ -678,7 +679,7 @@ public class SpeculativeProjection
 		return updatesByCuboid;
 	}
 
-	private void _applyFollowUp(Set<CuboidAddress> modifiedCuboids, _SpeculativeConsequences followUp)
+	private void _applyFollowUp(Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid, _SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
@@ -693,11 +694,11 @@ public class SpeculativeProjection
 		);
 		
 		// We ignore the results of these.
-		_applyFollowUpBlockMutations(innerContext, modifiedCuboids, followUp.exportedMutations);
+		_applyFollowUpBlockMutations(innerContext, modifiedBlocksByCuboid, followUp.exportedMutations);
 		_applyFollowUpEntityMutations(innerContext, followUp.exportedChanges);
 	}
 
-	private void _applyFollowUpBlockMutations(TickProcessingContext context, Set<CuboidAddress> modifiedCuboids, List<IMutationBlock> blockMutations)
+	private void _applyFollowUpBlockMutations(TickProcessingContext context, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid, List<IMutationBlock> blockMutations)
 	{
 		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
 		// We ignore the block updates in the speculative projection (although this could be used in more precisely notifying the listener).
@@ -717,7 +718,24 @@ public class SpeculativeProjection
 		);
 		_projectedWorld.putAll(innerFragment.stateFragment());
 		_projectedHeightMap.putAll(innerFragment.heightFragment());
-		modifiedCuboids.addAll(innerFragment.blockChangesByCuboid().keySet());
+		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> elt : innerFragment.blockChangesByCuboid().entrySet())
+		{
+			CuboidAddress key = elt.getKey();
+			List<BlockChangeDescription> value = elt.getValue();
+			
+			// This must have something in it if it was returned.
+			Assert.assertTrue(!value.isEmpty());
+			
+			List<AbsoluteLocation> list = modifiedBlocksByCuboid.get(key);
+			if (null == list)
+			{
+				list = new ArrayList<>();
+				modifiedBlocksByCuboid.put(key, list);
+			}
+			list.addAll(value.stream().map(
+					(BlockChangeDescription description) -> description.serializedForm().getAbsoluteLocation()
+			).toList());
+		}
 	}
 
 	private void _applyFollowUpEntityMutations(TickProcessingContext context, List<IMutationEntity<IMutablePlayerEntity>> thisEntityMutations)
