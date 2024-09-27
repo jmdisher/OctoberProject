@@ -33,6 +33,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
@@ -93,6 +94,7 @@ public class SpeculativeProjection
 	private Entity _projectedLocalEntity;
 	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
 	private Map<CuboidAddress, CuboidHeightMap> _projectedHeightMap;
+	private Map<AbsoluteLocation, BlockProxy> _projectedBlockChanges;
 	/**
 	 * The block loader is exposed publicly since it is often used by clients to view the world.  Note that this always
 	 * points to current _projectedWorld, symbolically.
@@ -125,6 +127,7 @@ public class SpeculativeProjection
 		
 		_projectedWorld = new HashMap<>();
 		_projectedHeightMap = new HashMap<>();
+		_projectedBlockChanges = new HashMap<>();
 		this.projectionBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			IReadOnlyCuboidData cuboid = _projectedWorld.get(address);
@@ -214,19 +217,6 @@ public class SpeculativeProjection
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
-		// Build the initial modified sets just by looking at what top-level elements of the shadow world deviate from our old projection (since we need to know what changes were reverted).
-		Set<CuboidAddress> revertedCuboidAddresses = new HashSet<>();
-		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : _shadowWorld.entrySet())
-		{
-			CuboidAddress key = elt.getKey();
-			IReadOnlyCuboidData projectedCuboid = _projectedWorld.get(key);
-			// Note that these are all immutable so instance comparison is sufficient.
-			if ((null != projectedCuboid) && (projectedCuboid != elt.getValue()))
-			{
-				revertedCuboidAddresses.add(key);
-			}
-		}
-		
 		// Rebuild our projection from these collections.
 		boolean isFirstRun = (null == _projectedLocalEntity);
 		_projectedWorld = new HashMap<>(_shadowWorld);
@@ -311,7 +301,9 @@ public class SpeculativeProjection
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
 		Set<Integer> otherEntitiesChanges = new HashSet<>(shadowUpdates.entitiesChangedInTick.keySet());
 		otherEntitiesChanges.remove(_localEntityId);
-		_notifyChanges(revertedCuboidAddresses, modifiedBlocksByCuboid, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
+		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = _projectedBlockChanges;
+		_projectedBlockChanges = new HashMap<>();
+		_notifyChanges(previousProjectedChanges, modifiedBlocksByCuboid, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -365,7 +357,7 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyChanges(Set.of(), modifiedBlocksByCuboid, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
+		_notifyChanges(Map.of(), modifiedBlocksByCuboid, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -398,7 +390,7 @@ public class SpeculativeProjection
 		if (null != updated)
 		{
 			_projectedLocalEntity = updated;
-			_notifyChanges(Set.of(), Map.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
+			_notifyChanges(Map.of(), Map.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
 		}
 	}
 
@@ -514,7 +506,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	private void _notifyChanges(Set<CuboidAddress> revertedCuboidAddresses
+	private void _notifyChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
 			, Map<CuboidAddress, List<AbsoluteLocation>> changedBlocksByCuboid
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
 			, Entity authoritativeLocalEntity
@@ -523,22 +515,66 @@ public class SpeculativeProjection
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
-		for (CuboidAddress address : changedBlocksByCuboid.keySet())
+		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> changed : changedBlocksByCuboid.entrySet())
 		{
 			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
 			// Remember that these are copy-on-write so we can just instance-compare.
+			CuboidAddress address = changed.getKey();
 			IReadOnlyCuboidData activeVersion = _projectedWorld.get(address);
-			if (activeVersion != _shadowWorld.get(address))
+			IReadOnlyCuboidData shadowVersion = _shadowWorld.get(address);
+			if (activeVersion != shadowVersion)
 			{
-				cuboidsToReport.put(address, activeVersion);
+				// Also, record any of the changed locations here for future reverts.
+				for (AbsoluteLocation location : changed.getValue())
+				{
+					BlockAddress block = location.getBlockAddress();
+					// See if there is an entry from what we are rebuilding (since we will already handle that, below).
+					if (!previousProjectedChanges.containsKey(location))
+					{
+						BlockProxy projected = new BlockProxy(block, activeVersion);
+						BlockProxy previousReport = _projectedBlockChanges.get(location);
+						if (null == previousReport)
+						{
+							// We will claim that we are comparing against the shadow version so we don't report non-changes.
+							previousReport = new BlockProxy(block, shadowVersion);
+						}
+						
+						if (!previousReport.doAspectsMatch(projected))
+						{
+							_projectedBlockChanges.put(location, projected);
+							
+							// We also need to report this cuboid as changed.
+							cuboidsToReport.put(address, activeVersion);
+						}
+					}
+				}
 			}
 		}
-		// Reverted addresses are reported all the time, though.
-		for (CuboidAddress address : revertedCuboidAddresses)
+		
+		// See if any of the previously projected changes are still changed in the new projected world.
+		for (Map.Entry<AbsoluteLocation, BlockProxy> changeEntry : previousProjectedChanges.entrySet())
 		{
-			if (!cuboidsToReport.containsKey(address))
+			AbsoluteLocation blockLocation = changeEntry.getKey();
+			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
+			BlockProxy proxy = changeEntry.getValue();
+			IReadOnlyCuboidData activeVersion = _projectedWorld.get(cuboidAddress);
+			IReadOnlyCuboidData shadowVersion = _shadowWorld.get(cuboidAddress);
+			if ((null != activeVersion) && (null != shadowVersion))
 			{
-				cuboidsToReport.put(address, _projectedWorld.get(address));
+				BlockAddress block = blockLocation.getBlockAddress();
+				BlockProxy projected = new BlockProxy(block, activeVersion);
+				BlockProxy shadow = new BlockProxy(block, shadowVersion);
+				
+				if (!projected.doAspectsMatch(shadow))
+				{
+					// This still differs so it still counts as a change.
+					_projectedBlockChanges.put(blockLocation, projected);
+				}
+				if (!projected.doAspectsMatch(proxy))
+				{
+					// This has changed since we last reported.
+					cuboidsToReport.put(cuboidAddress, activeVersion);
+				}
 			}
 		}
 		

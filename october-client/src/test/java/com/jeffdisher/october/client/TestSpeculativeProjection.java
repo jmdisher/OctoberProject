@@ -33,6 +33,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
@@ -162,9 +163,9 @@ public class TestSpeculativeProjection
 				, commit1
 				, 1L
 		);
-		// Only the changes are in the speculative list:  We passed in 7 and committed 1.
+		// Only the changes are in the speculative list:  The one we committed should be something we already reported.
 		Assert.assertEquals(6, speculativeCount);
-		Assert.assertEquals(7 + 1, listener.changeCount);
+		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
 		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
@@ -179,9 +180,9 @@ public class TestSpeculativeProjection
 				, commit2
 				, 1L
 		);
-		// 5 changes left.
+		// 5 changes left but no new callbacks since there are no conflicts.
 		Assert.assertEquals(5, speculativeCount);
-		Assert.assertEquals(7 + 1 + 1, listener.changeCount);
+		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
 		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
@@ -197,7 +198,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(7 + 1 + 1 + 1, listener.changeCount);
+		Assert.assertEquals(7, listener.changeCount);
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
 		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
@@ -286,7 +287,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2 + 1, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, listener.unloadCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
@@ -374,8 +375,7 @@ public class TestSpeculativeProjection
 		);
 		// We will still see 2 elements in the speculative list since EntityChangeMutation always claims to have applied.  Hence, we will only remove them when the commit level passes them.
 		Assert.assertEquals(2, speculativeCount);
-		// We see another 2 changes due to the reverses (that is, when applying changes from the server, they will be different instances compared to what WAS in the speculative projection).
-		Assert.assertEquals(2 + 2, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		// Commit the other one normally.
@@ -391,9 +391,7 @@ public class TestSpeculativeProjection
 				, 1L
 		);
 		Assert.assertEquals(0, speculativeCount);
-		// This time, we will only add a +1 since the previous commit of mutation0 meant that our speculative change would have failed to apply on top so it ISN'T reverted here.
-		// That is, the only change from the previous commit action is the application of mutation1.
-		Assert.assertEquals(2 + 2 + 1, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		
 		speculativeCount = projector.applyChangesForServerTick(5L
@@ -758,7 +756,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
@@ -779,7 +777,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(4, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
@@ -1464,6 +1462,117 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(lastStep, listener.authoritativeEntityState.location());
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+	}
+
+	@Test
+	public void checkCallbacksForUpdates()
+	{
+		// We want to check that the update callbacks make sense when the change is conflicting as well as when it is non-conflicting to the same location.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, Collections.emptyList()
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.authoritativeEntityState);
+		Assert.assertNotNull(listener.thisEntityState);
+		
+		// Create and add an empty cuboid.
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, List.of(CuboidData.mutableClone(cuboid))
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(0, 0));
+		
+		// Apply a single local mutation.
+		AbsoluteLocation target = new AbsoluteLocation(0, 1, 2);
+		// Apply a few local mutations.
+		ReplaceBlockMutation mutation = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), STONE_ITEM.number());
+		EntityChangeMutation lone = new EntityChangeMutation(mutation);
+		long commit = projector.applyLocalChange(lone, currentTimeMillis);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		
+		// Commit an unrelated mutation (from the server) to change the inventory (this is air, so it can hold data and placing the block will overwrite it).
+		MutationBlockStoreItems storeItems = new MutationBlockStoreItems(target, new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY);
+		int speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, storeItems))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		// There should still be a change in the speculative list but our change would over-write the inventory so there shouldn't be a callback.
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		
+		// Now commit a conflicting change.
+		ReplaceBlockMutation conflict = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), LOG_ITEM.number());
+		speculativeCount = projector.applyChangesForServerTick(4L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of(FakeUpdateFactories.blockUpdate(cuboid, conflict))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		// The speculative change will be there until we see the commit level and we should see the change from the conflict writing.
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		
+		// Account for the commit level update.
+		speculativeCount = projector.applyChangesForServerTick(5L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit
+				, 1L
+		);
+		// This should retire the change with no updates.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 	}
 
 
