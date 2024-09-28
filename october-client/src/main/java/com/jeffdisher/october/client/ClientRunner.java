@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -18,6 +19,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -459,10 +461,10 @@ public class ClientRunner
 			_projectionListener.cuboidDidLoad(cuboid, heightMap);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidChange(cuboid, heightMap);
+			_projectionListener.cuboidDidChange(cuboid, heightMap, changedBlocks);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

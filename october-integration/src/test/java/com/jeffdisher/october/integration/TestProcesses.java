@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import org.junit.AfterClass;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.process.ServerProcess;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -516,8 +518,9 @@ public class TestProcesses
 			Assert.assertNull(old);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
 		{
+			Assert.assertFalse(changedBlocks.isEmpty());
 			Object old = this.cuboids.put(cuboid.getCuboidAddress(), cuboid);
 			Assert.assertNotNull(old);
 		}

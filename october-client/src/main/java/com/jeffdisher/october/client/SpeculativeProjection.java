@@ -515,6 +515,7 @@ public class SpeculativeProjection
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
+		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
 		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> changed : changedBlocksByCuboid.entrySet())
 		{
 			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
@@ -545,6 +546,13 @@ public class SpeculativeProjection
 							
 							// We also need to report this cuboid as changed.
 							cuboidsToReport.put(address, activeVersion);
+							Set<BlockAddress> set = changedBlocks.get(address);
+							if (null == set)
+							{
+								set = new HashSet<>();
+								changedBlocks.put(address, set);
+							}
+							set.add(block);
 						}
 					}
 				}
@@ -574,6 +582,13 @@ public class SpeculativeProjection
 				{
 					// This has changed since we last reported.
 					cuboidsToReport.put(cuboidAddress, activeVersion);
+					Set<BlockAddress> set = changedBlocks.get(cuboidAddress);
+					if (null == set)
+					{
+						set = new HashSet<>();
+						changedBlocks.put(cuboidAddress, set);
+					}
+					set.add(block);
 				}
 			}
 		}
@@ -589,9 +604,12 @@ public class SpeculativeProjection
 		allHeightMaps.putAll(knownHeightMaps);
 		allHeightMaps.putAll(addedHeightMaps);
 		
-		for (IReadOnlyCuboidData data : cuboidsToReport.values())
+		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : cuboidsToReport.entrySet())
 		{
-			_listener.cuboidDidChange(data, allHeightMaps.get(data.getCuboidAddress().getColumn()));
+			CuboidAddress address = elt.getKey();
+			IReadOnlyCuboidData data = elt.getValue();
+			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
+			_listener.cuboidDidChange(data, allHeightMaps.get(address.getColumn()), blocksChanged);
 		}
 		if (null != updatedLocalEntity)
 		{
@@ -879,8 +897,9 @@ public class SpeculativeProjection
 		 * 
 		 * @param cuboid The read-only cuboid data.
 		 * @param heightMap The height map for this cuboid's column.
+		 * @param changedBlocks The set of blocks which have some kind of change.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

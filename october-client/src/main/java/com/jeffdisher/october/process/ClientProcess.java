@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.jeffdisher.october.client.ClientRunner;
@@ -35,6 +36,7 @@ import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -499,10 +501,10 @@ public class ClientProcess
 			});
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidChange(cuboid, heightMap);
+				_listener.cuboidDidChange(cuboid, heightMap, changedBlocks);
 			});
 		}
 		@Override
@@ -651,8 +653,9 @@ public class ClientProcess
 		 * 
 		 * @param cuboid The read-only cuboid data.
 		 * @param heightMap The height map for this cuboid's column.
+		 * @param changedBlocks The set of blocks which have some kind of change.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

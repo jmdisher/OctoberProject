@@ -2,6 +2,7 @@ package com.jeffdisher.october.integration;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Set;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -12,6 +13,7 @@ import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.process.ClientProcess;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -210,8 +212,9 @@ public class AutoWalkingClient
 		{
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
 		{
+			Assert.assertTrue(!changedBlocks.isEmpty());
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

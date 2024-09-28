@@ -2,6 +2,7 @@ package com.jeffdisher.october.client;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -23,6 +24,7 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -520,10 +522,11 @@ public class TestClientRunner
 			this.loadedCuboids.put(cuboidAddress, cuboid);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertTrue(this.loadedCuboids.containsKey(cuboidAddress));
+			Assert.assertFalse(changedBlocks.isEmpty());
 			this.loadedCuboids.put(cuboidAddress, cuboid);
 		}
 		@Override
