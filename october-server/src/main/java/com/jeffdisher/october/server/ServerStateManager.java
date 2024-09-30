@@ -428,20 +428,18 @@ public class ServerStateManager
 				, snapshot.visiblyChangedCreatures()
 				, creatureLocationFetcher
 		);
-		// Remove any extra entities which have since departed.
+		
+		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
 		Set<Integer> allEntityIds = new HashSet<>(snapshot.completedEntities().keySet());
 		allEntityIds.addAll(snapshot.completedCreatures().keySet());
-		if (state.knownEntities.size() > allEntityIds.size())
+		Iterator<Integer> entityIterator = state.knownEntities.iterator();
+		while (entityIterator.hasNext())
 		{
-			Iterator<Integer> entityIterator = state.knownEntities.iterator();
-			while (entityIterator.hasNext())
+			int entityId = entityIterator.next();
+			if (!allEntityIds.contains(entityId))
 			{
-				int entityId = entityIterator.next();
-				if (!allEntityIds.contains(entityId))
-				{
-					_callouts.network_removeEntity(clientId, entityId);
-					entityIterator.remove();
-				}
+				_callouts.network_removeEntity(clientId, entityId);
+				entityIterator.remove();
 			}
 		}
 	}

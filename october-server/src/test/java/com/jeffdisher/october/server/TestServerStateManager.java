@@ -30,9 +30,12 @@ import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -111,6 +114,7 @@ public class TestServerStateManager
 				, _convertToEntityMap(changes.newEntities())
 				, _convertToCuboidMap(changes.newCuboids())
 				, _convertToCuboidHeightMap(changes.newCuboids())
+				, snapshot.completedCreatures()
 		);
 		
 		// Verify that we see the surrounding cuboid load requests on the next tick.
@@ -142,6 +146,7 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, snapshot.completedCuboids()
 				, snapshot.completedHeightMaps()
+				, snapshot.completedCreatures()
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
@@ -164,6 +169,7 @@ public class TestServerStateManager
 				, snapshot.completedEntities()
 				, _convertToCuboidMap(changes.newCuboids())
 				, _convertToCuboidHeightMap(changes.newCuboids())
+				, snapshot.completedCreatures()
 		);
 		
 		// In another call, it should appear as unloaded.
@@ -272,6 +278,7 @@ public class TestServerStateManager
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze(),
 						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far.z()).freeze()
 				)
+				, snapshot.completedCreatures()
 		);
 		
 		// Note that we will try to unload far and write-back everything else due to the tick number.
@@ -291,6 +298,7 @@ public class TestServerStateManager
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze()
 				)
+				, snapshot.completedCreatures()
 		);
 		
 		// The next tick shouldn't do anything.
@@ -310,6 +318,116 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.entitiesToTryWrite.size());
 		
 		manager.shutdown();
+	}
+
+	@Test
+	public void observeCreatureDeath()
+	{
+		// Connect 2 clients, each near a creature, verify that each only sees the closer one, then show that one of them dying is only observed by the nearer.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		int clientId1 = 1;
+		String clientName1 = "client1";
+		int clientId2 = 2;
+		String clientName2 = "client2";
+		manager.clientConnected(clientId1, clientName1);
+		manager.clientConnected(clientId2, clientName2);
+		
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.cuboidsToUnload().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		Assert.assertEquals(0, changes.entitiesToUnload().size());
+		
+		MutableEntity near = MutableEntity.createForTest(clientId1);
+		near.setLocation(new EntityLocation(5.0f, 5.0f, 0.0f));
+		MutableEntity far = MutableEntity.createForTest(clientId2);
+		far.setLocation(new EntityLocation(100.0f, 100.0f, 0.0f));
+		callouts.loadedEntities.add(new SuspendedEntity(near.freeze(), List.of()));
+		callouts.loadedEntities.add(new SuspendedEntity(far.freeze(), List.of()));
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.cuboidsToUnload().size());
+		Assert.assertEquals(2, changes.newEntities().size());
+		Assert.assertEquals(0, changes.entitiesToUnload().size());
+		Assert.assertEquals(1, callouts.joinedClients.get(clientId1).size());
+		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
+		
+		// Load in the cuboids and creatures.
+		CreatureEntity nearCreature = new CreatureEntity(-1, EntityType.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)1, (byte)100, null);
+		CreatureEntity farCreature = new CreatureEntity(-2, EntityType.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)1, (byte)100, null);
+		
+		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(nearCuboid
+				, HeightMapHelpers.buildHeightMap(nearCuboid)
+				, List.of(nearCreature)
+				, List.of()
+		));
+		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid
+				, HeightMapHelpers.buildHeightMap(farCuboid)
+				, List.of(farCreature)
+				, List.of()
+		));
+		snapshot = _modifySnapshot(snapshot
+				, Map.of(clientId1, near.freeze(), clientId2, far.freeze())
+				, Map.of(
+				)
+				, Map.of(
+				)
+				, snapshot.completedCreatures()
+		);
+		changes = manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(2, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.cuboidsToUnload().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		Assert.assertEquals(0, changes.entitiesToUnload().size());
+		
+		snapshot = _modifySnapshot(snapshot
+				, snapshot.completedEntities()
+				, Map.of(
+						nearCuboid.getCuboidAddress(), nearCuboid,
+						farCuboid.getCuboidAddress(), farCuboid
+				)
+				, HeightMapHelpers.buildColumnMaps(Map.of(
+						nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid),
+						farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
+				))
+				, Map.of(
+						nearCreature.id(), nearCreature,
+						farCreature.id(), farCreature
+				)
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.cuboidsToUnload().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		Assert.assertEquals(0, changes.entitiesToUnload().size());
+		// We expect to see each client having received only their closest creature.
+		Assert.assertEquals(1, callouts.partialEntitiesPerClient.get(clientId1).size());
+		Assert.assertEquals(1, callouts.partialEntitiesPerClient.get(clientId2).size());
+		
+		// Now, make one of these entities die and see that it disappears only from the nearest creature.
+		snapshot = _modifySnapshot(snapshot
+				, snapshot.completedEntities()
+				, snapshot.completedCuboids()
+				, snapshot.completedHeightMaps()
+				, Map.of(
+						farCreature.id(), farCreature
+				)
+		);
+		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
+		Assert.assertEquals(0, changes.newCuboids().size());
+		Assert.assertEquals(0, changes.cuboidsToUnload().size());
+		Assert.assertEquals(0, changes.newEntities().size());
+		Assert.assertEquals(0, changes.entitiesToUnload().size());
+		Assert.assertEquals(0, callouts.partialEntitiesPerClient.get(clientId1).size());
+		Assert.assertEquals(1, callouts.partialEntitiesPerClient.get(clientId2).size());
+		
+		manager.clientDisconnected(clientId1);
+		manager.clientDisconnected(clientId2);
+		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
 
@@ -345,6 +463,7 @@ public class TestServerStateManager
 			, Map<Integer, Entity> completedEntities
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
+			, Map<Integer, CreatureEntity> completedCreatures
 	)
 	{
 		TickRunner.TickStats stats = snapshot.stats();
@@ -353,7 +472,7 @@ public class TestServerStateManager
 				, snapshot.commitLevels()
 				, completedCuboids
 				, completedHeightMaps
-				, snapshot.completedCreatures()
+				, completedCreatures
 				
 				, snapshot.updatedEntities()
 				, snapshot.resultantBlockChangesByCuboid()
@@ -442,6 +561,7 @@ public class TestServerStateManager
 		public Function<PacketFromClient, PacketFromClient> peekHandler = null;
 		public boolean didEnqueue = false;
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
+		public Map<Integer, Set<Integer>> partialEntitiesPerClient = new HashMap<>();
 		
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
@@ -490,12 +610,28 @@ public class TestServerStateManager
 		@Override
 		public void network_sendPartialEntity(int clientId, PartialEntity entity)
 		{
-			throw new AssertionError("networkSendPartialEntity");
+			Set<Integer> ids = this.partialEntitiesPerClient.get(clientId);
+			if (null == ids)
+			{
+				ids = new HashSet<>();
+				this.partialEntitiesPerClient.put(clientId, ids);
+			}
+			boolean didAdd = ids.add(entity.id());
+			Assert.assertTrue(didAdd);
 		}
 		@Override
 		public void network_removeEntity(int clientId, int entityId)
 		{
-			throw new AssertionError("networkRemoveEntity");
+			if (entityId > 0)
+			{
+				throw new AssertionError("networkRemoveEntity");
+			}
+			else
+			{
+				Set<Integer> ids = this.partialEntitiesPerClient.get(clientId);
+				boolean didRemove = ids.remove(entityId);
+				Assert.assertTrue(didRemove);
+			}
 		}
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
