@@ -42,4 +42,6 @@ public interface IMutablePlayerEntity extends IMutableMinimalEntity
 	long getLastSpecialActionMillis();
 
 	void setLastSpecialActionMillis(long millis);
+
+	void setSpawnLocation(EntityLocation spawnLocation);
 }

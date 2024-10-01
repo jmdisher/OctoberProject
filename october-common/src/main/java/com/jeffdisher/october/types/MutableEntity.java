@@ -96,6 +96,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public int newEnergyDeficit;
 	public boolean isCreativeMode;
 	public long ephemeral_lastSpecialActionMillis;
+	public EntityLocation newSpawn;
 
 	private MutableEntity(Entity original)
 	{
@@ -113,6 +114,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newEnergyDeficit = original.energyDeficit();
 		this.isCreativeMode = original.isCreativeMode();
 		this.ephemeral_lastSpecialActionMillis = original.ephemeral_lastSpecialActionMillis();
+		this.newSpawn = original.spawnLocation();
 	}
 
 	@Override
@@ -231,7 +233,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		
 		// Respawn them.
 		this.newInventory.clearInventory(null);
-		this.newLocation = _original.spawnLocation();
+		this.newLocation = this.newSpawn;
 		this.newHealth = MutableEntity.DEFAULT_HEALTH;
 		this.newFood = MutableEntity.DEFAULT_FOOD;
 		// Wipe all the hotbar slots.
@@ -356,6 +358,12 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.ephemeral_lastSpecialActionMillis = millis;
 	}
 
+	@Override
+	public void setSpawnLocation(EntityLocation spawnLocation)
+	{
+		this.newSpawn = spawnLocation;
+	}
+
 	/**
 	 * Creates an immutable snapshot of the receiver.
 	 * Note that this will return the original instance if a new instance would have been identical.
@@ -407,7 +415,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newFood
 				, this.newBreath
 				, this.newEnergyDeficit
-				, _original.spawnLocation()
+				, this.newSpawn
 				, this.ephemeral_lastSpecialActionMillis
 		);
 		// See if these are identical.

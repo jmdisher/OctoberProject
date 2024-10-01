@@ -1,8 +1,10 @@
 package com.jeffdisher.october.net;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityType;
@@ -20,25 +22,26 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 	/**
 	 * The white-list of entity changes which can come directly from a client (since some are internal-only).
 	 */
-	public static final Set<MutationEntityType> ALLOWED_TYPES = Set.of(
-			MutationEntityType.MOVE,
-			MutationEntityType.JUMP,
-			MutationEntityType.SWIM,
-			MutationEntityType.BLOCK_PLACE,
-			MutationEntityType.CRAFT,
-			MutationEntityType.SELECT_ITEM,
-			MutationEntityType.ITEMS_REQUEST_PUSH,
-			MutationEntityType.ITEMS_REQUEST_PULL,
-			MutationEntityType.INCREMENTAL_BREAK_BLOCK,
-			MutationEntityType.CRAFT_IN_BLOCK,
-			MutationEntityType.ATTACK_ENTITY,
-			MutationEntityType.USE_SELECTED_ITEM_ON_SELF,
-			MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK,
-			MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY,
-			MutationEntityType.CHANGE_HOTBAR_SLOT,
-			MutationEntityType.SWAP_ARMOUR,
-			MutationEntityType.SET_BLOCK_LOGIC_STATE
-	);
+	public static final Set<MutationEntityType> ALLOWED_TYPES = Arrays.stream(new MutationEntityType[] {
+		MutationEntityType.MOVE,
+		MutationEntityType.JUMP,
+		MutationEntityType.SWIM,
+		MutationEntityType.BLOCK_PLACE,
+		MutationEntityType.CRAFT,
+		MutationEntityType.SELECT_ITEM,
+		MutationEntityType.ITEMS_REQUEST_PUSH,
+		MutationEntityType.ITEMS_REQUEST_PULL,
+		MutationEntityType.INCREMENTAL_BREAK_BLOCK,
+		MutationEntityType.CRAFT_IN_BLOCK,
+		MutationEntityType.ATTACK_ENTITY,
+		MutationEntityType.USE_SELECTED_ITEM_ON_SELF,
+		MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK,
+		MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY,
+		MutationEntityType.CHANGE_HOTBAR_SLOT,
+		MutationEntityType.SWAP_ARMOUR,
+		MutationEntityType.SET_BLOCK_LOGIC_STATE,
+		MutationEntityType.SET_DAY_AND_SPAWN,
+	}).collect(Collectors.toSet());
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{

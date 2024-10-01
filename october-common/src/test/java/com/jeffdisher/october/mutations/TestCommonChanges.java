@@ -733,8 +733,7 @@ public class TestCommonChanges
 		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		EntityLocation targetLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
-		EntityLocation spawnLocation = new EntityLocation(8.0f, 8.0f, 0.0f);
-		MutableEntity target = MutableEntity.createWithLocation(targetId, targetLocation, spawnLocation);
+		MutableEntity target = MutableEntity.createWithLocation(targetId, targetLocation, MutableEntity.TESTING_LOCATION);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
@@ -772,6 +771,13 @@ public class TestCommonChanges
 					}, null)
 				.finish()
 		;
+		
+		// We want to control the spawn location so set that first.
+		EntityLocation spawnLocation = new EntityLocation(8.0f, 8.0f, 0.0f);
+		EntityChangeSetDayAndSpawn setSpawn = new EntityChangeSetDayAndSpawn(spawnLocation);
+		Assert.assertEquals(MutableEntity.TESTING_LOCATION, target.newSpawn);
+		Assert.assertTrue(setSpawn.applyChange(context, target));
+		Assert.assertEquals(spawnLocation, target.newSpawn);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);
