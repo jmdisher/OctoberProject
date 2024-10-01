@@ -65,6 +65,7 @@ public class ServerStateManager
 	private final Queue<Integer> _removedClients;
 	private final Set<Integer> _clientsToRead;
 	private final Map<Integer, String> _clientsPendingLoad;
+	private Thread _ownerThread;
 
 	// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
 	private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
@@ -93,8 +94,14 @@ public class ServerStateManager
 		_completedCreatures = Collections.emptySet();
 	}
 
+	public void setOwningThread()
+	{
+		_ownerThread = Thread.currentThread();
+	}
+
 	public void clientConnected(int clientId, String name)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(clientId > 0);
 		
@@ -105,6 +112,7 @@ public class ServerStateManager
 
 	public void clientDisconnected(int clientId)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// Remove them from the list of connected clients (we can do this immediately).
 		_connectedClients.remove(clientId);
 		// We also want to add them to the list of clients which must be unloaded in the logic engine.
@@ -122,6 +130,7 @@ public class ServerStateManager
 
 	public void clientReadReady(int clientId)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// We shouldn't already think that this is readable.
 		Assert.assertTrue(!_clientsToRead.contains(clientId));
 		boolean isReadable = _drainPacketsIntoRunner(clientId);
@@ -133,6 +142,7 @@ public class ServerStateManager
 
 	public TickChanges setupNextTickAfterCompletion(TickRunner.Snapshot snapshot)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		_completedCuboids = snapshot.completedCuboids().values();
 		_completedEntities = snapshot.completedEntities().values();
 		_completedCreatures = snapshot.completedCreatures().values();
@@ -267,6 +277,7 @@ public class ServerStateManager
 
 	public void broadcastConfig(WorldConfig config)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		for (Integer clientId : _connectedClients.keySet())
 		{
 			_callouts.network_sendConfig(clientId, config);
@@ -275,12 +286,14 @@ public class ServerStateManager
 
 	public void sendConsoleMessage(int targetId, String message)
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		int consoleId = 0;
 		_relayChatMessage(targetId, consoleId, message);
 	}
 
 	public void shutdown()
 	{
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
 		// Finish any remaining write-back.
 		if (!_completedCuboids.isEmpty() || !_completedEntities.isEmpty())
 		{

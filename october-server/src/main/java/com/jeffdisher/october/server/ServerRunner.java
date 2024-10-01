@@ -2,6 +2,7 @@ package com.jeffdisher.october.server;
 
 import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
@@ -113,6 +114,11 @@ public class ServerRunner
 		_tickAdvancer = new _TickAdvancer();
 		_stateManager = new ServerStateManager(new _Callouts());
 		
+		// We want to prime the state manager's thread check.
+		_messages.enqueue(() -> {
+			_stateManager.setOwningThread();
+		});
+		
 		// Register our various attachments into the monitoring agent.
 		_monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
 		{
@@ -124,12 +130,16 @@ public class ServerRunner
 			@Override
 			public void requestConfigBroadcast()
 			{
-				_stateManager.broadcastConfig(config);
+				_messages.enqueue(() -> {
+					_stateManager.broadcastConfig(config);
+				});
 			}
 			@Override
 			public void sendChatMessage(int targetId, String message)
 			{
-				_stateManager.sendConsoleMessage(targetId, message);
+				_messages.enqueue(() -> {
+					_stateManager.sendConsoleMessage(targetId, message);
+				});
 			}
 			@Override
 			public void installSampler(MonitoringAgent.Sampler sampler)
@@ -152,6 +162,23 @@ public class ServerRunner
 	 */
 	public void shutdown()
 	{
+		// Shut down the state manager in its own thread.
+		CountDownLatch latch = new CountDownLatch(1);
+		_messages.enqueue(() -> {
+			// Allow the state manager to flush anything it has stored.
+			_stateManager.shutdown();
+			latch.countDown();
+		});
+		try
+		{
+			latch.await();
+		}
+		catch (InterruptedException e1)
+		{
+			// We don't use interruption.
+			throw Assert.unexpected(e1);
+		}
+		
 		// Stop accepting messages.
 		_messages.shutdown();
 		
@@ -168,9 +195,6 @@ public class ServerRunner
 		
 		// Shut down the tick runner.
 		_tickRunner.shutdown();
-		
-		// Allow the state manager to flush anything it has stored.
-		_stateManager.shutdown();
 		
 		// Shut down the cuboid loader.
 		_loader.shutdown();

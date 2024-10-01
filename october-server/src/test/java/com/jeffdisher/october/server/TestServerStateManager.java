@@ -63,6 +63,7 @@ public class TestServerStateManager
 	{
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		manager.shutdown();
 	}
 
@@ -71,6 +72,7 @@ public class TestServerStateManager
 	{
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
 		ServerStateManager.TickChanges changes = manager.setupNextTickAfterCompletion(snapshot);
 		manager.shutdown();
@@ -87,6 +89,7 @@ public class TestServerStateManager
 	{
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
 		manager.clientConnected(clientId, clientName);
@@ -193,6 +196,7 @@ public class TestServerStateManager
 		// Connect a client, mark them as readable, then disconnect them, finally end a tick.
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		int clientId = 1;
 		String clientName = "client";
 		manager.clientConnected(clientId, clientName);
@@ -219,6 +223,7 @@ public class TestServerStateManager
 		// We just want to connect 2 clients and verify that they see each other join and the first one to disconnect is seen.
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		int clientId1 = 1;
 		String clientName1 = "client1";
 		int clientId2 = 2;
@@ -251,6 +256,7 @@ public class TestServerStateManager
 		// Create a snapshot with an entity and some cuboids, showing what write-backs are requested based on different situations and tick numbers.
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		int clientId = 1;
 		manager.clientConnected(clientId, "client");
 		TickRunner.Snapshot snapshot = _createEmptySnapshot();
@@ -326,6 +332,7 @@ public class TestServerStateManager
 		// Connect 2 clients, each near a creature, verify that each only sees the closer one, then show that one of them dying is only observed by the nearer.
 		_Callouts callouts = new _Callouts();
 		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
 		int clientId1 = 1;
 		String clientName1 = "client1";
 		int clientId2 = 2;
