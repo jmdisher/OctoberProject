@@ -352,13 +352,21 @@ public class TestPropagationHelpers
 		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.8f, multiplier, 0.01f);
 		dayStartTick = PropagationHelpers.resumableStartTick(10L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(10L, dayStartTick);
 		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.8f, multiplier, 0.01f);
 		multiplier = PropagationHelpers.skyLightMultiplier(10L, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.6f, multiplier, 0.01f);
-		dayStartTick = PropagationHelpers.resumableStartTick(10L, ticksPerDay, dayStartTick);
+		dayStartTick = PropagationHelpers.resumableStartTick(15L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(25L, dayStartTick);
 		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
-		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		Assert.assertEquals(0.5f, multiplier, 0.01f);
+		// Show what happens if a day really shrinks down.
+		ticksPerDay = 10;
+		dayStartTick = PropagationHelpers.resumableStartTick(2050L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(5L, dayStartTick);
+		multiplier = PropagationHelpers.skyLightMultiplier(0L, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.0f, multiplier, 0.01f);
 	}
 
 

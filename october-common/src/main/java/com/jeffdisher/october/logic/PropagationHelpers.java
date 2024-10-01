@@ -217,7 +217,8 @@ public class PropagationHelpers
 	}
 
 	/**
-	 * A helper to calculate the new dayStartTick after running for some time.
+	 * A helper to calculate the new dayStartTick after running for some time.  The point of this is to return a number
+	 * which will represent the same time of day after a server restart.
 	 * 
 	 * @param ticksRun The ticks run in this session.
 	 * @param ticksPerDay The number of ticks per day.
@@ -226,7 +227,7 @@ public class PropagationHelpers
 	 */
 	public static long resumableStartTick(long ticksRun, long ticksPerDay, long previousDayStartOffset)
 	{
-		return ((ticksPerDay + previousDayStartOffset - ticksRun) % ticksPerDay);
+		return (ticksRun + previousDayStartOffset) % ticksPerDay;
 	}
 
 
@@ -450,7 +451,7 @@ public class PropagationHelpers
 	private static float _skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
 		// The dayStartOffset is usually 0, but is set to the offset into ticksPerDay where we should reposition the start of the day.
-		long step = (gameTick + ticksPerDay - dayStartOffset) % ticksPerDay;
+		long step = (gameTick + dayStartOffset) % ticksPerDay;
 		// We actually need the light strength to cycle back and forth, not loop, so make this an abs function over half the day length.
 		long ticksPerHalfDay = ticksPerDay / 2;
 		return (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
