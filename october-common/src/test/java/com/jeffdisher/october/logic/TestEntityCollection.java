@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.MutableEntity;
 
 
 public class TestEntityCollection
@@ -79,6 +80,7 @@ public class TestEntityCollection
 				, (byte)0
 				, EntityConstants.MAX_BREATH
 				, 0
+				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
 	}

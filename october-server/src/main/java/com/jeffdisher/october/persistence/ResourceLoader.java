@@ -54,7 +54,10 @@ public class ResourceLoader
 	 * Version 0 was used in v1.0-pre4 and earlier, no longer supported (pre-releases have no migration support).
 	 */
 	public static final int VERSION_CUBOID = 1;
-	public static final int VERSION_ENTITY = 0;
+	/**
+	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
+	 */
+	public static final int VERSION_ENTITY = 1;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -208,7 +211,7 @@ public class ResourceLoader
 					if (null == data)
 					{
 						// Note that the entity generator is always present.
-						data = _buildDefaultEntity(id, _playerSpawnLocation);
+						data = _buildDefaultEntity(id, _playerSpawnLocation, _playerSpawnLocation);
 					}
 					
 					// Return the result.
@@ -616,12 +619,12 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation location)
+	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation location, EntityLocation spawn)
 	{
 		List<ScheduledChange> initialChanges = List.of(
 				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
-		return new SuspendedEntity(MutableEntity.createWithLocation(id, location).freeze(), initialChanges);
+		return new SuspendedEntity(MutableEntity.createWithLocation(id, location, spawn).freeze(), initialChanges);
 	}
 
 	private static File _getConfigFile(File saveDirectory)

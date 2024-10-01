@@ -31,6 +31,8 @@ public record Entity(int id
 		, int breath
 		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
 		, int energyDeficit
+		// The location where the entity is sent when they spawn for the first time or die and respawn.
+		, EntityLocation spawnLocation
 		
 		// ***** Values below this point are considered ephemeral and local:  They are not persisted, nor send over the network.
 		, long ephemeral_lastSpecialActionMillis
@@ -43,26 +45,4 @@ public record Entity(int id
 	 * code which would otherwise just have an inline constant 0.
 	 */
 	public static final int NO_SELECTION = 0;
-
-	public static Entity fromPartial(PartialEntity entity)
-	{
-		// We will assume no velocity - this may change if we start sending this data for client-side prediction, in the future.
-		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-		return new Entity(entity.id()
-				, false
-				, entity.location()
-				, velocity
-				, 0.0f
-				, Inventory.start(0).finish()
-				, new int[HOTBAR_SIZE]
-				, 0
-				, new NonStackableItem[BodyPart.values().length]
-				, null
-				, (byte)0
-				, (byte)0
-				, EntityConstants.MAX_BREATH
-				, 0
-				, 0L
-		);
-	}
 }

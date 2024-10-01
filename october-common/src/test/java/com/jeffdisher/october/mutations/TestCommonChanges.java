@@ -41,7 +41,6 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -733,8 +732,9 @@ public class TestCommonChanges
 		int targetId = 2;
 		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
-		MutableEntity target = MutableEntity.createForTest(targetId);
-		target.newLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
+		EntityLocation targetLocation = new EntityLocation(9.0f, 9.0f, 0.0f);
+		EntityLocation spawnLocation = new EntityLocation(8.0f, 8.0f, 0.0f);
+		MutableEntity target = MutableEntity.createWithLocation(targetId, targetLocation, spawnLocation);
 		target.newInventory.addAllItems(STONE_ITEM, 2);
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
@@ -745,8 +745,6 @@ public class TestCommonChanges
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, STONE);
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		WorldConfig worldConfig = new WorldConfig();
-		worldConfig.worldSpawn = new AbsoluteLocation(1, 2, 3);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) ->
 					{
@@ -772,7 +770,6 @@ public class TestCommonChanges
 							blockHolder[0] = mutation;
 						}
 					}, null)
-				.config(worldConfig)
 				.finish()
 		;
 		
@@ -787,7 +784,7 @@ public class TestCommonChanges
 		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
-		Assert.assertEquals(worldConfig.worldSpawn.toEntityLocation(), target.newLocation);
+		Assert.assertEquals(spawnLocation, target.newLocation);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
 	}
 
@@ -1728,6 +1725,7 @@ public class TestCommonChanges
 				, MutableEntity.DEFAULT_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
+				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
@@ -1849,6 +1847,7 @@ public class TestCommonChanges
 				, food
 				, breath
 				, 0
+				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
 		

@@ -33,11 +33,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	 * 
 	 * @param id The entity ID (must be positive).
 	 * @param location The location of the entity.
+	 * @param spawn The respawn location of this entity.
 	 * @return A mutable entity.
 	 */
-	public static MutableEntity createWithLocation(int id, EntityLocation location)
+	public static MutableEntity createWithLocation(int id, EntityLocation location, EntityLocation spawn)
 	{
-		return _createWithLocation(id, location);
+		return _createWithLocation(id, location, spawn);
 	}
 
 	/**
@@ -48,10 +49,10 @@ public class MutableEntity implements IMutablePlayerEntity
 	 */
 	public static MutableEntity createForTest(int id)
 	{
-		return _createWithLocation(id, TESTING_LOCATION);
+		return _createWithLocation(id, TESTING_LOCATION, TESTING_LOCATION);
 	}
 
-	private static MutableEntity _createWithLocation(int id, EntityLocation location)
+	private static MutableEntity _createWithLocation(int id, EntityLocation location, EntityLocation spawn)
 	{
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(id > 0);
@@ -71,6 +72,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, DEFAULT_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
+				, spawn
 				, 0L
 		);
 		return new MutableEntity(entity);
@@ -229,7 +231,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		
 		// Respawn them.
 		this.newInventory.clearInventory(null);
-		this.newLocation = context.config.worldSpawn.toEntityLocation();
+		this.newLocation = _original.spawnLocation();
 		this.newHealth = MutableEntity.DEFAULT_HEALTH;
 		this.newFood = MutableEntity.DEFAULT_FOOD;
 		// Wipe all the hotbar slots.
@@ -405,6 +407,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newFood
 				, this.newBreath
 				, this.newEnergyDeficit
+				, _original.spawnLocation()
 				, this.ephemeral_lastSpecialActionMillis
 		);
 		// See if these are identical.

@@ -148,6 +148,7 @@ public class CodecHelpers
 		byte food = buffer.get();
 		int breath = buffer.getInt();
 		int energyDeficit = buffer.getInt();
+		EntityLocation spawn = _readEntityLocation(buffer);
 		long ephemeral_lastSpecialActionMillis = 0L;
 		
 		return new Entity(id
@@ -164,6 +165,7 @@ public class CodecHelpers
 				, food
 				, breath
 				, energyDeficit
+				, spawn
 				, ephemeral_lastSpecialActionMillis
 		);
 	}
@@ -201,6 +203,7 @@ public class CodecHelpers
 		buffer.put(entity.food());
 		buffer.putInt(entity.breath());
 		buffer.putInt(entity.energyDeficit());
+		_writeEntityLocation(buffer, entity.spawnLocation());
 	}
 
 	public static PartialEntity readPartialEntity(ByteBuffer buffer)

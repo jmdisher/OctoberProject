@@ -16,8 +16,9 @@ public class Packet_ClientSendDescription extends PacketFromClient
 	public static final PacketType TYPE = PacketType.CLIENT_SEND_DESCRIPTION;
 	/**
 	 * Protocol version 0 was used in v1.0-pre4 and earlier.
+	 * Protocol version 1 was used in v1.0-pre6 and earlier.
 	 */
-	public static final int NETWORK_PROTOCOL_VERSION = 1;
+	public static final int NETWORK_PROTOCOL_VERSION = 2;
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{

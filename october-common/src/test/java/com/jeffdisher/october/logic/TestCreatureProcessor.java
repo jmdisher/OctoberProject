@@ -44,6 +44,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -826,6 +827,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, EntityConstants.MAX_BREATH
 				, 0
+				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
 	}
