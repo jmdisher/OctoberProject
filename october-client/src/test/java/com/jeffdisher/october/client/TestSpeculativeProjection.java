@@ -1,5 +1,6 @@
 package com.jeffdisher.october.client;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
@@ -478,9 +480,11 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		// We should still just see the initial changes in the speculative list.
+		// We should still just see the initial changes in the speculative list and the 1 update from the incoming change.
 		Assert.assertEquals(2, speculativeCount);
-		Assert.assertEquals(0, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation0.getAbsoluteLocation().getBlockAddress()));
 		
 		// Commit the other one normally.
 		speculativeCount = projector.applyChangesForServerTick(4L
@@ -496,7 +500,9 @@ public class TestSpeculativeProjection
 		);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(0, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation1.getAbsoluteLocation().getBlockAddress()));
 		
 		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
@@ -612,7 +618,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Collections.emptyMap()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation2))
+				, List.of()
 				, Collections.emptyList()
 				, List.of(address)
 				, commit2
@@ -1583,6 +1589,66 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+	}
+
+	@Test
+	public void smallServerUpdate()
+	{
+		// We just plumb through small block updates from the server and verify that we see the right updates.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
+		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidData scratchCuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of(scratchCuboid)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 1L
+		);
+		Assert.assertNotNull(listener.authoritativeEntityState);
+		Assert.assertNotNull(listener.thisEntityState);
+		Assert.assertEquals(address, listener.lastData.getCuboidAddress());
+		listener.lastData = null;
+		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(1, 2));
+		listener.lastHeightMap = null;
+		Assert.assertNull(listener.lastChangedBlocks);
+		
+		// Make some updates to the scratch cuboid and write them to the projection.
+		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
+		MutableBlockProxy blockProxy = new MutableBlockProxy(blockLocation, scratchCuboid);
+		blockProxy.setBlockAndClear(STONE);
+		AbsoluteLocation lightLocation = new AbsoluteLocation(4, 5, 6);
+		MutableBlockProxy lightProxy = new MutableBlockProxy(lightLocation, scratchCuboid);
+		lightProxy.setLight((byte)10);
+		AbsoluteLocation inventoryLocation = new AbsoluteLocation(7, 8, 9);
+		MutableBlockProxy inventoryProxy = new MutableBlockProxy(inventoryLocation, scratchCuboid);
+		inventoryProxy.setInventory(Inventory.start(10).addStackable(STONE.item(), 5).finish());
+		ByteBuffer scratchBuffer = ByteBuffer.allocate(1024);
+		projector.applyChangesForServerTick(2L
+				, List.of()
+				, Collections.emptyList()
+				, List.of()
+				, Collections.emptyMap()
+				, List.of(
+						MutationBlockSetBlock.extractFromProxy(scratchBuffer, blockProxy),
+						MutationBlockSetBlock.extractFromProxy(scratchBuffer, lightProxy),
+						MutationBlockSetBlock.extractFromProxy(scratchBuffer, inventoryProxy)
+				)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, 2L
+		);
+		Assert.assertEquals(address, listener.lastData.getCuboidAddress());
+		Assert.assertEquals(3, listener.lastChangedBlocks.size());
+		Assert.assertEquals(3, listener.lastHeightMap.getHeight(1, 2));
 	}
 
 

@@ -198,7 +198,8 @@ public class SpeculativeProjection
 		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(entityUpdates, partialEntityUpdates, cuboidUpdates);
+		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
+		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(entityUpdates, partialEntityUpdates, updatesToApply);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -303,7 +304,8 @@ public class SpeculativeProjection
 		otherEntitiesChanges.remove(_localEntityId);
 		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = _projectedBlockChanges;
 		_projectedBlockChanges = new HashMap<>();
-		_notifyChanges(previousProjectedChanges, modifiedBlocksByCuboid, columnHeightMaps, _thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
+		_notifyCuboidChanges(previousProjectedChanges, updatesToApply, modifiedBlocksByCuboid, columnHeightMaps);
+		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -357,7 +359,8 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyChanges(Map.of(), modifiedBlocksByCuboid, Map.of(), _thisShadowEntity, changedLocalEntity, Set.of());
+		_notifyCuboidChanges(Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
+		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -390,7 +393,7 @@ public class SpeculativeProjection
 		if (null != updated)
 		{
 			_projectedLocalEntity = updated;
-			_notifyChanges(Map.of(), Map.of(), Map.of(), _thisShadowEntity, _projectedLocalEntity, Set.of());
+			_notifyEntityChanges(_thisShadowEntity, _projectedLocalEntity, Set.of());
 		}
 	}
 
@@ -398,7 +401,7 @@ public class SpeculativeProjection
 
 	private _UpdateTuple _applyUpdatesToShadowState(List<IEntityUpdate> entityUpdates
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
-			, List<MutationBlockSetBlock> cuboidUpdates
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
 	)
 	{
 		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(entityUpdates);
@@ -408,7 +411,7 @@ public class SpeculativeProjection
 		Map<CuboidAddress, CuboidHeightMap> updatedMaps = new HashMap<>();
 		_applyCuboidUpdatesToShadowState(updatedCuboids
 				, updatedMaps
-				, cuboidUpdates
+				, updatesToApply
 		);
 		_UpdateTuple shadowUpdates = new _UpdateTuple(updatedShadowEntity
 				, entitiesChangedInTick
@@ -466,11 +469,9 @@ public class SpeculativeProjection
 
 	private void _applyCuboidUpdatesToShadowState(Map<CuboidAddress, IReadOnlyCuboidData> out_updatedCuboids
 			, Map<CuboidAddress, CuboidHeightMap> out_updatedMaps
-			, List<MutationBlockSetBlock> cuboidUpdates
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
 	)
 	{
-		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
-		
 		// NOTE:  This logic is similar to WorldProcessor but partially-duplicated here to avoid all the other requirements of the WorldProcessor or redundant operations it would perform.
 		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : updatesToApply.entrySet())
 		{
@@ -506,17 +507,52 @@ public class SpeculativeProjection
 		}
 	}
 
-	private void _notifyChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
-			, Map<CuboidAddress, List<AbsoluteLocation>> changedBlocksByCuboid
+	private void _notifyCuboidChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
+			, Map<CuboidAddress, List<MutationBlockSetBlock>> authoritativeChangesByCuboid
+			, Map<CuboidAddress, List<AbsoluteLocation>> locallyChangedBlocksByCuboid
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
-			, Entity authoritativeLocalEntity
-			, Entity updatedLocalEntity
-			, Set<Integer> otherEntityIds
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
-		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> changed : changedBlocksByCuboid.entrySet())
+		
+		// We want to add all changes which can in from the server.
+		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> changed : authoritativeChangesByCuboid.entrySet())
+		{
+			CuboidAddress address = changed.getKey();
+			Set<BlockAddress> set = changedBlocks.get(address);
+			IReadOnlyCuboidData activeVersion = _projectedWorld.get(address);
+			// This should never be null (the server shouldn't describe what it is unloading).
+			Assert.assertTrue(null != activeVersion);
+			for (MutationBlockSetBlock setBlock : changed.getValue())
+			{
+				// We want to report this if it isn't just an echo of something we already reported.
+				AbsoluteLocation location = setBlock.getAbsoluteLocation();
+				// See if there is an entry from what we are rebuilding (since we will already handle that, below).
+				if (!previousProjectedChanges.containsKey(location))
+				{
+					BlockAddress block = location.getBlockAddress();
+					BlockProxy projected = new BlockProxy(block, activeVersion);
+					BlockProxy previousReport = _projectedBlockChanges.get(location);
+					if ((null == previousReport) || !previousReport.doAspectsMatch(projected))
+					{
+						if (null == set)
+						{
+							set = new HashSet<>();
+							changedBlocks.put(address, set);
+						}
+						set.add(block);
+					}
+				}
+			}
+			if (null != set)
+			{
+				cuboidsToReport.put(address, activeVersion);
+			}
+		}
+		
+		// Check the local changes to see if any should be reported.
+		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> changed : locallyChangedBlocksByCuboid.entrySet())
 		{
 			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
 			// Remember that these are copy-on-write so we can just instance-compare.
@@ -528,10 +564,10 @@ public class SpeculativeProjection
 				// Also, record any of the changed locations here for future reverts.
 				for (AbsoluteLocation location : changed.getValue())
 				{
-					BlockAddress block = location.getBlockAddress();
 					// See if there is an entry from what we are rebuilding (since we will already handle that, below).
 					if (!previousProjectedChanges.containsKey(location))
 					{
+						BlockAddress block = location.getBlockAddress();
 						BlockProxy projected = new BlockProxy(block, activeVersion);
 						BlockProxy previousReport = _projectedBlockChanges.get(location);
 						if (null == previousReport)
@@ -566,9 +602,9 @@ public class SpeculativeProjection
 			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
 			BlockProxy proxy = changeEntry.getValue();
 			IReadOnlyCuboidData activeVersion = _projectedWorld.get(cuboidAddress);
-			IReadOnlyCuboidData shadowVersion = _shadowWorld.get(cuboidAddress);
-			if ((null != activeVersion) && (null != shadowVersion))
+			if (null != activeVersion)
 			{
+				IReadOnlyCuboidData shadowVersion = _shadowWorld.get(cuboidAddress);
 				BlockAddress block = blockLocation.getBlockAddress();
 				BlockProxy projected = new BlockProxy(block, activeVersion);
 				BlockProxy shadow = new BlockProxy(block, shadowVersion);
@@ -611,6 +647,13 @@ public class SpeculativeProjection
 			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
 			_listener.cuboidDidChange(data, allHeightMaps.get(address.getColumn()), blocksChanged);
 		}
+	}
+
+	private void _notifyEntityChanges(Entity authoritativeLocalEntity
+			, Entity updatedLocalEntity
+			, Set<Integer> otherEntityIds
+	)
+	{
 		if (null != updatedLocalEntity)
 		{
 			_listener.thisEntityDidChange(authoritativeLocalEntity, updatedLocalEntity);
