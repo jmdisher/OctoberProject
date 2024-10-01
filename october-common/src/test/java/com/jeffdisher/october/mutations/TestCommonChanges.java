@@ -1789,8 +1789,10 @@ public class TestCommonChanges
 	@Test
 	public void setCreative() throws Throwable
 	{
-		// Create an entity in survival mode, change them to creative and back.
+		// Create an entity in survival mode, change them to creative and back.  We also show that this change clears the hotbar (since it isn't the same inventory).
 		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 1);
+		newEntity.newHotbar[newEntity.newHotbarIndex] = 1;
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
@@ -1798,10 +1800,15 @@ public class TestCommonChanges
 		EntityChangeOperatorSetCreative set = new EntityChangeOperatorSetCreative(true);
 		Assert.assertTrue(set.applyChange(holder.context, newEntity));
 		Assert.assertTrue(newEntity.freeze().isCreativeMode());
+		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
+		MutationEntitySelectItem select = new MutationEntitySelectItem(10);
+		Assert.assertTrue(select.applyChange(holder.context, newEntity));
+		Assert.assertEquals(10, newEntity.newHotbar[newEntity.newHotbarIndex]);
 		
 		EntityChangeOperatorSetCreative clear = new EntityChangeOperatorSetCreative(false);
 		Assert.assertTrue(clear.applyChange(holder.context, newEntity));
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
+		Assert.assertEquals(0, newEntity.newHotbar[newEntity.newHotbarIndex]);
 	}
 
 	@Test

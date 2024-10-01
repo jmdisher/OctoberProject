@@ -124,7 +124,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	{
 		// If this is a creative player, which ignore their inventory and always return the fake creative one.
 		IMutableInventory inv;
-		if (_original.isCreativeMode())
+		if (this.isCreativeMode)
 		{
 			inv = new CreativeInventory();
 		}
@@ -370,7 +370,7 @@ public class MutableEntity implements IMutablePlayerEntity
 			int newKey = this.newHotbar[i];
 			if (Entity.NO_SELECTION != newKey)
 			{
-				IMutableInventory inventoryToCheck = _original.isCreativeMode()
+				IMutableInventory inventoryToCheck = this.isCreativeMode
 						? new CreativeInventory()
 						: this.newInventory;
 				Items stack = inventoryToCheck.getStackForKey(newKey);
