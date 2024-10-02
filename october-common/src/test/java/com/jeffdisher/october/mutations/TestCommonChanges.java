@@ -774,14 +774,22 @@ public class TestCommonChanges
 				.finish()
 		;
 		
-		// We want to control the spawn location so set that first.
-		EntityLocation spawnLocation = new EntityLocation(8.0f, 8.0f, 0.0f);
-		EntityChangeSetDayAndSpawn setSpawn = new EntityChangeSetDayAndSpawn(spawnLocation);
+		// We want to control the spawn location place a bed down to use.
+		AbsoluteLocation bedLocation = new AbsoluteLocation (8, 8, 0);
+		Item bed = ENV.items.getItemById("op.bed");
+		airCuboid.setData15(AspectRegistry.BLOCK, bedLocation.getBlockAddress(), bed.number());
+		
+		// Set the spawn.
+		EntityChangeSetDayAndSpawn setSpawn = new EntityChangeSetDayAndSpawn(bedLocation);
 		Assert.assertEquals(MutableEntity.TESTING_LOCATION, target.newSpawn);
 		Assert.assertEquals(0, context.config.dayStartTick);
 		Assert.assertTrue(setSpawn.applyChange(context, target));
-		Assert.assertEquals(spawnLocation, target.newSpawn);
+		Assert.assertEquals(target.newLocation, target.newSpawn);
 		Assert.assertEquals(tickNumber, context.config.dayStartTick);
+		EntityLocation spawnLocation = target.newSpawn;
+		
+		// Move slightly so that we see the location update on respawn.
+		target.newLocation = new EntityLocation(target.newLocation.x() - 1.0f, target.newLocation.y() - 1.0f, target.newLocation.z());
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);

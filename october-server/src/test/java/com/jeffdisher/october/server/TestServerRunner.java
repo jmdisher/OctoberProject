@@ -585,7 +585,34 @@ public class TestServerRunner
 	public void configBroadcastOnDayReset() throws Throwable
 	{
 		TestAdapter network = new TestAdapter();
-		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
+		IWorldGenerator worldGen = new IWorldGenerator() {
+			@Override
+			public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
+			{
+				// If this is above 0, make it air, if below, make it stone.
+				Block fill = (address.z() >= 0)
+						? ENV.special.AIR
+						: STONE
+					;
+				CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, fill);
+				// If it is 0, 0, 0, add a bed at 1,1,1.
+				if (address.equals(new CuboidAddress((short)0, (short)0, (short)0)))
+				{
+					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), ENV.items.getItemById("op.bed").number());
+				}
+				return new SuspendedCuboid<>(cuboid
+						, HeightMapHelpers.buildHeightMap(cuboid)
+						, List.of()
+						, List.of()
+				);
+			}
+			@Override
+			public EntityLocation getDefaultSpawnLocation()
+			{
+				return MutableEntity.TESTING_LOCATION;
+			}
+		};
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), worldGen, MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		WorldConfig config = new WorldConfig();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -604,17 +631,28 @@ public class TestServerRunner
 		Entity entity1 = network.waitForThisEntity(clientId1);
 		Assert.assertNotNull(entity1);
 		
-		// Now, inject the action to reset the day and spawn for them.
-		Assert.assertEquals(0, config.dayStartTick);
-		EntityLocation spawn = new EntityLocation(entity1.location().x() + 1, entity1.location().y() + 1, entity1.location().z());
-		network.receiveFromClient(clientId1, new EntityChangeSetDayAndSpawn(spawn), 1L);
-		// Wait for 4 ticks for the broadcast to happen (it since it won't come until "after" the tick where this was scheduled and we may already be waiting for the previous tick).
-		network.waitForServer(4L);
-		Assert.assertNotEquals(0, network.config.dayStartTick);
+		// Move them slightly so that they aren't on the world spawn.
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(100L, 1.0f, EntityChangeMove.Direction.NORTH);
+		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		MutableEntity mutable = MutableEntity.existing(entity1);
 		((MutationEntitySetEntity) change0).applyToEntity(mutable);
+		entity1 = mutable.freeze();
+		Assert.assertEquals(MutableEntity.TESTING_LOCATION, entity1.spawnLocation());
+		Assert.assertNotEquals(MutableEntity.TESTING_LOCATION, entity1.location());
+		
+		// Now, inject the action to reset the day and spawn for them.
+		Assert.assertEquals(0, config.dayStartTick);
+		network.receiveFromClient(clientId1, new EntityChangeSetDayAndSpawn(new AbsoluteLocation(1, 1, 1)), 2L);
+		EntityLocation spawn = entity1.location();
+		// Wait for 4 ticks for the broadcast to happen (it since it won't come until "after" the tick where this was scheduled and we may already be waiting for the previous tick).
+		network.waitForServer(4L);
+		Assert.assertNotEquals(0, network.config.dayStartTick);
+		Object change1 = network.waitForUpdate(clientId1, 1);
+		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
+		mutable = MutableEntity.existing(entity1);
+		((MutationEntitySetEntity) change1).applyToEntity(mutable);
 		entity1 = mutable.freeze();
 		Assert.assertEquals(spawn, entity1.spawnLocation());
 		

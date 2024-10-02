@@ -2,9 +2,11 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -21,18 +23,18 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 
 	public static EntityChangeSetDayAndSpawn deserializeFromBuffer(ByteBuffer buffer)
 	{
-		EntityLocation spawnLocation = CodecHelpers.readEntityLocation(buffer);
-		return new EntityChangeSetDayAndSpawn(spawnLocation);
+		AbsoluteLocation bedLocation = CodecHelpers.readAbsoluteLocation(buffer);
+		return new EntityChangeSetDayAndSpawn(bedLocation);
 	}
 
 
-	private final EntityLocation _spawnLocation;
+	private final AbsoluteLocation _bedLocation;
 
-	public EntityChangeSetDayAndSpawn(EntityLocation spawnLocation)
+	public EntityChangeSetDayAndSpawn(AbsoluteLocation bedLocation)
 	{
-		Assert.assertTrue(null != spawnLocation);
+		Assert.assertTrue(null != bedLocation);
 		
-		_spawnLocation = spawnLocation;
+		_bedLocation = bedLocation;
 	}
 
 	@Override
@@ -45,19 +47,27 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		// Make sure that the target is reasonably within range.
-		EntityLocation targetCentre = SpatialHelpers.getEntityCentre(_spawnLocation, EntityConstants.getVolume(newEntity.getType()));
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
-		float absX = Math.abs(targetCentre.x() - entityCentre.x());
-		float absY = Math.abs(targetCentre.y() - entityCentre.y());
-		float absZ = Math.abs(targetCentre.z() - entityCentre.z());
-		boolean isInRange = ((absX <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absY <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absZ <= EntityChangeIncrementalBlockBreak.MAX_REACH));
+		// Make sure that the target is a bed.
+		Environment env = Environment.getShared();
+		boolean isBed = (env.items.getItemById("op.bed") == context.previousBlockLookUp.apply(_bedLocation).getBlock().item());
+		
+		boolean isInRange = false;
+		if (isBed)
+		{
+			// Make sure that the target is reasonably within range.
+			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(_bedLocation.toEntityLocation(), EntityConstants.getVolume(newEntity.getType()));
+			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
+			float absX = Math.abs(targetCentre.x() - entityCentre.x());
+			float absY = Math.abs(targetCentre.y() - entityCentre.y());
+			float absZ = Math.abs(targetCentre.z() - entityCentre.z());
+			isInRange = ((absX <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absY <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absZ <= EntityChangeIncrementalBlockBreak.MAX_REACH));
+		}
 		
 		boolean didApply = false;
 		if (isInRange)
 		{
 			// Set spawn.
-			newEntity.setSpawnLocation(_spawnLocation);
+			newEntity.setSpawnLocation(newEntity.getLocation());
 			
 			// We will reset the day start in the shared WorldConfig instance (note that doing so is racy but should be harmless) and ServerRunner will observe this and broadcast.
 			context.config.dayStartTick = (int)PropagationHelpers.resumableStartTick(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
@@ -76,7 +86,7 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeEntityLocation(buffer, _spawnLocation);
+		CodecHelpers.writeAbsoluteLocation(buffer, _bedLocation);
 	}
 
 	@Override
@@ -89,6 +99,6 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 	@Override
 	public String toString()
 	{
-		return "Set Spawn " + _spawnLocation;
+		return "Set spawn on bed at " + _bedLocation;
 	}
 }
