@@ -12,8 +12,7 @@ public record Entity(int id
 		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
 		// Note that horizontal movement is usually cancelled by friction within the same tick.
 		, EntityLocation velocity
-		// The maximum distance, in blocks, the entity can move in a single tick (float since this is usually less than 1).
-		, float blocksPerTickSpeed
+		// The normal inventory of the entity (hotbar slots reference this but armour slots do NOT overlap with this).
 		, Inventory inventory
 		// The keys in the hotbar are references to inventory.  If any are 0, they have no selection.
 		, int[] hotbarItems

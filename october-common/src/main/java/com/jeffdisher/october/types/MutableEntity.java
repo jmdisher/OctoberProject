@@ -13,7 +13,6 @@ import com.jeffdisher.october.utils.Assert;
 public class MutableEntity implements IMutablePlayerEntity
 {
 	public static final EntityLocation TESTING_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
-	public static final float DEFAULT_BLOCKS_PER_TICK_SPEED = 0.5f;
 	public static final byte DEFAULT_HEALTH = 100;
 	public static final byte DEFAULT_FOOD = 100;
 
@@ -62,7 +61,6 @@ public class MutableEntity implements IMutablePlayerEntity
 				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
@@ -405,7 +403,6 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.isCreativeMode
 				, this.newLocation
 				, this.newVelocity
-				, _original.blocksPerTickSpeed()
 				, this.newInventory.freeze()
 				, didHotbarChange ? this.newHotbar : _original.hotbarItems()
 				, this.newHotbarIndex

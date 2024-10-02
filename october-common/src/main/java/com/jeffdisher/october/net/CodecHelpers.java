@@ -130,7 +130,6 @@ public class CodecHelpers
 		boolean isCreativeMode = _readBoolean(buffer);
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
-		float blocksPerTickSpeed = buffer.getFloat();
 		Inventory inventory = _readInventory(buffer);
 		int[] hotbar = new int[Entity.HOTBAR_SIZE];
 		for (int i = 0; i < hotbar.length; ++i)
@@ -155,7 +154,6 @@ public class CodecHelpers
 				, isCreativeMode
 				, location
 				, velocity
-				, blocksPerTickSpeed
 				, inventory
 				, hotbar
 				, hotbarIndex
@@ -176,7 +174,6 @@ public class CodecHelpers
 		boolean isCreativeMode = entity.isCreativeMode();
 		EntityLocation location = entity.location();
 		EntityLocation velocity = entity.velocity();
-		float blocksPerTickSpeed = entity.blocksPerTickSpeed();
 		Inventory inventory = entity.inventory();
 		int[] hotbar = entity.hotbarItems();
 		int hotbarIndex = entity.hotbarIndex();
@@ -187,7 +184,6 @@ public class CodecHelpers
 		_writeBoolean(buffer, isCreativeMode);
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
-		buffer.putFloat(blocksPerTickSpeed);
 		_writeInventory(buffer, inventory);
 		for (int key : hotbar)
 		{

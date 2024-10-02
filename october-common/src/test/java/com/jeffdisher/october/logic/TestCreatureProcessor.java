@@ -817,7 +817,6 @@ public class TestCreatureProcessor
 				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, 0.0f
 				, inventory
 				, new int[] { key }
 				, 0

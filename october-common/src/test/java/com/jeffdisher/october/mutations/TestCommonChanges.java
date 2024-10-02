@@ -1733,7 +1733,6 @@ public class TestCommonChanges
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, MutableEntity.DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
@@ -1855,7 +1854,6 @@ public class TestCommonChanges
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
-				, MutableEntity.DEFAULT_BLOCKS_PER_TICK_SPEED
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
