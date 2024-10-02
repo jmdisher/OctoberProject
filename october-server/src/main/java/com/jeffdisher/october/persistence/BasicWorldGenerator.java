@@ -710,18 +710,23 @@ public class BasicWorldGenerator implements IWorldGenerator
 					{
 						int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 						int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-						// Choose the block above the dirt.
-						int absoluteZ = heightMap.getHeight(relativeX, relativeY) + 1;
-						// The tree is a 3x3 structure with the tree in the middle so step back by one.
-						// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
-						AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
-						// Make sure that these are over dirt.
-						AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
-						if (dirtLocation.getCuboidAddress().equals(address))
+						// We only generate here if the target block is at an elevation where dirt spawns.
+						int dirtBlockZ = heightMap.getHeight(relativeX, relativeY);
+						if (dirtBlockZ < STONE_PEAK_Z_LEVEL)
 						{
-							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+							// Choose the block above the dirt.
+							int absoluteZ = dirtBlockZ + 1;
+							// The tree is a 3x3 structure with the tree in the middle so step back by one.
+							// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
+							AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
+							// Make sure that these are over dirt.
+							AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
+							if (dirtLocation.getCuboidAddress().equals(address))
+							{
+								Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+							}
+							_basicTree.applyToCuboid(data, relativeBase, airNumber);
 						}
-						_basicTree.applyToCuboid(data, relativeBase, airNumber);
 					}
 					// We generated trees into this so update the cuboid height map.
 					if ((0 == x) && (0 == y))

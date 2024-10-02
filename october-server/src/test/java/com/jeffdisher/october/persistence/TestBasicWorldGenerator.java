@@ -308,6 +308,17 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
 	}
 
+	@Test
+	public void stoneForest() throws Throwable
+	{
+		// This test verifies that we don't fail when we try to generate a forest on a stone peak (experimentally found this seed).
+		int seed = 10256;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)1, (short)-1, (short)0));
+		CuboidData cuboid = suspended.cuboid();
+		_checkBlockTypes(cuboid, 11919, 24, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 10, 20, 0, 0);
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
 	{
