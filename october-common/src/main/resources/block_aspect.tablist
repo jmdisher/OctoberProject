@@ -116,3 +116,6 @@ op.carrot_mature
 	requires_support	op.dirt
 	special_drop	op.carrot_seed	op.carrot_seed	op.carrot_item	op.carrot_item
 	viscosity	10
+op.bed
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt
+	block_material	AXE
