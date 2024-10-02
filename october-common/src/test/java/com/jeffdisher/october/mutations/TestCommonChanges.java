@@ -744,7 +744,9 @@ public class TestCommonChanges
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, STONE);
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		long tickNumber = 100L;
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(tickNumber)
 				.lookups((AbsoluteLocation location) ->
 					{
 						CuboidAddress address = location.getCuboidAddress();
@@ -776,8 +778,10 @@ public class TestCommonChanges
 		EntityLocation spawnLocation = new EntityLocation(8.0f, 8.0f, 0.0f);
 		EntityChangeSetDayAndSpawn setSpawn = new EntityChangeSetDayAndSpawn(spawnLocation);
 		Assert.assertEquals(MutableEntity.TESTING_LOCATION, target.newSpawn);
+		Assert.assertEquals(0, context.config.dayStartTick);
 		Assert.assertTrue(setSpawn.applyChange(context, target));
 		Assert.assertEquals(spawnLocation, target.newSpawn);
+		Assert.assertEquals(tickNumber, context.config.dayStartTick);
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);

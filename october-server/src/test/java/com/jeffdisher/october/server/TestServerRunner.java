@@ -26,6 +26,7 @@ import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
+import com.jeffdisher.october.mutations.EntityChangeSetDayAndSpawn;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -577,6 +578,48 @@ public class TestServerRunner
 		server.clientDisconnected(clientId2);
 		network.resetClient(clientId1);
 		network.resetClient(clientId2);
+		runner.shutdown();
+	}
+
+	@Test
+	public void configBroadcastOnDayReset() throws Throwable
+	{
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		WorldConfig config = new WorldConfig();
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, config
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		
+		// We need to attach a single client.
+		int clientId1 = 1;
+		network.prepareForClient(clientId1);
+		server.clientConnected(clientId1, null, "name");
+		Entity entity1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1);
+		
+		// Now, inject the action to reset the day and spawn for them.
+		Assert.assertEquals(0, config.dayStartTick);
+		EntityLocation spawn = new EntityLocation(entity1.location().x() + 1, entity1.location().y() + 1, entity1.location().z());
+		network.receiveFromClient(clientId1, new EntityChangeSetDayAndSpawn(spawn), 1L);
+		// Wait for 4 ticks for the broadcast to happen (it since it won't come until "after" the tick where this was scheduled and we may already be waiting for the previous tick).
+		network.waitForServer(4L);
+		Assert.assertNotEquals(0, network.config.dayStartTick);
+		Object change0 = network.waitForUpdate(clientId1, 0);
+		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		MutableEntity mutable = MutableEntity.existing(entity1);
+		((MutationEntitySetEntity) change0).applyToEntity(mutable);
+		entity1 = mutable.freeze();
+		Assert.assertEquals(spawn, entity1.spawnLocation());
+		
+		server.clientDisconnected(clientId1);
+		network.resetClient(clientId1);
 		runner.shutdown();
 	}
 

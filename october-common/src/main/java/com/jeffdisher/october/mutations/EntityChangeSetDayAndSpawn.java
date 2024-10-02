@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityConstants;
@@ -58,7 +59,8 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 			// Set spawn.
 			newEntity.setSpawnLocation(_spawnLocation);
 			
-			// TODO:  Reset the day once a mechanism for this is provided.
+			// We will reset the day start in the shared WorldConfig instance (note that doing so is racy but should be harmless) and ServerRunner will observe this and broadcast.
+			context.config.dayStartTick = (int)PropagationHelpers.resumableStartTick(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
 			
 			didApply = true;
 		}

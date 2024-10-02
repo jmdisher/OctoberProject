@@ -111,7 +111,7 @@ public class ServerRunner
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
 		
-		_tickAdvancer = new _TickAdvancer();
+		_tickAdvancer = new _TickAdvancer(config);
 		_stateManager = new ServerStateManager(new _Callouts());
 		
 		// We want to prime the state manager's thread check.
@@ -309,6 +309,16 @@ public class ServerRunner
 
 	private final class _TickAdvancer implements Runnable
 	{
+		// We expect that this class is a singleton so we will record relevant world state (config) changes which might require a notification to the clients.
+		private final WorldConfig _sharedConfig;
+		private int _previousDayStartTick;
+		
+		public _TickAdvancer(WorldConfig config)
+		{
+			_sharedConfig = config;
+			_previousDayStartTick = config.dayStartTick;
+		}
+		
 		@Override
 		public void run()
 		{
@@ -350,6 +360,14 @@ public class ServerRunner
 				{
 					_currentSampler = null;
 				}
+			}
+			
+			// See if there was a change to the config (set by EntityChangeSetDayAndSpawn).
+			// TODO:  Generalize this kind of callout into the TickRunner if it becomes more common or varied.
+			if (_previousDayStartTick != _sharedConfig.dayStartTick)
+			{
+				_stateManager.broadcastConfig(_sharedConfig);
+				_previousDayStartTick = _sharedConfig.dayStartTick;
 			}
 		}
 	}
