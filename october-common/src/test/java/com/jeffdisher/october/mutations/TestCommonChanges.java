@@ -981,7 +981,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Do the break with enough time to break the block.
-		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)1000);
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)2000);
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		Assert.assertNull(holder.change);

@@ -426,7 +426,7 @@ public class TestTickRunner
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		long nextCommit = 1L;
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)200);
 		
 		// Wait for the tick and observe the results.
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -440,11 +440,11 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		BlockProxy proxy1 = _getBlockProxy(snapshot, changeLocation1);
 		Assert.assertEquals(STONE, proxy1.getBlock());
-		Assert.assertEquals((short) 500, proxy1.getDamage());
+		Assert.assertEquals((short)1000, proxy1.getDamage());
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the remaining hits to finish the break.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)200);
 		
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(nextCommit - 1L, snapshot.commitLevels().get(entityId).longValue());
@@ -469,7 +469,7 @@ public class TestTickRunner
 		
 		// We should also see the durability loss on our tool (2 x 50ms).
 		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability();
-		Assert.assertEquals(2 * 100, (startDurability - updatedDurability));
+		Assert.assertEquals(2 * 200, (startDurability - updatedDurability));
 		
 		runner.shutdown();
 	}
@@ -1246,7 +1246,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Send an incremental update to break the stone, but only partially.
-		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, stoneLocation, (short)50);
+		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, stoneLocation, (short)100);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
@@ -1260,10 +1260,10 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
-		Assert.assertEquals((short)50, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
+		Assert.assertEquals((short)100, snapshot.completedCuboids().get(address).getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
 		
 		// Apply the second break attempt, which should break it.
-		_applyIncrementalBreaks(runner, nextCommit, entityId, stoneLocation, (short)50);
+		_applyIncrementalBreaks(runner, nextCommit, entityId, stoneLocation, (short)100);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
@@ -1566,7 +1566,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, creak the dirt block.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, dirtLocation, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, dirtLocation, (short)200);
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		

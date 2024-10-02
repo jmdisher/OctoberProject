@@ -160,8 +160,8 @@ public class TestClientRunner
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
-		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 500 ms each time.
-		currentTimeMillis += 500L;
+		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 1000 ms each time.
+		currentTimeMillis += 1000L;
 		runner.hitBlock(changeLocation, currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (they only send this after the next tick).
@@ -176,16 +176,16 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
 		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)500, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
-		currentTimeMillis += 500L;
+		currentTimeMillis += 1000L;
 		runner.hitBlock(changeLocation, currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
@@ -194,7 +194,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)500, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		

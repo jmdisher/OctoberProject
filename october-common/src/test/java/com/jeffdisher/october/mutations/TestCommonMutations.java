@@ -115,9 +115,9 @@ public class TestCommonMutations
 		int clientId = 1;
 		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		
-		// Without a tool, this will take 5 hits.
+		// Without a tool, this will take 10 hits.
 		MutableBlockProxy proxy = null;
-		for (int i = 0; i < 5; ++i)
+		for (int i = 0; i < 10; ++i)
 		{
 			// Check that once we run this change, it requests the appropriate mutation.
 			boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
