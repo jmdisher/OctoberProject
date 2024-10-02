@@ -65,8 +65,8 @@ public class TestOrcStateMachine
 		
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L, 0L, 0L)));
-		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L, 0L, 0L, Long.MAX_VALUE)));
+		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
 		
@@ -98,8 +98,8 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L, 0L, 0L)));
-		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L, 0L, 0L, Long.MAX_VALUE)));
+		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		
 		// We should see the orc send the attack message
@@ -115,13 +115,13 @@ public class TestOrcStateMachine
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// A second attack on the following tick should fail since we are on cooldown.
-		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc.location(), orc.id()));
+		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, null, orc.location(), orc.id()));
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// But will work if we advance tick number further.
 		long ticksToAdvance = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick;
 		context = _advanceTick(context, ticksToAdvance);
-		didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.id());
+		didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;
@@ -133,8 +133,56 @@ public class TestOrcStateMachine
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 	}
 
+	@Test
+	public void despawnAfterIdleTimeout()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
+		
+		long startTick = 1000L;
+		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);
+		
+		// Create the orc and ask it to check for deliberate actions to show that it updates its despawn timer.
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(null, 0, null, 0L, 0L, 0L, Long.MAX_VALUE)));
+		EntityLocation target = machine.selectDeliberateTarget(context,  new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
+		Assert.assertNull(target);
+		long idleTickDelay = (OrcStateMachine.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
+		Assert.assertEquals(startTick + idleTickDelay, OrcStateMachine.decodeExtendedData(machine.freezeToData()).idleDespawnTick());
+		
+		// Now, update the tick number to the despawn tick, ask them for another deliberate action, and show that nothing changed.
+		context = _createContextForTick(startTick + idleTickDelay, Map.of(orc.id(), orc), Map.of(), null, assigner);
+		target = machine.selectDeliberateTarget(context,  new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
+		Assert.assertNull(target);
+		Assert.assertEquals(startTick + idleTickDelay, OrcStateMachine.decodeExtendedData(machine.freezeToData()).idleDespawnTick());
+		
+		// Finally, ask them to perform special actions and observe that they request a despawn.
+		boolean[] shouldDespawn = new boolean[1];
+		machine.doneSpecialActions(context, null, () -> {
+			shouldDespawn[0] = true;
+		}, orc.location(), orc.id());
+		Assert.assertTrue(shouldDespawn[0]);
+	}
+
 
 	private static TickProcessingContext _createContext(Map<Integer, CreatureEntity> creatures
+			, Map<Integer, Entity> players
+			, BiConsumer<Integer, IMutationEntity<IMutablePlayerEntity>> nextAcceptor
+			, CreatureIdAssigner assigner
+	)
+	{
+		long millisPerTick = 100L;
+		long tickNumber = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / millisPerTick;
+		return _createContextForTick(tickNumber
+				, creatures
+				, players
+				, nextAcceptor
+				, assigner
+		);
+	}
+
+	private static TickProcessingContext _createContextForTick(long tickNumber
+			, Map<Integer, CreatureEntity> creatures
 			, Map<Integer, Entity> players
 			, BiConsumer<Integer, IMutationEntity<IMutablePlayerEntity>> nextAcceptor
 			, CreatureIdAssigner assigner
@@ -177,8 +225,6 @@ public class TestOrcStateMachine
 				Assert.fail();
 			}
 		};
-		long millisPerTick = 100L;
-		long tickNumber = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / millisPerTick;
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(tickNumber)
 				.lookups(null, previousEntityLookUp)

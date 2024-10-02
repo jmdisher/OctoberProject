@@ -45,6 +45,10 @@ public class OrcStateMachine implements ICreatureStateMachine
 	 * there was no good deliberate option.
 	 */
 	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
+	/**
+	 * The amount of time will orc will continue to live if not taking any deliberate action before despawn (5 minutes).
+	 */
+	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
@@ -75,6 +79,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 						, testing.lastAttackTick
 						, testing.nextDeliberateActTick
 						, testing.nextIdleActTick
+						, testing.idleDespawnTick
 				)
 				: null
 		;
@@ -97,6 +102,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 						, extended.lastAttackTick
 						, extended.nextDeliberateActTick
 						, extended.nextIdleActTick
+						, extended.idleDespawnTick
 				)
 				: null
 		;
@@ -110,6 +116,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private long _lastAttackTick;
 	private long _nextDeliberateActTick;
 	private long _nextIdleActTick;
+	private long _idleDespawnTick;
 	
 	private OrcStateMachine(_ExtendedData data)
 	{
@@ -122,6 +129,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_lastAttackTick = data.lastAttackTick;
 			_nextDeliberateActTick = data.nextDeliberateActTick;
 			_nextIdleActTick = data.nextIdleActTick;
+			_idleDespawnTick = data.idleDespawnTick;
 		}
 		else
 		{
@@ -131,6 +139,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_lastAttackTick = 0L;
 			_nextDeliberateActTick = 0L;
 			_nextIdleActTick = 0L;
+			// We will initialize this when making the first deliberate action.
+			_idleDespawnTick = Long.MAX_VALUE;
 		}
 	}
 
@@ -144,21 +154,32 @@ public class OrcStateMachine implements ICreatureStateMachine
 		if (context.currentTick >= _nextDeliberateActTick)
 		{
 			// Orcs only have a single target:  Any player in range.
-			// We will just use arrays to pass this "by reference".
-			int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
-			EntityLocation[] target = new EntityLocation[1];
-			_findPlayerInRange(entityCollection, creatureLocation, targetId, target);
+			_Target target = _findPlayerInRange(entityCollection, creatureLocation);
 			// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
-			_targetEntityId = targetId[0];
-			_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
-			targetLocation = target[0];
+			if (null != target)
+			{
+				_targetEntityId = target.id;
+				_targetPreviousLocation = target.location.getBlockLocation();
+				targetLocation = target.location;
+			}
+			else
+			{
+				_targetEntityId = NO_TARGET_ENTITY_ID;
+				_targetPreviousLocation = null;
+				targetLocation = null;
+			}
 			
 			// Update our next action ticks.
 			_nextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
-			if (null != _targetPreviousLocation)
+			if (null != target)
 			{
 				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
 				_nextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
+			}
+			if ((null != target) || (Long.MAX_VALUE == _idleDespawnTick))
+			{
+				// We made a deliberate action or just started so delay our idle despawn.
+				_idleDespawnTick = context.currentTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 			}
 		}
 		return targetLocation;
@@ -186,7 +207,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, int creatureId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
@@ -231,6 +252,11 @@ public class OrcStateMachine implements ICreatureStateMachine
 				_clearPlans();
 			}
 		}
+		if (!didTakeAction && (context.currentTick >= _idleDespawnTick))
+		{
+			// We aren't doing anything so despawn without drops.
+			requestDespawnWithoutDrops.run();
+		}
 		return didTakeAction;
 	}
 
@@ -262,7 +288,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public Object freezeToData()
 	{
 		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
-				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick)
+				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick, _idleDespawnTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -280,19 +306,20 @@ public class OrcStateMachine implements ICreatureStateMachine
 		_movementPlan = null;
 	}
 
-	private void _findPlayerInRange(EntityCollection entityCollection, EntityLocation creatureLocation, int[] out_targetId, EntityLocation[] out_target)
+	private _Target _findPlayerInRange(EntityCollection entityCollection, EntityLocation creatureLocation)
 	{
+		_Target[] target = new _Target[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkPlayersInRange(creatureLocation, ORC_VIEW_DISTANCE, (Entity player) -> {
 			EntityLocation end = player.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 			if (distance < distanceToTarget[0])
 			{
-				out_targetId[0] = player.id();
-				out_target[0] = end;
+				target[0] = new _Target(player.id(), end);
 				distanceToTarget[0] = distance;
 			}
 		});
+		return target[0];
 	}
 
 
@@ -305,6 +332,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 			, long lastAttackTick
 			, long nextDeliberateActTick
 			, long nextIdleActTick
+			, long idleDespawnTick
 	)
 	{}
 
@@ -314,6 +342,12 @@ public class OrcStateMachine implements ICreatureStateMachine
 			, long lastAttackTick
 			, long nextDeliberateActTick
 			, long nextIdleActTick
+			, long idleDespawnTick
+	)
+	{}
+
+	private static record _Target(int id
+			, EntityLocation location
 	)
 	{}
 }

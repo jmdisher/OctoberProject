@@ -48,11 +48,12 @@ public interface ICreatureStateMachine
 	 * 
 	 * @param context The context of the current tick.
 	 * @param creatureSpawner A consumer for any new entities spawned.
+	 * @param requestDespawnWithoutDrops Called to request that this creature be despawned without dropping anything.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureId The creature's ID.
 	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, int creatureId);
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId);
 
 	/**
 	 * @return The maximum pathing distance this creature should use when planning the path to a target.

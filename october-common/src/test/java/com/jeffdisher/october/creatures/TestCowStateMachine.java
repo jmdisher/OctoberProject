@@ -73,7 +73,7 @@ public class TestCowStateMachine
 		
 		// Start with them both in a love mode.
 		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null, mother.id(), mother.location().getBlockLocation(), null, 0L, 0L)));
-		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, father.location(), father.id());
+		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.id());
 		Assert.assertTrue(didTakeAction);
 		// We should see the father sending a message
 		Assert.assertEquals(mother.id(), targetId[0]);
@@ -83,7 +83,7 @@ public class TestCowStateMachine
 		
 		CowStateMachine motherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null, father.id(), father.location().getBlockLocation(), null, 0L, 0L)));
 		// The mother should not take any action since they are waiting for the father.
-		didTakeAction = motherMachine.doneSpecialActions(context, null, mother.location(), mother.id());
+		didTakeAction = motherMachine.doneSpecialActions(context, null, null, mother.location(), mother.id());
 		Assert.assertFalse(didTakeAction);
 		// The mother should be unchanged.
 		Assert.assertNull(message[0]);
@@ -120,7 +120,7 @@ public class TestCowStateMachine
 		boolean didTakeAction = machine.doneSpecialActions(context, (CreatureEntity spawn) -> {
 			Assert.assertNull(offspring[0]);
 			offspring[0] = spawn;
-		}, null, 0);
+		}, null, null, 0);
 		Assert.assertTrue(didTakeAction);
 		extendedData = machine.freezeToData();
 		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(extendedData);
@@ -141,7 +141,7 @@ public class TestCowStateMachine
 		
 		// Start with them both in a love mode and give the father a non-null path and with the target of the mother (a "previous" location).
 		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, List.of(), mother.id(), new AbsoluteLocation(3, 0, 0), null, 0L, 0L)));
-		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, father.location(), father.id());
+		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.id());
 		Assert.assertTrue(didTakeAction);
 		
 		// We should see that the father has lost the target and path (they will need to re-find it on a future selection).

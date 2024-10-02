@@ -217,12 +217,16 @@ public class CreatureLogic
 			, MutableCreature creature
 	)
 	{
+		Runnable requestDespawnWithoutDrops = () -> {
+			// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
+			creature.setHealth((byte)0);
+		};
 		boolean isDone;
 		switch (creature.getType())
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
-			isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getId());
+			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 			if (isDone)
 			{
 				creature.setExtendedData(machine.freezeToData());
@@ -239,7 +243,7 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
-				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getId());
+				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 				if (isDone)
 				{
 					creature.setExtendedData(machine.freezeToData());
