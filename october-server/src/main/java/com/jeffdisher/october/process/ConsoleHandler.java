@@ -335,7 +335,7 @@ public class ConsoleHandler
 			{
 				// We will reset the day start time based on the current tick value and broadcast the change.
 				long currentGameTick = state.monitoringAgent.getLastSnapshot().tickNumber();
-				state.mutableSharedConfig.dayStartTick = (int)PropagationHelpers.resumableStartTick(currentGameTick, state.mutableSharedConfig.ticksPerDay, state.mutableSharedConfig.dayStartTick);
+				state.mutableSharedConfig.dayStartTick = (int)PropagationHelpers.startDayThisTick(currentGameTick, state.mutableSharedConfig.ticksPerDay);
 				state.monitoringAgent.getCommandSink().requestConfigBroadcast();
 			}
 			else

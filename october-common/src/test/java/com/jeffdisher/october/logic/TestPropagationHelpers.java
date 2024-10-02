@@ -369,6 +369,68 @@ public class TestPropagationHelpers
 		Assert.assertEquals(0.0f, multiplier, 0.01f);
 	}
 
+	@Test
+	public void timeOfDayAcrossResetsAndSaves()
+	{
+		// Show how we use the dayStartTick to make the day/night cycle continuous across restarts.
+		long ticksPerDay = 100L;
+		
+		// Initial startup.
+		long currentTick = 0L;
+		long dayStartTick = 0L;
+		float multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		
+		// Restart server.
+		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(20L, dayStartTick);
+		currentTick = 0L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.2f, multiplier, 0.01f);
+		
+		// Restart server.
+		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(40L, dayStartTick);
+		currentTick = 0L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.2f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.2f, multiplier, 0.01f);
+		
+		// Reset day.
+		dayStartTick = PropagationHelpers.startDayThisTick(currentTick, ticksPerDay);
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		
+		// Reset day.
+		dayStartTick = PropagationHelpers.startDayThisTick(currentTick, ticksPerDay);
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(1.0f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		
+		// Restart server.
+		dayStartTick = PropagationHelpers.resumableStartTick(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(20L, dayStartTick);
+		currentTick = 0L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.6f, multiplier, 0.01f);
+		currentTick += 20L;
+		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
+		Assert.assertEquals(0.2f, multiplier, 0.01f);
+	}
+
 
 	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
 	{

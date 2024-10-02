@@ -785,7 +785,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, context.config.dayStartTick);
 		Assert.assertTrue(setSpawn.applyChange(context, target));
 		Assert.assertEquals(target.newLocation, target.newSpawn);
-		Assert.assertEquals(tickNumber, context.config.dayStartTick);
+		Assert.assertEquals(context.config.ticksPerDay - tickNumber, context.config.dayStartTick);
 		EntityLocation spawnLocation = target.newSpawn;
 		
 		// Move slightly so that we see the location update on respawn.

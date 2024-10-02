@@ -230,6 +230,18 @@ public class PropagationHelpers
 		return (ticksRun + previousDayStartOffset) % ticksPerDay;
 	}
 
+	/**
+	 * A helper to calculate the new dayStartTick which would make currentTick behave like the start of the day.
+	 * 
+	 * @param currentTick The current tick number.
+	 * @param ticksPerDay The number of ticks per day.
+	 * @return The new day start offset.
+	 */
+	public static long startDayThisTick(long currentTick, long ticksPerDay)
+	{
+		return ticksPerDay - (currentTick % ticksPerDay);
+	}
+
 
 	private static Set<AbsoluteLocation> _runCommonFlood(Environment env
 			, _ILightAccess accessor

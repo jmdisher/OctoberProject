@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.MonitoringAgent;
+import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -302,5 +303,47 @@ public class TestConsoleHandler
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
 		Assert.assertArrayEquals("Broadcast: one two three\nShutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertEquals("one two three", outMessage[0]);
+	}
+
+	@Test
+	public void resetDay() throws Throwable
+	{
+		// Verify that the config is appropriately changed and the broadcast is requested.
+		InputStream in = new ByteArrayInputStream("!reset_day\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		long tickNumber = 50L;
+		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null, null, null, null, null, null));
+		boolean[] didBroadcast = new boolean[1];
+		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				throw new AssertionError("submitEntityMutation");
+			}
+			@Override
+			public void requestConfigBroadcast()
+			{
+				didBroadcast[0] = true;
+			}
+			@Override
+			public void sendChatMessage(int targetId, String message)
+			{
+				throw new AssertionError("sendChatMessage");
+			}
+			public void installSampler(MonitoringAgent.Sampler sampler)
+			{
+				throw new AssertionError("installSampler");
+			}
+		});
+		WorldConfig config = new WorldConfig();
+		config.dayStartTick = 5;
+		config.ticksPerDay = 40;
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didBroadcast[0]);
+		Assert.assertEquals(30, config.dayStartTick);
 	}
 }
