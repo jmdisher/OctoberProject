@@ -185,6 +185,26 @@ public class TestCreatureSpawner
 		Assert.assertNull(entity);
 	}
 
+	@Test
+	public void emptyHeightMap()
+	{
+		// Create a situation where spawning should be ideal but will fail because of an empty height map.
+		// This sometimes happens if a cuboid just loaded before the tick and its map hasn't been generated/merged before snapshot.
+		// Create a cuboid of air with a single stone block located such that our random generator will find it and show that a single orc is spawned on the block.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)5, (byte)1), STONE.item().number());
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
+		ColumnHeightMap columnMap = ColumnHeightMap.build().freeze();
+		TickProcessingContext context = _createContext(completedCuboids, 5);
+		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Set.of(), Set.of())
+				, completedCuboids
+				, Map.of(cuboid.getCuboidAddress().getColumn(), columnMap)
+				, Map.of()
+		);
+		Assert.assertNull(entity);
+	}
+
 
 	private static TickProcessingContext _createSunnyContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
 	{

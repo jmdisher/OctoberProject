@@ -130,12 +130,29 @@ public class CreatureSpawner
 		
 		// We will first skip past any blocks which are clearly above the height map.
 		int highestBlockZ = heightMap.getHeight(x, y);
-		AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
-		int baseZ = cuboidBase.z();
-		int thisAttemptZ = baseZ + z;
-		thisAttemptZ = Math.min(thisAttemptZ, highestBlockZ + 1);
-		AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, (byte)(thisAttemptZ - baseZ));
-		
+		// Also, ignore this cuboid if the column height map is unknown (often happens on initial load).
+		CreatureEntity spawned = null;
+		if (Integer.MIN_VALUE != highestBlockZ)
+		{
+			AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
+			int baseZ = cuboidBase.z();
+			int thisAttemptZ = baseZ + z;
+			thisAttemptZ = Math.min(thisAttemptZ, highestBlockZ + 1);
+			AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, (byte)(thisAttemptZ - baseZ));
+			
+			spawned = _spawnInValidCuboid(context, existingEntities, baseZ, highestBlockZ, checkSpawningLocation);
+		}
+		return spawned;
+	}
+
+
+	private static CreatureEntity _spawnInValidCuboid(TickProcessingContext context
+			, EntityCollection existingEntities
+			, int baseZ
+			, int highestBlockZ
+			, AbsoluteLocation checkSpawningLocation
+	)
+	{
 		// We want to slide down through this cuboid until we reach solid ground.
 		Environment env = Environment.getShared();
 		byte skyLightValue = PropagationHelpers.currentSkyLightValue(context.currentTick, context.config.ticksPerDay, context.config.dayStartTick);
