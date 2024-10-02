@@ -1849,7 +1849,7 @@ public class TestCommonChanges
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		byte health = EntityConstants.PLAYER_MAX_HEALTH / 2;
 		byte food = EntityConstants.PLAYER_MAX_FOOD / 2;
-		int breath = EntityConstants.MAX_BREATH / 2;
+		byte breath = EntityConstants.MAX_BREATH / 2;
 		Entity original = new Entity(entityId
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
@@ -1869,7 +1869,7 @@ public class TestCommonChanges
 		
 		// Try to change these values and verify that nothing happens.
 		MutableEntity localMutable = MutableEntity.existing(original);
-		localMutable.setBreath(1);
+		localMutable.setBreath((byte)1);
 		localMutable.setFood((byte)1);
 		localMutable.setHealth((byte)1);
 		Assert.assertTrue(original == localMutable.freeze());

@@ -18,7 +18,7 @@ public record CreatureEntity(int id
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
 		// The breath the entity has (for drowning).
-		, int breath
+		, byte breath
 		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData

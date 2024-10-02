@@ -19,8 +19,10 @@ public class EntityConstants
 	public static final float SPEED_COW = 2.0f;
 	public static final float SPEED_ORC = 3.0f;
 
-	// Breath goes down by 1/tick when under water, so this is 100 seconds if we have 20 ticks/sec.
-	public static final int MAX_BREATH = 2000;
+	// Breath is just used as a percentage which will drop by 1% per second when not in a breathable block.
+	public static final byte MAX_BREATH = 100;
+	public static final byte SUFFOCATION_BREATH_PER_SECOND = 5;
+	public static final byte SUFFOCATION_DAMAGE_PER_SECOND = 10;
 
 	public static final byte COW_MAX_HEALTH = 40;
 	public static final byte ORC_MAX_HEALTH = 20;

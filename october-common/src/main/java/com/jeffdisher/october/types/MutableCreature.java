@@ -30,7 +30,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
 	public byte newHealth;
-	public int newBreath;
+	public byte newBreath;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -127,13 +127,13 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public int getBreath()
+	public byte getBreath()
 	{
 		return this.newBreath;
 	}
 
 	@Override
-	public void setBreath(int breath)
+	public void setBreath(byte breath)
 	{
 		this.newBreath = breath;
 	}

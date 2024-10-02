@@ -44,6 +44,24 @@ public class TickUtils
 	public static void endOfTick(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
+		
+		// We will only apply the breath mechanics once per second so see if that is this tick.
+		// Note that currentTick is set to 0 when running speculatively on the client so skip it there (always >0 when run on server).
+		if (context.currentTick > 0L)
+		{
+			long ticksPerSecond = (1_000L / context.millisPerTick);
+			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerSecond));
+			if (isBeginningOfSecond)
+			{
+				_applyBreathMechanics(context, newEntity);
+			}
+		}
+	}
+
+
+	private static void _applyBreathMechanics(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	{
+		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
 		EntityLocation footLocation = newEntity.getLocation();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float halfWidth = volume.width() / 2.0f;
@@ -65,10 +83,14 @@ public class TickUtils
 			else
 			{
 				// Suffocate.
-				int breath = newEntity.getBreath();
+				byte breath = newEntity.getBreath();
 				if (breath > 0)
 				{
-					breath -= 1;
+					breath -= EntityConstants.SUFFOCATION_BREATH_PER_SECOND;
+					if (breath < 0)
+					{
+						breath = 0;
+					}
 					newEntity.setBreath(breath);
 				}
 				else
@@ -77,12 +99,12 @@ public class TickUtils
 					int id = newEntity.getId();
 					if (id > 0)
 					{
-						EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)1);
+						EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND);
 						context.newChangeSink.next(id, takeDamage);
 					}
 					else
 					{
-						EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)1);
+						EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND);
 						context.newChangeSink.creature(id, takeDamage);
 					}
 				}

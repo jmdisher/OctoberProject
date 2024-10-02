@@ -22,6 +22,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -555,6 +556,74 @@ public class TestCommonMutations
 		Assert.assertNull(runningCraft);
 		inv = proxy.getInventory();
 		Assert.assertEquals(1, inv.getCount(log));
+	}
+
+	@Test
+	public void testSuffocation()
+	{
+		// We will invoke the TickUtils a few ways to test what happens with suffocation.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.WATER_SOURCE);
+		MutableEntity entity = MutableEntity.createForTest(1);
+		entity.setBreath((byte)1);
+		entity.setHealth((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND));
+		
+		// Run a tick which isn't end of the second - should change nothing.
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(1L)
+				.millisPerTick(20L)
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.finish();
+		
+		TickUtils.endOfTick(context, entity);
+		Assert.assertEquals((byte)1, entity.getBreath());
+		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		
+		// Now, do one at the end of the second to see the breath run out.
+		@SuppressWarnings("unchecked")
+		EntityChangeTakeDamage<IMutablePlayerEntity>[] holder = new EntityChangeTakeDamage[1];
+		context = ContextBuilder.build()
+				.tick(50L)
+				.millisPerTick(20L)
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+						Assert.assertNull(holder[0]);
+						holder[0] = (EntityChangeTakeDamage<IMutablePlayerEntity>) change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+						Assert.fail();
+					}
+				})
+				.finish();
+		
+		TickUtils.endOfTick(context, entity);
+		Assert.assertEquals((byte)0, entity.getBreath());
+		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		Assert.assertNull(holder[0]);
+		
+		// Run again to show the damage taken.
+		TickUtils.endOfTick(context, entity);
+		Assert.assertEquals((byte)0, entity.getBreath());
+		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		Assert.assertNotNull(holder[0]);
+		
+		// Run this mutation.
+		holder[0].applyChange(context, entity);
+		Assert.assertEquals((byte)0, entity.getBreath());
+		Assert.assertEquals(EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
 	}
 
 

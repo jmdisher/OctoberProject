@@ -88,7 +88,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public CraftOperation newLocalCraftOperation;
 	public byte newHealth;
 	public byte newFood;
-	public int newBreath;
+	public byte newBreath;
 	public int newEnergyDeficit;
 	public boolean isCreativeMode;
 	public long ephemeral_lastSpecialActionMillis;
@@ -284,13 +284,13 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public int getBreath()
+	public byte getBreath()
 	{
 		return this.newBreath;
 	}
 
 	@Override
-	public void setBreath(int breath)
+	public void setBreath(byte breath)
 	{
 		// We can't change food, health, or breath in creative mode.
 		if (!this.isCreativeMode)

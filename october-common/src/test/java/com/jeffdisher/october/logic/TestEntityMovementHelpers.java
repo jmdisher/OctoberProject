@@ -261,12 +261,12 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public int getBreath()
+		public byte getBreath()
 		{
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public void setBreath(int breath)
+		public void setBreath(byte breath)
 		{
 			throw new AssertionError("Not in test");
 		}

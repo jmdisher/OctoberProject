@@ -27,7 +27,7 @@ public record Entity(int id
 		// The food level stored within the entity.  Currently, we just use a byte since it is in the range of [0..100].
 		, byte food
 		// The breath the entity has (for drowning).
-		, int breath
+		, byte breath
 		// The energy deficit is used as an intermediary to decide when to consume food.  It changes in response to many actions.
 		, int energyDeficit
 		// The location where the entity is sent when they spawn for the first time or die and respawn.
