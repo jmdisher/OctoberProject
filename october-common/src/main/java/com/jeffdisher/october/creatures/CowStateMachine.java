@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
@@ -33,7 +34,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
 	public static final float COW_VIEW_DISTANCE = 7.0f;
 	public static final float COW_MATING_DISTANCE = 1.0f;
-	public static final byte COW_DEFAULT_HEALTH = 100;
 	// Use 2x the view distance to account for obstacles.
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
 	public static final int NO_TARGET_ENTITY_ID = 0;
@@ -268,7 +268,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (null != _offspringLocation)
 		{
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, COW_DEFAULT_HEALTH));
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, EntityConstants.COW_MAX_HEALTH));
 			_offspringLocation = null;
 			didTakeAction = true;
 		}

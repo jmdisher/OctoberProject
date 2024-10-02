@@ -19,8 +19,14 @@ public class EntityConstants
 	public static final float SPEED_COW = 2.0f;
 	public static final float SPEED_ORC = 3.0f;
 
-	// Breath goes down by 1/tick when under water, so this is 100 seconds.
-	public static final int MAX_BREATH = 1000;
+	// Breath goes down by 1/tick when under water, so this is 100 seconds if we have 20 ticks/sec.
+	public static final int MAX_BREATH = 2000;
+
+	public static final byte COW_MAX_HEALTH = 40;
+	public static final byte ORC_MAX_HEALTH = 20;
+	public static final byte PLAYER_MAX_HEALTH = 100;
+
+	public static final byte PLAYER_MAX_FOOD = 100;
 
 	public static EntityVolume getVolume(EntityType type)
 	{

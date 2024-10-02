@@ -13,8 +13,6 @@ import com.jeffdisher.october.utils.Assert;
 public class MutableEntity implements IMutablePlayerEntity
 {
 	public static final EntityLocation TESTING_LOCATION = new EntityLocation(0.0f, 0.0f, 0.0f);
-	public static final byte DEFAULT_HEALTH = 100;
-	public static final byte DEFAULT_FOOD = 100;
 
 	/**
 	 * Create a mutable entity from the elements of an existing entity.
@@ -66,8 +64,8 @@ public class MutableEntity implements IMutablePlayerEntity
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
 				, null
-				, DEFAULT_HEALTH
-				, DEFAULT_FOOD
+				, EntityConstants.PLAYER_MAX_HEALTH
+				, EntityConstants.PLAYER_MAX_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
 				, spawn
@@ -232,8 +230,8 @@ public class MutableEntity implements IMutablePlayerEntity
 		// Respawn them.
 		this.newInventory.clearInventory(null);
 		this.newLocation = this.newSpawn;
-		this.newHealth = MutableEntity.DEFAULT_HEALTH;
-		this.newFood = MutableEntity.DEFAULT_FOOD;
+		this.newHealth = EntityConstants.PLAYER_MAX_HEALTH;
+		this.newFood = EntityConstants.PLAYER_MAX_FOOD;
 		// Wipe all the hotbar slots.
 		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
 		{

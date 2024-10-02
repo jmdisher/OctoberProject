@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
-import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -221,7 +220,7 @@ public class CreatureSpawner
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
-				spawned = CreatureEntity.create(context.idAssigner.next(), EntityType.ORC, location, OrcStateMachine.ORC_DEFAULT_HEALTH);
+				spawned = CreatureEntity.create(context.idAssigner.next(), EntityType.ORC, location, EntityConstants.ORC_MAX_HEALTH);
 			}
 			else
 			{

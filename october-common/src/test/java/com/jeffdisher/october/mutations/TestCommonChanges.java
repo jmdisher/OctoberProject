@@ -798,8 +798,8 @@ public class TestCommonChanges
 		Assert.assertNull(blockHolder[0]);
 		
 		Assert.assertTrue(takeDamage.applyChange(context, target));
-		Assert.assertEquals(MutableEntity.DEFAULT_HEALTH, target.newHealth);
-		Assert.assertEquals(MutableEntity.DEFAULT_FOOD, target.newFood);
+		Assert.assertEquals(EntityConstants.PLAYER_MAX_HEALTH, target.newHealth);
+		Assert.assertEquals(EntityConstants.PLAYER_MAX_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
 		Assert.assertEquals(spawnLocation, target.newLocation);
@@ -1738,8 +1738,8 @@ public class TestCommonChanges
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
 				, null
-				, MutableEntity.DEFAULT_HEALTH
-				, MutableEntity.DEFAULT_FOOD
+				, EntityConstants.PLAYER_MAX_HEALTH
+				, EntityConstants.PLAYER_MAX_FOOD
 				, EntityConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
@@ -1847,8 +1847,8 @@ public class TestCommonChanges
 		// Create an entity in creative mode and verify that it ignores changes to health, food, and breath.
 		int entityId = 1;
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
-		byte health = MutableEntity.DEFAULT_HEALTH / 2;
-		byte food = MutableEntity.DEFAULT_FOOD / 2;
+		byte health = EntityConstants.PLAYER_MAX_HEALTH / 2;
+		byte food = EntityConstants.PLAYER_MAX_FOOD / 2;
 		int breath = EntityConstants.MAX_BREATH / 2;
 		Entity original = new Entity(entityId
 				, true
