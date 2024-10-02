@@ -15,3 +15,8 @@ op.iron_helmet	1000
 op.iron_chestplate	1000
 op.iron_greaves	1000
 op.iron_boots	1000
+op.club	100
+op.stone_knife	150
+op.stone_hatchet	10000
+op.wooden_chisel	10000
+op.digging_stick	5000

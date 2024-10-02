@@ -144,3 +144,23 @@ op.bed	COMMON
 	input	op.plank	op.plank	op.plank	op.wheat_item	op.wheat_item
 	output	op.bed
 	millis	10000
+op.club	BUILT_IN
+	input	op.log
+	output	op.club
+	millis	500
+op.stone_knife	COMMON
+	input	op.stick	op.stone
+	output	op.stone_hatchet
+	millis	8000
+op.stone_hatchet	COMMON
+	input	op.stick	op.stone
+	output	op.stone_hatchet
+	millis	8000
+op.wooden_chisel	COMMON
+	input	op.stick	op.log
+	output	op.wooden_chisel
+	millis	2000
+op.digging_stick	BUILT_IN
+	input	op.stick
+	output	op.digging_stick
+	millis	500

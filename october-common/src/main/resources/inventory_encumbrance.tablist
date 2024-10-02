@@ -65,3 +65,8 @@ op.carrot_seedling	0
 op.carrot_young	0
 op.carrot_mature	0
 op.bed	5
+op.club	2
+op.stone_knife	1
+op.stone_hatchet	2
+op.wooden_chisel	2
+op.digging_stick	1
