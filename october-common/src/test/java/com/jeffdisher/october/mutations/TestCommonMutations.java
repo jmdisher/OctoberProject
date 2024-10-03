@@ -529,7 +529,7 @@ public class TestCommonMutations
 		// This shouldn't yet be using the fuel, but it should be present.
 		FuelState fuel = proxy.getFuel();
 		Assert.assertEquals(0, fuel.millisFuelled());
-		Assert.assertEquals(1, fuel.fuelInventory().currentEncumbrance);
+		Assert.assertEquals(2, fuel.fuelInventory().currentEncumbrance);
 		CraftOperation runningCraft = proxy.getCrafting();
 		Assert.assertNull(runningCraft);
 		

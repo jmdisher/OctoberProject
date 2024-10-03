@@ -282,7 +282,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Try to drop too much to fit and verify that nothing changes.
-		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, StationRegistry.CAPACITY_BLOCK_EMPTY / 2));
+		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, StationRegistry.CAPACITY_BLOCK_EMPTY / 4));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		

@@ -14,16 +14,16 @@
 # included) where 1 is the speed of in-inventory trivia crafting.  0 denotes that this station crafts automatically.
 
 op.crafting_table
-	inventory	30
+	inventory	100
 	crafting	BUILT_IN	COMMON
 	manual_multiplier	10
 op.furnace
-	inventory	30
+	inventory	100
 	crafting	FUELLED_FURNACE
 	fuel_inventory	20
 	manual_multiplier	0
 op.chest
-	inventory	100
+	inventory	1000
 op.hopper_down
 	inventory	20
 op.hopper_north
@@ -35,6 +35,6 @@ op.hopper_east
 op.hopper_west
 	inventory	20
 op.quern
-	inventory	20
+	inventory	60
 	crafting	GRINDING
 	manual_multiplier	1

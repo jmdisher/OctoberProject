@@ -25,8 +25,8 @@ public class StationRegistry
 	 * ground" and we want containers to be used.  That said, these blocks are often over-filled to avoid destroying
 	 * items.
 	 */
-	public static final int CAPACITY_BLOCK_EMPTY = 20;
-	public static final int CAPACITY_PLAYER = 40;
+	public static final int CAPACITY_BLOCK_EMPTY = 100;
+	public static final int CAPACITY_PLAYER = 200;
 
 	public static final String FIELD_INVENTORY = "inventory";
 	public static final String FIELD_CRAFTING = "crafting";

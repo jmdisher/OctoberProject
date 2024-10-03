@@ -562,7 +562,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.changeCount);
 		
 		// Try to drop a few items.
-		int encumbrance = 2;
+		int encumbrance = 4;
 		Item stoneItem = STONE_ITEM;
 		AbsoluteLocation block1 = new AbsoluteLocation(1, 1, 1);
 		IMutationBlock mutation1 = new DropItemMutation(block1, stoneItem, 1);
@@ -1351,8 +1351,8 @@ public class TestSpeculativeProjection
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 100);
-		Assert.assertTrue(stored < 100);
+		int stored = mutable.newInventory.addItemsBestEfforts(dirt.item(), 200);
+		Assert.assertTrue(stored < 200);
 		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
 		
 		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 1, 1);

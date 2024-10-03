@@ -60,7 +60,7 @@ public class TestCuboidCodec
 		Assert.assertEquals((short) 1, output.getData15(AspectRegistry.BLOCK, testAddress));
 		Inventory inv = output.getDataSpecial(AspectRegistry.INVENTORY, testAddress);
 		Assert.assertEquals(5, inv.maxEncumbrance);
-		Assert.assertEquals(4, inv.currentEncumbrance);
+		Assert.assertEquals(8, inv.currentEncumbrance);
 		Assert.assertEquals(1, inv.sortedKeys().size());
 		Assert.assertEquals(2, inv.getCount(stoneItem));
 	}
