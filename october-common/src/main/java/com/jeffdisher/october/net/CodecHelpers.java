@@ -208,9 +208,11 @@ public class CodecHelpers
 		byte ordinal = buffer.get();
 		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
+		byte health = buffer.get();
 		return new PartialEntity(id
 				, type
 				, location
+				, health
 		);
 	}
 
@@ -220,10 +222,12 @@ public class CodecHelpers
 		int ordinal = entity.type().ordinal();
 		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
+		byte health = entity.health();
 		
 		buffer.putInt(id);
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
+		buffer.put(health);
 	}
 
 	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)

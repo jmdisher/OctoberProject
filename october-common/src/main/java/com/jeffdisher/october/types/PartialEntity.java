@@ -10,6 +10,7 @@ public record PartialEntity(int id
 		, EntityType type
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
+		, byte health
 )
 {
 	public static PartialEntity fromEntity(Entity entity)
@@ -17,6 +18,7 @@ public record PartialEntity(int id
 		return new PartialEntity(entity.id()
 				, EntityType.PLAYER
 				, entity.location()
+				, entity.health()
 		);
 	}
 
@@ -25,6 +27,7 @@ public record PartialEntity(int id
 		return new PartialEntity(entity.id()
 				, entity.type()
 				, entity.location()
+				, entity.health()
 		);
 	}
 }

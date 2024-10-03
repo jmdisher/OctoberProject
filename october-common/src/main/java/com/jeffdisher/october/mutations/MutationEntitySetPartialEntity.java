@@ -32,6 +32,7 @@ public class MutationEntitySetPartialEntity implements IPartialEntityUpdate
 	public void applyToEntity(MutablePartialEntity newEntity)
 	{
 		newEntity.newLocation = _entity.location();
+		newEntity.newHealth = _entity.health();
 	}
 
 	@Override
