@@ -158,7 +158,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "III\n"
 			+ "III\n"
 	};
-	public static final int FOREST_TREE_COUNT = 6;
+	public static final int FOREST_TREE_COUNT = 18;
 	public static final String[] BASIC_TREE = new String[] {""
 			+ "   \n"
 			+ " T \n"

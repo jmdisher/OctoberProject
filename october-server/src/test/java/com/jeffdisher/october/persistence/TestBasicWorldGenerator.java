@@ -192,8 +192,8 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, dirtCount);
 		Assert.assertEquals(4, coalCount);
 		Assert.assertEquals(0, ironCount);
-		Assert.assertEquals(12, logCount);
-		Assert.assertEquals(24, leafCount);
+		Assert.assertEquals(36, logCount);
+		Assert.assertEquals(66, leafCount);
 	}
 
 	@Test
@@ -258,7 +258,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-10, (short)-9, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 12, 25, 0, 0);
+		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 34, 69, 0, 0);
 	}
 
 	@Test
@@ -282,9 +282,9 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, new CuboidAddress((short)-10, (short)9, (short)0));
 		
 		// Verify the wheat field.
-		// This is a large field (55 in gully + 4).
+		// This is a large field (56 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 56 + 4, 0);
+		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 2, 56 + 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -316,7 +316,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)1, (short)-1, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 11919, 24, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 10, 20, 0, 0);
+		_checkBlockTypes(cuboid, 11919, 24, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 34, 69, 0, 0);
 	}
 
 
