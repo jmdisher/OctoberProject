@@ -158,6 +158,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			+ "III\n"
 			+ "III\n"
 	};
+	public static final int IRON_EXTRA_MIN = 1;
+	public static final int IRON_EXTRA_MAX = 100;
 	public static final int FOREST_TREE_COUNT = 18;
 	public static final String[] BASIC_TREE = new String[] {""
 			+ "   \n"
@@ -178,6 +180,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockDirt;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
+	private final Block _blockIronOre;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
@@ -197,6 +200,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
+		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
 		
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
@@ -734,6 +738,28 @@ public class BasicWorldGenerator implements IWorldGenerator
 						newMap = HeightMapHelpers.buildHeightMap(data);
 					}
 				}
+			}
+		}
+		
+		// At least temporarily (until we add something like cave generation), we will add in more random bits of iron ore in the stone (based on depth).
+		int extraIronAttemptCount = Math.max(IRON_EXTRA_MIN, Math.min(IRON_EXTRA_MAX, -address.z()));
+		short stoneNumber = _blockStone.item().number();
+		short ironNumber = _blockIronOre.item().number();
+		_SubField relField = subField.relativeField(0, 0);
+		int cuboidSeed = relField.get(0, 0);
+		Random random = new Random(cuboidSeed);
+		for (int i = 0; i < extraIronAttemptCount; ++i)
+		{
+			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+			int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+			int relativeZ = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+			AbsoluteLocation location = base.getRelative(relativeX, relativeY, relativeZ);
+			BlockAddress blockAddress = location.getBlockAddress();
+			
+			// Overwrite this with iron if it is just stone.
+			if (stoneNumber == data.getData15(AspectRegistry.BLOCK, blockAddress))
+			{
+				data.setData15(AspectRegistry.BLOCK, blockAddress, ironNumber);
 			}
 		}
 		return newMap;

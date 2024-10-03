@@ -220,7 +220,7 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)-1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32643, 44, 81, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32642, 44, 82, 0, 0, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
 		address = new CuboidAddress((short)5, (short)1, (short)0);
@@ -232,7 +232,7 @@ public class TestBasicWorldGenerator
 		address = new CuboidAddress((short)5, (short)1, (short)-5);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32768, 0, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32763, 0, 5, 0, 0, 0, 0, 0);
 	}
 
 	@Test
@@ -316,7 +316,32 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)1, (short)-1, (short)0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 11919, 24, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 34, 69, 0, 0);
+		_checkBlockTypes(cuboid, 11918, 24, 1, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 34, 69, 0, 0);
+	}
+
+	@Test
+	public void testExtraOre() throws Throwable
+	{
+		// Show what happens with the extra iron ore spawns in high/low cuboids.
+		Block stoneBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		
+		// Try one high in the air.
+		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)100);
+		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
+		generator.test_generateOreNodes(address, data);
+		// We generate at least 1 ore.
+		int iron = 1;
+		_checkBlockTypes(data, 32767, 0, iron, 0, 0, 0, 0, 0);
+		
+		// Try one deep underground.
+		address = new CuboidAddress((short)5, (short)1, (short)-200);
+		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
+		generator.test_generateOreNodes(address, data);
+		// We generate at most 100 ore.
+		iron = 100;
+		_checkBlockTypes(data, 32668, 0, iron, 0, 0, 0, 0, 0);
 	}
 
 
