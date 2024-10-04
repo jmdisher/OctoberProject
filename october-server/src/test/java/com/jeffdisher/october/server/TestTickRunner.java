@@ -891,7 +891,6 @@ public class TestTickRunner
 		// Create a single cuboid and load some items into a block.
 		// Verify that nothing happens until we change a block adjacent to it, and then it updates.
 		WorldConfig config = new WorldConfig();
-		config.shouldSynthesizeUpdatesOnLoad = true;
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
@@ -1111,7 +1110,6 @@ public class TestTickRunner
 	{
 		// Create a single cascade cuboid, add a dirt block and water source in the top level, break the block, wait until the water completes flowing.
 		WorldConfig config = new WorldConfig();
-		config.shouldSynthesizeUpdatesOnLoad = true;
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
@@ -1220,7 +1218,6 @@ public class TestTickRunner
 		// We want to verify that block updates don't happen for things like damage updates so we place a water source,
 		// a gap, and a stone, then incrementally break it.  We should only see the update once the block breaks.
 		WorldConfig config = new WorldConfig();
-		config.shouldSynthesizeUpdatesOnLoad = true;
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		CuboidAddress address = new CuboidAddress((short)-3, (short)-4, (short)-5);
@@ -1535,7 +1532,6 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		
 		WorldConfig config = new WorldConfig();
-		config.shouldSynthesizeUpdatesOnLoad = true;
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);

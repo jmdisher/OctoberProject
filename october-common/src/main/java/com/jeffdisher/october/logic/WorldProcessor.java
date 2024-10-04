@@ -91,19 +91,17 @@ public class WorldProcessor
 						(AbsoluteLocation location) ->  new MutableBlockProxy(location, oldState)
 				);
 				
-				// We will run any synthetic update events related to cuboid loading if that is enabled.
+				// We want to synthesize block updates adjacent to modified blocks and, optionally, boundaries of fresh cuboids.
 				// NOTE:  This is disabled by default since it washes out all performance values and will be replaced with something more precise in the future.
-				if (context.config.shouldSynthesizeUpdatesOnLoad)
-				{
-					committedMutationCount += _synthesizeAndRunBlockUpdates(processor
-							, lazyMutableBlockCache
-							, context
-							, oldState
-							, modifiedBlocksByCuboidAddress
-							, worldMap.keySet()
-							, cuboidsLoadedThisTick
-					);
-				}
+				committedMutationCount += _synthesizeAndRunBlockUpdates(processor
+						, context.config.shouldSynthesizeUpdatesOnLoad
+						, lazyMutableBlockCache
+						, context
+						, oldState
+						, modifiedBlocksByCuboidAddress
+						, worldMap.keySet()
+						, cuboidsLoadedThisTick
+				);
 				
 				// Now run the normal mutations.
 				List<ScheduledMutation> mutations = mutationsToRun.get(key);
@@ -216,6 +214,7 @@ public class WorldProcessor
 	}
 
 	private static int _synthesizeAndRunBlockUpdates(ProcessorElement processor
+			, boolean shouldIncludeLoadedCuboidFaces
 			, Function<AbsoluteLocation, MutableBlockProxy> lazyMutableBlockCache
 			, TickProcessingContext context
 			, IReadOnlyCuboidData oldState
@@ -229,13 +228,27 @@ public class WorldProcessor
 		// -if any of those locations are in our current cuboid, add them to a set (avoids duplicates)
 		CuboidAddress thisAddress = oldState.getCuboidAddress();
 		Set<AbsoluteLocation> toSynthesize = new HashSet<>();
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, -1);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 1);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, -1, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 1, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, -1, 0, 0);
-		_checkCuboid(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, allLoadedCuboids, cuboidsLoadedThisTick, 1, 0, 0);
+		
+		// We always synthesize update events for modified blocks.
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 0, 0, 0);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 0, 0, -1);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 0, 0, 1);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 0, -1, 0);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 0, 1, 0);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, -1, 0, 0);
+		_collectBlocksAdjacentToChanges(toSynthesize, thisAddress, modifiedBlocksByCuboidAddress, 1, 0, 0);
+		
+		// Optionally, synthesize update events for all loaded cuboid faces (and opposing faces)
+		if (shouldIncludeLoadedCuboidFaces)
+		{
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 0);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, -1);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 0, 1);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, -1, 0);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 0, 1, 0);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, -1, 0, 0);
+			_collectFacesOfNewCuboids(toSynthesize, thisAddress, allLoadedCuboids, cuboidsLoadedThisTick, 1, 0, 0);
+		}
 		
 		// Now, walk that set, synthesize and run a block update on each.
 		int appliedUpdates = 0;
@@ -252,9 +265,8 @@ public class WorldProcessor
 		return appliedUpdates;
 	}
 
-	private static void _checkCuboid(Set<AbsoluteLocation> inout_toSynthesize
+	private static void _collectFacesOfNewCuboids(Set<AbsoluteLocation> inout_toSynthesize
 			, CuboidAddress targetCuboid
-			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Set<CuboidAddress> allLoadedCuboids
 			, Set<CuboidAddress> cuboidsLoadedThisTick
 			, int relX
@@ -306,7 +318,18 @@ public class WorldProcessor
 				}
 			}
 		}
-		else if (modifiedBlocksByCuboidAddress.containsKey(checkingCuboid))
+	}
+
+	private static void _collectBlocksAdjacentToChanges(Set<AbsoluteLocation> inout_toSynthesize
+			, CuboidAddress targetCuboid
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
+			, int relX
+			, int relY
+			, int relZ
+	)
+	{
+		CuboidAddress checkingCuboid = targetCuboid.getRelative(relX, relY, relZ);
+		if (modifiedBlocksByCuboidAddress.containsKey(checkingCuboid))
 		{
 			List<AbsoluteLocation> modifiedBlocks = modifiedBlocksByCuboidAddress.get(checkingCuboid);
 			for (AbsoluteLocation modified : modifiedBlocks)
