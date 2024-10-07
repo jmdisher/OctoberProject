@@ -10,11 +10,11 @@
 # Durability is a number which must be non-negative (0 means unbreakable).  Durability is the measurement of
 # milliseconds for which the tool can be used before it breaks.
 
-op.iron_pickaxe	5
+op.iron_pickaxe	10
 	block_material	PICKAXE
-op.iron_shovel	5
+op.iron_shovel	10
 	block_material	SHOVEL
-op.iron_axe	5
+op.iron_axe	10
 	block_material	AXE
 op.iron_sword	10
 	block_material	SWORD
@@ -22,9 +22,9 @@ op.club	3
 	block_material	SWORD
 op.stone_knife	4
 	block_material	SWORD
-op.stone_hatchet	2
+op.stone_hatchet	4
 	block_material	AXE
-op.wooden_chisel	2
+op.wooden_chisel	4
 	block_material	PICKAXE
-op.digging_stick	3
+op.digging_stick	6
 	block_material	SHOVEL

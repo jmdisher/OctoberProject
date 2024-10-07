@@ -11,7 +11,7 @@ op.plank	2
 op.stone_brick	4
 op.crafting_table	4
 op.furnace	8
-op.charcoal	2
+op.charcoal	3
 op.coal_ore	4
 op.iron_ore	8
 op.dirt	2
@@ -28,7 +28,7 @@ op.wheat_seedling	0
 op.wheat_young	0
 op.wheat_mature	0
 op.bread	2
-op.stick	2
+op.stick	1
 op.iron_pickaxe	4
 op.iron_shovel	4
 op.iron_axe	4
@@ -69,4 +69,4 @@ op.club	4
 op.stone_knife	2
 op.stone_hatchet	4
 op.wooden_chisel	4
-op.digging_stick	2
+op.digging_stick	1

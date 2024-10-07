@@ -426,7 +426,7 @@ public class TestTickRunner
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		long nextCommit = 1L;
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)200);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
 		
 		// Wait for the tick and observe the results.
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -444,7 +444,7 @@ public class TestTickRunner
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the remaining hits to finish the break.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)200);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
 		
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(nextCommit - 1L, snapshot.commitLevels().get(entityId).longValue());
@@ -467,9 +467,9 @@ public class TestTickRunner
 		Inventory entityInventory = entity.inventory();
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
-		// We should also see the durability loss on our tool (2 x 50ms).
+		// We should also see the durability loss on our tool (2 x 100ms).
 		int updatedDurability = entityInventory.getNonStackableForKey(entity.hotbarItems()[entity.hotbarIndex()]).durability();
-		Assert.assertEquals(2 * 200, (startDurability - updatedDurability));
+		Assert.assertEquals(2 * 100, (startDurability - updatedDurability));
 		
 		runner.shutdown();
 	}
@@ -1675,7 +1675,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		Inventory blockInventory = snapshot.completedCuboids().get(address).getDataSpecial(AspectRegistry.INVENTORY, spawn.getBlockAddress());
 		Assert.assertEquals(1, blockInventory.sortedKeys().size());
-		Assert.assertEquals(1, blockInventory.getCount(ENV.items.getItemById("op.beef")));
+		Assert.assertEquals(5, blockInventory.getCount(ENV.items.getItemById("op.beef")));
 		
 		runner.shutdown();
 	}

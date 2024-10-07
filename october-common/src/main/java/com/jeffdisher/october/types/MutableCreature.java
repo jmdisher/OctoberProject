@@ -88,18 +88,19 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public void handleEntityDeath(TickProcessingContext context)
 	{
-		// For now, just drop wheat item for all creatures.
-		// TODO:  Define this drop loot table in data.
+		// TODO:  Define this drop loot table in data once we have a better sense of what mob information should be represented declaratively.
 		Environment env = Environment.getShared();
 		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(_creature.type()));
 		Items toDrop;
 		switch (_creature.type())
 		{
 		case COW:
-			toDrop = new Items(env.items.getItemById("op.beef"), 1);
+			// We will try to drop 5 beef, although they may not all fit if the storage overflows.
+			toDrop = new Items(env.items.getItemById("op.beef"), 5);
 			break;
 		case ORC:
-			toDrop = new Items(env.items.getItemById("op.iron_ingot"), 1);
+			// We will drop iron dust from the orc, creating an incentive to attack them (although this might be over-powered).
+			toDrop = new Items(env.items.getItemById("op.iron_dust"), 1);
 			break;
 		case ERROR:
 		case PLAYER:

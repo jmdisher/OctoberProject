@@ -50,7 +50,7 @@ op.bread	FUELLED_FURNACE
 # TODO:  This should make more than 1 stick but we need to do an encumbrance rework, first.
 op.plank_to_stick	BUILT_IN
 	input	op.plank
-	output	op.stick
+	output	op.stick	op.stick
 	millis	1000
 op.iron_pickaxe	COMMON
 	input	op.stick	op.iron_ingot
@@ -150,7 +150,7 @@ op.club	BUILT_IN
 	millis	500
 op.stone_knife	COMMON
 	input	op.stick	op.stone
-	output	op.stone_hatchet
+	output	op.stone_knife
 	millis	8000
 op.stone_hatchet	COMMON
 	input	op.stick	op.stone

@@ -2,7 +2,12 @@
 # ID<TAB>number
 # 
 # The given number is non-negative and represents the durability of the item (0 means unbreakable).  Durability is
-# defined by the way the item is used, being different for things like tools, weapons, armour, etc.
+# defined by the way the item is used, being different for things like tools, weapons, armour, etc:
+# -tools:  Milliseconds of use applied to a block (a tool with 1000 will last for 1 second of continuous use, no matter
+#  the multiplier).
+# -weapons:  The amount of damage inflicted, before armour (so a sword will lose durability more quickly due to its
+#  multiplier).
+# -armour:  The amount of damage the piece absorbs instead of the target player.
 # Note that every item listed here is non-stackable (which is why 0 is sometimes used).
 
 op.iron_pickaxe	100000
@@ -11,12 +16,12 @@ op.iron_axe	100000
 op.iron_sword	100000
 op.bucket_empty	0
 op.bucket_water	0
-op.iron_helmet	1000
-op.iron_chestplate	1000
-op.iron_greaves	1000
-op.iron_boots	1000
-op.club	100
-op.stone_knife	150
+op.iron_helmet	10000
+op.iron_chestplate	10000
+op.iron_greaves	10000
+op.iron_boots	10000
+op.club	1000
+op.stone_knife	1500
 op.stone_hatchet	10000
 op.wooden_chisel	10000
 op.digging_stick	5000

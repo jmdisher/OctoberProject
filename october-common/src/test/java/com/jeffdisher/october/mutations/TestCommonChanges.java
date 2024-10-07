@@ -1038,7 +1038,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(startDurability - duration, newEntity.newInventory.getNonStackableForKey(1).durability());
-		Assert.assertEquals(5 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
+		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
 		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog, duration);
