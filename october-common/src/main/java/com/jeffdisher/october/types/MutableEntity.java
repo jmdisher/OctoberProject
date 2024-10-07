@@ -2,7 +2,6 @@ package com.jeffdisher.october.types;
 
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
 
@@ -320,7 +319,11 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void setEnergyDeficit(int deficit)
 	{
-		this.newEnergyDeficit = deficit;
+		// Energy deficit shouldn't be changed in creative mode.
+		if (!this.isCreativeMode)
+		{
+			this.newEnergyDeficit = deficit;
+		}
 	}
 
 	@Override
@@ -338,8 +341,11 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void applyEnergyCost(TickProcessingContext context, int cost)
 	{
-		// Apply the energy cost using the logic in the periodic entity.
-		EntityChangePeriodic.useEnergyAllowingDamage(context, this, cost);
+		// Energy deficit shouldn't be changed in creative mode.
+		if (!this.isCreativeMode)
+		{
+			this.newEnergyDeficit += cost;
+		}
 	}
 
 	@Override

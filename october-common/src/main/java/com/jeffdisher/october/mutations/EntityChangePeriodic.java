@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -40,19 +41,6 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 		return new EntityChangePeriodic();
 	}
 
-	/**
-	 * Applies the given energy draw to the given newEntity, issuing a damage change to the next tick if they are
-	 * starving as a result.
-	 * 
-	 * @param context The context.
-	 * @param newEntity The entity to change.
-	 * @param energy The energy to drain.
-	 */
-	public static void useEnergyAllowingDamage(TickProcessingContext context, IMutablePlayerEntity newEntity, int energy)
-	{
-		_useEnergy(context, newEntity, energy);
-	}
-
 
 	public EntityChangePeriodic()
 	{
@@ -67,7 +55,8 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		_useEnergy(context, newEntity, ENERGY_COST_IDLE);
+		newEntity.setEnergyDeficit(newEntity.getEnergyDeficit() + ENERGY_COST_IDLE);
+		_accountForEnergy(context, newEntity);
 		
 		// Reschedule, always.
 		context.newChangeSink.future(newEntity.getId(), this, MILLIS_BETWEEN_PERIODIC_UPDATES);
@@ -99,17 +88,15 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	}
 
 
-	private static void _useEnergy(TickProcessingContext context, IMutablePlayerEntity newEntity, int energy)
+	private static void _accountForEnergy(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		int deficit = newEntity.getEnergyDeficit() + energy;
+		int deficit = newEntity.getEnergyDeficit();
 		byte foodToConsume = 0;
-		// Note that we will still only use food at most once per action, so this will slightly lag behind a period of intense activity (which should look more interesting).
 		if (deficit >= ENERGY_PER_FOOD)
 		{
-			deficit -= ENERGY_PER_FOOD;
-			foodToConsume = 1;
+			foodToConsume = (byte)(deficit / ENERGY_PER_FOOD);
+			newEntity.setEnergyDeficit(deficit % ENERGY_PER_FOOD);
 		}
-		newEntity.setEnergyDeficit(deficit);
 		
 		// We apply some basic logic:
 		// -if food is >=80 and health is <100, increase health
@@ -138,7 +125,7 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 			// They are starving so we want to apply damage.
 			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
-			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)1);
+			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, EntityConstants.STARVATION_DAMAGE_PER_SECOND);
 			context.newChangeSink.next(newEntity.getId(), takeDamage);
 		}
 	}

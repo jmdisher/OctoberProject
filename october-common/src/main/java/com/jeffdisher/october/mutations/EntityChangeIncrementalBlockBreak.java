@@ -133,7 +133,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 			newEntity.setCurrentCraftingOperation(null);
 			
 			// Breaking a block expends energy proportional to breaking time.
-			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, _millisToApply);
+			newEntity.setEnergyDeficit(newEntity.getEnergyDeficit() + _millisToApply);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);

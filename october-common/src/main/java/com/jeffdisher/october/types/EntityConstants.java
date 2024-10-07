@@ -29,6 +29,7 @@ public class EntityConstants
 	public static final byte PLAYER_MAX_HEALTH = 100;
 
 	public static final byte PLAYER_MAX_FOOD = 100;
+	public static final byte STARVATION_DAMAGE_PER_SECOND = 5;
 
 	public static EntityVolume getVolume(EntityType type)
 	{

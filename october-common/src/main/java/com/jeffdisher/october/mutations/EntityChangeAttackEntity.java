@@ -139,7 +139,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			}
 			
 			// Attacking expends a lot of energy.
-			EntityChangePeriodic.useEnergyAllowingDamage(context, newEntity, EntityChangePeriodic.ENERGY_COST_ATTACK);
+			newEntity.setEnergyDeficit(newEntity.getEnergyDeficit() + EntityChangePeriodic.ENERGY_COST_ATTACK);
 			
 			// Rate-limit us by updating the special action time.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);

@@ -1850,6 +1850,7 @@ public class TestCommonChanges
 		byte health = EntityConstants.PLAYER_MAX_HEALTH / 2;
 		byte food = EntityConstants.PLAYER_MAX_FOOD / 2;
 		byte breath = EntityConstants.MAX_BREATH / 2;
+		int energyDeficit = 50;
 		Entity original = new Entity(entityId
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
@@ -1862,7 +1863,7 @@ public class TestCommonChanges
 				, health
 				, food
 				, breath
-				, 0
+				, energyDeficit
 				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
@@ -1872,6 +1873,7 @@ public class TestCommonChanges
 		localMutable.setBreath((byte)1);
 		localMutable.setFood((byte)1);
 		localMutable.setHealth((byte)1);
+		localMutable.setEnergyDeficit(1);
 		Assert.assertTrue(original == localMutable.freeze());
 		
 		// Periodic change should also not change anything even if we set a high energy deficit.
@@ -1895,10 +1897,10 @@ public class TestCommonChanges
 		localMutable.setEnergyDeficit(10 * EntityChangePeriodic.ENERGY_PER_FOOD);
 		periodic.applyChange(context, localMutable);
 		Entity end = localMutable.freeze();
-		Assert.assertEquals(9050, end.energyDeficit());
 		Assert.assertEquals(health, end.health());
 		Assert.assertEquals(food, end.food());
 		Assert.assertEquals(breath, end.breath());
+		Assert.assertEquals(energyDeficit, end.energyDeficit());
 	}
 
 	@Test
