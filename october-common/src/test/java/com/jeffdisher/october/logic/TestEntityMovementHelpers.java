@@ -81,7 +81,7 @@ public class TestEntityMovementHelpers
 		EntityLocation startVector = entity.vector;
 		long millisInMotion = 100L;
 		float blocksPerSecond = 2.0f;
-		EntityMovementHelpers.accelerate(context, entity, blocksPerSecond, millisInMotion, -1.0f, 0.0f);
+		EntityMovementHelpers.accelerate(entity, blocksPerSecond, millisInMotion, -1.0f, 0.0f);
 		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		Assert.assertFalse(didMove);
 		Assert.assertEquals(startLocation, entity.location);
@@ -98,7 +98,7 @@ public class TestEntityMovementHelpers
 		EntityLocation startVector = entity.vector;
 		long millisInMotion = 100L;
 		float blocksPerSecond = 2.0f;
-		EntityMovementHelpers.accelerate(context, entity, blocksPerSecond, millisInMotion, 1.0f, 0.0f);
+		EntityMovementHelpers.accelerate(entity, blocksPerSecond, millisInMotion, 1.0f, 0.0f);
 		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
@@ -116,8 +116,8 @@ public class TestEntityMovementHelpers
 		long millisInMotion = 100L;
 		float blocksPerSecond = 2.0f;
 		long millisInStep = millisInMotion / 2L;
-		EntityMovementHelpers.accelerate(context, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
-		EntityMovementHelpers.accelerate(context, entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
+		EntityMovementHelpers.accelerate(entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
+		EntityMovementHelpers.accelerate(entity, blocksPerSecond, millisInStep, 1.0f, 0.0f);
 		boolean didMove = _allowMovement(context, entity, millisInMotion);
 		// We should move but still have no vector since we aren't falling.
 		Assert.assertTrue(didMove);
@@ -291,7 +291,7 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
-		public void applyEnergyCost(TickProcessingContext context, int cost)
+		public void applyEnergyCost(int cost)
 		{
 			this.cost += cost;
 		}

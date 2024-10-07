@@ -125,7 +125,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 				throw Assert.unreachable();
 			}
 			float speed = maxSpeed * _speedMultipler;
-			EntityMovementHelpers.accelerate(context, newEntity, speed, _millisInMotion, xComponent, yComponent);
+			EntityMovementHelpers.accelerate(newEntity, speed, _millisInMotion, xComponent, yComponent);
 			didApply = true;
 		}
 		return didApply;

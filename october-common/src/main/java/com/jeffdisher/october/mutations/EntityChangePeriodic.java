@@ -55,7 +55,7 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		newEntity.setEnergyDeficit(newEntity.getEnergyDeficit() + ENERGY_COST_IDLE);
+		newEntity.applyEnergyCost(ENERGY_COST_IDLE);
 		_accountForEnergy(context, newEntity);
 		
 		// Reschedule, always.

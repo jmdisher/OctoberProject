@@ -109,7 +109,7 @@ public class EntityChangeCraft implements IMutationEntity<IMutablePlayerEntity>
 		{
 			// Crafting expends energy.
 			int cost = (int)(_millisToApply * EntityChangePeriodic.ENERGY_COST_CRAFT_PER_SECOND / 1000);
-			newEntity.setEnergyDeficit(newEntity.getEnergyDeficit() + cost);
+			newEntity.applyEnergyCost(cost);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);

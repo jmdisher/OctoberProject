@@ -339,7 +339,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
-	public void applyEnergyCost(TickProcessingContext context, int cost)
+	public void applyEnergyCost(int cost)
 	{
 		// Energy deficit shouldn't be changed in creative mode.
 		if (!this.isCreativeMode)

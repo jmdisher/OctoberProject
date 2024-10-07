@@ -154,7 +154,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public void applyEnergyCost(TickProcessingContext context, int cost)
+	public void applyEnergyCost(int cost)
 	{
 		// Creatures don't currently have energy so do nothing.
 	}

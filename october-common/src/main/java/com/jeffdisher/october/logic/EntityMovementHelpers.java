@@ -10,7 +10,6 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
@@ -26,15 +25,13 @@ public class EntityMovementHelpers
 	 * length.
 	 * This helper will also apply the movement energy cost to the entity.
 	 * 
-	 * @param context The context.
-	 * @param secondsInMotion How many seconds of motion to consider.
 	 * @param newEntity The entity to update.
 	 * @param blocksPerSecond The speed of the entity for this time.
+	 * @param millisInMotion How many milliseconds of motion to consider.
 	 * @param xComponent The x-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
 	 * @param yComponent The y-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
 	 */
-	public static void accelerate(TickProcessingContext context
-			, IMutableMinimalEntity newEntity
+	public static void accelerate(IMutableMinimalEntity newEntity
 			, float blocksPerSecond
 			, long millisInMotion
 			, float xComponent
@@ -51,7 +48,7 @@ public class EntityMovementHelpers
 		
 		// Then pay for the acceleration.
 		int cost = (int)(targetBlocksInStep * (float)EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK);
-		newEntity.applyEnergyCost(context, cost);
+		newEntity.applyEnergyCost(cost);
 	}
 
 	/**
