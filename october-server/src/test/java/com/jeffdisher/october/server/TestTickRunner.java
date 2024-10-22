@@ -1912,6 +1912,36 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void growAfterFirstLoad()
+	{
+		// Verifies that we don't NPE when running a growth tick on a cuboid which was just loaded and doesn't yet have its height map.
+		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
+		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), DIRT_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), WHEAT_SEEDLING_ITEM.number());
+		
+		WorldConfig config = new WorldConfig();
+		TickRunner runner = _createTestRunnerWithConfig(config);
+		MutationBlockPeriodic growth = new MutationBlockPeriodic(location);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(new ScheduledMutation(growth, 0L)))
+				)
+				, null
+				, null
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		
+		// If there was a problem, the tick runner would have crashed.
+		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
