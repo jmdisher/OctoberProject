@@ -11,6 +11,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MinimalEntity;
 
 
 /**
@@ -381,15 +382,39 @@ public class SpatialHelpers
 	 */
 	public static EntityLocation getEyeLocation(IMutablePlayerEntity entity)
 	{
-		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
-		// We will say that their eyes are 90% of the way up their body from their feet.
-		float entityEyeHeightMultiplier = 0.9f;
-		EntityVolume volume = EntityConstants.VOLUME_PLAYER;
+		return _getEyeLocation(entity);
+	}
+
+	/**
+	 * Finds the distance from the eye of the given eyeEntity to the bounding box of the given targetEntity.
+	 * 
+	 * @param eyeEntity The entity whose eye we are looking through.
+	 * @param targetEntity The entity we are targeting.
+	 * @return The diagonal distance from the eye to the target's bounding-box.
+	 */
+	public static float distanceFromEyeToEntitySurface(IMutablePlayerEntity eyeEntity, MinimalEntity targetEntity)
+	{
+		EntityLocation eye = _getEyeLocation(eyeEntity);
+		EntityLocation target = targetEntity.location();
+		EntityVolume targetVolume = EntityConstants.getVolume(targetEntity.type());
 		
-		float widthOffset = volume.width() / 2.0f;
-		float heightOffset = volume.height() * entityEyeHeightMultiplier;
-		EntityLocation entityLocation = entity.getLocation();
-		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
+		return _distanceToTarget(eye, target, targetVolume);
+	}
+
+	/**
+	 * Finds the distance from the eye of the given eyeEntity to the nearest edge of the given block.
+	 * 
+	 * @param eyeEntity The entity whose eye we are looking through.
+	 * @param block The block we are targeting.
+	 * @return The diagonal distance from the eye to the nearest edge of the given block.
+	 */
+	public static float distanceFromEyeToBlockSurface(IMutablePlayerEntity eyeEntity, AbsoluteLocation block)
+	{
+		EntityLocation eye = _getEyeLocation(eyeEntity);
+		EntityLocation target = block.toEntityLocation();
+		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
+		
+		return _distanceToTarget(eye, target, cubeVolume);
 	}
 
 
@@ -489,6 +514,60 @@ public class SpatialHelpers
 		// (we want the block under our centre).
 		float widthOffset = volume.width() / 2.0f;
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
+	}
+
+	private static EntityLocation _getEyeLocation(IMutablePlayerEntity entity)
+	{
+		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
+		// We will say that their eyes are 90% of the way up their body from their feet.
+		float entityEyeHeightMultiplier = 0.9f;
+		EntityVolume volume = EntityConstants.getVolume(entity.getType());
+		
+		float widthOffset = volume.width() / 2.0f;
+		float heightOffset = volume.height() * entityEyeHeightMultiplier;
+		EntityLocation entityLocation = entity.getLocation();
+		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
+	}
+
+	private static float _distanceToTarget(EntityLocation eye, EntityLocation target, EntityVolume targetVolume)
+	{
+		// We interpret this as a rectangular prism axis-aligned bounding-box.
+		float highX = target.x() + targetVolume.width();
+		float highY = target.y() + targetVolume.width();
+		float highZ = target.z() + targetVolume.height();
+		float squareDistance = 0.0f;
+		
+		if (eye.x() < target.x())
+		{
+			float delta = target.x() - eye.x();
+			squareDistance += delta * delta;
+		}
+		else if (eye.x() > highX)
+		{
+			float delta = eye.x() - highX;
+			squareDistance += delta * delta;
+		}
+		if (eye.y() < target.y())
+		{
+			float delta = target.y() - eye.y();
+			squareDistance += delta * delta;
+		}
+		else if (eye.y() > highY)
+		{
+			float delta = eye.y() - highY;
+			squareDistance += delta * delta;
+		}
+		if (eye.z() < target.z())
+		{
+			float delta = target.z() - eye.z();
+			squareDistance += delta * delta;
+		}
+		else if (eye.z() > highZ)
+		{
+			float delta = eye.z() - highZ;
+			squareDistance += delta * delta;
+		}
+		return (float)Math.sqrt(squareDistance);
 	}
 
 	private static int _floorInt(float f)

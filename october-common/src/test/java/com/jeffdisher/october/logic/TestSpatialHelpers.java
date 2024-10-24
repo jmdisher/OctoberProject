@@ -14,7 +14,9 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -240,5 +242,20 @@ public class TestSpatialHelpers
 		Assert.assertEquals(new AbsoluteLocation(2, -2, 12), block2);
 		EntityLocation eye2 = SpatialHelpers.getEyeLocation(entity2);
 		Assert.assertEquals(new EntityLocation(2.0f, -1.6f, 13.41f), eye2);
+	}
+
+	@Test
+	public void entityEyeDistances()
+	{
+		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
+		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
+		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
+		MinimalEntity entity2 = new MinimalEntity(2, EntityType.COW, location2);
+		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
+		
+		float entityDistance = SpatialHelpers.distanceFromEyeToEntitySurface(entity1, entity2);
+		Assert.assertEquals(0.63f, entityDistance, 0.01f);
+		float blockDistance = SpatialHelpers.distanceFromEyeToBlockSurface(entity1, block1);
+		Assert.assertEquals(13.50f, blockDistance, 0.01f);
 	}
 }
