@@ -6,8 +6,11 @@ import java.util.function.Predicate;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
 /**
@@ -348,6 +351,47 @@ public class SpatialHelpers
 		;
 	}
 
+	/**
+	 * The location of the entity's feet (the centre of their model, at the very bottom).
+	 * 
+	 * @param entity The entity.
+	 * @return The location where their feet are.
+	 */
+	public static EntityLocation getCentreFeetLocation(IMutableMinimalEntity entity)
+	{
+		return _getCentreFeetLocation(entity);
+	}
+
+	/**
+	 * The block location where the entity's feet are located.
+	 * 
+	 * @param entity The entity.
+	 * @return The block where the bottom of the entity's feet are.
+	 */
+	public static AbsoluteLocation getBlockAtFeet(IMutableMinimalEntity entity)
+	{
+		return _getCentreFeetLocation(entity).getBlockLocation();
+	}
+
+	/**
+	 * Finds the location of the entity's eyes.  This is the centre of their model, near the top.
+	 * 
+	 * @param entity The entity.
+	 * @return The location where their eyes are.
+	 */
+	public static EntityLocation getEyeLocation(IMutablePlayerEntity entity)
+	{
+		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
+		// We will say that their eyes are 90% of the way up their body from their feet.
+		float entityEyeHeightMultiplier = 0.9f;
+		EntityVolume volume = EntityConstants.VOLUME_PLAYER;
+		
+		float widthOffset = volume.width() / 2.0f;
+		float heightOffset = volume.height() * entityEyeHeightMultiplier;
+		EntityLocation entityLocation = entity.getLocation();
+		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
@@ -436,6 +480,15 @@ public class SpatialHelpers
 			}
 		}
 		return check;
+	}
+
+	private static EntityLocation _getCentreFeetLocation(IMutableMinimalEntity entity)
+	{
+		EntityLocation entityLocation = entity.getLocation();
+		EntityVolume volume = EntityConstants.getVolume(entity.getType());
+		// (we want the block under our centre).
+		float widthOffset = volume.width() / 2.0f;
+		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
 	}
 
 	private static int _floorInt(float f)

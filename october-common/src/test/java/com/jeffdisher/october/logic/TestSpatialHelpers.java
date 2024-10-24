@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
@@ -217,5 +218,27 @@ public class TestSpatialHelpers
 		;
 		EntityLocation touching = SpatialHelpers.locationTouchingEastWall(blockTypeReader, location, VOLUME, location.x());
 		Assert.assertNull(touching);
+	}
+
+	@Test
+	public void entityPartLocations()
+	{
+		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
+		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
+		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
+		MutableEntity entity2 = MutableEntity.createWithLocation(2, location2, location2);
+		
+		EntityLocation feet1 = SpatialHelpers.getCentreFeetLocation(entity1);
+		Assert.assertEquals(new EntityLocation(1.2f, -0.8f, 12.0f), feet1);
+		AbsoluteLocation block1 = SpatialHelpers.getBlockAtFeet(entity1);
+		Assert.assertEquals(new AbsoluteLocation(1, -1, 12), block1);
+		EntityLocation eye1 = SpatialHelpers.getEyeLocation(entity1);
+		Assert.assertEquals(new EntityLocation(1.2f, -0.8f, 12.81f), eye1);
+		EntityLocation feet2 = SpatialHelpers.getCentreFeetLocation(entity2);
+		Assert.assertEquals(new EntityLocation(2.0f, -1.6f, 12.6f), feet2);
+		AbsoluteLocation block2 = SpatialHelpers.getBlockAtFeet(entity2);
+		Assert.assertEquals(new AbsoluteLocation(2, -2, 12), block2);
+		EntityLocation eye2 = SpatialHelpers.getEyeLocation(entity2);
+		Assert.assertEquals(new EntityLocation(2.0f, -1.6f, 13.41f), eye2);
 	}
 }
