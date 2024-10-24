@@ -7,8 +7,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -65,13 +63,9 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
 		if (isReady && (null != targetEntity))
 		{
-			// The target is loaded so check the distances.
-			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(targetEntity.location(), EntityConstants.getVolume(targetEntity.type()));
-			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
-			float absX = Math.abs(targetCentre.x() - entityCentre.x());
-			float absY = Math.abs(targetCentre.y() - entityCentre.y());
-			float absZ = Math.abs(targetCentre.z() - entityCentre.z());
-			isInRange = ((absX <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absY <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absZ <= EntityChangeIncrementalBlockBreak.MAX_REACH));
+			// Find the distance from the eye to the target.
+			float distance = SpatialHelpers.distanceFromEyeToEntitySurface(newEntity, targetEntity);
+			isInRange = (distance <= EntityChangeIncrementalBlockBreak.MAX_REACH);
 		}
 		else
 		{

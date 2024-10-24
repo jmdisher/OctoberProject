@@ -8,8 +8,6 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableInventory;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -60,13 +58,9 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		Environment env = Environment.getShared();
 		// We will just check that the block is in range and isn't air (we won't worry about whether or not it is breakable).
 		
-		// We want to only consider breaking the block if it is within 2 blocks of where the entity currently is.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
-		EntityLocation blockCentre = SpatialHelpers.getBlockCentre(_targetBlock);
-		float absX = Math.abs(blockCentre.x() - entityCentre.x());
-		float absY = Math.abs(blockCentre.y() - entityCentre.y());
-		float absZ = Math.abs(blockCentre.z() - entityCentre.z());
-		boolean isLocationClose = ((absX <= MAX_REACH) && (absY <= MAX_REACH) && (absZ <= MAX_REACH));
+		// Find the distance from the eye to the target.
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		boolean isLocationClose = (distance <= MAX_REACH);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());

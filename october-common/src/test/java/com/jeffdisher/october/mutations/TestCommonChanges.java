@@ -457,7 +457,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		
-		AbsoluteLocation tooFar = new AbsoluteLocation(7, 0, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(7, 2, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation reasonable = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);

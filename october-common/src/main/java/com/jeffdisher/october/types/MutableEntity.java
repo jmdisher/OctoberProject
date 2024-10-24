@@ -217,7 +217,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	public void handleEntityDeath(TickProcessingContext context)
 	{
 		// Drop their inventory.
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(EntityType.PLAYER));
+		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		for (Integer key : this.newInventory.freeze().sortedKeys())
 		{
 			Items stackable = this.newInventory.getStackForKey(key);

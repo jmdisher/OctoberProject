@@ -90,7 +90,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	{
 		// TODO:  Define this drop loot table in data once we have a better sense of what mob information should be represented declaratively.
 		Environment env = Environment.getShared();
-		EntityLocation entityCentre = SpatialHelpers.getEntityCentre(this.newLocation, EntityConstants.getVolume(_creature.type()));
+		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		Items toDrop;
 		switch (_creature.type())
 		{

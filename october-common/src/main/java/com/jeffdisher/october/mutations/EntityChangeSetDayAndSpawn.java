@@ -7,8 +7,6 @@ import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -54,13 +52,9 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 		boolean isInRange = false;
 		if (isBed)
 		{
-			// Make sure that the target is reasonably within range.
-			EntityLocation targetCentre = SpatialHelpers.getEntityCentre(_bedLocation.toEntityLocation(), EntityConstants.getVolume(newEntity.getType()));
-			EntityLocation entityCentre = SpatialHelpers.getEntityCentre(newEntity.getLocation(), EntityConstants.getVolume(newEntity.getType()));
-			float absX = Math.abs(targetCentre.x() - entityCentre.x());
-			float absY = Math.abs(targetCentre.y() - entityCentre.y());
-			float absZ = Math.abs(targetCentre.z() - entityCentre.z());
-			isInRange = ((absX <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absY <= EntityChangeIncrementalBlockBreak.MAX_REACH) && (absZ <= EntityChangeIncrementalBlockBreak.MAX_REACH));
+			// Find the distance from the eye to the bed.
+			float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _bedLocation);
+			isInRange = (distance <= EntityChangeIncrementalBlockBreak.MAX_REACH);
 		}
 		
 		boolean didApply = false;
