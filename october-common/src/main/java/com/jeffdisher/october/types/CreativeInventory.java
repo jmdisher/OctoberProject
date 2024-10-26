@@ -7,13 +7,18 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * We use this fake mutable inventory implementation for cases where we need an inventory to modify but we don't want
  * to use a real inventory.
- * This implementation will include 1 of every item which is non-stackable or stackable with non-zero encumbrance but
- * is internally immutable and claims to accept MAX_INT instances of each item.
+ * This implementation will include STACK_SIZE of every item which is non-stackable or stackable with non-zero
+ * encumbrance but is internally immutable and claims to accept MAX_INT instances of each item.
  */
 public class CreativeInventory implements IMutableInventory
 {
 	/**
-	 * A helper to return a faked-up inventory with 1 of everything.
+	 * We need a number for the size of every stack in the inventory which is big enough to satisfy crafting requests.
+	 */
+	public static int STACK_SIZE = 99;
+
+	/**
+	 * A helper to return a faked-up inventory with STACK_SIZE of everything.
 	 * 
 	 * @return A fake read-only inventory instance.
 	 */
@@ -32,7 +37,7 @@ public class CreativeInventory implements IMutableInventory
 				// We only want to include stackable items if they have a non-zero encumbrance since those items are only in-world block modes.
 				if (env.encumbrance.getEncumbrance(item) > 0)
 				{
-					builder.addStackable(item, 1);
+					builder.addStackable(item, STACK_SIZE);
 				}
 			}
 			else

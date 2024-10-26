@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -43,7 +44,7 @@ public class TestCreativeInventory
 		
 		Items items = inv.getStackForKey(stoneKey);
 		Assert.assertEquals(STONE_ITEM, items.type());
-		Assert.assertEquals(1, items.count());
+		Assert.assertEquals(CreativeInventory.STACK_SIZE, items.count());
 		
 		// We shouldn't see a stackable sword but we should find one in the inventory.
 		Assert.assertEquals(0, inv.getIdOfStackableType(SWORD_ITEM));
@@ -59,7 +60,7 @@ public class TestCreativeInventory
 		Assert.assertEquals(SWORD_ITEM, nonStack.type());
 		Assert.assertEquals(ENV.durability.getDurability(SWORD_ITEM), nonStack.durability());
 		
-		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
+		Assert.assertEquals(CreativeInventory.STACK_SIZE, inv.getCount(STONE_ITEM));
 		
 		Assert.assertTrue(inv.addAllItems(STONE_ITEM, 100));
 		
@@ -104,8 +105,8 @@ public class TestCreativeInventory
 				{
 					Items stackable = inv.getStackForKey(nextKey);
 					Assert.assertEquals(item, stackable.type());
-					Assert.assertEquals(1, stackable.count());
-					encumbrance += ENV.encumbrance.getEncumbrance(item);
+					Assert.assertEquals(CreativeInventory.STACK_SIZE, stackable.count());
+					encumbrance += CreativeInventory.STACK_SIZE * ENV.encumbrance.getEncumbrance(item);
 					nextKey += 1;
 				}
 			}
@@ -164,5 +165,13 @@ public class TestCreativeInventory
 				Assert.assertNotNull(nonStack);
 			}
 		}
+	}
+
+	@Test
+	public void craftInInventory() throws Throwable
+	{
+		Inventory inv = CreativeInventory.fakeInventory();
+		Craft craft = ENV.crafting.getCraftById("op.planks_to_crafting_table");
+		Assert.assertTrue(CraftAspect.canApply(craft, inv));
 	}
 }
