@@ -36,13 +36,13 @@ public class TestCreativeInventory
 		
 		Items items = inv.getStackForKey((int)STONE_ITEM.number());
 		Assert.assertEquals(STONE_ITEM, items.type());
-		Assert.assertEquals(Integer.MAX_VALUE, items.count());
+		Assert.assertEquals(1, items.count());
 		
 		NonStackableItem nonStack = inv.getNonStackableForKey(SWORD_ITEM.number());
 		Assert.assertEquals(SWORD_ITEM, nonStack.type());
 		Assert.assertEquals(ENV.durability.getDurability(SWORD_ITEM), nonStack.durability());
 		
-		Assert.assertEquals(Integer.MAX_VALUE, inv.getCount(STONE_ITEM));
+		Assert.assertEquals(1, inv.getCount(STONE_ITEM));
 		
 		Assert.assertTrue(inv.addAllItems(STONE_ITEM, 100));
 		

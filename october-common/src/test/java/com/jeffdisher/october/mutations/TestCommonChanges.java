@@ -1766,7 +1766,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// This should be unchanged and the block shouldn't yet have the items.
-		Assert.assertEquals(Integer.MAX_VALUE, newEntity.accessMutableInventory().getCount(STONE_ITEM));
+		Assert.assertEquals(1, newEntity.accessMutableInventory().getCount(STONE_ITEM));
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		
 		// We can now apply the step 2.

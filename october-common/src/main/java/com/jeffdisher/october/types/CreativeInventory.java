@@ -42,53 +42,36 @@ public class CreativeInventory implements IMutableInventory
 
 
 	private final Environment _env;
+	private final Inventory _inventory;
 
 	public CreativeInventory()
 	{
 		_env = Environment.getShared();
+		_inventory = fakeInventory();
 	}
 
 	@Override
 	public int getIdOfStackableType(Item type)
 	{
-		return type.number();
+		return _inventory.getIdOfStackableType(type);
 	}
 
 	@Override
 	public Items getStackForKey(int key)
 	{
-		Items items = null;
-		if (key > 0)
-		{
-			Item item = _env.items.ITEMS_BY_TYPE[key];
-			if (_env.durability.isStackable(item))
-			{
-				items = new Items(item, Integer.MAX_VALUE);
-			}
-		}
-		return items;
+		return _inventory.getStackForKey(key);
 	}
 
 	@Override
 	public NonStackableItem getNonStackableForKey(int key)
 	{
-		NonStackableItem nonStack = null;
-		if (key > 0)
-		{
-			Item item = _env.items.ITEMS_BY_TYPE[key];
-			if (!_env.durability.isStackable(item))
-			{
-				nonStack = new NonStackableItem(item, _env.durability.getDurability(item));
-			}
-		}
-		return nonStack;
+		return _inventory.getNonStackableForKey(key);
 	}
 
 	@Override
 	public int getCount(Item type)
 	{
-		Assert.assertTrue(_env.durability.isStackable(type));
-		return Integer.MAX_VALUE;
+		return _inventory.getCount(type);
 	}
 
 	@Override
