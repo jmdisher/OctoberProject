@@ -24,6 +24,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.Craft;
+import com.jeffdisher.october.types.CreativeInventory;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -1751,10 +1752,14 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// This is a multi-step process which starts by asking the entity to start the 2 drops.
-		// We will use the keys we assume are appropriate for these, based on how the creative inventory works.
+		// We first need to look up the keys (which is tricky for non-stackables).
+		Inventory creativeInventory = CreativeInventory.fakeInventory();
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
-		int stoneId = STONE_ITEM.number();
-		int pickId = pickItem.number();
+		int stoneId = creativeInventory.getIdOfStackableType(STONE_ITEM);
+		int pickId = creativeInventory.sortedKeys().stream().filter(
+				(Integer key) -> (null != creativeInventory.getNonStackableForKey(key)) && (pickItem == creativeInventory.getNonStackableForKey(key).type())
+		).toList().get(0);
+		
 		MutableEntity newEntity = MutableEntity.existing(original);
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, stoneId, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		Assert.assertTrue(push.applyChange(holder.context, newEntity));

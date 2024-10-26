@@ -7,8 +7,8 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * We use this fake mutable inventory implementation for cases where we need an inventory to modify but we don't want
  * to use a real inventory.
- * This implementation will show all the known items with an unlimited (MAX_INT) count or durability and will never
- * change these numbers whether dropping them or accepting them.
+ * This implementation will include 1 of every item which is non-stackable or stackable with non-zero encumbrance but
+ * is internally immutable and claims to accept MAX_INT instances of each item.
  */
 public class CreativeInventory implements IMutableInventory
 {
@@ -29,7 +29,11 @@ public class CreativeInventory implements IMutableInventory
 			}
 			else if (env.durability.isStackable(item))
 			{
-				builder.addStackable(item, 1);
+				// We only want to include stackable items if they have a non-zero encumbrance since those items are only in-world block modes.
+				if (env.encumbrance.getEncumbrance(item) > 0)
+				{
+					builder.addStackable(item, 1);
+				}
 			}
 			else
 			{
@@ -134,11 +138,7 @@ public class CreativeInventory implements IMutableInventory
 	@Override
 	public void removeNonStackableItems(int key)
 	{
-		if (key > 0)
-		{
-			Item item = _env.items.ITEMS_BY_TYPE[key];
-			Assert.assertTrue(!_env.durability.isStackable(item));
-		}
+		Assert.assertTrue(null != _inventory.getNonStackableForKey(key));
 	}
 
 	@Override
