@@ -95,4 +95,14 @@ public class TestCreativeInventory
 		}
 		Assert.assertEquals(encumbrance, inv.currentEncumbrance);
 	}
+
+	@Test
+	public void replacedItem() throws Throwable
+	{
+		// Make sure that we correctly handle cases of items which are replaced in inventory when used (buckets change to full/empty).
+		IMutableInventory inv = new CreativeInventory();
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
+		Item fullBucket = ENV.items.getItemById("op.bucket_water");
+		inv.replaceNonStackable(emptyBucket.number(), new NonStackableItem(fullBucket, 0));
+	}
 }

@@ -133,7 +133,6 @@ public class CreativeInventory implements IMutableInventory
 		if (key > 0)
 		{
 			Assert.assertTrue(!_env.durability.isStackable(updated.type()));
-			Assert.assertTrue(key == updated.type().number());
 		}
 	}
 
