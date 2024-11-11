@@ -270,9 +270,9 @@ public class TestServerStateManager
 		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
 		manager.setupNextTickAfterCompletion(snapshot);
 		
-		CuboidAddress near = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress near = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near, ENV.special.AIR);
-		CuboidAddress far = new CuboidAddress((short)10, (short)0, (short)0);
+		CuboidAddress far = CuboidAddress.fromInt(10, 0, 0);
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(1, entity)

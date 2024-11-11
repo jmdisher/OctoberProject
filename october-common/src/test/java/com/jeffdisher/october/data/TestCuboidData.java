@@ -37,7 +37,7 @@ public class TestCuboidData
 	@Test
 	public void serializeEmpty()
 	{
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -57,7 +57,7 @@ public class TestCuboidData
 	public void serializeSimple()
 	{
 		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(STONE_ITEM, 2).finish());
@@ -82,7 +82,7 @@ public class TestCuboidData
 	public void serializeNoProgress()
 	{
 		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(STONE_ITEM, 2).finish());
@@ -106,7 +106,7 @@ public class TestCuboidData
 	public void serializeOverflow()
 	{
 		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		input.setDataSpecial(AspectRegistry.INVENTORY, testAddress, Inventory.start(5).addStackable(STONE_ITEM, 2).finish());
@@ -139,7 +139,7 @@ public class TestCuboidData
 	public void walkBlocks()
 	{
 		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
 		
@@ -154,7 +154,7 @@ public class TestCuboidData
 	public void compareProxies()
 	{
 		BlockAddress testAddress = BlockAddress.fromInt(10, 11, 12);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData base = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		CuboidData test = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		

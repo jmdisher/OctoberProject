@@ -137,7 +137,7 @@ public class TestCreativeInventory
 	{
 		// Verify that all the items in the inventory have a valid placed block type or are non-stackable (anything else is just a non-item type).
 		Inventory inv = CreativeInventory.fakeInventory();
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), airCuboid);

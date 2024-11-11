@@ -100,7 +100,7 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
-		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), STONE);
+		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
 				.sinks(new IMutationSink() {
@@ -255,7 +255,7 @@ public class TestCreatureProcessor
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -517,7 +517,7 @@ public class TestCreatureProcessor
 	{
 		// Create an entity in a hole and see it position itself correctly and jump out.
 		// Make an air cuboid with the bottom layer stone and the layer above stone except for one air block.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		for (byte z = 0; z < 2; ++z)
 		{
 			_setCuboidLayer(cuboid, z, STONE.item().number());
@@ -596,7 +596,7 @@ public class TestCreatureProcessor
 	public void walkThroughWaterOrAir()
 	{
 		// Demonstrate that the walking speed through water and air is different.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		_setCuboidLayer(cuboid, (byte)1, ENV.items.getItemById("op.water_source").number());
 		_setCuboidLayer(cuboid, (byte)16, STONE.item().number());
@@ -661,7 +661,7 @@ public class TestCreatureProcessor
 	public void swimToSurface()
 	{
 		// Show a creature swimming to the surface of a body of water.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
 		_setCuboidLayer(cuboid, (byte)0, STONE.item().number());
 		_setCuboidLayer(cuboid, (byte)1, waterSourceNumber);
@@ -730,8 +730,8 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _createContextWithDifficulty(Difficulty difficulty)
 	{
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
-		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		long millisPerTick = 100L;
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;

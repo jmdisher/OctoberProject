@@ -241,7 +241,7 @@ public class TestIntegratedNetwork
 			}
 		}
 		// Combine this into a basic cuboid.
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidData.createNew(cuboidAddress, new IOctree[] { octree
 				, OctreeObject.create()
 				, OctreeShort.create((short)0)

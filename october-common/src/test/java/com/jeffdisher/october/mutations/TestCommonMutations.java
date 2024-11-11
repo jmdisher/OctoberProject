@@ -562,7 +562,7 @@ public class TestCommonMutations
 	public void testSuffocation()
 	{
 		// We will invoke the TickUtils a few ways to test what happens with suffocation.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.WATER_SOURCE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.WATER_SOURCE);
 		MutableEntity entity = MutableEntity.createForTest(1);
 		entity.setBreath((byte)1);
 		entity.setHealth((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND));

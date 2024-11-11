@@ -191,7 +191,7 @@ public class TestEntityMovementHelpers
 	private static TickProcessingContext _createContextWithCuboidType(Block fillBlock)
 	{
 		// We will treat the 0x0x0 cuboid as the fill type, but all others as stone.
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), fillBlock);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), fillBlock);
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
 			BlockAddress block = location.getBlockAddress();

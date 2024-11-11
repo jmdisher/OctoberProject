@@ -66,7 +66,7 @@ public class TestResourceLoader
 	public void empty() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
-		CuboidAddress address = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see nothing come back, not matter how many times we issue the request.
 		Assert.assertNull(_loadSimpleCuboids(loader, List.of(address)));
@@ -79,7 +79,7 @@ public class TestResourceLoader
 	public void basic() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), null, null);
-		CuboidAddress address = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(1, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		loader.preload(cuboid);
 		
@@ -99,8 +99,8 @@ public class TestResourceLoader
 	public void flatWorld() throws Throwable
 	{
 		ResourceLoader loader = new ResourceLoader(DIRECTORY.newFolder(), new FlatWorldGenerator(false), null);
-		CuboidAddress stoneAddress = new CuboidAddress((short)1, (short)0, (short)-1);
-		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress stoneAddress = CuboidAddress.fromInt(1, 0, -1);
+		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(stoneAddress, airAddress));
@@ -130,7 +130,7 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
-		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
@@ -209,7 +209,7 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
-		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
@@ -291,7 +291,7 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
-		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
@@ -356,7 +356,7 @@ public class TestResourceLoader
 			}
 		}, null);
 		List<SuspendedCuboid<CuboidData>> out_loadedCuboids = new ArrayList<>();
-		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(new CuboidAddress((short)1, (short)2, (short)3)), List.of());
+		loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, List.of(), List.of(CuboidAddress.fromInt(1, 2, 3)), List.of());
 		Assert.assertTrue(out_loadedCuboids.isEmpty());
 		for (int i = 0; (out_loadedCuboids.isEmpty()) && (i < 10); ++i)
 		{
@@ -377,7 +377,7 @@ public class TestResourceLoader
 		// We want to store a cuboid and entity with 2 suspended actions each and verify that the non-persistable one is dropped on reload.
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
-		CuboidAddress airAddress = new CuboidAddress((short)1, (short)0, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		int entityId = 1;
 		int targetId = 2;
 		
@@ -446,7 +446,7 @@ public class TestResourceLoader
 	{
 		File worldDirectory = DIRECTORY.newFolder();
 		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), null);
-		CuboidAddress airAddress = new CuboidAddress((short)3, (short)-5, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(3, -5, 0);
 		
 		// We will request that this be generated and verify that there is an entity.
 		Collection<SuspendedCuboid<CuboidData>> results = new ArrayList<>();

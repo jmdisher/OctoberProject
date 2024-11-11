@@ -43,7 +43,7 @@ public class TestPropagationHelpers
 		// Create an empty cuboid with a lantern and verify the expected number of updates.
 		Block blockLantern = ENV.blocks.fromItem(ENV.items.getItemById("op.lantern"));
 		
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation lantern = address.getBase().getRelative(16, 16, 16);
 		_setBlock(lantern, cuboid, blockLantern, true, false);
@@ -111,7 +111,7 @@ public class TestPropagationHelpers
 		Block blockSwitchOff = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_off"));
 		Block blockLampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
 		
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation switchOn = address.getBase().getRelative(16, 16, 16);
 		_setBlock(switchOn, cuboid, blockSwitchOn, false, true);
@@ -188,7 +188,7 @@ public class TestPropagationHelpers
 		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
 		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
 		_setBlock(switchLocation, cuboid, blockSwitchOn, false, true);
@@ -242,7 +242,7 @@ public class TestPropagationHelpers
 		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
 		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
 		MutableBlockProxy mutable = new MutableBlockProxy(switchLocation, cuboid);

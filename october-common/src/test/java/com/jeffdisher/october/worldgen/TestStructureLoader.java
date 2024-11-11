@@ -45,7 +45,7 @@ public class TestStructureLoader
 		String[] zLayers = new String[] {
 				"D\n",
 		};
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		AbsoluteLocation target = new AbsoluteLocation(5, 6, 7);
@@ -73,7 +73,7 @@ public class TestStructureLoader
 				+ " D D \n"
 				+ "B B B\n"
 		};
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		Assert.assertEquals(new AbsoluteLocation(5, 3, 3), structure.totalVolume());
@@ -104,7 +104,7 @@ public class TestStructureLoader
 				+ " D D \n"
 				+ "B B B\n"
 		};
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		
@@ -128,7 +128,7 @@ public class TestStructureLoader
 		// Make sure that things which grow or are light sources are replaced by air with mutations to place later.
 		StructureLoader loader = new StructureLoader(ENV.items, ENV.blocks);
 		String[] zLayers = new String[] {" P B S B L \n"};
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, DIRT);
 		Structure structure = loader.loadFromStrings(zLayers);
 		
@@ -168,7 +168,7 @@ public class TestStructureLoader
 				+ "A A\n"
 		};
 		// Create a cuboid where only the bottom layer is stone but the rest is air.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		short stoneBlockValue = ENV.items.getItemById("op.stone").number();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
@@ -212,7 +212,7 @@ public class TestStructureLoader
 				+ "EE\n"
 				+ "EE\n"
 		};
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Structure structure = loader.loadFromStrings(zLayers);
 		

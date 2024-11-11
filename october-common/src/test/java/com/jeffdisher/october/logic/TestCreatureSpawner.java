@@ -52,7 +52,7 @@ public class TestCreatureSpawner
 	public void singleCuboid()
 	{
 		// Create a cuboid of air with a single stone block located such that our random generator will find it and show that a single orc is spawned on the block.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
@@ -72,7 +72,7 @@ public class TestCreatureSpawner
 	public void sunnyCuboid()
 	{
 		// This is the same as singleCuboid() but it is bright out so the spawn should fail.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
@@ -92,7 +92,7 @@ public class TestCreatureSpawner
 	public void singleCuboidPeaceful()
 	{
 		// Create a cuboid of air with a single stone block located such that our random generator will find it but will fail to spawn due to peaceful mode.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
@@ -150,7 +150,7 @@ public class TestCreatureSpawner
 	public void singleCuboidLit()
 	{
 		// Use the same approach as singleCuboid, so we know where the spawn should happen, but set the LIGHT aspect so that the spawn will fail.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		cuboid.setData7(AspectRegistry.LIGHT, BlockAddress.fromInt(5, 5, 2), (byte)1);
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
@@ -170,7 +170,7 @@ public class TestCreatureSpawner
 	public void singleCuboidNearPlayer()
 	{
 		// Use the same approach as singleCuboid, so we know where the spawn should happen, but put a player near them so that the spawn will fail.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
@@ -191,7 +191,7 @@ public class TestCreatureSpawner
 		// Create a situation where spawning should be ideal but will fail because of an empty height map.
 		// This sometimes happens if a cuboid just loaded before the tick and its map hasn't been generated/merged before snapshot.
 		// Create a cuboid of air with a single stone block located such that our random generator will find it and show that a single orc is spawned on the block.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		ColumnHeightMap columnMap = ColumnHeightMap.build().freeze();
@@ -244,8 +244,8 @@ public class TestCreatureSpawner
 
 	private static Map<CuboidAddress, IReadOnlyCuboidData> _buildTestWorld()
 	{
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), AIR);
-		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		return Map.of(airCuboid.getCuboidAddress(), airCuboid
 				, stoneCuboid.getCuboidAddress(), stoneCuboid
 		);

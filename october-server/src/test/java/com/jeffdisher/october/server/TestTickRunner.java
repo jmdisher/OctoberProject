@@ -110,7 +110,7 @@ public class TestTickRunner
 	@Test
 	public void basicOneCuboid()
 	{
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -135,7 +135,7 @@ public class TestTickRunner
 	@Test
 	public void shockwaveOneCuboid()
 	{
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -179,14 +179,14 @@ public class TestTickRunner
 				, new WorldConfig()
 		);
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(_buildAirCuboid(new CuboidAddress((short)0, (short)0, (short)0))
-					, _buildAirCuboid(new CuboidAddress((short)0, (short)0, (short)-1))
-					, _buildAirCuboid(new CuboidAddress((short)0, (short)-1, (short)0))
-					, _buildAirCuboid(new CuboidAddress((short)0, (short)-1, (short)-1))
-					, _buildAirCuboid(new CuboidAddress((short)-1, (short)0, (short)0))
-					, _buildAirCuboid(new CuboidAddress((short)-1, (short)0, (short)-1))
-					, _buildAirCuboid(new CuboidAddress((short)-1, (short)-1, (short)0))
-					, _buildAirCuboid(new CuboidAddress((short)-1, (short)-1, (short)-1))
+		runner.setupChangesForTick(List.of(_buildAirCuboid(CuboidAddress.fromInt(0, 0, 0))
+					, _buildAirCuboid(CuboidAddress.fromInt(0, 0, -1))
+					, _buildAirCuboid(CuboidAddress.fromInt(0, -1, 0))
+					, _buildAirCuboid(CuboidAddress.fromInt(0, -1, -1))
+					, _buildAirCuboid(CuboidAddress.fromInt(-1, 0, 0))
+					, _buildAirCuboid(CuboidAddress.fromInt(-1, 0, -1))
+					, _buildAirCuboid(CuboidAddress.fromInt(-1, -1, 0))
+					, _buildAirCuboid(CuboidAddress.fromInt(-1, -1, -1))
 				)
 				, null
 				, List.of(_createFreshEntity(entityId))
@@ -216,7 +216,7 @@ public class TestTickRunner
 	@Test
 	public void basicBlockRead()
 	{
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -257,7 +257,7 @@ public class TestTickRunner
 		// Just add, add, and remove some inventory items.
 		AbsoluteLocation testBlock = new AbsoluteLocation(0, 0, 0);
 		Item stoneItem = STONE_ITEM;
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		
 		// Create a tick runner with a single cuboid and get it running.
@@ -303,7 +303,7 @@ public class TestTickRunner
 	@Test
 	public void deliverWithEntity()
 	{
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
@@ -402,7 +402,7 @@ public class TestTickRunner
 		TickRunner runner = _createTestRunner();
 		
 		// Create a cuboid of stone.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		// We will load a pickaxe into the entity so that it can do this in only a few small hits.
 		int entityId = 1;
@@ -488,8 +488,8 @@ public class TestTickRunner
 				, snapshotListener
 				, new WorldConfig()
 		);
-		CuboidAddress targetAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidAddress constantAddress = new CuboidAddress((short)0, (short)0, (short)1);
+		CuboidAddress targetAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidAddress constantAddress = CuboidAddress.fromInt(0, 0, 1);
 		CuboidColumnAddress column = targetAddress.getColumn();
 		Assert.assertEquals(column, constantAddress.getColumn());
 		int entityId = 1;
@@ -602,8 +602,8 @@ public class TestTickRunner
 		
 		// Wait for the start-up to complete and then load the entity and some cuboids.
 		runner.waitForPreviousTick();
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
-		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidAddress stoneAddress = CuboidAddress.fromInt(0, 0, -1);
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(
 				_buildAirCuboid(airAddress),
@@ -635,9 +635,9 @@ public class TestTickRunner
 		runner = _createTestRunner();
 		runner.start();
 		runner.waitForPreviousTick();
-		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		runner.setupChangesForTick(List.of(
-				_buildAirCuboid(new CuboidAddress((short)0, (short)0, (short)0)),
+				_buildAirCuboid(CuboidAddress.fromInt(0, 0, 0)),
 				new SuspendedCuboid<IReadOnlyCuboidData>(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid), List.of(), List.of(new ScheduledMutation(mutation, 0L)))
 			)
 			, null
@@ -658,7 +658,7 @@ public class TestTickRunner
 	public void saturatingMutations()
 	{
 		// Apply a few mutations which saturate within one tick.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -711,7 +711,7 @@ public class TestTickRunner
 		long craftCharcoalMillis = ENV.crafting.getCraftById("op.furnace_logs_to_charcoal").millisPerCraft;
 		long craftCharcoalTicks = craftCharcoalMillis / MILLIS_PER_TICK;
 		
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -846,9 +846,9 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.completedCuboids().size());
 		
 		// Add the new cuboids, run a tick, and verify they are in the snapshot.
-		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, STONE);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of())
 					, new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of())
@@ -903,7 +903,7 @@ public class TestTickRunner
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
 		AbsoluteLocation startLocation = new AbsoluteLocation(0, 0, 2);
-		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
@@ -960,7 +960,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.completedCuboids().size());
 		
 		// Load in a cuboid with a suspended mutation to represent the falling.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid
 				, HeightMapHelpers.buildHeightMap(cuboid)
@@ -1064,7 +1064,7 @@ public class TestTickRunner
 		runner.start();
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
-		CuboidAddress address0 = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.WATER_SOURCE);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
 				, null
@@ -1077,7 +1077,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Now, load an air cuboid below this and verify that the water start falling.
-		CuboidAddress address1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of()))
 				, null
@@ -1113,7 +1113,7 @@ public class TestTickRunner
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
-		CuboidData cascade = _buildCascade(new CuboidAddress((short)-3, (short)-4, (short)-5));
+		CuboidData cascade = _buildCascade(CuboidAddress.fromInt(-3, -4, -5));
 		AbsoluteLocation plug = cascade.getCuboidAddress().getBase().getRelative(16, 16, 30);
 		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
 		cascade.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 31), ENV.special.WATER_SOURCE.item().number());
@@ -1163,7 +1163,7 @@ public class TestTickRunner
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
 		
-		CuboidAddress startAddress = new CuboidAddress((short)-3, (short)-4, (short)-5);
+		CuboidAddress startAddress = CuboidAddress.fromInt(-3, -4, -5);
 		CuboidData topNorthEast = _buildCascade(startAddress);
 		AbsoluteLocation plug = topNorthEast.getCuboidAddress().getBase().getRelative(0, 0, 30);
 		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
@@ -1220,7 +1220,7 @@ public class TestTickRunner
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);
 		runner.start();
-		CuboidAddress address = new CuboidAddress((short)-3, (short)-4, (short)-5);
+		CuboidAddress address = CuboidAddress.fromInt(-3, -4, -5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation stoneLocation = address.getBase().getRelative(5, 5, 0);
 		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
@@ -1292,7 +1292,7 @@ public class TestTickRunner
 	public void simpleLighting()
 	{
 		// Just show a relatively simple lighting case - add a lantern and an opaque block and verify the lighting pattern across 3 cuboids (diagonally).
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidAddress otherAddress0 = address.getRelative(-1, 0, 0);
 		CuboidAddress otherAddress1 = address.getRelative(-1, -1, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
@@ -1353,7 +1353,7 @@ public class TestTickRunner
 	public void treeGrowth()
 	{
 		// We just want to see what happens when we plant a sapling.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
@@ -1426,7 +1426,7 @@ public class TestTickRunner
 	{
 		// Plant a seed and watch it grow.
 		int ticksBetweenGrowthCalls = (int)(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS / MILLIS_PER_TICK);
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
@@ -1524,7 +1524,7 @@ public class TestTickRunner
 	public void breakGrowingWheat()
 	{
 		// Plant a seed and then break the block under it, see that a seed drops, and run for a few cycles to make sure the delayed growth tick is ok.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
@@ -1611,7 +1611,7 @@ public class TestTickRunner
 	public void attackCreature()
 	{
 		// Load a cuboid with a creature on it and an entity.  Verify that the entity can hit the creature multiple times and that the despawn is correctly reflected.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
@@ -1684,7 +1684,7 @@ public class TestTickRunner
 	public void fallingCreature()
 	{
 		// Load anair cuboid with a creature in it and verify that it falls as time passes.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		EntityLocation entityLocation = spawn.toEntityLocation();
@@ -1723,7 +1723,7 @@ public class TestTickRunner
 	public void lampSwitch()
 	{
 		// Place a lamp and switch in the world, activate the switch, then observe the lamp change of state and lighting update.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Item lampOff = ENV.items.getItemById("op.lamp_off");
 		Item lampOn = ENV.items.getItemById("op.lamp_on");
@@ -1795,7 +1795,7 @@ public class TestTickRunner
 	public void breakLogicWire()
 	{
 		// Place an activated switch and some wire in the world, verify that the logic propagates, then break the wire and show that the wire goes dead.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Item switchOff = ENV.items.getItemById("op.switch_off");
 		Item switchOn = ENV.items.getItemById("op.switch_on");
@@ -1880,7 +1880,7 @@ public class TestTickRunner
 	public void operatorSetCreative()
 	{
 		// Define an entity and show that we can set their creative flag with an operator command.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		
 		// Create a tick runner with a single cuboid and get it running.
@@ -1916,7 +1916,7 @@ public class TestTickRunner
 	public void growAfterFirstLoad()
 	{
 		// Verifies that we don't NPE when running a growth tick on a cuboid which was just loaded and doesn't yet have its height map.
-		CuboidAddress address = new CuboidAddress((short)7, (short)8, (short)9);
+		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);

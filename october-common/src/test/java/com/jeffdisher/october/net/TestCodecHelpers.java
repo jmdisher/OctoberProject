@@ -56,7 +56,7 @@ public class TestCodecHelpers
 	public void cuboidAddress() throws Throwable
 	{
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		CuboidAddress test = new CuboidAddress((short)0, (short)1, (short)-2);
+		CuboidAddress test = CuboidAddress.fromInt(0, 1, -2);
 		CodecHelpers.writeCuboidAddress(buffer, test);
 		buffer.flip();
 		CuboidAddress output = CodecHelpers.readCuboidAddress(buffer);

@@ -48,7 +48,7 @@ public class TestHopperHelpers
 		Block hopperNorth = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.hopper_north"));
 		Item charcoal = ENV.items.getItemById("op.charcoal");
 		Item sword = ENV.items.getItemById("op.iron_sword");
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation topLocation = address.getBase().getRelative(16, 16, 16);
 		AbsoluteLocation hopperLocation = topLocation.getRelative(0, 0, -1);

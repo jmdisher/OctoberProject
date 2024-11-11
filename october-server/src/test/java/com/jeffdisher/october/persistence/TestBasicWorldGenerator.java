@@ -115,7 +115,7 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)0, (short)0, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(0, 0, 0));
 		CuboidData cuboid = suspended.cuboid();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
@@ -217,19 +217,19 @@ public class TestBasicWorldGenerator
 		// This one is in the middle of the range so it should see some values.
 		// -coal is a range of 70 with 4 tries of 8 blocks so we should average around 14.6/cuboid
 		// -iron is a range of 90 with 2 tries of 27 blocks so we should average around 19.2/cuboid
-		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)-1);
+		CuboidAddress address = CuboidAddress.fromInt(5, 2, -1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
 		_checkBlockTypes(data, 32642, 44, 82, 0, 0, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
-		address = new CuboidAddress((short)5, (short)1, (short)0);
+		address = CuboidAddress.fromInt(5, 1, 0);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
 		_checkBlockTypes(data, 32736, 32, 0, 0, 0, 0, 0, 0);
 		
 		// This one is too deep for either.
-		address = new CuboidAddress((short)5, (short)1, (short)-5);
+		address = CuboidAddress.fromInt(5, 1, -5);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
 		_checkBlockTypes(data, 32763, 0, 5, 0, 0, 0, 0, 0);
@@ -256,7 +256,7 @@ public class TestBasicWorldGenerator
 	{
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-10, (short)-9, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-10, -9, 0));
 		CuboidData cuboid = suspended.cuboid();
 		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 34, 69, 0, 0);
 	}
@@ -279,7 +279,7 @@ public class TestBasicWorldGenerator
 		// We know that this cuboid has a gully in a field biome so it will contain wheat.
 		// (this will spawn cows so make sure we have an ID assigner).
 		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
-		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, new CuboidAddress((short)-10, (short)9, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, CuboidAddress.fromInt(-10, 9, 0));
 		
 		// Verify the wheat field.
 		// This is a large field (56 in gully + 4).
@@ -302,7 +302,7 @@ public class TestBasicWorldGenerator
 		int seed = 42;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		// We know that this cuboid has a gully in a meadow biome so it will contain carrots.
-		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)-9, (short)-5, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-9, -5, 0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a small field (3 in gully + 3).
 		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
@@ -314,7 +314,7 @@ public class TestBasicWorldGenerator
 		// This test verifies that we don't fail when we try to generate a forest on a stone peak (experimentally found this seed).
 		int seed = 10256;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
-		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, new CuboidAddress((short)1, (short)-1, (short)0));
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(1, -1, 0));
 		CuboidData cuboid = suspended.cuboid();
 		_checkBlockTypes(cuboid, 11918, 24, 1, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 34, 69, 0, 0);
 	}
@@ -328,7 +328,7 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		
 		// Try one high in the air.
-		CuboidAddress address = new CuboidAddress((short)5, (short)2, (short)100);
+		CuboidAddress address = CuboidAddress.fromInt(5, 2, 100);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
 		// We generate at least 1 ore.
@@ -336,7 +336,7 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(data, 32767, 0, iron, 0, 0, 0, 0, 0);
 		
 		// Try one deep underground.
-		address = new CuboidAddress((short)5, (short)1, (short)-200);
+		address = CuboidAddress.fromInt(5, 1, -200);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
 		// We generate at most 100 ore.

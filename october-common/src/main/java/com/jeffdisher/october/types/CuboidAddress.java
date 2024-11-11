@@ -8,6 +8,19 @@ import com.jeffdisher.october.utils.Encoding;
  */
 public record CuboidAddress(short x, short y, short z)
 {
+	/**
+	 * A helper factory method to create an instance without explicit casting to short.
+	 * 
+	 * @param x The x coordinate.
+	 * @param y The y coordinate.
+	 * @param z The z coordinate.
+	 * @return A new CuboidAddress.
+	 */
+	public static final CuboidAddress fromInt(int x, int y, int z)
+	{
+		return new CuboidAddress((short)x, (short)y, (short)z);
+	}
+
 	// (these are int args just to require fewer casts in the callers)
 	public final CuboidAddress getRelative(int rx, int ry, int rz)
 	{

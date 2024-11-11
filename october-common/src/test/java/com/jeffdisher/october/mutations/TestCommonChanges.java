@@ -243,7 +243,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, target);
@@ -269,7 +269,7 @@ public class TestCommonChanges
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		Inventory blockInventory = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish();
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), blockInventory);
@@ -327,7 +327,7 @@ public class TestCommonChanges
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity original = mutable.freeze();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
@@ -383,7 +383,7 @@ public class TestCommonChanges
 		int idOfPick = 1;
 		mutable.setSelectedKey(idOfPick);
 		Entity original = mutable.freeze();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
@@ -424,7 +424,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try too close (colliding).
@@ -461,7 +461,7 @@ public class TestCommonChanges
 		AbsoluteLocation tooFar = new AbsoluteLocation(7, 2, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation reasonable = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), STONE_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, wrongType.getBlockAddress(), PLANK_ITEM.number());
 		Assert.assertEquals(PLANK_ITEM.number(), cuboid.getData15(AspectRegistry.BLOCK, wrongType.getBlockAddress()));
@@ -516,7 +516,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 2);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(CHARCOAL_ITEM));
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		MutableBlockProxy proxy = new MutableBlockProxy(furnace, cuboid);
 		proxy.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		proxy.writeBack(cuboid);
@@ -562,7 +562,7 @@ public class TestCommonChanges
 		mutable2.newInventory.addAllItems(STONE_ITEM, 1);
 		mutable2.setSelectedKey(mutable2.newInventory.getIdOfStackableType(STONE_ITEM));
 		
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
@@ -616,7 +616,7 @@ public class TestCommonChanges
 	public void itemDropOverfill() throws Throwable
 	{
 		// Fill 2 blocks in the column and show that the top falls into the bottom, even making it over-full.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 9);
 		// We need to make sure that there is a solid block under the target location so it doesn't just fall.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
@@ -659,7 +659,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		int stored = newEntity.newInventory.addItemsBestEfforts(STONE_ITEM, 100);
 		Assert.assertTrue(stored < 100);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Create the change.
@@ -739,9 +739,9 @@ public class TestCommonChanges
 		target.setSelectedKey(target.newInventory.getIdOfStackableType(STONE_ITEM));
 		
 		// We need to make sure that there is a solid block under the entities so nothing falls.
-		CuboidAddress airAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
-		CuboidAddress stoneAddress = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress stoneAddress = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(stoneAddress, STONE);
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -948,7 +948,7 @@ public class TestCommonChanges
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE_ITEM.number());
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
@@ -974,7 +974,7 @@ public class TestCommonChanges
 		int initialEncumbrance = newEntity.newInventory.getCurrentEncumbrance();
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE_ITEM.number());
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), plank.number());
@@ -1022,7 +1022,7 @@ public class TestCommonChanges
 		
 		AbsoluteLocation targetStone = new AbsoluteLocation(6, 0, 10);
 		AbsoluteLocation targetLog = new AbsoluteLocation(6, 1, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, targetStone.getBlockAddress(), STONE_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, targetLog.getBlockAddress(), LOG_ITEM.number());
 		
@@ -1068,7 +1068,7 @@ public class TestCommonChanges
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), stone);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
@@ -1212,7 +1212,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 2);
 		int charcoalId = newEntity.newInventory.getIdOfStackableType(CHARCOAL_ITEM);
 		AbsoluteLocation furnace = new AbsoluteLocation(2, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		MutableBlockProxy mutable = new MutableBlockProxy(furnace, cuboid);
 		mutable.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.furnace")));
 		mutable.writeBack(cuboid);
@@ -1386,7 +1386,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemDoorClosed, 1);
 		newEntity.setSelectedKey(1);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
 		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, target);
@@ -1452,7 +1452,7 @@ public class TestCommonChanges
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemHopperDown, 6);
 		newEntity.setSelectedKey(1);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// We will place down 5 hoppers, all with different orientations, and verify that they end up correctly oriented in the world.
@@ -1522,7 +1522,7 @@ public class TestCommonChanges
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation doorLocation = new AbsoluteLocation(0, 1, 10);
 		AbsoluteLocation switchLocation = doorLocation.getRelative(1, 0, 0);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), closedDoor.item().number());
@@ -1609,7 +1609,7 @@ public class TestCommonChanges
 		// Swim and see how our vector changes.
 		EntityLocation oldLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), waterSource);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
@@ -1646,7 +1646,7 @@ public class TestCommonChanges
 	{
 		// Create a water cuboid with a solid block in it to show that a jump or swim will work on the block but only swimming works in the water.
 		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), waterSource);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), waterSource);
 		AbsoluteLocation stoneLocation = cuboid.getCuboidAddress().getBase().getRelative(5, 5, 5);
 		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), STONE.item().number());
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
@@ -1682,7 +1682,7 @@ public class TestCommonChanges
 		newEntity.newInventory.addAllItems(wheatItem, 1);
 		int wheatId = newEntity.newInventory.getIdOfStackableType(wheatItem);
 		AbsoluteLocation quern = new AbsoluteLocation(2, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		MutableBlockProxy mutable = new MutableBlockProxy(quern, cuboid);
 		mutable.setBlockAndClear(ENV.blocks.fromItem(ENV.items.getItemById("op.quern")));
 		mutable.writeBack(cuboid);
@@ -1746,7 +1746,7 @@ public class TestCommonChanges
 				, MutableEntity.TESTING_LOCATION
 				, 0L
 		);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
@@ -1813,7 +1813,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newInventory.addAllItems(CHARCOAL_ITEM, 1);
 		newEntity.newHotbar[newEntity.newHotbarIndex] = 1;
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		Assert.assertFalse(newEntity.freeze().isCreativeMode());
 		
@@ -1836,7 +1836,7 @@ public class TestCommonChanges
 	{
 		// Create an entity in survival mode, change them to creative and back.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, false, false);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), newEntity.freeze().location());
 		
@@ -1921,7 +1921,7 @@ public class TestCommonChanges
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), STONE_ITEM.number());
 		// (we also need to make sure that we are standing on something)
 		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
@@ -1949,8 +1949,8 @@ public class TestCommonChanges
 
 	private static TickProcessingContext _createSimpleContext()
 	{
-		CuboidData air = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE);
+		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null)
 				.finish()

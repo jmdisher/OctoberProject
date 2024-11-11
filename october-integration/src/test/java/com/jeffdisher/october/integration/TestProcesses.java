@@ -112,7 +112,7 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Load a cuboid.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboidLoader.preload(cuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
@@ -156,8 +156,8 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Load a cuboids.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0,  0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
@@ -203,7 +203,7 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Create and load the cuboid full of stone with no inventories.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
@@ -241,8 +241,8 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader
@@ -348,7 +348,7 @@ public class TestProcesses
 		long currentTimeMillis = 1000L;
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		cuboidLoader.preload(cuboid);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
@@ -402,8 +402,8 @@ public class TestProcesses
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Create and load the cuboids full of air (so we can walk through them) with no inventories.
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short) 0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)-1, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0,  0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerProcess server = new ServerProcess(PORT, MILLIS_PER_TICK
 				, cuboidLoader

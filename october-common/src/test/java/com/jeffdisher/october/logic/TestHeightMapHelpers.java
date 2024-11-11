@@ -53,7 +53,7 @@ public class TestHeightMapHelpers
 		// We will create a map which technically has the wrong values just to show the missing elements aren't updated.
 		byte value = 5;
 		byte[][] raw = HeightMapHelpers.createUniformHeightMap(value);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		BlockAddress blockAddress = BlockAddress.fromInt(5, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, ENV.items.getItemById("op.stone").number());
 		HeightMapHelpers.populateHeightMap(raw, cuboid);
@@ -79,7 +79,7 @@ public class TestHeightMapHelpers
 	public void buildHeightMap() throws Throwable
 	{
 		// Populate a cuboid with some values and observe the expected height map.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		for (byte x = 0; x < 2; ++x)
 		{
@@ -120,8 +120,8 @@ public class TestHeightMapHelpers
 	public void mergeToOneColumnMap() throws Throwable
 	{
 		// Populate a cuboid with some values and observe the expected height map.
-		CuboidAddress low = new CuboidAddress((short)0, (short)0, (short)-1);
-		CuboidAddress high = new CuboidAddress((short)0, (short)0, (short)1);
+		CuboidAddress low = CuboidAddress.fromInt(0, 0, -1);
+		CuboidAddress high = CuboidAddress.fromInt(0, 0, 1);
 		int lowZ = low.getBase().z();
 		int highZ = high.getBase().z();
 		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
@@ -149,9 +149,9 @@ public class TestHeightMapHelpers
 	public void mergeColumnCollection() throws Throwable
 	{
 		// Populate a cuboid with some values and observe the expected height map.
-		CuboidAddress low = new CuboidAddress((short)0, (short)0, (short)-1);
-		CuboidAddress high = new CuboidAddress((short)0, (short)0, (short)1);
-		CuboidAddress distinct = new CuboidAddress((short)-1, (short)-1, (short)-2);
+		CuboidAddress low = CuboidAddress.fromInt(0, 0, -1);
+		CuboidAddress high = CuboidAddress.fromInt(0, 0, 1);
+		CuboidAddress distinct = CuboidAddress.fromInt(-1, -1, -2);
 		int lowZ = low.getBase().z();
 		int highZ = high.getBase().z();
 		int distinctZ = distinct.getBase().z();
@@ -190,10 +190,10 @@ public class TestHeightMapHelpers
 	{
 		// Use the height map rebuild helper to handle changes across a few columns.
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
-		CuboidData x0z0 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		CuboidData x0z1 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)1), ENV.special.AIR);
-		CuboidData x1z0 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.special.AIR);
-		CuboidData x1z1 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)1), ENV.special.AIR);
+		CuboidData x0z0 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData x0z1 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 1), ENV.special.AIR);
+		CuboidData x1z0 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR);
+		CuboidData x1z1 = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 1), ENV.special.AIR);
 		
 		// Seed some initial data.
 		x0z0.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), stoneNumber);

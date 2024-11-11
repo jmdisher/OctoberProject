@@ -533,7 +533,7 @@ public class ServerStateManager
 			{
 				for (int k = -1; k <= 1; ++k)
 				{
-					CuboidAddress oneCuboid = new CuboidAddress((short) (currentCuboid.x() + i), (short) (currentCuboid.y() + j), (short) (currentCuboid.z() + k));
+					CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
 					if (state.knownCuboids.contains(oneCuboid))
 					{
 						// We know about this cuboid so send any updates.

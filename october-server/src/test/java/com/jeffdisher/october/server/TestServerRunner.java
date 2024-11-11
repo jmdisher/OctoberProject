@@ -147,8 +147,8 @@ public class TestServerRunner
 		
 		// Create a world with a stone cuboid and an air cuboid on top.
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
 		
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
@@ -196,10 +196,10 @@ public class TestServerRunner
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
 		
 		// Fill the cuboid with chests and put some items into one, so we can pull them out.
-		CuboidAddress addressAir = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress addressAir = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboidAir = CuboidGenerator.createFilledCuboid(addressAir, ENV.special.AIR);
 		cuboidLoader.preload(cuboidAir);
-		CuboidAddress addressChest = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress addressChest = CuboidAddress.fromInt(0, 0, -1);
 		Block chest = ENV.blocks.fromItem(ENV.items.getItemById("op.chest"));
 		CuboidData cuboidChest = CuboidGenerator.createFilledCuboid(addressChest, chest);
 		cuboidLoader.preload(cuboidChest);
@@ -246,8 +246,8 @@ public class TestServerRunner
 		// Do nothing and observe that we see location updates from the server as the entity falls.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short) 0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
@@ -332,14 +332,14 @@ public class TestServerRunner
 		// Connect a client and have them walk over a cuboid boundary so that cuboids are removed.
 		TestAdapter network = new TestAdapter();
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)-1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)-1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)-1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-1, (short)0, (short)0), ENV.special.AIR));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)-1), STONE));
-		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(new CuboidAddress((short)-2, (short)0, (short)0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, -1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, -1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, -1), STONE));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-2, 0, 0), ENV.special.AIR));
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
@@ -519,7 +519,7 @@ public class TestServerRunner
 		// We want to connect 2 clients and teleport them between different isolated cuboids, showing what comes in/out of visiblity.
 		TestAdapter network = new TestAdapter();
 		// We will use a special cuboid generator which only generates the one cuboid with a well-defined population of creatures.
-		CuboidAddress otherIsland = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress otherIsland = CuboidAddress.fromInt(10, 10, 10);
 		_SkyBlockGenerator cuboidGenerator = new _SkyBlockGenerator(otherIsland);
 		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), cuboidGenerator, MutableEntity.TESTING_LOCATION);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
@@ -596,7 +596,7 @@ public class TestServerRunner
 					;
 				CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, fill);
 				// If it is 0, 0, 0, add a bed at 1,1,1.
-				if (address.equals(new CuboidAddress((short)0, (short)0, (short)0)))
+				if (address.equals(CuboidAddress.fromInt(0, 0, 0)))
 				{
 					cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), ENV.items.getItemById("op.bed").number());
 				}
@@ -665,7 +665,7 @@ public class TestServerRunner
 	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
 		// Create and load the cuboid full of stone with no inventories.
-		CuboidAddress address = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		cuboidLoader.preload(cuboid);
 	}
@@ -960,7 +960,7 @@ public class TestServerRunner
 		private final Set<CuboidAddress> _islands;
 		public _SkyBlockGenerator(CuboidAddress extraIsland)
 		{
-			CuboidAddress origin = new CuboidAddress((short)0, (short)0, (short)0);
+			CuboidAddress origin = CuboidAddress.fromInt(0, 0, 0);
 			_islands = (null != extraIsland)
 					? Set.of(origin, extraIsland)
 					: Set.of(origin)

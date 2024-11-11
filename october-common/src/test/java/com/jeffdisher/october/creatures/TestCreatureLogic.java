@@ -48,7 +48,7 @@ public class TestCreatureLogic
 		// Verify that all possible idle paths end on the ground.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		
@@ -88,7 +88,7 @@ public class TestCreatureLogic
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		_setLayer(input, (byte)1, "op.water_source");
@@ -129,7 +129,7 @@ public class TestCreatureLogic
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		_setLayer(input, (byte)1, "op.water_source");
@@ -160,7 +160,7 @@ public class TestCreatureLogic
 		// Verify that we will choose to do nothing if there are no idle movement targets.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
 		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
-		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		_setLayer(input, (byte)0, "op.stone");

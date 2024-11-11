@@ -50,7 +50,7 @@ public class TestFallingBehaviour
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 2);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(STONE_ITEM));
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 3);
 		// Create a solid block a little below this so we can watch it fall down.
@@ -106,7 +106,7 @@ public class TestFallingBehaviour
 	{
 		// Verify that breaking the bottom block first results in the top inventory falling.
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation bottomLocation = new AbsoluteLocation(0, 0, 3);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -150,7 +150,7 @@ public class TestFallingBehaviour
 		// Verify that breaking the top block first results in it still floating after breaking the bottom.
 		// (this requires generalized block update logic).
 		// We will just generate a solid stone cuboid so we don't worry about things falling due to empty space.
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation topLocation = new AbsoluteLocation(0, 0, 4);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
@@ -204,7 +204,7 @@ public class TestFallingBehaviour
 	public void bottomOfCuboid() throws Throwable
 	{
 		// Create an air cuboid with some items in the bottom block, then load another air cuboid and verify that they fall.
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
@@ -220,7 +220,7 @@ public class TestFallingBehaviour
 		Assert.assertEquals(2, cuboid.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Use a new context with a new cuboid to show that the items fall if updated now.
-		CuboidAddress cuboidAddress1 = new CuboidAddress((short)0, (short)0, (short)-1);
+		CuboidAddress cuboidAddress1 = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboidAddress.equals(location.getCuboidAddress())
@@ -248,7 +248,7 @@ public class TestFallingBehaviour
 	public void flowingWaterAfterBreak() throws Throwable
 	{
 		// Create a cuboid of stone with water sources around one block, air and inventory above it and below, then observe what happens when the block is broken.
-		CuboidAddress cuboidAddress = new CuboidAddress((short)0, (short)0, (short)0);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(15, 15, 15);
 		AbsoluteLocation eastLocation = targetLocation.getRelative(1, 0, 0);

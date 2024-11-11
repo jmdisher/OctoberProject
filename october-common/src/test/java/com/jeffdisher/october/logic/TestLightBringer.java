@@ -43,7 +43,7 @@ public class TestLightBringer
 	public void singleLightSource()
 	{
 		// Create a single light source in the middle of an air cuboid and check how it propagates.
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		MutableBlockProxy source = new MutableBlockProxy(centre, cuboid);
@@ -92,7 +92,7 @@ public class TestLightBringer
 	{
 		byte value = LightAspect.MAX_LIGHT;
 		// Create a single light source in the middle of an air cuboid and check how it propagates.
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
@@ -166,7 +166,7 @@ public class TestLightBringer
 	{
 		// Add and them remove a single light source in a 2D maze, in a block of stone.
 		byte value = LightAspect.MAX_LIGHT;
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		BlockAddress source = _loadBlockMap(cuboid, (byte)16, ""
 				+ "SSSSSSSSSSSSSSS SSSSSSSSSSSSSSSS"
@@ -248,7 +248,7 @@ public class TestLightBringer
 	public void murky()
 	{
 		// We want to check adding a few light sources to a high-opacity environment and then remove some.
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
@@ -319,7 +319,7 @@ public class TestLightBringer
 	public void differentOpacity()
 	{
 		// Make sure that the evaluation order is correct, even when opacity differs via different paths.
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
@@ -386,7 +386,7 @@ public class TestLightBringer
 		byte strong = LightAspect.MAX_LIGHT;
 		byte dim = 5;
 		
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		AbsoluteLocation strongLocation = centre.getRelative(-1, 0, 0);
@@ -444,7 +444,7 @@ public class TestLightBringer
 	public void batchProcess()
 	{
 		// We will add 3 light sources in one call, then remove 2 and add another 2 in the following call.
-		CuboidAddress address = new CuboidAddress((short)10, (short)10, (short)10);
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
 		
 		// In this case, we only use a real cuboid for the light levels and fixed values for opacity, based on location.
