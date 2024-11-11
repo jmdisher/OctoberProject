@@ -54,7 +54,7 @@ public class TestHeightMapHelpers
 		byte value = 5;
 		byte[][] raw = HeightMapHelpers.createUniformHeightMap(value);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		BlockAddress blockAddress = new BlockAddress((byte)5, (byte)6, (byte)7);
+		BlockAddress blockAddress = BlockAddress.fromInt(5, 6, 7);
 		cuboid.setData15(AspectRegistry.BLOCK, blockAddress, ENV.items.getItemById("op.stone").number());
 		HeightMapHelpers.populateHeightMap(raw, cuboid);
 		for (int y = 0; y < raw.length; ++y)
@@ -91,8 +91,8 @@ public class TestHeightMapHelpers
 				}
 			}
 		}
-		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)10), stoneNumber);
-		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)12), stoneNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 10), stoneNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 12), stoneNumber);
 		
 		CuboidHeightMap map = HeightMapHelpers.buildHeightMap(cuboid);
 		int airCount = 0;
@@ -127,10 +127,10 @@ public class TestHeightMapHelpers
 		CuboidData bottom = CuboidGenerator.createFilledCuboid(low, ENV.special.AIR);
 		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
-		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)10), stoneNumber);
-		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)10), stoneNumber);
-		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)12), stoneNumber);
-		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)2), stoneNumber);
+		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 10), stoneNumber);
+		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 10), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 12), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 2), stoneNumber);
 		
 		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
 		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
@@ -159,11 +159,11 @@ public class TestHeightMapHelpers
 		CuboidData top = CuboidGenerator.createFilledCuboid(high, ENV.special.AIR);
 		CuboidData other = CuboidGenerator.createFilledCuboid(distinct, ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
-		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)10), stoneNumber);
-		bottom.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)10), stoneNumber);
-		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)12), stoneNumber);
-		top.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)2, (byte)2, (byte)2), stoneNumber);
-		other.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), stoneNumber);
+		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 10), stoneNumber);
+		bottom.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 10), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 12), stoneNumber);
+		top.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(2, 2, 2), stoneNumber);
+		other.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), stoneNumber);
 		
 		Map<CuboidAddress, CuboidHeightMap> perCuboid = Map.of(low, HeightMapHelpers.buildHeightMap(bottom)
 				, high, HeightMapHelpers.buildHeightMap(top)
@@ -196,10 +196,10 @@ public class TestHeightMapHelpers
 		CuboidData x1z1 = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)1, (short)0, (short)1), ENV.special.AIR);
 		
 		// Seed some initial data.
-		x0z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), stoneNumber);
-		x0z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)2, (byte)1), stoneNumber);
-		x1z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)3, (byte)1), stoneNumber);
-		x1z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)4, (byte)1), stoneNumber);
+		x0z0.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), stoneNumber);
+		x0z1.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 2, 1), stoneNumber);
+		x1z0.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 3, 1), stoneNumber);
+		x1z1.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 4, 1), stoneNumber);
 		
 		Map<CuboidAddress, CuboidHeightMap> initialCuboids = Map.of(
 				x0z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z0)
@@ -219,8 +219,8 @@ public class TestHeightMapHelpers
 		Assert.assertEquals(33, first.get(x1z0.getCuboidAddress().getColumn()).getHeight(1, 4));
 		
 		// Make a few small changes and rebuild the maps - overlap under and over existing height.
-		x0z0.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)2, (byte)1), stoneNumber);
-		x1z1.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)3, (byte)1), stoneNumber);
+		x0z0.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 2, 1), stoneNumber);
+		x1z1.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 3, 1), stoneNumber);
 		Map<CuboidAddress, CuboidHeightMap> changedCuboids = Map.of(
 				x0z0.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x0z0)
 				, x1z1.getCuboidAddress(), HeightMapHelpers.buildHeightMap(x1z1)

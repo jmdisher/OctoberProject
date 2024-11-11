@@ -165,9 +165,9 @@ public class TestCreatureLogic
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		_setLayer(input, (byte)0, "op.stone");
 		_setLayer(input, (byte)1, "op.stone");
-		input.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)1), stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 1), stoneNumber);
 		_setLayer(input, (byte)2, "op.stone");
-		input.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)2), stoneNumber);
+		input.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 2), stoneNumber);
 		
 		// We should see 0 possible locations.
 		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {

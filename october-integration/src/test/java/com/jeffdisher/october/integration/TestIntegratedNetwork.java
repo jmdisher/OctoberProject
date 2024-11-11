@@ -229,13 +229,13 @@ public class TestIntegratedNetwork
 		OctreeShort octree = OctreeShort.create((short)0);
 		System.out.println("Building worst-case octree");
 		short value = 0;
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					octree.setData(new BlockAddress((byte)x, (byte)y, (byte)z), value);
+					octree.setData(new BlockAddress(x, y, z), value);
 					value += 1;
 				}
 			}
@@ -340,9 +340,9 @@ public class TestIntegratedNetwork
 		Assert.assertNotNull(finished);
 		
 		// Verify that a few of the entries are consistent.
-		Assert.assertEquals(0, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals((32 * 32 * 10) + (32 * 10) + 10, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)10, (byte)10, (byte)10)));
-		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)30, (byte)30, (byte)30)));
+		Assert.assertEquals(0, finished.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
+		Assert.assertEquals((32 * 32 * 10) + (32 * 10) + 10, finished.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(10, 10, 10)));
+		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(30, 30, 30)));
 	}
 
 

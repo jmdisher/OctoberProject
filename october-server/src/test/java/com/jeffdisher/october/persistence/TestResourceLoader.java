@@ -117,7 +117,7 @@ public class TestResourceLoader
 			}
 		}
 		Assert.assertEquals(2, loaded.size());
-		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
 		short test0 = loaded.get(0).getData15(AspectRegistry.BLOCK, block);
 		short test1 = loaded.get(1).getData15(AspectRegistry.BLOCK, block);
 		Assert.assertTrue((ENV.special.AIR.item().number() == test0) || (ENV.special.AIR.item().number() == test1));
@@ -136,7 +136,7 @@ public class TestResourceLoader
 		Collection<CuboidData> results = _loadSimpleCuboids(loader, List.of(airAddress));
 		Assert.assertNull(results);
 		CuboidData loaded = _waitForOne(loader);
-		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
 		// Modify a block and write this back.
 		loaded.setData15(AspectRegistry.BLOCK, block, STONE_ITEM.number());
 		loader.writeBackToDisk(List.of(new PackagedCuboid(loaded, List.of(), List.of())), List.of());

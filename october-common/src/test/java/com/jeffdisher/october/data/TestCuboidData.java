@@ -48,7 +48,7 @@ public class TestCuboidData
 		CuboidData output = CuboidData.createEmpty(cuboidAddress);
 		resume = output.deserializeResumable(null, buffer);
 		Assert.assertNull(resume);
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		Assert.assertEquals((short) 0, output.getData15(AspectRegistry.BLOCK, testAddress));
 		Assert.assertNull(output.getDataSpecial(AspectRegistry.INVENTORY, testAddress));
 	}
@@ -56,7 +56,7 @@ public class TestCuboidData
 	@Test
 	public void serializeSimple()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
@@ -81,7 +81,7 @@ public class TestCuboidData
 	@Test(expected = AssertionError.class)
 	public void serializeNoProgress()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
@@ -105,7 +105,7 @@ public class TestCuboidData
 	@Test
 	public void serializeOverflow()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
@@ -138,7 +138,7 @@ public class TestCuboidData
 	@Test
 	public void walkBlocks()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);
@@ -153,7 +153,7 @@ public class TestCuboidData
 	@Test
 	public void compareProxies()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)10, (byte)11, (byte)12);
+		BlockAddress testAddress = BlockAddress.fromInt(10, 11, 12);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData base = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		CuboidData test = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);

@@ -205,7 +205,7 @@ public class TestServerRunner
 		cuboidLoader.preload(cuboidChest);
 		
 		Inventory inventory = Inventory.start(ENV.stations.getNormalInventorySize(chest)).addStackable(STONE.item(), 2).finish();
-		cuboidChest.setDataSpecial(AspectRegistry.INVENTORY, new BlockAddress((byte)0, (byte)0, (byte)31), inventory);
+		cuboidChest.setDataSpecial(AspectRegistry.INVENTORY, BlockAddress.fromInt(0, 0, 31), inventory);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
 				, network
@@ -598,7 +598,7 @@ public class TestServerRunner
 				// If it is 0, 0, 0, add a bed at 1,1,1.
 				if (address.equals(new CuboidAddress((short)0, (short)0, (short)0)))
 				{
-					cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)1, (byte)1, (byte)1), ENV.items.getItemById("op.bed").number());
+					cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), ENV.items.getItemById("op.bed").number());
 				}
 				return new SuspendedCuboid<>(cuboid
 						, HeightMapHelpers.buildHeightMap(cuboid)
@@ -979,7 +979,7 @@ public class TestServerRunner
 				{
 					for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 					{
-						raw.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte) 0), STONE.item().number());
+						raw.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
 					}
 				}
 				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);

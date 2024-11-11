@@ -295,7 +295,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 					}
 					if (blockToWrite != defaultBlock)
 					{
-						data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte)z), blockToWrite.item().number());
+						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
 					}
 				}
 			}
@@ -425,7 +425,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int[][] xCentres = new int[3][3];
 		_buildCentreField3x3(new _SubField(seeds, 0, 0), yCentres, xCentres);
 		
-		return new BlockAddress((byte)xCentres[1][1], (byte)yCentres[1][1], (byte)0);
+		return BlockAddress.fromInt(xCentres[1][1], yCentres[1][1], 0);
 	}
 
 	/**
@@ -832,14 +832,14 @@ public class BasicWorldGenerator implements IWorldGenerator
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBottomZ + 1;
 				if ((relativeZ >= 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
 				{
-					BlockAddress address = new BlockAddress((byte)relativeX, (byte)relativeY, (byte)relativeZ);
+					BlockAddress address = BlockAddress.fromInt(relativeX, relativeY, relativeZ);
 					short original = data.getData15(AspectRegistry.BLOCK, address);
 					if (blockToReplace == original)
 					{
 						// Make sure that these are over dirt.
 						if (address.z() > 0)
 						{
-							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, new BlockAddress(address.x(), address.y(), (byte)(address.z() - 1))));
+							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, address.getRelativeInt(0, 0, -1)));
 						}
 						data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
 					}

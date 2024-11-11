@@ -401,7 +401,7 @@ public class OctreeShort implements IOctree
 			if (skip != _inlineCompact)
 			{
 				byte size = 32;
-				castCallback.visit(new BlockAddress((byte)0, (byte)0, (byte)0), size, _inlineCompact);
+				castCallback.visit(BlockAddress.fromInt(0, 0, 0), size, _inlineCompact);
 			}
 		}
 	}

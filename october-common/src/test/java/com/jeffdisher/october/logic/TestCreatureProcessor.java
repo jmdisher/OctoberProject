@@ -522,7 +522,7 @@ public class TestCreatureProcessor
 		{
 			_setCuboidLayer(cuboid, z, STONE.item().number());
 		}
-		cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)8, (byte)8, (byte)1), AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(8, 8, 1), AIR.item().number());
 		
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);

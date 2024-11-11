@@ -52,8 +52,8 @@ public class TestStructureLoader
 		List<IMutationBlock> changes = structure.applyToCuboid(cuboid, target, Structure.REPLACE_ALL);
 		Assert.assertTrue(changes.isEmpty());
 		
-		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)4, (byte)5, (byte)6)));
-		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)5, (byte)6, (byte)7)));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(4, 5, 6)));
+		Assert.assertEquals(DIRT.item().number(), cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 6, 7)));
 	}
 
 	@Test

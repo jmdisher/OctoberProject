@@ -37,7 +37,7 @@ public class TestCuboidCodec
 	@Test
 	public void empty()
 	{
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		
@@ -50,7 +50,7 @@ public class TestCuboidCodec
 	public void simple()
 	{
 		Item stoneItem = ENV.items.getItemById("op.stone");
-		BlockAddress testAddress = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress testAddress = BlockAddress.fromInt(0, 0, 0);
 		CuboidAddress cuboidAddress = new CuboidAddress((short) 0, (short) 0, (short) 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		input.setData15(AspectRegistry.BLOCK, testAddress, (short)1);

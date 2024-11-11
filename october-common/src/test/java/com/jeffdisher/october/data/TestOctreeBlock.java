@@ -32,8 +32,8 @@ public class TestOctreeBlock
 	public void filled()
 	{
 		OctreeShort test = OctreeShort.create(ENV.special.AIR.item().number());
-		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
-		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, new BlockAddress((byte)31, (byte)31, (byte)31)));
+		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
+		Assert.assertEquals(ENV.special.AIR.item().number(), (short)test.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(31, 31, 31)));
 	}
 
 	@Test
@@ -62,14 +62,14 @@ public class TestOctreeBlock
 		// We init to 0 and will set the first block to 0.
 		OctreeShort test = OctreeShort.create(value);
 		long startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					test.setData(new BlockAddress((byte)x, (byte)y, (byte)z), value);
+					test.setData(new BlockAddress(x, y, z), value);
 					value += 1;
 				}
 			}
@@ -84,14 +84,14 @@ public class TestOctreeBlock
 		// Verify that we can read all of these.
 		value = 0;
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(value, (short)verify.getData(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(value, (short)verify.getData(AspectRegistry.BLOCK, new BlockAddress(x, y, z)));
 					value += 1;
 				}
 			}
@@ -103,14 +103,14 @@ public class TestOctreeBlock
 		
 		// Clear all the bytes.
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					verify.setData(new BlockAddress((byte)x, (byte)y, (byte)z), (short)0);
+					verify.setData(new BlockAddress(x, y, z), (short)0);
 				}
 			}
 			long end = System.currentTimeMillis();
@@ -124,14 +124,14 @@ public class TestOctreeBlock
 		// Perform final verification.
 		value = 0;
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(0, (short)verify.getData(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(0, (short)verify.getData(AspectRegistry.BLOCK, new BlockAddress(x, y, z)));
 				}
 			}
 			long end = System.currentTimeMillis();
@@ -158,14 +158,14 @@ public class TestOctreeBlock
 		// We init to 0 and will set the first block to 0.
 		OctreeByte test = OctreeByte.create(value);
 		long startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					test.setData(new BlockAddress((byte)x, (byte)y, (byte)z), value);
+					test.setData(new BlockAddress(x, y, z), value);
 					value += 1;
 					if (value < 0)
 					{
@@ -185,14 +185,14 @@ public class TestOctreeBlock
 		// Verify that we can read all of these.
 		value = 0;
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(value, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(value, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress(x, y, z)));
 					value += 1;
 					if (value < 0)
 					{
@@ -208,14 +208,14 @@ public class TestOctreeBlock
 		
 		// Clear all the bytes.
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					verify.setData(new BlockAddress((byte)x, (byte)y, (byte)z), (byte)0);
+					verify.setData(new BlockAddress(x, y, z), (byte)0);
 				}
 			}
 			long end = System.currentTimeMillis();
@@ -229,14 +229,14 @@ public class TestOctreeBlock
 		// Perform final verification.
 		value = 0;
 		startStore = System.currentTimeMillis();
-		for (int x = 0; x < 32; ++x)
+		for (byte x = 0; x < 32; ++x)
 		{
 			long start = System.currentTimeMillis();
-			for (int y = 0; y < 32; ++y)
+			for (byte y = 0; y < 32; ++y)
 			{
-				for (int z = 0; z < 32; ++z)
+				for (byte z = 0; z < 32; ++z)
 				{
-					Assert.assertEquals(0, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress((byte)x, (byte)y, (byte)z)));
+					Assert.assertEquals(0, (byte)verify.getData(AspectRegistry.LIGHT, new BlockAddress(x, y, z)));
 				}
 			}
 			long end = System.currentTimeMillis();
@@ -258,15 +258,15 @@ public class TestOctreeBlock
 			{
 				for (int z = 0; z < 2; ++z)
 				{
-					test.setData(new BlockAddress((byte)(2 + x), (byte)(2 + y), (byte)(2 + z)), (byte)1);
+					test.setData(BlockAddress.fromInt((2 + x), (2 + y), (2 + z)), (byte)1);
 				}
 			}
 		}
-		test.setData(new BlockAddress((byte)18, (byte)29, (byte)7), (byte)2);
+		test.setData(BlockAddress.fromInt(18, 29, 7), (byte)2);
 		
 		BlockAddress[] bases = new BlockAddress[] {
-				new BlockAddress((byte)2, (byte)2, (byte)2),
-				new BlockAddress((byte)18, (byte)29, (byte)7),
+				BlockAddress.fromInt(2, 2, 2),
+				BlockAddress.fromInt(18, 29, 7),
 		};
 		byte[] sizes = new byte[] {
 				(byte)2,
@@ -298,15 +298,15 @@ public class TestOctreeBlock
 			{
 				for (int z = 0; z < 4; ++z)
 				{
-					test.setData(new BlockAddress((byte)(28 + x), (byte)(28 + y), (byte)(28 + z)), (short)1);
+					test.setData(BlockAddress.fromInt((28 + x), (28 + y), (28 + z)), (short)1);
 				}
 			}
 		}
-		test.setData(new BlockAddress((byte)0, (byte)0, (byte)0), (short)2);
+		test.setData(BlockAddress.fromInt(0, 0, 0), (short)2);
 		
 		BlockAddress[] bases = new BlockAddress[] {
-				new BlockAddress((byte)0, (byte)0, (byte)0),
-				new BlockAddress((byte)28, (byte)28, (byte)28),
+				BlockAddress.fromInt(0, 0, 0),
+				BlockAddress.fromInt(28, 28, 28),
 		};
 		byte[] sizes = new byte[] {
 				(byte)1,
@@ -331,12 +331,12 @@ public class TestOctreeBlock
 	{
 		// Put a few instances into the object tree and walk them.
 		OctreeObject test = OctreeObject.create();
-		test.setData(new BlockAddress((byte)28, (byte)29, (byte)7), Integer.valueOf(1));
-		test.setData(new BlockAddress((byte)0, (byte)0, (byte)0), Integer.valueOf(2));
+		test.setData(BlockAddress.fromInt(28, 29, 7), Integer.valueOf(1));
+		test.setData(BlockAddress.fromInt(0, 0, 0), Integer.valueOf(2));
 		
 		BlockAddress[] bases = new BlockAddress[] {
-				new BlockAddress((byte)0, (byte)0, (byte)0),
-				new BlockAddress((byte)28, (byte)29, (byte)7),
+				BlockAddress.fromInt(0, 0, 0),
+				BlockAddress.fromInt(28, 29, 7),
 		};
 		byte sizes = (byte)1;
 		int[] values = new int[] {
@@ -366,7 +366,7 @@ public class TestOctreeBlock
 				}
 				, null
 		);
-		BlockAddress blockAddress = new BlockAddress((byte)14, (byte)15, (byte)16);
+		BlockAddress blockAddress = BlockAddress.fromInt(14, 15, 16);
 		Assert.assertEquals((byte)0, empty.getData(aspect, blockAddress).byteValue());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Object state = empty.serializeResumable(null, buffer, null);
@@ -388,7 +388,7 @@ public class TestOctreeBlock
 		state = test2.deserializeResumable(null, buffer, null);
 		Assert.assertNull(state);
 		Assert.assertEquals((byte)5, test2.getData(aspect, blockAddress).byteValue());
-		Assert.assertEquals((byte)0, test2.getData(aspect, new BlockAddress((byte)13, (byte)14, (byte)15)).byteValue());
+		Assert.assertEquals((byte)0, test2.getData(aspect, BlockAddress.fromInt(13, 14, 15)).byteValue());
 	}
 
 
@@ -411,26 +411,26 @@ public class TestOctreeBlock
 
 	private static void _setAllSubtrees(OctreeShort input, byte offset, short value)
 	{
-		input.setData(new BlockAddress((byte)0, (byte)0, (byte)(0 + offset)), value);
-		input.setData(new BlockAddress((byte)0, (byte)0, (byte)(16 + offset)), value);
-		input.setData(new BlockAddress((byte)0, (byte)16, (byte)(0 + offset)), value);
-		input.setData(new BlockAddress((byte)0, (byte)16, (byte)(16 + offset)), value);
-		input.setData(new BlockAddress((byte)16, (byte)0, (byte)(0 + offset)), value);
-		input.setData(new BlockAddress((byte)16, (byte)0, (byte)(16 + offset)), value);
-		input.setData(new BlockAddress((byte)16, (byte)16, (byte)(0 + offset)), value);
-		input.setData(new BlockAddress((byte)16, (byte)16, (byte)(16 + offset)), value);
+		input.setData(BlockAddress.fromInt(0, 0, (0 + offset)), value);
+		input.setData(BlockAddress.fromInt(0, 0, (16 + offset)), value);
+		input.setData(BlockAddress.fromInt(0, 16, (0 + offset)), value);
+		input.setData(BlockAddress.fromInt(0, 16, (16 + offset)), value);
+		input.setData(BlockAddress.fromInt(16, 0, (0 + offset)), value);
+		input.setData(BlockAddress.fromInt(16, 0, (16 + offset)), value);
+		input.setData(BlockAddress.fromInt(16, 16, (0 + offset)), value);
+		input.setData(BlockAddress.fromInt(16, 16, (16 + offset)), value);
 	}
 
 	private static void _checkAllSubtrees(OctreeShort input, byte offset, short value)
 	{
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)(0 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)(16 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)16, (byte)(0 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)16, (byte)(16 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)0, (byte)(0 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)0, (byte)(16 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(0 + offset))));
-		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)(16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, (0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, (16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 16, (0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 16, (16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 0, (0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 0, (16 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, (0 + offset))));
+		Assert.assertEquals(value, (short)input.getData(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, (16 + offset))));
 	}
 
 	private static OctreeByte _codecByte(OctreeByte input, int expectedSizeBytes)

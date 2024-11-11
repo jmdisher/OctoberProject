@@ -79,8 +79,8 @@ public class FlatWorldGenerator implements IWorldGenerator
 			_fillPlane(data, (byte)25, env.blocks.fromItem(env.items.getItemById("op.iron_ore")));
 			// We want to add a bit of water.
 			Block waterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
-			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)6, (byte)6, (byte)31), waterSource.item().number());
-			data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)7, (byte)7, (byte)31), waterSource.item().number());
+			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(6, 6, 31), waterSource.item().number());
+			data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(7, 7, 31), waterSource.item().number());
 			heightMapValue = 31;
 		}
 		else
@@ -156,11 +156,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 	private static void _fillPlane(CuboidData data, byte z, Block block)
 	{
 		short number = block.item().number();
-		for (int y = 0; y < 32; ++y)
+		for (byte y = 0; y < 32; ++y)
 		{
-			for (int x = 0; x < 32; ++x)
+			for (byte x = 0; x < 32; ++x)
 			{
-				data.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, z), number);
+				data.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
 			}
 		}
 	}

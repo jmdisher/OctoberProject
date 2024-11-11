@@ -625,7 +625,7 @@ public class TestTickRunner
 		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(0, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
+		Assert.assertEquals(0, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().get(stoneAddress).size());
 		MutationBlockIncrementalBreak mutation = (MutationBlockIncrementalBreak) snapshot.scheduledBlockMutations().get(stoneAddress).get(0).mutation();
@@ -649,7 +649,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
-		Assert.assertEquals(damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, new BlockAddress((byte)1, (byte)1, (byte)31)));
+		Assert.assertEquals(damage, snapshot.completedCuboids().get(stoneAddress).getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
 		
 		runner.shutdown();
 	}
@@ -1100,7 +1100,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, new BlockAddress((byte)0, (byte)0, (byte)0)));
+		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
 		
 		runner.shutdown();
 	}
@@ -1116,7 +1116,7 @@ public class TestTickRunner
 		CuboidData cascade = _buildCascade(new CuboidAddress((short)-3, (short)-4, (short)-5));
 		AbsoluteLocation plug = cascade.getCuboidAddress().getBase().getRelative(16, 16, 30);
 		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
-		cascade.setData15(AspectRegistry.BLOCK, new BlockAddress((byte)16, (byte)16, (byte)31), ENV.special.WATER_SOURCE.item().number());
+		cascade.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 31), ENV.special.WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
@@ -1343,8 +1343,8 @@ public class TestTickRunner
 		Assert.assertEquals(STONE_ITEM.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getBlockAddress()));
 		Assert.assertEquals(11, snapshot.completedCuboids().get(address).getData7(AspectRegistry.LIGHT, stoneLocation.getRelative(1, 0, 0).getBlockAddress()));
-		Assert.assertEquals(9, snapshot.completedCuboids().get(otherAddress0).getData7(AspectRegistry.LIGHT, new BlockAddress((byte)31, (byte)6, (byte)7)));
-		Assert.assertEquals(2, snapshot.completedCuboids().get(otherAddress1).getData7(AspectRegistry.LIGHT, new BlockAddress((byte)31, (byte)31, (byte)7)));
+		Assert.assertEquals(9, snapshot.completedCuboids().get(otherAddress0).getData7(AspectRegistry.LIGHT, BlockAddress.fromInt(31, 6, 7)));
+		Assert.assertEquals(2, snapshot.completedCuboids().get(otherAddress1).getData7(AspectRegistry.LIGHT, BlockAddress.fromInt(31, 31, 7)));
 		
 		runner.shutdown();
 	}

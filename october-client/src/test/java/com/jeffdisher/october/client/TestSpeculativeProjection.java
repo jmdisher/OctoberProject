@@ -1158,7 +1158,7 @@ public class TestSpeculativeProjection
 		long currentTimeMillis = 1000L;
 		SpeculativeProjection projector = new SpeculativeProjection(localEntityId, listener, MILLIS_PER_TICK);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(new CuboidAddress((short)0, (short)0, (short)0), ENV.special.AIR);
-		BlockAddress block = new BlockAddress((byte)0, (byte)0, (byte)0);
+		BlockAddress block = BlockAddress.fromInt(0, 0, 0);
 		Inventory inv = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
 		int stoneKey = inv.getIdOfStackableType(STONE_ITEM);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
@@ -1661,7 +1661,7 @@ public class TestSpeculativeProjection
 			{
 				for (int z = 0; z < 32; ++z)
 				{
-					short value = cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress((byte)x, (byte)y, (byte)z));
+					short value = cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z));
 					if (blockType == value)
 					{
 						count += 1;
