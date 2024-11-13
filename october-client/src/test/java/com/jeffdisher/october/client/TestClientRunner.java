@@ -15,9 +15,12 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -475,6 +478,44 @@ public class TestClientRunner
 		currentTimeMillis += EntityChangeUseSelectedItemOnSelf.COOLDOWN_MILLIS;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
 		Assert.assertEquals(0, projection.thisEntity.inventory().getCount(bread));
+	}
+
+	@Test
+	public void orientationAcceleration() throws Throwable
+	{
+		// Show that the orientation and acceleration helpers work.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), STONE));
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// Set orientation and walk.
+		EntityChangeSetOrientation<IMutablePlayerEntity> jumpChange = new EntityChangeSetOrientation<>(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.accelerateHorizontally(EntityChangeAccelerate.Relative.LEFT, currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		EntityLocation location = projection.thisEntity.location();
+		Assert.assertEquals(0.0f, location.x(), 0.0001f);
+		Assert.assertEquals(0.32f, location.y(), 0.0001f);
+		Assert.assertEquals(0.0f, location.z(), 0.0001f);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, projection.thisEntity.yaw());
+		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, projection.thisEntity.pitch());
 	}
 
 

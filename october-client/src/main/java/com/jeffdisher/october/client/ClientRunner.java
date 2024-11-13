@@ -10,6 +10,7 @@ import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
@@ -147,6 +148,31 @@ public class ClientRunner
 			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
 			EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(millisFree, 1.0f, direction);
 			_applyLocalChange(moveChange, currentTimeMillis);
+			
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
+	}
+
+	/**
+	 * Creates the change to move the entity from the current location in the speculative projection in the given
+	 * direction, relative to the current orientation, for the amount of time which has passed since the last call.
+	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
+	 * least attempt to move in this way (and will send the change to the server).
+	 * 
+	 * @param relativeDirection The direction to move, relative to the current orientation.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void accelerateHorizontally(EntityChangeAccelerate.Relative relativeDirection, long currentTimeMillis)
+	{
+		// Make sure that at least some time has passed.
+		if (currentTimeMillis > _lastCallMillis)
+		{
+			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeAccelerate.LIMIT_COST_MILLIS);
+			
+			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
+			EntityChangeAccelerate<IMutablePlayerEntity> accelerate = new EntityChangeAccelerate<>(millisFree, relativeDirection);
+			_applyLocalChange(accelerate, currentTimeMillis);
 			
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;

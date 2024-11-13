@@ -14,6 +14,7 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkClient;
@@ -213,6 +214,21 @@ public class ClientProcess
 	public void moveHorizontalFully(EntityChangeMove.Direction direction, long currentTimeMillis)
 	{
 		_clientRunner.moveHorizontalFully(direction, currentTimeMillis);
+		_runPendingCallbacks();
+	}
+
+	/**
+	 * Creates the change to move the entity from the current location in the speculative projection in the given
+	 * direction, relative to the current orientation, for the amount of time which has passed since the last call.
+	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
+	 * least attempt to move in this way (and will send the change to the server).
+	 * 
+	 * @param relativeDirection The direction to move, relative to the current orientation.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void accelerateHorizontally(EntityChangeAccelerate.Relative relativeDirection, long currentTimeMillis)
+	{
+		_clientRunner.accelerateHorizontally(relativeDirection, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
