@@ -27,6 +27,7 @@ import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
+import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeAcceptItems;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
@@ -1742,6 +1743,90 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(pitch2, listener.thisEntityState.pitch());
 		Assert.assertEquals(yaw2, listener.authoritativeEntityState.yaw());
 		Assert.assertEquals(pitch2, listener.authoritativeEntityState.pitch());
+	}
+
+	@Test
+	public void orientAndAccelerate()
+	{
+		// Change orientation and walk, showing that the movement is correctly interpretted in the projection.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of(airCuboid)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertNotNull(listener.authoritativeEntityState);
+		Assert.assertNotNull(listener.thisEntityState);
+		EntityLocation initialLocation = listener.authoritativeEntityState.location();
+		
+		// Change orientation and move, locally.
+		byte yaw = 30;
+		byte pitch = 20;
+		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
+		EntityLocation targetLocation = new EntityLocation(0.24f, 0.22f, 0.0f);
+		EntityChangeAccelerate<IMutablePlayerEntity> move = new EntityChangeAccelerate<>(100L, EntityChangeAccelerate.Relative.RIGHT);
+		long commit1 = projector.applyLocalChange(set, currentTimeMillis);
+		long commit2 = projector.applyLocalChange(move, currentTimeMillis);
+		Assert.assertEquals(1L, commit1);
+		Assert.assertEquals(2L, commit2);
+		
+		// We should see the entity moved to its speculative location (but only in projection).
+		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
+		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
+		
+		// Absorb the first change and observe.
+		int speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(airAddress, airCuboid), listener.authoritativeEntityState, set))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+				, currentTimeMillis
+		);
+		
+		// We should now see 1 speculative commit and partial updates.
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
+		Assert.assertEquals(pitch, listener.thisEntityState.pitch());
+		Assert.assertEquals(yaw, listener.authoritativeEntityState.yaw());
+		Assert.assertEquals(pitch, listener.authoritativeEntityState.pitch());
+		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
+		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
+		
+		// Absorb the next change and see consistency.
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(airAddress, airCuboid), listener.authoritativeEntityState, move))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
+		Assert.assertEquals(pitch, listener.thisEntityState.pitch());
+		Assert.assertEquals(yaw, listener.authoritativeEntityState.yaw());
+		Assert.assertEquals(pitch, listener.authoritativeEntityState.pitch());
+		Assert.assertEquals(targetLocation, listener.authoritativeEntityState.location());
+		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
 	}
 
 

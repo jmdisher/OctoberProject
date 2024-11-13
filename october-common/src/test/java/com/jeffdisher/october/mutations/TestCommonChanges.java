@@ -1967,6 +1967,31 @@ public class TestCommonChanges
 		Assert.assertEquals(pitch, newEntity.newPitch);
 	}
 
+	@Test
+	public void orientAndAccelerate()
+	{
+		byte yaw = 30;
+		byte pitch = 20;
+		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
+		
+		// Check that the move works if the blocks are air.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		long millisInStep = 100L;
+		EntityChangeAccelerate<IMutablePlayerEntity> move = new EntityChangeAccelerate<>(millisInStep, EntityChangeAccelerate.Relative.RIGHT);
+		TickProcessingContext context = _createSimpleContext();
+		context = _createNextTick(context, move.getTimeCostMillis());
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		boolean didApply = set.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		didApply = move.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+		TickUtils.endOfTick(context, newEntity);
+		Assert.assertEquals(yaw, newEntity.newYaw);
+		Assert.assertEquals(new EntityLocation(0.24f, 0.22f, 0.0f), newEntity.newLocation);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
