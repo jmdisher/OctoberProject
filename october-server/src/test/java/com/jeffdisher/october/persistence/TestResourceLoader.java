@@ -30,18 +30,22 @@ import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
+import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
 import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CraftOperation;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -609,6 +613,82 @@ public class TestResourceLoader
 		List<ScheduledChange> changes = results.get(0).changes();
 		Assert.assertEquals(1, changes.size());
 		Assert.assertTrue(changes.get(0).change() instanceof EntityChangeMove);
+		
+		loader.shutdown();
+	}
+
+	@Test
+	public void writeAndReadCuboidV1() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
+		
+		// This is a test of our ability to read the V1 cuboid data.  We manually write a file and then attempt to read it, verifying the result is sensible.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		
+		int id = -5;
+		EntityType type = EntityType.COW;
+		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
+		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
+		byte health = 50;
+		byte breath = 98;
+		LegacyCreatureEntityV1 legacy = new LegacyCreatureEntityV1(id
+				, type
+				, location
+				, velocity
+				, health
+				, breath
+		);
+		MutationBlockStoreItems store = new MutationBlockStoreItems(address.getBase(), new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY);
+		
+		// Serialize to buffer.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		buffer.putInt(ResourceLoader.VERSION_CUBOID_V1);
+		
+		Object state = cuboid.serializeResumable(null, buffer);
+		Assert.assertTrue(null == state);
+		
+		buffer.putInt(1);
+		legacy.test_writeToBuffer(buffer);
+		buffer.putInt(1);
+		buffer.putLong(500L);
+		MutationBlockCodec.serializeToBuffer(buffer, store);
+		buffer.flip();
+		
+		// Write the file.
+		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(buffer);
+			outChannel.truncate((long)written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read the data and verify that it is correct.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+		}
+		
+		// We expect a result with a cow of ID -1 (renumbered on load).
+		Assert.assertEquals(1, results.size());
+		Assert.assertNotNull(results.get(0).cuboid());
+		Assert.assertNotNull(results.get(0).heightMap());
+		List<CreatureEntity> creatures = results.get(0).creatures();
+		Assert.assertEquals(1, creatures.size());
+		List<ScheduledMutation> mutations = results.get(0).mutations();
+		Assert.assertEquals(1, mutations.size());
+		
+		CreatureEntity entity = creatures.get(0);
+		Assert.assertEquals(-1, entity.id());
+		Assert.assertEquals((byte)0, entity.yaw());
 		
 		loader.shutdown();
 	}

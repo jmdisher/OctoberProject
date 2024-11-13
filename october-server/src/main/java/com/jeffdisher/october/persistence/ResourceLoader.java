@@ -33,6 +33,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -54,8 +55,10 @@ public class ResourceLoader
 {
 	/**
 	 * Version 0 was used in v1.0-pre4 and earlier, no longer supported (pre-releases have no migration support).
+	 * Version 1 was used in v1.0.1 and earlier, and is supported.
 	 */
-	public static final int VERSION_CUBOID = 1;
+	public static final int VERSION_CUBOID_V1 = 1;
+	public static final int VERSION_CUBOID = 2;
 	/**
 	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
 	 * Version 1 was used in v1.0.1 and earlier, and is supported.
@@ -403,49 +406,70 @@ public class ResourceLoader
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
 			
-			// Verify the version is one we can understand (we will just raise a fatal error since we don't support
-			// multiple versions yet - non-current pre-release are NOT supported).
+			// Verify the version is one we can understand.
 			int version = buffer.getInt();
-			if (VERSION_CUBOID != version)
+			
+			Supplier<SuspendedCuboid<CuboidData>> dataReader;
+			if (VERSION_CUBOID == version)
 			{
-				throw new RuntimeException("UNSUPPORTED STORAGE VERSION:  Non-current pre-release data is not supported");
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboid(address, buffer);
+					
+					// Load any creatures associated with the cuboid.
+					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> suspended = _background_readMutations(buffer);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, suspended
+					);
+				};
+			}
+			else if (VERSION_CUBOID_V1 == version)
+			{
+				// The V1 entity is has less data.
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboid(address, buffer);
+					
+					// Load any creatures associated with the cuboid.
+					int creatureCount = buffer.getInt();
+					List<CreatureEntity> creatures = new ArrayList<>();
+					for (int i = 0; i < creatureCount; ++i)
+					{
+						LegacyCreatureEntityV1 legacy = LegacyCreatureEntityV1.load(this.creatureIdAssigner.next(), buffer);
+						CreatureEntity entity = legacy.toEntity();
+						creatures.add(entity);
+					}
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> suspended = _background_readMutations(buffer);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, suspended
+					);
+				};
+			}
+			else
+			{
+				throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
 			}
 			
-			CuboidData cuboid = CuboidData.createEmpty(address);
-			Object state = cuboid.deserializeResumable(null, buffer);
-			// There should be no resumable state since the file is complete.
-			Assert.assertTrue(null == state);
-			
-			// Load any creatures associated with the cuboid.
-			int creatureCount = buffer.getInt();
-			List<CreatureEntity> creatures = new ArrayList<>();
-			for (int i = 0; i < creatureCount; ++i)
-			{
-				CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer);
-				creatures.add(entity);
-			}
-			
-			// Now, load any suspended mutations.
-			int mutationCount = buffer.getInt();
-			List<ScheduledMutation> suspended = new ArrayList<>();
-			for (int i = 0; i < mutationCount; ++i)
-			{
-				// Read the parts of the suspended data.
-				long millisUntilReady = buffer.getLong();
-				IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
-				suspended.add(new ScheduledMutation(mutation, millisUntilReady));
-			}
-			
-			// This should be fully read.
-			Assert.assertTrue(!buffer.hasRemaining());
-			
-			// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
-			CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
-			result = new SuspendedCuboid<>(cuboid
-					, heightMap
-					, creatures
-					, suspended
-			);
+			result = dataReader.get();
 		}
 		catch (FileNotFoundException e)
 		{
@@ -457,6 +481,41 @@ public class ResourceLoader
 			throw Assert.unexpected(e);
 		}
 		return result;
+	}
+
+	private CuboidData _background_readCuboid(CuboidAddress address, MappedByteBuffer buffer)
+	{
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		Object state = cuboid.deserializeResumable(null, buffer);
+		// There should be no resumable state since the file is complete.
+		Assert.assertTrue(null == state);
+		return cuboid;
+	}
+
+	private List<CreatureEntity> _background_readCreatures(MappedByteBuffer buffer)
+	{
+		int creatureCount = buffer.getInt();
+		List<CreatureEntity> creatures = new ArrayList<>();
+		for (int i = 0; i < creatureCount; ++i)
+		{
+			CreatureEntity entity = CodecHelpers.readCreatureEntity(this.creatureIdAssigner.next(), buffer);
+			creatures.add(entity);
+		}
+		return creatures;
+	}
+
+	private List<ScheduledMutation> _background_readMutations(MappedByteBuffer buffer)
+	{
+		int mutationCount = buffer.getInt();
+		List<ScheduledMutation> suspended = new ArrayList<>();
+		for (int i = 0; i < mutationCount; ++i)
+		{
+			// Read the parts of the suspended data.
+			long millisUntilReady = buffer.getLong();
+			IMutationBlock mutation = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+			suspended.add(new ScheduledMutation(mutation, millisUntilReady));
+		}
+		return suspended;
 	}
 
 	private void _background_writeCuboidToDisk(PackagedCuboid data)

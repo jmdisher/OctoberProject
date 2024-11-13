@@ -29,6 +29,8 @@ public class MutableCreature implements IMutableCreatureEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
+	public byte newYaw;
+	public byte newPitch;
 	public byte newHealth;
 	public byte newBreath;
 	public Object newExtendedData;
@@ -38,6 +40,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		_creature = creature;
 		this.newLocation = creature.location();
 		this.newVelocity = creature.velocity();
+		this.newYaw = creature.yaw();
+		this.newPitch = creature.pitch();
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
 		this.newExtendedData = creature.extendedData();
@@ -188,6 +192,8 @@ public class MutableCreature implements IMutableCreatureEntity
 					, _creature.type()
 					, this.newLocation
 					, this.newVelocity
+					, this.newYaw
+					, this.newPitch
 					, this.newHealth
 					, this.newBreath
 					, this.newExtendedData

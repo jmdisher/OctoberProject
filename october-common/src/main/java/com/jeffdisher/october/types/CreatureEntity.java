@@ -15,6 +15,10 @@ public record CreatureEntity(int id
 		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
 		// Note that horizontal movement is usually cancelled by friction within the same tick.
 		, EntityLocation velocity
+		// Yaw is measured from [-128..127] where 0 is "North" and positive values move to the "left" (counter-clockwise, from above).
+		, byte yaw
+		// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
+		, byte pitch
 		// The health value of the entity.  Currently, we just use a byte since it is in the range of [1..100].
 		, byte health
 		// The breath the entity has (for drowning).
@@ -47,6 +51,8 @@ public record CreatureEntity(int id
 				, type
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
 				, health
 				, EntityConstants.MAX_BREATH
 				, null

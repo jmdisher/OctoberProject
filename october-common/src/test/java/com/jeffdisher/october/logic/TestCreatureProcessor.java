@@ -182,6 +182,8 @@ public class TestCreatureProcessor
 				, EntityType.COW
 				, startLocation
 				, velocity
+				, (byte)0
+				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
@@ -215,6 +217,8 @@ public class TestCreatureProcessor
 				, EntityType.COW
 				, startLocation
 				, velocity
+				, (byte)0
+				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
@@ -249,6 +253,8 @@ public class TestCreatureProcessor
 				, EntityType.COW
 				, startLocation
 				, velocity
+				, (byte)0
+				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))

@@ -246,6 +246,8 @@ public class CodecHelpers
 		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
 		byte health = buffer.get();
 		byte breath = buffer.get();
 		
@@ -255,6 +257,8 @@ public class CodecHelpers
 				, type
 				, location
 				, velocity
+				, yaw
+				, pitch
 				, health
 				, breath
 				, extendedData
@@ -268,12 +272,16 @@ public class CodecHelpers
 		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
 		EntityLocation velocity = entity.velocity();
+		byte yaw = entity.yaw();
+		byte pitch = entity.pitch();
 		byte health = entity.health();
 		byte breath = entity.breath();
 		
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
+		buffer.put(yaw);
+		buffer.put(pitch);
 		buffer.put(health);
 		buffer.put(breath);
 	}
