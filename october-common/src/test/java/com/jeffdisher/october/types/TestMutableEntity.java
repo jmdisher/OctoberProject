@@ -75,8 +75,10 @@ public class TestMutableEntity
 	public void partialEntity_revertedChange()
 	{
 		EntityLocation location0 = new EntityLocation(0.0f, 0.0f, 0.0f);
+		byte yaw = 64;
+		byte pitch = 0;
 		byte health = 50;
-		PartialEntity input = new PartialEntity(1, EntityType.PLAYER, location0, health);
+		PartialEntity input = new PartialEntity(1, EntityType.PLAYER, location0, yaw, pitch, health);
 		MutablePartialEntity mutable = MutablePartialEntity.existing(input);
 		mutable.newLocation = new EntityLocation(1.0f, 0.0f, 0.0f);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);

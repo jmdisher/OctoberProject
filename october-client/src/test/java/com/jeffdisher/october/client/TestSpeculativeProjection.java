@@ -24,6 +24,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAcceptItems;
@@ -856,6 +857,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(midStep, listener.thisEntityState.location());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
 	}
 
 	@Test
@@ -1417,6 +1419,8 @@ public class TestSpeculativeProjection
 		Assert.assertNotNull(listener.authoritativeEntityState);
 		Assert.assertNotNull(listener.thisEntityState);
 		EntityLocation initialLocation = listener.authoritativeEntityState.location();
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.thisEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.authoritativeEntityState.yaw());
 		
 		// Apply 3 steps, locally.
 		// (note that 0.4 is the limit for one tick)
@@ -1437,6 +1441,8 @@ public class TestSpeculativeProjection
 		// We should see the entity moved to its speculative location (but only locally).
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.authoritativeEntityState.yaw());
 		
 		// Now, absorb the first 2 changes from the server so we force follow-ups to be evaluated in a way which allows them to bunch up.
 		MutableEntity authoritativeMutable = MutableEntity.existing(listener.authoritativeEntityState);
@@ -1458,6 +1464,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(secondStep, listener.authoritativeEntityState.location());
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.authoritativeEntityState.yaw());
 		
 		// Absorb the final change to make sure that the result is still as expected.
 		currentTimeMillis = 300L;
@@ -1476,6 +1484,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(lastStep, listener.authoritativeEntityState.location());
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.authoritativeEntityState.yaw());
 	}
 
 	@Test

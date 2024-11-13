@@ -10,6 +10,10 @@ public record PartialEntity(int id
 		, EntityType type
 		// Note that the location is the bottom, south-west corner of the space occupied by the entity and the volume extends from there.
 		, EntityLocation location
+		// Yaw is measured from [-128..127] where 0 is "North" and positive values move to the "left" (counter-clockwise, from above).
+		, byte yaw
+		// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
+		, byte pitch
 		, byte health
 )
 {
@@ -18,6 +22,8 @@ public record PartialEntity(int id
 		return new PartialEntity(entity.id()
 				, EntityType.PLAYER
 				, entity.location()
+				, entity.yaw()
+				, entity.pitch()
 				, entity.health()
 		);
 	}
@@ -27,6 +33,8 @@ public record PartialEntity(int id
 		return new PartialEntity(entity.id()
 				, entity.type()
 				, entity.location()
+				, entity.yaw()
+				, entity.pitch()
 				, entity.health()
 		);
 	}

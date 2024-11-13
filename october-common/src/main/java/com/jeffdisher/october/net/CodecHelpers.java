@@ -216,10 +216,14 @@ public class CodecHelpers
 		byte ordinal = buffer.get();
 		EntityType type = EntityType.values()[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
 		byte health = buffer.get();
 		return new PartialEntity(id
 				, type
 				, location
+				, yaw
+				, pitch
 				, health
 		);
 	}
@@ -231,10 +235,14 @@ public class CodecHelpers
 		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
 		EntityLocation location = entity.location();
 		byte health = entity.health();
+		byte yaw = entity.yaw();
+		byte pitch = entity.pitch();
 		
 		buffer.putInt(id);
 		buffer.put((byte)ordinal);
 		_writeEntityLocation(buffer, location);
+		buffer.put(yaw);
+		buffer.put(pitch);
 		buffer.put(health);
 	}
 
