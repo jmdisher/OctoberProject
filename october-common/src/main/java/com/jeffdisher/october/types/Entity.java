@@ -12,6 +12,10 @@ public record Entity(int id
 		// We track the current entity velocity using an EntityLocation object since it is 3 orthogonal floats.
 		// Note that horizontal movement is usually cancelled by friction within the same tick.
 		, EntityLocation velocity
+		// Yaw is measured from [-128..127] where 0 is "North" and positive values move to the "left" (counter-clockwise, from above).
+		, byte yaw
+		// Pitch is measured from [-64..64] where 0 is "level", -64 is "straight down", and 64 is "straight up".
+		, byte pitch
 		// The normal inventory of the entity (hotbar slots reference this but armour slots do NOT overlap with this).
 		, Inventory inventory
 		// The keys in the hotbar are references to inventory.  If any are 0, they have no selection.

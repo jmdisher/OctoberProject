@@ -1,6 +1,9 @@
 package com.jeffdisher.october.persistence;
 
 import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,21 +25,29 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
+import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
+import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
+import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Encoding;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -516,6 +527,89 @@ public class TestResourceLoader
 		Assert.assertEquals(2000, config.ticksPerDay);
 		Assert.assertEquals(WorldConfig.WorldGeneratorName.BASIC, config.worldGeneratorName);
 		Assert.assertTrue(config.shouldSynthesizeUpdatesOnLoad);
+		loader.shutdown();
+	}
+
+	@Test
+	public void writeAndReadEntityV1() throws Throwable
+	{
+		Item swordItem = ENV.items.getItemById("op.iron_sword");
+		File worldDirectory = DIRECTORY.newFolder();
+		
+		// This is a test of our ability to read the V1 entity data.  We manually write a file and then attempt to read it, verifying the result is sensible.
+		int id = 1;
+		boolean isCreativeMode = true;
+		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
+		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
+		Inventory inventory = Inventory.start(20).addStackable(STONE_ITEM, 1).addNonStackable(new NonStackableItem(swordItem, 5)).finish();
+		int[] hotbarItems = new int[LegacyEntityV1.HOTBAR_SIZE];
+		int hotbarIndex = 3;
+		NonStackableItem[] armourSlots = new NonStackableItem[BodyPart.values().length];
+		CraftOperation localCraftOperation = null;
+		byte health = 50;
+		byte food = 12;
+		byte breath = 98;
+		int energyDeficit = 500;
+		EntityLocation spawnLocation = new EntityLocation(-5.0f, -6.0f, -7.0f);
+		LegacyEntityV1 legacy = new LegacyEntityV1(id
+			, isCreativeMode
+			, location
+			, velocity
+			, inventory
+			, hotbarItems
+			, hotbarIndex
+			, armourSlots
+			, localCraftOperation
+			, health
+			, food
+			, breath
+			, energyDeficit
+			, spawnLocation
+		);
+		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(10L, 1.0f, EntityChangeMove.Direction.EAST);
+		
+		// Serialize to buffer.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		buffer.putInt(ResourceLoader.VERSION_ENTITY_V1);
+		legacy.test_writeToBuffer(buffer);
+		buffer.putLong(500L);
+		MutationEntityCodec.serializeToBuffer(buffer, move);
+		buffer.flip();
+		
+		// Write the file.
+		String fileName = "entity_" + id + ".entity";
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(buffer);
+			outChannel.truncate((long)written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read the data and verify that it is correct.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		List<SuspendedEntity> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id));
+		Assert.assertTrue(results.isEmpty());
+		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+		}
+		
+		// Verify that this matches.
+		Assert.assertEquals(1, results.size());
+		Entity entity = results.get(0).entity();
+		Assert.assertEquals(location, entity.location());
+		Assert.assertEquals(BodyPart.values().length, entity.armourSlots().length);
+		Assert.assertNull(entity.localCraftOperation());
+		Assert.assertEquals((byte)0, entity.yaw());
+		List<ScheduledChange> changes = results.get(0).changes();
+		Assert.assertEquals(1, changes.size());
+		Assert.assertTrue(changes.get(0).change() instanceof EntityChangeMove);
+		
 		loader.shutdown();
 	}
 

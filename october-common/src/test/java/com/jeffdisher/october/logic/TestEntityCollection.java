@@ -70,6 +70,8 @@ public class TestEntityCollection
 				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
 				, null
 				, null
 				, 0

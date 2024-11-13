@@ -58,6 +58,8 @@ public class MutableEntity implements IMutablePlayerEntity
 				, false
 				, location
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
@@ -81,6 +83,8 @@ public class MutableEntity implements IMutablePlayerEntity
 	// The location is immutable but can be directly replaced.
 	public EntityLocation newLocation;
 	public EntityLocation newVelocity;
+	public byte newYaw;
+	public byte newPitch;
 	public int[] newHotbar;
 	public int newHotbarIndex;
 	public NonStackableItem[] newArmour;
@@ -99,6 +103,8 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newInventory = new MutableInventory(original.inventory());
 		this.newLocation = original.location();
 		this.newVelocity = original.velocity();
+		this.newYaw = original.yaw();
+		this.newPitch = original.pitch();
 		this.newHotbar = original.hotbarItems().clone();
 		this.newHotbarIndex = original.hotbarIndex();
 		this.newArmour = original.armourSlots().clone();
@@ -407,6 +413,8 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.isCreativeMode
 				, this.newLocation
 				, this.newVelocity
+				, this.newYaw
+				, this.newPitch
 				, this.newInventory.freeze()
 				, didHotbarChange ? this.newHotbar : _original.hotbarItems()
 				, this.newHotbarIndex

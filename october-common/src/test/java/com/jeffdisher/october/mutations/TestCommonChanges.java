@@ -1734,6 +1734,8 @@ public class TestCommonChanges
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0
@@ -1860,6 +1862,8 @@ public class TestCommonChanges
 				, true
 				, new EntityLocation(0.0f, 0.0f, 10.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
 				, inventory
 				, new int[Entity.HOTBAR_SIZE]
 				, 0

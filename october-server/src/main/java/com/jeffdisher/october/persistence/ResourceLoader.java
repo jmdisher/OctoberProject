@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
@@ -32,6 +33,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
+import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -56,8 +58,10 @@ public class ResourceLoader
 	public static final int VERSION_CUBOID = 1;
 	/**
 	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
+	 * Version 1 was used in v1.0.1 and earlier, and is supported.
 	 */
-	public static final int VERSION_ENTITY = 1;
+	public static final int VERSION_ENTITY_V1 = 1;
+	public static final int VERSION_ENTITY = 2;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -531,26 +535,39 @@ public class ResourceLoader
 			MappedByteBuffer buffer = inChannel.map(FileChannel.MapMode.READ_ONLY, 0, inChannel.size());
 			buffer.load();
 			
-			// Verify the version is one we can understand (we will just raise a fatal error since we don't support
-			// multiple versions yet - non-current pre-release are NOT supported).
+			// Verify the version is one we can understand.
 			int version = buffer.getInt();
-			if (VERSION_ENTITY != version)
+			
+			Supplier<SuspendedEntity> dataReader;
+			if (VERSION_ENTITY == version)
 			{
-				throw new RuntimeException("UNSUPPORTED STORAGE VERSION:  Non-current pre-release data is not supported");
+				dataReader = () -> {
+					Entity entity = CodecHelpers.readEntity(buffer);
+					
+					// Now, load any suspended changes.
+					List<ScheduledChange> suspended = _background_readSuspendedMutations(buffer);
+					return new SuspendedEntity(entity, suspended);
+				};
+			}
+			else if (VERSION_ENTITY_V1 == version)
+			{
+				// The V1 entity is has less data.
+				dataReader = () -> {
+					// Read the legacy data.
+					LegacyEntityV1 legacy = LegacyEntityV1.load(buffer);
+					Entity entity = legacy.toEntity();
+					
+					// Now, load any suspended changes.
+					List<ScheduledChange> suspended = _background_readSuspendedMutations(buffer);
+					return new SuspendedEntity(entity, suspended);
+				};
+			}
+			else
+			{
+				throw new RuntimeException("UNSUPPORTED ENTITY STORAGE VERSION:  " + version);
 			}
 			
-			Entity entity = CodecHelpers.readEntity(buffer);
-			
-			// Now, load any suspended changes.
-			List<ScheduledChange> suspended = new ArrayList<>();
-			while (buffer.hasRemaining())
-			{
-				// Read the parts of the suspended data.
-				long millisUntilReady = buffer.getLong();
-				IMutationEntity<IMutablePlayerEntity> change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
-				suspended.add(new ScheduledChange(change, millisUntilReady));
-			}
-			result = new SuspendedEntity(entity, suspended);
+			result = dataReader.get();
 		}
 		catch (FileNotFoundException e)
 		{
@@ -562,6 +579,19 @@ public class ResourceLoader
 			throw Assert.unexpected(e);
 		}
 		return result;
+	}
+
+	private List<ScheduledChange> _background_readSuspendedMutations(ByteBuffer buffer)
+	{
+		List<ScheduledChange> suspended = new ArrayList<>();
+		while (buffer.hasRemaining())
+		{
+			// Read the parts of the suspended data.
+			long millisUntilReady = buffer.getLong();
+			IMutationEntity<IMutablePlayerEntity> change = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+			suspended.add(new ScheduledChange(change, millisUntilReady));
+		}
+		return suspended;
 	}
 
 	private void _background_writeEntityToDisk(SuspendedEntity suspended)
