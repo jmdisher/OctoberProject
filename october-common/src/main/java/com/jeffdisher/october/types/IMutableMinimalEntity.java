@@ -35,6 +35,8 @@ public interface IMutableMinimalEntity
 
 	byte getYaw();
 
+	byte getPitch();
+
 	NonStackableItem getArmour(BodyPart part);
 
 	void setArmour(BodyPart part, NonStackableItem item);

@@ -1963,6 +1963,8 @@ public class TestCommonChanges
 		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, newEntity.newPitch);
 		boolean didApply = set.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
+		didApply = set.applyChange(context, newEntity);
+		Assert.assertFalse(didApply);
 		Assert.assertEquals(yaw, newEntity.newYaw);
 		Assert.assertEquals(pitch, newEntity.newPitch);
 	}

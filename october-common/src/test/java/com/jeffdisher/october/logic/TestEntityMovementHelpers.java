@@ -281,6 +281,11 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
+		public byte getPitch()
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
 		public NonStackableItem getArmour(BodyPart part)
 		{
 			throw new AssertionError("Not in test");

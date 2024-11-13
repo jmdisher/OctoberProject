@@ -1699,6 +1699,8 @@ public class TestSpeculativeProjection
 		long commit2 = projector.applyLocalChange(set2, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
 		Assert.assertEquals(2L, commit2);
+		long failRedundant = projector.applyLocalChange(set2, currentTimeMillis);
+		Assert.assertEquals(0L, failRedundant);
 		
 		// We should see the entity oriented (but only in projection).
 		Assert.assertEquals(yaw2, listener.thisEntityState.yaw());

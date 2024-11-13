@@ -318,6 +318,12 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public byte getPitch()
+	{
+		return this.newPitch;
+	}
+
+	@Override
 	public NonStackableItem getArmour(BodyPart part)
 	{
 		return this.newArmour[part.ordinal()];

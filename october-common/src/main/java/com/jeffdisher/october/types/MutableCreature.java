@@ -157,6 +157,12 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
+	public byte getPitch()
+	{
+		return this.newPitch;
+	}
+
+	@Override
 	public NonStackableItem getArmour(BodyPart part)
 	{
 		// Currently, no armour for creatures.

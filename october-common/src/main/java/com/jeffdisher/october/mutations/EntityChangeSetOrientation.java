@@ -46,8 +46,14 @@ public class EntityChangeSetOrientation<T extends IMutableMinimalEntity> impleme
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
-		newEntity.setOrientation(_yaw, _pitch);
-		return true;
+		// We don't want to apply this if it doesn't change anything (this is mostly to avoid a redundant check on the client-side).
+		boolean didApply = false;
+		if ((newEntity.getYaw() != _yaw) || (newEntity.getPitch() != _pitch))
+		{
+			newEntity.setOrientation(_yaw, _pitch);
+			didApply = true;
+		}
+		return didApply;
 	}
 
 	@Override
