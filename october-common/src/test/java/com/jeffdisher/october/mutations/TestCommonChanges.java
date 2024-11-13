@@ -1950,6 +1950,23 @@ public class TestCommonChanges
 		Assert.assertEquals(1, newEntity.newInventory.freeze().getNonStackableForKey(1).durability());
 	}
 
+	@Test
+	public void setOrientation()
+	{
+		byte yaw = 10;
+		byte pitch = 20;
+		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
+		TickProcessingContext context = _createSimpleContext();
+		context = _createNextTick(context, set.getTimeCostMillis());
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
+		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, newEntity.newPitch);
+		boolean didApply = set.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(yaw, newEntity.newYaw);
+		Assert.assertEquals(pitch, newEntity.newPitch);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

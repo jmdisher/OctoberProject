@@ -41,6 +41,7 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 		MutationEntityType.SWAP_ARMOUR,
 		MutationEntityType.SET_BLOCK_LOGIC_STATE,
 		MutationEntityType.SET_DAY_AND_SPAWN,
+		MutationEntityType.SET_ORIENTATION,
 	}).collect(Collectors.toSet());
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)

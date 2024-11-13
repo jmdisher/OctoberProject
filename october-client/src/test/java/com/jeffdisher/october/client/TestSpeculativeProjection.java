@@ -33,6 +33,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -1659,6 +1660,88 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(address, listener.lastData.getCuboidAddress());
 		Assert.assertEquals(3, listener.lastChangedBlocks.size());
 		Assert.assertEquals(3, listener.lastHeightMap.getHeight(1, 2));
+	}
+
+	@Test
+	public void setOrientation()
+	{
+		// Just show that we can re-orient ourselves.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
+		long currentTimeMillis = 1L;
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR))
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertNotNull(listener.authoritativeEntityState);
+		Assert.assertNotNull(listener.thisEntityState);
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.thisEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, listener.thisEntityState.pitch());
+		
+		// Change orientation twice, showing that the final change is set locally.
+		byte yaw1 = -10;
+		byte pitch1 = 5;
+		EntityChangeSetOrientation<IMutablePlayerEntity> set1 = new EntityChangeSetOrientation<>(yaw1, pitch1);
+		byte yaw2 = -20;
+		byte pitch2 = 15;
+		EntityChangeSetOrientation<IMutablePlayerEntity> set2 = new EntityChangeSetOrientation<>(yaw2, pitch2);
+		long commit1 = projector.applyLocalChange(set1, currentTimeMillis);
+		long commit2 = projector.applyLocalChange(set2, currentTimeMillis);
+		Assert.assertEquals(1L, commit1);
+		Assert.assertEquals(2L, commit2);
+		
+		// We should see the entity oriented (but only in projection).
+		Assert.assertEquals(yaw2, listener.thisEntityState.yaw());
+		Assert.assertEquals(pitch2, listener.thisEntityState.pitch());
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.authoritativeEntityState.yaw());
+		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, listener.authoritativeEntityState.pitch());
+		
+		// Absorb the first change and observe.
+		int speculativeCount = projector.applyChangesForServerTick(2L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, set1))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit1
+				, currentTimeMillis
+		);
+		
+		// We should now see 1 speculative commit and partial updates to orientation.
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(yaw2, listener.thisEntityState.yaw());
+		Assert.assertEquals(pitch2, listener.thisEntityState.pitch());
+		Assert.assertEquals(yaw1, listener.authoritativeEntityState.yaw());
+		Assert.assertEquals(pitch1, listener.authoritativeEntityState.pitch());
+		
+		// Absorb the next change and see consistency.
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(), listener.authoritativeEntityState, set2))
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, commit2
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(yaw2, listener.thisEntityState.yaw());
+		Assert.assertEquals(pitch2, listener.thisEntityState.pitch());
+		Assert.assertEquals(yaw2, listener.authoritativeEntityState.yaw());
+		Assert.assertEquals(pitch2, listener.authoritativeEntityState.pitch());
 	}
 
 
