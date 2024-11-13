@@ -271,6 +271,16 @@ public class TestEntityMovementHelpers
 			throw new AssertionError("Not in test");
 		}
 		@Override
+		public void setOrientation(byte yaw, byte pitch)
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
+		public byte getYaw()
+		{
+			throw new AssertionError("Not in test");
+		}
+		@Override
 		public NonStackableItem getArmour(BodyPart part)
 		{
 			throw new AssertionError("Not in test");

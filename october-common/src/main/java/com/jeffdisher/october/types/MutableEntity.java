@@ -305,6 +305,19 @@ public class MutableEntity implements IMutablePlayerEntity
 	}
 
 	@Override
+	public void setOrientation(byte yaw, byte pitch)
+	{
+		this.newYaw = yaw;
+		this.newPitch = pitch;
+	}
+
+	@Override
+	public byte getYaw()
+	{
+		return this.newYaw;
+	}
+
+	@Override
 	public NonStackableItem getArmour(BodyPart part)
 	{
 		return this.newArmour[part.ordinal()];

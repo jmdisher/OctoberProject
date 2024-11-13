@@ -31,6 +31,10 @@ public interface IMutableMinimalEntity
 
 	void setBreath(byte breath);
 
+	void setOrientation(byte yaw, byte pitch);
+
+	byte getYaw();
+
 	NonStackableItem getArmour(BodyPart part);
 
 	void setArmour(BodyPart part, NonStackableItem item);

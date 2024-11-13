@@ -17,6 +17,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -82,11 +83,13 @@ public class TestCommonChanges
 		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
 	}
 
 	@Test
@@ -101,10 +104,12 @@ public class TestCommonChanges
 		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		move.applyChange(context, newEntity);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
 	}
 
 	@Test
@@ -122,10 +127,12 @@ public class TestCommonChanges
 		context = _createNextTick(context, move.getTimeCostMillis());
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		move.applyChange(context, newEntity);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
 	}
 
 	@Test
@@ -141,6 +148,7 @@ public class TestCommonChanges
 		// We start with a zero z-vector since we should start falling.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
 		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
@@ -152,6 +160,7 @@ public class TestCommonChanges
 		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (0.5f * expectedZVector / 10.0f));
 		Assert.assertEquals(expectedZVector, newEntity.newVelocity.z(), 0.01f);
 		Assert.assertEquals(expectedLocation, newEntity.newLocation);
+		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
 	}
 
 	@Test

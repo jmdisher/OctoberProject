@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -99,31 +100,32 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 		
 		if ((_millisInMotion > 0) && (_millisInMotion <= LIMIT_COST_MILLIS))
 		{
-			// Find our speed and determine the components of movement.
-			float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
-			float xComponent;
-			float yComponent;
+			// We want to emulate orientation when this mutation is used.
+			byte yaw;
 			switch (_direction)
 			{
 			case NORTH:
-				xComponent = 0.0f;
-				yComponent = 1.0f;
+				yaw = OrientationHelpers.YAW_NORTH;
 				break;
 			case EAST:
-				xComponent = 1.0f;
-				yComponent = 0.0f;
+				yaw = OrientationHelpers.YAW_EAST;
 				break;
 			case SOUTH:
-				xComponent = 0.0f;
-				yComponent = -1.0f;
+				yaw = OrientationHelpers.YAW_SOUTH;
 				break;
 			case WEST:
-				xComponent = -1.0f;
-				yComponent = 0.0f;
+				yaw = OrientationHelpers.YAW_WEST;
 				break;
 			default:
 				throw Assert.unreachable();
 			}
+			newEntity.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
+			
+			// Find our speed and determine the components of movement.
+			float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
+			float yawRadians = OrientationHelpers.getYawRadians(newEntity.getYaw());
+			float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
+			float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
 			float speed = maxSpeed * _speedMultipler;
 			EntityMovementHelpers.accelerate(newEntity, speed, _millisInMotion, xComponent, yComponent);
 			didApply = true;

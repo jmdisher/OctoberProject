@@ -144,6 +144,19 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
+	public void setOrientation(byte yaw, byte pitch)
+	{
+		this.newYaw = yaw;
+		this.newPitch = pitch;
+	}
+
+	@Override
+	public byte getYaw()
+	{
+		return this.newYaw;
+	}
+
+	@Override
 	public NonStackableItem getArmour(BodyPart part)
 	{
 		// Currently, no armour for creatures.
