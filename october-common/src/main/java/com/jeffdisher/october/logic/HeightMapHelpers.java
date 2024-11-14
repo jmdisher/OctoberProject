@@ -173,7 +173,7 @@ public class HeightMapHelpers
 				builder = ColumnHeightMap.build();
 				builders.put(column, builder);
 			}
-			builder.consume(elt.getValue(), address.getBase().z());
+			builder.consume(elt.getValue(), address);
 		}
 		return builders.entrySet().stream().collect(Collectors.toUnmodifiableMap(
 				(Map.Entry<CuboidColumnAddress, ColumnHeightMap.Builder> elt) -> elt.getKey()

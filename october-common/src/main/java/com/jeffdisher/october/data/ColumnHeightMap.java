@@ -1,5 +1,6 @@
 package com.jeffdisher.october.data;
 
+import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
@@ -81,11 +82,12 @@ public class ColumnHeightMap
 		 * Integrates the given cuboid at zBase absolute Z location into the builder's height map.
 		 * 
 		 * @param cuboid The cuboid-local height map to integrate.
-		 * @param zBase The base Z coordinate of the cuboid.
+		 * @param address The address of the cuboid associated with the given height map.
 		 * @return This.
 		 */
-		public Builder consume(CuboidHeightMap cuboid, int zBase)
+		public Builder consume(CuboidHeightMap cuboid, CuboidAddress address)
 		{
+			int zBase = address.getBase().z();
 			for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 			{
 				int[] targetRow = _mutableYMajorData[y];

@@ -135,8 +135,8 @@ public class TestHeightMapHelpers
 		CuboidHeightMap bottomMap = HeightMapHelpers.buildHeightMap(bottom);
 		CuboidHeightMap topMap = HeightMapHelpers.buildHeightMap(top);
 		ColumnHeightMap column = ColumnHeightMap.build()
-				.consume(bottomMap, lowZ)
-				.consume(topMap, highZ)
+				.consume(bottomMap, low)
+				.consume(topMap, high)
 				.freeze()
 		;
 		Assert.assertEquals(Integer.MIN_VALUE, column.getHeight(3, 3));

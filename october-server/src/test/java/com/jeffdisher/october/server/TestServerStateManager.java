@@ -281,8 +281,8 @@ public class TestServerStateManager
 						far, farCuboid
 				)
 				, Map.of(
-						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze(),
-						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far.z()).freeze()
+						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze(),
+						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far).freeze()
 				)
 				, snapshot.completedCreatures()
 		);
@@ -302,7 +302,7 @@ public class TestServerStateManager
 						near, nearCuboid
 				)
 				, Map.of(
-						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near.z()).freeze()
+						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze()
 				)
 				, snapshot.completedCreatures()
 		);
@@ -534,7 +534,7 @@ public class TestServerStateManager
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
 			Assert.assertTrue(suspended.mutations().isEmpty());
-			Object old = completedMaps.put(cuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid), cuboid.getCuboidAddress().z()).freeze());
+			Object old = completedMaps.put(cuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid), cuboid.getCuboidAddress()).freeze());
 			Assert.assertNull(old);
 		}
 		return completedMaps;
