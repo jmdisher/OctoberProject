@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.jeffdisher.october</groupId>
+		<artifactId>october-project</artifactId>
+		<version>1.1</version>
+	</parent>
+	<artifactId>october-integration</artifactId>
+	<name>OctoberIntegration</name>
+
+	<properties>
+		<!-- The root directory of the entire project. -->
+		<main.basedir>${project.basedir}/..</main.basedir>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.jeffdisher.october</groupId>
+			<artifactId>october-common</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jeffdisher.october</groupId>
+			<artifactId>october-client</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jeffdisher.october</groupId>
+			<artifactId>october-server</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.jeffdisher.october</groupId>
+			<artifactId>october-testresources</artifactId>
+			<version>1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<!--  We create a stand-alone jar for each of our test and utility programs. -->
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.6</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>AutoWalkingClient</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<finalName>AutoWalkingClient</finalName>
+							<archive>
+								<manifest>
+									<mainClass>com.jeffdisher.october.integration.AutoWalkingClient</mainClass>
+								</manifest>
+							</archive>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>
