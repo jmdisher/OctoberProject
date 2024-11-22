@@ -277,7 +277,7 @@ public class TestCommonChanges
 		// Create an air cuboid with items in an inventory slot and then pick it up.
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
 		Inventory blockInventory = Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish();
@@ -332,7 +332,7 @@ public class TestCommonChanges
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block.
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
 		Entity original = mutable.freeze();
@@ -386,7 +386,7 @@ public class TestCommonChanges
 		// Create an air cuboid and an entity with an item, then try to drop it onto a block.
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
-		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, ENV.durability.getDurability(pickItem)));
 		int idOfPick = 1;
@@ -467,7 +467,7 @@ public class TestCommonChanges
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		
-		AbsoluteLocation tooFar = new AbsoluteLocation(7, 2, 10);
+		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
 		AbsoluteLocation reasonable = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1741,7 +1741,7 @@ public class TestCommonChanges
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity original = new Entity(entityId
 				, true
-				, new EntityLocation(0.0f, 0.0f, 10.0f)
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)0
 				, (byte)0

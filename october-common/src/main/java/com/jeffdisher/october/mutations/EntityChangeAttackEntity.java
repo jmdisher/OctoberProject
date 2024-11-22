@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.BlockMaterial;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Entity;
@@ -65,7 +66,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		{
 			// Find the distance from the eye to the target.
 			float distance = SpatialHelpers.distanceFromEyeToEntitySurface(newEntity, targetEntity);
-			isInRange = (distance <= EntityChangeIncrementalBlockBreak.MAX_REACH);
+			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else
 		{

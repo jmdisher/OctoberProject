@@ -2,7 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -62,6 +64,14 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 		// First, we want to make sure that we are not still busy doing something else.
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
+		// We also want to make sure that this is in range.
+		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
+		float distance = (null != target)
+				? SpatialHelpers.distanceFromEyeToEntitySurface(newEntity, target)
+				: Float.MAX_VALUE
+		;
+		boolean isInRange = (distance <= MiscConstants.REACH_ENTITY);
+		
 		// Get the current selected item.
 		int selectedKey = newEntity.getSelectedKey();
 		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
@@ -70,11 +80,10 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 		Item itemType = (null != selectedStack) ? selectedStack.type() : null;
 		
 		// See if the target entity exists and is of the correct type.
-		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
 		EntityType entityType = (null != target) ? target.type() : null;
 		
 		boolean didApply = false;
-		if (isReady && CreatureLogic.canUseOnEntity(itemType, entityType))
+		if (isReady && isInRange && CreatureLogic.canUseOnEntity(itemType, entityType))
 		{
 			// Remove the wheat item and apply it to the entity.
 			// Note that we don't bother with racy conditions where we might need to pass it back since that is a rare case and of minimal impact.

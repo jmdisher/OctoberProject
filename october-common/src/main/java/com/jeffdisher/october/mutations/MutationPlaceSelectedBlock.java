@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -80,14 +81,9 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
 		boolean isItemSelected = (null != blockType);
 		
-		// We want to only consider placing the block if it is within 2 blocks of where the entity currently is.
-		EntityLocation entityLocation = newEntity.getLocation();
-		int targetX = _targetBlock.x();
-		int targetY = _targetBlock.y();
-		int absX = Math.abs(targetX - Math.round(entityLocation.x()));
-		int absY = Math.abs(targetY - Math.round(entityLocation.y()));
-		int absZ = Math.abs(_targetBlock.z() - Math.round(entityLocation.z()));
-		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
+		// Find the distance from the eye to the target.
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// (to check for collision, we will ask about a world where only this block isn't air).
 		boolean isLocationNotColliding = false;
@@ -95,6 +91,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 		{
 			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.special.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
+			EntityLocation entityLocation = newEntity.getLocation();
 			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), entityLocation, EntityConstants.getVolume(newEntity.getType()));
 		}
 		
@@ -122,6 +119,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 				// Check the direction of the output, relative to target block.
 				int outX = _blockOutput.x();
 				int outY = _blockOutput.y();
+				int targetX = _targetBlock.x();
+				int targetY = _targetBlock.y();
 				if (outY > targetY)
 				{
 					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_NORTH));

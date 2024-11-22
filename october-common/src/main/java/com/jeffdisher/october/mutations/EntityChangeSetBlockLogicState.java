@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -21,7 +22,6 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.SET_BLOCK_LOGIC_STATE;
-	public static final float MAX_REACH = 1.5f;
 
 	public static EntityChangeSetBlockLogicState deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -69,7 +69,7 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 	{
 		// Make sure that this is in range.
 		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
-		boolean isLocationClose = (distance <= MAX_REACH);
+		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		BlockProxy previous = context.previousBlockLookUp.apply(_targetBlock);
 		
 		boolean didApply = false;

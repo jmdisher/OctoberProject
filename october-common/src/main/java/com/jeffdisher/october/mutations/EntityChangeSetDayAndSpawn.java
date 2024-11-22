@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -54,7 +55,7 @@ public class EntityChangeSetDayAndSpawn implements IMutationEntity<IMutablePlaye
 		{
 			// Find the distance from the eye to the bed.
 			float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _bedLocation);
-			isInRange = (distance <= EntityChangeIncrementalBlockBreak.MAX_REACH);
+			isInRange = (distance <= MiscConstants.REACH_BLOCK);
 		}
 		
 		boolean didApply = false;

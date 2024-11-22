@@ -3,11 +3,12 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
-import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -61,11 +62,8 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 	{
 		Environment env = Environment.getShared();
 		// Make sure that the block is within range and is a crafting table.
-		EntityLocation newLocation = newEntity.getLocation();
-		int absX = Math.abs(_targetBlock.x() - Math.round(newLocation.x()));
-		int absY = Math.abs(_targetBlock.y() - Math.round(newLocation.y()));
-		int absZ = Math.abs(_targetBlock.z() - Math.round(newLocation.z()));
-		boolean isLocationClose = ((absX <= 2) && (absY <= 2) && (absZ <= 2));
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
+		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isCraftingTable = (null != proxy) && (env.stations.getManualMultiplier(proxy.getBlock()) > 0);

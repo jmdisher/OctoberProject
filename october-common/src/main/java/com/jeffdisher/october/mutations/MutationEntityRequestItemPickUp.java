@@ -2,7 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.FuelState;
@@ -65,8 +67,12 @@ public class MutationEntityRequestItemPickUp implements IMutationEntity<IMutable
 		BlockProxy target = context.previousBlockLookUp.apply(_blockLocation);
 		Inventory inv = _getInventory(target);
 		
+		// We also want to make sure that this is in range.
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _blockLocation);
+		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
+		
 		boolean didApply = false;
-		if (null != inv)
+		if (isInRange && (null != inv))
 		{
 			Items stack = inv.getStackForKey(_blockInventoryKey);
 			NonStackableItem nonStack = inv.getNonStackableForKey(_blockInventoryKey);

@@ -3,7 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -80,8 +82,12 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 		// First, we want to make sure that we are not still busy doing something else.
 		boolean isReady = ((newEntity.getLastSpecialActionMillis() + COOLDOWN_MILLIS) <= context.currentTickTimeMillis);
 		
+		// We also want to make sure that this is in range.
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _target);
+		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
+		
 		boolean didApply = false;
-		if (isReady)
+		if (isReady && isInRange)
 		{
 			didApply = _apply(context, newEntity);
 			

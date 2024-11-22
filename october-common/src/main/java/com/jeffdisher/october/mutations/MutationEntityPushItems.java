@@ -3,7 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.IMutableInventory;
@@ -92,7 +94,12 @@ public class MutationEntityPushItems implements IMutationEntity<IMutablePlayerEn
 			Assert.assertTrue(1 == _count);
 			type = nonStackable.type();
 		}
-		if (canTransfer && (null != inv))
+		
+		// We also want to make sure that this is in range.
+		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _blockLocation);
+		boolean isInRange = (distance <= MiscConstants.REACH_BLOCK);
+		
+		if (canTransfer && isInRange && (null != inv))
 		{
 			// See if there is space in the inventory.
 			MutableInventory checker = new MutableInventory(inv);

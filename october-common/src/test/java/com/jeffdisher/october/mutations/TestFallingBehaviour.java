@@ -47,7 +47,7 @@ public class TestFallingBehaviour
 		// Create an air cuboid and an entity with some items, then try to drop them onto a block and observe that they fall through.
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 3.0f);
 		newEntity.newInventory.addAllItems(STONE_ITEM, 2);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(STONE_ITEM));
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);

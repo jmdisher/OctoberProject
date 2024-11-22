@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -24,7 +25,6 @@ import com.jeffdisher.october.utils.Assert;
 public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.INCREMENTAL_BREAK_BLOCK;
-	public static final float MAX_REACH = 1.5f;
 
 	public static EntityChangeIncrementalBlockBreak deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -60,7 +60,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		
 		// Find the distance from the eye to the target.
 		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
-		boolean isLocationClose = (distance <= MAX_REACH);
+		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
