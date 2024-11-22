@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -62,13 +63,17 @@ public class CreatureProcessor
 				processor.creaturesProcessed += 1;
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
+				TickUtils.IDamageApplication damageApplication = (byte damage) ->{
+					EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(null, damage);
+					context.newChangeSink.creature(id, takeDamage);
+				};
 				
 				// Determine if we need to schedule movements.
 				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
 				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
-					millisAtEndOfTick = _runExternalChanges(processor, context, mutable, changes, millisAtEndOfTick);
+					millisAtEndOfTick = _runExternalChanges(processor, context, damageApplication, mutable, changes, millisAtEndOfTick);
 				}
 				
 				// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
@@ -78,13 +83,13 @@ public class CreatureProcessor
 				if (!didSpecial && (millisAtEndOfTick > 0L))
 				{
 					// If we didn't perform a special action, we can proceed with movement.
-					millisAtEndOfTick = _runInternalChanges(processor, context, entityCollection, mutable, millisAtEndOfTick);
+					millisAtEndOfTick = _runInternalChanges(processor, context, damageApplication, entityCollection, mutable, millisAtEndOfTick);
 				}
 				
 				// Account for time passing.
 				if (millisAtEndOfTick > 0L)
 				{
-					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);
+					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisAtEndOfTick);
 				}
 				TickUtils.endOfTick(context, mutable);
 				
@@ -112,6 +117,7 @@ public class CreatureProcessor
 
 	private static long _runExternalChanges(ProcessorElement processor
 			, TickProcessingContext context
+			, TickUtils.IDamageApplication damageApplication
 			, MutableCreature mutable
 			, List<IMutationEntity<IMutableCreatureEntity>> changes
 			, long millisAtEndOfTick
@@ -127,7 +133,7 @@ public class CreatureProcessor
 				long millisInChange = change.getTimeCostMillis();
 				if (millisInChange > 0L)
 				{
-					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
+					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
 					millisAtEndOfTick -= millisInChange;
 				}
 			}
@@ -137,6 +143,7 @@ public class CreatureProcessor
 
 	private static long _runInternalChanges(ProcessorElement processor
 			, TickProcessingContext context
+			, TickUtils.IDamageApplication damageApplication
 			, EntityCollection entityCollection
 			, MutableCreature mutable
 			, long millisAtEndOfTick
@@ -161,7 +168,7 @@ public class CreatureProcessor
 						// If this applied, account for time passing.
 						if (timeCostMillis > 0L)
 						{
-							TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
+							TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, timeCostMillis);
 						}
 					}
 					millisAtEndOfTick -= timeCostMillis;

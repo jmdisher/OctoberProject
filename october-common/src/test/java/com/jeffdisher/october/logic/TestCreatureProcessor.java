@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -726,6 +727,78 @@ public class TestCreatureProcessor
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
 		Assert.assertEquals(3.54f, creature.location().z(), 0.01f);
+	}
+
+	@Test
+	public void fallDamage()
+	{
+		// Show that a creature takes damage when falling.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
+		
+		byte health = 100;
+		EntityLocation startLocation = new EntityLocation(16.8f, 16.8f, 16.1f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 2.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, health);
+		MutableCreature mutable = MutableCreature.existing(creature);
+		mutable.newVelocity = startVelocity;
+		creature = mutable.freeze();
+		
+		List<IMutationEntity<IMutableCreatureEntity>> outChanges = new ArrayList<>();
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(1L)
+				.lookups((AbsoluteLocation location) -> {
+						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+						;
+					}, null)
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+						Assert.fail("Not in test");
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail("Not in test");
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+						Assert.assertEquals(-1, targetCreatureId);
+						outChanges.add(change);
+					}
+				})
+				.finish()
+		;
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, Map.of(creature.id(), creature)
+				, context
+				, new EntityCollection(Set.of(), List.of(creature))
+				, Map.of()
+		);
+		creature = group.updatedCreatures().get(creature.id());
+		
+		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
+		Assert.assertEquals(health, creature.health());
+		Assert.assertEquals(1, outChanges.size());
+		
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, group.updatedCreatures()
+				, context
+				, new EntityCollection(Set.of(), List.of(creature))
+				, Map.of(creature.id(), new ArrayList<>(outChanges))
+		);
+		creature = group.updatedCreatures().get(creature.id());
+		
+		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
+		Assert.assertEquals((byte)58, creature.health());
+		Assert.assertEquals(1, outChanges.size());
 	}
 
 

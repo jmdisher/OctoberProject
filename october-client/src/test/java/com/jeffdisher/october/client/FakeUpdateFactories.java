@@ -56,7 +56,7 @@ public class FakeUpdateFactories
 		long millisInChange = mutation.getTimeCostMillis();
 		if (millisInChange > 0L)
 		{
-			TickUtils.allowMovement(context.previousBlockLookUp, newEntity, millisInChange);
+			TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, millisInChange);
 		}
 		TickUtils.endOfTick(context, newEntity);
 		return new MutationEntitySetEntity(newEntity.freeze());

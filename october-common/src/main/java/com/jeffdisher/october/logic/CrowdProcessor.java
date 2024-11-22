@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.TickUtils;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -57,6 +58,10 @@ public class CrowdProcessor
 				processor.entitiesProcessed += 1;
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
+				TickUtils.IDamageApplication damageApplication = (byte damage) ->{
+					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, damage);
+					context.newChangeSink.next(id, takeDamage);
+				};
 				List<ScheduledChange> changes = changesToRun.get(id);
 				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
@@ -75,7 +80,7 @@ public class CrowdProcessor
 								long millisInChange = change.getTimeCostMillis();
 								if (millisInChange > 0L)
 								{
-									TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
+									TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
 									// WARNING:  Due to the way "in-progress" changes are handled, this may underflow
 									// into the negative so the accounting for movement may double-count when these
 									// changes span ticks.
@@ -104,7 +109,7 @@ public class CrowdProcessor
 				// Account for time passing.
 				if (millisAtEndOfTick > 0L)
 				{
-					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);
+					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisAtEndOfTick);
 				}
 				TickUtils.endOfTick(context, mutable);
 				

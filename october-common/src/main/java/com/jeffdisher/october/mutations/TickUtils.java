@@ -5,6 +5,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
@@ -23,14 +24,30 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class TickUtils
 {
+	/**
+	 * We will base our damage threshold on the terminal velocity.
+	 */
+	public static final float DECELERATION_DAMAGE_THRESHOLD = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 4.0f;
+	public static final float DECELERATION_DAMAGE_RANGE = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND - DECELERATION_DAMAGE_THRESHOLD;
+	/**
+	 * Fall damage should be the maximum possible amount of damage.
+	 */
+	public static final byte DECELERATION_DAMAGE_MAX = Byte.MAX_VALUE;
+	public static final float DECELERATION_DAMAGE_MAX_FLOAT = DECELERATION_DAMAGE_MAX;
+
 	private TickUtils()
 	{
 		// There is no need to instantiate this.
 	}
 
-	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, IMutableMinimalEntity newEntity, long millisToMove)
+	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
+			, IDamageApplication damageApplication
+			, IMutableMinimalEntity newEntity
+			, long millisToMove
+	)
 	{
 		EntityLocation oldLocation = newEntity.getLocation();
+		EntityLocation oldVelocity = newEntity.getVelocityVector();
 		EntityMovementHelpers.allowMovement(previousBlockLookUp, newEntity, millisToMove);
 		boolean didApply = !oldLocation.equals(newEntity.getLocation());
 		
@@ -38,6 +55,17 @@ public class TickUtils
 		{
 			// Do other state reset now that we are moving.
 			newEntity.resetLongRunningOperations();
+			
+			// If we lost our z-vector, see if this deceleration should cause damage.
+			if (0.0f == newEntity.getVelocityVector().z())
+			{
+				float loss = oldVelocity.z();
+				byte damage = _calculateFallDamage(loss);
+				if (damage > 0)
+				{
+					damageApplication.applyDamage(damage);
+				}
+			}
 		}
 	}
 
@@ -110,5 +138,30 @@ public class TickUtils
 				}
 			}
 		}
+	}
+
+	private static byte _calculateFallDamage(float deceleration)
+	{
+		byte damage;
+		// Note that deceleration is measured as a negative value.
+		if (deceleration <= DECELERATION_DAMAGE_THRESHOLD)
+		{
+			// Use this threshold and the terminal velocity to map this linearly onto the damage space.
+			float hurtingDeceleration = deceleration - DECELERATION_DAMAGE_THRESHOLD;
+			float fractionDamage = hurtingDeceleration / DECELERATION_DAMAGE_RANGE;
+			damage = (byte)(DECELERATION_DAMAGE_MAX_FLOAT * fractionDamage);
+		}
+		else
+		{
+			// Harmless.
+			damage = 0;
+		}
+		return damage;
+	}
+
+
+	public static interface IDamageApplication
+	{
+		public void applyDamage(byte damage);
 	}
 }
