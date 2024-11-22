@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -179,6 +180,22 @@ public class TestEntityMovementHelpers
 		// We know that the drag of the water will slow this down but these are experimentally derived.
 		Assert.assertEquals(3.92f, entity.vector.z(), 0.01f);
 		Assert.assertEquals(7.20f, entity.location.z(), 0.01f);
+	}
+
+	@Test
+	public void fallingCollision()
+	{
+		// Show that we account for falling under each block and stop completely when we collide.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
+		_Entity entity = new _Entity();
+		entity.location = new EntityLocation(16.8f, 16.8f, 16.1f);
+		entity.vector = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 2.0f);
+		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		}, entity, 100L);
+		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), entity.location);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), entity.vector);
 	}
 
 

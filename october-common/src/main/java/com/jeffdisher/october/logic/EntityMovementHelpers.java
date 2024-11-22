@@ -234,11 +234,12 @@ public class EntityMovementHelpers
 			
 			if (attempt == newLocation)
 			{
-				// We can't stand anywhere so just cancel y movement.
+				// We can't stand anywhere so just cancel z movement.
 				newLocation = new EntityLocation(newLocation.x(), newLocation.y(), oldZ);
-				// (this also requires handling the z-vector since we don't implicitly cancel it).
-				newZVector = 0.0f;
 			}
+			
+			// If for any reason we can't exist in this block, cancel the z-vector.
+			newZVector = 0.0f;
 		}
 		
 		// Set the location and velocity.
