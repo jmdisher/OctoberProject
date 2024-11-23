@@ -530,6 +530,191 @@ public class TestLightBringer
 		_writeLight(System.out, cuboid, centre.getBlockAddress().z());
 	}
 
+	@Test
+	public void lightInconsistencyBoundary()
+	{
+		// This demonstrates what happens when a lighting update is made inconsistent by cuboid load/unload operations.
+		byte strong = LightAspect.MAX_LIGHT;
+		byte dark = 0;
+		
+		CuboidAddress address1 = CuboidAddress.fromInt(10, 10, 10);
+		CuboidAddress address2 = CuboidAddress.fromInt(11, 10, 10);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		CuboidData cuboid2 = CuboidGenerator.createFilledCuboid(address2, ENV.special.AIR);
+		AbsoluteLocation firstLight = address1.getBase().getRelative(25, 16, 16);
+		AbsoluteLocation secondLight = address1.getBase().getRelative(26, 16, 16);
+		IByteLookup<AbsoluteLocation> opacityLookup = (AbsoluteLocation location) ->
+		{
+			// We will say that the entire cuboid is opaque, other than this z-level
+			return (firstLight.getBlockAddress().z() == location.getBlockAddress().z())
+					? 1
+					: LightAspect.MAX_LIGHT
+			;
+		};
+		
+		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
+		{
+			return sources.containsKey(location)
+					? sources.get(location)
+					: 0
+			;
+		};
+		
+		// Add the first light source, applying to both cuboids.
+		cuboid1.setData7(AspectRegistry.LIGHT, firstLight.getBlockAddress(), strong);
+		sources.put(firstLight, strong);
+		_MultiCuboidCache multi = new _MultiCuboidCache(cuboid1, cuboid2);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(multi.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(firstLight, strong)), List.of());
+		// This update value was found experimentally.
+		Assert.assertEquals(420, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (location.getCuboidAddress().equals(cuboid1.getCuboidAddress()))
+			{
+				cuboid1.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+			else
+			{
+				cuboid2.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+		}
+		
+		// Remove this light, but only with cuboid1 loaded.
+		cuboid1.setData7(AspectRegistry.LIGHT, firstLight.getBlockAddress(), dark);
+		sources.remove(firstLight);
+		_OneCuboidLookupCache single = new _OneCuboidLookupCache(cuboid1);
+		updates = LightBringer.batchProcessLight(single.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(firstLight, strong)));
+		// This update value was found experimentally.
+		Assert.assertEquals(356, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (location.getCuboidAddress().equals(cuboid1.getCuboidAddress()))
+			{
+				cuboid1.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+			else
+			{
+			}
+		}
+		
+		// Add the second light source, applying only to cuboid1.
+		cuboid1.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), strong);
+		sources.put(secondLight, strong);
+		single = new _OneCuboidLookupCache(cuboid1);
+		updates = LightBringer.batchProcessLight(single.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(secondLight, strong)), List.of());
+		// This update value was found experimentally.
+		Assert.assertEquals(420, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (location.getCuboidAddress().equals(cuboid1.getCuboidAddress()))
+			{
+				cuboid1.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+			else
+			{
+			}
+		}
+		
+		// Remove the new light with both cuboids
+		cuboid1.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), dark);
+		sources.remove(secondLight);
+		multi = new _MultiCuboidCache(cuboid1, cuboid2);
+		updates = LightBringer.batchProcessLight(multi.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(secondLight, strong)));
+		// This update value was found experimentally.
+		Assert.assertEquals(339, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			AbsoluteLocation location = update.getKey();
+			if (location.getCuboidAddress().equals(cuboid1.getCuboidAddress()))
+			{
+				cuboid1.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+			else
+			{
+				cuboid2.setData7(AspectRegistry.LIGHT, location.getBlockAddress(), update.getValue());
+			}
+		}
+	}
+
+	@Test
+	public void lightInconsistencyDefinitionChange()
+	{
+		// This demonstrates the lighting glitch created when the light opacity data definition is changed under an existing world (a warning is logged).
+		byte strong = LightAspect.MAX_LIGHT;
+		byte dark = 0;
+		
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation centre = address.getBase().getRelative(16, 16, 16);
+		AbsoluteLocation testLocation1 = centre.getRelative(-2, 0, 0);
+		AbsoluteLocation testLocation2 = centre.getRelative(3, 0, 0);
+		byte[] opacityRef = new byte[] { (byte)4 };
+		boolean[] isTestOccupied = new boolean[] { false };
+		IByteLookup<AbsoluteLocation> opacityLookup = (AbsoluteLocation location) ->
+		{
+			// We will say that the entire cuboid is opaque, other than (X, 16, 16), which we will say is a high opacity.
+			byte opacity = ((centre.getBlockAddress().z() == location.getBlockAddress().z()) && (centre.getBlockAddress().y() == location.getBlockAddress().y()))
+					? opacityRef[0]
+					: LightAspect.MAX_LIGHT
+			;
+			if (location.equals(testLocation1) && isTestOccupied[0])
+			{
+				opacity = LightAspect.MAX_LIGHT;
+			}
+			return opacity;
+		};
+		
+		Map<AbsoluteLocation, Byte> sources = new HashMap<>();
+		IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
+		{
+			return sources.containsKey(location)
+					? sources.get(location)
+					: 0
+			;
+		};
+		
+		// Add the light source using the start opacity.
+		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), strong);
+		sources.put(centre, strong);
+		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(centre, strong)), List.of());
+		// This update value was found experimentally.
+		Assert.assertEquals(6, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		
+		// Add the barrier using the new opacity.
+		opacityRef[0] = 3;
+		isTestOccupied[0] = true;
+		byte initial = cuboid.getData7(AspectRegistry.LIGHT, testLocation1.getBlockAddress());
+		cuboid.setData7(AspectRegistry.LIGHT, testLocation1.getBlockAddress(), dark);
+		lookup = new _OneCuboidLookupCache(cuboid);
+		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(testLocation1, initial)));
+		Assert.assertEquals(0, resetUpdates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : resetUpdates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+		
+		// Add another light source using the ending opacity.
+		cuboid.setData7(AspectRegistry.LIGHT, testLocation2.getBlockAddress(), strong);
+		sources.put(testLocation2, strong);
+		lookup = new _OneCuboidLookupCache(cuboid);
+		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(testLocation2, strong)), List.of());
+		// This update value was found experimentally.
+		Assert.assertEquals(5, updates.size());
+		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
+		{
+			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
+		}
+	}
+
 
 	private static void _writeLight(PrintStream stream, CuboidData cuboid, byte z)
 	{
@@ -614,6 +799,46 @@ public class TestLightBringer
 			if (!_cache.containsKey(location))
 			{
 				_cache.put(location, new BlockProxy(location.getBlockAddress(), _cuboid));
+			}
+			return _cache.get(location);
+		}
+	}
+
+	private static class _MultiCuboidCache
+	{
+		private final CuboidData[] _cuboids;
+		private final Map<AbsoluteLocation, BlockProxy> _cache;
+		public final IByteLookup<AbsoluteLocation> lightLookup = (AbsoluteLocation location) -> 
+		{
+			BlockProxy proxy = _readOrPopulateCache(location);
+			return (null != proxy)
+					? proxy.getLight()
+					: IByteLookup.NOT_FOUND
+			;
+		};
+		public _MultiCuboidCache(CuboidData... cuboids)
+		{
+			_cuboids = cuboids;
+			_cache = new HashMap<>();
+		}
+		private BlockProxy _readOrPopulateCache(AbsoluteLocation location)
+		{
+			if (!_cache.containsKey(location))
+			{
+				BlockProxy proxy = null;
+				CuboidAddress address = location.getCuboidAddress();
+				for (CuboidData cuboid : _cuboids)
+				{
+					if (address.equals(cuboid.getCuboidAddress()))
+					{
+						proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+						break;
+					}
+				}
+				if (null != proxy)
+				{
+					_cache.put(location, proxy);
+				}
 			}
 			return _cache.get(location);
 		}

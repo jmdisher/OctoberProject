@@ -213,9 +213,17 @@ public class LightBringer
 			// Make sure that we didn't already flag this as a source or something.
 			else if ((existingLight > 1) && !reFlood.containsKey(location))
 			{
-				Assert.assertTrue(existingLight > light);
-				// We need to re-flood this one.
-				reFlood.put(location, existingLight);
+				// NOTE:  This if statement SHOULD always be true but may not be as a result of unloaded cuboid boundaries or if lighting/opacity configuration changed under an existing world.
+				if (existingLight > light)
+				{
+					// We need to re-flood this one.
+					reFlood.put(location, existingLight);
+				}
+				else
+				{
+					// We will log this since it might imply a problem (or at least explains any lighting errors to the user).
+					System.err.println("WARNING:  Lighting value higher than expected (probably load boundary or config change):  " + location);
+				}
 			}
 		}
 	}
