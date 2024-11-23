@@ -10,7 +10,7 @@
 op.log	4000
 op.plank	2000
 # op.stone_brick
-op.crafting_table	8000
+op.crafting_table	6000
 # op.furnace
 op.charcoal	20000
 op.coal_ore	20000
@@ -28,3 +28,7 @@ op.sapling	500
 # op.wheat_seedling
 # op.wheat_young
 # op.wheat_mature
+op.stick	500
+op.chest	8000
+op.door_closed	6000
+op.bed	3000
