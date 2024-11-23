@@ -13,6 +13,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -257,5 +258,21 @@ public class TestSpatialHelpers
 		Assert.assertEquals(0.63f, entityDistance, 0.01f);
 		float blockDistance = SpatialHelpers.distanceFromEyeToBlockSurface(entity1, block1);
 		Assert.assertEquals(13.50f, blockDistance, 0.01f);
+	}
+
+	@Test
+	public void sourceToRegionDistance()
+	{
+		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
+		EntityLocation base1 = location1;
+		EntityVolume volume1 = EntityConstants.VOLUME_PLAYER;
+		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
+		EntityLocation base2 = location2;
+		EntityVolume volume2 = EntityConstants.VOLUME_COW;
+		
+		float distance1 = SpatialHelpers.distanceFromLocationToVolume(location1, base2, volume2);
+		float distance2 = SpatialHelpers.distanceFromLocationToVolume(location2, base1, volume1);
+		Assert.assertEquals(1.00f, distance1, 0.01f);
+		Assert.assertEquals(0.89f, distance2, 0.01f);
 	}
 }

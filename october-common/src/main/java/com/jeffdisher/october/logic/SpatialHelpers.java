@@ -385,6 +385,19 @@ public class SpatialHelpers
 		return _distanceToTarget(eye, target, cubeVolume);
 	}
 
+	/**
+	 * Finds the distance from a start location to the nearest of a target base and volume .
+	 * 
+	 * @param start The start location from which to measure.
+	 * @param targetBase The base of the target region.
+	 * @param targetVolume The volume of the target region.
+	 * @return The diagonal distance from the start to the nearest edge of the described region.
+	 */
+	public static float distanceFromLocationToVolume(EntityLocation start, EntityLocation targetBase, EntityVolume targetVolume)
+	{
+		return _distanceToTarget(start, targetBase, targetVolume);
+	}
+
 
 	private static boolean _isBlockAligned(float coord)
 	{
