@@ -10,6 +10,7 @@ import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
@@ -43,6 +44,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockPushToBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPushToBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLogicChange.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPeriodic.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalRepair.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

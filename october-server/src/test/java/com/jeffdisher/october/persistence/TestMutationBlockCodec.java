@@ -12,6 +12,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockOverwrite;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -127,6 +128,21 @@ public class TestMutationBlockCodec
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
 		Assert.assertTrue(read instanceof MutationBlockCraft);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void repair() throws Throwable
+	{
+		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
+		short damage = 150;
+		MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, damage);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		MutationBlockCodec.serializeToBuffer(buffer, mutation);
+		buffer.flip();
+		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertTrue(read instanceof MutationBlockIncrementalRepair);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }

@@ -626,6 +626,41 @@ public class TestCommonMutations
 		Assert.assertEquals(EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
 	}
 
+	@Test
+	public void repairCases()
+	{
+		// Try to repair a damaged block, an undamaged block, and a block of the wrong type.
+		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
+		AbsoluteLocation noDamage = new AbsoluteLocation(5, 1, 10);
+		AbsoluteLocation valid = new AbsoluteLocation(6, 0, 10);
+		short damaged = 150;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, noDamage.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, valid.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
+		
+		short repairMillis = 100;
+		MutableBlockProxy wrongProxy = new MutableBlockProxy(wrongType, cuboid);
+		MutableBlockProxy noDamangeProxy = new MutableBlockProxy(noDamage, cuboid);
+		MutableBlockProxy validProxy = new MutableBlockProxy(valid, cuboid);
+		
+		// Try wrong type.
+		MutationBlockIncrementalRepair repairWrongType = new MutationBlockIncrementalRepair(wrongType, repairMillis);
+		Assert.assertFalse(repairWrongType.applyMutation(null, wrongProxy));
+		
+		// Try undamaged
+		MutationBlockIncrementalRepair repairNoDamange = new MutationBlockIncrementalRepair(noDamage, repairMillis);
+		Assert.assertFalse(repairNoDamange.applyMutation(null, noDamangeProxy));
+		
+		// Try valid
+		MutationBlockIncrementalRepair repairValid = new MutationBlockIncrementalRepair(valid, repairMillis);
+		Assert.assertTrue(repairValid.applyMutation(null, validProxy));
+		Assert.assertEquals((short)50, validProxy.getDamage());
+		Assert.assertTrue(repairValid.applyMutation(null, validProxy));
+		Assert.assertEquals((short)0, validProxy.getDamage());
+		Assert.assertFalse(repairValid.applyMutation(null, validProxy));
+	}
+
 
 	private static class ProcessingSinks
 	{
