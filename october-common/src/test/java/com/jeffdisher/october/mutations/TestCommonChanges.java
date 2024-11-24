@@ -1994,6 +1994,52 @@ public class TestCommonChanges
 		Assert.assertEquals(new EntityLocation(0.24f, 0.22f, 0.0f), newEntity.newLocation);
 	}
 
+	@Test
+	public void repairCases() throws Throwable
+	{
+		// Try to repair a damaged block, an undamaged block, a block of the wrong type, and a block too far away.
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
+		
+		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
+		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
+		AbsoluteLocation noDamage = new AbsoluteLocation(5, 1, 10);
+		AbsoluteLocation valid = new AbsoluteLocation(6, 0, 10);
+		short damaged = 150;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, tooFar.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.DAMAGE, tooFar.getBlockAddress(), damaged);
+		// wrongType will just be air.
+		cuboid.setData15(AspectRegistry.BLOCK, noDamage.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, valid.getBlockAddress(), STONE_ITEM.number());
+		cuboid.setData15(AspectRegistry.DAMAGE, valid.getBlockAddress(), damaged);
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		short repairMillis = 100;
+		
+		// Try too far.
+		EntityChangeIncrementalBlockRepair repairTooFar = new EntityChangeIncrementalBlockRepair(tooFar, repairMillis);
+		Assert.assertFalse(repairTooFar.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
+		
+		// Try wrong type.
+		EntityChangeIncrementalBlockRepair repairWrongType = new EntityChangeIncrementalBlockRepair(wrongType, repairMillis);
+		Assert.assertFalse(repairWrongType.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
+		
+		// Try undamaged
+		EntityChangeIncrementalBlockRepair repairUndamaged = new EntityChangeIncrementalBlockRepair(noDamage, repairMillis);
+		Assert.assertFalse(repairUndamaged.applyChange(holder.context, newEntity));
+		Assert.assertNull(holder.mutation);
+		
+		// Try valid
+		EntityChangeIncrementalBlockRepair repairValid = new EntityChangeIncrementalBlockRepair(valid, repairMillis);
+		Assert.assertTrue(repairValid.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockIncrementalRepair);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{
