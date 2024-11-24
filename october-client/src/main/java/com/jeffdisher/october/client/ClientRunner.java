@@ -14,6 +14,7 @@ import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -124,6 +125,26 @@ public class ClientRunner
 		{
 			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
 			_applyLocalChange(hit, currentTimeMillis);
+			_runAllPendingCalls(currentTimeMillis);
+			_lastCallMillis = currentTimeMillis;
+		}
+	}
+
+	/**
+	 * Sends a single repair block change, targeting the given block location.  Note that it may take many such
+	 * changes to fully repair a block.
+	 * 
+	 * @param blockLocation The location of the block to repair.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	{
+		long millisToApply = (currentTimeMillis - _lastCallMillis);
+		// Only apply this if it has been running for a while.
+		if (millisToApply > TIME_GATE_MILLIS)
+		{
+			EntityChangeIncrementalBlockRepair repair = new EntityChangeIncrementalBlockRepair(blockLocation, (short)millisToApply);
+			_applyLocalChange(repair, currentTimeMillis);
 			_runAllPendingCalls(currentTimeMillis);
 			_lastCallMillis = currentTimeMillis;
 		}

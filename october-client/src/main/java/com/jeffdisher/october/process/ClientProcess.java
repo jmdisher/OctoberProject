@@ -203,6 +203,19 @@ public class ClientProcess
 	}
 
 	/**
+	 * Sends a single repair block change, targeting the given block location.  Note that it may take many such
+	 * changes to fully repair a block.
+	 * 
+	 * @param blockLocation The location of the block to repair.
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	{
+		_clientRunner.repairBlock(blockLocation, currentTimeMillis);
+		_runPendingCallbacks();
+	}
+
+	/**
 	 * Creates the change to move the entity from the current location in the speculative projection along the given
 	 * horizontal direction for the amount of time which has passed since the last call.
 	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at

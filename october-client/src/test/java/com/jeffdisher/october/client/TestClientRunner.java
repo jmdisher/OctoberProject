@@ -18,12 +18,14 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -508,6 +510,66 @@ public class TestClientRunner
 		Assert.assertEquals(0.0f, location.z(), 0.0001f);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, projection.thisEntity.yaw());
 		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, projection.thisEntity.pitch());
+	}
+
+	@Test
+	public void repair() throws Throwable
+	{
+		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		CuboidAddress cuboidAddress = changeLocation.getCuboidAddress();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
+		cuboid.setData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), (short)150);
+		
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them.
+		int clientId = 1;
+		long currentTimeMillis = 1000L;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		
+		// Send them an entity and a cuboid.
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
+		network.client.receivedCuboid(cuboid);
+		network.client.receivedEndOfTick(1L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
+		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)150, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		
+		// Run a repair call and observe the damage value change.
+		currentTimeMillis += 100L;
+		runner.repairBlock(changeLocation, currentTimeMillis);
+		currentTimeMillis += 100L;
+		// (they only send this after the next tick).
+		network.client.receivedEndOfTick(2L, 0L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Observe that this came out in the network.
+		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockRepair);
+		Assert.assertTrue(1L == network.commitLevel);
+		
+		// They would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
+		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
+		network.client.receivedEndOfTick(3L, 1L);
+		runner.runPendingCalls(currentTimeMillis);
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
+		network.client.receivedEndOfTick(4L, 1L);
+		runner.runPendingCalls(currentTimeMillis);
+		
+		// Verify that the block has been partially repaired.
+		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)50, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		
+		// Disconnect them.
+		network.client.adapterDisconnected();
+		runner.runPendingCalls(System.currentTimeMillis());
+		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 	}
 
 
