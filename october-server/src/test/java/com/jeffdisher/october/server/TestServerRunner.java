@@ -35,6 +35,7 @@ import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
+import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.persistence.FlatWorldGenerator;
 import com.jeffdisher.october.persistence.IWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -661,6 +662,65 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void clientMessages() throws Throwable
+	{
+		// Connect 2 clients and show different message uses.
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
+		_loadDefaultMap(cuboidLoader);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		ServerRunner runner = new ServerRunner(ServerRunner.DEFAULT_MILLIS_PER_TICK
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, new WorldConfig()
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId1 = 1;
+		int clientId2 = 2;
+		network.prepareForClient(clientId1);
+		network.prepareForClient(clientId2);
+		server.clientConnected(clientId1, null, "name1");
+		server.clientConnected(clientId2, null, "name2");
+		Assert.assertEquals("name2", network.waitForClientJoin(clientId1, clientId2));
+		Assert.assertEquals("name1", network.waitForClientJoin(clientId2, clientId1));
+		Entity entity1_1 = network.waitForThisEntity(clientId1);
+		Assert.assertNotNull(entity1_1);
+		PartialEntity entity1_2 = network.waitForPeerEntity(clientId1, clientId2);
+		Assert.assertNotNull(entity1_2);
+		PartialEntity entity2_1 = network.waitForPeerEntity(clientId2, clientId1);
+		Assert.assertNotNull(entity2_1);
+		Entity entity2_2 = network.waitForThisEntity(clientId2);
+		Assert.assertNotNull(entity2_2);
+		
+		// Now, send some basic messages.
+		network.receiveMessageFromClient(clientId1, clientId2, "One to Two");
+		network.receiveMessageFromClient(clientId1, 0, "One to All");
+		network.receiveMessageFromClient(clientId2, clientId1, "Two to One");
+		network.receiveMessageFromClient(clientId2, 0, "Two to All");
+		monitoringAgent.getCommandSink().sendChatMessage(clientId1, "Root to One");
+		monitoringAgent.getCommandSink().sendChatMessage(clientId2, "Root to Two");
+		monitoringAgent.getCommandSink().sendChatMessage(0, "Root to All");
+		Assert.assertEquals(clientId1 + ": One to All", network.waitForChatMessage(clientId1, 0));
+		Assert.assertEquals(clientId2 + ": Two to One", network.waitForChatMessage(clientId1, 1));
+		Assert.assertEquals(clientId2 + ": Two to All", network.waitForChatMessage(clientId1, 2));
+		Assert.assertEquals("0: Root to One", network.waitForChatMessage(clientId1, 3));
+		Assert.assertEquals("0: Root to All", network.waitForChatMessage(clientId1, 4));
+		Assert.assertEquals(clientId1 + ": One to Two", network.waitForChatMessage(clientId2, 0));
+		Assert.assertEquals(clientId1 + ": One to All", network.waitForChatMessage(clientId2, 1));
+		Assert.assertEquals(clientId2 + ": Two to All", network.waitForChatMessage(clientId2, 2));
+		Assert.assertEquals("0: Root to Two", network.waitForChatMessage(clientId2, 3));
+		Assert.assertEquals("0: Root to All", network.waitForChatMessage(clientId2, 4));
+		
+		server.clientDisconnected(1);
+		network.resetClient(1);
+		server.clientDisconnected(2);
+		network.resetClient(2);
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
@@ -674,11 +734,12 @@ public class TestServerRunner
 	private static class TestAdapter implements IServerAdapter
 	{
 		public IServerAdapter.IListener server;
-		public final Map<Integer, Queue<Packet_MutationEntityFromClient>> packets = new HashMap<>();
+		public final Map<Integer, Queue<PacketFromClient>> packets = new HashMap<>();
 		// Currently, each client only sees a single full entity - itself.
 		public final Map<Integer, Entity> clientFullEntities = new HashMap<>();
 		public final Map<Integer, Map<Integer, PartialEntity>> clientPartialEntities = new HashMap<>();
 		public final Map<Integer, List<Object>> clientUpdates = new HashMap<>();
+		public final Map<Integer, List<String>> chatMessages = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidAddedCount = new HashMap<>();
 		public final Map<Integer, Integer> clientCuboidRemovedCount = new HashMap<>();
 		public final Map<Integer, Map<Integer, String>> clientConnectedNames = new HashMap<>();
@@ -698,7 +759,7 @@ public class TestServerRunner
 		@Override
 		public synchronized PacketFromClient peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
 		{
-			Queue<Packet_MutationEntityFromClient> queue = this.packets.get(clientId);
+			Queue<PacketFromClient> queue = this.packets.get(clientId);
 			if (null != toRemove)
 			{
 				Assert.assertEquals(toRemove, queue.poll());
@@ -801,9 +862,11 @@ public class TestServerRunner
 			this.notifyAll();
 		}
 		@Override
-		public void sendChatMessage(int clientId, int senderId, String message)
+		public synchronized void sendChatMessage(int clientId, int senderId, String message)
 		{
-			throw new AssertionError("sendChatMessage");
+			List<String> messages = this.chatMessages.get(clientId);
+			messages.add(senderId + ": " + message);
+			this.notifyAll();
 		}
 		@Override
 		public synchronized void disconnectClient(int clientId)
@@ -842,12 +905,14 @@ public class TestServerRunner
 			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientPartialEntities.containsKey(clientId));
 			Assert.assertFalse(this.clientUpdates.containsKey(clientId));
+			Assert.assertFalse(this.chatMessages.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidAddedCount.containsKey(clientId));
 			Assert.assertFalse(this.clientCuboidRemovedCount.containsKey(clientId));
 			Assert.assertFalse(this.clientConnectedNames.containsKey(clientId));
 			this.packets.put(clientId, new LinkedList<>());
 			this.clientPartialEntities.put(clientId, new HashMap<>());
 			this.clientUpdates.put(clientId, new ArrayList<>());
+			this.chatMessages.put(clientId, new ArrayList<>());
 			this.clientCuboidAddedCount.put(clientId, 0);
 			this.clientCuboidRemovedCount.put(clientId, 0);
 			this.clientConnectedNames.put(clientId, new HashMap<>());
@@ -887,6 +952,15 @@ public class TestServerRunner
 			}
 			return updates.get(index);
 		}
+		public synchronized String waitForChatMessage(int clientId, int index) throws InterruptedException
+		{
+			List<String> messages = this.chatMessages.get(clientId);
+			while (messages.size() <= index)
+			{
+				this.wait();
+			}
+			return messages.get(index);
+		}
 		public synchronized void waitForCuboidAddedCount(int clientId, int count) throws InterruptedException
 		{
 			while (this.clientCuboidAddedCount.get(clientId) < count)
@@ -903,11 +977,26 @@ public class TestServerRunner
 		}
 		public void receiveFromClient(int clientId, IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel)
 		{
+			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(mutation, commitLevel);
 			boolean wasEmpty;
 			synchronized (this)
 			{
 				wasEmpty = this.packets.get(clientId).isEmpty();
-				this.packets.get(clientId).add(new Packet_MutationEntityFromClient(mutation, commitLevel));
+				this.packets.get(clientId).add(packet);
+			}
+			if (wasEmpty)
+			{
+				this.server.clientReadReady(clientId);
+			}
+		}
+		public void receiveMessageFromClient(int clientId, int targetId, String message)
+		{
+			Packet_SendChatMessage packet = new Packet_SendChatMessage(targetId, message);
+			boolean wasEmpty;
+			synchronized (this)
+			{
+				wasEmpty = this.packets.get(clientId).isEmpty();
+				this.packets.get(clientId).add(packet);
 			}
 			if (wasEmpty)
 			{
@@ -924,6 +1013,7 @@ public class TestServerRunner
 			this.clientFullEntities.remove(clientId);
 			this.clientPartialEntities.remove(clientId);
 			this.clientUpdates.remove(clientId);
+			this.chatMessages.remove(clientId);
 			this.clientCuboidAddedCount.remove(clientId);
 			this.clientCuboidRemovedCount.remove(clientId);
 			this.clientConnectedNames.remove(clientId);
