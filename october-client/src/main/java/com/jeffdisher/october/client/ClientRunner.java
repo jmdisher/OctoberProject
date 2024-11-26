@@ -281,6 +281,19 @@ public class ClientRunner
 	}
 
 	/**
+	 * Updates the internal last action times and runs callbacks without applying changes to the projection or network.
+	 * This is primarily used in the case where the associated server is paused and the client must skip over that time
+	 * without sending its usual periodic updates.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void advanceTime(long currentTimeMillis)
+	{
+		_lastCallMillis = currentTimeMillis;
+		_runAllPendingCalls(currentTimeMillis);
+	}
+
+	/**
 	 * Requests that this client disconnect from the server.
 	 */
 	public void disconnect()

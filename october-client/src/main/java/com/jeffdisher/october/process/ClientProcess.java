@@ -294,6 +294,19 @@ public class ClientProcess
 		_clientRunner.sentChatMessage(targetId, message);
 	}
 
+	/**
+	 * Updates the internal last action times and runs callbacks without applying changes to the projection or network.
+	 * This is primarily used in the case where the associated server is paused and the client must skip over that time
+	 * without sending its usual periodic updates.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void advanceTime(long currentTimeMillis)
+	{
+		_clientRunner.advanceTime(currentTimeMillis);
+		_runPendingCallbacks();
+	}
+
 
 	private void _background_bufferPacket(PacketFromClient packet)
 	{
