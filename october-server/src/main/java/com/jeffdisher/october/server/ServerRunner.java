@@ -149,6 +149,16 @@ public class ServerRunner
 					_currentSampler = sampler;
 				});
 			}
+			@Override
+			public void pauseTickProcessing()
+			{
+				_tickRunner.pause();
+			}
+			@Override
+			public void resumeTickProcessing()
+			{
+				_tickRunner.resume();
+			}
 		});
 		
 		// Starting a thread in a constructor isn't ideal but this does give us a simple interface.

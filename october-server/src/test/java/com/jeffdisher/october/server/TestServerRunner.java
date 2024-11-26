@@ -721,6 +721,62 @@ public class TestServerRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void pauseWhileFalling() throws Throwable
+	{
+		// Show that pausing the server will stop updates from the server and resuming will allow them to continue as expected.
+		TestAdapter network = new TestAdapter();
+		ResourceLoader cuboidLoader = new ResourceLoader(DIRECTORY.newFolder(), null, MutableEntity.TESTING_LOCATION);
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		cuboidLoader.preload(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR));
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		// We will use a faster tick speed but this can't get too small or rounding errors will impact movement.
+		long millisPerTick = 20L;
+		ServerRunner runner = new ServerRunner(millisPerTick
+				, network
+				, cuboidLoader
+				, () -> System.currentTimeMillis()
+				, monitoringAgent
+				, new WorldConfig()
+		);
+		IServerAdapter.IListener server = network.waitForServer(1);
+		int clientId = 1;
+		network.prepareForClient(clientId);
+		server.clientConnected(clientId, null, "name");
+		Entity entity = network.waitForThisEntity(clientId);
+		Assert.assertNotNull(entity);
+		EntityLocation start = entity.location();
+		network.waitForCuboidAddedCount(clientId, 2);
+		
+		// Pause, wait for several ticks, and verify that we saw fewer ticks arrive, then resume and observe that falling continues.
+		monitoringAgent.getCommandSink().pauseTickProcessing();
+		// We will get the last tick number since at most 1 more will be produced before the pause is observed.
+		long lastTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
+		// Wait for some time and send a broadcast to verify that messages still work.
+		int updates1 = network.countClientUpdates(clientId);
+		Thread.sleep(5 * millisPerTick);
+		network.receiveMessageFromClient(clientId, 0, "One to All");
+		int updates2 = network.countClientUpdates(clientId);
+		Assert.assertTrue((updates2 - updates1) < 3);
+		long laterTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
+		Assert.assertTrue((laterTickNumber - lastTickNumber) <= 1);
+		Assert.assertEquals(clientId + ": One to All", network.waitForChatMessage(clientId, 0));
+		monitoringAgent.getCommandSink().resumeTickProcessing();
+		
+		Object change0 = network.waitForUpdate(clientId, updates2);
+		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
+		MutableEntity mutable = MutableEntity.existing(entity);
+		((MutationEntitySetEntity)change0).applyToEntity(mutable);
+		Assert.assertTrue(mutable.newLocation.z() < start.z());
+		EntityLocation first = mutable.newLocation;
+		Object change1 = network.waitForUpdate(clientId, updates2 + 1);
+		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
+		((MutationEntitySetEntity)change1).applyToEntity(mutable);
+		Assert.assertTrue(mutable.newLocation.z() < first.z());
+		
+		runner.shutdown();
+	}
+
 
 	private static void _loadDefaultMap(ResourceLoader cuboidLoader)
 	{
@@ -951,6 +1007,10 @@ public class TestServerRunner
 				this.wait();
 			}
 			return updates.get(index);
+		}
+		public synchronized int countClientUpdates(int clientId) throws InterruptedException
+		{
+			return this.clientUpdates.get(clientId).size();
 		}
 		public synchronized String waitForChatMessage(int clientId, int index) throws InterruptedException
 		{

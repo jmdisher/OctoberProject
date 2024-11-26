@@ -87,6 +87,8 @@ public class MonitoringAgent
 		void requestConfigBroadcast();
 		void sendChatMessage(int targetId, String message);
 		void installSampler(Sampler sampler);
+		void pauseTickProcessing();
+		void resumeTickProcessing();
 	}
 
 	public static class Sampler

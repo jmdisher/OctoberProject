@@ -286,5 +286,15 @@ public class TestConsoleHandler
 		{
 			throw new AssertionError("installSampler");
 		}
+		@Override
+		public void pauseTickProcessing()
+		{
+			throw new AssertionError("pauseTickProcessing");
+		}
+		@Override
+		public void resumeTickProcessing()
+		{
+			throw new AssertionError("resumeTickProcessing");
+		}
 	}
 }
