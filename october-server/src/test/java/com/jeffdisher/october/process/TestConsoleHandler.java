@@ -106,7 +106,7 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didCheck = new boolean[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
 			@Override
 			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
@@ -114,21 +114,6 @@ public class TestConsoleHandler
 				Assert.assertEquals(123, clientId);
 				Assert.assertNotNull(command);
 				didCheck[0] = true;
-			}
-			@Override
-			public void requestConfigBroadcast()
-			{
-				throw new AssertionError("requestConfigBroadcast");
-			}
-			@Override
-			public void sendChatMessage(int targetId, String message)
-			{
-				throw new AssertionError("sendChatMessage");
-			}
-			@Override
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -160,7 +145,7 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didCheck = new boolean[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
 			@Override
 			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
@@ -168,20 +153,6 @@ public class TestConsoleHandler
 				Assert.assertEquals(123, clientId);
 				Assert.assertNotNull(command);
 				didCheck[0] = true;
-			}
-			@Override
-			public void requestConfigBroadcast()
-			{
-				throw new AssertionError("requestConfigBroadcast");
-			}
-			@Override
-			public void sendChatMessage(int targetId, String message)
-			{
-				throw new AssertionError("sendChatMessage");
-			}
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -198,26 +169,12 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		boolean[] didBroadcast = new boolean[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
-			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
-			{
-				throw new AssertionError("submitEntityMutation");
-			}
 			@Override
 			public void requestConfigBroadcast()
 			{
 				didBroadcast[0] = true;
-			}
-			@Override
-			public void sendChatMessage(int targetId, String message)
-			{
-				throw new AssertionError("sendChatMessage");
-			}
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -238,28 +195,14 @@ public class TestConsoleHandler
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		monitoringAgent.clientConnected(1, null, "Client");
 		String[] outMessage = new String[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
-			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
-			{
-				throw new AssertionError("submitEntityMutation");
-			}
-			@Override
-			public void requestConfigBroadcast()
-			{
-				throw new AssertionError("requestConfigBroadcast");
-			}
 			@Override
 			public void sendChatMessage(int targetId, String message)
 			{
 				Assert.assertEquals(1, targetId);
 				Assert.assertNull(outMessage[0]);
 				outMessage[0] = message;
-			}
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -276,28 +219,14 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		String[] outMessage = new String[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
-			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
-			{
-				throw new AssertionError("submitEntityMutation");
-			}
-			@Override
-			public void requestConfigBroadcast()
-			{
-				throw new AssertionError("requestConfigBroadcast");
-			}
 			@Override
 			public void sendChatMessage(int targetId, String message)
 			{
 				Assert.assertEquals(0, targetId);
 				Assert.assertNull(outMessage[0]);
 				outMessage[0] = message;
-			}
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, new WorldConfig());
@@ -316,26 +245,12 @@ public class TestConsoleHandler
 		long tickNumber = 50L;
 		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null, null, null, null, null, null));
 		boolean[] didBroadcast = new boolean[1];
-		monitoringAgent.setOperatorCommandSink(new MonitoringAgent.OperatorCommandSink()
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{
-			@Override
-			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
-			{
-				throw new AssertionError("submitEntityMutation");
-			}
 			@Override
 			public void requestConfigBroadcast()
 			{
 				didBroadcast[0] = true;
-			}
-			@Override
-			public void sendChatMessage(int targetId, String message)
-			{
-				throw new AssertionError("sendChatMessage");
-			}
-			public void installSampler(MonitoringAgent.Sampler sampler)
-			{
-				throw new AssertionError("installSampler");
 			}
 		});
 		WorldConfig config = new WorldConfig();
@@ -345,5 +260,31 @@ public class TestConsoleHandler
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didBroadcast[0]);
 		Assert.assertEquals(30, config.dayStartTick);
+	}
+
+
+	// Since these tests usually just want to test a single callback, this is provided so they can override a failing implementation.
+	private static class _TestCommandSink implements MonitoringAgent.OperatorCommandSink
+	{
+		@Override
+		public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+		{
+			throw new AssertionError("submitEntityMutation");
+		}
+		@Override
+		public void requestConfigBroadcast()
+		{
+			throw new AssertionError("requestConfigBroadcast");
+		}
+		@Override
+		public void sendChatMessage(int targetId, String message)
+		{
+			throw new AssertionError("sendChatMessage");
+		}
+		@Override
+		public void installSampler(MonitoringAgent.Sampler sampler)
+		{
+			throw new AssertionError("installSampler");
+		}
 	}
 }
