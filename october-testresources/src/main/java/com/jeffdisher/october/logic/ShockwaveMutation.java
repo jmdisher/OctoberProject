@@ -3,10 +3,13 @@ package com.jeffdisher.october.logic;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.aspects.DamageAspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
@@ -31,8 +34,21 @@ public class ShockwaveMutation implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
+		boolean didApply = false;
+		
+		// We want to apply a single point of damage to this block, so that we changed something.
+		Block block = newBlock.getBlock();
+		if (DamageAspect.UNBREAKABLE != env.damage.getToughness(block))
+		{
+			short newDamage = (short)(newBlock.getDamage() + 1);
+			newBlock.setDamage(newDamage);
+			didApply = true;
+		}
+		
+		// Now, apply this to the other blocks.
 		_commonMutation((IMutationBlock mutation) -> context.mutationSink.next(mutation));
-		return true;
+		return didApply;
 	}
 
 	@Override

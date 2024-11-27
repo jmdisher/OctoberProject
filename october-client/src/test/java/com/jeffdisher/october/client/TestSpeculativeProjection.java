@@ -445,8 +445,8 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, 1);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
-		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, STONE);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, STONE);
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
@@ -468,8 +468,7 @@ public class TestSpeculativeProjection
 		EntityChangeMutation lone1 = new EntityChangeMutation(mutation1);
 		projector.applyLocalChange(lone0, currentTimeMillis);
 		long commit1 = projector.applyLocalChange(lone1, currentTimeMillis);
-		// Note that shockwave doesn't change blocks.
-		Assert.assertEquals(0, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
 		int speculativeCount = projector.applyChangesForServerTick(3L
@@ -485,7 +484,7 @@ public class TestSpeculativeProjection
 		);
 		// We should still just see the initial changes in the speculative list and the 1 update from the incoming change.
 		Assert.assertEquals(2, speculativeCount);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation0.getAbsoluteLocation().getBlockAddress()));
 		
@@ -503,7 +502,7 @@ public class TestSpeculativeProjection
 		);
 		// This commit level change should cause them all to be retired.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(4, listener.changeCount);
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation1.getAbsoluteLocation().getBlockAddress()));
 		

@@ -136,7 +136,7 @@ public class TestTickRunner
 	public void shockwaveOneCuboid()
 	{
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
@@ -179,14 +179,14 @@ public class TestTickRunner
 				, new WorldConfig()
 		);
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(_buildAirCuboid(CuboidAddress.fromInt(0, 0, 0))
-					, _buildAirCuboid(CuboidAddress.fromInt(0, 0, -1))
-					, _buildAirCuboid(CuboidAddress.fromInt(0, -1, 0))
-					, _buildAirCuboid(CuboidAddress.fromInt(0, -1, -1))
-					, _buildAirCuboid(CuboidAddress.fromInt(-1, 0, 0))
-					, _buildAirCuboid(CuboidAddress.fromInt(-1, 0, -1))
-					, _buildAirCuboid(CuboidAddress.fromInt(-1, -1, 0))
-					, _buildAirCuboid(CuboidAddress.fromInt(-1, -1, -1))
+		runner.setupChangesForTick(List.of(_buildStoneCuboid(CuboidAddress.fromInt(0, 0, 0))
+					, _buildStoneCuboid(CuboidAddress.fromInt(0, 0, -1))
+					, _buildStoneCuboid(CuboidAddress.fromInt(0, -1, 0))
+					, _buildStoneCuboid(CuboidAddress.fromInt(0, -1, -1))
+					, _buildStoneCuboid(CuboidAddress.fromInt(-1, 0, 0))
+					, _buildStoneCuboid(CuboidAddress.fromInt(-1, 0, -1))
+					, _buildStoneCuboid(CuboidAddress.fromInt(-1, -1, 0))
+					, _buildStoneCuboid(CuboidAddress.fromInt(-1, -1, -1))
 				)
 				, null
 				, List.of(_createFreshEntity(entityId))
@@ -2022,6 +2022,12 @@ public class TestTickRunner
 	private SuspendedCuboid<IReadOnlyCuboidData> _buildAirCuboid(CuboidAddress address)
 	{
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		return _packageCuboid(cuboid);
+	}
+
+	private SuspendedCuboid<IReadOnlyCuboidData> _buildStoneCuboid(CuboidAddress address)
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		return _packageCuboid(cuboid);
 	}
 
