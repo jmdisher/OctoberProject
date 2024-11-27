@@ -141,6 +141,7 @@ public class TestClientRunner
 	{
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
@@ -181,7 +182,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -199,7 +200,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -519,6 +520,7 @@ public class TestClientRunner
 		CuboidAddress cuboidAddress = changeLocation.getCuboidAddress();
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		cuboid.setData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), (short)150);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
 		TestAdapter network = new TestAdapter();
 		TestProjection projection = new TestProjection();
@@ -558,7 +560,7 @@ public class TestClientRunner
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalRepair(changeLocation, (short)100)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		

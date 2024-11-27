@@ -118,10 +118,11 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
-				, List.of(CuboidData.mutableClone(cuboid))
+				, List.of(cuboid)
 				, List.of()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -149,7 +150,7 @@ public class TestSpeculativeProjection
 			AbsoluteLocation location = new AbsoluteLocation(i, 0, 0);
 			IMutationBlock mutation = new ReplaceBlockMutation(location, ENV.special.AIR.item().number(), STONE_ITEM.number());
 			EntityChangeMutation entityChange = new EntityChangeMutation(mutation);
-			mutationsToCommit.add(FakeUpdateFactories.blockUpdate(cuboid, mutation));
+			mutationsToCommit.add(FakeUpdateFactories.blockUpdate(serverCuboid, mutation));
 			commitNumbers[i] = projector.applyLocalChange(entityChange, currentTimeMillis);
 		}
 		Assert.assertEquals(7, listener.changeCount);
@@ -165,7 +166,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -182,7 +183,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation2))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -255,6 +256,7 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, 1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		CuboidData serverCuboid0 = CuboidData.mutableClone(cuboid0);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
@@ -289,7 +291,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, List.of(address1)
 				, commit1
@@ -344,9 +346,11 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, 1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		CuboidData serverCuboid0 = CuboidData.mutableClone(cuboid0);
+		CuboidData serverCuboid1 = CuboidData.mutableClone(cuboid1);
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
-				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
+				, List.of(cuboid0, cuboid1)
 				, List.of()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -377,7 +381,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -394,7 +398,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid1, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -447,9 +451,11 @@ public class TestSpeculativeProjection
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, 1);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, STONE);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, STONE);
+		CuboidData serverCuboid0 = CuboidData.mutableClone(cuboid0);
+		CuboidData serverCuboid1 = CuboidData.mutableClone(cuboid1);
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
-				, List.of(CuboidData.mutableClone(cuboid0), CuboidData.mutableClone(cuboid1))
+				, List.of(cuboid0, cuboid1)
 				, List.of()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -476,7 +482,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid0, mutation0))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -494,7 +500,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid1, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -549,6 +555,7 @@ public class TestSpeculativeProjection
 		// Create and add an empty cuboid.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
 				, List.of(cuboid)
@@ -602,7 +609,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, mutation1))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -714,6 +721,7 @@ public class TestSpeculativeProjection
 		
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		long currentTimeMillis = 1L;
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
 		projector.applyChangesForServerTick(1L
@@ -763,7 +771,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -784,7 +792,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit2
@@ -1165,6 +1173,7 @@ public class TestSpeculativeProjection
 		Inventory inv = Inventory.start(10).addStackable(STONE_ITEM, 1).finish();
 		int stoneKey = inv.getIdOfStackableType(STONE_ITEM);
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, block, inv);
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		projector.setThisEntity(MutableEntity.createForTest(localEntityId).freeze());
 		projector.applyChangesForServerTick(1L
 				, List.of()
@@ -1220,7 +1229,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, extract))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, extract))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, commit1
@@ -1513,11 +1522,15 @@ public class TestSpeculativeProjection
 		
 		// Create and add an empty cuboid.
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		AbsoluteLocation target = new AbsoluteLocation(0, 1, 2);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		// We are going to try interacting with an inventory so write a solid block under it.
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		long currentTimeMillis = 1L;
 		projector.applyChangesForServerTick(2L
 				, Collections.emptyList()
-				, List.of(CuboidData.mutableClone(cuboid))
+				, List.of(cuboid)
 				, List.of()
 				, Collections.emptyMap()
 				, Collections.emptyList()
@@ -1528,17 +1541,15 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
-		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Apply a single local mutation.
-		AbsoluteLocation target = new AbsoluteLocation(0, 1, 2);
-		// Apply a few local mutations.
 		ReplaceBlockMutation mutation = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), STONE_ITEM.number());
 		EntityChangeMutation lone = new EntityChangeMutation(mutation);
 		long commit = projector.applyLocalChange(lone, currentTimeMillis);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 		
@@ -1549,7 +1560,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, storeItems))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, storeItems))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
@@ -1558,7 +1569,7 @@ public class TestSpeculativeProjection
 		// There should still be a change in the speculative list but our change would over-write the inventory so there shouldn't be a callback.
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Now commit a conflicting change.
@@ -1568,16 +1579,16 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, List.of()
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(cuboid, conflict))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, conflict))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, 0L
 				, 1L
 		);
-		// The speculative change will be there until we see the commit level and we should see the change from the conflict writing.
+		// The speculative change will be there until we see the commit level and we should see the change from the conflict writing (since the wrapper we use always returns success).
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(2, listener.changeCount);
-		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
@@ -1597,7 +1608,7 @@ public class TestSpeculativeProjection
 		// This should retire the change with no updates.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.changeCount);
-		Assert.assertEquals(0, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 	}

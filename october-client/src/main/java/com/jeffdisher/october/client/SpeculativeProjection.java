@@ -192,6 +192,9 @@ public class SpeculativeProjection
 		// We assume that we must have been told about ourselves before this first tick.
 		Assert.assertTrue(null != _thisShadowEntity);
 		
+		// We will take a snapshot of the previous shadowWorld so we can use it to describe what is changing in the authoritative set.
+		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = new HashMap<>(_shadowWorld);
+		
 		// Before applying the updates, add the new data.
 		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((PartialEntity entity) -> entity.id(), (PartialEntity entity) -> entity)));
 		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
@@ -215,6 +218,20 @@ public class SpeculativeProjection
 		_shadowCrowd.keySet().removeAll(removedEntities);
 		_shadowWorld.keySet().removeAll(removedCuboids);
 		_shadowHeightMap.keySet().removeAll(removedCuboids);
+		
+		// Verify that all state changes to the shadow data actually did something (since this would be a needless change we should prune, otherwise).
+		// In the future, we may want to remove this since it is a non-trivial check.
+		for (MutationBlockSetBlock update : cuboidUpdates)
+		{
+			AbsoluteLocation location = update.getAbsoluteLocation();
+			CuboidAddress address = location.getCuboidAddress();
+			BlockAddress block = location.getBlockAddress();
+			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
+			IReadOnlyCuboidData shadowCuboid = _shadowWorld.get(address);
+			BlockProxy stale = new BlockProxy(block, staleCuboid);
+			BlockProxy shadow = new BlockProxy(block, shadowCuboid);
+			Assert.assertTrue(!stale.doAspectsMatch(shadow));
+		}
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
