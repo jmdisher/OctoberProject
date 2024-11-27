@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -619,11 +620,16 @@ public class TestClientRunner
 			this.loadedCuboids.put(cuboidAddress, cuboid);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertTrue(this.loadedCuboids.containsKey(cuboidAddress));
 			Assert.assertFalse(changedBlocks.isEmpty());
+			Assert.assertFalse(changedAspects.isEmpty());
 			this.loadedCuboids.put(cuboidAddress, cuboid);
 		}
 		@Override

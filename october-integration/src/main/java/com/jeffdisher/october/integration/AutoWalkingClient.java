@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -212,9 +213,14 @@ public class AutoWalkingClient
 		{
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			Assert.assertTrue(!changedBlocks.isEmpty());
+			Assert.assertTrue(!changedAspects.isEmpty());
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

@@ -7,6 +7,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
 import com.jeffdisher.october.client.SpeculativeProjection;
@@ -543,10 +544,14 @@ public class ClientProcess
 			});
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidChange(cuboid, heightMap, changedBlocks);
+				_listener.cuboidDidChange(cuboid, heightMap, changedBlocks, changedAspects);
 			});
 		}
 		@Override
@@ -696,8 +701,13 @@ public class ClientProcess
 		 * @param cuboid The read-only cuboid data.
 		 * @param heightMap The height map for this cuboid's column.
 		 * @param changedBlocks The set of blocks which have some kind of change.
+		 * @param changedAspects The set of aspects changed by any of the changedBlocks.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

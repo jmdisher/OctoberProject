@@ -1,5 +1,8 @@
 package com.jeffdisher.october.data;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -10,6 +13,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -136,6 +140,44 @@ public class BlockProxy implements IBlockProxy
 			}
 		}
 		return doesMatch;
+	}
+
+	/**
+	 * Checks if the receiver and the given other are backed by the same aspect values, returning the set which differs.
+	 * Note that this depends on the underlying aspect value type implementing .equals(), which most don't, so changes
+	 * to this type instance will typically end up in the set, no matter what.  This shouldn't generally be an issue if
+	 * they originated from the same base data due to the copy-on-write design.
+	 * NOTE:  The receiver and other MUST have the same block address.
+	 * 
+	 * @param other The other proxy.
+	 * @return The set of mismatched aspects.
+	 */
+	public Set<Aspect<?, ?>> checkMismatchedAspects(BlockProxy other)
+	{
+		// It doesn't make sense to ask for this check if the blocks are in different locations.
+		Assert.assertTrue(_address.equals(other._address));
+		Set<Aspect<?, ?>> set = new HashSet<>();
+		
+		// We check the cached block instead of block aspect for performance reasons.
+		if (_cachedBlock != other._cachedBlock)
+		{
+			set.add(AspectRegistry.BLOCK);
+		}
+		for (Aspect<?, ?> aspect : AspectRegistry.ALL_ASPECTS)
+		{
+			if (aspect != AspectRegistry.BLOCK)
+			{
+				Object one = _data.getDataSpecial(aspect, _address);
+				Object two = other._data.getDataSpecial(aspect, other._address);
+				// NOTE:  Most actual object types don't implement this .equals() check (Inventory, for example).
+				boolean doesMatch = (one == two) || ((null != one) && (null != two) && one.equals(two));
+				if (!doesMatch)
+				{
+					set.add(aspect);
+				}
+			}
+		}
+		return set;
 	}
 
 

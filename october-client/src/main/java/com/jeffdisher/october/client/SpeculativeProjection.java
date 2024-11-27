@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -321,7 +322,7 @@ public class SpeculativeProjection
 		otherEntitiesChanges.remove(_localEntityId);
 		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = _projectedBlockChanges;
 		_projectedBlockChanges = new HashMap<>();
-		_notifyCuboidChanges(previousProjectedChanges, updatesToApply, modifiedBlocksByCuboid, columnHeightMaps);
+		_notifyCuboidChanges(previousProjectedChanges, staleShadowWorld, updatesToApply, modifiedBlocksByCuboid, columnHeightMaps);
 		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
 		
 		// Notify the listeners of what was removed.
@@ -376,7 +377,7 @@ public class SpeculativeProjection
 		
 		// Notify the listener of what changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		_notifyCuboidChanges(Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
+		_notifyCuboidChanges(Map.of(), Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
 		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, Set.of());
 		return commitNumber;
 	}
@@ -525,6 +526,7 @@ public class SpeculativeProjection
 	}
 
 	private void _notifyCuboidChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
+			, Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> authoritativeChangesByCuboid
 			, Map<CuboidAddress, List<AbsoluteLocation>> locallyChangedBlocksByCuboid
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
@@ -532,6 +534,7 @@ public class SpeculativeProjection
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
+		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
 		
 		// We want to add all changes which can in from the server.
 		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> changed : authoritativeChangesByCuboid.entrySet())
@@ -539,8 +542,10 @@ public class SpeculativeProjection
 			CuboidAddress address = changed.getKey();
 			Set<BlockAddress> set = changedBlocks.get(address);
 			IReadOnlyCuboidData activeVersion = _projectedWorld.get(address);
+			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
 			// This should never be null (the server shouldn't describe what it is unloading).
 			Assert.assertTrue(null != activeVersion);
+			Assert.assertTrue(null != staleCuboid);
 			for (MutationBlockSetBlock setBlock : changed.getValue())
 			{
 				// We want to report this if it isn't just an echo of something we already reported.
@@ -559,6 +564,20 @@ public class SpeculativeProjection
 							changedBlocks.put(address, set);
 						}
 						set.add(block);
+						
+						// See what aspects changed (may require loading the proxy for real data).
+						Set<Aspect<?, ?>> mismatches;
+						if (null == previousReport)
+						{
+							BlockProxy stale = new BlockProxy(block, staleCuboid);
+							mismatches = stale.checkMismatchedAspects(projected);
+						}
+						else
+						{
+							mismatches = previousReport.checkMismatchedAspects(projected);
+						}
+						Assert.assertTrue(!mismatches.isEmpty());
+						changedAspects.addAll(mismatches);
 					}
 				}
 			}
@@ -606,6 +625,11 @@ public class SpeculativeProjection
 								changedBlocks.put(address, set);
 							}
 							set.add(block);
+							
+							// See what aspects changed.
+							Set<Aspect<?, ?>> mismatches = previousReport.checkMismatchedAspects(projected);
+							Assert.assertTrue(!mismatches.isEmpty());
+							changedAspects.addAll(mismatches);
 						}
 					}
 				}
@@ -642,6 +666,11 @@ public class SpeculativeProjection
 						changedBlocks.put(cuboidAddress, set);
 					}
 					set.add(block);
+					
+					// See what aspects changed.
+					Set<Aspect<?, ?>> mismatches = projected.checkMismatchedAspects(proxy);
+					Assert.assertTrue(!mismatches.isEmpty());
+					changedAspects.addAll(mismatches);
 				}
 			}
 		}
@@ -662,7 +691,11 @@ public class SpeculativeProjection
 			CuboidAddress address = elt.getKey();
 			IReadOnlyCuboidData data = elt.getValue();
 			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
-			_listener.cuboidDidChange(data, allHeightMaps.get(address.getColumn()), blocksChanged);
+			_listener.cuboidDidChange(data
+					, allHeightMaps.get(address.getColumn())
+					, blocksChanged
+					, changedAspects
+			);
 		}
 	}
 
@@ -958,8 +991,13 @@ public class SpeculativeProjection
 		 * @param cuboid The read-only cuboid data.
 		 * @param heightMap The height map for this cuboid's column.
 		 * @param changedBlocks The set of blocks which have some kind of change.
+		 * @param changedAspects The set of aspects changed by any of the changedBlocks.
 		 */
-		void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks);
+		void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		);
 		/**
 		 * Called when a new cuboid should be unloaded as the server is no longer telling the client about it.
 		 * 

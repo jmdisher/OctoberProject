@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
@@ -521,10 +522,14 @@ public class ClientRunner
 			_projectionListener.cuboidDidLoad(cuboid, heightMap);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidChange(cuboid, heightMap, changedBlocks);
+			_projectionListener.cuboidDidChange(cuboid, heightMap, changedBlocks, changedAspects);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

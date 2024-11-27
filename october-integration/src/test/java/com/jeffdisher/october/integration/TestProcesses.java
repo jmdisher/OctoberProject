@@ -14,6 +14,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -518,9 +519,14 @@ public class TestProcesses
 			Assert.assertNull(old);
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			Assert.assertFalse(changedBlocks.isEmpty());
+			Assert.assertFalse(changedAspects.isEmpty());
 			Object old = this.cuboids.put(cuboid.getCuboidAddress(), cuboid);
 			Assert.assertNotNull(old);
 		}

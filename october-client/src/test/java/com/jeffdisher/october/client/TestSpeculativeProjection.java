@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
@@ -157,6 +158,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(7, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		// Each local change causes an update so we only see 1.
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(0, 0));
 		Assert.assertEquals(0, listener.lastHeightMap.getHeight(1, 0));
 		
@@ -280,6 +282,7 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0, currentTimeMillis);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		long commit1 = projector.applyLocalChange(lone1, currentTimeMillis);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
@@ -370,6 +373,7 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0, currentTimeMillis);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		long commit1 = projector.applyLocalChange(lone1, currentTimeMillis);
 		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
@@ -493,6 +497,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation0.getAbsoluteLocation().getBlockAddress()));
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.DAMAGE));
 		
 		// Commit the other one normally.
 		speculativeCount = projector.applyChangesForServerTick(4L
@@ -511,6 +517,8 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(4, listener.changeCount);
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation1.getAbsoluteLocation().getBlockAddress()));
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.DAMAGE));
 		
 		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
@@ -749,6 +757,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals((short)1000, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(31, listener.lastHeightMap.getHeight(0, 0));
 		
 		// Allow time to pass in the local environment apply the second stage of the change.
@@ -1029,6 +1038,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, commit2);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(1, 1));
 	}
 
@@ -1551,6 +1561,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Commit an unrelated mutation (from the server) to change the inventory (this is air, so it can hold data and placing the block will overwrite it).
@@ -1591,6 +1602,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Account for the commit level update.
@@ -1641,6 +1653,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(Integer.MIN_VALUE, listener.lastHeightMap.getHeight(1, 2));
 		listener.lastHeightMap = null;
 		Assert.assertNull(listener.lastChangedBlocks);
+		Assert.assertNull(listener.lastChangedAspects);
 		
 		// Make some updates to the scratch cuboid and write them to the projection.
 		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
@@ -1670,6 +1683,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(address, listener.lastData.getCuboidAddress());
 		Assert.assertEquals(3, listener.lastChangedBlocks.size());
+		Assert.assertEquals(3, listener.lastChangedAspects.size());
 		Assert.assertEquals(3, listener.lastHeightMap.getHeight(1, 2));
 	}
 
@@ -1882,6 +1896,7 @@ public class TestSpeculativeProjection
 		public IReadOnlyCuboidData lastData = null;
 		public ColumnHeightMap lastHeightMap = null;
 		public Set<BlockAddress> lastChangedBlocks = null;
+		public Set<Aspect<?, ?>> lastChangedAspects = null;
 		public int entityChangeCount = 0;
 		public Entity authoritativeEntityState = null;
 		public Entity thisEntityState = null;
@@ -1896,13 +1911,19 @@ public class TestSpeculativeProjection
 			this.lastHeightMap = heightMap;
 		}
 		@Override
-		public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks)
+		public void cuboidDidChange(IReadOnlyCuboidData cuboid
+				, ColumnHeightMap heightMap
+				, Set<BlockAddress> changedBlocks
+				, Set<Aspect<?, ?>> changedAspects
+		)
 		{
 			Assert.assertFalse(changedBlocks.isEmpty());
+			Assert.assertFalse(changedAspects.isEmpty());
 			this.changeCount += 1;
 			this.lastData = cuboid;
 			this.lastHeightMap = heightMap;
 			this.lastChangedBlocks = changedBlocks;
+			this.lastChangedAspects = changedAspects;
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
