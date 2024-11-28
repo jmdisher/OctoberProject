@@ -12,26 +12,24 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Applies damage to an entity, potentially reseting them to world spawn and dropping their inventory.
- * Note that the damage origin is passed in here and checked for range but that will likely be moved to the sender, in
- * the future.
+ * A deprecated version of the damage mutation which was last present in V2 of the entity persistent data.
  */
-public class EntityChangeTakeDamage<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class EntityChangeTakeDamage_V2<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.TAKE_DAMAGE;
+	public static final MutationEntityType TYPE = MutationEntityType.OLD_TAKE_DAMAGE_V2;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamage<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamage_V2<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		byte damage = buffer.get();
-		return new EntityChangeTakeDamage<>(target, damage);
+		return new EntityChangeTakeDamage_V2<>(target, damage);
 	}
 
 
 	private final BodyPart _target;
 	private final byte _damage;
 
-	public EntityChangeTakeDamage(BodyPart target, byte damage)
+	public EntityChangeTakeDamage_V2(BodyPart target, byte damage)
 	{
 		// Make sure that this is positive.
 		Assert.assertTrue(damage > 0);

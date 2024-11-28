@@ -582,7 +582,7 @@ public class TestCommonMutations
 		
 		// Now, do one at the end of the second to see the breath run out.
 		@SuppressWarnings("unchecked")
-		EntityChangeTakeDamage<IMutablePlayerEntity>[] holder = new EntityChangeTakeDamage[1];
+		EntityChangeTakeDamageFromOther<IMutablePlayerEntity>[] holder = new EntityChangeTakeDamageFromOther[1];
 		context = ContextBuilder.build()
 				.tick(50L)
 				.millisPerTick(20L)
@@ -594,7 +594,7 @@ public class TestCommonMutations
 					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(holder[0]);
-						holder[0] = (EntityChangeTakeDamage<IMutablePlayerEntity>) change;
+						holder[0] = (EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
 					}
 					@Override
 					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)

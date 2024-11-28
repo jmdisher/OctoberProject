@@ -84,7 +84,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 					: null
 			;
 			Environment env = Environment.getShared();
-			byte damageToApply;
+			int damageToApply;
 			if (BlockMaterial.SWORD == env.tools.toolTargetMaterial(toolType))
 			{
 				int toolSpeedMultiplier = env.tools.toolSpeedModifier(toolType);
@@ -98,14 +98,15 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 			// Choose the target body part at random.
 			int index = context.randomInt.applyAsInt(BodyPart.values().length);
 			BodyPart target = BodyPart.values()[index];
+			int sourceEntityId = newEntity.getId();
 			if (_targetEntityId > 0)
 			{
-				EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
+				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.next(_targetEntityId, takeDamage);
 			}
 			else
 			{
-				EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(target, damageToApply);
+				EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, damageToApply, sourceEntityId);
 				context.newChangeSink.creature(_targetEntityId, takeDamage);
 			}
 			

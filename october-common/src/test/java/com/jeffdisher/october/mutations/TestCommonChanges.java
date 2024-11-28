@@ -731,7 +731,7 @@ public class TestCommonChanges
 		// Check the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamage);
+		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
 	}
 
 	@Test
@@ -802,7 +802,7 @@ public class TestCommonChanges
 		target.newLocation = new EntityLocation(target.newLocation.x() - 1.0f, target.newLocation.y() - 1.0f, target.newLocation.z());
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
-		EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(BodyPart.HEAD, (byte) 60);
+		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(BodyPart.HEAD, 60, attackerId);
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
 		Assert.assertNull(blockHolder[0]);
@@ -865,12 +865,12 @@ public class TestCommonChanges
 		// Check that the sword durability changed and that we scheduled the hit.
 		Assert.assertTrue(new EntityChangeAttackEntity(targetId).applyChange(context, attacker));
 		Assert.assertEquals(targetId, targetHolder[0]);
-		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamage);
+		Assert.assertTrue(changeHolder[0] instanceof EntityChangeTakeDamageFromEntity);
 		int endDurability = attacker.newInventory.getNonStackableForKey(attacker.getSelectedKey()).durability();
 		Assert.assertEquals(10, (startDurability - endDurability));
 		
 		// Apply the hit and verify that the target health changed.
-		EntityChangeTakeDamage<IMutablePlayerEntity> change = (EntityChangeTakeDamage<IMutablePlayerEntity>) changeHolder[0];
+		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
 		targetHolder[0] = 0;
 		changeHolder[0] = null;
 		Assert.assertTrue(change.applyChange(context, target));
@@ -1143,27 +1143,28 @@ public class TestCommonChanges
 	{
 		// We will put some armour on the entity and see how the health is impacted by various attacks.
 		int entityId = 1;
+		int attackerId = 2;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int startDurability = 15;
 		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
 		
 		// Hit them in a different place and see the whole damage applied.
-		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.TORSO, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.TORSO, 10, attackerId).applyChange(null,  mutable));
 		Assert.assertEquals((byte)90, mutable.newHealth);
 		
 		// Hit them in the head with 1 damage and see it applied, with no durability loss.
-		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)1).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(null,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
 		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(null,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
 		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamage<IMutablePlayerEntity>(BodyPart.HEAD, (byte)10).applyChange(null,  mutable));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(null,  mutable));
 		Assert.assertEquals((byte)87, mutable.newHealth);
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}
@@ -1310,7 +1311,7 @@ public class TestCommonChanges
 		List<IMutationEntity<IMutableCreatureEntity>> list = creatureChanges.get(targetId);
 		Assert.assertEquals(1, list.size());
 		IMutationEntity<IMutableCreatureEntity> change = list.get(0);
-		Assert.assertTrue(change instanceof EntityChangeTakeDamage<IMutableCreatureEntity>);
+		Assert.assertTrue(change instanceof EntityChangeTakeDamageFromEntity<IMutableCreatureEntity>);
 	}
 
 	@Test

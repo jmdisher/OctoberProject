@@ -23,7 +23,9 @@ import com.jeffdisher.october.mutations.EntityChangeSetDayAndSpawn;
 import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.EntityChangeSwapArmour;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamage_V2;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
@@ -55,7 +57,7 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangeIncrementalBlockBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeIncrementalBlockBreak.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeCraftInBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeCraftInBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeAttackEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeAttackEntity.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[EntityChangeTakeDamage.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamage.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeTakeDamage_V2.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamage_V2.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangePeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangePeriodic.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeUseSelectedItemOnSelf.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnSelf.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeUseSelectedItemOnBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeUseSelectedItemOnBlock.deserializeFromBuffer(buffer);
@@ -69,6 +71,8 @@ public class MutationEntityCodec
 		_CODEC_TABLE[EntityChangeSetOrientation.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSetOrientation.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeAccelerate.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeAccelerate.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeIncrementalBlockRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeIncrementalBlockRepair.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeTakeDamageFromEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamageFromEntity.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[EntityChangeTakeDamageFromOther.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeTakeDamageFromOther.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

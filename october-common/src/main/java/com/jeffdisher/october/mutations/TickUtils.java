@@ -41,7 +41,7 @@ public class TickUtils
 	}
 
 	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, IDamageApplication damageApplication
+			, IFallDamage damageApplication
 			, IMutableMinimalEntity newEntity
 			, long millisToMove
 	)
@@ -127,12 +127,12 @@ public class TickUtils
 					int id = newEntity.getId();
 					if (id > 0)
 					{
-						EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND);
+						EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
 						context.newChangeSink.next(id, takeDamage);
 					}
 					else
 					{
-						EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND);
+						EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
 						context.newChangeSink.creature(id, takeDamage);
 					}
 				}
@@ -160,8 +160,8 @@ public class TickUtils
 	}
 
 
-	public static interface IDamageApplication
+	public static interface IFallDamage
 	{
-		public void applyDamage(byte damage);
+		public void applyDamage(int damage);
 	}
 }

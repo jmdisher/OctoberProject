@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -105,7 +105,7 @@ public class TestOrcStateMachine
 		// We should see the orc send the attack message
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;
-		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamage);
+		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamageFromEntity);
 		message[0] = null;
 		
 		// The orc should still target them.
@@ -125,7 +125,7 @@ public class TestOrcStateMachine
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;
-		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamage);
+		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamageFromEntity);
 		message[0] = null;
 		result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertEquals(player.id(), result.targetEntityId());

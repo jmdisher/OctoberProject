@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -229,7 +229,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 					// We can attack them so choose the target.
 					int index = context.randomInt.applyAsInt(BodyPart.values().length);
 					BodyPart target = BodyPart.values()[index];
-					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(target, ORC_DAMAGE);
+					EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, ORC_DAMAGE, creatureId);
 					context.newChangeSink.next(_targetEntityId, takeDamage);
 					// Set us on to cooldown.
 					_lastAttackTick = context.currentTick;

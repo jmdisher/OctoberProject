@@ -125,7 +125,7 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 			// They are starving so we want to apply damage.
 			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
-			EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, EntityConstants.STARVATION_DAMAGE_PER_SECOND);
+			EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, EntityConstants.STARVATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_STARVATION);
 			context.newChangeSink.next(newEntity.getId(), takeDamage);
 		}
 	}

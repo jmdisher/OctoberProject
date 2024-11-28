@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -63,8 +63,8 @@ public class CreatureProcessor
 				processor.creaturesProcessed += 1;
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
-				TickUtils.IDamageApplication damageApplication = (byte damage) ->{
-					EntityChangeTakeDamage<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamage<>(null, damage);
+				TickUtils.IFallDamage damageApplication = (int damage) ->{
+					EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, damage, EntityChangeTakeDamageFromOther.CAUSE_FALL);
 					context.newChangeSink.creature(id, takeDamage);
 				};
 				
@@ -117,7 +117,7 @@ public class CreatureProcessor
 
 	private static long _runExternalChanges(ProcessorElement processor
 			, TickProcessingContext context
-			, TickUtils.IDamageApplication damageApplication
+			, TickUtils.IFallDamage damageApplication
 			, MutableCreature mutable
 			, List<IMutationEntity<IMutableCreatureEntity>> changes
 			, long millisAtEndOfTick
@@ -143,7 +143,7 @@ public class CreatureProcessor
 
 	private static long _runInternalChanges(ProcessorElement processor
 			, TickProcessingContext context
-			, TickUtils.IDamageApplication damageApplication
+			, TickUtils.IFallDamage damageApplication
 			, EntityCollection entityCollection
 			, MutableCreature mutable
 			, long millisAtEndOfTick

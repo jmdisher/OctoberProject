@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamage;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -58,8 +58,8 @@ public class CrowdProcessor
 				processor.entitiesProcessed += 1;
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
-				TickUtils.IDamageApplication damageApplication = (byte damage) ->{
-					EntityChangeTakeDamage<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamage<>(null, damage);
+				TickUtils.IFallDamage damageApplication = (int damage) ->{
+					EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, damage, EntityChangeTakeDamageFromOther.CAUSE_FALL);
 					context.newChangeSink.next(id, takeDamage);
 				};
 				List<ScheduledChange> changes = changesToRun.get(id);
