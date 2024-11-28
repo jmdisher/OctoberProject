@@ -32,7 +32,7 @@ import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
-import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -926,7 +926,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.completedCuboids().size());
 		Assert.assertEquals(1, snapshot.scheduledBlockMutations().size());
-		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0).mutation() instanceof MutationBlockOverwrite);
+		Assert.assertTrue(snapshot.scheduledBlockMutations().get(address0).get(0).mutation() instanceof MutationBlockOverwriteByEntity);
 		Assert.assertEquals(2, snapshot.completedCuboids().get(address0).getDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress()).getCount(STONE_ITEM));
 		
 		// Run another tick and we shouldn't see anything scheduled (since updated don't go through that path).

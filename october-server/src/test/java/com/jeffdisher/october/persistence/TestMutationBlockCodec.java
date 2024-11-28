@@ -13,7 +13,8 @@ import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
-import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Craft;
@@ -38,16 +39,31 @@ public class TestMutationBlockCodec
 	}
 
 	@Test
-	public void overwrite() throws Throwable
+	public void overwriteInternal() throws Throwable
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
+		MutationBlockOverwriteInternal mutation = new MutationBlockOverwriteInternal(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")));
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);
 		buffer.flip();
 		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
-		Assert.assertTrue(read instanceof MutationBlockOverwrite);
+		Assert.assertTrue(read instanceof MutationBlockOverwriteInternal);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void overwriteByEntity() throws Throwable
+	{
+		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
+		int entityId = 1;
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")), entityId);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		MutationBlockCodec.serializeToBuffer(buffer, mutation);
+		buffer.flip();
+		IMutationBlock read = MutationBlockCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertTrue(read instanceof MutationBlockOverwriteByEntity);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 

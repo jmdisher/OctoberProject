@@ -11,7 +11,7 @@ import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.PlantRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.IMutationBlock;
-import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -162,7 +162,7 @@ public class Structure
 							if (needsLightUpdate || needsGrowth)
 							{
 								cuboid.setData15(AspectRegistry.BLOCK, blockAddress, replacementBlock);
-								mutations.add(new MutationBlockOverwrite(thisBlock, block));
+								mutations.add(new MutationBlockOverwriteInternal(thisBlock, block));
 							}
 							else
 							{

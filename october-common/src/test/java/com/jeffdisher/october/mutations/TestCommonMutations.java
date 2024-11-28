@@ -250,7 +250,8 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		
 		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
+		int entityId = 1;
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
@@ -276,12 +277,13 @@ public class TestCommonMutations
 		// This is to verify that we don't destroy an existing inventory in this block if we replace it with something which allows entity movement (air-equivalent).
 		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
+		int entityId = 1;
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
 		
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(target, wheatSeedling);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
@@ -357,6 +359,7 @@ public class TestCommonMutations
 		Block switchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
 		Block lampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
 		Block lampOn = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_on"));
+		int entityId = 1;
 		AbsoluteLocation switchLocation = new AbsoluteLocation(5, 5, 5);
 		AbsoluteLocation lampLocation = switchLocation.getRelative(1, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(switchLocation.getCuboidAddress(), ENV.special.AIR);
@@ -366,7 +369,7 @@ public class TestCommonMutations
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		
-		MutationBlockOverwrite mutation = new MutationBlockOverwrite(lampLocation, lampOff);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lampOff, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(lampLocation, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());

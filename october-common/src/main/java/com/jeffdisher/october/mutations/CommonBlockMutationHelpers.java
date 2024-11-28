@@ -4,6 +4,8 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.HopperHelpers;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
@@ -61,6 +63,67 @@ public class CommonBlockMutationHelpers
 	public static void fillInventoryFromBlockWithoutLimit(MutableInventory inventoryToFill, IBlockProxy block)
 	{
 		_fillInventoryFromBlockWithoutLimit(inventoryToFill, block);
+	}
+
+	/**
+	 * A helper to overwrite the given newBlock with a block of blockType if it is a block type which can be replaced.
+	 * 
+	 * @param context The context wherein the change should be applied.
+	 * @param newBlock The block being written.
+	 * @param location The location of the block being written.
+	 * @param blockType The new block type to write.
+	 * @return True if the block was written or false if the write was aborted.
+	 */
+	public static boolean overwriteBlock(TickProcessingContext context, IMutableBlockProxy newBlock, AbsoluteLocation location, Block blockType)
+	{
+		Environment env = Environment.getShared();
+		boolean didApply = false;
+		
+		// Check to see if this is the expected type.
+		Block oldBlock = newBlock.getBlock();
+		if (env.blocks.canBeReplaced(oldBlock))
+		{
+			// See if the block we are changing needs a special logic mode.
+			Block newType = LogicLayerHelpers.blockTypeToPlace(context, location, blockType);
+			
+			// Make sure that this block can be supported by the one under it.
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
+			// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
+			boolean blockIsSupported = (null != belowBlock)
+					? env.blocks.canExistOnBlock(newType, belowBlock.getBlock())
+					: true
+			;
+			
+			// Note that failing to place this means that the block will be destroyed.
+			if (blockIsSupported)
+			{
+				// If we are placing a block which allows entity movement, be sure to copy over any inventory on the ground.
+				Inventory inventoryToRestore = !env.blocks.isSolid(newType)
+						? newBlock.getInventory()
+						: null
+				;
+				
+				// Replace the block with the type we have.
+				newBlock.setBlockAndClear(newType);
+				if (null != inventoryToRestore)
+				{
+					newBlock.setInventory(inventoryToRestore);
+				}
+				
+				if (env.plants.growthDivisor(newType) > 0)
+				{
+					newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS);
+				}
+				didApply = true;
+			}
+		}
+		
+		// Handle the case where this might be a hopper.
+		if (didApply && HopperHelpers.isHopper(location, newBlock))
+		{
+			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
+		}
+		return didApply;
 	}
 
 

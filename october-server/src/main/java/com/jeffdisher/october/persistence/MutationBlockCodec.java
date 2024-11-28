@@ -12,7 +12,8 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockLogicChange;
-import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -32,7 +33,7 @@ public class MutationBlockCodec
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
 	{
-		_CODEC_TABLE[MutationBlockOverwrite.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwrite.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockOverwriteInternal.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteInternal.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockExtractItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockExtractItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockStoreItems.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStoreItems.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockIncrementalBreak.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalBreak.deserializeFromBuffer(buffer);
@@ -45,6 +46,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLogicChange.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPeriodic.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalRepair.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

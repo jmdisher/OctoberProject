@@ -259,7 +259,7 @@ public class TestCommonChanges
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
 		
 		// We also need to apply the actual mutation.
-		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
@@ -450,7 +450,7 @@ public class TestCommonChanges
 		AbsoluteLocation reasonable = new AbsoluteLocation(1, 1, 8);
 		MutationPlaceSelectedBlock placeReasonable = new MutationPlaceSelectedBlock(reasonable, reasonable);
 		Assert.assertTrue(placeReasonable.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		// Make sure we fail if there is no selection.
@@ -541,7 +541,7 @@ public class TestCommonChanges
 		MutationEntitySelectItem select = new MutationEntitySelectItem(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
 		Assert.assertTrue(select.applyChange(holder.context, newEntity));
 		Assert.assertTrue(place.applyChange(holder.context, newEntity));
-		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwrite);
+		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		holder.mutation = null;
 		
 		// Verify that we can store the charcoal into the furnace inventory or fuel inventory.

@@ -3,7 +3,7 @@ package com.jeffdisher.october.logic;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
-import com.jeffdisher.october.mutations.MutationBlockOverwrite;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -130,7 +130,7 @@ public class PlantHelpers
 			Block block = proxy.getBlock();
 			if (env.blocks.canBeReplaced(block))
 			{
-				context.mutationSink.next(new MutationBlockOverwrite(location, blockType));
+				context.mutationSink.next(new MutationBlockOverwriteInternal(location, blockType));
 			}
 		}
 	}
