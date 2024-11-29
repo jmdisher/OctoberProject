@@ -92,6 +92,14 @@ public enum PacketType
 	 * Sent by the server to the client.
 	 */
 	RECEIVE_CHAT_MESSAGE,
+	/**
+	 * Sent by the server to describe a block event.
+	 */
+	EVENT_BLOCK,
+	/**
+	 * Sent by the server to describe an entity event (location is optional).
+	 */
+	EVENT_ENTITY,
 	
 	END_OF_LIST,
 }
