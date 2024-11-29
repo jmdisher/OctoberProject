@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -104,6 +105,7 @@ public class FakeUpdateFactories
 			}
 			, null
 			, null
+			, (EventRecord record) -> {}
 			, new WorldConfig()
 			, 100L
 			, 0L

@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.LazyLocationCache;
@@ -475,6 +476,8 @@ public class TickRunner
 					, newChangeSink
 					, _idAssigner
 					, _random
+					// TODO:  Replace this with a real event handler.
+					, (EventRecord event) -> {}
 					, config
 					, _millisPerTick
 					, currentTickTimeMillis

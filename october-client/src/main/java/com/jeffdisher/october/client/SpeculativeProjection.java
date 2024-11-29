@@ -38,6 +38,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -957,6 +958,8 @@ public class SpeculativeProjection
 				, null
 				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
 				, (int bound) -> 0
+				// TODO:  Replace this with a real event handler.
+				, (EventRecord event) -> {}
 				// By default, we run in hostile mode.
 				, new WorldConfig()
 				, millisPerTick

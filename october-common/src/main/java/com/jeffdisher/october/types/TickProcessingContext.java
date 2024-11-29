@@ -61,6 +61,11 @@ public class TickProcessingContext
 	public final IntUnaryOperator randomInt;
 
 	/**
+	 * Called by some changes in order to give high-level meanings to what they are doing.
+	 */
+	public final IEventSink eventSink;
+
+	/**
 	 * The server's config object.
 	 */
 	public final WorldConfig config;
@@ -85,6 +90,7 @@ public class TickProcessingContext
 			, IChangeSink newChangeSink
 			, CreatureIdAssigner idAssigner
 			, IntUnaryOperator randomInt
+			, IEventSink eventSink
 			, WorldConfig config
 			, long millisPerTick
 			, long currentTickTimeMillis
@@ -98,6 +104,7 @@ public class TickProcessingContext
 		this.newChangeSink = newChangeSink;
 		this.idAssigner = idAssigner;
 		this.randomInt = randomInt;
+		this.eventSink = eventSink;
 		this.config = config;
 		this.millisPerTick = millisPerTick;
 		this.currentTickTimeMillis = currentTickTimeMillis;
@@ -147,5 +154,17 @@ public class TickProcessingContext
 		 * @param change The change to run.
 		 */
 		void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change);
+	}
+
+
+	/**
+	 * Events are data elements which clients can observe but are never read within tick processing, nor are they
+	 * persisted on the server.
+	 * They exist purely to allow the client to make meaningful sense of things happening in the world.  For example,
+	 * instead of a block appearing in the world, an event could be used to say that an entity placed it.
+	 */
+	public static interface IEventSink
+	{
+		void post(EventRecord event);
 	}
 }

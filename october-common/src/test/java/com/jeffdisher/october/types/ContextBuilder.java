@@ -8,8 +8,6 @@ import org.junit.Assert;
 
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
-import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
-import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
 
 
 /**
@@ -29,6 +27,7 @@ public class ContextBuilder
 				.lookups(previous.previousBlockLookUp, previous.previousEntityLookUp)
 				.sinks(previous.mutationSink, previous.newChangeSink)
 				.assigner(previous.idAssigner)
+				.eventSink(previous.eventSink)
 		;
 		builder.randomInt = previous.randomInt;
 		builder.config = previous.config;
@@ -41,10 +40,11 @@ public class ContextBuilder
 	public Function<AbsoluteLocation, BlockProxy> previousBlockLookUp;
 	public Function<Integer, MinimalEntity> previousEntityLookUp;
 	public IByteLookup<AbsoluteLocation> skyLight;
-	public IMutationSink mutationSink;
-	public IChangeSink newChangeSink;
+	public TickProcessingContext.IMutationSink mutationSink;
+	public TickProcessingContext.IChangeSink newChangeSink;
 	public CreatureIdAssigner idAssigner;
 	public IntUnaryOperator randomInt;
+	public TickProcessingContext.IEventSink eventSink;
 	public WorldConfig config;
 	public long millisPerTick;
 
@@ -104,6 +104,12 @@ public class ContextBuilder
 		return this;
 	}
 
+	public ContextBuilder eventSink(TickProcessingContext.IEventSink eventSink)
+	{
+		this.eventSink = eventSink;
+		return this;
+	}
+
 	public ContextBuilder boundedRandom(int value)
 	{
 		this.randomInt = (int bound) -> {
@@ -137,6 +143,7 @@ public class ContextBuilder
 				, this.newChangeSink
 				, this.idAssigner
 				, this.randomInt
+				, this.eventSink
 				, this.config
 				, this.millisPerTick
 				, (this.currentTick * this.millisPerTick)
