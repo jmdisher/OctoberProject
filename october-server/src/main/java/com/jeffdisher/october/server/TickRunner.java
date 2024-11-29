@@ -182,6 +182,9 @@ public class TickRunner
 				// scheduledEntityMutations.
 				, Collections.emptyMap()
 				
+				// postedEvents
+				, List.of()
+				
 				// Information related to tick behaviour and performance statistics.
 				, new TickStats(0L
 						, 0L
@@ -420,6 +423,7 @@ public class TickRunner
 						, List.of()
 						, Map.of()
 						, Map.of()
+						, List.of()
 						, Map.of()
 				)
 				, 0L
@@ -442,6 +446,7 @@ public class TickRunner
 			LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(loader);
 			CommonMutationSink newMutationSink = new CommonMutationSink();
 			CommonChangeSink newChangeSink = new CommonChangeSink();
+			List<EventRecord> events = new ArrayList<>();
 			
 			// On the server, we just generate the tick time as purely abstract monotonic value.
 			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
@@ -476,8 +481,7 @@ public class TickRunner
 					, newChangeSink
 					, _idAssigner
 					, _random
-					// TODO:  Replace this with a real event handler.
-					, (EventRecord event) -> {}
+					, (EventRecord event) -> events.add(event)
 					, config
 					, _millisPerTick
 					, currentTickTimeMillis
@@ -548,6 +552,7 @@ public class TickRunner
 							, newMutationSink.takeExportedMutations()
 							, newChangeSink.takeExportedChanges()
 							, newChangeSink.takeExportedCreatureChanges()
+							, events
 							, materials.commitLevels
 					)
 					, materials.millisInTickPreamble
@@ -594,6 +599,7 @@ public class TickRunner
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
 			Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
+			List<EventRecord> postedEvents = new ArrayList<>();
 			
 			// We will create new mutable maps from the previous materials and modify them based on the changes in the fragments.
 			// We will create read-only snapshots for the Snapshot object and continue to modify these in order to create the next TickMaterials.
@@ -651,6 +657,7 @@ public class TickRunner
 				{
 					_scheduleChangesForEntity(nextCreatureChanges, container.getKey(), container.getValue());
 				}
+				postedEvents.addAll(fragment.postedEvents);
 				
 				// World data.
 				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
@@ -711,6 +718,9 @@ public class TickRunner
 					, Collections.unmodifiableMap(snapshotBlockMutations)
 					// scheduledEntityMutations
 					, Collections.unmodifiableMap(snapshotEntityMutations)
+					
+					// postedEvents
+					, postedEvents
 					
 					// Stats.
 					, new TickStats(_nextTick
@@ -1158,7 +1168,8 @@ public class TickRunner
 			// These fields are related to what is scheduled for the NEXT (or future) tick (added here to expose them to serialization).
 			, Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations
 			, Map<Integer, List<ScheduledChange>> scheduledEntityMutations
-			// Note that the creature changes aren't included here since they are not serialized.
+			
+			, List<EventRecord> postedEvents
 			
 			, TickStats stats
 	)
@@ -1260,6 +1271,7 @@ public class TickRunner
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> newlyScheduledCreatureChanges
+			, List<EventRecord> postedEvents
 			, Map<Integer, Long> commitLevels
 	) {}
 }

@@ -454,6 +454,8 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
+				, List.of()
+				
 				// Information related to tick behaviour and performance statistics.
 				, new TickRunner.TickStats(0L
 						, 0L
@@ -488,6 +490,8 @@ public class TestServerStateManager
 				, snapshot.scheduledBlockMutations()
 				, snapshot.scheduledEntityMutations()
 				
+				, snapshot.postedEvents()
+				
 				// Information related to tick behaviour and performance statistics.
 				, stats
 		);
@@ -509,6 +513,8 @@ public class TestServerStateManager
 				
 				, snapshot.scheduledBlockMutations()
 				, snapshot.scheduledEntityMutations()
+				
+				, snapshot.postedEvents()
 				
 				// Information related to tick behaviour and performance statistics.
 				, stats
