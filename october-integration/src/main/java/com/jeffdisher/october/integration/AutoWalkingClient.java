@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -251,6 +252,10 @@ public class AutoWalkingClient
 		}
 		@Override
 		public void tickDidComplete(long gameTick)
+		{
+		}
+		@Override
+		public void handleEvent(EventRecord event)
 		{
 		}
 		@Override

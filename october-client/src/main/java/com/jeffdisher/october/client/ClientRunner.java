@@ -591,6 +591,11 @@ public class ClientRunner
 		{
 			_projectionListener.tickDidComplete(gameTick);
 		}
+		@Override
+		public void handleEvent(EventRecord event)
+		{
+			_projectionListener.handleEvent(event);
+		}
 	}
 
 	/**

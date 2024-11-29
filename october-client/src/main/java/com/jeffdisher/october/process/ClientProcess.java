@@ -44,6 +44,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -615,6 +616,13 @@ public class ClientProcess
 				_listener.tickDidComplete(gameTick);
 			});
 		}
+		@Override
+		public void handleEvent(EventRecord event)
+		{
+			_pendingCallbacks.add(() -> {
+				_listener.handleEvent(event);
+			});
+		}
 	}
 
 	// Note that these calls are issued on the thread which calls into the ClientRunner, meaning the thread we are treating as "main", from the user.
@@ -767,6 +775,12 @@ public class ClientProcess
 		 * @param gameTick The tick number (this is monotonic).
 		 */
 		void tickDidComplete(long gameTick);
+		/**
+		 * Called when an event is generated in the client or comes in from the server.
+		 * 
+		 * @param event The event.
+		 */
+		void handleEvent(EventRecord event);
 		/**
 		 * The server's config options were changed or it is announcing these right after connection.
 		 * 

@@ -30,6 +30,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -571,6 +572,12 @@ public class TestProcesses
 		{
 			Assert.assertTrue(gameTick > this.lastTickCompleted);
 			this.lastTickCompleted = gameTick;
+		}
+		@Override
+		public void handleEvent(EventRecord event)
+		{
+			// Not in this test.
+			throw new AssertionError("handleEvent");
 		}
 		@Override
 		public void configUpdated(int ticksPerDay, int dayStartTick)

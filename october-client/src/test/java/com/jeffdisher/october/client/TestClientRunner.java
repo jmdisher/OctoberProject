@@ -1,6 +1,8 @@
 package com.jeffdisher.october.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +37,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -100,6 +103,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -135,6 +139,7 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -212,6 +217,15 @@ public class TestClientRunner
 		network.client.adapterDisconnected();
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+		
+		// We should see the event for the block being broken.
+		Assert.assertEquals(1, projection.events.size());
+		EventRecord event = projection.events.get(0);
+		Assert.assertEquals(EventRecord.Type.BLOCK_BROKEN, event.type());
+		Assert.assertEquals(EventRecord.Cause.NONE, event.cause());
+		Assert.assertEquals(changeLocation, event.location());
+		Assert.assertEquals(0, event.entityTarget());
+		Assert.assertEquals(clientId, event.entitySource());
 	}
 
 	@Test
@@ -252,6 +266,7 @@ public class TestClientRunner
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
 		float stepDistance = EntityConstants.SPEED_PLAYER / 10.0f;
 		Assert.assertEquals(new EntityLocation(stepDistance, 0.0f, 0.0f), projection.thisEntity.location());
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -292,6 +307,7 @@ public class TestClientRunner
 		Assert.assertEquals(0.0f, location.x(), 0.0001f);
 		Assert.assertEquals(0.0f, location.y(), 0.0001f);
 		Assert.assertEquals(0.44f, location.z(), 0.0001f);
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -338,6 +354,7 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		runner.doNothing(currentTimeMillis);
 		Assert.assertEquals(changeCount, projection.allEntityChangeCount);
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -386,6 +403,7 @@ public class TestClientRunner
 		proxy = projection.readBlock(table);
 		Assert.assertNull(proxy.getCrafting());
 		Assert.assertEquals(2, proxy.getInventory().getCount(PLANK_ITEM));
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -429,6 +447,7 @@ public class TestClientRunner
 		}
 		// Compare this walked distance to what we have experimentally verified.
 		Assert.assertEquals(new EntityLocation(21.0f, 0.0f, 0.0f), projection.thisEntity.location());
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -474,6 +493,7 @@ public class TestClientRunner
 		currentTimeMillis += EntityChangeUseSelectedItemOnSelf.COOLDOWN_MILLIS;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
 		Assert.assertEquals(0, projection.thisEntity.inventory().getCount(bread));
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -512,6 +532,7 @@ public class TestClientRunner
 		Assert.assertEquals(0.0f, location.z(), 0.0001f);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, projection.thisEntity.yaw());
 		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, projection.thisEntity.pitch());
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 	@Test
@@ -573,6 +594,7 @@ public class TestClientRunner
 		network.client.adapterDisconnected();
 		runner.runPendingCalls(System.currentTimeMillis());
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+		Assert.assertTrue(projection.events.isEmpty());
 	}
 
 
@@ -612,6 +634,7 @@ public class TestClientRunner
 		public int allEntityChangeCount = 0;
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
 		public long lastTickCompleted = 0L;
+		public List<EventRecord> events = new ArrayList<>();
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
 		{
@@ -681,6 +704,11 @@ public class TestClientRunner
 		{
 			Assert.assertTrue(gameTick > this.lastTickCompleted);
 			this.lastTickCompleted = gameTick;
+		}
+		@Override
+		public void handleEvent(EventRecord event)
+		{
+			this.events.add(event);
 		}
 		public BlockProxy readBlock(AbsoluteLocation block)
 		{

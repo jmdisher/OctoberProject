@@ -56,6 +56,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -234,6 +235,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -329,6 +331,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -440,6 +443,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -553,6 +557,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(2, listener.unloadCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -668,6 +673,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(1, listener.unloadCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -745,6 +751,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.thisEntityState.inventory().sortedKeys().size());
 		// This won't change the instance since we will realize that they are the same.
 		Assert.assertTrue(otherEntity == listener.otherEntityStates.get(entityId2));
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -846,6 +853,10 @@ public class TestSpeculativeProjection
 		// (the authoritative side doesn't synthesize the item entering the inventory so it will be empty until the authoritative answer arrives).
 		Assert.assertEquals(0, listener.authoritativeEntityState.inventory().getCount(STONE.item()));
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(STONE.item()));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, changeLocation, 0, entityId), listener.events.get(0));
 	}
 
 	@Test
@@ -909,6 +920,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(midStep, listener.thisEntityState.location());
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -971,6 +983,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1031,6 +1044,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, inv.getCount(STONE_BRICK_ITEM));
 		entity = listener.thisEntityState;
 		Assert.assertEquals(Entity.NO_SELECTION, entity.hotbarItems()[entity.hotbarIndex()]);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1077,6 +1091,10 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(1, listener.lastHeightMap.getHeight(1, 1));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, entityId), listener.events.get(0));
 	}
 
 	@Test
@@ -1164,6 +1182,11 @@ public class TestSpeculativeProjection
 		entityInventory = listener.thisEntityState.inventory();
 		Assert.assertEquals(1, entityInventory.sortedKeys().size());
 		Assert.assertEquals(1, entityInventory.getCount(CRAFTING_TABLE_ITEM));
+		
+		// Verify the events.
+		Assert.assertEquals(2, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(0));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(1));
 	}
 
 	@Test
@@ -1206,6 +1229,7 @@ public class TestSpeculativeProjection
 		// There should be no active operation.
 		Assert.assertNull(listener.authoritativeEntityState.localCraftOperation());
 		Assert.assertNull(listener.thisEntityState.localCraftOperation());
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1328,6 +1352,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.authoritativeEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(ENV.encumbrance.getEncumbrance(STONE_ITEM), listener.thisEntityState.inventory().currentEncumbrance);
 		Assert.assertEquals(0, new BlockProxy(block, listener.lastData).getInventory().currentEncumbrance);
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1408,6 +1433,11 @@ public class TestSpeculativeProjection
 		entityInventory = listener.thisEntityState.inventory();
 		Assert.assertEquals(1, entityInventory.sortedKeys().size());
 		Assert.assertEquals(1, entityInventory.getCount(FURNACE_ITEM));
+		
+		// Verify the events.
+		Assert.assertEquals(2, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(0));
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, location, 0, localEntityId), listener.events.get(1));
 	}
 
 	@Test
@@ -1454,6 +1484,10 @@ public class TestSpeculativeProjection
 		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
 		Assert.assertEquals(1, feetInventory.sortedKeys().size());
 		Assert.assertEquals(1, feetInventory.getCount(dirt.item()));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
 	}
 
 	@Test
@@ -1555,6 +1589,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(lastStep, listener.thisEntityState.location());
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.authoritativeEntityState.yaw());
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1677,6 +1712,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1741,6 +1777,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3, listener.lastChangedBlocks.size());
 		Assert.assertEquals(3, listener.lastChangedAspects.size());
 		Assert.assertEquals(3, listener.lastHeightMap.getHeight(1, 2));
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1828,6 +1865,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(pitch2, listener.thisEntityState.pitch());
 		Assert.assertEquals(yaw2, listener.authoritativeEntityState.yaw());
 		Assert.assertEquals(pitch2, listener.authoritativeEntityState.pitch());
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 	@Test
@@ -1915,6 +1953,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(pitch, listener.authoritativeEntityState.pitch());
 		Assert.assertEquals(targetLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
+		Assert.assertTrue(listener.events.isEmpty());
 	}
 
 
@@ -1964,6 +2003,7 @@ public class TestSpeculativeProjection
 		public Entity thisEntityState = null;
 		public Map<Integer, PartialEntity> otherEntityStates = new HashMap<>();
 		public long lastTickCompleted = 0L;
+		public List<EventRecord> events = new ArrayList<>();
 		
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
@@ -2033,6 +2073,11 @@ public class TestSpeculativeProjection
 		{
 			Assert.assertTrue(gameTick > this.lastTickCompleted);
 			this.lastTickCompleted = gameTick;
+		}
+		@Override
+		public void handleEvent(EventRecord event)
+		{
+			this.events.add(event);
 		}
 	}
 }

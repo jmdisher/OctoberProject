@@ -240,6 +240,16 @@ public class SpeculativeProjection
 		
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
+		// First, we can send the events since they are unrelated to our projected state.
+		for (EventRecord event : events)
+		{
+			// We want to strip out any which have this entity as the source since we will already have sent those as local changes (probably).
+			if (_thisShadowEntity.id() != event.entitySource())
+			{
+				_listener.handleEvent(event);
+			}
+		}
+		
 		// Rebuild our projection from these collections.
 		boolean isFirstRun = (null == _projectedLocalEntity);
 		_projectedWorld = new HashMap<>(_shadowWorld);
@@ -261,7 +271,7 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, wrapper.change, wrapper.commitLevel, wrapper.currentTickTimeMillis);
+				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, wrapper.change, false, wrapper.commitLevel, wrapper.currentTickTimeMillis);
 				// If this was applied, re-add the new wrapper.
 				if (null != appliedWrapper)
 				{
@@ -367,7 +377,7 @@ public class SpeculativeProjection
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
 		
 		// Attempt to apply the change.
-		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, change, commitNumber, currentTickTimeMillis);
+		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, change, true, commitNumber, currentTickTimeMillis);
 		if (null != appliedWrapper)
 		{
 			_speculativeChanges.add(appliedWrapper);
@@ -402,6 +412,7 @@ public class SpeculativeProjection
 		TickProcessingContext context = _createContext(0L
 				, newMutationSink
 				, newChangeSink
+				, true
 				, millisToPass
 				, currentTickTimeMillis
 		);
@@ -719,7 +730,12 @@ public class SpeculativeProjection
 	}
 
 	// Note that we populate modifiedCuboids with cuboids changed by this change but only the local entity could change (others are all read-only).
-	private _SpeculativeWrapper _forwardApplySpeculative(Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid, IMutationEntity<IMutablePlayerEntity> change, long commitNumber, long currentTickTimeMillis)
+	private _SpeculativeWrapper _forwardApplySpeculative(Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid
+			, IMutationEntity<IMutablePlayerEntity> change
+			, boolean shouldSendEvents
+			, long commitNumber
+			, long currentTickTimeMillis
+	)
 	{
 		// We will apply this change to the projected state using the common logic mechanism, looping on any produced updates until complete.
 		
@@ -732,6 +748,7 @@ public class SpeculativeProjection
 		TickProcessingContext context = _createContext(gameTick
 				, newMutationSink
 				, newChangeSink
+				, shouldSendEvents
 				, millisecondsBeforeChange
 				, currentTickTimeMillis
 		);
@@ -764,6 +781,7 @@ public class SpeculativeProjection
 			TickProcessingContext innerContext = _createContext(gameTick
 					, innerNewMutationSink
 					, innerNewChangeSink
+					, shouldSendEvents
 					, _serverMillisPerTick
 					, currentTickTimeMillis
 			);
@@ -840,6 +858,7 @@ public class SpeculativeProjection
 		TickProcessingContext innerContext = _createContext(gameTick
 				, innerNewMutationSink
 				, innerNewChangeSink
+				, false
 				, _serverMillisPerTick
 				, currentTickTimeMillis
 		);
@@ -944,11 +963,19 @@ public class SpeculativeProjection
 	private TickProcessingContext _createContext(long gameTick
 			, CommonMutationSink newMutationSink
 			, CommonChangeSink newChangeSink
+			, boolean shouldSendEvents
 			, long millisPerTick
 			, long currentTickTimeMillis 
 	)
 	{
 		LazyLocationCache<BlockProxy> cachingLoader = new LazyLocationCache<>(this.projectionBlockLoader);
+		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
+			if (shouldSendEvents)
+			{
+				// We will just send these events directly.
+				_listener.handleEvent(event);
+			}
+		};
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)
@@ -961,8 +988,7 @@ public class SpeculativeProjection
 				, null
 				// We need a random number generator for a few cases (like attack) but the server will send us the authoritative result.
 				, (int bound) -> 0
-				// TODO:  Replace this with a real event handler.
-				, (EventRecord event) -> {}
+				, eventSink
 				// By default, we run in hostile mode.
 				, new WorldConfig()
 				, millisPerTick
@@ -1052,6 +1078,14 @@ public class SpeculativeProjection
 		 * @param gameTick The tick number (this is monotonic).
 		 */
 		void tickDidComplete(long gameTick);
+		
+		/**
+		 * Called when a high-level event is generated, either by a local change or as a result of absorbing changes
+		 * from the server.
+		 * 
+		 * @param event The event.
+		 */
+		void handleEvent(EventRecord event);
 	}
 
 	private static record _SpeculativeWrapper(long commitLevel
