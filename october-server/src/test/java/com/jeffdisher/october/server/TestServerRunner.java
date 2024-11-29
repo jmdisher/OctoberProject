@@ -50,6 +50,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
@@ -881,6 +882,16 @@ public class TestServerRunner
 			List<Object> updates = this.clientUpdates.get(clientId);
 			updates.add(update);
 			this.notifyAll();
+		}
+		@Override
+		public void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySourceId)
+		{
+			throw new AssertionError("Unimplemented");
+		}
+		@Override
+		public void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId)
+		{
+			throw new AssertionError("Unimplemented");
 		}
 		@Override
 		public synchronized void sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)

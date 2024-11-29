@@ -30,12 +30,14 @@ import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
@@ -670,6 +672,16 @@ public class TestServerStateManager
 		public void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update)
 		{
 			throw new AssertionError("networkSendBlockUpdate");
+		}
+		@Override
+		public void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
+		{
+			throw new AssertionError("network_sendBlockEvent");
+		}
+		@Override
+		public void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
+		{
+			throw new AssertionError("network_sendEntityEvent");
 		}
 		@Override
 		public void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded)

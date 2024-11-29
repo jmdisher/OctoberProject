@@ -32,8 +32,10 @@ import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.IServerAdapter;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -384,6 +386,16 @@ public class ServerProcess
 		{
 			Packet_ReceiveChatMessage packet = new Packet_ReceiveChatMessage(senderId, message);
 			_bufferPacket(clientId, packet);
+		}
+		@Override
+		public void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
+		{
+			// TODO:  Implement.
+		}
+		@Override
+		public void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
+		{
+			// TODO:  Implement.
 		}
 		@Override
 		public void disconnectClient(int clientId)

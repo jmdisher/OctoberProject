@@ -6,8 +6,10 @@ import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 
@@ -97,6 +99,26 @@ public interface IServerAdapter
 	 * @param update The state update to send.
 	 */
 	void sendBlockUpdate(int clientId, MutationBlockSetBlock update);
+	/**
+	 * Delivers an event to clientId describing the block event at location.
+	 * 
+	 * @param clientId The ID of the client to receive the message (must be >0).
+	 * @param type The event type (must be a block event type).
+	 * @param location The location where the event occurred.
+	 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
+	 */
+	void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySourceId);
+	/**
+	 * Delivers an event to clientId describing the entity event with an optional location (can be null).
+	 * 
+	 * @param clientId The ID of the client to receive the message (must be >0).
+	 * @param type The event type (must be an entity event type).
+	 * @param cause The event cause.
+	 * @param optionalLocation The location where the event happened or null if not visible.
+	 * @param entityTargetId The ID of the entity who was the target of the event (must be >0).
+	 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
+	 */
+	void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId);
 	/**
 	 * Sends the end of tick message to the given client.  All the messages which the client received since the previous
 	 * end of tick are considered part of this tick.

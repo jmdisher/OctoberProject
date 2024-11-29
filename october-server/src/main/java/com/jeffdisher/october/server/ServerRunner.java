@@ -18,8 +18,10 @@ import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -472,6 +474,16 @@ public class ServerRunner
 		public void network_sendChatMessage(int clientId, int senderId, String message)
 		{
 			_network.sendChatMessage(clientId, senderId, message);
+		}
+		@Override
+		public void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
+		{
+			_network.sendBlockEvent(clientId, type, location, entitySource);
+		}
+		@Override
+		public void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
+		{
+			_network.sendEntityEvent(clientId, type, cause, optionalLocation, entityTarget, entitySource);
 		}
 		@Override
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)

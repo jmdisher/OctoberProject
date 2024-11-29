@@ -33,10 +33,12 @@ import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
@@ -312,9 +314,16 @@ public class ServerStateManager
 			, Set<CuboidAddress> out_referencedCuboids
 	)
 	{
-		// We want to send the mutations for any of the cuboids and entities which are already loaded.
+		// We want to send information to this client if they can see it, potentially sending whole data or just
+		// incremental updates, based on whether or not they already have this data.
+		
+		// We send events, filtered by what they can currently see.
+		_sendEvents(clientId, state, snapshot);
+		
+		// We send entities based on how far away they are.
 		_sendEntityUpdates(clientId, state, snapshot);
 		
+		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
 		_sendCuboidUpdates(clientId, state, snapshot, out_referencedCuboids);
 		
 		// Finally, send them the end of tick.
@@ -374,6 +383,45 @@ public class ServerStateManager
 			throw Assert.unreachable();
 		}
 		return didHandle;
+	}
+
+	private void _sendEvents(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+	{
+		for (EventRecord event : snapshot.postedEvents())
+		{
+			// Based on the type, we determine whether we send this and how we send it (since some events may not want to include a location).
+			switch (event.type())
+			{
+			case BLOCK_BROKEN:
+			case BLOCK_PLACED:
+			case LIQUID_REMOVED:
+			case LIQUID_PLACED:
+				// Include these if the cuboid is known to the client.
+				if (state.knownCuboids.contains(event.location().getCuboidAddress()))
+				{
+					_callouts.network_sendBlockEvent(clientId, event.type(), event.location(), event.entitySource());
+				}
+				break;
+			case ENTITY_HURT:
+				// Include this if the entity is known to the client.
+				if (state.knownEntities.contains(event.entityTarget()))
+				{
+					_callouts.network_sendEntityEvent(clientId, event.type(), event.cause(), event.location(), event.entityTarget(), event.entitySource());
+				}
+				break;
+			case ENTITY_KILLED:
+				// Include this all the time but only include location if they are known to the client.
+				AbsoluteLocation targetLocation = state.knownEntities.contains(event.entityTarget())
+						? event.location()
+						: null
+				;
+				_callouts.network_sendEntityEvent(clientId, event.type(), event.cause(), targetLocation, event.entityTarget(), event.entitySource());
+				break;
+			default:
+				// We must handle all types.
+				throw Assert.unreachable();
+			}
+		}
 	}
 
 	private void _sendEntityUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
@@ -683,6 +731,8 @@ public class ServerStateManager
 		void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update);
 		void network_sendPartialEntityUpdate(int clientId, int entityId, IPartialEntityUpdate update);
 		void network_sendBlockUpdate(int clientId, MutationBlockSetBlock update);
+		void network_sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource);
+		void network_sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource);
 		void network_sendEndOfTick(int clientId, long tickNumber, long latestLocalCommitIncluded);
 		void network_sendConfig(int clientId, WorldConfig config);
 		void network_sendClientJoined(int clientId, int joinedClientId, String name);
