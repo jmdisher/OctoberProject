@@ -171,6 +171,7 @@ public class SpeculativeProjection
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
 	 * @param removedCuboids The list of cuboids which were removed in this tick.
+	 * @param events The list of events which were generated in this tick.
 	 * @param latestLocalCommitIncluded The latest client-local commit number which was included in this tick.
 	 * @param currentTimeMillis Current system time, in milliseconds.
 	 * @return The number of speculative changes remaining in the local projection (only useful for testing).
@@ -186,6 +187,8 @@ public class SpeculativeProjection
 			
 			, List<Integer> removedEntities
 			, List<CuboidAddress> removedCuboids
+			
+			, List<EventRecord> events
 			
 			, long latestLocalCommitIncluded
 			, long currentTimeMillis

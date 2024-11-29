@@ -110,6 +110,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -129,6 +130,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -171,6 +173,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, 1L
 		);
@@ -188,6 +191,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation2))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, 1L
 		);
@@ -205,6 +209,7 @@ public class TestSpeculativeProjection
 				, mutationsToCommit
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commitNumbers[commitNumbers.length - 1]
 				, 1L
 		);
@@ -223,6 +228,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(address)
+				, List.of()
 				, commitNumbers[commitNumbers.length - 1]
 				, 1L
 		);
@@ -246,6 +252,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -268,6 +275,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -297,6 +305,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, List.of(address1)
+				, List.of()
 				, commit1
 				, 1L
 		);
@@ -314,6 +323,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(address0)
+				, List.of()
 				, commit1
 				, 1L
 		);
@@ -338,6 +348,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -359,6 +370,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -388,6 +400,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -405,6 +418,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, 1L
 		);
@@ -420,6 +434,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(address0, address1)
+				, List.of()
 				, commit1
 				, 1L
 		);
@@ -444,6 +459,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -465,6 +481,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -489,6 +506,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid0, mutation0))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -509,6 +527,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid1, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -528,6 +547,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of(address0, address1)
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -552,6 +572,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -572,6 +593,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -603,6 +625,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -620,6 +643,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, mutation1))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -638,6 +662,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, Collections.emptyList()
 				, List.of(address)
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -667,6 +692,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -694,6 +720,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -708,6 +735,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -740,6 +768,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -783,6 +812,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -804,6 +834,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short) 1000, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -834,6 +865,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -867,6 +899,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -896,6 +929,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -932,6 +966,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -962,6 +997,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1018,6 +1054,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1067,6 +1104,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1150,6 +1188,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1193,6 +1232,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1219,6 +1259,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1242,6 +1283,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, extract))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1260,6 +1302,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1277,6 +1320,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1311,6 +1355,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1391,6 +1436,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1433,6 +1479,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1478,6 +1525,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -1497,6 +1545,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit3
 				, currentTimeMillis
 		);
@@ -1524,6 +1573,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -1546,6 +1596,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1574,6 +1625,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, storeItems))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -1593,6 +1645,7 @@ public class TestSpeculativeProjection
 				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, conflict))
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -1614,6 +1667,7 @@ public class TestSpeculativeProjection
 				, List.of()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit
 				, 1L
 		);
@@ -1643,6 +1697,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 1L
 		);
@@ -1678,6 +1733,7 @@ public class TestSpeculativeProjection
 				)
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, 2L
 		);
@@ -1704,6 +1760,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1741,6 +1798,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1761,6 +1819,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);
@@ -1790,6 +1849,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, 0L
 				, currentTimeMillis
 		);
@@ -1821,6 +1881,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit1
 				, currentTimeMillis
 		);
@@ -1843,6 +1904,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, Collections.emptyList()
+				, List.of()
 				, commit2
 				, currentTimeMillis
 		);

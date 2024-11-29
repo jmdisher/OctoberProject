@@ -5,8 +5,10 @@ import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 
@@ -117,6 +119,24 @@ public interface IClientAdapter
 		 * @param stateUpdate The update.
 		 */
 		void receivedBlockUpdate(MutationBlockSetBlock stateUpdate);
+		/**
+		 * Called when we receive a block event from the server.
+		 * 
+		 * @param type The event type (must be a block event type).
+		 * @param location The location where the event occurred.
+		 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
+		 */
+		void receivedBlockEvent(EventRecord.Type type, AbsoluteLocation location, int entitySourceId);
+		/**
+		 * Called when we receive an entity event from the server.
+		 * 
+		 * @param type The event type (must be an entity event type).
+		 * @param cause The event cause.
+		 * @param optionalLocation The location where the event happened or null if not visible.
+		 * @param entityTargetId The ID of the entity who was the target of the event (must be >0).
+		 * @param entitySourceId The ID of the entity who was the source of the event (may be 0).
+		 */
+		void receivedEntityEvent(EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId);
 		/**
 		 * Called when the server sends us the end of tick message.  Any messages received since the previous end of
 		 * tick are considered part of this tick.

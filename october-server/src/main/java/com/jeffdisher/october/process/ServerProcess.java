@@ -25,6 +25,8 @@ import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_ServerSendConfigUpdate;
@@ -390,12 +392,14 @@ public class ServerProcess
 		@Override
 		public void sendBlockEvent(int clientId, EventRecord.Type type, AbsoluteLocation location, int entitySource)
 		{
-			// TODO:  Implement.
+			Packet_EventBlock packet = new Packet_EventBlock(type, location, entitySource);
+			_bufferPacket(clientId, packet);
 		}
 		@Override
 		public void sendEntityEvent(int clientId, EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTarget, int entitySource)
 		{
-			// TODO:  Implement.
+			Packet_EventEntity packet = new Packet_EventEntity(type, cause, optionalLocation, entityTarget, entitySource);
+			_bufferPacket(clientId, packet);
 		}
 		@Override
 		public void disconnectClient(int clientId)

@@ -26,6 +26,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.utils.Assert;
@@ -349,6 +350,8 @@ public class ClientRunner
 		private List<Integer> _removedEntities = new ArrayList<>();
 		private List<CuboidAddress> _removedCuboids = new ArrayList<>();
 		
+		private List<EventRecord> _events = new ArrayList<>();
+		
 		@Override
 		public void adapterConnected(int assignedId, long millisPerTick)
 		{
@@ -421,6 +424,18 @@ public class ClientRunner
 			_cuboidUpdates.add(stateUpdate);
 		}
 		@Override
+		public void receivedBlockEvent(EventRecord.Type type, AbsoluteLocation location, int entitySourceId)
+		{
+			EventRecord record = new EventRecord(type, EventRecord.Cause.NONE, location, 0, entitySourceId);
+			_events.add(record);
+		}
+		@Override
+		public void receivedEntityEvent(EventRecord.Type type, EventRecord.Cause cause, AbsoluteLocation optionalLocation, int entityTargetId, int entitySourceId)
+		{
+			EventRecord record = new EventRecord(type, cause, optionalLocation, entityTargetId, entitySourceId);
+			_events.add(record);
+		}
+		@Override
 		public void receivedEndOfTick(long tickNumber, long latestLocalCommitIncluded)
 		{
 			// Package up copies of everything we put together here and reset out network-side buffers.
@@ -440,6 +455,8 @@ public class ClientRunner
 			_removedEntities.clear();
 			List<CuboidAddress> removedCuboids = new ArrayList<>(_removedCuboids);
 			_removedCuboids.clear();
+			List<EventRecord> events = new ArrayList<>(_events);
+			_events.clear();
 			
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// Send anything we have outgoing.
@@ -461,6 +478,7 @@ public class ClientRunner
 						, cuboidUpdates
 						, removedEntities
 						, removedCuboids
+						, events
 						, latestLocalCommitIncluded
 						, currentTimeMillis
 				);

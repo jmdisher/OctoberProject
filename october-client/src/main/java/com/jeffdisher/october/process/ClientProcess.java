@@ -33,6 +33,8 @@ import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
 import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
 import com.jeffdisher.october.net.Packet_EntityUpdateFromServer;
+import com.jeffdisher.october.net.Packet_EventBlock;
+import com.jeffdisher.october.net.Packet_EventEntity;
 import com.jeffdisher.october.net.Packet_RemoveCuboid;
 import com.jeffdisher.october.net.Packet_RemoveEntity;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
@@ -489,6 +491,16 @@ public class ClientProcess
 			{
 				Packet_ReceiveChatMessage safe = (Packet_ReceiveChatMessage)packet;
 				_messagesToClientRunner.receivedChatMessage(safe.sourceId, safe.message);
+			}
+			else if (packet instanceof Packet_EventBlock)
+			{
+				Packet_EventBlock safe = (Packet_EventBlock)packet;
+				_messagesToClientRunner.receivedBlockEvent(safe.eventType, safe.location, safe.entitySourceId);
+			}
+			else if (packet instanceof Packet_EventEntity)
+			{
+				Packet_EventEntity safe = (Packet_EventEntity)packet;
+				_messagesToClientRunner.receivedEntityEvent(safe.eventType, safe.cause, safe.optionalLocation, safe.entityTargetId, safe.entitySourceId);
 			}
 			else
 			{
