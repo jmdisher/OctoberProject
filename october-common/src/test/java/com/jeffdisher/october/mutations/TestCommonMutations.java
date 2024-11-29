@@ -23,6 +23,7 @@ import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -68,6 +69,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 						return cuboidAddress.equals(location.getCuboidAddress())
@@ -75,8 +77,10 @@ public class TestCommonMutations
 								: null
 						;
 					}, null)
+				.eventSink(events)
 				.finish()
 		;
+		events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY));
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -117,6 +121,7 @@ public class TestCommonMutations
 		
 		// Without a tool, this will take 10 hits.
 		MutableBlockProxy proxy = null;
+		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, clientId));
 		for (int i = 0; i < 10; ++i)
 		{
 			// Check that once we run this change, it requests the appropriate mutation.
@@ -211,6 +216,7 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_WEAK.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
@@ -219,11 +225,13 @@ public class TestCommonMutations
 						{
 						}
 					}, null)
+				.eventSink(events)
 				.finish()
 		;
 		
 		MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(target, (short)2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY));
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
@@ -253,6 +261,7 @@ public class TestCommonMutations
 		int entityId = 1;
 		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
@@ -262,8 +271,10 @@ public class TestCommonMutations
 							Assert.fail("Not expected in test");
 						}
 					}, null)
+				.eventSink(events)
 				.finish()
 		;
+		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
 		boolean didApply = mutation.applyMutation(context, proxy);
 		Assert.assertTrue(didApply);
 		Assert.assertTrue(proxy.didChange());
@@ -285,6 +296,7 @@ public class TestCommonMutations
 		
 		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
@@ -294,8 +306,10 @@ public class TestCommonMutations
 							Assert.fail("Not expected in tets");
 						}
 					}, null)
+				.eventSink(events)
 				.finish()
 		;
+		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatSeedling, proxy.getBlock());
@@ -369,6 +383,7 @@ public class TestCommonMutations
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		
+		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, lampLocation, 0, entityId));
 		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lampOff, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(lampLocation, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
@@ -566,7 +581,8 @@ public class TestCommonMutations
 	{
 		// We will invoke the TickUtils a few ways to test what happens with suffocation.
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.WATER_SOURCE);
-		MutableEntity entity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity entity = MutableEntity.createForTest(entityId);
 		entity.setBreath((byte)1);
 		entity.setHealth((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND));
 		
@@ -577,6 +593,7 @@ public class TestCommonMutations
 				.lookups((AbsoluteLocation location) -> {
 					return new BlockProxy(location.getBlockAddress(), cuboid);
 				}, null)
+				.eventSink(new _Events())
 				.finish();
 		
 		TickUtils.endOfTick(context, entity);
@@ -586,6 +603,7 @@ public class TestCommonMutations
 		// Now, do one at the end of the second to see the breath run out.
 		@SuppressWarnings("unchecked")
 		EntityChangeTakeDamageFromOther<IMutablePlayerEntity>[] holder = new EntityChangeTakeDamageFromOther[1];
+		_Events events = new _Events();
 		context = ContextBuilder.build()
 				.tick(50L)
 				.millisPerTick(20L)
@@ -610,6 +628,7 @@ public class TestCommonMutations
 						Assert.fail();
 					}
 				})
+				.eventSink(events)
 				.finish();
 		
 		TickUtils.endOfTick(context, entity);
@@ -624,6 +643,7 @@ public class TestCommonMutations
 		Assert.assertNotNull(holder[0]);
 		
 		// Run this mutation.
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entityId, 0));
 		holder[0].applyChange(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals(EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
@@ -670,6 +690,7 @@ public class TestCommonMutations
 		public IMutationBlock nextMutation;
 		public int nextTargetEntityId;
 		public IMutationEntity<IMutablePlayerEntity> nextChange;
+		public final _Events events = new _Events();
 		
 		public TickProcessingContext createBoundContext(CuboidData cuboid)
 		{
@@ -704,8 +725,25 @@ public class TestCommonMutations
 								Assert.fail("Not expected in tets");
 							}
 						})
+					.eventSink(this.events)
 					.finish()
 			;
+		}
+	}
+
+	private static class _Events implements TickProcessingContext.IEventSink
+	{
+		private EventRecord _expected;
+		public void expected(EventRecord expected)
+		{
+			Assert.assertNull(_expected);
+			_expected = expected;
+		}
+		@Override
+		public void post(EventRecord event)
+		{
+			Assert.assertEquals(_expected, event);
+			_expected = null;
 		}
 	}
 }

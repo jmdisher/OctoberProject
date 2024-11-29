@@ -32,6 +32,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -248,7 +249,8 @@ public class TestCommonChanges
 	public void placeBlock() throws Throwable
 	{
 		// Create the entity in an air block so we can place this (give us a starter inventory).
-		MutableEntity newEntity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(LOG_ITEM, 1);
 		newEntity.setSelectedKey(newEntity.newInventory.getIdOfStackableType(LOG_ITEM));
@@ -262,6 +264,7 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockOverwriteByEntity);
 		AbsoluteLocation location = holder.mutation.getAbsoluteLocation();
 		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, location, 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		
@@ -755,6 +758,7 @@ public class TestCommonChanges
 		
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
 		long tickNumber = 100L;
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(tickNumber)
 				.lookups((AbsoluteLocation location) ->
@@ -781,6 +785,7 @@ public class TestCommonChanges
 							blockHolder[0] = mutation;
 						}
 					}, null)
+				.eventSink(events)
 				.finish()
 		;
 		
@@ -803,10 +808,12 @@ public class TestCommonChanges
 		
 		// Now, we will attack in 2 swipes to verify damage is taken but also the respawn logic works.
 		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(BodyPart.HEAD, 60, attackerId);
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals((byte)40, target.newHealth);
 		Assert.assertNull(blockHolder[0]);
 		
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals(EntityConstants.PLAYER_MAX_HEALTH, target.newHealth);
 		Assert.assertEquals(EntityConstants.PLAYER_MAX_FOOD, target.newFood);
@@ -837,6 +844,7 @@ public class TestCommonChanges
 		int[] targetHolder = new int[1];
 		@SuppressWarnings("unchecked")
 		IMutationEntity<IMutablePlayerEntity>[] changeHolder = new IMutationEntity[1];
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(5L)
 				.lookups(null, (Integer thisId) -> MinimalEntity.fromEntity(targetsById.get(thisId)))
@@ -859,6 +867,7 @@ public class TestCommonChanges
 							Assert.fail("Not expected in tets");
 						}
 					})
+				.eventSink(events)
 				.finish()
 		;
 		
@@ -873,6 +882,7 @@ public class TestCommonChanges
 		EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> change = (EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>) changeHolder[0];
 		targetHolder[0] = 0;
 		changeHolder[0] = null;
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
 		Assert.assertTrue(change.applyChange(context, target));
 		Assert.assertEquals(90, target.newHealth);
 	}
@@ -976,7 +986,8 @@ public class TestCommonChanges
 	public void breakBlockFullInventory() throws Throwable
 	{
 		// Break a block with a nearly full inventory and verify that it doesn't add the new item.
-		MutableEntity newEntity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
 		Item plank = ENV.items.getItemById("op.plank");
 		newEntity.newInventory.addItemsBestEfforts(plank, newEntity.newInventory.maxVacancyForItem(plank) - 1);
@@ -999,6 +1010,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, entityId));
 		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertNull(holder.mutation);
@@ -1148,23 +1160,29 @@ public class TestCommonChanges
 		Item helmetType = ENV.items.getItemById("op.iron_helmet");
 		int startDurability = 15;
 		mutable.newArmour[BodyPart.HEAD.ordinal()] = new NonStackableItem(helmetType, startDurability);
+		_Events events = new _Events();
+		TickProcessingContext context = _createSimpleContextWithEvents(events);
 		
 		// Hit them in a different place and see the whole damage applied.
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.TORSO, 10, attackerId).applyChange(null,  mutable));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.TORSO, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)90, mutable.newHealth);
 		
 		// Hit them in the head with 1 damage and see it applied, with no durability loss.
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(null,  mutable));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
 		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(null,  mutable));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
 		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
-		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(null,  mutable));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)87, mutable.newHealth);
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
 	}
@@ -1392,7 +1410,8 @@ public class TestCommonChanges
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(itemDoorClosed);
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
 		
-		MutableEntity newEntity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemDoorClosed, 1);
 		newEntity.setSelectedKey(1);
@@ -1404,6 +1423,7 @@ public class TestCommonChanges
 		
 		// We also need to apply the actual mutation.
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
@@ -1439,6 +1459,7 @@ public class TestCommonChanges
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, holder.mutation.getAbsoluteLocation(), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		proxy.writeBack(cuboid);
@@ -1458,7 +1479,8 @@ public class TestCommonChanges
 		// Give the entity a hopper, place it with a direction, and observe that it ends up oriented that way.
 		Item itemHopperDown = ENV.items.getItemById("op.hopper_down");
 		
-		MutableEntity newEntity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		newEntity.newInventory.addAllItems(itemHopperDown, 6);
 		newEntity.setSelectedKey(1);
@@ -1473,6 +1495,7 @@ public class TestCommonChanges
 		MutationPlaceSelectedBlock north = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, -1, 0), centreTarget);
 		Assert.assertTrue(north.applyChange(holder.context, newEntity));
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper_north"), proxy.getBlock().item());
 		proxy.writeBack(cuboid);
@@ -1482,6 +1505,7 @@ public class TestCommonChanges
 		MutationPlaceSelectedBlock south = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 1, 0), centreTarget);
 		Assert.assertTrue(south.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper_south"), proxy.getBlock().item());
 		proxy.writeBack(cuboid);
@@ -1491,6 +1515,7 @@ public class TestCommonChanges
 		MutationPlaceSelectedBlock east = new MutationPlaceSelectedBlock(centreTarget.getRelative(-1, 0, 0), centreTarget);
 		Assert.assertTrue(east.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper_east"), proxy.getBlock().item());
 		proxy.writeBack(cuboid);
@@ -1500,6 +1525,7 @@ public class TestCommonChanges
 		MutationPlaceSelectedBlock west = new MutationPlaceSelectedBlock(centreTarget.getRelative(1, 0, 0), centreTarget);
 		Assert.assertTrue(west.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(ENV.items.getItemById("op.hopper_west"), proxy.getBlock().item());
 		proxy.writeBack(cuboid);
@@ -1509,6 +1535,7 @@ public class TestCommonChanges
 		MutationPlaceSelectedBlock down = new MutationPlaceSelectedBlock(centreTarget.getRelative(0, 0, -1), centreTarget);
 		Assert.assertTrue(down.applyChange(holder.context, newEntity));
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, -1), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(itemHopperDown, proxy.getBlock().item());
 		proxy.writeBack(cuboid);
@@ -1530,7 +1557,8 @@ public class TestCommonChanges
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_closed"));
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
 		
-		MutableEntity newEntity = MutableEntity.createForTest(1);
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation doorLocation = new AbsoluteLocation(0, 1, 10);
@@ -1565,6 +1593,7 @@ public class TestCommonChanges
 		// Break it and watch the door close.
 		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(switchLocation, (short)100);
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
+		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, switchLocation, 0, entityId));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, ENV.special.AIR);
 		_runMutationInContext(cuboid, holder, openedDoor);
 		_runMutationInContext(cuboid, holder, closedDoor);
@@ -2053,10 +2082,16 @@ public class TestCommonChanges
 
 	private static TickProcessingContext _createSimpleContext()
 	{
+		return _createSimpleContextWithEvents(null);
+	}
+
+	private static TickProcessingContext _createSimpleContextWithEvents(_Events events)
+	{
 		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null)
+				.eventSink(events)
 				.finish()
 		;
 		return context;
@@ -2130,6 +2165,7 @@ public class TestCommonChanges
 		public final TickProcessingContext context;
 		public IMutationEntity<IMutablePlayerEntity> change;
 		public IMutationBlock mutation;
+		public final _Events events = new _Events();
 		
 		public _ContextHolder(IReadOnlyCuboidData cuboid, boolean allowEntityChange, boolean allowBlockMutation)
 		{
@@ -2162,8 +2198,25 @@ public class TestCommonChanges
 								Assert.fail("Not expected in tets");
 							}
 						} : null)
+					.eventSink(this.events)
 					.finish()
 			;
+		}
+	}
+
+	private static class _Events implements TickProcessingContext.IEventSink
+	{
+		private EventRecord _expected;
+		public void expected(EventRecord expected)
+		{
+			Assert.assertNull(_expected);
+			_expected = expected;
+		}
+		@Override
+		public void post(EventRecord event)
+		{
+			Assert.assertEquals(_expected, event);
+			_expected = null;
 		}
 	}
 }

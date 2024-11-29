@@ -38,6 +38,7 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -78,10 +79,12 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = _createContext();
+		_Events events = new _Events();
+		TickProcessingContext context = _createContextWithEvents(events);
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 10, sourceId);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -103,6 +106,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
 				.sinks(new IMutationSink() {
@@ -113,11 +117,13 @@ public class TestCreatureProcessor
 						mutationHolder[0] = mutation;
 					}
 				}, null)
+				.eventSink(events)
 				.finish()
 		;
 		int sourceId = 1;
 		EntityChangeTakeDamageFromEntity<IMutableCreatureEntity> change = new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, 120, sourceId);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of(creature.id(), List.of(change));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -160,7 +166,7 @@ public class TestCreatureProcessor
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = _createContextWithDifficulty(Difficulty.PEACEFUL);
+		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -310,7 +316,8 @@ public class TestCreatureProcessor
 		byte startHealth = 100;
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.COW, startLocation, startHealth);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
-		TickProcessingContext context = _createContext();
+		_Events events = new _Events();
+		TickProcessingContext context = _createContextWithEvents(events);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -332,6 +339,7 @@ public class TestCreatureProcessor
 		int damage = 10;
 		int sourceId = 1;
 		changesToRun = Map.of(creature.id(), List.of(new EntityChangeTakeDamageFromEntity<>(BodyPart.FEET, damage, sourceId)));
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, creature.location().getBlockLocation(), creature.id(), sourceId));
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -749,6 +757,7 @@ public class TestCreatureProcessor
 		
 		List<IMutationEntity<IMutableCreatureEntity>> outChanges = new ArrayList<>();
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(1L)
 				.lookups((AbsoluteLocation location) -> {
@@ -775,6 +784,7 @@ public class TestCreatureProcessor
 						outChanges.add(change);
 					}
 				})
+				.eventSink(events)
 				.finish()
 		;
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -790,6 +800,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(health, creature.health());
 		Assert.assertEquals(1, outChanges.size());
 		
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, group.updatedCreatures()
 				, context
@@ -807,10 +818,15 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _createContext()
 	{
-		return _createContextWithDifficulty(Difficulty.HOSTILE);
+		return _createContextWithOptions(Difficulty.HOSTILE, null);
 	}
 
-	private static TickProcessingContext _createContextWithDifficulty(Difficulty difficulty)
+	private static TickProcessingContext _createContextWithEvents(_Events events)
+	{
+		return _createContextWithOptions(Difficulty.HOSTILE, events);
+	}
+
+	private static TickProcessingContext _createContextWithOptions(Difficulty difficulty, _Events events)
 	{
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), AIR);
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
@@ -827,6 +843,7 @@ public class TestCreatureProcessor
 					} , null)
 				// We return a fixed "1" for the random generator to make sure that we select a reasonable plan for all tests.
 				.fixedRandom(1)
+				.eventSink(events)
 				.config(config)
 				.finish()
 		;
@@ -923,6 +940,22 @@ public class TestCreatureProcessor
 			{
 				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
 			}
+		}
+	}
+
+	private static class _Events implements TickProcessingContext.IEventSink
+	{
+		private EventRecord _expected;
+		public void expected(EventRecord expected)
+		{
+			Assert.assertNull(_expected);
+			_expected = expected;
+		}
+		@Override
+		public void post(EventRecord event)
+		{
+			Assert.assertEquals(_expected, event);
+			_expected = null;
 		}
 	}
 }

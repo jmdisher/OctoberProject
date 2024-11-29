@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableInventory;
@@ -108,6 +109,14 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
 				}
+				
+				// This also triggers an event.
+				context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_BROKEN
+						, EventRecord.Cause.NONE
+						, _location
+						, 0
+						, _optionalEntityForStorage
+				));
 			}
 			else
 			{

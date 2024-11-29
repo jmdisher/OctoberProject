@@ -16,6 +16,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
@@ -56,7 +57,7 @@ public class TestFallingBehaviour
 		// Create a solid block a little below this so we can watch it fall down.
 		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, -3).getBlockAddress(), STONE_ITEM.number());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder, targetLocation);
 		
 		// This is a multi-step process which starts by asking the entity to start the drop.
 		MutationEntityPushItems push = new MutationEntityPushItems(targetLocation, newEntity.newInventory.getIdOfStackableType(STONE_ITEM), 1, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -109,8 +110,9 @@ public class TestFallingBehaviour
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation bottomLocation = new AbsoluteLocation(0, 0, 3);
+		AbsoluteLocation topLocation = bottomLocation.getRelative(0, 0, 1);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder, bottomLocation, topLocation);
 		
 		// Break the bottom block.
 		MutableBlockProxy bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
@@ -124,7 +126,6 @@ public class TestFallingBehaviour
 		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		
 		// Now, break the top block.
-		AbsoluteLocation topLocation = bottomLocation.getRelative(0, 0, 1);
 		MutableBlockProxy topBlock = new MutableBlockProxy(topLocation, cuboid);
 		breaking = new MutationBlockIncrementalBreak(topLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, topBlock));
@@ -153,8 +154,9 @@ public class TestFallingBehaviour
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation topLocation = new AbsoluteLocation(0, 0, 4);
+		AbsoluteLocation bottomLocation = topLocation.getRelative(0, 0, -1);
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder, topLocation, bottomLocation);
 		
 		// Break the top block.
 		MutableBlockProxy topBlock = new MutableBlockProxy(topLocation, cuboid);
@@ -168,7 +170,6 @@ public class TestFallingBehaviour
 		Assert.assertEquals(1, blockInventory.getCount(STONE_ITEM));
 		
 		// Now, break the bottom block.
-		AbsoluteLocation bottomLocation = topLocation.getRelative(0, 0, -1);
 		MutableBlockProxy bottomBlock = new MutableBlockProxy(bottomLocation, cuboid);
 		breaking = new MutationBlockIncrementalBreak(bottomLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, bottomBlock));
@@ -263,7 +264,7 @@ public class TestFallingBehaviour
 		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
 		IMutationBlock[] blockHolder = new IMutationBlock[1];
-		TickProcessingContext context = _createTestContext(cuboid, blockHolder);
+		TickProcessingContext context = _createTestContext(cuboid, blockHolder, targetLocation);
 		
 		// Break the target block and observe the change.
 		MutableBlockProxy targetBlock = new MutableBlockProxy(targetLocation, cuboid);
@@ -298,8 +299,12 @@ public class TestFallingBehaviour
 	}
 
 
-	private static TickProcessingContext _createTestContext(CuboidData cuboid, IMutationBlock[] blockHolder)
+	private static TickProcessingContext _createTestContext(CuboidData cuboid
+			, IMutationBlock[] blockHolder
+			, AbsoluteLocation... blockLocation
+	)
 	{
+		int[] index = new int[] {0};
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
 				.sinks(new TickProcessingContext.IMutationSink() {
@@ -310,6 +315,17 @@ public class TestFallingBehaviour
 							blockHolder[0] = mutation;
 						}
 					}, null)
+				.eventSink((EventRecord event) -> {
+					// Note that entity 0 doesn't really make sense, in practice, but we use it for this test to avoid picking up the blocks and the event is still passed through.
+					EventRecord expected = new EventRecord(EventRecord.Type.BLOCK_BROKEN
+							, EventRecord.Cause.NONE
+							, blockLocation[index[0]]
+							, 0
+							, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY
+					);
+					Assert.assertEquals(expected, event);
+					index[0] += 1;
+				})
 				.finish()
 		;
 		return context;

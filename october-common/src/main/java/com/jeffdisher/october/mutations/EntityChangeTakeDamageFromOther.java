@@ -3,7 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -60,16 +62,44 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 			// Determine how much actual damage to apply by looking at target and armour.
 			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);
 			int finalHealth = health - damageToApply;
+			AbsoluteLocation entityLocation = newEntity.getLocation().getBlockLocation();
+			EventRecord.Type type;
 			if (finalHealth > 0)
 			{
 				// We can apply the damage.
 				newEntity.setHealth((byte)finalHealth);
+				type = EventRecord.Type.ENTITY_HURT;
 			}
 			else
 			{
 				// The entity is dead so use the type-specific death logic.
 				newEntity.handleEntityDeath(context);
+				type = EventRecord.Type.ENTITY_KILLED;
 			}
+			
+			EventRecord.Cause cause;
+			switch (_cause)
+			{
+			case CAUSE_STARVATION:
+				cause = EventRecord.Cause.STARVATION;
+				break;
+			case CAUSE_SUFFOCATION:
+				cause = EventRecord.Cause.SUFFOCATION;
+				break;
+			case CAUSE_FALL:
+				cause = EventRecord.Cause.FALL;
+				break;
+			default:
+				// This is an undefined type.
+				throw Assert.unreachable();
+			}
+			context.eventSink.post(new EventRecord(type
+					, cause
+					, entityLocation
+					, newEntity.getId()
+					, 0
+			));
+			
 			didApply = true;
 		}
 		return didApply;

@@ -3,7 +3,9 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -61,16 +63,28 @@ public class EntityChangeTakeDamageFromEntity<T extends IMutableMinimalEntity> i
 			// Determine how much actual damage to apply by looking at target and armour.
 			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);
 			int finalHealth = health - damageToApply;
+			AbsoluteLocation startLocation = newEntity.getLocation().getBlockLocation();
+			EventRecord.Type type;
 			if (finalHealth > 0)
 			{
 				// We can apply the damage.
 				newEntity.setHealth((byte)finalHealth);
+				type = EventRecord.Type.ENTITY_HURT;
 			}
 			else
 			{
 				// The entity is dead so use the type-specific death logic.
 				newEntity.handleEntityDeath(context);
+				type = EventRecord.Type.ENTITY_KILLED;
 			}
+			
+			context.eventSink.post(new EventRecord(type
+					, EventRecord.Cause.ATTACKED
+					, startLocation
+					, newEntity.getId()
+					, _sourceEntityId
+			));
+			
 			didApply = true;
 		}
 		return didApply;
