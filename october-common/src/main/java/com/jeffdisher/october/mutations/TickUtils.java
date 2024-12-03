@@ -25,9 +25,9 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class TickUtils
 {
 	/**
-	 * We will base our damage threshold on the terminal velocity.
+	 * We want the damage threshold to be roughly free-fall for 4 metres (which is just over 8 m/s down).
 	 */
-	public static final float DECELERATION_DAMAGE_THRESHOLD = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 4.0f;
+	public static final float DECELERATION_DAMAGE_THRESHOLD = -8.0f;
 	public static final float DECELERATION_DAMAGE_RANGE = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND - DECELERATION_DAMAGE_THRESHOLD;
 	/**
 	 * Fall damage should be the maximum possible amount of damage.

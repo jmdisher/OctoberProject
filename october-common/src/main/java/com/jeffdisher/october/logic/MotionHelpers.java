@@ -14,7 +14,8 @@ public class MotionHelpers
 {
 	// Constants related to how we apply gravity and terminal velocity.
 	public static final float GRAVITY_CHANGE_PER_SECOND = -9.8f;
-	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -20.0f;
+	// (40 m/s seems to be a common free-fall velocity for sky-divers)
+	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -40.0f;
 	public static final float FLOAT_MILLIS_PER_SECOND = 1000.0f;
 
 	/**

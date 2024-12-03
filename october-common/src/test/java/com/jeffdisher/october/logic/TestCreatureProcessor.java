@@ -26,6 +26,7 @@ import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
+import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -748,8 +749,9 @@ public class TestCreatureProcessor
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
 		
 		byte health = 100;
+		float fallingVelocity = TickUtils.DECELERATION_DAMAGE_THRESHOLD + (TickUtils.DECELERATION_DAMAGE_RANGE / 2.0f);
 		EntityLocation startLocation = new EntityLocation(16.8f, 16.8f, 16.1f);
-		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 2.0f);
+		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, fallingVelocity);
 		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, health);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newVelocity = startVelocity;
@@ -811,7 +813,7 @@ public class TestCreatureProcessor
 		
 		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
-		Assert.assertEquals((byte)58, creature.health());
+		Assert.assertEquals((byte)37, creature.health());
 		Assert.assertEquals(1, outChanges.size());
 	}
 
