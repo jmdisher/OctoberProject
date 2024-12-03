@@ -198,6 +198,62 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), entity.vector);
 	}
 
+	@Test
+	public void fallThroughGround()
+	{
+		// A test to show that the issue of falling through the ground (from the old movement helper) has been fixed.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 0), STONE.item().number());
+		_Entity entity = new _Entity();
+		entity.type = EntityType.ORC;
+		entity.location = new EntityLocation(16.8f, 16.8f, 1.11f);
+		entity.vector = new EntityLocation(0.0f, 0.0f, -17.64f);
+		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		}, entity, 100L);
+		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 1.0f), entity.location);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), entity.vector);
+	}
+
+	@Test
+	public void walkIntoCorner()
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 1), AIR.item().number());
+		_Entity entity = new _Entity();
+		entity.location = new EntityLocation(16.0f, 16.0f, 1.0f);
+		entity.vector = new EntityLocation(8.0f, 7.0f, 0.0f);
+		long millisInMotion = 100L;
+		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		}, entity, millisInMotion);
+		Assert.assertEquals(new EntityLocation(16.59f, 16.59f, 1.0f), entity.location);
+	}
+
+	@Test
+	public void walkAlongWall()
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		for (int i = 1; i < 31; ++i)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, i, 1), AIR.item().number());
+		}
+		EntityLocation velocity = new EntityLocation(8.0f, 7.0f, 0.0f);
+		_Entity entity = new _Entity();
+		entity.location = new EntityLocation(16.0f, 16.0f, 1.0f);
+		entity.vector = velocity;
+		long millisInMotion = 100L;
+		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		}, entity, millisInMotion);
+		Assert.assertEquals(new EntityLocation(16.59f, 16.7f, 1.0f), entity.location);
+		entity.vector = velocity;
+		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		}, entity, millisInMotion);
+		Assert.assertEquals(new EntityLocation(16.59f, 17.40f, 1.0f), entity.location);
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{

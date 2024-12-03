@@ -86,160 +86,124 @@ public class EntityMovementHelpers
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float newZVector;
-		boolean shouldAllowFalling;
 		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
 		{
 			// We are up against the ceiling so cancel the velocity.
 			newZVector = 0.0f;
-			shouldAllowFalling = true;
 		}
 		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(previousBlockLookUp, oldLocation, volume))
 		{
 			// We are on the ground so cancel the velocity.
 			newZVector = 0.0f;
-			shouldAllowFalling = false;
 		}
 		else
 		{
 			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
-			shouldAllowFalling = true;
 		}
+		
+		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
+		float effectiveZVelocity = secondsInMotion * (initialZVector + newZVector) / 2.0f;
 		
 		// Note that we currently just set the x/y velocities to zero after applying the movement so just directly apply these through the viscosity.
 		// TODO:  This assumption of setting x/y velocity to zero will need to change to support icy surfaces or "flying through the air".
 		float velocityFraction = (1.0f - viscosityFraction);
 		float velocityToApplyX = velocityFraction * oldVector.x();
 		float velocityToApplyY = velocityFraction * oldVector.y();
+		float velocityToApplyZ = velocityFraction * effectiveZVelocity;
 		
-		// We need to decide how far they would move in the x or y directions based on the current velocity and time.
-		// (for now, we will just apply the movement based on the current velocity, not accounting for friction-based deceleration).
-		float xDistance = secondsInMotion * velocityToApplyX;
-		float yDistance = secondsInMotion * velocityToApplyY;
-		// Figure out where our new location is (requires calculating the z-movement in this time).
-		// Note that we directly fudge this by the velocity fraction from the viscosity.
-		float rawZ = shouldAllowFalling
-				? MotionHelpers.applyZMovement(initialZVector, secondsInMotion)
-				: 0.0f
-		;
-		float zDistance = velocityFraction * rawZ;
-		
-		float oldX = oldLocation.x();
-		float oldY = oldLocation.y();
-		float oldZ = oldLocation.z();
-		float xLocation = oldX + xDistance;
-		float yLocation = oldY + yDistance;
-		float zLocation = oldZ + zDistance;
-		
-		// We will incrementally search for barriers in each axis.
-		// -X
-		EntityLocation newLocation = new EntityLocation(xLocation, oldY, oldZ);
-		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
+		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
+		EntityLocation averageVelocity = new EntityLocation(secondsInMotion * velocityToApplyX, secondsInMotion * velocityToApplyY, velocityToApplyZ);
+		// We also want to apply the fudge factor here to deal with the positive edge being exclusive to collision (this is subtracted later).
+		float fudgeFactor = 0.01f;
+		if (velocityToApplyX > 0.0f)
 		{
-			// Adjust the X axis.
-			EntityLocation attempt = newLocation;
-			if (xDistance > 0.0f)
-			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingEastWall(previousBlockLookUp, newLocation, volume, oldX);
-				if (null != adjustedLocation)
-				{
-					newLocation = adjustedLocation;
-				}
-			}
-			else if (xDistance < 0.0f)
-			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingWestWall(previousBlockLookUp, newLocation, volume, oldX);
-				if (null != adjustedLocation)
-				{
-					newLocation = adjustedLocation;
-				}
-			}
-			else
-			{
-				// We must be inside a wall.
-			}
-			
-			if (attempt == newLocation)
-			{
-				// We can't stand anywhere so just cancel x movement.
-				newLocation = new EntityLocation(oldX, newLocation.y(), newLocation.z());
-			}
+			averageVelocity = new EntityLocation(averageVelocity.x() + fudgeFactor, averageVelocity.y(), averageVelocity.z());
 		}
-		// The x-vector is always cancelled.
+		if (velocityToApplyY > 0.0f)
+		{
+			averageVelocity = new EntityLocation(averageVelocity.x(), averageVelocity.y() + fudgeFactor, averageVelocity.z());
+		}
+		if (velocityToApplyZ > 0.0f)
+		{
+			averageVelocity = new EntityLocation(averageVelocity.x(), averageVelocity.y(), averageVelocity.z() + fudgeFactor);
+		}
+		
+		// We will always cancel x/y velocity but only z if we cancelled.
 		float newXVector = 0.0f;
-		
-		// -Y
-		newLocation = new EntityLocation(newLocation.x(), yLocation, newLocation.z());
-		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
-		{
-			// Adjust the Y axis.
-			EntityLocation attempt = newLocation;
-			if (yDistance > 0.0f)
-			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingNorthWall(previousBlockLookUp, newLocation, volume, oldY);
-				if (null != adjustedLocation)
-				{
-					newLocation = adjustedLocation;
-				}
-			}
-			else if (yDistance < 0.0f)
-			{
-				EntityLocation adjustedLocation = SpatialHelpers.locationTouchingSouthWall(previousBlockLookUp, newLocation, volume, oldY);
-				if (null != adjustedLocation)
-				{
-					newLocation = adjustedLocation;
-				}
-			}
-			else
-			{
-				// We must be inside a wall.
-			}
-			
-			if (attempt == newLocation)
-			{
-				// We can't stand anywhere so just cancel y movement.
-				newLocation = new EntityLocation(newLocation.x(), oldY, newLocation.z());
-			}
-		}
-		// The y-vector is always cancelled.
 		float newYVector = 0.0f;
 		
-		// -Z
-		newLocation = new EntityLocation(newLocation.x(), newLocation.y(), zLocation);
-		if (!SpatialHelpers.canExistInLocation(previousBlockLookUp, newLocation, volume))
+		// We will try to move at most 3 times since we could collide in all 3 axes.
+		EntityLocation zero = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation newLocation = oldLocation;
+		EntityLocation lastAdjustment = oldLocation;
+		while (!zero.equals(averageVelocity))
 		{
-			// Adjust the Z axis.
-			EntityLocation attempt = newLocation;
-			if (zDistance > 0.0f)
-			{
-				// We were jumping to see if we can clamp our location under the block.
-				EntityLocation highestLocation = SpatialHelpers.locationTouchingCeiling(previousBlockLookUp, newLocation, volume, oldZ);
-				if (null != highestLocation)
+			boolean[] ref_shouldCancel = new boolean[] {false};
+			
+			RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(newLocation, volume, averageVelocity, (AbsoluteLocation l) -> {
+				boolean stop;
+				BlockProxy proxy = previousBlockLookUp.apply(l);
+				// This can be null if the world isn't totally loaded on the client.
+				if (null != proxy)
 				{
-					newLocation = highestLocation;
+					stop = env.blocks.isSolid(proxy.getBlock());
 				}
-			}
-			else if (zDistance < 0.0f)
-			{
-				// We were falling so see if we can stop on the block(s) above where we fell.
-				EntityLocation lowestLocation = SpatialHelpers.locationTouchingGround(previousBlockLookUp, newLocation, volume, oldZ);
-				if (null != lowestLocation)
+				else
 				{
-					newLocation = lowestLocation;
+					stop = true;
+				}
+				if (stop)
+				{
+					// If we hit anything, we want to cancel the movement.
+					ref_shouldCancel[0] = true;
+				}
+				return stop;
+			});
+			newLocation = result.location();
+			
+			// Adjust the location by removing the fudge factor (note that these are only on the positive edge).
+			if (newLocation.x() > lastAdjustment.x())
+			{
+				newLocation = new EntityLocation(newLocation.x() - fudgeFactor, newLocation.y(), newLocation.z());
+			}
+			if (newLocation.y() > lastAdjustment.y())
+			{
+				newLocation = new EntityLocation(newLocation.x(), newLocation.y() - fudgeFactor, newLocation.z());
+			}
+			if (newLocation.z() > lastAdjustment.z())
+			{
+				newLocation = new EntityLocation(newLocation.x(), newLocation.y(), newLocation.z() - fudgeFactor);
+			}
+			
+			// Account for how much of the velocity we have applied in this iteration, and store the last adjustment so we don't redundantly remove fudge factor.
+			float deltaX = newLocation.x() - lastAdjustment.x();
+			float deltaY = newLocation.y() - lastAdjustment.y();
+			float deltaZ = newLocation.z() - lastAdjustment.z();
+			lastAdjustment = newLocation;
+			
+			if (ref_shouldCancel[0] && (null != result.collisionAxis()))
+			{
+				// We hit something so figure out which direction to cancel.
+				// Also, recalculate position to make sure we don't get stuck in a wall.
+				switch (result.collisionAxis())
+				{
+				case X:
+					averageVelocity = new EntityLocation(0.0f, averageVelocity.y() - deltaY, averageVelocity.z() - deltaZ);
+					break;
+				case Y:
+					averageVelocity = new EntityLocation(averageVelocity.x() - deltaX, 0.0f, averageVelocity.z() - deltaZ);
+					break;
+				case Z:
+					averageVelocity = new EntityLocation(averageVelocity.x() - deltaX, averageVelocity.y() - deltaY, 0.0f);
+					newZVector = 0.0f;
+					break;
 				}
 			}
 			else
 			{
-				// We must be inside a wall.
+				// We didn't hit anything, or we are stuck in a block, so just fall out.
+				averageVelocity = zero;
 			}
-			
-			if (attempt == newLocation)
-			{
-				// We can't stand anywhere so just cancel z movement.
-				newLocation = new EntityLocation(newLocation.x(), newLocation.y(), oldZ);
-			}
-			
-			// If for any reason we can't exist in this block, cancel the z-vector.
-			newZVector = 0.0f;
 		}
 		
 		// Set the location and velocity.
