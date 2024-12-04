@@ -85,6 +85,7 @@ public class SpeculativeProjection
 	private final ProcessorElement _singleThreadElement;
 	private final IProjectionListener _listener;
 	private final long _serverMillisPerTick;
+	private final Set<EventRecord.Type> _eventTypesToAlwaysReport;
 	
 	private Entity _thisShadowEntity;
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
@@ -121,6 +122,8 @@ public class SpeculativeProjection
 		_singleThreadElement = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_listener = listener;
 		_serverMillisPerTick = serverMillisPerTick;
+		// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
+		_eventTypesToAlwaysReport = Set.of(EventRecord.Type.ENTITY_HURT, EventRecord.Type.ENTITY_KILLED);
 		
 		// The initial states start as empty and are populated by the server.
 		_shadowWorld = new HashMap<>();
@@ -243,8 +246,11 @@ public class SpeculativeProjection
 		// First, we can send the events since they are unrelated to our projected state.
 		for (EventRecord event : events)
 		{
-			// We want to strip out any which have this entity as the source since we will already have sent those as local changes (probably).
-			if (_thisShadowEntity.id() != event.entitySource())
+			// We may need to strip off some events to avoid redundant reporting:  If the event has this entity as its source AND it is a block-based event, it should be skipped.
+			// Events related to other entities are still let through since we don't apply speculative changes to other entities (only the local entity and the world).
+			boolean isSourceLocal = _thisShadowEntity.id() == event.entitySource();
+			boolean shouldReport = !isSourceLocal || _eventTypesToAlwaysReport.contains(event.type());
+			if (shouldReport)
 			{
 				_listener.handleEvent(event);
 			}

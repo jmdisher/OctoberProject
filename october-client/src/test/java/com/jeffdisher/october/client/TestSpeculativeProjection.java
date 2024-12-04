@@ -30,6 +30,7 @@ import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeAcceptItems;
+import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
@@ -52,15 +53,18 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.Craft;
+import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -1954,6 +1958,65 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(targetLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
 		Assert.assertTrue(listener.events.isEmpty());
+	}
+
+	@Test
+	public void attackEvents()
+	{
+		// Show that attack events come through sensibly, when both inflicted by and against the local entity.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		Entity localEntity = MutableEntity.createForTest(entityId).freeze();
+		projector.setThisEntity(localEntity);
+		int creatureId = -1;
+		CreatureEntity orc = CreatureEntity.create(creatureId, EntityType.ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50);
+		long currentTimeMillis = 1L;
+		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);
+		projector.applyChangesForServerTick(1L
+				, List.of(PartialEntity.fromCreature(orc))
+				, List.of(airCuboid)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		
+		// Attack the orc locally and verify that we don't see any events (since we don't apply changes to other entities in the projection).
+		currentTimeMillis += 1000L;
+		EntityChangeAttackEntity attack = new EntityChangeAttackEntity(creatureId);
+		long commit = projector.applyLocalChange(attack, currentTimeMillis);
+		Assert.assertEquals(1L, commit);
+		Assert.assertTrue(listener.events.isEmpty());
+		
+		// Synthesize the events coming from the server along with some basic data updates and verify we see both events.
+		MutableEntity mutable = MutableEntity.existing(localEntity);
+		mutable.newHealth -= 10;
+		localEntity = mutable.freeze();
+		MutableCreature mutableCreature = MutableCreature.existing(orc);
+		mutableCreature.newHealth -= 10;
+		orc = mutableCreature.freeze();
+		currentTimeMillis += 100L;
+		projector.applyChangesForServerTick(2L
+				, List.of()
+				, List.of()
+				, List.of(new MutationEntitySetEntity(localEntity))
+				, Map.of(orc.id(), List.of(new MutationEntitySetPartialEntity(PartialEntity.fromCreature(orc))))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, localEntity.location().getBlockLocation(), localEntity.id(), orc.id())
+						, new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, orc.location().getBlockLocation(), orc.id(), localEntity.id())
+				)
+				, commit
+				, currentTimeMillis
+		);
+		Assert.assertEquals(2, listener.events.size());
 	}
 
 
