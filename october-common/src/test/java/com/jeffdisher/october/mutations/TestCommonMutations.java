@@ -691,6 +691,113 @@ public class TestCommonMutations
 		Assert.assertFalse(repairValid.applyMutation(null, validProxy));
 	}
 
+	@Test
+	public void inventoryMovesOnOverwrite()
+	{
+		// This is to demonstrate that the inventory in an empty block will move to the block above (on the next tick) when a solid block is written in place.
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		int entityId = 1;
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
+		
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, dirt, entityId);
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		_Events events = new _Events();
+		IMutationBlock[] out_mutation = new IMutationBlock[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> cuboid.getCuboidAddress().equals(location.getCuboidAddress()) ? new BlockProxy(location.getBlockAddress(), cuboid) : null, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.assertNull(out_mutation[0]);
+							out_mutation[0] = mutation;
+						}
+					}, null)
+				.eventSink(events)
+				.finish()
+		;
+		events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId));
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(dirt, proxy.getBlock());
+		Assert.assertNull(proxy.getInventory());
+		proxy.writeBack(cuboid);
+		
+		AbsoluteLocation above = target.getRelative(0, 0, 1);
+		MutationBlockStoreItems followUp = (MutationBlockStoreItems)out_mutation[0];
+		out_mutation[0] = null;
+		Assert.assertEquals(above, followUp.getAbsoluteLocation());
+		proxy = new MutableBlockProxy(above, cuboid);
+		Assert.assertTrue(followUp.applyMutation(context, proxy));
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(1, proxy.getInventory().getCount(CHARCOAL_ITEM));
+	}
+
+	@Test
+	public void treeGrowthOverInventory()
+	{
+		// Show that tree growth will force its inventory to the north.
+		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block sapling = ENV.blocks.fromItem(ENV.items.getItemById("op.sapling"));
+		Block log = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 1, -1).getBlockAddress(), dirt.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), sapling.item().number());
+		// We will also place inventory in that block to show that growth doesn't destroy it.
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
+		
+		IMutationBlock[] out_mutation = new IMutationBlock[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.skyLight((AbsoluteLocation blockLocation) -> PlantHelpers.MIN_LIGHT)
+				.sinks(new TickProcessingContext.IMutationSink() {
+							@Override
+							public void next(IMutationBlock mutation)
+							{
+								if (mutation instanceof MutationBlockOverwriteInternal)
+								{
+									// Note that we will see lots of over-write calls for the rest of the tree but ignore them.
+								}
+								else
+								{
+									Assert.assertNull(out_mutation[0]);
+									out_mutation[0] = mutation;
+								}
+							}
+						}
+						, null)
+				.fixedRandom(1)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockPeriodic mutation = new MutationBlockPeriodic(target);
+		boolean didApply = mutation.applyMutation(context, proxy);
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(log, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		
+		AbsoluteLocation north = target.getRelative(0, 1, 0);
+		MutationBlockStoreItems followUp = (MutationBlockStoreItems)out_mutation[0];
+		out_mutation[0] = null;
+		Assert.assertEquals(north, followUp.getAbsoluteLocation());
+		proxy = new MutableBlockProxy(north, cuboid);
+		Assert.assertTrue(followUp.applyMutation(context, proxy));
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
+	}
+
 
 	private static class ProcessingSinks
 	{

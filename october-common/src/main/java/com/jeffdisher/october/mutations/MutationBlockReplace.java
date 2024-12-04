@@ -7,6 +7,7 @@ import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -56,8 +57,12 @@ public class MutationBlockReplace implements IMutationBlock
 		Block oldType = newBlock.getBlock();
 		if (oldType == _originalType)
 		{
-			// TODO:  Determine what to do if there is an inventory left over.
-			CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(Environment.getShared(), newBlock, _newType);
+			Environment env = Environment.getShared();
+			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, _newType);
+			if (null != inventoryToMove)
+			{
+				CommonBlockMutationHelpers.pushInventoryToNeighbour(env, context, _location, inventoryToMove, false);
+			}
 			didApply = true;
 		}
 		return didApply;

@@ -98,8 +98,11 @@ public class CommonBlockMutationHelpers
 			if (blockIsSupported)
 			{
 				// Do the standard inventory handling.
-				// TODO:  Handle this inventory if it can't be restored.
-				_replaceBlockAndRestoreInventory(env, newBlock, newType);
+				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, newBlock, newType);
+				if (null != inventoryToMove)
+				{
+					_pushInventoryToNeighbour(env, context, location, inventoryToMove, false);
+				}
 				
 				if (env.plants.growthDivisor(newType) > 0)
 				{
@@ -133,6 +136,22 @@ public class CommonBlockMutationHelpers
 	public static Inventory replaceBlockAndRestoreInventory(Environment env, IMutableBlockProxy newBlock, Block block)
 	{
 		return _replaceBlockAndRestoreInventory(env, newBlock, block);
+	}
+
+	/**
+	 * Tries to find a neighbour which isn't a solid block in which to store the given inventoryToMove.  The search
+	 * order is:  Up, North, South, East, West.  If none of those are loaded, non-solid blocks, the inventory is
+	 * silently discarded.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for scheduling the follow-up storage mutations or looking up blocks.
+	 * @param location The location where the inventorytToMove originated.
+	 * @param inventoryToMove The inventory which should be pushed into a neighbouring block.
+	 * @param skipAbove True if we should skip the "up" check (since some cases explicitly know this will fail.
+	 */
+	public static void pushInventoryToNeighbour(Environment env, TickProcessingContext context, AbsoluteLocation location, Inventory inventoryToMove, boolean skipAbove)
+	{
+		_pushInventoryToNeighbour(env, context, location, inventoryToMove, skipAbove);
 	}
 
 
@@ -334,5 +353,40 @@ public class CommonBlockMutationHelpers
 			original = null;
 		}
 		return original;
+	}
+
+	private static void _pushInventoryToNeighbour(Environment env, TickProcessingContext context, AbsoluteLocation location, Inventory inventoryToMove, boolean skipAbove)
+	{
+		// The inventory must not be empty.
+		Assert.assertTrue(inventoryToMove.currentEncumbrance > 0);
+		
+		// We will try to drop this inventory in the first non-solid block we find in this search order:  Above, North, South, East, West.
+		AbsoluteLocation[] locations = new AbsoluteLocation[] {
+				location.getRelative(0, 0, 1),
+				location.getRelative(0, 1, 0),
+				location.getRelative(0, -1, 0),
+				location.getRelative(1, 0, 0),
+				location.getRelative(-1, 0, 0),
+		};
+		// If none of these can hold it, the inventory will be lost.  Note that we don't check for stations.
+		// Since we send the inventory via a mutation, the block may have changed by the time it gets there,
+		boolean didPlace = false;
+		for (int i = skipAbove ? 1 : 0; !didPlace && (i < locations.length); ++i)
+		{
+			AbsoluteLocation target = locations[i];
+			BlockProxy test = context.previousBlockLookUp.apply(target);
+			if ((null != test) && !env.blocks.isSolid(test.getBlock()))
+			{
+				for (Integer key : inventoryToMove.sortedKeys())
+				{
+					Items stackable = inventoryToMove.getStackForKey(key);
+					NonStackableItem nonStackable = inventoryToMove.getNonStackableForKey(key);
+					// Precisely one of these must be non-null.
+					Assert.assertTrue((null != stackable) != (null != nonStackable));
+					context.mutationSink.next(new MutationBlockStoreItems(target, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
+				}
+				didPlace = true;
+			}
+		}
 	}
 }
