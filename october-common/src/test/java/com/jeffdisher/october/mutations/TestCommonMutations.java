@@ -216,6 +216,9 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_WEAK.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
+		// We will also store inventory in one of these blocks to show that flowing water doesn't break it.
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, downOver.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
+		
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
@@ -248,6 +251,7 @@ public class TestCommonMutations
 		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(ENV.special.WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test
@@ -401,6 +405,8 @@ public class TestCommonMutations
 		Block wheatYoung = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_young"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), wheatSeedling.item().number());
+		// We will also place inventory in that block to show that growth doesn't destroy it.
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, BlockAddress.fromInt(1, 1, 1), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()
@@ -438,6 +444,7 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		Assert.assertEquals(wheatYoung, proxy.getBlock());
 		Assert.assertEquals(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS, proxy.periodicDelayMillis);
+		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
 	@Test

@@ -94,21 +94,12 @@ public class CommonBlockMutationHelpers
 					: true
 			;
 			
-			// Note that failing to place this means that the block will be destroyed.
+			// Note that failing to place this means that the block will be destroyed and nothing changes.
 			if (blockIsSupported)
 			{
-				// If we are placing a block which allows entity movement, be sure to copy over any inventory on the ground.
-				Inventory inventoryToRestore = !env.blocks.isSolid(newType)
-						? newBlock.getInventory()
-						: null
-				;
-				
-				// Replace the block with the type we have.
-				newBlock.setBlockAndClear(newType);
-				if (null != inventoryToRestore)
-				{
-					newBlock.setInventory(inventoryToRestore);
-				}
+				// Do the standard inventory handling.
+				// TODO:  Handle this inventory if it can't be restored.
+				_replaceBlockAndRestoreInventory(env, newBlock, newType);
 				
 				if (env.plants.growthDivisor(newType) > 0)
 				{
@@ -124,6 +115,24 @@ public class CommonBlockMutationHelpers
 			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
 		return didApply;
+	}
+
+	/**
+	 * Changes the block type in newBlock to be block, attempting to restore any previous inventory into the new block.
+	 * The inventory is restored if the block type is non-solid (air, plants, etc) or has a standard inventory (chest,
+	 * etc).
+	 * Will return the inventory if it was non-empty and couldn't be restored so that the caller can decide what to do
+	 * with it.
+	 * 
+	 * @param env The environment.
+	 * @param newBlock The block to modify.
+	 * @param block The new block type to set.
+	 * @return Null if there was no inventory or if it could be restored (only non-null when there is an inventory this
+	 * helper can't restore).
+	 */
+	public static Inventory replaceBlockAndRestoreInventory(Environment env, IMutableBlockProxy newBlock, Block block)
+	{
+		return _replaceBlockAndRestoreInventory(env, newBlock, block);
 	}
 
 
@@ -304,5 +313,26 @@ public class CommonBlockMutationHelpers
 		{
 			_combineInventory(inventoryToFill, oldFuel.fuelInventory());
 		}
+	}
+
+	private static Inventory _replaceBlockAndRestoreInventory(Environment env, IMutableBlockProxy newBlock, Block block)
+	{
+		// Get the existing inventory (note that this will return an empty inventory if the block type can support an
+		// inventory but there is nothing there).
+		Inventory original = newBlock.getInventory();
+		if ((null != original) && (0 == original.currentEncumbrance))
+		{
+			// We will ignore empty inventories.
+			original = null;
+		}
+		newBlock.setBlockAndClear(block);
+		if ((null != original) && (!env.blocks.isSolid(block) || (0 != env.stations.getNormalInventorySize(block))))
+		{
+			// We need to restore this since it is an empty block or a normal inventory.
+			newBlock.setInventory(original);
+			// We have resolved this.
+			original = null;
+		}
+		return original;
 	}
 }

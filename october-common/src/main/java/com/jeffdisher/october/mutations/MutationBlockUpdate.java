@@ -61,12 +61,9 @@ public class MutationBlockUpdate implements IMutationBlock
 			;
 			if (newType != thisBlock)
 			{
-				// We need to change this so write-back (copy over anything changing).
-				Inventory inv = newBlock.getInventory();
-				// These block types all support inventories.
-				Assert.assertTrue(null != inv);
-				newBlock.setBlockAndClear(newType);
-				newBlock.setInventory(inv);
+				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, newType);
+				// The inventory should be restored if these are all empty block types.
+				Assert.assertTrue(null == inv);
 				thisBlock = newType;
 				didApply = true;
 			}
