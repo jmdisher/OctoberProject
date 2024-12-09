@@ -56,7 +56,6 @@ public class ClientRunner
 	private final List<Runnable> _pendingNetworkCallsToFlush;
 
 	// Variables related to our local cache of this entity's state.
-	private int _assignedEntityId;
 	private Entity _localEntityProjection;
 
 	// Variables related to moving calls from the network into the caller thread.
@@ -358,7 +357,6 @@ public class ClientRunner
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// We create the projection here.
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
-				_assignedEntityId = assignedId;
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
 				_lastCallMillis = currentTimeMillis;
 				// Notify the listener that we were assigned an ID.
@@ -404,7 +402,6 @@ public class ClientRunner
 		public void receivedEntityUpdate(int entityId, IEntityUpdate update)
 		{
 			// Currently (and probably forever), the only full entity on the client is the user, themselves.
-			Assert.assertTrue(_assignedEntityId == entityId);
 			_entityUpdates.add(update);
 		}
 		@Override
@@ -582,8 +579,6 @@ public class ClientRunner
 		@Override
 		public void otherEntityDidUnload(int id)
 		{
-			// Just make sure that this isn't us (since that can't happen).
-			Assert.assertTrue(_assignedEntityId != id);
 			_projectionListener.otherEntityDidUnload(id);
 		}
 		@Override
