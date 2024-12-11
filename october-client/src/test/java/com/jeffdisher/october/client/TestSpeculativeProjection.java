@@ -40,6 +40,7 @@ import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -770,8 +771,9 @@ public class TestSpeculativeProjection
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		long currentTimeMillis = 1L;
+		long gameTick = 1L;
 		projector.setThisEntity(MutableEntity.createForTest(entityId).freeze());
-		projector.applyChangesForServerTick(1L
+		projector.applyChangesForServerTick(gameTick
 				, List.of()
 				, List.of(cuboid)
 				, List.of()
@@ -815,7 +817,23 @@ public class TestSpeculativeProjection
 		
 		// If we commit the first part of this change, we should still see the same result - note that we need to fake-up all the changes and mutations which would come from this.
 		currentTimeMillis += 100L;
-		int speculativeCount = projector.applyChangesForServerTick(2L
+		gameTick += 1L;
+		int speculativeCount = projector.applyChangesForServerTick(gameTick
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commit1
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, speculativeCount);
+		currentTimeMillis += 100L;
+		gameTick += 1L;
+		speculativeCount = projector.applyChangesForServerTick(gameTick
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -837,7 +855,8 @@ public class TestSpeculativeProjection
 		
 		// Commit the second part and make sure the change is still there.
 		currentTimeMillis += 100L;
-		speculativeCount = projector.applyChangesForServerTick(3L
+		gameTick += 1L;
+		speculativeCount = projector.applyChangesForServerTick(gameTick
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
@@ -2016,6 +2035,175 @@ public class TestSpeculativeProjection
 				, commit
 				, currentTimeMillis
 		);
+		Assert.assertEquals(2, listener.events.size());
+	}
+
+	@Test
+	public void breakWithIncrementalCommit()
+	{
+		// We want to test that everything works correctly (including receiving the block) when we fully break locally, then slowly absorb server changes.
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		Item dirt = ENV.items.getItemById("op.dirt");
+		
+		AbsoluteLocation entityLocation = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation dirtLocation = new AbsoluteLocation(5, 6, 5);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), dirt.number());
+		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
+		long currentTimeMillis = 1L;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = entityLocation.toEntityLocation();
+		projector.setThisEntity(mutable.freeze());
+		long gameTick = 1L;
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of(cuboid)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// Now, break the block over 10 increments and make sure that we see the block end up in the inventory.
+		for (int i = 0; i < 10; ++i)
+		{
+			Assert.assertEquals(0, listener.events.size());
+			currentTimeMillis += 100L;
+			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(dirtLocation, (short)20);
+			long commit1 = projector.applyLocalChange(blockBreak, currentTimeMillis);
+			Assert.assertEquals(i + 1, commit1);
+		}
+		
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(EventRecord.Type.BLOCK_BROKEN, listener.events.get(0).type());
+		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(dirt));
+		MutationPlaceSelectedBlock placeBlock = new MutationPlaceSelectedBlock(dirtLocation, dirtLocation);
+		long commit1 = projector.applyLocalChange(placeBlock, currentTimeMillis);
+		Assert.assertEquals(11, commit1);
+		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
+		Assert.assertEquals(2, listener.events.size());
+		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, listener.events.get(1).type());
+		
+		// Now, feed in the updates, one at a time, and make sure the result is the same after each one.
+		for (int i = 0; i < 10; ++i)
+		{
+			currentTimeMillis += 100L;
+			gameTick += 1L;
+			long commit = i + 1;
+			List<MutationBlockSetBlock> list = (i > 0)
+					? List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)20, entityId)))
+					: List.of()
+			;
+			int speculativeCount = projector.applyChangesForServerTick(gameTick
+					, Collections.emptyList()
+					, Collections.emptyList()
+					, List.of()
+					, Map.of()
+					, list
+					, Collections.emptyList()
+					, Collections.emptyList()
+					, List.of()
+					, commit
+					, currentTimeMillis
+			);
+			Assert.assertEquals(10 - i, speculativeCount);
+			Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+			Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+			Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
+		}
+		
+		currentTimeMillis += 100L;
+		gameTick += 1L;
+		// This is an odd one:  We need to pass another tick to give time for the block to break, then a tick to pick up the item, then we can ack the commit to place it.
+		int speculativeCount = projector.applyChangesForServerTick(gameTick
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)20, entityId)))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 10L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
+		
+		currentTimeMillis += 100L;
+		gameTick += 1L;
+		// Now we pick up the block.
+		speculativeCount = projector.applyChangesForServerTick(gameTick
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new MutationEntityStoreToInventory(new Items(dirt, 1), null)))
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 10L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
+		
+		currentTimeMillis += 100L;
+		gameTick += 1L;
+		// Finally, we can commit the last change.
+		speculativeCount = projector.applyChangesForServerTick(gameTick
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of(FakeUpdateFactories.entityUpdate(Map.of(address, serverCuboid), listener.thisEntityState, new MutationPlaceSelectedBlock(dirtLocation, dirtLocation)))
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 11L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
+		
+		currentTimeMillis += 100L;
+		gameTick += 1L;
+		// To wrap things up, we can now place the block so the follow-up should be done.
+		speculativeCount = projector.applyChangesForServerTick(gameTick
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, Map.of()
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockOverwriteByEntity(dirtLocation, ENV.blocks.getAsPlaceableBlock(dirt), entityId)))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 11L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		Assert.assertEquals(2, listener.events.size());
 	}
 

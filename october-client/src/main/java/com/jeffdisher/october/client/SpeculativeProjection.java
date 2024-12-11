@@ -270,6 +270,12 @@ public class SpeculativeProjection
 		}
 		
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
+		for (int i = 0; i < _followUpTicks.size(); ++i)
+		{
+			_SpeculativeConsequences followUp = _followUpTicks.get(i);
+			_applyFollowUp(modifiedBlocksByCuboid, followUp);
+		}
+		
 		List<_SpeculativeWrapper> previous = new ArrayList<>(_speculativeChanges);
 		_speculativeChanges.clear();
 		for (_SpeculativeWrapper wrapper : previous)
@@ -286,6 +292,12 @@ public class SpeculativeProjection
 			}
 			else
 			{
+				// Apply this as a follow-up.
+				for (_SpeculativeConsequences followUp : wrapper.followUpTicks)
+				{
+					_applyFollowUp(modifiedBlocksByCuboid, followUp);
+				}
+				
 				// We are removing this so promote any follow-ups.
 				for (int i = 0; i < wrapper.followUpTicks.size(); ++i)
 				{
@@ -305,13 +317,6 @@ public class SpeculativeProjection
 					shared.absorb(followUp);
 				}
 			}
-		}
-		
-		// Apply any remaining follow-up changes.
-		for (int i = 0; i < _followUpTicks.size(); ++i)
-		{
-			_SpeculativeConsequences followUp = _followUpTicks.get(i);
-			_applyFollowUp(modifiedBlocksByCuboid, followUp);
 		}
 		
 		// ***** By this point, the projected state has been replaced so we need to determine what to send to the listener
@@ -597,7 +602,7 @@ public class SpeculativeProjection
 						{
 							mismatches = previousReport.checkMismatchedAspects(projected);
 						}
-						Assert.assertTrue(!mismatches.isEmpty());
+						// Note that these mismatches can be empty if the result is part of something the local user already did.
 						changedAspects.addAll(mismatches);
 					}
 				}
