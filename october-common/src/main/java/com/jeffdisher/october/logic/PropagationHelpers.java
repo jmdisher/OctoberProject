@@ -335,7 +335,13 @@ public class PropagationHelpers
 				int distanceToCuboid = _distanceToCuboid(targetAddress, location);
 				if (distanceToCuboid < accessor.getMaxLight())
 				{
-					_processLightChange(accessor, lightsToAdd, lightsToRemove, changes, proxyLookup, location);
+					// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
+					BlockProxy proxy = proxyLookup.apply(location);
+					// Note that this could have been unloaded if this is the edge of a cuboid which is unloaded in this tick (mostly just seen in SpeculativeProjection).
+					if (null != proxy)
+					{
+						_processLightChange(accessor, lightsToAdd, lightsToRemove, changes, proxy, location);
+					}
 				}
 			}
 		}
@@ -346,12 +352,10 @@ public class PropagationHelpers
 			, List<LightBringer.Light> lightsToAdd
 			, List<LightBringer.Light> lightsToRemove
 			, Map<AbsoluteLocation, Byte> changes
-			, Function<AbsoluteLocation, BlockProxy> proxyLookup
+			, BlockProxy proxy
 			, AbsoluteLocation location
 	)
 	{
-		// Read the block proxy to see if this if this something which is inconsistent with its emission or surrounding blocks and opacity.
-		BlockProxy proxy = proxyLookup.apply(location);
 		Block block = proxy.getBlock();
 		byte currentLight = accessor.getLightForLocation(location);
 		// Check if this is a light source.

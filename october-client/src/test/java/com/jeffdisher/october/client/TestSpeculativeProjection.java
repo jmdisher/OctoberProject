@@ -18,6 +18,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -2205,6 +2206,182 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
 		Assert.assertEquals(2, listener.events.size());
+	}
+
+	@Test
+	public void breakBlockNearLight()
+	{
+		// We want to break a block and observe that a nearby light source flows immediately.
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block torch = ENV.blocks.fromItem(ENV.items.getItemById("op.torch"));
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		
+		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
+		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 3, 1);
+		AbsoluteLocation torchLocation = new AbsoluteLocation(1, 4, 1);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData serverCuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		serverCuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		serverCuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), dirt.item().number());
+		serverCuboid.setData15(AspectRegistry.BLOCK, torchLocation.getBlockAddress(), torch.item().number());
+		serverCuboid.setData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress(), LightAspect.MAX_LIGHT);
+		Assert.assertEquals(0, serverCuboid.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
+		Assert.assertEquals(0, serverCuboid.getData7(AspectRegistry.LIGHT, entityLocation.getBlockAddress()));
+		
+		long currentTimeMillis = 1L;
+		projector.setThisEntity(mutable.freeze());
+		long gameTick = 1L;
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of(CuboidData.mutableClone(serverCuboid))
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// We will break a block in a single hit, then commit the follow-up changes, observing that this update is seemless.
+		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation, (short)200);
+		long commitNumber = projector.applyLocalChange(blockBreak, currentTimeMillis);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(2, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 2, listener.lastData.getData7(AspectRegistry.LIGHT, entityLocation.getBlockAddress()));
+		
+		// This update will technically take 3 ticks (entity, block, light), so apply those changes in sequence.
+		gameTick += 1L;
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of()
+				, List.of()
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		gameTick += 1L;
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of()
+				, List.of()
+				, Map.of()
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(targetLocation, (short)200, entityId)))
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.changeCount);
+		
+		// The lighting update requires a hard-coded update.
+		MutationBlockSetBlock targetLighting = new MutationBlockSetBlock(targetLocation, new byte[] {(byte)AspectRegistry.LIGHT.index(), LightAspect.MAX_LIGHT - 1});
+		MutationBlockSetBlock entityLighting = new MutationBlockSetBlock(entityLocation, new byte[] {(byte)AspectRegistry.LIGHT.index(), LightAspect.MAX_LIGHT - 2});
+		gameTick += 1L;
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of()
+				, List.of()
+				, Map.of()
+				, List.of(targetLighting, entityLighting)
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commitNumber
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, commitNumber);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(2, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT - 2, listener.lastData.getData7(AspectRegistry.LIGHT, entityLocation.getBlockAddress()));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
+	}
+
+	@Test
+	public void placeBlockNearLight()
+	{
+		// Place a block near a light source and show that the light is immediately blocked.
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block torch = ENV.blocks.fromItem(ENV.items.getItemById("op.torch"));
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newInventory.addAllItems(dirt.item(), 1);
+		mutable.setSelectedKey(1);
+		mutable.newLocation = new EntityLocation(1.0f, 2.0f, 1.0f);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		
+		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
+		AbsoluteLocation targetLocation = new AbsoluteLocation(1, 3, 1);
+		AbsoluteLocation torchLocation = new AbsoluteLocation(1, 4, 1);
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, torchLocation.getBlockAddress(), torch.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress(), LightAspect.MAX_LIGHT);
+		cuboid.setData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress(), (byte)(LightAspect.MAX_LIGHT - 1));
+		cuboid.setData15(AspectRegistry.BLOCK, entityLocation.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, entityLocation.getBlockAddress(), (byte)(LightAspect.MAX_LIGHT - 2));
+		
+		long currentTimeMillis = 1L;
+		projector.setThisEntity(mutable.freeze());
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of(cuboid)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(1, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// Place the block and verify the other blocks go dark.
+		currentTimeMillis += 100L;
+		MutationPlaceSelectedBlock placeBlock = new MutationPlaceSelectedBlock(targetLocation, torchLocation);
+		long commit1 = projector.applyLocalChange(placeBlock, currentTimeMillis);
+		Assert.assertEquals(1, commit1);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(2, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+		Assert.assertEquals(dirt.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
+		Assert.assertEquals(0, listener.lastData.getData7(AspectRegistry.LIGHT, entityLocation.getBlockAddress()));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
 	}
 
 
