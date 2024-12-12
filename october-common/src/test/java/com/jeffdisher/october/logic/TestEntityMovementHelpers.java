@@ -158,9 +158,8 @@ public class TestEntityMovementHelpers
 			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
-		// Note that the velocity is not touched by the viscosity - that is only applied when applying the velocity as displacement.
-		Assert.assertEquals(-9.80f, entity.vector.z(), 0.01f);
-		Assert.assertEquals(-2.45f, entity.location.z() - startLocation.z(), 0.01f);
+		Assert.assertEquals(-0.97f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(-0.42f, entity.location.z() - startLocation.z(), 0.01f);
 	}
 
 	@Test
@@ -178,8 +177,8 @@ public class TestEntityMovementHelpers
 			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
-		Assert.assertEquals(3.92f, entity.vector.z(), 0.01f);
-		Assert.assertEquals(7.20f, entity.location.z(), 0.01f);
+		Assert.assertEquals(1.96f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(6.70f, entity.location.z(), 0.01f);
 	}
 
 	@Test

@@ -1664,8 +1664,8 @@ public class TestCommonChanges
 		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates if viscosity or acceleration calculation changes).
 		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(5.22, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(3.92f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(5.17, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(1.96f, newEntity.newVelocity.z(), 0.01f);
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
@@ -1675,9 +1675,9 @@ public class TestCommonChanges
 			ticks += 1;
 		}
 		// Verify the expected tick count, location, and velocity (experimentally derived).
-		Assert.assertEquals(4, ticks);
-		Assert.assertEquals(5.60f, newEntity.newLocation.z(), 0.01f);
-		Assert.assertEquals(0.00f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(2, ticks);
+		Assert.assertEquals(5.24f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(-0.24f, newEntity.newVelocity.z(), 0.01f);
 	}
 
 	@Test

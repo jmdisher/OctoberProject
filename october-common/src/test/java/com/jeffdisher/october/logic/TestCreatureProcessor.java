@@ -698,7 +698,7 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
-		for (int i = 0; i < 11; ++i)
+		for (int i = 0; i < 13; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
@@ -724,8 +724,8 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We expect the 11th iteration to be the final one (since we now swim up quickly).
-			if (i < 10)
+			// We expect the 13th iteration to be the final one (since we now swim up quickly).
+			if (i < 12)
 			{
 				Assert.assertNotNull(creature.extendedData());
 			}
@@ -738,7 +738,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.54f, creature.location().z(), 0.01f);
+		Assert.assertEquals(3.19f, creature.location().z(), 0.01f);
 	}
 
 	@Test

@@ -19,6 +19,13 @@ import com.jeffdisher.october.types.IMutableMinimalEntity;
 public class EntityMovementHelpers
 {
 	/**
+	 * We apply a fudge factor to magnify the impact of the drag on vertical velocity.  This is done in order to make
+	 * the drag behaviour "feel" right while the movement system is redesigned.
+	 * TODO:  Remove this once the movement system and viscosity values are redone.
+	 */
+	public static final float DRAG_FUDGE_FACTOR = 10.0f;
+
+	/**
 	 * Sets the velocity of the given newEntity based on the given x/y components and a target total speed of
 	 * blocksPerSecond.
 	 * Note:  No check is done on xComponent or yComponent but they should typically describe a combined vector of 1.0f
@@ -85,6 +92,7 @@ public class EntityMovementHelpers
 		float initialZVector = oldVector.z();
 		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
+		float velocityFraction = (1.0f - viscosityFraction);
 		float newZVector;
 		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
 		{
@@ -98,7 +106,15 @@ public class EntityMovementHelpers
 		}
 		else
 		{
-			newZVector = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
+			float acceleratedZ = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
+			// Decelerate the velocity based on time and drag.
+			float drag = secondsInMotion * viscosityFraction * acceleratedZ * DRAG_FUDGE_FACTOR;
+			newZVector = acceleratedZ - drag;
+			// Make sure that this doesn't overflow (due to the drag fudge factor).
+			if (Math.signum(acceleratedZ) != Math.signum(newZVector))
+			{
+				newZVector = 0.0f;
+			}
 		}
 		
 		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
@@ -106,7 +122,6 @@ public class EntityMovementHelpers
 		
 		// Note that we currently just set the x/y velocities to zero after applying the movement so just directly apply these through the viscosity.
 		// TODO:  This assumption of setting x/y velocity to zero will need to change to support icy surfaces or "flying through the air".
-		float velocityFraction = (1.0f - viscosityFraction);
 		float velocityToApplyX = velocityFraction * oldVector.x();
 		float velocityToApplyY = velocityFraction * oldVector.y();
 		float velocityToApplyZ = velocityFraction * effectiveZVelocity;
