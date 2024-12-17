@@ -21,6 +21,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.IByteLookup;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.Encoding;
 
 
 /**
@@ -272,25 +273,38 @@ public class PropagationHelpers
 		Set<AbsoluteLocation> changedLocations = new HashSet<>();
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
+			int maxLight = accessor.getMaxLight();
+			int reverse = -maxLight;
+			int forward = Encoding.CUBOID_EDGE_SIZE + maxLight;
+			AbsoluteLocation base = targetAddress.getBase().getRelative(reverse, reverse, reverse);
+			AbsoluteLocation edge = targetAddress.getBase().getRelative(forward, forward, forward);
 			LightBringer.IBlockDataOverlay overlay = new LightBringer.IBlockDataOverlay() {
 				@Override
 				public byte getLight(AbsoluteLocation location)
 				{
 					byte value;
-					Byte overlayValue = lightValueOverlay.get(location);
-					if (null == overlayValue)
+					if (_inRange(location))
 					{
-						value = accessor.getLightForLocation(location);
+						Byte overlayValue = lightValueOverlay.get(location);
+						if (null == overlayValue)
+						{
+							value = accessor.getLightForLocation(location);
+						}
+						else
+						{
+							value = overlayValue;
+						}
 					}
 					else
 					{
-						value = overlayValue;
+						value = IByteLookup.NOT_FOUND;
 					}
 					return value;
 				}
 				@Override
 				public void setLight(AbsoluteLocation location, byte value)
 				{
+					Assert.assertTrue(_inRange(location));
 					Byte previous = lightValueOverlay.put(location, value);
 					// This entry-point can only increase brightness.
 					if (null != previous)
@@ -301,12 +315,14 @@ public class PropagationHelpers
 				@Override
 				public void setDark(AbsoluteLocation location)
 				{
+					Assert.assertTrue(_inRange(location));
 					// We expect not to see this happen redundantly.
 					Assert.assertTrue(null == lightValueOverlay.put(location, (byte)0));
 				}
 				@Override
 				public byte getOpacity(AbsoluteLocation location)
 				{
+					Assert.assertTrue(_inRange(location));
 					BlockProxy proxy = lazyGlobalCache.apply(location);
 					return (null != proxy)
 							? accessor.getOpacityForBlock(proxy.getBlock())
@@ -316,10 +332,18 @@ public class PropagationHelpers
 				@Override
 				public byte getLightSource(AbsoluteLocation location)
 				{
+					Assert.assertTrue(_inRange(location));
 					BlockProxy proxy = lazyGlobalCache.apply(location);
 					return (null != proxy)
 							? accessor.getEmissionForBlock(proxy.getBlock())
 							: IByteLookup.NOT_FOUND
+					;
+				}
+				private boolean _inRange(AbsoluteLocation location)
+				{
+					return (base.x() <= location.x()) && (location.x() < edge.x())
+							&& (base.y() <= location.y()) && (location.y() < edge.y())
+							&& (base.z() <= location.z()) && (location.z() < edge.z())
 					;
 				}
 			};
