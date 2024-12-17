@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.IByteLookup;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -271,46 +272,73 @@ public class PropagationHelpers
 		Set<AbsoluteLocation> changedLocations = new HashSet<>();
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
-			IByteLookup<AbsoluteLocation> lightLookup = (AbsoluteLocation location) ->
-			{
-				Byte overlayValue = lightValueOverlay.get(location);
-				byte value;
-				if (null == overlayValue)
+			Map<AbsoluteLocation, Byte> changedValues = new HashMap<>();;
+			LightBringer.IBlockDataOverlay overlay = new LightBringer.IBlockDataOverlay() {
+				@Override
+				public byte getLight(AbsoluteLocation location)
 				{
-					value = accessor.getLightForLocation(location);
+					byte value;
+					if (changedValues.containsKey(location))
+					{
+						value = changedValues.get(location);
+					}
+					else
+					{
+						Byte overlayValue = lightValueOverlay.get(location);
+						if (null == overlayValue)
+						{
+							value = accessor.getLightForLocation(location);
+						}
+						else
+						{
+							value = overlayValue;
+						}
+					}
+					return value;
 				}
-				else
+				@Override
+				public void setLight(AbsoluteLocation location, byte value)
 				{
-					value = overlayValue;
+					Byte previous = changedValues.put(location, value);
+					// This entry-point can only increase brightness.
+					if (null != previous)
+					{
+						Assert.assertTrue(value > previous);
+					}
 				}
-				return value;
+				@Override
+				public void setDark(AbsoluteLocation location)
+				{
+					// We expect not to see this happen redundantly.
+					Assert.assertTrue(null == changedValues.put(location, (byte)0));
+				}
+				@Override
+				public byte getOpacity(AbsoluteLocation location)
+				{
+					BlockProxy proxy = lazyGlobalCache.apply(location);
+					return (null != proxy)
+							? accessor.getOpacityForBlock(proxy.getBlock())
+							: IByteLookup.NOT_FOUND
+					;
+				}
+				@Override
+				public byte getLightSource(AbsoluteLocation location)
+				{
+					BlockProxy proxy = lazyGlobalCache.apply(location);
+					return (null != proxy)
+							? accessor.getEmissionForBlock(proxy.getBlock())
+							: IByteLookup.NOT_FOUND
+					;
+				}
 			};
-			IByteLookup<AbsoluteLocation> opacityLookup = (AbsoluteLocation location) ->
-			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
-				return (null != proxy)
-						? accessor.getOpacityForBlock(proxy.getBlock())
-						: IByteLookup.NOT_FOUND
-				;
-			};
-			IByteLookup<AbsoluteLocation> sourceLookup = (AbsoluteLocation location) ->
-			{
-				BlockProxy proxy = lazyGlobalCache.apply(location);
-				return (null != proxy)
-						? accessor.getEmissionForBlock(proxy.getBlock())
-						: IByteLookup.NOT_FOUND
-				;
-			};
-			Map<AbsoluteLocation, Byte> lightChanges = LightBringer.batchProcessLight(lightLookup
-					, opacityLookup
-					, sourceLookup
+			LightBringer.batchProcessLight(overlay
 					, lightsToAdd
 					, lightsToRemove
 			);
 			// First, set the lights based on our change starts.
 			_flushLightChanges(accessor, targetAddress, lazyLocalCache, lightValueOverlay, changedLocations);
 			// Now, re-update this with whatever was propagated.
-			_flushLightChanges(accessor, targetAddress, lazyLocalCache, lightChanges, changedLocations);
+			_flushLightChanges(accessor, targetAddress, lazyLocalCache, changedValues, changedLocations);
 		}
 		return changedLocations;
 	}

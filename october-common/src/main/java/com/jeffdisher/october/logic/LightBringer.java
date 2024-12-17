@@ -23,25 +23,17 @@ public class LightBringer
 	 * Called to perform a batch update on the lighting model.  This allows multiple light sources to added or removed
 	 * in a single call.
 	 * Note that this assumes all toAdd and toRemove locations have already been updated with their new values.
-	 * Note that this doesn't change the underlying data, only returns the changes which must be made.
+	 * All changes are made via the overlay interface.
 	 * 
-	 * @param lightLookup A function to look up block light levels.
-	 * @param opacityLookup A function to look up block opacity.
-	 * @param sourceLookup A function to get the light eminating from a source block (0 if not a source).
+	 * @param overlay Opaque abstraction over the lighting data.
 	 * @param toAdd The list of light sources to add.
 	 * @param toRemove The list of light sources to remove.
-	 * @return A map of locations and light levels to update.
 	 */
-	public static Map<AbsoluteLocation, Byte> batchProcessLight(IByteLookup<AbsoluteLocation> lightLookup
-			, IByteLookup<AbsoluteLocation> opacityLookup
-			, IByteLookup<AbsoluteLocation> sourceLookup
+	public static void batchProcessLight(IBlockDataOverlay overlay
 			, List<Light> toAdd
 			, List<Light> toRemove
 	)
 	{
-		// We want to intercept lighting lookups to use any updated values we have.
-		_BlockDataOverlay overlay = new _BlockDataOverlay(lightLookup, opacityLookup, sourceLookup);
-		
 		// We will build a light queue and start it with our list of sources to add.
 		// We will add the "re-flood" sources to this queue, afterward, since they are likely lower values (avoids redundant light changes).
 		Queue<_Step> lightQueue = new LinkedList<>();
@@ -69,12 +61,10 @@ public class LightBringer
 		
 		// Finally, since all light increasing operations are enqueued, run them.
 		_runLightQueue(overlay, lightQueue);
-		
-		return overlay.getChangedValues();
 	}
 
 
-	private static void _runLightQueue(_BlockDataOverlay overlay
+	private static void _runLightQueue(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 	)
 	{
@@ -91,7 +81,7 @@ public class LightBringer
 		}
 	}
 
-	private static void _enqueueLightNeighbours(_BlockDataOverlay overlay
+	private static void _enqueueLightNeighbours(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 			, AbsoluteLocation start
 			, byte light
@@ -105,7 +95,7 @@ public class LightBringer
 		_checkLightNeighbour(overlay, queue, start.getRelative( 1, 0, 0), light);
 	}
 
-	private static void _checkLightNeighbour(_BlockDataOverlay overlay
+	private static void _checkLightNeighbour(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 			, AbsoluteLocation location
 			, byte lightEntering
@@ -134,7 +124,7 @@ public class LightBringer
 		}
 	}
 
-	private static void _runDarkQueue(_BlockDataOverlay overlay
+	private static void _runDarkQueue(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> reFlood
 	)
@@ -152,7 +142,7 @@ public class LightBringer
 		}
 	}
 
-	private static void _enqueueDarkNeighbours(_BlockDataOverlay overlay
+	private static void _enqueueDarkNeighbours(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> reFlood
 			, AbsoluteLocation start
@@ -167,7 +157,7 @@ public class LightBringer
 		_checkDarkNeighbour(overlay, queue, reFlood, start.getRelative( 1, 0, 0), light);
 	}
 
-	private static void _checkDarkNeighbour(_BlockDataOverlay overlay
+	private static void _checkDarkNeighbour(IBlockDataOverlay overlay
 			, Queue<_Step> queue
 			, Map<AbsoluteLocation, Byte> reFlood
 			, AbsoluteLocation location
@@ -235,52 +225,12 @@ public class LightBringer
 	private static record _Step(AbsoluteLocation location, byte lightValue)
 	{}
 
-	private static class _BlockDataOverlay
+	public interface IBlockDataOverlay
 	{
-		private final IByteLookup<AbsoluteLocation> _lightLookup;
-		private final IByteLookup<AbsoluteLocation> _opacityLookup;
-		private final IByteLookup<AbsoluteLocation> _sourceLookup;
-		private final Map<AbsoluteLocation, Byte> _changedValues;
-		
-		public _BlockDataOverlay(IByteLookup<AbsoluteLocation> lightLookup, IByteLookup<AbsoluteLocation> opacityLookup, IByteLookup<AbsoluteLocation> sourceLookup)
-		{
-			_lightLookup = lightLookup;
-			_opacityLookup = opacityLookup;
-			_sourceLookup = sourceLookup;
-			_changedValues = new HashMap<>();
-		}
-		public byte getLight(AbsoluteLocation location)
-		{
-			return _changedValues.containsKey(location)
-					? _changedValues.get(location)
-					: _lightLookup.lookup(location)
-			;
-		}
-		public void setLight(AbsoluteLocation location, byte value)
-		{
-			Byte previous = _changedValues.put(location, value);
-			// This entry-point can only increase brightness.
-			if (null != previous)
-			{
-				Assert.assertTrue(value > previous);
-			}
-		}
-		public void setDark(AbsoluteLocation location)
-		{
-			// We expect not to see this happen redundantly.
-			Assert.assertTrue(null == _changedValues.put(location, (byte)0));
-		}
-		public byte getOpacity(AbsoluteLocation location)
-		{
-			return _opacityLookup.lookup(location);
-		}
-		public byte getLightSource(AbsoluteLocation location)
-		{
-			return _sourceLookup.lookup(location);
-		}
-		public Map<AbsoluteLocation, Byte> getChangedValues()
-		{
-			return _changedValues;
-		}
+		public byte getLight(AbsoluteLocation location);
+		public void setLight(AbsoluteLocation location, byte value);
+		public void setDark(AbsoluteLocation location);
+		public byte getOpacity(AbsoluteLocation location);
+		public byte getLightSource(AbsoluteLocation location);
 	}
 }

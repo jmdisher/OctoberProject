@@ -2384,6 +2384,78 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
 	}
 
+	@Test
+	public void perfLightChanges()
+	{
+		// Places and breaks a lantern on the boundary of 2 cuboids, over and over.  The number of iterations can be increased to make this a good stress test for profiling.
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block lantern = ENV.blocks.fromItem(ENV.items.getItemById("op.lantern"));
+		CountingListener listener = new CountingListener();
+		AbsoluteLocation entityLocation = new AbsoluteLocation(31, 15, 15);
+		AbsoluteLocation dirtLocation = entityLocation.getRelative(0, 0, -1);
+		AbsoluteLocation lanternLocation = entityLocation.getRelative(0, 0, 1);
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newInventory.addAllItems(lantern.item(), 1);
+		mutable.setSelectedKey(1);
+		mutable.newLocation = entityLocation.toEntityLocation();
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		cuboid0.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), dirt.item().number());
+		CuboidAddress address1 = CuboidAddress.fromInt(1, 0, 0);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		
+		long gameTick = 1L;
+		long currentTimeMillis = 1L;
+		projector.setThisEntity(mutable.freeze());
+		projector.applyChangesForServerTick(gameTick
+				, List.of()
+				, List.of(cuboid0, cuboid1)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		
+		// We now do the loop - note that we will ask that we will limit the number of speculative changes to 2, just for simplicity.
+		int iterationCount = 10;
+		long nextCommit = 1L;
+		for (int i = 0; i < iterationCount; ++i)
+		{
+			currentTimeMillis += 100L;
+			MutationPlaceSelectedBlock placeBlock = new MutationPlaceSelectedBlock(lanternLocation, lanternLocation);
+			long commit1 = projector.applyLocalChange(placeBlock, currentTimeMillis);
+			Assert.assertEquals(nextCommit, commit1);
+			nextCommit += 1;
+			
+			currentTimeMillis += 100L;
+			EntityChangeIncrementalBlockBreak breakBlock = new EntityChangeIncrementalBlockBreak(lanternLocation, (short)1000);
+			long commit2 = projector.applyLocalChange(breakBlock, currentTimeMillis);
+			Assert.assertEquals(nextCommit, commit2);
+			nextCommit += 1;
+			
+			gameTick += 1;
+			projector.applyChangesForServerTick(gameTick
+					, List.of()
+					, List.of()
+					, List.of()
+					, Collections.emptyMap()
+					, Collections.emptyList()
+					, Collections.emptyList()
+					, Collections.emptyList()
+					, List.of()
+					, nextCommit - 1L
+					, currentTimeMillis
+			);
+		}
+	}
+
 
 	private int _countBlocks(IReadOnlyCuboidData cuboid, short blockType)
 	{

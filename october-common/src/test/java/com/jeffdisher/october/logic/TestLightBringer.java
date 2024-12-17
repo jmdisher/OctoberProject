@@ -82,7 +82,9 @@ public class TestLightBringer
 				;
 			};
 			_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-			Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(new LightBringer.Light(centre, thisSourceLight)), List.of());
+			_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+			LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(centre, thisSourceLight)), List.of());
+			Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 			Assert.assertEquals(expectedValues[i], updates.size());
 		}
 	}
@@ -108,7 +110,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), value);
 		sources.put(centre, value);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> initialSet = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(new LightBringer.Light(centre, value)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(centre, value)), List.of());
+		Map<AbsoluteLocation, Byte> initialSet = overlay._changedValues;
 		Assert.assertEquals(4088, initialSet.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : initialSet.entrySet())
 		{
@@ -123,7 +127,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), value);
 		sources.put(secondLight, value);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> secondUpdates = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(new LightBringer.Light(secondLight, value)), List.of());
+		overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(secondLight, value)), List.of());
+		Map<AbsoluteLocation, Byte> secondUpdates = overlay._changedValues;
 		Assert.assertEquals(2359, secondUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : secondUpdates.entrySet())
 		{
@@ -135,7 +141,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), (byte)0);
 		sources.remove(secondLight);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(secondLight, value)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(secondLight, value)));
+		Map<AbsoluteLocation, Byte> resetUpdates = overlay._changedValues;
 		Assert.assertEquals(2360, resetUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : resetUpdates.entrySet())
 		{
@@ -218,7 +226,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, source, value);
 		sources.put(target, value);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(new LightBringer.Light(target, value)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(target, value)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// We expect 38 updates to fill the maze.
 		int expectedUpdates = 38;
 		Assert.assertEquals(expectedUpdates, updates.size());
@@ -231,7 +241,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, source, (byte)0);
 		sources.remove(target);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, lookup.opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(target, value)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, lookup.opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(target, value)));
+		updates = overlay._changedValues;
 		// The same number to clear the maze.
 		Assert.assertEquals(expectedUpdates, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -269,7 +281,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, west.getBlockAddress(), (byte)15);
 		sources.put(west, (byte)15);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(new LightBringer.Light(west, (byte)15)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(west, (byte)15)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(62, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -280,7 +294,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, east.getBlockAddress(), (byte)15);
 		sources.put(east, (byte)15);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(new LightBringer.Light(east, (byte)15)), List.of());
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(east, (byte)15)), List.of());
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(43, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -294,7 +310,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, west.getBlockAddress(), (byte)0);
 		sources.remove(west);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(), List.of(new LightBringer.Light(west, (byte)15)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(west, (byte)15)));
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(57, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -304,7 +322,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, east.getBlockAddress(), (byte)0);
 		sources.remove(east);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(), List.of(new LightBringer.Light(east, (byte)15)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(east, (byte)15)));
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(62, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -356,7 +376,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), LightAspect.MAX_LIGHT);
 		sources.put(centre, LightAspect.MAX_LIGHT);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(new LightBringer.Light(centre, LightAspect.MAX_LIGHT)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(centre, LightAspect.MAX_LIGHT)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		int expectedUpdates = 143;
 		Assert.assertEquals(expectedUpdates, updates.size());
@@ -370,7 +392,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), (byte)0);
 		sources.remove(centre);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(), List.of(new LightBringer.Light(centre, LightAspect.MAX_LIGHT)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(centre, LightAspect.MAX_LIGHT)));
+		updates = overlay._changedValues;
 		Assert.assertEquals(expectedUpdates, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
 		{
@@ -413,7 +437,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, strongLocation.getBlockAddress(), strong);
 		sources.put(strongLocation, strong);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(new LightBringer.Light(strongLocation, strong)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(strongLocation, strong)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		int expectedUpdates = 420;
 		Assert.assertEquals(expectedUpdates, updates.size());
@@ -430,7 +456,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, strongLocation.getBlockAddress(), (byte)0);
 		lookup = new _OneCuboidLookupCache(cuboid);
 		sources.remove(strongLocation);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, List.of(), List.of(new LightBringer.Light(strongLocation, strong)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(strongLocation, strong)));
+		updates = overlay._changedValues;
 		// We see one additional update for the source, itself.
 		Assert.assertEquals(expectedUpdates + 1, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -482,7 +510,9 @@ public class TestLightBringer
 		}
 		
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, toAdd1, List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, toAdd1, List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(527, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -516,7 +546,9 @@ public class TestLightBringer
 		}
 		
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacity, sourceLookup, toAdd2, toRemove);
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacity, sourceLookup);
+		LightBringer.batchProcessLight(overlay, toAdd2, toRemove);
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(656, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -565,7 +597,9 @@ public class TestLightBringer
 		cuboid1.setData7(AspectRegistry.LIGHT, firstLight.getBlockAddress(), strong);
 		sources.put(firstLight, strong);
 		_MultiCuboidCache multi = new _MultiCuboidCache(cuboid1, cuboid2);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(multi.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(firstLight, strong)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(multi.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(firstLight, strong)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(420, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -585,7 +619,9 @@ public class TestLightBringer
 		cuboid1.setData7(AspectRegistry.LIGHT, firstLight.getBlockAddress(), dark);
 		sources.remove(firstLight);
 		_OneCuboidLookupCache single = new _OneCuboidLookupCache(cuboid1);
-		updates = LightBringer.batchProcessLight(single.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(firstLight, strong)));
+		overlay = new _BlockDataOverlay(single.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(firstLight, strong)));
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(356, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -604,7 +640,9 @@ public class TestLightBringer
 		cuboid1.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), strong);
 		sources.put(secondLight, strong);
 		single = new _OneCuboidLookupCache(cuboid1);
-		updates = LightBringer.batchProcessLight(single.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(secondLight, strong)), List.of());
+		overlay = new _BlockDataOverlay(single.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(secondLight, strong)), List.of());
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(420, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -623,7 +661,9 @@ public class TestLightBringer
 		cuboid1.setData7(AspectRegistry.LIGHT, secondLight.getBlockAddress(), dark);
 		sources.remove(secondLight);
 		multi = new _MultiCuboidCache(cuboid1, cuboid2);
-		updates = LightBringer.batchProcessLight(multi.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(secondLight, strong)));
+		overlay = new _BlockDataOverlay(multi.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(secondLight, strong)));
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(339, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -681,7 +721,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, centre.getBlockAddress(), strong);
 		sources.put(centre, strong);
 		_OneCuboidLookupCache lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> updates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(centre, strong)), List.of());
+		_BlockDataOverlay overlay = new _BlockDataOverlay(lookup.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(centre, strong)), List.of());
+		Map<AbsoluteLocation, Byte> updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(6, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -695,7 +737,9 @@ public class TestLightBringer
 		byte initial = cuboid.getData7(AspectRegistry.LIGHT, testLocation1.getBlockAddress());
 		cuboid.setData7(AspectRegistry.LIGHT, testLocation1.getBlockAddress(), dark);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		Map<AbsoluteLocation, Byte> resetUpdates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(), List.of(new LightBringer.Light(testLocation1, initial)));
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(), List.of(new LightBringer.Light(testLocation1, initial)));
+		Map<AbsoluteLocation, Byte> resetUpdates = overlay._changedValues;
 		Assert.assertEquals(0, resetUpdates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : resetUpdates.entrySet())
 		{
@@ -706,7 +750,9 @@ public class TestLightBringer
 		cuboid.setData7(AspectRegistry.LIGHT, testLocation2.getBlockAddress(), strong);
 		sources.put(testLocation2, strong);
 		lookup = new _OneCuboidLookupCache(cuboid);
-		updates = LightBringer.batchProcessLight(lookup.lightLookup, opacityLookup, sourceLookup, List.of(new LightBringer.Light(testLocation2, strong)), List.of());
+		overlay = new _BlockDataOverlay(lookup.lightLookup, opacityLookup, sourceLookup);
+		LightBringer.batchProcessLight(overlay, List.of(new LightBringer.Light(testLocation2, strong)), List.of());
+		updates = overlay._changedValues;
 		// This update value was found experimentally.
 		Assert.assertEquals(5, updates.size());
 		for (Map.Entry<AbsoluteLocation, Byte> update : updates.entrySet())
@@ -841,6 +887,56 @@ public class TestLightBringer
 				}
 			}
 			return _cache.get(location);
+		}
+	}
+
+	private static class _BlockDataOverlay implements LightBringer.IBlockDataOverlay
+	{
+		private final IByteLookup<AbsoluteLocation> _lightLookup;
+		private final IByteLookup<AbsoluteLocation> _opacityLookup;
+		private final IByteLookup<AbsoluteLocation> _sourceLookup;
+		private final Map<AbsoluteLocation, Byte> _changedValues;
+		
+		public _BlockDataOverlay(IByteLookup<AbsoluteLocation> lightLookup, IByteLookup<AbsoluteLocation> opacityLookup, IByteLookup<AbsoluteLocation> sourceLookup)
+		{
+			_lightLookup = lightLookup;
+			_opacityLookup = opacityLookup;
+			_sourceLookup = sourceLookup;
+			_changedValues = new HashMap<>();
+		}
+		@Override
+		public byte getLight(AbsoluteLocation location)
+		{
+			return _changedValues.containsKey(location)
+					? _changedValues.get(location)
+					: _lightLookup.lookup(location)
+			;
+		}
+		@Override
+		public void setLight(AbsoluteLocation location, byte value)
+		{
+			Byte previous = _changedValues.put(location, value);
+			// This entry-point can only increase brightness.
+			if (null != previous)
+			{
+				Assert.assertTrue(value > previous);
+			}
+		}
+		@Override
+		public void setDark(AbsoluteLocation location)
+		{
+			// We expect not to see this happen redundantly.
+			Assert.assertTrue(null == _changedValues.put(location, (byte)0));
+		}
+		@Override
+		public byte getOpacity(AbsoluteLocation location)
+		{
+			return _opacityLookup.lookup(location);
+		}
+		@Override
+		public byte getLightSource(AbsoluteLocation location)
+		{
+			return _sourceLookup.lookup(location);
 		}
 	}
 }
