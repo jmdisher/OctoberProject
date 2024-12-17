@@ -272,34 +272,26 @@ public class PropagationHelpers
 		Set<AbsoluteLocation> changedLocations = new HashSet<>();
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
-			Map<AbsoluteLocation, Byte> changedValues = new HashMap<>();;
 			LightBringer.IBlockDataOverlay overlay = new LightBringer.IBlockDataOverlay() {
 				@Override
 				public byte getLight(AbsoluteLocation location)
 				{
 					byte value;
-					if (changedValues.containsKey(location))
+					Byte overlayValue = lightValueOverlay.get(location);
+					if (null == overlayValue)
 					{
-						value = changedValues.get(location);
+						value = accessor.getLightForLocation(location);
 					}
 					else
 					{
-						Byte overlayValue = lightValueOverlay.get(location);
-						if (null == overlayValue)
-						{
-							value = accessor.getLightForLocation(location);
-						}
-						else
-						{
-							value = overlayValue;
-						}
+						value = overlayValue;
 					}
 					return value;
 				}
 				@Override
 				public void setLight(AbsoluteLocation location, byte value)
 				{
-					Byte previous = changedValues.put(location, value);
+					Byte previous = lightValueOverlay.put(location, value);
 					// This entry-point can only increase brightness.
 					if (null != previous)
 					{
@@ -310,7 +302,7 @@ public class PropagationHelpers
 				public void setDark(AbsoluteLocation location)
 				{
 					// We expect not to see this happen redundantly.
-					Assert.assertTrue(null == changedValues.put(location, (byte)0));
+					Assert.assertTrue(null == lightValueOverlay.put(location, (byte)0));
 				}
 				@Override
 				public byte getOpacity(AbsoluteLocation location)
@@ -335,10 +327,21 @@ public class PropagationHelpers
 					, lightsToAdd
 					, lightsToRemove
 			);
-			// First, set the lights based on our change starts.
-			_flushLightChanges(accessor, targetAddress, lazyLocalCache, lightValueOverlay, changedLocations);
-			// Now, re-update this with whatever was propagated.
-			_flushLightChanges(accessor, targetAddress, lazyLocalCache, changedValues, changedLocations);
+			
+			// Write-back changes.
+			for (Map.Entry<AbsoluteLocation, Byte> change : lightValueOverlay.entrySet())
+			{
+				AbsoluteLocation location = change.getKey();
+				if (targetAddress.equals(location.getCuboidAddress()))
+				{
+					byte value = change.getValue();
+					boolean didChange = accessor.setLightForLocation(location, value);
+					if (didChange)
+					{
+						changedLocations.add(location);
+					}
+				}
+			}
 		}
 		return changedLocations;
 	}
@@ -468,28 +471,6 @@ public class PropagationHelpers
 		byte zMax = (byte)Math.max(up, down);
 		byte max = (byte) Math.max(xMax, Math.max(yMax, zMax));
 		return max;
-	}
-
-	private static void _flushLightChanges(_ILightAccess accessor
-			, CuboidAddress key
-			, Function<AbsoluteLocation, MutableBlockProxy> lazyLocalCache
-			, Map<AbsoluteLocation, Byte> lightChanges
-			, Set<AbsoluteLocation> inout_changedLocations
-	)
-	{
-		for (Map.Entry<AbsoluteLocation, Byte> change : lightChanges.entrySet())
-		{
-			AbsoluteLocation location = change.getKey();
-			if (key.equals(location.getCuboidAddress()))
-			{
-				byte value = change.getValue();
-				boolean didChange = accessor.setLightForLocation(location, value);
-				if (didChange)
-				{
-					inout_changedLocations.add(location);
-				}
-			}
-		}
 	}
 
 	private static float _skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
