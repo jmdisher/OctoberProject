@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -257,14 +256,25 @@ public class PropagationHelpers
 		// reflood the lighting, writing back any changes in this cuboid.
 		List<LightBringer.Light> lightsToAdd = new ArrayList<>();
 		List<LightBringer.Light> lightsToRemove = new ArrayList<>();
-		Map<AbsoluteLocation, Byte> lightValueOverlay = new HashMap<>();
+		int maxLight = accessor.getMaxLight();
+		int reverse = -maxLight;
+		AbsoluteLocation targetBase = targetAddress.getBase();
+		AbsoluteLocation base = targetBase.getRelative(reverse, reverse, reverse);
+		SparseByteCube lightChanges = new SparseByteCube(Encoding.CUBOID_EDGE_SIZE + 2 * maxLight);
+		_IByteWriter writer = (AbsoluteLocation location, byte value) ->
+		{
+			int x = location.x() - base.x();
+			int y = location.y() - base.y();
+			int z = location.z() - base.z();
+			lightChanges.set(x, y, z, value);
+		};
 		for (int x = -1; x <= 1; ++x)
 		{
 			for (int y = -1; y <= 1; ++y)
 			{
 				for (int z = -1; z <= 1; ++z)
 				{
-					lightValueOverlay.putAll(_getAndSplitLightUpdates(accessor, lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, lazyGlobalCache, targetAddress, x, y, z));
+					_getAndSplitLightUpdates(accessor, writer, lightsToAdd, lightsToRemove, potentialLightChangesByCuboid, lazyGlobalCache, targetAddress, x, y, z);
 				}
 			}
 		}
@@ -273,11 +283,8 @@ public class PropagationHelpers
 		Set<AbsoluteLocation> changedLocations = new HashSet<>();
 		if (!lightsToAdd.isEmpty() || !lightsToRemove.isEmpty())
 		{
-			int maxLight = accessor.getMaxLight();
-			int reverse = -maxLight;
 			int forward = Encoding.CUBOID_EDGE_SIZE + maxLight;
-			AbsoluteLocation base = targetAddress.getBase().getRelative(reverse, reverse, reverse);
-			AbsoluteLocation edge = targetAddress.getBase().getRelative(forward, forward, forward);
+			AbsoluteLocation edge = targetBase.getRelative(forward, forward, forward);
 			LightBringer.IBlockDataOverlay overlay = new LightBringer.IBlockDataOverlay() {
 				@Override
 				public byte getLight(AbsoluteLocation location)
@@ -285,14 +292,17 @@ public class PropagationHelpers
 					byte value;
 					if (_inRange(location))
 					{
-						Byte overlayValue = lightValueOverlay.get(location);
-						if (null == overlayValue)
+						int x = location.x() - base.x();
+						int y = location.y() - base.y();
+						int z = location.z() - base.z();
+						byte previous = lightChanges.get(x, y, z);
+						if (IByteLookup.NOT_FOUND == previous)
 						{
 							value = accessor.getLightForLocation(location);
 						}
 						else
 						{
-							value = overlayValue;
+							value = previous;
 						}
 					}
 					else
@@ -305,9 +315,12 @@ public class PropagationHelpers
 				public void setLight(AbsoluteLocation location, byte value)
 				{
 					Assert.assertTrue(_inRange(location));
-					Byte previous = lightValueOverlay.put(location, value);
+					int x = location.x() - base.x();
+					int y = location.y() - base.y();
+					int z = location.z() - base.z();
+					byte previous = lightChanges.set(x, y, z, value);
 					// This entry-point can only increase brightness.
-					if (null != previous)
+					if (IByteLookup.NOT_FOUND != previous)
 					{
 						Assert.assertTrue(value > previous);
 					}
@@ -317,7 +330,11 @@ public class PropagationHelpers
 				{
 					Assert.assertTrue(_inRange(location));
 					// We expect not to see this happen redundantly.
-					Assert.assertTrue(null == lightValueOverlay.put(location, (byte)0));
+					int x = location.x() - base.x();
+					int y = location.y() - base.y();
+					int z = location.z() - base.z();
+					byte previous = lightChanges.set(x, y, z, (byte)0);
+					Assert.assertTrue(IByteLookup.NOT_FOUND == previous);
 				}
 				@Override
 				public byte getOpacity(AbsoluteLocation location)
@@ -353,24 +370,20 @@ public class PropagationHelpers
 			);
 			
 			// Write-back changes.
-			for (Map.Entry<AbsoluteLocation, Byte> change : lightValueOverlay.entrySet())
-			{
-				AbsoluteLocation location = change.getKey();
-				if (targetAddress.equals(location.getCuboidAddress()))
+			lightChanges.walkAllValues((int x, int y, int z, byte value) -> {
+				AbsoluteLocation location = targetBase.getRelative(x, y, z);
+				boolean didChange = accessor.setLightForLocation(location, value);
+				if (didChange)
 				{
-					byte value = change.getValue();
-					boolean didChange = accessor.setLightForLocation(location, value);
-					if (didChange)
-					{
-						changedLocations.add(location);
-					}
+					changedLocations.add(location);
 				}
-			}
+			}, maxLight, maxLight, maxLight, Encoding.CUBOID_EDGE_SIZE);
 		}
 		return changedLocations;
 	}
 
-	private static Map<AbsoluteLocation, Byte> _getAndSplitLightUpdates(_ILightAccess accessor
+	private static void _getAndSplitLightUpdates(_ILightAccess accessor
+			, _IByteWriter writer
 			, List<LightBringer.Light> lightsToAdd
 			, List<LightBringer.Light> lightsToRemove
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
@@ -381,7 +394,6 @@ public class PropagationHelpers
 			, int zOffset
 	)
 	{
-		Map<AbsoluteLocation, Byte> changes = new HashMap<>();
 		List<AbsoluteLocation> cuboidLights = potentialLightChangesByCuboid.get(targetAddress.getRelative(xOffset, yOffset, zOffset));
 		if (null != cuboidLights)
 		{
@@ -395,18 +407,17 @@ public class PropagationHelpers
 					// Note that this could have been unloaded if this is the edge of a cuboid which is unloaded in this tick (mostly just seen in SpeculativeProjection).
 					if (null != proxy)
 					{
-						_processLightChange(accessor, lightsToAdd, lightsToRemove, changes, proxy, location);
+						_processLightChange(accessor, writer, lightsToAdd, lightsToRemove, proxy, location);
 					}
 				}
 			}
 		}
-		return changes;
 	}
 
 	private static void _processLightChange(_ILightAccess accessor
+			, _IByteWriter writer
 			, List<LightBringer.Light> lightsToAdd
 			, List<LightBringer.Light> lightsToRemove
-			, Map<AbsoluteLocation, Byte> changes
 			, BlockProxy proxy
 			, AbsoluteLocation location
 	)
@@ -419,7 +430,7 @@ public class PropagationHelpers
 		{
 			// We need to add this light source.
 			lightsToAdd.add(new LightBringer.Light(location, emission));
-			changes.put(location, emission);
+			writer.set(location, emission);
 		}
 		else
 		{
@@ -429,7 +440,7 @@ public class PropagationHelpers
 			{
 				// We need to set this to zero and cast the shadow.
 				lightsToRemove.add(new LightBringer.Light(location, currentLight));
-				changes.put(location, (byte)0);
+				writer.set(location, (byte)0);
 			}
 			else
 			{
@@ -450,13 +461,13 @@ public class PropagationHelpers
 				{
 					// We add the new light level and reflow from here.
 					lightsToAdd.add(new LightBringer.Light(location, calculated));
-					changes.put(location, calculated);
+					writer.set(location, calculated);
 				}
 				else if (calculated < currentLight)
 				{
 					// We add the previous light level so we will quickly reflow from the actual source.
 					lightsToRemove.add(new LightBringer.Light(location, currentLight));
-					changes.put(location, (byte)0);
+					writer.set(location, (byte)0);
 				}
 				else
 				{
@@ -515,5 +526,10 @@ public class PropagationHelpers
 		boolean setLightForLocation(AbsoluteLocation location, byte lightValue);
 		byte getEmissionForBlock(Block block);
 		byte getOpacityForBlock(Block block);
+	}
+
+	private static interface _IByteWriter
+	{
+		public void set(AbsoluteLocation location, byte value);
 	}
 }
