@@ -185,6 +185,18 @@ public class CuboidData implements IReadOnlyCuboidData
 		return resume;
 	}
 
+	/**
+	 * NOTE:  This helper allows mutable access to the internal data trees of the instance so it should only be used in
+	 * cases which are explicitly unsafe as the data structure should generally be considered copy-on-write with this
+	 * data array being very private.
+	 * 
+	 * @return A reference the internal data octrees of the receiver.
+	 */
+	public IOctree[] unsafeDataAccess()
+	{
+		return _data;
+	}
+
 
 	private static record _ResumableState(int currentAspectIndex, Object octreeState)
 	{
