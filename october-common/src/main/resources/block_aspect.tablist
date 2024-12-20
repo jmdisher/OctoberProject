@@ -100,7 +100,7 @@ op.quern
 	block_material	PICKAXE
 op.torch
 	block_material	AXE
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick
 	viscosity	0
 # op.carrot
 op.carrot_seedling
@@ -117,5 +117,5 @@ op.carrot_mature
 	special_drop	op.carrot_seed	op.carrot_seed	op.carrot_item	op.carrot_item
 	viscosity	10
 op.bed
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick
 	block_material	AXE
