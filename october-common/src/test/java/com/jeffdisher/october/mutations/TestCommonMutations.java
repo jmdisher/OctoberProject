@@ -47,12 +47,18 @@ public class TestCommonMutations
 	private static Item STONE_ITEM;
 	private static Item CHARCOAL_ITEM;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
+	private static Block WATER_STRONG;
+	private static Block WATER_WEAK;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
+		WATER_SOURCE = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_source"));
+		WATER_STRONG = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_strong"));
+		WATER_WEAK = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_weak"));
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 	}
 	@AfterClass
@@ -212,8 +218,8 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		AbsoluteLocation down = target.getRelative(0, 0, -1);
 		AbsoluteLocation downOver = target.getRelative(1, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), ENV.special.WATER_STRONG.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_WEAK.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(-1, 0, 1).getBlockAddress(), WATER_STRONG.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress(), WATER_WEAK.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, down.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downOver.getBlockAddress(), ENV.special.AIR.item().number());
 		// We will also store inventory in one of these blocks to show that flowing water doesn't break it.
@@ -239,18 +245,18 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		// If we break a block under weak flow, we expect it to be weak unless it lands on a solid block.
-		Assert.assertEquals(ENV.special.WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
 		
 		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
 		proxy = new MutableBlockProxy(down, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(down).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.special.WATER_STRONG, proxy.getBlock());
+		Assert.assertEquals(WATER_STRONG, proxy.getBlock());
 		
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(ENV.special.WATER_WEAK, proxy.getBlock());
+		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
@@ -324,7 +330,7 @@ public class TestCommonMutations
 	public void replaceSerialization()
 	{
 		AbsoluteLocation target = new AbsoluteLocation(0, 0, 0);
-		MutationBlockReplace replace = new MutationBlockReplace(target, ENV.special.AIR, ENV.special.WATER_SOURCE);
+		MutationBlockReplace replace = new MutationBlockReplace(target, ENV.special.AIR, WATER_SOURCE);
 		ByteBuffer buffer = ByteBuffer.allocate(64);
 		replace.serializeToBuffer(buffer);
 		buffer.flip();
@@ -587,7 +593,7 @@ public class TestCommonMutations
 	public void testSuffocation()
 	{
 		// We will invoke the TickUtils a few ways to test what happens with suffocation.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.WATER_SOURCE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
 		int entityId = 1;
 		MutableEntity entity = MutableEntity.createForTest(entityId);
 		entity.setBreath((byte)1);

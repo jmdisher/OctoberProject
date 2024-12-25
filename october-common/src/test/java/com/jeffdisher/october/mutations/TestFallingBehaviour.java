@@ -249,6 +249,8 @@ public class TestFallingBehaviour
 	public void flowingWaterAfterBreak() throws Throwable
 	{
 		// Create a cuboid of stone with water sources around one block, air and inventory above it and below, then observe what happens when the block is broken.
+		short waterSourceNumber = ENV.items.getItemById("op.water_source").number();
+		short waterStrongNumber = ENV.items.getItemById("op.water_strong").number();
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(15, 15, 15);
@@ -258,8 +260,8 @@ public class TestFallingBehaviour
 		AbsoluteLocation southLocation = targetLocation.getRelative(0, -1, 0);
 		AbsoluteLocation upLocation = targetLocation.getRelative(0, 0, 1);
 		AbsoluteLocation downLocation = targetLocation.getRelative(0, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, eastLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
-		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, eastLocation.getBlockAddress(), waterSourceNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, westLocation.getBlockAddress(), waterSourceNumber);
 		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
@@ -272,7 +274,7 @@ public class TestFallingBehaviour
 		Assert.assertTrue(breaking.applyMutation(context, targetBlock));
 		targetBlock.writeBack(cuboid);
 		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
-		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(waterSourceNumber, cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		
 		// Run this store operation.
 		MutationBlockStoreItems store = (MutationBlockStoreItems) blockHolder[0];
@@ -288,7 +290,7 @@ public class TestFallingBehaviour
 		Assert.assertTrue(new MutationBlockUpdate(downLocation).applyMutation(context, downBlock));
 		downBlock.writeBack(cuboid);
 		Assert.assertNull(blockHolder[0]);
-		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
+		Assert.assertEquals(waterStrongNumber, cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
 		
 		Assert.assertFalse(new MutationBlockUpdate(eastLocation).applyMutation(context, new MutableBlockProxy(eastLocation, cuboid)));
 		Assert.assertFalse(new MutationBlockUpdate(westLocation).applyMutation(context, new MutableBlockProxy(westLocation, cuboid)));

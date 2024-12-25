@@ -422,7 +422,8 @@ public class TestResourceLoader
 		EntityChangeAttackEntity ephemeralChange = new EntityChangeAttackEntity(targetId);
 		
 		// Create the cuboid mutations we want.
-		MutationBlockReplace persistentMutation = new MutationBlockReplace(airAddress.getBase(), ENV.special.AIR, ENV.special.WATER_SOURCE);
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		MutationBlockReplace persistentMutation = new MutationBlockReplace(airAddress.getBase(), ENV.special.AIR, waterSource);
 		MutationBlockIncrementalBreak ephemeralMutation = new MutationBlockIncrementalBreak(airAddress.getBase(), (short)10, targetId);
 		
 		// Re-save these to disk.

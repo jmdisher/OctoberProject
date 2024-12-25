@@ -80,7 +80,9 @@ public class TestTickRunner
 	private static Item WHEAT_SEEDLING_ITEM;
 	private static Item WHEAT_YOUNG_ITEM;
 	private static Item WHEAT_MATURE_ITEM;
+	private static Item WATER_STRONG;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup()
 	{
@@ -99,7 +101,9 @@ public class TestTickRunner
 		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
 		WHEAT_YOUNG_ITEM = ENV.items.getItemById("op.wheat_young");
 		WHEAT_MATURE_ITEM = ENV.items.getItemById("op.wheat_mature");
+		WATER_STRONG = ENV.items.getItemById("op.water_strong");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1065,7 +1069,7 @@ public class TestTickRunner
 		
 		// Load the initial cuboid and run a tick to verify nothing happens.
 		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.WATER_SOURCE);
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, WATER_SOURCE);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
 				, null
 				, null
@@ -1100,7 +1104,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
+		Assert.assertEquals(WATER_STRONG.number(), snapshot.completedCuboids().get(address1).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(0, 0, 0)));
 		
 		runner.shutdown();
 	}
@@ -1116,7 +1120,7 @@ public class TestTickRunner
 		CuboidData cascade = _buildCascade(CuboidAddress.fromInt(-3, -4, -5));
 		AbsoluteLocation plug = cascade.getCuboidAddress().getBase().getRelative(16, 16, 30);
 		cascade.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
-		cascade.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 31), ENV.special.WATER_SOURCE.item().number());
+		cascade.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 31), WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
@@ -1167,7 +1171,7 @@ public class TestTickRunner
 		CuboidData topNorthEast = _buildCascade(startAddress);
 		AbsoluteLocation plug = topNorthEast.getCuboidAddress().getBase().getRelative(0, 0, 30);
 		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getBlockAddress(), DIRT_ITEM.number());
-		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		topNorthEast.setData15(AspectRegistry.BLOCK, plug.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
@@ -1226,7 +1230,7 @@ public class TestTickRunner
 		AbsoluteLocation waterLocation = stoneLocation.getRelative(-2, 0, 0);
 		AbsoluteLocation emptyLocation = stoneLocation.getRelative(-1, 0, 0);
 		cuboid.setData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress(), PLANK_ITEM.number());
-		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, waterLocation.getBlockAddress(), WATER_SOURCE.item().number());
 		
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
@@ -1282,7 +1286,7 @@ public class TestTickRunner
 		// (we should see the update scheduled, but no change).
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
-		Assert.assertEquals(ENV.special.WATER_STRONG.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
+		Assert.assertEquals(WATER_STRONG.number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, emptyLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		
 		runner.shutdown();

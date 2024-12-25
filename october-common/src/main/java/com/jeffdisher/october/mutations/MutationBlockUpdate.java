@@ -55,7 +55,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		{
 			// This is an "empty" type so see if the "empty" blocks around it should influence its type.
 			// Note that we don't change the "source" blocks.
-			Block newType = (env.special.WATER_SOURCE == thisBlock)
+			Block newType = env.liquids.isSource(thisBlock)
 					? thisBlock
 					: CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation)
 			;

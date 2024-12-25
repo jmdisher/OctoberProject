@@ -63,12 +63,12 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 			Block oldBlock = newBlock.getBlock();
 			// Determine the appropriate event to trigger.
 			EventRecord.Type type;
-			if (env.special.WATER_SOURCE == _blockType)
+			if (env.liquids.isSource(_blockType))
 			{
 				// We must have placed water.
 				type = EventRecord.Type.LIQUID_PLACED;
 			}
-			else if ((env.special.AIR == _blockType) && (env.special.WATER_SOURCE == oldBlock))
+			else if ((env.special.AIR == _blockType) && env.liquids.isSource(oldBlock))
 			{
 				// We removed the water.
 				type = EventRecord.Type.LIQUID_REMOVED;

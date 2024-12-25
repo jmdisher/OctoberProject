@@ -781,6 +781,7 @@ public class TestLightBringer
 	{
 		BlockAddress match = null;
 		Item stoneItem = ENV.items.getItemById("op.stone");
+		short waterSourceItemNumber = ENV.items.getItemById("op.water_source").number();
 		int index = 0;
 		for (byte y = 31; y >= 0; --y)
 		{
@@ -798,7 +799,7 @@ public class TestLightBringer
 					value = stoneItem.number();
 					break;
 				case 'W':
-					value = ENV.special.WATER_SOURCE.item().number();
+					value = waterSourceItemNumber;
 					break;
 				case 'X':
 					value = ENV.special.AIR.item().number();

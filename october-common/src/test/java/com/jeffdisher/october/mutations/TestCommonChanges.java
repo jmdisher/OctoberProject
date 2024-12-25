@@ -1082,6 +1082,7 @@ public class TestCommonChanges
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		short waterSourceItemNumber = ENV.items.getItemById("op.water_source").number();
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
@@ -1090,7 +1091,7 @@ public class TestCommonChanges
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), waterSourceItemNumber);
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
@@ -1117,7 +1118,7 @@ public class TestCommonChanges
 		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
-		Assert.assertEquals(ENV.special.WATER_SOURCE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(waterSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 	}
 
 	@Test
@@ -1339,8 +1340,8 @@ public class TestCommonChanges
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
 		Item breadItem = ENV.items.getItemById("op.bread");
 		Item fertilizerItem = ENV.items.getItemById("op.fertilizer");
-		Block waterSource = ENV.special.WATER_SOURCE;
-		Block waterWeak = ENV.special.WATER_WEAK;
+		Block waterSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_source"));
+		Block waterWeak = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.water_weak"));
 		Block wheatYoung = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_young"));
 		Block wheatMature = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
 		

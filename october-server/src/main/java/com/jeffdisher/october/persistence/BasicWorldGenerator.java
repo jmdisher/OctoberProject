@@ -181,6 +181,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
 	private final Block _blockIronOre;
+	private final Block _blockWaterSource;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
@@ -201,6 +202,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
+		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
 		
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
@@ -243,7 +245,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		else
 		{
 			// Water.
-			defaultEmptyBlock = _env.special.WATER_SOURCE;
+			defaultEmptyBlock = _blockWaterSource;
 		}
 		
 		Block defaultBlock;
