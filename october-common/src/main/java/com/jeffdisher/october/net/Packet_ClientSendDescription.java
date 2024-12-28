@@ -19,8 +19,9 @@ public class Packet_ClientSendDescription extends PacketFromClient
 	 * Protocol version 1 was used in v1.0-pre6 and earlier.
 	 * Protocol version 2 was used in v1.0.1 and earlier.
 	 * Protocol version 3 was used in v1.1 and earlier.
+	 * Protocol version 4 was used in v1.2.1 and earlier.
 	 */
-	public static final int NETWORK_PROTOCOL_VERSION = 4;
+	public static final int NETWORK_PROTOCOL_VERSION = 5;
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)
 	{
