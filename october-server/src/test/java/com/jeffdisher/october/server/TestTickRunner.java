@@ -1094,6 +1094,9 @@ public class TestTickRunner
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
+			// Allow a second tick for the "flow into" mutation.
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
 			Assert.assertEquals(2, snapshot.completedCuboids().size());
 			Assert.assertEquals(1, snapshot.resultantBlockChangesByCuboid().size());
 			Assert.assertEquals(1024, snapshot.resultantBlockChangesByCuboid().get(address1).size());
@@ -1149,8 +1152,14 @@ public class TestTickRunner
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
+			// Allow a second tick for the "flow into" mutation.
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
 			Assert.assertFalse(snapshot.resultantBlockChangesByCuboid().isEmpty());
 		}
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Allow a second tick for the "flow into" mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertTrue(snapshot.resultantBlockChangesByCuboid().isEmpty());
@@ -1193,11 +1202,17 @@ public class TestTickRunner
 		);
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		// Allow a second tick for the "flow into" mutation.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(8, snapshot.completedCuboids().size());
 		Assert.assertEquals(0, snapshot.scheduledBlockMutations().size());
 		
 		// Now, break the plug.
 		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)20), 1L);
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Allow a second tick for the "flow into" mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		
@@ -1207,8 +1222,14 @@ public class TestTickRunner
 		{
 			runner.startNextTick();
 			snapshot = runner.waitForPreviousTick();
+			// Allow a second tick for the "flow into" mutation.
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
 			Assert.assertFalse(snapshot.resultantBlockChangesByCuboid().isEmpty());
 		}
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Allow a second tick for the "flow into" mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertTrue(snapshot.resultantBlockChangesByCuboid().isEmpty());
@@ -1281,6 +1302,9 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.completedCuboids().get(address).getData15(AspectRegistry.BLOCK, stoneLocation.getBlockAddress()));
 		
 		// Run the tick which will trigger the block update, thus causing the water to flow.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		// Allow a second tick for the "flow into" mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled, but no change).

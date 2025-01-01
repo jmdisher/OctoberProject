@@ -71,8 +71,13 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			// See if this is broken (note that damage could overflow).
 			if ((damage >= env.damage.getToughness(block)) || (damage < 0))
 			{
-				// We have decided to break this block so determine what block it will become.
-				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
+				// We want to see if there are any liquids around this block which we will need to handle.
+				Block emptyBlock = env.special.AIR;
+				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
+				if (emptyBlock != eventualBlock)
+				{
+					context.mutationSink.next(new MutationBlockLiquidFlowInto(_location));
+				}
 				
 				// Create the inventory for this type.
 				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));

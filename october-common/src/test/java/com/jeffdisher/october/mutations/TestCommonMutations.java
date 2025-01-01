@@ -1,6 +1,8 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -226,12 +228,14 @@ public class TestCommonMutations
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, downOver.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
 		
 		_Events events = new _Events();
+		List<IMutationBlock> out_mutation = new ArrayList<>();
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
 				.sinks(new TickProcessingContext.IMutationSink() {
 						@Override
 						public void next(IMutationBlock mutation)
 						{
+							out_mutation.add(mutation);
 						}
 					}, null)
 				.eventSink(events)
@@ -244,6 +248,19 @@ public class TestCommonMutations
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
+		
+		// This should cause a delayed water flow so we should see air there until the next update.
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(2, out_mutation.size());
+		Assert.assertTrue(out_mutation.get(0) instanceof MutationBlockLiquidFlowInto);
+		Assert.assertTrue(out_mutation.get(1) instanceof MutationBlockStoreItems);
+		IMutationBlock internal = out_mutation.get(0);
+		out_mutation.clear();
+		proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(internal.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		
 		// If we break a block under weak flow, we expect it to be weak unless it lands on a solid block.
 		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
 		
@@ -251,10 +268,30 @@ public class TestCommonMutations
 		proxy = new MutableBlockProxy(down, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(down).applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
+		
+		// This should cause a delayed water flow so we should see air there until the next update.
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(1, out_mutation.size());
+		Assert.assertTrue(out_mutation.get(0) instanceof MutationBlockLiquidFlowInto);
+		internal = out_mutation.get(0);
+		out_mutation.clear();
+		proxy = new MutableBlockProxy(down, cuboid);
+		Assert.assertTrue(internal.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
 		Assert.assertEquals(WATER_STRONG, proxy.getBlock());
 		
 		proxy = new MutableBlockProxy(downOver, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(downOver).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		Assert.assertEquals(1, out_mutation.size());
+		Assert.assertTrue(out_mutation.get(0) instanceof MutationBlockLiquidFlowInto);
+		internal = out_mutation.get(0);
+		out_mutation.clear();
+		proxy = new MutableBlockProxy(downOver, cuboid);
+		Assert.assertTrue(internal.applyMutation(context, proxy));
+		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));

@@ -9,11 +9,9 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -61,10 +59,8 @@ public class MutationBlockUpdate implements IMutationBlock
 			;
 			if (newType != thisBlock)
 			{
-				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, newType);
-				// The inventory should be restored if these are all empty block types.
-				Assert.assertTrue(null == inv);
-				thisBlock = newType;
+				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
+				context.mutationSink.next(new MutationBlockLiquidFlowInto(_blockLocation));
 				didApply = true;
 			}
 		}
@@ -77,8 +73,13 @@ public class MutationBlockUpdate implements IMutationBlock
 			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
 			if (!blockIsSupported)
 			{
-				// We have decided to break this block so determine what block it will become.
-				Block emptyBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
+				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
+				Block emptyBlock = env.special.AIR;
+				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
+				if (emptyBlock != eventualBlock)
+				{
+					context.mutationSink.next(new MutationBlockLiquidFlowInto(_blockLocation));
+				}
 				
 				// Create the inventory for this type.
 				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));

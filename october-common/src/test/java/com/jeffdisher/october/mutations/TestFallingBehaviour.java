@@ -265,7 +265,7 @@ public class TestFallingBehaviour
 		cuboid.setData15(AspectRegistry.BLOCK, upLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, downLocation.getBlockAddress(), ENV.special.AIR.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, upLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		IMutationBlock[] blockHolder = new IMutationBlock[1];
+		IMutationBlock[] blockHolder = new IMutationBlock[2];
 		TickProcessingContext context = _createTestContext(cuboid, blockHolder, targetLocation);
 		
 		// Break the target block and observe the change.
@@ -273,13 +273,21 @@ public class TestFallingBehaviour
 		MutationBlockIncrementalBreak breaking = new MutationBlockIncrementalBreak(targetLocation, (short) 2000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
 		Assert.assertTrue(breaking.applyMutation(context, targetBlock));
 		targetBlock.writeBack(cuboid);
-		Assert.assertTrue(blockHolder[0] instanceof MutationBlockStoreItems);
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockLiquidFlowInto);
+		Assert.assertTrue(blockHolder[1] instanceof MutationBlockStoreItems);
+		
+		// This will start as air but let the liquid flow in.
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		MutationBlockLiquidFlowInto flow = (MutationBlockLiquidFlowInto) blockHolder[0];
+		Assert.assertTrue(flow.applyMutation(context, targetBlock));
+		targetBlock.writeBack(cuboid);
 		Assert.assertEquals(waterSourceNumber, cuboid.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		
 		// Run this store operation.
-		MutationBlockStoreItems store = (MutationBlockStoreItems) blockHolder[0];
+		MutationBlockStoreItems store = (MutationBlockStoreItems) blockHolder[1];
 		Assert.assertEquals(downLocation, store.getAbsoluteLocation());
 		blockHolder[0] = null;
+		blockHolder[1] = null;
 		MutableBlockProxy downBlock = new MutableBlockProxy(downLocation, cuboid);
 		Assert.assertTrue(store.applyMutation(context, downBlock));
 		downBlock.writeBack(cuboid);
@@ -288,6 +296,15 @@ public class TestFallingBehaviour
 		// Apply the block updates and see the changes in block types and the enqueue of the new store for falling items.
 		downBlock = new MutableBlockProxy(downLocation, cuboid);
 		Assert.assertTrue(new MutationBlockUpdate(downLocation).applyMutation(context, downBlock));
+		downBlock.writeBack(cuboid);
+		Assert.assertTrue(blockHolder[0] instanceof MutationBlockLiquidFlowInto);
+		Assert.assertNull(blockHolder[1]);
+		
+		// This will start as air but let the liquid flow in.
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
+		flow = (MutationBlockLiquidFlowInto) blockHolder[0];
+		blockHolder[0] = null;
+		Assert.assertTrue(flow.applyMutation(context, downBlock));
 		downBlock.writeBack(cuboid);
 		Assert.assertNull(blockHolder[0]);
 		Assert.assertEquals(waterStrongNumber, cuboid.getData15(AspectRegistry.BLOCK, downLocation.getBlockAddress()));
@@ -313,8 +330,13 @@ public class TestFallingBehaviour
 						@Override
 						public void next(IMutationBlock mutation)
 						{
-							Assert.assertNull(blockHolder[0]);
-							blockHolder[0] = mutation;
+							int thisIndex = 0;
+							while (null != blockHolder[thisIndex])
+							{
+								thisIndex += 1;
+							}
+							Assert.assertNull(blockHolder[thisIndex]);
+							blockHolder[thisIndex] = mutation;
 						}
 					}, null)
 				.eventSink((EventRecord event) -> {
