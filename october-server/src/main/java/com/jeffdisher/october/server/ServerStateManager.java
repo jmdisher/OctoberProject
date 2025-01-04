@@ -11,9 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -70,14 +67,19 @@ public class ServerStateManager
 	private Thread _ownerThread;
 
 	// It could take several ticks for a cuboid to be loaded/generated and we don't want to redundantly load them so track what is pending.
-	private Set<CuboidAddress> _requestedCuboids = new HashSet<>();
-	// We capture the collection of loaded cuboids at each tick so that we can write them back to disk when we shut down.
-	private Collection<IReadOnlyCuboidData> _completedCuboids = Collections.emptySet();
-	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations = Collections.emptyMap();
-	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations = Collections.emptyMap();
-	// Same thing with entities.
-	private Collection<Entity> _completedEntities = Collections.emptySet();
-	private Collection<CreatureEntity> _completedCreatures = Collections.emptySet();
+	private Set<CuboidAddress> _requestedCuboids;
+	
+	// We store the elements we need from the most recent TickRunner.Snapshot locally.
+	private long _tickNumber;
+	private Map<CuboidAddress, IReadOnlyCuboidData> _completedCuboids;
+	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations;
+	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations;
+	private Map<Integer, Entity> _completedEntities;
+	private Map<Integer, Entity> _updatedEntities;
+	private Map<Integer, Long> _commitLevels;
+	private Map<Integer, CreatureEntity> _completedCreatures;
+	private Map<Integer, CreatureEntity> _visiblyChangedCreatures;
+	private Map<CuboidAddress, List<MutationBlockSetBlock>> _blockChanges;
 
 	public ServerStateManager(ICallouts callouts)
 	{
@@ -88,12 +90,17 @@ public class ServerStateManager
 		_clientsToRead = new HashSet<>();
 		_clientsPendingLoad = new HashMap<>();
 		
+		_tickNumber = 0L;
 		_requestedCuboids = new HashSet<>();
-		_completedCuboids = Collections.emptySet();
+		_completedCuboids = Collections.emptyMap();
 		_scheduledBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
-		_completedEntities = Collections.emptySet();
-		_completedCreatures = Collections.emptySet();
+		_completedEntities = Collections.emptyMap();
+		_updatedEntities = Collections.emptyMap();
+		_commitLevels = Collections.emptyMap();
+		_completedCreatures = Collections.emptyMap();
+		_visiblyChangedCreatures = Collections.emptyMap();
+		_blockChanges = Collections.emptyMap();
 	}
 
 	public void setOwningThread()
@@ -145,34 +152,43 @@ public class ServerStateManager
 	public TickChanges setupNextTickAfterCompletion(TickRunner.Snapshot snapshot)
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
-		_completedCuboids = snapshot.completedCuboids().values();
-		_completedEntities = snapshot.completedEntities().values();
-		_completedCreatures = snapshot.completedCreatures().values();
+		
+		// We will first tear the snapshot apart and cache the relevant parts of it in our state (then base all decisions on the state).
+		_tickNumber = snapshot.tickNumber();
+		_completedCuboids = snapshot.completedCuboids();
+		_completedEntities = snapshot.completedEntities();
+		_updatedEntities = snapshot.updatedEntities();
+		_commitLevels = snapshot.commitLevels();
+		_completedCreatures = snapshot.completedCreatures();
+		_visiblyChangedCreatures = snapshot.visiblyChangedCreatures();
+		_blockChanges = snapshot.resultantBlockChangesByCuboid();
 		_scheduledBlockMutations = snapshot.scheduledBlockMutations();
 		_scheduledEntityMutations = snapshot.scheduledEntityMutations();
 		
+		Set<CuboidAddress> completedCuboidAddresses = _completedCuboids.keySet();
+		
 		// Remove any of the cuboids in the snapshot from any that we had requested.
-		_requestedCuboids.removeAll(snapshot.completedCuboids().keySet());
+		_requestedCuboids.removeAll(completedCuboidAddresses);
 		
 		// We want to create a set of all the cuboids which are actually required, based on the entities.
 		// (we will use this for load/unload decisions)
-		Set<CuboidAddress> referencedCuboids = new HashSet<>();
+		Set<CuboidAddress> referencedCuboids = _findReferencedCuboids(_connectedClients.values());
+		
 		for (Map.Entry<Integer, ClientState> elt : _connectedClients.entrySet())
 		{
 			int clientId = elt.getKey();
 			ClientState state = elt.getValue();
 			
 			// Update the location snapshot in the ClientState in case the entity moved.
-			Entity entity = snapshot.completedEntities().get(clientId);
+			Entity entity = _completedEntities.get(clientId);
 			// This may not be here if they just joined.
 			if (null != entity)
 			{
 				state.location = entity.location();
 			}
 			
-			_sendUpdatesToClient(clientId, state, snapshot, referencedCuboids);
+			_sendUpdatesToClient(clientId, state, snapshot.postedEvents());
 		}
-		
 		
 		// Note that we will clear the removed clients BEFORE adding new ones since it is theoretically possible for
 		// a client to disconnect and reconnect in the same tick and the logic has this implicit assumption.
@@ -183,7 +199,7 @@ public class ServerStateManager
 		
 		// Determine what we should unload.
 		// -start with the currently loaded cuboids
-		Set<CuboidAddress> orphanedCuboids = new HashSet<>(snapshot.completedCuboids().keySet());
+		Set<CuboidAddress> orphanedCuboids = new HashSet<>(completedCuboidAddresses);
 		// -remove any which we referenced via entities
 		orphanedCuboids.removeAll(referencedCuboids);
 		// -remove any which we already know are pending loads
@@ -194,87 +210,29 @@ public class ServerStateManager
 		// -remove those we already requested
 		cuboidsToLoad.removeAll(_requestedCuboids);
 		// -remove those which are already loaded.
-		cuboidsToLoad.removeAll(snapshot.completedCuboids().keySet());
+		cuboidsToLoad.removeAll(completedCuboidAddresses);
 		
 		// Request that we save back anything we are unloading before we request that anything new be loaded.
-		// (this is most important in the corner-case where the same entity left and rejoined in the same tick)
-		if (!orphanedCuboids.isEmpty() || !removedClients.isEmpty())
-		{
-			List<IReadOnlyCuboidData> cuboidsToPackage = orphanedCuboids.stream().map(
-					(CuboidAddress address) -> snapshot.completedCuboids().get(address)
-			).toList();
-			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(cuboidsToPackage);
-			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
-			List<Entity> entitiesToPackage = removedClients.stream().map(
-					(Integer id) -> snapshot.completedEntities().get(id)
-			).filter(
-					// Note that these entities might be missing if they disconnect before they appear in a snapshot (very unusual but can happen in unit tests).
-					(Entity entity) -> (null != entity)
-			).toList();
-			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
-			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
-		}
-		
-		// Package up anything else which is loaded and pass them off to the resource loader for best-efforts eventual serialization (these may be ignored if the loader is busy).
-		if (0 == (snapshot.tickNumber() % FORCE_FLUSH_TICK_FREQUENCY))
-		{
-			_writeRemainingToDisk(snapshot, orphanedCuboids, removedClients);
-		}
+		_handleEndOfTickWriteBack(removedClients, orphanedCuboids);
 		
 		// Request any missing cuboids or new entities and see what we got back from last time.
-		Collection<SuspendedCuboid<CuboidData>> newCuboids = new ArrayList<>();
-		Collection<SuspendedEntity> newEntities = new ArrayList<>();
-		_callouts.resources_getAndRequestBackgroundLoad(newCuboids, newEntities, cuboidsToLoad, _newClients.keySet());
-		_requestedCuboids.addAll(cuboidsToLoad);
-		// We have requested the clients so drop this, now.
-		_clientsPendingLoad.putAll(_newClients);
-		_newClients.clear();
+		Collection<SuspendedCuboid<CuboidData>> newlyLoadedCuboids = new ArrayList<>();
+		Collection<SuspendedEntity> newlyLoadedEntities = new ArrayList<>();
+		_handleResourceLoading(newlyLoadedCuboids, newlyLoadedEntities, cuboidsToLoad);
 		
 		// Walk through any new clients, adding them to the world.
-		for (SuspendedEntity suspended : newEntities)
-		{
-			// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
-			// This client is now connected and can receive events.
-			Entity newEntity = suspended.entity();
-			int clientId = newEntity.id();
-			String clientName = _clientsPendingLoad.remove(clientId);
-			Assert.assertTrue(null != clientName);
-			
-			// Notify the other clients that they joined and tell them about the other clients.
-			for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
-			{
-				int existingClientId = existingClient.getKey();
-				String existingClientName = existingClient.getValue().name;
-				Assert.assertTrue(null != existingClientName);
-				
-				// Tell the old client about the new client.
-				_callouts.network_sendClientJoined(existingClientId, clientId, clientName);
-				// Tell the new client about the old client.
-				_callouts.network_sendClientJoined(clientId, existingClientId, existingClientName);
-			}
-			
-			// We can now add them to the fully-connected clients.
-			_connectedClients.put(clientId, new ClientState(clientName, newEntity.location()));
-		}
+		_handleConnectingClientsForNewEntities(newlyLoadedEntities);
 		
 		// Push any required data into the TickRunner before we kick-off the tick.
 		// We need to run through these to make them the read-only variants for the TickRunner.
-		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newCuboids.stream().map(
+		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newlyLoadedCuboids.stream().map(
 				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.heightMap(), readWrite.creatures(), readWrite.mutations())
 		).toList();
 		
 		// Feed in any new data from the network.
-		Iterator<Integer> readableClientIterator = _clientsToRead.iterator();
-		while (readableClientIterator.hasNext())
-		{
-			boolean isStillReadable = _drainPacketsIntoRunner(readableClientIterator.next());
-			if (!isStillReadable)
-			{
-				readableClientIterator.remove();
-			}
-		}
+		_drainAllClientPacketsAndUpdateClients();
 		
-		return new TickChanges(readOnlyCuboids, orphanedCuboids, newEntities, removedClients);
+		return new TickChanges(readOnlyCuboids, orphanedCuboids, newlyLoadedEntities, removedClients);
 	}
 
 	public void broadcastConfig(WorldConfig config)
@@ -300,39 +258,140 @@ public class ServerStateManager
 		if (!_completedCuboids.isEmpty() || !_completedEntities.isEmpty())
 		{
 			// We need to package up the cuboids with any suspended operations.
-			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids);
-			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids, creaturesToUnload);
-			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities);
+			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(_completedCuboids.values());
+			Collection<PackagedCuboid> cuboidResources = _packageCuboidsForUnloading(_completedCuboids.values(), creaturesToUnload);
+			Collection<SuspendedEntity> entityResources = _packageEntitiesForUnloading(_completedEntities.values());
 			_callouts.resources_writeToDisk(cuboidResources, entityResources);
 		}
 	}
 
 
+	private Set<CuboidAddress> _findReferencedCuboids(Collection<ClientState> clientStates)
+	{
+		Set<CuboidAddress> referencedCuboids = new HashSet<>();
+		for (ClientState state : clientStates)
+		{
+			CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
+			for (int i = -1; i <= 1; ++i)
+			{
+				for (int j = -1; j <= 1; ++j)
+				{
+					for (int k = -1; k <= 1; ++k)
+					{
+						CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
+						referencedCuboids.add(oneCuboid);
+					}
+				}
+			}
+		}
+		return referencedCuboids;
+	}
+
+	private void _handleEndOfTickWriteBack(Collection<Integer> removedClients, Set<CuboidAddress> orphanedCuboids)
+	{
+		// (this is most important in the corner-case where the same entity left and rejoined in the same tick)
+		if (!orphanedCuboids.isEmpty() || !removedClients.isEmpty())
+		{
+			List<IReadOnlyCuboidData> cuboidsToPackage = orphanedCuboids.stream().map(
+					(CuboidAddress address) -> _completedCuboids.get(address)
+			).toList();
+			Map<CuboidAddress, List<CreatureEntity>> creaturesToUnload = _findCreaturesToUnload(cuboidsToPackage);
+			Collection<PackagedCuboid> saveCuboids = _packageCuboidsForUnloading(cuboidsToPackage, creaturesToUnload);
+			List<Entity> entitiesToPackage = removedClients.stream().map(
+					(Integer id) -> _completedEntities.get(id)
+			).filter(
+					// Note that these entities might be missing if they disconnect before they appear in a snapshot (very unusual but can happen in unit tests).
+					(Entity entity) -> (null != entity)
+			).toList();
+			Collection<SuspendedEntity> saveEntities = _packageEntitiesForUnloading(entitiesToPackage);
+			_callouts.resources_writeToDisk(saveCuboids, saveEntities);
+		}
+		
+		// Package up anything else which is loaded and pass them off to the resource loader for best-efforts eventual serialization (these may be ignored if the loader is busy).
+		if (0 == (_tickNumber % FORCE_FLUSH_TICK_FREQUENCY))
+		{
+			_writeRemainingToDisk(orphanedCuboids, removedClients);
+		}
+	}
+
+	private void _handleResourceLoading(Collection<SuspendedCuboid<CuboidData>> out_loadedCuboids
+			, Collection<SuspendedEntity> out_loadedEntities
+			, Set<CuboidAddress> cuboidsToLoad
+	)
+	{
+		_callouts.resources_getAndRequestBackgroundLoad(out_loadedCuboids, out_loadedEntities, cuboidsToLoad, _newClients.keySet());
+		_requestedCuboids.addAll(cuboidsToLoad);
+		// We have requested the clients so drop this, now.
+		_clientsPendingLoad.putAll(_newClients);
+		_newClients.clear();
+	}
+
+	private void _handleConnectingClientsForNewEntities(Collection<SuspendedEntity> newEntities)
+	{
+		for (SuspendedEntity suspended : newEntities)
+		{
+			// Adding this here means that the client will see their entity join the world in a future tick, after they receive the snapshot from the previous tick.
+			// This client is now connected and can receive events.
+			Entity newEntity = suspended.entity();
+			int clientId = newEntity.id();
+			String clientName = _clientsPendingLoad.remove(clientId);
+			Assert.assertTrue(null != clientName);
+			
+			// Notify the other clients that they joined and tell them about the other clients.
+			for (Map.Entry<Integer, ClientState> existingClient : _connectedClients.entrySet())
+			{
+				int existingClientId = existingClient.getKey();
+				String existingClientName = existingClient.getValue().name;
+				Assert.assertTrue(null != existingClientName);
+				
+				// Tell the old client about the new client.
+				_callouts.network_sendClientJoined(existingClientId, clientId, clientName);
+				// Tell the new client about the old client.
+				_callouts.network_sendClientJoined(clientId, existingClientId, existingClientName);
+			}
+			
+			// We can now add them to the fully-connected clients.
+			_connectedClients.put(clientId, new ClientState(clientName, newEntity.location()));
+		}
+	}
+
 	private void _sendUpdatesToClient(int clientId
 			, ClientState state
-			, TickRunner.Snapshot snapshot
-			, Set<CuboidAddress> out_referencedCuboids
+			, List<EventRecord> postedEvents
 	)
 	{
 		// We want to send information to this client if they can see it, potentially sending whole data or just
 		// incremental updates, based on whether or not they already have this data.
 		
 		// We send events, filtered by what they can currently see.
-		_sendEvents(clientId, state, snapshot);
+		_sendEvents(clientId, state, postedEvents);
 		
 		// We send entities based on how far away they are.
-		_sendEntityUpdates(clientId, state, snapshot);
+		_sendEntityUpdates(clientId, state);
 		
 		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
-		_sendCuboidUpdates(clientId, state, snapshot, out_referencedCuboids);
+		_sendCuboidUpdates(clientId, state);
 		
 		// Finally, send them the end of tick.
 		// (note that the commit level won't be in the snapshot if they just joined).
-		long commitLevel = snapshot.commitLevels().containsKey(clientId)
-				? snapshot.commitLevels().get(clientId)
+		long commitLevel = _commitLevels.containsKey(clientId)
+				? _commitLevels.get(clientId)
 				: 0L
 		;
-		_callouts.network_sendEndOfTick(clientId, snapshot.tickNumber(), commitLevel);
+		_callouts.network_sendEndOfTick(clientId, _tickNumber, commitLevel);
+	}
+
+	private void _drainAllClientPacketsAndUpdateClients()
+	{
+		Iterator<Integer> readableClientIterator = _clientsToRead.iterator();
+		while (readableClientIterator.hasNext())
+		{
+			boolean isStillReadable = _drainPacketsIntoRunner(readableClientIterator.next());
+			if (!isStillReadable)
+			{
+				readableClientIterator.remove();
+			}
+		}
 	}
 
 	private boolean _drainPacketsIntoRunner(int clientId)
@@ -385,9 +444,9 @@ public class ServerStateManager
 		return didHandle;
 	}
 
-	private void _sendEvents(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+	private void _sendEvents(int clientId, ClientState state, List<EventRecord> postedEvents)
 	{
-		for (EventRecord event : snapshot.postedEvents())
+		for (EventRecord event : postedEvents)
 		{
 			// Based on the type, we determine whether we send this and how we send it (since some events may not want to include a location).
 			switch (event.type())
@@ -424,75 +483,14 @@ public class ServerStateManager
 		}
 	}
 
-	private void _sendEntityUpdates(int clientId, ClientState state, TickRunner.Snapshot snapshot)
+	private void _sendEntityUpdates(int clientId, ClientState state)
 	{
-		// Add any entities this client hasn't seen.
-		Consumer<Entity> seenEntityHandler = (Entity entity) -> {
-			// TODO:  This should only send the changed data, not entire entities or partials.
-			int entityId = entity.id();
-			if (clientId == entityId)
-			{
-				// The client has the full entity so send it.
-				IEntityUpdate update = new MutationEntitySetEntity(entity);
-				_callouts.network_sendEntityUpdate(clientId, entityId, update);
-			}
-			else
-			{
-				// The client will have a partial so just send that.
-				IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
-				_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
-			}
-		};
-		Consumer<Entity> unseenEntityHandler = (Entity entity) -> {
-			// See if this is "them" or someone else.
-			int entityId = entity.id();
-			if (clientId == entityId)
-			{
-				_callouts.network_sendFullEntity(clientId, entity);
-			}
-			else
-			{
-				PartialEntity partial = PartialEntity.fromEntity(entity);
-				_callouts.network_sendPartialEntity(clientId, partial);
-			}
-		};
-		IntConsumer movedAwayHandler = (int entityId) -> {
-			_callouts.network_removeEntity(clientId, entityId);
-		};
-		Function<Entity, EntityLocation> entityLocationFetcher = (Entity entity) -> entity.location();
-		_sendNewAndUpdatedEntities(state
-				, seenEntityHandler
-				, unseenEntityHandler
-				, movedAwayHandler
-				, snapshot.completedEntities()
-				, snapshot.updatedEntities()
-				, entityLocationFetcher
-		);
-		
-		Consumer<CreatureEntity> seenCreatureHandler = (CreatureEntity entity) -> {
-			// Creatures are always partial.
-			int entityId = entity.id();
-			IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
-			_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
-		};
-		Consumer<CreatureEntity> unseenCreatureHandler = (CreatureEntity entity) -> {
-			// Creatures are always partial.
-			PartialEntity partial = PartialEntity.fromCreature(entity);
-			_callouts.network_sendPartialEntity(clientId, partial);
-		};
-		Function<CreatureEntity, EntityLocation> creatureLocationFetcher = (CreatureEntity entity) -> entity.location();
-		_sendNewAndUpdatedEntities(state
-				, seenCreatureHandler
-				, unseenCreatureHandler
-				, movedAwayHandler
-				, snapshot.completedCreatures()
-				, snapshot.visiblyChangedCreatures()
-				, creatureLocationFetcher
-		);
+		_sendNewAndUpdatedEntities(clientId, state);
+		_sendNewAndUpdatedCreatures(clientId, state);
 		
 		// If there are any entities in the state which aren't in the snapshot, remove them since they died or disconnected.
-		Set<Integer> allEntityIds = new HashSet<>(snapshot.completedEntities().keySet());
-		allEntityIds.addAll(snapshot.completedCreatures().keySet());
+		Set<Integer> allEntityIds = new HashSet<>(_completedEntities.keySet());
+		allEntityIds.addAll(_completedCreatures.keySet());
 		Iterator<Integer> entityIterator = state.knownEntities.iterator();
 		while (entityIterator.hasNext())
 		{
@@ -505,20 +503,14 @@ public class ServerStateManager
 		}
 	}
 
-	private <E> void _sendNewAndUpdatedEntities(ClientState state
-			, Consumer<E> seenHandler
-			, Consumer<E> unseenHandler
-			, IntConsumer movedAwayHandler
-			, Map<Integer, E> completed
-			, Map<Integer, E> updated
-			, Function<E, EntityLocation> locationFetcher
-	)
+	private void _sendNewAndUpdatedEntities(int clientId, ClientState state)
 	{
-		for (Map.Entry<Integer, E> entry : completed.entrySet())
+		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
+		for (Map.Entry<Integer, Entity> entry : _completedEntities.entrySet())
 		{
 			int entityId = entry.getKey();
-			E entity = entry.getValue();
-			EntityLocation location = locationFetcher.apply(entity);
+			Entity entity = entry.getValue();
+			EntityLocation location = entity.location();
 			float distance = SpatialHelpers.distanceBetween(state.location, location);
 			if (state.knownEntities.contains(entityId))
 			{
@@ -526,32 +518,93 @@ public class ServerStateManager
 				if (distance > ENTITY_VISIBLE_DISTANCE)
 				{
 					// This is too far away so discard it.
-					movedAwayHandler.accept(entityId);
+					_callouts.network_removeEntity(clientId, entityId);
 					state.knownEntities.remove(entityId);
 				}
 				else
 				{
 					// We know this entity so generate the update for this client.
-					E newEntity = updated.get(entityId);
+					Entity newEntity = _updatedEntities.get(entityId);
 					if (null != newEntity)
 					{
-						seenHandler.accept(newEntity);
+						// TODO:  This should only send the changed data, not entire entities or partials.
+						if (clientId == entityId)
+						{
+							// The client has the full entity so send it.
+							IEntityUpdate update = new MutationEntitySetEntity(entity);
+							_callouts.network_sendEntityUpdate(clientId, entityId, update);
+						}
+						else
+						{
+							// The client will have a partial so just send that.
+							IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromEntity(entity));
+							_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
+						}
 					}
 				}
 			}
 			else if (distance <= ENTITY_VISIBLE_DISTANCE)
 			{
 				// We don't know this entity, and they are close by, so send them.
-				unseenHandler.accept(entity);
+				// See if this is "them" or someone else.
+				if (clientId == entityId)
+				{
+					// This only won't be already known during the first tick after they join.
+					_callouts.network_sendFullEntity(clientId, entity);
+				}
+				else
+				{
+					PartialEntity partial = PartialEntity.fromEntity(entity);
+					_callouts.network_sendPartialEntity(clientId, partial);
+				}
 				state.knownEntities.add(entityId);
 			}
 		}
 	}
-	
+
+	private void _sendNewAndUpdatedCreatures(int clientId, ClientState state)
+	{
+		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
+		for (Map.Entry<Integer, CreatureEntity> entry : _completedCreatures.entrySet())
+		{
+			int entityId = entry.getKey();
+			CreatureEntity entity = entry.getValue();
+			EntityLocation location = entity.location();
+			float distance = SpatialHelpers.distanceBetween(state.location, location);
+			if (state.knownEntities.contains(entityId))
+			{
+				// See if they are too far away.
+				if (distance > ENTITY_VISIBLE_DISTANCE)
+				{
+					// This is too far away so discard it.
+					_callouts.network_removeEntity(clientId, entityId);
+					state.knownEntities.remove(entityId);
+				}
+				else
+				{
+					// We know this entity so generate the update for this client.
+					CreatureEntity newEntity = _visiblyChangedCreatures.get(entityId);
+					if (null != newEntity)
+					{
+						// Creatures are always partial.
+						IPartialEntityUpdate update = new MutationEntitySetPartialEntity(PartialEntity.fromCreature(entity));
+						_callouts.network_sendPartialEntityUpdate(clientId, entityId, update);
+					}
+				}
+			}
+			else if (distance <= ENTITY_VISIBLE_DISTANCE)
+			{
+				// We don't know this entity, and they are close by, so send them.
+				// Creatures are always partial.
+				PartialEntity partial = PartialEntity.fromCreature(entity);
+				_callouts.network_sendPartialEntity(clientId, partial);
+				state.knownEntities.add(entityId);
+			}
+		}
+	}
+
 	private void _sendCuboidUpdates(int clientId
 			, ClientState state
-			, TickRunner.Snapshot snapshot
-			, Set<CuboidAddress> out_referencedCuboids
 	)
 	{
 		// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
@@ -585,7 +638,7 @@ public class ServerStateManager
 					if (state.knownCuboids.contains(oneCuboid))
 					{
 						// We know about this cuboid so send any updates.
-						List<MutationBlockSetBlock> mutations = snapshot.resultantBlockChangesByCuboid().get(oneCuboid);
+						List<MutationBlockSetBlock> mutations = _blockChanges.get(oneCuboid);
 						if (null != mutations)
 						{
 							for (MutationBlockSetBlock mutation : mutations)
@@ -597,7 +650,7 @@ public class ServerStateManager
 					else
 					{
 						// We haven't seen this yet so just send it.
-						IReadOnlyCuboidData cuboidData = snapshot.completedCuboids().get(oneCuboid);
+						IReadOnlyCuboidData cuboidData = _completedCuboids.get(oneCuboid);
 						// This may not yet be loaded.
 						if (null != cuboidData)
 						{
@@ -609,8 +662,6 @@ public class ServerStateManager
 							// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
 						}
 					}
-					// Record that we referenced this.
-					out_referencedCuboids.add(oneCuboid);
 				}
 			}
 		}
@@ -625,7 +676,7 @@ public class ServerStateManager
 			creaturesToUnload.put(address, new ArrayList<>());
 		}
 		// TODO:  Change this to use some sort of spatial look-up mechanism since this loop is attrocious.
-		for (CreatureEntity creature : _completedCreatures)
+		for (CreatureEntity creature : _completedCreatures.values())
 		{
 			CuboidAddress address = creature.location().getBlockLocation().getCuboidAddress();
 			List<CreatureEntity> list = creaturesToUnload.get(address);
@@ -687,11 +738,11 @@ public class ServerStateManager
 		}
 	}
 
-	private void _writeRemainingToDisk(TickRunner.Snapshot snapshot, Set<CuboidAddress> orphanedCuboids, Collection<Integer> removedClients)
+	private void _writeRemainingToDisk(Set<CuboidAddress> orphanedCuboids, Collection<Integer> removedClients)
 	{
-		Map<CuboidAddress, IReadOnlyCuboidData> remainingCuboids = new HashMap<>(snapshot.completedCuboids());
+		Map<CuboidAddress, IReadOnlyCuboidData> remainingCuboids = new HashMap<>(_completedCuboids);
 		remainingCuboids.keySet().removeAll(orphanedCuboids);
-		Map<Integer, Entity> remainingEntities = new HashMap<>(snapshot.completedEntities());
+		Map<Integer, Entity> remainingEntities = new HashMap<>(_completedEntities);
 		remainingEntities.keySet().removeAll(removedClients);
 		
 		if (!remainingCuboids.isEmpty() || !remainingEntities.isEmpty())
