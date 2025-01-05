@@ -30,9 +30,11 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityStoreToInventory;
+import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
@@ -323,8 +325,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 53 bytes.
-		Assert.assertEquals(53L, cuboidFile.length());
+		// Experimentally, we know that this is 57 bytes.
+		Assert.assertEquals(57L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -338,8 +340,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 30 bytes.
-		Assert.assertEquals(30L, cuboidFile.length());
+		// Experimentally, we know that this is 34 bytes.
+		Assert.assertEquals(34L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -701,6 +703,80 @@ public class TestResourceLoader
 		CreatureEntity entity = creatures.get(0);
 		Assert.assertEquals(-1, entity.id());
 		Assert.assertEquals((byte)0, entity.yaw());
+		
+		loader.shutdown();
+	}
+
+	@Test
+	public void writeAndReadCuboidV3() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
+		BlockAddress periodicBlock = BlockAddress.fromInt(1, 2, 3);
+		AbsoluteLocation periodicLocation = address.getBase().relativeForBlock(periodicBlock);
+		
+		// This is a test of our ability to read the V3 cuboid data, showing the different mutation types.  We manually write a file and then attempt to read it, verifying the result is sensible.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		
+		// We will save a normal store mutation (immediate) and a periodic mutation (delayed) and verify that both are read correctly.
+		MutationBlockStoreItems store = new MutationBlockStoreItems(address.getBase(), new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY);
+		MutationBlockPeriodic periodic = new MutationBlockPeriodic(periodicLocation);
+		
+		// Serialize to buffer.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		buffer.putInt(ResourceLoader.VERSION_CUBOID_V3);
+		
+		Object state = cuboid.serializeResumable(null, buffer);
+		Assert.assertTrue(null == state);
+		
+		// 0 creatures.
+		buffer.putInt(0);
+		
+		// Write the scheduled and periodic mutations.
+		long periodicDelay = 1000L;
+		buffer.putInt(2);
+		buffer.putLong(0L);
+		MutationBlockCodec.serializeToBuffer(buffer, store);
+		buffer.putLong(periodicDelay);
+		// Note that we no longer support serialization of periodic mutations so we inline that logic here.
+		buffer.put((byte) periodic.getType().ordinal());
+		CodecHelpers.writeAbsoluteLocation(buffer, periodic.getAbsoluteLocation());
+		buffer.flip();
+		
+		// Write the file.
+		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(buffer);
+			outChannel.truncate((long)written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read the data and verify that it is correct.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, results.size());
+		SuspendedCuboid<CuboidData> result = results.get(0);
+		
+		Assert.assertNotNull(result.cuboid());
+		Assert.assertNotNull(result.heightMap());
+		Assert.assertEquals(0, result.creatures().size());
+		List<ScheduledMutation> pendingMutations = result.pendingMutations();
+		Assert.assertEquals(1, pendingMutations.size());
+		Assert.assertEquals(0L, pendingMutations.get(0).millisUntilReady());
+		Assert.assertTrue(pendingMutations.get(0).mutation() instanceof MutationBlockStoreItems);
+		Map<BlockAddress, Long> periodicMutationMillis = result.periodicMutationMillis();
+		Assert.assertEquals(1, periodicMutationMillis.size());
+		Assert.assertEquals(periodicDelay, periodicMutationMillis.get(periodicBlock).longValue());
 		
 		loader.shutdown();
 	}

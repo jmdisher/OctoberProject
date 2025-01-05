@@ -10,6 +10,7 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -25,6 +26,7 @@ public class MutationBlockPeriodic implements IMutationBlock
 
 	public static MutationBlockPeriodic deserializeFromBuffer(ByteBuffer buffer)
 	{
+		// We don't normally need to deserialize these, since they are never stored, but pre-V4 cuboid storage contains them.
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		return new MutationBlockPeriodic(location);
 	}
@@ -77,13 +79,14 @@ public class MutationBlockPeriodic implements IMutationBlock
 	@Override
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
-		CodecHelpers.writeAbsoluteLocation(buffer, _location);
+		// These are no longer written to disk and never written to network (was written to disk in pre-V4 cuboid storage).
+		throw Assert.unreachable();
 	}
 
 	@Override
 	public boolean canSaveToDisk()
 	{
-		// Common case.
-		return true;
+		// Periodic mutations only exist internally, synthesized when needed from specific rules (except for pre-V4 cuboid storage).
+		return false;
 	}
 }

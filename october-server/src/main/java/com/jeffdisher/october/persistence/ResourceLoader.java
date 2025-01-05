@@ -36,7 +36,6 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -422,9 +421,36 @@ public class ResourceLoader
 			int version = buffer.getInt();
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if ((VERSION_CUBOID == version) || (VERSION_CUBOID_V2 == version) || (VERSION_CUBOID_V3 == version))
+			if (VERSION_CUBOID == version)
 			{
-				// V2 is a subset of V3 (which is a subset of V4) so do nothing special - just stops old versions from being broken.
+				// V4 is similar to V3 but has some additional types and makes an explicit distinction between periodic and scheduled mutations
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboid(address, buffer);
+					
+					// Load any creatures associated with the cuboid.
+					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					// ... and any periodic mutations.
+					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, pendingMutations
+							, periodicMutations
+					);
+				};
+			}
+			else if ((VERSION_CUBOID_V2 == version) || (VERSION_CUBOID_V3 == version))
+			{
+				// V2 is a subset of V3 so do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
 					CuboidData cuboid = _background_readCuboid(address, buffer);
 					
@@ -557,41 +583,56 @@ public class ResourceLoader
 		return suspended;
 	}
 
+	private Map<BlockAddress, Long> _background_readPeriodic(MappedByteBuffer buffer)
+	{
+		Map<BlockAddress, Long> periodicMutations = new HashMap<>();
+		
+		int mutationCount = buffer.getInt();
+		for (int i = 0; i < mutationCount; ++i)
+		{
+			// Read the location.
+			byte x = buffer.get();
+			byte y = buffer.get();
+			byte z = buffer.get();
+			BlockAddress block = new BlockAddress(x, y, z);
+			
+			// Read the millis until ready.
+			long millis = buffer.getLong();
+			periodicMutations.put(block, millis);
+		}
+		return periodicMutations;
+	}
+
 	private void _background_writeCuboidToDisk(PackagedCuboid data)
 	{
 		// Serialize the entire cuboid into memory and write it out.
+		// Data goes in the following order:
+		// 1) version header
+		// 2) cuboid data
+		// 3) creatures
+		// 4) suspended mutations
+		// 5) periodic mutations
 		Assert.assertTrue(0 == _backround_serializationBuffer.position());
 		
-		// Write the version header.
+		// 1) Write the version header.
 		_backround_serializationBuffer.putInt(VERSION_CUBOID);
 		
+		// 2) Write the raw cuboid data.
 		IReadOnlyCuboidData cuboid = data.cuboid();
-		List<ScheduledMutation> mutations = new ArrayList<>(data.pendingMutations());
-		AbsoluteLocation base = cuboid.getCuboidAddress().getBase();
-		for (Map.Entry<BlockAddress, Long> periodic : data.periodicMutationMillis().entrySet())
-		{
-			// For now, we just combine these together but that is temporary.
-			// TODO: We want to store the scheduled mutations and periodic mutations distinctly.
-			AbsoluteLocation location = base.relativeForBlock(periodic.getKey());
-			MutationBlockPeriodic mutation = new MutationBlockPeriodic(location);
-			ScheduledMutation scheduled = new ScheduledMutation(mutation, periodic.getValue());
-			mutations.add(scheduled);
-		}
-		List<CreatureEntity> entities = data.creatures();
 		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
 		// We currently assume that we just do the write in a single call.
 		Assert.assertTrue(null == state);
 		
-		// Store any creatures in this cuboid.
+		// 3) Write the creatures.
+		List<CreatureEntity> entities = data.creatures();
 		_backround_serializationBuffer.putInt(entities.size());
 		for (CreatureEntity entity : entities)
 		{
 			CodecHelpers.writeCreatureEntity(_backround_serializationBuffer, entity);
 		}
 		
-		// We now write any suspended mutations.
-		// Find out how many are going to be saved (some have ephemeral references and should be dropped).
-		List<ScheduledMutation> mutationsToWrite = mutations.stream().filter((ScheduledMutation scheduled) -> scheduled.mutation().canSaveToDisk()).toList();
+		// 4) Write suspended mutations.
+		List<ScheduledMutation> mutationsToWrite = data.pendingMutations().stream().filter((ScheduledMutation scheduled) -> scheduled.mutation().canSaveToDisk()).toList();
 		_backround_serializationBuffer.putInt(mutationsToWrite.size());
 		for (ScheduledMutation scheduled : mutationsToWrite)
 		{
@@ -599,6 +640,22 @@ public class ResourceLoader
 			_backround_serializationBuffer.putLong(scheduled.millisUntilReady());
 			MutationBlockCodec.serializeToBuffer(_backround_serializationBuffer, scheduled.mutation());
 		}
+		
+		// 5) Write periodic mutations.
+		Map<BlockAddress, Long> periodic = data.periodicMutationMillis();
+		_backround_serializationBuffer.putInt(periodic.size());
+		for (Map.Entry<BlockAddress, Long> elt : periodic.entrySet())
+		{
+			BlockAddress block = elt.getKey();
+			long millisUntilReady = elt.getValue();
+			
+			_backround_serializationBuffer.put(block.x());
+			_backround_serializationBuffer.put(block.y());
+			_backround_serializationBuffer.put(block.z());
+			_backround_serializationBuffer.putLong(millisUntilReady);
+		}
+		
+		// We are done the write so flip the buffer and write it out.
 		_backround_serializationBuffer.flip();
 		
 		try (
