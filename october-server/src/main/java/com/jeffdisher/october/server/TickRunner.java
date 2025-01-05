@@ -160,26 +160,10 @@ public class TickRunner
 		Assert.assertTrue(null == _snapshot);
 		// Initial snapshot is tick "0".
 		_snapshot = new Snapshot(0L
-				// No completedEntities.
-				, Collections.emptyMap()
-				// No commit levels.
-				, Collections.emptyMap()
-				// No completedCuboids.
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				// No completedCreatures.
 				, Collections.emptyMap()
 				
-				// No updatedEntities
-				, Collections.emptyMap()
-				// No resultantBlockChangesByCuboid.
-				, Collections.emptyMap()
-				// // No visiblyChangedCreatures.
-				, Collections.emptyMap()
-				
-				// No scheduledBlockMutations.
-				, Collections.emptyMap()
-				// scheduledEntityMutations.
 				, Collections.emptyMap()
 				
 				// postedEvents
@@ -696,28 +680,70 @@ public class TickRunner
 			
 			// At this point, the tick to advance the world and crowd states has completed so publish the read-only results and wait before we put together the materials for the next tick.
 			// Acknowledge that the tick is completed by creating a snapshot of the state.
+			Map<CuboidAddress, SnapshotCuboid> cuboids = new HashMap<>();
+			for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> ent : mutableWorldState.entrySet())
+			{
+				CuboidAddress key = ent.getKey();
+				IReadOnlyCuboidData cuboid = ent.getValue();
+				
+				// The list of block changes will be null if nothing changed but the list of mutations will never be null, although typically empty.
+				List<MutationBlockSetBlock> changedBlocks = resultantBlockChangesByCuboid.get(key);
+				Assert.assertTrue((null == changedBlocks) || !changedBlocks.isEmpty());
+				List<ScheduledMutation> scheduledMutations = snapshotBlockMutations.get(key);
+				if (null == scheduledMutations)
+				{
+					scheduledMutations = List.of();
+				}
+				SnapshotCuboid snapshot = new SnapshotCuboid(
+						cuboid
+						, changedBlocks
+						, scheduledMutations
+				);
+				cuboids.put(key, snapshot);
+			}
+			Map<Integer, SnapshotEntity> entities = new HashMap<>();
+			for (Map.Entry<Integer, Entity> ent : mutableCrowdState.entrySet())
+			{
+				Integer key = ent.getKey();
+				Assert.assertTrue(key > 0);
+				Entity completed = ent.getValue();
+				long commitLevel = combinedCommitLevels.get(key);
+				Entity updated = updatedEntities.get(key);
+				
+				// Get the scheduled mutations (note that this is often null but we don't want to store null).
+				List<ScheduledChange> scheduledMutations = snapshotEntityMutations.get(key);
+				if (null == scheduledMutations)
+				{
+					scheduledMutations = List.of();
+				}
+				SnapshotEntity snapshot = new SnapshotEntity(
+						completed
+						, commitLevel
+						, updated
+						, scheduledMutations
+				);
+				entities.put(key, snapshot);
+			}
+			Map<Integer, SnapshotCreature> creatures = new HashMap<>();
+			for (Map.Entry<Integer, CreatureEntity>  ent : mutableCreatureState.entrySet())
+			{
+				Integer key = ent.getKey();
+				Assert.assertTrue(key < 0);
+				CreatureEntity completed = ent.getValue();
+				CreatureEntity visiblyChanged = updatedCreatures.get(key);
+				
+				SnapshotCreature snapshot = new SnapshotCreature(
+						completed
+						, visiblyChanged
+				);
+				creatures.put(key, snapshot);
+			}
+			
 			Snapshot completedTick = new Snapshot(_nextTick
-					// completedEntities
-					, Map.copyOf(mutableCrowdState)
-					// commitLevels
-					, Collections.unmodifiableMap(combinedCommitLevels)
-					// completedCuboids
-					, Map.copyOf(mutableWorldState)
+					, Collections.unmodifiableMap(cuboids)
+					, Collections.unmodifiableMap(entities)
+					, Collections.unmodifiableMap(creatures)
 					, completedHeightMaps
-					// completedCreatures
-					, Map.copyOf(mutableCreatureState)
-					
-					// updatedEntities
-					, Collections.unmodifiableMap(updatedEntities)
-					// resultantBlockChangesByCuboid
-					, Collections.unmodifiableMap(resultantBlockChangesByCuboid)
-					// visiblyChangedCreatures
-					, Collections.unmodifiableMap(updatedCreatures)
-					
-					// scheduledBlockMutations
-					, Collections.unmodifiableMap(snapshotBlockMutations)
-					// scheduledEntityMutations
-					, Collections.unmodifiableMap(snapshotEntityMutations)
 					
 					// postedEvents
 					, postedEvents
@@ -1151,27 +1177,44 @@ public class TickRunner
 	 * The snapshot of immutable state created whenever a tick is completed.
 	 */
 	public static record Snapshot(long tickNumber
-			// Read-only entities from the previous tick, resolved by ID.
-			, Map<Integer, Entity> completedEntities
-			, Map<Integer, Long> commitLevels
-			// Read-only cuboids from the previous tick, resolved by address.
-			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidAddress, SnapshotCuboid> cuboids
+			, Map<Integer, SnapshotEntity> entities
+			, Map<Integer, SnapshotCreature> creatures
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
-			, Map<Integer, CreatureEntity> completedCreatures
-			
-			// Change-only resources.
-			, Map<Integer, Entity> updatedEntities
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> resultantBlockChangesByCuboid
-			// Note that we only want to include the changed creatures if a MinimalEntity projection of the creature would differ (no internal-only state changes).
-			, Map<Integer, CreatureEntity> visiblyChangedCreatures
-			
-			// These fields are related to what is scheduled for the NEXT (or future) tick (added here to expose them to serialization).
-			, Map<CuboidAddress, List<ScheduledMutation>> scheduledBlockMutations
-			, Map<Integer, List<ScheduledChange>> scheduledEntityMutations
 			
 			, List<EventRecord> postedEvents
 			
 			, TickStats stats
+	)
+	{}
+
+	public static record SnapshotCuboid(
+			// Never null.
+			IReadOnlyCuboidData completed
+			// Never null but can be empty.
+			, List<MutationBlockSetBlock> blockChanges
+			// Never null but can be empty.
+			, List<ScheduledMutation> scheduledBlockMutations
+	)
+	{}
+
+	public static record SnapshotEntity(
+			// Never null.
+			Entity completed
+			// The last commit level from the connected client.
+			, long commitLevel
+			// Null if not changed in this tick.
+			, Entity updated
+			// Never null but can be empty.
+			, List<ScheduledChange> scheduledMutations
+	)
+	{}
+
+	public static record SnapshotCreature(
+			// Never null.
+			CreatureEntity completed
+			// Null if not visibly changed in this tick.
+			, CreatureEntity visiblyChanged
 	)
 	{}
 

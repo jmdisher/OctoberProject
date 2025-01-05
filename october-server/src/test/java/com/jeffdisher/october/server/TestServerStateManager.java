@@ -116,10 +116,10 @@ public class TestServerStateManager
 		Assert.assertTrue(callouts.requestedCuboidAddresses.isEmpty());
 		Assert.assertTrue(callouts.lastFinishedCommitPerClient.isEmpty());
 		snapshot = _modifySnapshot(snapshot
-				, _convertToEntityMap(changes.newEntities())
 				, _convertToCuboidMap(changes.newCuboids())
+				, _convertToEntityMap(changes.newEntities())
+				, snapshot.creatures()
 				, _convertToCuboidHeightMap(changes.newCuboids())
-				, snapshot.completedCreatures()
 		);
 		
 		// Verify that we see the surrounding cuboid load requests on the next tick.
@@ -148,10 +148,10 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.entitiesToWrite.size());
 		callouts.entitiesToWrite.clear();
 		snapshot = _modifySnapshot(snapshot
+				, snapshot.cuboids()
 				, Collections.emptyMap()
-				, snapshot.completedCuboids()
+				, snapshot.creatures()
 				, snapshot.completedHeightMaps()
-				, snapshot.completedCreatures()
 		);
 		
 		// Load one of the requested cuboids and verify it appears as loaded.
@@ -171,10 +171,10 @@ public class TestServerStateManager
 		Assert.assertTrue(callouts.entitiesToWrite.isEmpty());
 		Assert.assertTrue(callouts.cuboidsToWrite.isEmpty());
 		snapshot = _modifySnapshot(snapshot
-				, snapshot.completedEntities()
 				, _convertToCuboidMap(changes.newCuboids())
+				, snapshot.entities()
+				, snapshot.creatures()
 				, _convertToCuboidHeightMap(changes.newCuboids())
-				, snapshot.completedCreatures()
 		);
 		
 		// In another call, it should appear as unloaded.
@@ -277,16 +277,16 @@ public class TestServerStateManager
 		CuboidAddress far = CuboidAddress.fromInt(10, 0, 0);
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
-				, Map.of(1, entity)
 				, Map.of(
-						near, nearCuboid,
-						far, farCuboid
+						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of()),
+						far, new TickRunner.SnapshotCuboid(farCuboid, null, List.of())
 				)
+				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
+				, snapshot.creatures()
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze(),
 						far.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(farCuboid), far).freeze()
 				)
-				, snapshot.completedCreatures()
 		);
 		
 		// Note that we will try to unload far and write-back everything else due to the tick number.
@@ -299,14 +299,14 @@ public class TestServerStateManager
 		callouts.cuboidsToTryWrite.clear();
 		callouts.entitiesToTryWrite.clear();
 		snapshot = _modifySnapshot(snapshot
-				, Map.of(1, entity)
 				, Map.of(
-						near, nearCuboid
+						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of())
 				)
+				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
+				, snapshot.creatures()
 				, Map.of(
 						near.getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(nearCuboid), near).freeze()
 				)
-				, snapshot.completedCreatures()
 		);
 		
 		// The next tick shouldn't do anything.
@@ -380,12 +380,12 @@ public class TestServerStateManager
 				, List.of()
 		));
 		snapshot = _modifySnapshot(snapshot
-				, Map.of(clientId1, near.freeze(), clientId2, far.freeze())
 				, Map.of(
 				)
+				, Map.of(clientId1, new TickRunner.SnapshotEntity(near.freeze(), 1L, null, List.of()), clientId2, new TickRunner.SnapshotEntity(far.freeze(), 1L, null, List.of()))
+				, snapshot.creatures()
 				, Map.of(
 				)
-				, snapshot.completedCreatures()
 		);
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, changes.newCuboids().size());
@@ -394,19 +394,19 @@ public class TestServerStateManager
 		Assert.assertEquals(0, changes.entitiesToUnload().size());
 		
 		snapshot = _modifySnapshot(snapshot
-				, snapshot.completedEntities()
 				, Map.of(
-						nearCuboid.getCuboidAddress(), nearCuboid,
-						farCuboid.getCuboidAddress(), farCuboid
+						nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of()),
+						farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of())
+				)
+				, snapshot.entities()
+				, Map.of(
+						nearCreature.id(), new TickRunner.SnapshotCreature(nearCreature, null),
+						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
 				)
 				, HeightMapHelpers.buildColumnMaps(Map.of(
 						nearCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(nearCuboid),
 						farCuboid.getCuboidAddress(), HeightMapHelpers.buildHeightMap(farCuboid)
 				))
-				, Map.of(
-						nearCreature.id(), nearCreature,
-						farCreature.id(), farCreature
-				)
 		);
 		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
 		Assert.assertEquals(0, changes.newCuboids().size());
@@ -419,12 +419,12 @@ public class TestServerStateManager
 		
 		// Now, make one of these entities die and see that it disappears only from the nearest creature.
 		snapshot = _modifySnapshot(snapshot
-				, snapshot.completedEntities()
-				, snapshot.completedCuboids()
-				, snapshot.completedHeightMaps()
+				, snapshot.cuboids()
+				, snapshot.entities()
 				, Map.of(
-						farCreature.id(), farCreature
+						farCreature.id(), new TickRunner.SnapshotCreature(farCreature, null)
 				)
+				, snapshot.completedHeightMaps()
 		);
 		changes = manager.setupNextTickAfterCompletion(_advanceSnapshot(snapshot, 1L));
 		Assert.assertEquals(0, changes.newCuboids().size());
@@ -446,14 +446,7 @@ public class TestServerStateManager
 				, Collections.emptyMap()
 				, Collections.emptyMap()
 				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyMap()
 				
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				, Collections.emptyMap()
-				
-				, Collections.emptyMap()
 				, Collections.emptyMap()
 				
 				, List.of()
@@ -471,26 +464,18 @@ public class TestServerStateManager
 	}
 
 	private TickRunner.Snapshot _modifySnapshot(TickRunner.Snapshot snapshot
-			, Map<Integer, Entity> completedEntities
-			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
+			, Map<CuboidAddress, TickRunner.SnapshotCuboid> cuboids
+			, Map<Integer, TickRunner.SnapshotEntity> entities
+			, Map<Integer, TickRunner.SnapshotCreature> completedCreatures
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
-			, Map<Integer, CreatureEntity> completedCreatures
 	)
 	{
 		TickRunner.TickStats stats = snapshot.stats();
 		return new TickRunner.Snapshot(snapshot.tickNumber()
-				, completedEntities
-				, snapshot.commitLevels()
-				, completedCuboids
-				, completedHeightMaps
+				, cuboids
+				, entities
 				, completedCreatures
-				
-				, snapshot.updatedEntities()
-				, snapshot.resultantBlockChangesByCuboid()
-				, snapshot.visiblyChangedCreatures()
-				
-				, snapshot.scheduledBlockMutations()
-				, snapshot.scheduledEntityMutations()
+				, completedHeightMaps
 				
 				, snapshot.postedEvents()
 				
@@ -503,18 +488,10 @@ public class TestServerStateManager
 	{
 		TickRunner.TickStats stats = snapshot.stats();
 		return new TickRunner.Snapshot(snapshot.tickNumber() + count
-				, snapshot.completedEntities()
-				, snapshot.commitLevels()
-				, snapshot.completedCuboids()
+				, snapshot.cuboids()
+				, snapshot.entities()
+				, snapshot.creatures()
 				, snapshot.completedHeightMaps()
-				, snapshot.completedCreatures()
-				
-				, snapshot.updatedEntities()
-				, snapshot.resultantBlockChangesByCuboid()
-				, snapshot.visiblyChangedCreatures()
-				
-				, snapshot.scheduledBlockMutations()
-				, snapshot.scheduledEntityMutations()
 				
 				, snapshot.postedEvents()
 				
@@ -523,14 +500,15 @@ public class TestServerStateManager
 		);
 	}
 
-	private Map<CuboidAddress, IReadOnlyCuboidData> _convertToCuboidMap(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids)
+	private Map<CuboidAddress, TickRunner.SnapshotCuboid> _convertToCuboidMap(Collection<SuspendedCuboid<IReadOnlyCuboidData>> cuboids)
 	{
-		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = new HashMap<>();
+		Map<CuboidAddress, TickRunner.SnapshotCuboid> completedCuboids = new HashMap<>();
 		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
 			Assert.assertTrue(suspended.mutations().isEmpty());
-			completedCuboids.put(cuboid.getCuboidAddress(), cuboid);
+			TickRunner.SnapshotCuboid wrapper = new TickRunner.SnapshotCuboid(cuboid, null, List.of());
+			completedCuboids.put(cuboid.getCuboidAddress(), wrapper);
 		}
 		return completedCuboids;
 	}
@@ -548,14 +526,15 @@ public class TestServerStateManager
 		return completedMaps;
 	}
 
-	private Map<Integer, Entity> _convertToEntityMap(Collection<SuspendedEntity> entities)
+	private Map<Integer, TickRunner.SnapshotEntity> _convertToEntityMap(Collection<SuspendedEntity> entities)
 	{
-		Map<Integer, Entity> completedEntities = new HashMap<>();
+		Map<Integer, TickRunner.SnapshotEntity> completedEntities = new HashMap<>();
 		for (SuspendedEntity suspended : entities)
 		{
 			Entity entity = suspended.entity();
 			Assert.assertTrue(suspended.changes().isEmpty());
-			completedEntities.put(entity.id(), entity);
+			TickRunner.SnapshotEntity wrapper = new TickRunner.SnapshotEntity(entity, 0L, null, List.of());
+			completedEntities.put(entity.id(), wrapper);
 		}
 		return completedEntities;
 	}

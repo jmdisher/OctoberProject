@@ -175,9 +175,9 @@ public class ConsoleHandler
 			long tickNumber = snapshot.tickNumber();
 			TickRunner.TickStats stats = snapshot.stats();
 			long processMillis = stats.millisTickPreamble() + stats.millisTickParallelPhase() + stats.millisTickPostamble();
-			int entityCount = snapshot.completedEntities().size();
-			int cuboidCount = snapshot.completedCuboids().size();
-			int creatureCount = snapshot.completedCreatures().size();
+			int entityCount = snapshot.entities().size();
+			int cuboidCount = snapshot.cuboids().size();
+			int creatureCount = snapshot.creatures().size();
 			out.printf("Tick %d processed in %d ms:\n", tickNumber, processMillis);
 			out.println("\tEntities: " + entityCount);
 			out.println("\tCuboids: " + cuboidCount);

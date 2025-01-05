@@ -243,7 +243,7 @@ public class TestConsoleHandler
 		PrintStream printer = new PrintStream(out);
 		MonitoringAgent monitoringAgent = new MonitoringAgent();
 		long tickNumber = 50L;
-		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null, null, null, null, null, null, null));
+		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null));
 		boolean[] didBroadcast = new boolean[1];
 		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
 		{

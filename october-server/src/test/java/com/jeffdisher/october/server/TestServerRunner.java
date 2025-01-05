@@ -473,7 +473,7 @@ public class TestServerRunner
 		
 		// Verify that the monitoring agent sees consistent data.
 		Assert.assertEquals(1, monitoringAgent.getClientsCopy().size());
-		Assert.assertEquals(1, monitoringAgent.getLastSnapshot().completedCreatures().size());
+		Assert.assertEquals(1, monitoringAgent.getLastSnapshot().creatures().size());
 		
 		server.clientDisconnected(clientId1);
 		network.resetClient(clientId1);
