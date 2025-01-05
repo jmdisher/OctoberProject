@@ -1,9 +1,11 @@
 package com.jeffdisher.october.persistence;
 
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledMutation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 
 
@@ -12,7 +14,8 @@ import com.jeffdisher.october.types.CreatureEntity;
  */
 public record PackagedCuboid(IReadOnlyCuboidData cuboid
 		, List<CreatureEntity> creatures
-		, List<ScheduledMutation> mutations
+		, List<ScheduledMutation> pendingMutations
+		, Map<BlockAddress, Long> periodicMutationMillis
 )
 {
 }

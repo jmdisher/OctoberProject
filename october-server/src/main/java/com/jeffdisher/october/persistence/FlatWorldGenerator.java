@@ -1,6 +1,7 @@
 package com.jeffdisher.october.persistence;
 
 import java.util.List;
+import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
@@ -143,6 +144,7 @@ public class FlatWorldGenerator implements IWorldGenerator
 				, heightMap
 				, entities
 				, mutations
+				, Map.of()
 		);
 	}
 

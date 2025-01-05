@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
@@ -343,6 +344,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				, cuboidLocalMap
 				, entities
 				, mutations
+				, Map.of()
 		);
 	}
 

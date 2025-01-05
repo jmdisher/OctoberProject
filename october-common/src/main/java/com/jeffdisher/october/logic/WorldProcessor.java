@@ -18,6 +18,7 @@ import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
 import com.jeffdisher.october.net.PacketCodec;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -48,6 +49,7 @@ public class WorldProcessor
 	 * @param context The context used for running changes.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
+	 * @param periodicMutationMillis The map of blocks requiring periodic mutations, and their millisecond delays.
 	 * @param modifiedBlocksByCuboidAddress The map of which blocks where updated in the previous tick.
 	 * @param potentialLightChangesByCuboid The map of block locations which may have incurred lighting updates in the
 	 * previous tick.
@@ -61,6 +63,7 @@ public class WorldProcessor
 			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 			, TickProcessingContext context
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
+			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid
@@ -73,7 +76,7 @@ public class WorldProcessor
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
-		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
+		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
 		{
@@ -103,9 +106,40 @@ public class WorldProcessor
 						, cuboidsLoadedThisTick
 				);
 				
+				// Run any periodic mutations which have been requested.
+				Map<BlockAddress, Long> periodicNotReady = new HashMap<>();
+				Map<BlockAddress, Long> periodicToRun = periodicMutationMillis.get(key);
+				if (null != periodicToRun)
+				{
+					for (Map.Entry<BlockAddress, Long> ent : periodicToRun.entrySet())
+					{
+						BlockAddress block = ent.getKey();
+						long millisUntilReady = ent.getValue();
+						if (0L == millisUntilReady)
+						{
+							// Synthesize this.
+							MutationBlockPeriodic mutation = new MutationBlockPeriodic(key.getBase().relativeForBlock(block));
+							processor.cuboidMutationsProcessed += 1;
+							boolean didApply = _runOneMutation(lazyMutableBlockCache, context, oldState, mutation);
+							if (didApply)
+							{
+								committedMutationCount += 1;
+							}
+						}
+						else
+						{
+							long updatedMillis = millisUntilReady - millisSinceLastTick;
+							if (updatedMillis < 0L)
+							{
+								updatedMillis = 0L;
+							}
+							periodicNotReady.put(block, updatedMillis);
+						}
+					}
+				}
+				
 				// Now run the normal mutations.
 				List<ScheduledMutation> mutations = mutationsToRun.get(key);
-				Map<AbsoluteLocation, Long> periodicNotReadyByLocation = new HashMap<>();
 				if (null != mutations)
 				{
 					for (ScheduledMutation scheduledMutations : mutations)
@@ -123,12 +157,8 @@ public class WorldProcessor
 						}
 						else
 						{
-							long updatedMillis = millisUntilReady - millisSinceLastTick;
-							if (updatedMillis < 0L)
-							{
-								updatedMillis = 0L;
-							}
-							periodicNotReadyByLocation.put(mutation.getAbsoluteLocation(), updatedMillis);
+							// TODO:  Handle the case where we can schedule normal mutations for later.
+							throw Assert.unreachable();
 						}
 					}
 				}
@@ -177,18 +207,17 @@ public class WorldProcessor
 				).toList();
 				for (MutableBlockProxy proxy : proxiesWithScheduledMutations)
 				{
-					AbsoluteLocation location = proxy.absoluteLocation;
-					long existing = periodicNotReadyByLocation.containsKey(location)
-							? periodicNotReadyByLocation.get(location)
+					BlockAddress block = proxy.absoluteLocation.getBlockAddress();
+					long existing = periodicNotReady.containsKey(block)
+							? periodicNotReady.get(block)
 							: Long.MAX_VALUE
 					;
 					long updated = Math.min(proxy.periodicDelayMillis, existing);
-					periodicNotReadyByLocation.put(location, updated);
+					periodicNotReady.put(block, updated);
 				}
-				for (Map.Entry<AbsoluteLocation, Long> periodic : periodicNotReadyByLocation.entrySet())
+				if (!periodicNotReady.isEmpty())
 				{
-					MutationBlockPeriodic mutation = new MutationBlockPeriodic(periodic.getKey());
-					notYetReadyMutations.add(new ScheduledMutation(mutation, periodic.getValue()));
+					periodicNotReadyByCuboid.put(key, periodicNotReady);
 				}
 			}
 		}
@@ -196,7 +225,7 @@ public class WorldProcessor
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
 				, fragmentHeights
-				, notYetReadyMutations
+				, periodicNotReadyByCuboid
 				, blockChangesByCuboid
 				, committedMutationCount
 		);
@@ -358,7 +387,7 @@ public class WorldProcessor
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, Map<CuboidAddress, CuboidHeightMap> heightFragment
-			, List<ScheduledMutation> notYetReadyMutations
+			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount
 	) {}

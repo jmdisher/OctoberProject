@@ -946,6 +946,7 @@ public class SpeculativeProjection
 				, _projectedHeightMap
 				, context
 				, innerMutations
+				, Map.of()
 				, modifiedBlocksByCuboidAddress
 				, potentialLightChangesByCuboid
 				, potentialLogicChangesByCuboid

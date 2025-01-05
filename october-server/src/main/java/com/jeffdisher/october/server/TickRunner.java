@@ -400,7 +400,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				// mutableCreatureState
 				, Collections.emptyMap()
-				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), 0)
+				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), Map.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
 						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of(), List.of())
 						, null
@@ -509,6 +509,7 @@ public class TickRunner
 					, materials.cuboidHeightMaps
 					, context
 					, materials.mutationsToRun
+					, materials.periodicMutationMillis
 					, materials.modifiedBlocksByCuboidAddress
 					, materials.potentialLightChangesByCuboid
 					, materials.potentialLogicChangesByCuboid
@@ -581,6 +582,7 @@ public class TickRunner
 			// We will also capture any of the mutations which should be scheduled into the next tick since we should publish those into the snapshot.
 			// (this is in case they need to be serialized - that way they can be read back in without interrupting the enqueued operations)
 			Map<CuboidAddress, List<ScheduledMutation>> snapshotBlockMutations = new HashMap<>();
+			Map<CuboidAddress, Map<BlockAddress, Long>> snapshotPeriodicMutations = new HashMap<>();
 			Map<Integer, List<ScheduledChange>> snapshotEntityMutations = new HashMap<>();
 			Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> nextCreatureChanges = new HashMap<>();
 			List<EventRecord> postedEvents = new ArrayList<>();
@@ -644,9 +646,11 @@ public class TickRunner
 				postedEvents.addAll(fragment.postedEvents);
 				
 				// World data.
-				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
+				for (Map.Entry<CuboidAddress, Map<BlockAddress, Long>> ent : fragment.world.periodicNotReadyByCuboid().entrySet())
 				{
-					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
+					Map<BlockAddress, Long> old = snapshotPeriodicMutations.put(ent.getKey(), ent.getValue());
+					// These should never overlap.
+					Assert.assertTrue(null == old);
 				}
 				
 				// Crowd data.
@@ -694,10 +698,16 @@ public class TickRunner
 				{
 					scheduledMutations = List.of();
 				}
+				Map<BlockAddress, Long> periodicMutationMillis = snapshotPeriodicMutations.get(key);
+				if (null == periodicMutationMillis)
+				{
+					periodicMutationMillis = Map.of();
+				}
 				SnapshotCuboid snapshot = new SnapshotCuboid(
 						cuboid
 						, changedBlocks
 						, scheduledMutations
+						, periodicMutationMillis
 				);
 				cuboids.put(key, snapshot);
 			}
@@ -829,7 +839,8 @@ public class TickRunner
 				// We now update our mutable collections for the materials to use in the next tick.
 				Map<CuboidAddress, CuboidHeightMap> nextTickMutableHeightMaps = new HashMap<>(completedCuboidHeightMap);
 				nextTickMutableHeightMaps.putAll(mergedChangedHeightMaps);
-				Map<CuboidAddress, List<ScheduledMutation>> nextTickMutations = new HashMap<>();
+				Map<CuboidAddress, List<ScheduledMutation>> pendingMutations = new HashMap<>();
+				Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutations = new HashMap<>();
 				Map<Integer, List<ScheduledChange>> nextTickChanges = new HashMap<>();
 				
 				// Add in anything new.
@@ -853,10 +864,19 @@ public class TickRunner
 						}
 						
 						// Add any suspended mutations which came with the cuboid.
-						List<ScheduledMutation> mutations = suspended.mutations();
-						if (!mutations.isEmpty())
+						List<ScheduledMutation> pending = suspended.pendingMutations();
+						if (!pending.isEmpty())
 						{
-							old = nextTickMutations.put(address, new ArrayList<>(mutations));
+							old = pendingMutations.put(address, new ArrayList<>(pending));
+							// This must not already be present (this was just created above here).
+							Assert.assertTrue(null == old);
+						}
+						
+						// Add any periodic mutations loaded with the cuboid.
+						Map<BlockAddress, Long> periodic = suspended.periodicMutationMillis();
+						if (!periodic.isEmpty())
+						{
+							old = periodicMutations.put(address, new HashMap<>(periodic));
 							// This must not already be present (this was just created above here).
 							Assert.assertTrue(null == old);
 						}
@@ -907,10 +927,13 @@ public class TickRunner
 				{
 					for (ScheduledMutation mutation : list)
 					{
-						_scheduleMutationForCuboid(nextTickMutations, mutation);
+						_scheduleMutationForCuboid(pendingMutations, mutation);
 					}
 				}
 				snapshotBlockMutations = null;
+				// Also add in any periodic mutations.
+				periodicMutations.putAll(snapshotPeriodicMutations);
+				snapshotPeriodicMutations = null;
 				
 				// Remove anything old.
 				if (null != cuboidsToDrop)
@@ -937,7 +960,8 @@ public class TickRunner
 						}
 						
 						// Remove any of the scheduled operations for this cuboid.
-						nextTickMutations.remove(address);
+						pendingMutations.remove(address);
+						periodicMutations.remove(address);
 					}
 				}
 				if (null != removedEntityIds)
@@ -962,12 +986,17 @@ public class TickRunner
 				}
 				
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
-				for (CuboidAddress key : nextTickMutations.keySet())
+				for (CuboidAddress key : pendingMutations.keySet())
 				{
 					if (!mutableWorldState.containsKey(key))
 					{
 						System.out.println("WARNING: missing cuboid " + key);
 					}
+				}
+				for (CuboidAddress key : periodicMutations.keySet())
+				{
+					// Given that these can only be scheduled against loaded cuboids, which can only be explicitly unloaded above, anything remaining must still be present.
+					Assert.assertTrue(mutableWorldState.containsKey(key));
 				}
 				for (Integer id : nextTickChanges.keySet())
 				{
@@ -1031,7 +1060,8 @@ public class TickRunner
 						// completedCreatures
 						, Collections.unmodifiableMap(mutableCreatureState)
 						
-						, nextTickMutations
+						, pendingMutations
+						, periodicMutations
 						, nextTickChanges
 						// creatureChanges
 						, nextCreatureChanges
@@ -1195,6 +1225,8 @@ public class TickRunner
 			, List<MutationBlockSetBlock> blockChanges
 			// Never null but can be empty.
 			, List<ScheduledMutation> scheduledBlockMutations
+			// Never null but can be empty.
+			, Map<BlockAddress, Long> periodicMutationMillis
 	)
 	{}
 
@@ -1257,6 +1289,8 @@ public class TickRunner
 			, Map<Integer, CreatureEntity> completedCreatures
 			// The block mutations to run in this tick (by cuboid address).
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
+			// We handle "periodic" mutations differently since they saturate for a given location.
+			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis
 			// The entity mutations to run in this tick (by ID).
 			, Map<Integer, List<ScheduledChange>> changesToRun
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> creatureChanges

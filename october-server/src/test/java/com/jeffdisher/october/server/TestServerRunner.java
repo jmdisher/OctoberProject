@@ -606,6 +606,7 @@ public class TestServerRunner
 						, HeightMapHelpers.buildHeightMap(cuboid)
 						, List.of()
 						, List.of()
+						, Map.of()
 				);
 			}
 			@Override
@@ -1150,13 +1151,13 @@ public class TestServerRunner
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, (byte)100
 				);
-				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of());
+				data = new SuspendedCuboid<>(raw, heightMap, List.of(cow), List.of(), Map.of());
 			}
 			else
 			{
 				CuboidData raw = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
-				data = new SuspendedCuboid<>(raw, heightMap, List.of(), List.of());
+				data = new SuspendedCuboid<>(raw, heightMap, List.of(), List.of(), Map.of());
 			}
 			return data;
 		}

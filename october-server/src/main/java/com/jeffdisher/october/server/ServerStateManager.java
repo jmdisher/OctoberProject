@@ -32,6 +32,7 @@ import com.jeffdisher.october.persistence.PackagedCuboid;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.persistence.SuspendedEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -74,6 +75,7 @@ public class ServerStateManager
 	private long _tickNumber;
 	private Map<CuboidAddress, IReadOnlyCuboidData> _completedCuboids;
 	private Map<CuboidAddress, List<ScheduledMutation>> _scheduledBlockMutations;
+	private Map<CuboidAddress, Map<BlockAddress, Long>> _periodicBlockMutations;
 	private Map<Integer, List<ScheduledChange>> _scheduledEntityMutations;
 	private Map<Integer, Entity> _completedEntities;
 	private Map<Integer, Entity> _updatedEntities;
@@ -95,6 +97,7 @@ public class ServerStateManager
 		_requestedCuboids = new HashSet<>();
 		_completedCuboids = Collections.emptyMap();
 		_scheduledBlockMutations = Collections.emptyMap();
+		_periodicBlockMutations = Collections.emptyMap();
 		_scheduledEntityMutations = Collections.emptyMap();
 		_completedEntities = Collections.emptyMap();
 		_updatedEntities = Collections.emptyMap();
@@ -194,6 +197,10 @@ public class ServerStateManager
 				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
 				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().scheduledBlockMutations()
 		));
+		_periodicBlockMutations = snapshot.cuboids().entrySet().stream().collect(Collectors.toMap(
+				(Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getKey()
+				, (Map.Entry<CuboidAddress, TickRunner.SnapshotCuboid> elt) -> elt.getValue().periodicMutationMillis()
+		));
 		_scheduledEntityMutations = snapshot.entities().entrySet().stream().collect(Collectors.toMap(
 				(Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getKey()
 				, (Map.Entry<Integer, TickRunner.SnapshotEntity> elt) -> elt.getValue().scheduledMutations()
@@ -260,7 +267,7 @@ public class ServerStateManager
 		// Push any required data into the TickRunner before we kick-off the tick.
 		// We need to run through these to make them the read-only variants for the TickRunner.
 		Collection<SuspendedCuboid<IReadOnlyCuboidData>> readOnlyCuboids = newlyLoadedCuboids.stream().map(
-				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.heightMap(), readWrite.creatures(), readWrite.mutations())
+				(SuspendedCuboid<CuboidData> readWrite) -> new SuspendedCuboid<IReadOnlyCuboidData>(readWrite.cuboid(), readWrite.heightMap(), readWrite.creatures(), readWrite.pendingMutations(), readWrite.periodicMutationMillis())
 		).toList();
 		
 		// Feed in any new data from the network.
@@ -729,12 +736,17 @@ public class ServerStateManager
 		{
 			CuboidAddress address = cuboid.getCuboidAddress();
 			List<CreatureEntity> entities = creaturesToUnload.get(cuboid.getCuboidAddress());
-			List<ScheduledMutation> suspended = _scheduledBlockMutations.get(address);
-			if (null == suspended)
+			List<ScheduledMutation> pendingMutations = _scheduledBlockMutations.get(address);
+			if (null == pendingMutations)
 			{
-				suspended = List.of();
+				pendingMutations = List.of();
 			}
-			cuboidResources.add(new PackagedCuboid(cuboid, entities, suspended));
+			Map<BlockAddress, Long> periodicMutationMillis = _periodicBlockMutations.get(address);
+			if (null == periodicMutationMillis)
+			{
+				periodicMutationMillis = Map.of();
+			}
+			cuboidResources.add(new PackagedCuboid(cuboid, entities, pendingMutations, periodicMutationMillis));
 		}
 		return cuboidResources;
 	}

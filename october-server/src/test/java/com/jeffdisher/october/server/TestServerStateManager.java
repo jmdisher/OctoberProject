@@ -160,6 +160,7 @@ public class TestServerStateManager
 				, HeightMapHelpers.buildHeightMap(cuboid)
 				, List.of()
 				, List.of()
+				, Map.of()
 		));
 		changes = manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(1, changes.newCuboids().size());
@@ -278,8 +279,8 @@ public class TestServerStateManager
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far, ENV.special.AIR);
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of()),
-						far, new TickRunner.SnapshotCuboid(farCuboid, null, List.of())
+						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
+						far, new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 				)
 				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
@@ -300,7 +301,7 @@ public class TestServerStateManager
 		callouts.entitiesToTryWrite.clear();
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of())
+						near, new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of())
 				)
 				, Map.of(1, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
 				, snapshot.creatures()
@@ -373,11 +374,13 @@ public class TestServerStateManager
 				, HeightMapHelpers.buildHeightMap(nearCuboid)
 				, List.of(nearCreature)
 				, List.of()
+				, Map.of()
 		));
 		callouts.loadedCuboids.add(new SuspendedCuboid<>(farCuboid
 				, HeightMapHelpers.buildHeightMap(farCuboid)
 				, List.of(farCreature)
 				, List.of()
+				, Map.of()
 		));
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
@@ -395,8 +398,8 @@ public class TestServerStateManager
 		
 		snapshot = _modifySnapshot(snapshot
 				, Map.of(
-						nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of()),
-						farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of())
+						nearCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(nearCuboid, null, List.of(), Map.of()),
+						farCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(farCuboid, null, List.of(), Map.of())
 				)
 				, snapshot.entities()
 				, Map.of(
@@ -506,8 +509,9 @@ public class TestServerStateManager
 		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
-			Assert.assertTrue(suspended.mutations().isEmpty());
-			TickRunner.SnapshotCuboid wrapper = new TickRunner.SnapshotCuboid(cuboid, null, List.of());
+			Assert.assertTrue(suspended.pendingMutations().isEmpty());
+			Assert.assertTrue(suspended.periodicMutationMillis().isEmpty());
+			TickRunner.SnapshotCuboid wrapper = new TickRunner.SnapshotCuboid(cuboid, null, List.of(), Map.of());
 			completedCuboids.put(cuboid.getCuboidAddress(), wrapper);
 		}
 		return completedCuboids;
@@ -519,7 +523,8 @@ public class TestServerStateManager
 		for (SuspendedCuboid<IReadOnlyCuboidData> suspended : cuboids)
 		{
 			IReadOnlyCuboidData cuboid = suspended.cuboid();
-			Assert.assertTrue(suspended.mutations().isEmpty());
+			Assert.assertTrue(suspended.pendingMutations().isEmpty());
+			Assert.assertTrue(suspended.periodicMutationMillis().isEmpty());
 			Object old = completedMaps.put(cuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid), cuboid.getCuboidAddress()).freeze());
 			Assert.assertNull(old);
 		}

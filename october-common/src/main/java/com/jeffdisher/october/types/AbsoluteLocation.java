@@ -24,4 +24,9 @@ public final record AbsoluteLocation(int x, int y, int z)
 	{
 		return new EntityLocation(this.x, this.y, this.z);
 	}
+
+	public AbsoluteLocation relativeForBlock(BlockAddress block)
+	{
+		return new AbsoluteLocation(this.x + block.x(), this.y + block.y(), this.z + block.z());
+	}
 }

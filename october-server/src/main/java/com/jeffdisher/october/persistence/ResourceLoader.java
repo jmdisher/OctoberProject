@@ -31,10 +31,13 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.net.MutationEntityCodec;
 import com.jeffdisher.october.persistence.legacy.LegacyCreatureEntityV1;
 import com.jeffdisher.october.persistence.legacy.LegacyEntityV1;
+import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
@@ -199,6 +202,7 @@ public class ResourceLoader
 									, HeightMapHelpers.buildHeightMap(preloaded)
 									, List.of()
 									, List.of()
+									, Map.of()
 							);
 						}
 						else if (null != _cuboidGenerator)
@@ -428,7 +432,9 @@ public class ResourceLoader
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> suspended = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = new ArrayList<>();
+					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
+					_background_splitMutations(pendingMutations, periodicMutations, buffer);
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -438,7 +444,8 @@ public class ResourceLoader
 					return new SuspendedCuboid<>(cuboid
 							, heightMap
 							, creatures
-							, suspended
+							, pendingMutations
+							, periodicMutations
 					);
 				};
 			}
@@ -459,7 +466,9 @@ public class ResourceLoader
 					}
 					
 					// Now, load any suspended mutations.
-					List<ScheduledMutation> suspended = _background_readMutations(buffer);
+					List<ScheduledMutation> pendingMutations = new ArrayList<>();
+					Map<BlockAddress, Long> periodicMutations = new HashMap<>();
+					_background_splitMutations(pendingMutations, periodicMutations, buffer);
 					
 					// This should be fully read.
 					Assert.assertTrue(!buffer.hasRemaining());
@@ -469,7 +478,8 @@ public class ResourceLoader
 					return new SuspendedCuboid<>(cuboid
 							, heightMap
 							, creatures
-							, suspended
+							, pendingMutations
+							, periodicMutations
 					);
 				};
 			}
@@ -513,6 +523,26 @@ public class ResourceLoader
 		return creatures;
 	}
 
+	private void _background_splitMutations(List<ScheduledMutation> out_pendingMutations
+			, Map<BlockAddress, Long> out_periodicMutations
+			, MappedByteBuffer buffer
+	)
+	{
+		for (ScheduledMutation scheduledMutation : _background_readMutations(buffer))
+		{
+			IMutationBlock mutation = scheduledMutation.mutation();
+			if (mutation instanceof MutationBlockPeriodic)
+			{
+				BlockAddress block = mutation.getAbsoluteLocation().getBlockAddress();
+				out_periodicMutations.put(block, scheduledMutation.millisUntilReady());
+			}
+			else
+			{
+				out_pendingMutations.add(scheduledMutation);
+			}
+		}
+	}
+
 	private List<ScheduledMutation> _background_readMutations(MappedByteBuffer buffer)
 	{
 		int mutationCount = buffer.getInt();
@@ -536,7 +566,17 @@ public class ResourceLoader
 		_backround_serializationBuffer.putInt(VERSION_CUBOID);
 		
 		IReadOnlyCuboidData cuboid = data.cuboid();
-		List<ScheduledMutation> mutations = data.mutations();
+		List<ScheduledMutation> mutations = new ArrayList<>(data.pendingMutations());
+		AbsoluteLocation base = cuboid.getCuboidAddress().getBase();
+		for (Map.Entry<BlockAddress, Long> periodic : data.periodicMutationMillis().entrySet())
+		{
+			// For now, we just combine these together but that is temporary.
+			// TODO: We want to store the scheduled mutations and periodic mutations distinctly.
+			AbsoluteLocation location = base.relativeForBlock(periodic.getKey());
+			MutationBlockPeriodic mutation = new MutationBlockPeriodic(location);
+			ScheduledMutation scheduled = new ScheduledMutation(mutation, periodic.getValue());
+			mutations.add(scheduled);
+		}
 		List<CreatureEntity> entities = data.creatures();
 		Object state = cuboid.serializeResumable(null, _backround_serializationBuffer);
 		// We currently assume that we just do the write in a single call.

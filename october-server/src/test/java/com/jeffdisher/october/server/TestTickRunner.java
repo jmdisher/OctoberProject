@@ -118,7 +118,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -143,7 +143,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -222,7 +222,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -265,7 +265,7 @@ public class TestTickRunner
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -308,7 +308,7 @@ public class TestTickRunner
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, null
 				, null
@@ -413,7 +413,7 @@ public class TestTickRunner
 		int startDurability = ENV.durability.getDurability(pickaxe);
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		mutable.setSelectedKey(1);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
 				, null
@@ -639,7 +639,7 @@ public class TestTickRunner
 		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		runner.setupChangesForTick(List.of(
 				_buildAirCuboid(CuboidAddress.fromInt(0, 0, 0)),
-				new SuspendedCuboid<IReadOnlyCuboidData>(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid), List.of(), List.of(new ScheduledMutation(mutation, 0L)))
+				new SuspendedCuboid<IReadOnlyCuboidData>(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid), List.of(), List.of(new ScheduledMutation(mutation, 0L)), Map.of())
 			)
 			, null
 			, List.of(_createFreshEntity(entityId))
@@ -663,7 +663,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -722,7 +722,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(PLANK_ITEM, 2);
 		int plankKey = mutable.newInventory.getIdOfStackableType(PLANK_ITEM);
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
@@ -851,8 +851,8 @@ public class TestTickRunner
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, STONE);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of())
-					, new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of(), Map.of())
 				)
 				, null
 				, null
@@ -907,7 +907,7 @@ public class TestTickRunner
 		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
@@ -964,9 +964,10 @@ public class TestTickRunner
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid
-				, HeightMapHelpers.buildHeightMap(cuboid)
-				, List.of()
-				, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY), 0L))
+					, HeightMapHelpers.buildHeightMap(cuboid)
+					, List.of()
+					, List.of(new ScheduledMutation(new MutationBlockStoreItems(new AbsoluteLocation(10, 10, 30), new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY), 0L))
+					, Map.of()
 				))
 				, null
 				, null
@@ -992,9 +993,10 @@ public class TestTickRunner
 		
 		// Load it back in with the suspended mutation and verify that the item continues to fall.
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(saved.cuboids().get(address).completed()
-				, HeightMapHelpers.buildHeightMap(saved.cuboids().get(address).completed())
-				, List.of()
-				, saved.cuboids().get(address).scheduledBlockMutations()
+					, HeightMapHelpers.buildHeightMap(saved.cuboids().get(address).completed())
+					, List.of()
+					, saved.cuboids().get(address).scheduledBlockMutations()
+					, saved.cuboids().get(address).periodicMutationMillis()
 				))
 				, null
 				, null
@@ -1025,7 +1027,7 @@ public class TestTickRunner
 		CuboidAddress address0 = startLocation.getCuboidAddress();
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
 		cuboid0.setDataSpecial(AspectRegistry.INVENTORY, startLocation.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(STONE_ITEM, 2).finish());
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of()))
 				, null
 				, null
 				, null
@@ -1039,7 +1041,7 @@ public class TestTickRunner
 		// Now, load an air cuboid below this and verify that the items start falling.
 		CuboidAddress address1 = address0.getRelative(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of(), Map.of()))
 				, null
 				, null
 				, null
@@ -1066,7 +1068,7 @@ public class TestTickRunner
 		// Load the initial cuboid and run a tick to verify nothing happens.
 		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(address0, WATER_SOURCE);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid0, HeightMapHelpers.buildHeightMap(cuboid0), List.of(), List.of(), Map.of()))
 				, null
 				, null
 				, null
@@ -1079,7 +1081,7 @@ public class TestTickRunner
 		// Now, load an air cuboid below this and verify that the water start falling.
 		CuboidAddress address1 = CuboidAddress.fromInt(0, 0, -1);
 		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid1, HeightMapHelpers.buildHeightMap(cuboid1), List.of(), List.of(), Map.of()))
 				, null
 				, null
 				, null
@@ -1129,7 +1131,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.isCreativeMode = true;
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
 				, null
@@ -1255,7 +1257,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y() - 1, stoneLocation.z());
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
@@ -1398,7 +1400,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(SAPLING_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(SAPLING_ITEM));
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1473,7 +1475,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1565,7 +1567,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(WHEAT_SEED_ITEM, 1);
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(WHEAT_SEED_ITEM));
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1652,7 +1654,7 @@ public class TestTickRunner
 		mutable.newInventory.addNonStackableAllowingOverflow(new NonStackableItem(ENV.items.getItemById("op.iron_sword"), 1000));
 		mutable.setSelectedKey(1);
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1717,7 +1719,7 @@ public class TestTickRunner
 		CreatureEntity creature = CreatureEntity.create(creatureId, EntityType.COW, entityLocation, (byte)15);
 		
 		TickRunner runner = _createTestRunner();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())
 				)
 				, null
 				, null
@@ -1769,7 +1771,7 @@ public class TestTickRunner
 		MutableEntity mutable = MutableEntity.createForTest(entityId);
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1842,7 +1844,7 @@ public class TestTickRunner
 		mutable.newLocation = new EntityLocation(stoneLocation.x(), stoneLocation.y(), stoneLocation.z() + 1.0f);
 		mutable.isCreativeMode = true;
 		Entity entity = mutable.freeze();
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of())
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of())
 				)
 				, null
 				, List.of(new SuspendedEntity(entity, List.of()))
@@ -1911,7 +1913,7 @@ public class TestTickRunner
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of()))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
 				, List.of(_createFreshEntity(entityId))
 				, null
@@ -1950,8 +1952,7 @@ public class TestTickRunner
 		
 		WorldConfig config = new WorldConfig();
 		TickRunner runner = _createTestRunnerWithConfig(config);
-		MutationBlockPeriodic growth = new MutationBlockPeriodic(location);
-		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(new ScheduledMutation(growth, 0L)))
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of(location.getBlockAddress(), 0L))
 				)
 				, null
 				, null
@@ -2058,7 +2059,7 @@ public class TestTickRunner
 
 	private SuspendedCuboid<IReadOnlyCuboidData> _packageCuboid(CuboidData cuboid)
 	{
-		return new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of());
+		return new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of());
 	}
 
 	private int _mismatchCount(ColumnHeightMap one, ColumnHeightMap two)
