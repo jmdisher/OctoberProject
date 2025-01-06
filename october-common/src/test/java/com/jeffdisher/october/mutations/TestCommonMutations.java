@@ -237,6 +237,11 @@ public class TestCommonMutations
 						{
 							out_mutation.add(mutation);
 						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
+						}
 					}, null)
 				.eventSink(events)
 				.finish()
@@ -317,6 +322,11 @@ public class TestCommonMutations
 						{
 							Assert.fail("Not expected in test");
 						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
+						}
 					}, null)
 				.eventSink(events)
 				.finish()
@@ -351,6 +361,11 @@ public class TestCommonMutations
 						public void next(IMutationBlock mutation)
 						{
 							Assert.fail("Not expected in tets");
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -396,6 +411,11 @@ public class TestCommonMutations
 						{
 							Assert.assertNull(outMutation[0]);
 							outMutation[0] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
 						}
 					}, null)
 				.finish()
@@ -462,6 +482,11 @@ public class TestCommonMutations
 							public void next(IMutationBlock mutation)
 							{
 								Assert.fail("Not expected in test");
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not used in test");
 							}
 						}
 						, null)
@@ -582,6 +607,11 @@ public class TestCommonMutations
 						public void next(IMutationBlock mutation)
 						{
 							holder[0] = (MutationBlockFurnaceCraft) mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
 						}
 					}, null)
 				.finish()
@@ -758,6 +788,11 @@ public class TestCommonMutations
 							Assert.assertNull(out_mutation[0]);
 							out_mutation[0] = mutation;
 						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
+						}
 					}, null)
 				.eventSink(events)
 				.finish()
@@ -816,6 +851,11 @@ public class TestCommonMutations
 									out_mutation[0] = mutation;
 								}
 							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not used in test");
+							}
 						}
 						, null)
 				.fixedRandom(1)
@@ -860,6 +900,11 @@ public class TestCommonMutations
 							public void next(IMutationBlock mutation)
 							{
 								ProcessingSinks.this.nextMutation = mutation;
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not used in test");
 							}
 						}
 						, new TickProcessingContext.IChangeSink() {

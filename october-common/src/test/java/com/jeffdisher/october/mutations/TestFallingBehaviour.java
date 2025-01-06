@@ -235,6 +235,11 @@ public class TestFallingBehaviour
 							Assert.assertNull(blockHolder[0]);
 							blockHolder[0] = mutation;
 						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
+						}
 					}, null)
 				.finish()
 		;
@@ -337,6 +342,11 @@ public class TestFallingBehaviour
 							}
 							Assert.assertNull(blockHolder[thisIndex]);
 							blockHolder[thisIndex] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
 						}
 					}, null)
 				.eventSink((EventRecord event) -> {

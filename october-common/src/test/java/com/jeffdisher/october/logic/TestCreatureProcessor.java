@@ -117,6 +117,11 @@ public class TestCreatureProcessor
 						Assert.assertNull(mutationHolder[0]);
 						mutationHolder[0] = mutation;
 					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not used in test");
+					}
 				}, null)
 				.eventSink(events)
 				.finish()

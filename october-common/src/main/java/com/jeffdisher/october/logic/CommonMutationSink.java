@@ -17,8 +17,13 @@ public class CommonMutationSink implements TickProcessingContext.IMutationSink
 	@Override
 	public void next(IMutationBlock mutation)
 	{
-		// Note that it may be worth pre-filtering the mutations to eagerly schedule them against this cuboid but that seems like needless complexity.
 		_exportedMutations.add(new ScheduledMutation(mutation, 0L));
+	}
+
+	@Override
+	public void future(IMutationBlock mutation, long millisToDelay)
+	{
+		_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
 	}
 
 	/**

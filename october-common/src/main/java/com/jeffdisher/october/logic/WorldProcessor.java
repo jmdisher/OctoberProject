@@ -76,6 +76,7 @@ public class WorldProcessor
 		
 		// We need to walk all the loaded cuboids, just to make sure that there were no updates.
 		Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid = new HashMap<>();
+		List<ScheduledMutation> notYetReadyMutations = new ArrayList<>();
 		Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid = new HashMap<>();
 		int committedMutationCount = 0;
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : worldMap.entrySet())
@@ -157,8 +158,13 @@ public class WorldProcessor
 						}
 						else
 						{
-							// TODO:  Handle the case where we can schedule normal mutations for later.
-							throw Assert.unreachable();
+							long updatedMillis = millisUntilReady - millisSinceLastTick;
+							if (updatedMillis < 0L)
+							{
+								updatedMillis = 0L;
+							}
+							ScheduledMutation updated = new ScheduledMutation(mutation, updatedMillis);
+							notYetReadyMutations.add(updated);
 						}
 					}
 				}
@@ -225,6 +231,7 @@ public class WorldProcessor
 		// We package up any of the work that we did (note that no thread will return a cuboid which had no mutations in its fragment).
 		return new ProcessedFragment(fragment
 				, fragmentHeights
+				, notYetReadyMutations
 				, periodicNotReadyByCuboid
 				, blockChangesByCuboid
 				, committedMutationCount
@@ -387,6 +394,7 @@ public class WorldProcessor
 
 	public static record ProcessedFragment(Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
 			, Map<CuboidAddress, CuboidHeightMap> heightFragment
+			, List<ScheduledMutation> notYetReadyMutations
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicNotReadyByCuboid
 			, Map<CuboidAddress, List<BlockChangeDescription>> blockChangesByCuboid
 			, int committedMutationCount

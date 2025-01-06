@@ -400,7 +400,7 @@ public class TickRunner
 				, Collections.emptyMap()
 				// mutableCreatureState
 				, Collections.emptyMap()
-				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), Map.of(), Map.of(), 0)
+				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
 						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of(), List.of())
 						, null
@@ -646,6 +646,10 @@ public class TickRunner
 				postedEvents.addAll(fragment.postedEvents);
 				
 				// World data.
+				for (ScheduledMutation scheduledMutation : fragment.world.notYetReadyMutations())
+				{
+					_scheduleMutationForCuboid(snapshotBlockMutations, scheduledMutation);
+				}
 				for (Map.Entry<CuboidAddress, Map<BlockAddress, Long>> ent : fragment.world.periodicNotReadyByCuboid().entrySet())
 				{
 					Map<BlockAddress, Long> old = snapshotPeriodicMutations.put(ent.getKey(), ent.getValue());

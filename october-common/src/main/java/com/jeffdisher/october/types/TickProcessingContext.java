@@ -123,6 +123,13 @@ public class TickProcessingContext
 		 * @param mutation The mutation to schedule.
 		 */
 		void next(IMutationBlock mutation);
+		/**
+		 * Requests that a block mutation be scheduled for the future.
+		 * 
+		 * @param mutation The mutation to schedule.
+		 * @param millisToDelay Milliseconds to delay before running the mutation.
+		 */
+		void future(IMutationBlock mutation, long millisToDelay);
 	}
 
 

@@ -596,6 +596,11 @@ public class TestCommonChanges
 						{
 							blockHolder.add(mutation);
 						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
+						}
 					}, null)
 				.finish()
 		;
@@ -783,6 +788,11 @@ public class TestCommonChanges
 						{
 							Assert.assertNull(blockHolder[0]);
 							blockHolder[0] = mutation;
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.fail("Not used in test");
 						}
 					}, null)
 				.eventSink(events)
@@ -2179,6 +2189,11 @@ public class TestCommonChanges
 							{
 								Assert.assertNull(_ContextHolder.this.mutation);
 								_ContextHolder.this.mutation = mutation;
+							}
+							@Override
+							public void future(IMutationBlock mutation, long millisToDelay)
+							{
+								Assert.fail("Not used in test");
 							}
 						} : null
 						, allowEntityChange ? new TickProcessingContext.IChangeSink() {

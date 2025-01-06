@@ -25,6 +25,7 @@ import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
+import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
@@ -1966,6 +1967,48 @@ public class TestTickRunner
 		// If there was a problem, the tick runner would have crashed.
 		Assert.assertEquals(1, snapshot.stats().committedCuboidMutationCount());
 		runner.shutdown();
+	}
+
+	@Test
+	public void futureMutation()
+	{
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(_createFreshEntity(entityId))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// We just enqueue a future mutation to do basic damage.
+		AbsoluteLocation target = new AbsoluteLocation(16, 16, 16);
+		short damage = 100;
+		long delayMillis = 2L * MILLIS_PER_TICK - 1L;
+		MutationBlockIncrementalBreak takeDamage = new MutationBlockIncrementalBreak(target, damage, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
+		runner.enqueueEntityChange(entityId, new EntityChangeFutureBlock(takeDamage, delayMillis), 1L);
+		
+		// We enqueued this before the tick started so it will run immediately
+		// Run the tick to receive the change, then another to apply it.
+		runner.startNextTick();
+		TickRunner.Snapshot snap = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snap.stats().committedEntityMutationCount());
+		
+		// We need to pass time until the remaining delay reaches 0 and it is set for just under 2 ticks so we expect 2 ticks with nothing happening.
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snap.stats().committedCuboidMutationCount());
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(0, snap.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, target.getBlockAddress()));
+		runner.startNextTick();
+		snap = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
+		Assert.assertEquals(damage, snap.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, target.getBlockAddress()));
 	}
 
 
