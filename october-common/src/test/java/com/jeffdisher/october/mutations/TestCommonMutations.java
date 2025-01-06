@@ -881,6 +881,51 @@ public class TestCommonMutations
 		Assert.assertEquals(2, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
+	@Test
+	public void infiniteWaterSource()
+	{
+		// Show that removing a block from an infinite water source reschedules a flow action.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), waterSource.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 1, 0).getBlockAddress(), waterSource.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(1, 1, 0).getBlockAddress(), waterSource.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress(), waterSource.item().number());
+		
+		// First, we want to make sure that the wheat fails to grow due to darkness.
+		IMutationBlock[] out_mutation = new IMutationBlock[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail("Not in test");
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.assertNotNull(mutation);
+						Assert.assertTrue(millisToDelay > 0L);
+						Assert.assertNull(out_mutation[0]);
+						out_mutation[0] = mutation;
+					}
+				}, null)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockReplace replace = new MutationBlockReplace(target, waterSource, ENV.special.AIR);
+		boolean didApply = replace.applyMutation(context, proxy);
+		
+		// This should schedule a flow operation for the future.
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		Assert.assertTrue(out_mutation[0] instanceof MutationBlockLiquidFlowInto);
+	}
+
 
 	private static class ProcessingSinks
 	{
