@@ -151,6 +151,16 @@ public class LiquidRegistry
 		return blockOutput;
 	}
 
+	public long flowDelayMillis(Environment env, Block type)
+	{
+		// TODO:  Generalize this in the future but now we just make sure it is a water type.
+		boolean isWater = (_waterSource == type) || (_waterStrong == type) || (_waterWeak == type);
+		return isWater
+				? 100L
+				: 0L
+		;
+	}
+
 
 	private static void _checkBlock(Block block, int[] types, Block... blocks)
 	{

@@ -1225,7 +1225,7 @@ public class TickRunner
 	public static record SnapshotCuboid(
 			// Never null.
 			IReadOnlyCuboidData completed
-			// Never null but can be empty.
+			// Null if there are no changes or non-empty.
 			, List<MutationBlockSetBlock> blockChanges
 			// Never null but can be empty.
 			, List<ScheduledMutation> scheduledBlockMutations

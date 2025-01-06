@@ -346,7 +346,13 @@ public class TestFallingBehaviour
 						@Override
 						public void future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							int thisIndex = 0;
+							while (null != blockHolder[thisIndex])
+							{
+								thisIndex += 1;
+							}
+							Assert.assertNull(blockHolder[thisIndex]);
+							blockHolder[thisIndex] = mutation;
 						}
 					}, null)
 				.eventSink((EventRecord event) -> {

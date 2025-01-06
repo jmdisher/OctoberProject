@@ -60,7 +60,8 @@ public class MutationBlockUpdate implements IMutationBlock
 			if (newType != thisBlock)
 			{
 				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
-				context.mutationSink.next(new MutationBlockLiquidFlowInto(_blockLocation));
+				long millisDelay = env.liquids.flowDelayMillis(env, newType);
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				didApply = true;
 			}
 		}
@@ -78,7 +79,8 @@ public class MutationBlockUpdate implements IMutationBlock
 				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
 				if (emptyBlock != eventualBlock)
 				{
-					context.mutationSink.next(new MutationBlockLiquidFlowInto(_blockLocation));
+					long millisDelay = env.liquids.flowDelayMillis(env, eventualBlock);
+					context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				}
 				
 				// Create the inventory for this type.

@@ -240,7 +240,7 @@ public class TestCommonMutations
 						@Override
 						public void future(IMutationBlock mutation, long millisToDelay)
 						{
-							Assert.fail("Not used in test");
+							out_mutation.add(mutation);
 						}
 					}, null)
 				.eventSink(events)

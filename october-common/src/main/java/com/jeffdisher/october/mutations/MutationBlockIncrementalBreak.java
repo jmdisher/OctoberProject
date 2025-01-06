@@ -76,7 +76,8 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
 				if (emptyBlock != eventualBlock)
 				{
-					context.mutationSink.next(new MutationBlockLiquidFlowInto(_location));
+					long millisDelay = env.liquids.flowDelayMillis(env, eventualBlock);
+					context.mutationSink.future(new MutationBlockLiquidFlowInto(_location), millisDelay);
 				}
 				
 				// Create the inventory for this type.
