@@ -68,3 +68,8 @@ op.stone_knife	Stone Knife
 op.stone_hatchet	Stone Hatchet
 op.wooden_chisel	Wooden Chisel
 op.digging_stick	Digging Stick
+op.basalt	Basalt
+op.lava_source	Lava Source
+op.lava_strong	Lava (Strong Flow)
+op.lava_weak	Lava (Weak Flow)
+op.bucket_lava	Lava Bucket

@@ -70,3 +70,8 @@ op.stone_knife	2
 op.stone_hatchet	4
 op.wooden_chisel	4
 op.digging_stick	1
+op.basalt	4
+op.lava_source	0
+op.lava_strong	0
+op.lava_weak	0
+op.bucket_lava	4

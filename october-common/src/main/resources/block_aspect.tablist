@@ -119,3 +119,11 @@ op.carrot_mature
 op.bed
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick
 	block_material	AXE
+op.basalt
+	block_material	PICKAXE
+op.lava_source	can_be_replaced
+	viscosity	80
+op.lava_strong	can_be_replaced
+	viscosity	80
+op.lava_weak	can_be_replaced
+	viscosity	80

@@ -9,3 +9,6 @@
 op.lantern	15
 op.lamp_on	15
 op.torch	15
+op.lava_source	8
+op.lava_strong	6
+op.lava_weak	4
