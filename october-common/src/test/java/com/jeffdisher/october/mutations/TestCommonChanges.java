@@ -1088,24 +1088,28 @@ public class TestCommonChanges
 	@Test
 	public void bucketUsage() throws Throwable
 	{
-		// Use a bucket to pick up and place water.
+		// We will use a water bucket and lava bucket to show that we can place and replace these liquid sources.
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item waterBucket = ENV.items.getItemById("op.bucket_water");
+		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		short waterSourceItemNumber = ENV.items.getItemById("op.water_source").number();
+		short lavaSourceItemNumber = ENV.items.getItemById("op.lava_source").number();
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - EntityConstants.VOLUME_PLAYER.width(), 0.0f, 10.0f);
-		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(emptyBucket, 0));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, 0));
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, 0));
+		// Start with the water.
 		newEntity.setSelectedKey(1);
 		
 		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), waterSourceItemNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.AIR.item().number());
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
-		// Try to pick up the water source.
+		// Place the water source.
 		EntityChangeUseSelectedItemOnBlock exchange = new EntityChangeUseSelectedItemOnBlock(target);
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
@@ -1114,10 +1118,10 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
-		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
+		Assert.assertEquals(waterSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		
-		// Try to place the water source - note that this should fail unless we clear the last special action time.
+		// Try to pick up the water source - note that this should fail unless we clear the last special action time.
 		Assert.assertFalse(exchange.applyChange(holder.context, newEntity));
 		newEntity.ephemeral_lastSpecialActionMillis = 0L;
 		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
@@ -1127,8 +1131,33 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(target, cuboid);
 		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
-		Assert.assertEquals(waterSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(waterBucket, newEntity.newInventory.getNonStackableForKey(1).type());
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// Place the lava source.
+		newEntity.setSelectedKey(2);
+		newEntity.ephemeral_lastSpecialActionMillis = 0L;
+		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		replace = (MutationBlockReplace) holder.mutation;
+		holder.mutation = null;
+		proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(2).type());
+		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		
+		// Try to pick up the lava source.
+		newEntity.ephemeral_lastSpecialActionMillis = 0L;
+		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		replace = (MutationBlockReplace) holder.mutation;
+		holder.mutation = null;
+		proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(lavaBucket, newEntity.newInventory.getNonStackableForKey(2).type());
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 	}
 
 	@Test

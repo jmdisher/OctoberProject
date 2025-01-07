@@ -35,6 +35,7 @@ import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
+import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -2059,6 +2060,62 @@ public class TestTickRunner
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snap.stats().committedCuboidMutationCount());
 		Assert.assertEquals(damage, snap.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, target.getBlockAddress()));
+	}
+
+	@Test
+	public void liquidConflict()
+	{
+		// Place a water and lava source near each other on a platform and observe what happens after they finish flowing.
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
+		WorldConfig config = new WorldConfig();
+		TickRunner runner = _createTestRunnerWithConfig(config);
+		runner.start();
+		
+		CuboidData platform = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-3, -4, -5), STONE);
+		CuboidData openSpace = CuboidGenerator.createFilledCuboid(platform.getCuboidAddress().getRelative(0, 0, 1), ENV.special.AIR);
+		
+		AbsoluteLocation centre = openSpace.getCuboidAddress().getBase().getRelative(15, 15, 0);
+		AbsoluteLocation waterPlace = centre.getRelative(1, 1, 0);
+		AbsoluteLocation lavaPlace = centre.getRelative(-1, -1, 0);
+		MutationBlockReplace placeWater = new MutationBlockReplace(waterPlace, ENV.special.AIR, waterSource);
+		MutationBlockReplace placeLava = new MutationBlockReplace(lavaPlace, ENV.special.AIR, lavaSource);
+		runner.setupChangesForTick(List.of(
+					new SuspendedCuboid<IReadOnlyCuboidData>(platform, HeightMapHelpers.buildHeightMap(platform), List.of(), List.of(), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(openSpace, HeightMapHelpers.buildHeightMap(openSpace), List.of(), List.of(
+							new ScheduledMutation(placeWater, 0L)
+							, new ScheduledMutation(placeLava, 0L)
+					), Map.of())
+				)
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		
+		// Wait for lava to flow twice.
+		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		int ticksToPass = (int)(2 * millisToFlow / MILLIS_PER_TICK) + 4;
+		for (int j = 0; j < ticksToPass; ++j)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		
+		// Assess the blocks in this cuboid.
+		IReadOnlyCuboidData topCuboid = snapshot.cuboids().get(openSpace.getCuboidAddress()).completed();
+		// Make sure that the sources were applied.
+		Assert.assertEquals(waterSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getBlockAddress()));
+		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getBlockAddress()));
+		// Check a walk through the space, based on what we experimentally verified to see (since the lava arrives later, it doesn't flow).
+		Assert.assertEquals(ENV.items.getItemById("op.lava_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(-2, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(-1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(0, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.water_strong").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 0).getBlockAddress()));
+		
+		runner.shutdown();
 	}
 
 
