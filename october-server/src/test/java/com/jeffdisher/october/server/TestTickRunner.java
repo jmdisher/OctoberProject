@@ -2122,6 +2122,75 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void liquidStacking()
+	{
+		// We will show what happens when a single source of one liquid is placed over a pool of another.
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
+		WorldConfig config = new WorldConfig();
+		TickRunner runner = _createTestRunnerWithConfig(config);
+		runner.start();
+		
+		CuboidData waterPool = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, -1, 0), waterSource);
+		CuboidData lavaBlob = CuboidGenerator.createFilledCuboid(waterPool.getCuboidAddress().getRelative(0, 0, 1), ENV.special.AIR);
+		CuboidData lavaPool = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, 1, 0), lavaSource);
+		CuboidData waterBlob = CuboidGenerator.createFilledCuboid(lavaPool.getCuboidAddress().getRelative(0, 0, 1), ENV.special.AIR);
+		
+		AbsoluteLocation waterPlace = waterBlob.getCuboidAddress().getBase().getRelative(15, 15, 0);
+		AbsoluteLocation lavaPlace = lavaBlob.getCuboidAddress().getBase().getRelative(15, 15, 0);
+		MutationBlockReplace placeWater = new MutationBlockReplace(waterPlace, ENV.special.AIR, waterSource);
+		MutationBlockReplace placeLava = new MutationBlockReplace(lavaPlace, ENV.special.AIR, lavaSource);
+		runner.setupChangesForTick(List.of(
+					new SuspendedCuboid<IReadOnlyCuboidData>(waterPool, HeightMapHelpers.buildHeightMap(waterPool), List.of(), List.of(), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(lavaBlob, HeightMapHelpers.buildHeightMap(lavaBlob), List.of(), List.of(
+							new ScheduledMutation(placeLava, 0L)
+					), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(lavaPool, HeightMapHelpers.buildHeightMap(lavaPool), List.of(), List.of(), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(waterBlob, HeightMapHelpers.buildHeightMap(waterBlob), List.of(), List.of(
+							new ScheduledMutation(placeWater, 0L)
+					), Map.of())
+				)
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		
+		// Wait for lava to flow twice.
+		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		int ticksToPass = (int)(2 * millisToFlow / MILLIS_PER_TICK) + 4;
+		for (int j = 0; j < ticksToPass; ++j)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		
+		// Check the cuboids.
+		IReadOnlyCuboidData waterPoolCuboid = snapshot.cuboids().get(waterPool.getCuboidAddress()).completed();
+		IReadOnlyCuboidData lavaPoolCuboid = snapshot.cuboids().get(lavaPool.getCuboidAddress()).completed();
+		IReadOnlyCuboidData waterBlobCuboid = snapshot.cuboids().get(waterBlob.getCuboidAddress()).completed();
+		IReadOnlyCuboidData lavaBlobCuboid = snapshot.cuboids().get(lavaBlob.getCuboidAddress()).completed();
+		
+		// Make sure that the sources were applied.
+		Assert.assertEquals(waterSource.item().number(), waterBlobCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getBlockAddress()));
+		Assert.assertEquals(lavaSource.item().number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getBlockAddress()));
+		
+		// Check that these have flowed "out" from the sources.
+		Assert.assertEquals(ENV.items.getItemById("op.water_strong").number(), waterBlobCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), waterBlobCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getRelative(2, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.lava_strong").number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.lava_weak").number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 0, 0).getBlockAddress()));
+		
+		// Check what appears under these sources, where the old sources were.
+		// NOTE:  Sources are currently unchanged by liquid flows but this will change.
+		Assert.assertEquals(waterSource.item().number(), waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(0, 0, -1).getBlockAddress()));
+		Assert.assertEquals(lavaSource.item().number(), lavaPoolCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getRelative(0, 0, -1).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
