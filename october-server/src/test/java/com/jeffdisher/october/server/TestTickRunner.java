@@ -2115,6 +2115,10 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.items.getItemById("op.water_strong").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(1, 0, 0).getBlockAddress()));
 		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 0).getBlockAddress()));
 		
+		// We also want to verify that the lava is providing light.
+		Assert.assertEquals(5, topCuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
+		Assert.assertEquals(7, topCuboid.getData7(AspectRegistry.LIGHT, lavaPlace.getRelative(0, 0, 1).getBlockAddress()));
+		
 		runner.shutdown();
 	}
 
