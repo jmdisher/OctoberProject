@@ -52,11 +52,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
 			// This is an "empty" type so see if the "empty" blocks around it should influence its type.
-			// Note that we don't change the "source" blocks.
-			Block newType = env.liquids.isSource(thisBlock)
-					? thisBlock
-					: CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation)
-			;
+			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
 			if (newType != thisBlock)
 			{
 				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
@@ -76,7 +72,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			{
 				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
 				Block emptyBlock = env.special.AIR;
-				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
+				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 				if (emptyBlock != eventualBlock)
 				{
 					long millisDelay = env.liquids.flowDelayMillis(env, eventualBlock);

@@ -52,18 +52,14 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 		Block thisBlock = newBlock.getBlock();
 		if (env.blocks.canBeReplaced(thisBlock))
 		{
-			// For now, there are no interactions with source blocks.
-			if (!env.liquids.isSource(thisBlock))
+			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
+			if (newType != thisBlock)
 			{
-				Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation);
-				if (newType != thisBlock)
-				{
-					Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, newType);
-					// The inventory should be restored if these are all empty block types.
-					Assert.assertTrue(null == inv);
-					thisBlock = newType;
-					didApply = true;
-				}
+				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, newType);
+				// The inventory should be restored if these are all empty block types.
+				Assert.assertTrue(null == inv);
+				thisBlock = newType;
+				didApply = true;
 			}
 		}
 		return didApply;

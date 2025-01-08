@@ -73,7 +73,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			{
 				// We want to see if there are any liquids around this block which we will need to handle.
 				Block emptyBlock = env.special.AIR;
-				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location);
+				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location, emptyBlock);
 				if (emptyBlock != eventualBlock)
 				{
 					long millisDelay = env.liquids.flowDelayMillis(env, eventualBlock);

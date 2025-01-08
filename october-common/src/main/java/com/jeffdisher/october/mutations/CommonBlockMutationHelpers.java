@@ -46,11 +46,12 @@ public class CommonBlockMutationHelpers
 	 * 
 	 * @param context The context.
 	 * @param location The location to investigate.
+	 * @param currentBlock The current block contents (not read from context since it could be changing in caller).
 	 * @return The block type which the surrounding blocks imply the location should become.
 	 */
-	public static Block determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location)
+	public static Block determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)
 	{
-		return _determineEmptyBlockType(context, location);
+		return _determineEmptyBlockType(context, location, currentBlock);
 	}
 
 	/**
@@ -208,7 +209,7 @@ public class CommonBlockMutationHelpers
 		return didDropInventory;
 	}
 
-	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location)
+	private static Block _determineEmptyBlockType(TickProcessingContext context, AbsoluteLocation location, Block currentBlock)
 	{
 		Environment env = Environment.getShared();
 		Block east = _getBlockOrNull(context, location.getRelative(1, 0, 0));
@@ -218,7 +219,7 @@ public class CommonBlockMutationHelpers
 		Block up = _getBlockOrNull(context, location.getRelative(0, 0, 1));
 		Block down = _getBlockOrNull(context, location.getRelative(0, 0, -1));
 		
-		Block liquidType = env.liquids.chooseEmptyLiquidBlock(env, east, west, north, south, up, down);
+		Block liquidType = env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
 		
 		return (null != liquidType)
 				? liquidType

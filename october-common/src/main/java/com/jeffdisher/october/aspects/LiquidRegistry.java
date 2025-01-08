@@ -10,6 +10,11 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class LiquidRegistry
 {
+	// TODO:  Generalize this in the future by moving this into data.
+	public static final long FLOW_DELAY_MILLIS_WATER = 100L;
+	public static final long FLOW_DELAY_MILLIS_LAVA  = 1000L;
+	public static final long FLOW_DELAY_MILLIS_SOLID = 1000L;
+
 	// TODO:  Remove these ivars once this is pulled from a data file.
 	private final Block _waterSource;
 	private final Block _waterStrong;
@@ -17,6 +22,9 @@ public class LiquidRegistry
 	private final Block _lavaSource;
 	private final Block _lavaStrong;
 	private final Block _lavaWeak;
+
+	private final Block _blockStone;
+	private final Block _blockBasalt;
 
 	private final Item _bucketEmpty;
 	private final Item _bucketWater;
@@ -30,6 +38,10 @@ public class LiquidRegistry
 		_lavaSource = blocks.fromItem(items.getItemById("op.lava_source"));
 		_lavaStrong = blocks.fromItem(items.getItemById("op.lava_strong"));
 		_lavaWeak = blocks.fromItem(items.getItemById("op.lava_weak"));
+		
+		_blockStone = blocks.fromItem(items.getItemById("op.stone"));
+		_blockBasalt = blocks.fromItem(items.getItemById("op.basalt"));
+		
 		_bucketEmpty = items.getItemById("op.bucket_empty");
 		_bucketWater = items.getItemById("op.bucket_water");
 		_bucketLava = items.getItemById("op.bucket_lava");
@@ -40,7 +52,7 @@ public class LiquidRegistry
 		return (_waterSource == block) || (_lavaSource == block);
 	}
 
-	public Block chooseEmptyLiquidBlock(Environment env, Block east, Block west, Block north, Block south, Block above, Block below)
+	public Block chooseEmptyLiquidBlock(Environment env, Block currentBlock, Block east, Block west, Block north, Block south, Block above, Block below)
 	{
 		// An "empty" block is one which is left over after breaking a block.
 		// It is usually not a liquid type (so return null).
@@ -54,17 +66,21 @@ public class LiquidRegistry
 		_checkBlock(north, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
 		_checkBlock(south, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
 		
-		boolean isWater = (types[0] + types[1] + types[2]) > 0;
-		boolean isLava = (types[3] + types[4] + types[5]) > 0;
+		boolean isWaterSource = (currentBlock == _waterSource);
+		boolean isLavaSource = (currentBlock == _lavaSource);
+		boolean currentlyWater = isWaterSource || (currentBlock == _waterStrong) || (currentBlock == _waterWeak);
+		boolean currentlyLava = isLavaSource || (currentBlock == _lavaStrong) || (currentBlock == _lavaWeak);
+		boolean adjacentToWater = (types[0] + types[1] + types[2]) > 0;
+		boolean adjacentToLava = (types[3] + types[4] + types[5]) > 0;
 		
-		int offset = isLava ? 3 : 0;
+		int offset = adjacentToLava ? 3 : 0;
 		int strength = 0;
-		if (isWater && isLava)
+		if (adjacentToWater && adjacentToLava)
 		{
 			// This is a conflict which we currently treat as "air".
 			strength = 0;
 		}
-		else if (isWater && (types[offset] >= 2))
+		else if (adjacentToWater && (types[offset] >= 2))
 		{
 			// We have at lest 2 adjacent sources, so make this a source.
 			// (we only generate sources with water).
@@ -81,73 +97,96 @@ public class LiquidRegistry
 			strength = 1;
 		}
 		
+		// Account for if this is already a source.
+		if ((adjacentToWater && isWaterSource && (strength > 0))
+				|| (adjacentToLava && isLavaSource && (strength > 0))
+		)
+		{
+			strength = 3;
+		}
+		
 		int aboveStrength = 0;
+		Block solidType = null;
 		int aboveStrengthWater = _index(above, null, _waterWeak, _waterStrong, _waterSource);
 		int aboveStrengthLava = _index(above, null, _lavaWeak, _lavaStrong, _lavaSource);
 		if (aboveStrengthWater > 0)
 		{
 			// Water is falling onto us.
-			if (isLava)
+			if (adjacentToLava || currentlyLava)
 			{
-				isLava = false;
+				adjacentToLava = false;
 				strength = 0;
+				solidType = _blockBasalt;
 			}
 			else
 			{
-				isWater = true;
+				adjacentToWater = true;
 				aboveStrength = aboveStrengthWater;
 			}
 		}
 		if (aboveStrengthLava > 0)
 		{
 			// Lava is falling onto us.
-			if (isWater)
+			if (adjacentToWater || currentlyWater)
 			{
-				isWater = false;
+				adjacentToWater = false;
 				strength = 0;
+				solidType = _blockStone;
 			}
 			else
 			{
-				isLava = true;
+				adjacentToLava = true;
 				aboveStrength = aboveStrengthLava;
 			}
 		}
 		
-		if (-1 == aboveStrength)
+		if (null == solidType)
 		{
-			aboveStrength = 0;
-		}
-		if ((null != below) && env.blocks.canBeReplaced(below))
-		{
-			// Empty.
-			strength = Math.max(strength, aboveStrength);
-		}
-		else
-		{
-			// Solid block so we make this strong flow if up is any water type.
-			if ((aboveStrength > 0) && (strength < 2))
+			if (-1 == aboveStrength)
 			{
-				strength = 2;
+				aboveStrength = 0;
+			}
+			if ((null != below) && env.blocks.canBeReplaced(below))
+			{
+				// Empty.
+				strength = Math.max(strength, aboveStrength);
+			}
+			else
+			{
+				// Solid block so we make this strong flow if up is any water type.
+				if ((aboveStrength > 0) && (strength < 2))
+				{
+					strength = 2;
+				}
 			}
 		}
 		
 		Block type;
-		switch (strength)
+		if (null != solidType)
 		{
-		case 3:
-			type = isWater ? _waterSource : _lavaSource;
-			break;
-		case 2:
-			type = isWater ? _waterStrong : _lavaStrong;
-			break;
-		case 1:
-			type = isWater ? _waterWeak : _lavaWeak;
-			break;
-		case 0:
-			type = null;
-			break;
-			default:
-				throw Assert.unreachable();
+			// We decided to solidify.
+			type = solidType;
+		}
+		else
+		{
+			// We aren't going to solidify so just see what this should be.
+			switch (strength)
+			{
+			case 3:
+				type = adjacentToWater ? _waterSource : _lavaSource;
+				break;
+			case 2:
+				type = adjacentToWater ? _waterStrong : _lavaStrong;
+				break;
+			case 1:
+				type = adjacentToWater ? _waterWeak : _lavaWeak;
+				break;
+			case 0:
+				type = isWaterSource ? _waterSource : isLavaSource ? _lavaSource : null;
+				break;
+				default:
+					throw Assert.unreachable();
+			}
 		}
 		return type;
 	}
@@ -227,10 +266,10 @@ public class LiquidRegistry
 		boolean isWater = (_waterSource == type) || (_waterStrong == type) || (_waterWeak == type);
 		boolean isLava = (_lavaSource == type) || (_lavaStrong == type) || (_lavaWeak == type);
 		return isWater
-				? 100L
+				? FLOW_DELAY_MILLIS_WATER
 				: isLava
-					? 1000L
-					: 0L
+					? FLOW_DELAY_MILLIS_LAVA
+					: FLOW_DELAY_MILLIS_SOLID
 		;
 	}
 
