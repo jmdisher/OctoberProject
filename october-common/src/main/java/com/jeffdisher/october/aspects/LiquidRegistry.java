@@ -52,6 +52,19 @@ public class LiquidRegistry
 		return (_waterSource == block) || (_lavaSource == block);
 	}
 
+	/**
+	 * Determines the correct block should be given the current block state and the surrounding blocks.
+	 * 
+	 * @param env The environment.
+	 * @param currentBlock The current block type.
+	 * @param east Block to the East.
+	 * @param west Block to the West.
+	 * @param north Block to the North.
+	 * @param south Block to the South.
+	 * @param above Block above.
+	 * @param below Block below.
+	 * @return The block type (never null).
+	 */
 	public Block chooseEmptyLiquidBlock(Environment env, Block currentBlock, Block east, Block west, Block north, Block south, Block above, Block below)
 	{
 		// An "empty" block is one which is left over after breaking a block.
@@ -121,7 +134,8 @@ public class LiquidRegistry
 			else
 			{
 				adjacentToWater = true;
-				aboveStrength = aboveStrengthWater;
+				// Flow from above is always strong.
+				aboveStrength = 2;
 			}
 		}
 		if (aboveStrengthLava > 0)
@@ -136,7 +150,8 @@ public class LiquidRegistry
 			else
 			{
 				adjacentToLava = true;
-				aboveStrength = aboveStrengthLava;
+				// Flow from above is always strong.
+				aboveStrength = 2;
 			}
 		}
 		
@@ -146,19 +161,7 @@ public class LiquidRegistry
 			{
 				aboveStrength = 0;
 			}
-			if ((null != below) && env.blocks.canBeReplaced(below))
-			{
-				// Empty.
-				strength = Math.max(strength, aboveStrength);
-			}
-			else
-			{
-				// Solid block so we make this strong flow if up is any water type.
-				if ((aboveStrength > 0) && (strength < 2))
-				{
-					strength = 2;
-				}
-			}
+			strength = Math.max(strength, aboveStrength);
 		}
 		
 		Block type;
@@ -182,7 +185,12 @@ public class LiquidRegistry
 				type = adjacentToWater ? _waterWeak : _lavaWeak;
 				break;
 			case 0:
-				type = isWaterSource ? _waterSource : isLavaSource ? _lavaSource : null;
+				type = isWaterSource
+					? _waterSource
+					: isLavaSource
+						? _lavaSource
+						: env.special.AIR
+				;
 				break;
 				default:
 					throw Assert.unreachable();

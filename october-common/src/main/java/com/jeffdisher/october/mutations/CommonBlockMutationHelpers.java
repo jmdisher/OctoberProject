@@ -219,12 +219,7 @@ public class CommonBlockMutationHelpers
 		Block up = _getBlockOrNull(context, location.getRelative(0, 0, 1));
 		Block down = _getBlockOrNull(context, location.getRelative(0, 0, -1));
 		
-		Block liquidType = env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
-		
-		return (null != liquidType)
-				? liquidType
-				: env.special.AIR
-		;
+		return env.liquids.chooseEmptyLiquidBlock(env, currentBlock, east, west, north, south, up, down);
 	}
 
 	private static Block _getBlockOrNull(TickProcessingContext context, AbsoluteLocation location)
