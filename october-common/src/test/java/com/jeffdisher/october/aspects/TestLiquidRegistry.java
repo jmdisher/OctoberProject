@@ -73,23 +73,22 @@ public class TestLiquidRegistry
 		// We show what happens in different falling water scenarios.
 		// Under a water source.
 		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR);
-		Assert.assertEquals(WATER_STRONG, target);
+		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Under water strong.
 		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_STRONG, ENV.special.AIR);
-		Assert.assertEquals(WATER_STRONG, target);
+		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Under water weak.
 		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_WEAK, ENV.special.AIR);
-		Assert.assertEquals(WATER_STRONG, target);
+		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Next to water source.
 		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR);
-		Assert.assertEquals(WATER_STRONG, target);
+		Assert.assertEquals(WATER_WEAK, target);
 		
 		// Next to water strong.
 		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_STRONG, ENV.special.AIR, ENV.special.AIR);
-		// TODO:  We eventually want to change this so that water doesn't flow outward unless above a solid block.
 		Assert.assertEquals(WATER_WEAK, target);
 	}
 }

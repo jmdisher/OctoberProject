@@ -266,8 +266,8 @@ public class TestCommonMutations
 		Assert.assertTrue(proxy.didChange());
 		proxy.writeBack(cuboid);
 		
-		// If we break a block under any strength of flow, we expect it to be strong flow.
-		Assert.assertEquals(WATER_STRONG, proxy.getBlock());
+		// If we break a block under any strength of flow, we expect it to be weak flow.
+		Assert.assertEquals(WATER_WEAK, proxy.getBlock());
 		
 		// Run an update on the other blocks below to verify it flows through them, creating strong flow when it touches the solid block.
 		proxy = new MutableBlockProxy(down, cuboid);

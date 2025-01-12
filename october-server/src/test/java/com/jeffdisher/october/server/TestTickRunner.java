@@ -1165,10 +1165,10 @@ public class TestTickRunner
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
 		// Wait for this to trickle through the cuboid.
-		// This will take 37 steps, with some ticks between to allow flow - found experimentally.
+		// This will take 33 steps, with some ticks between to allow flow - found experimentally.
 		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE);
 		int ticksToPass = (int)(millisToFlow / MILLIS_PER_TICK);
-		for (int i = 0; i < 37; ++i)
+		for (int i = 0; i < 33; ++i)
 		{
 			// Allow the break of update to happen.
 			runner.startNextTick();
@@ -2184,10 +2184,10 @@ public class TestTickRunner
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		
-		// Wait for lava to flow twice, then another iteration for solidification, another 2 to let liquid fade.
+		// Wait for lava to flow twice, then another iteration for solidification, another 2 to let liquid fade, and a few more for final lava flow.
 		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
 		int ticksForOneLavaFlow = (int)(millisToFlow / MILLIS_PER_TICK) + 2;
-		int ticksToPass = 5 * ticksForOneLavaFlow;
+		int ticksToPass = 8 * ticksForOneLavaFlow;
 		for (int j = 0; j < ticksToPass; ++j)
 		{
 			runner.startNextTick();
@@ -2211,11 +2211,14 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.items.getItemById("op.lava_weak").number(), lavaBlobCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 0, 0).getBlockAddress()));
 		
 		// Check what appears under these sources, where the old sources were.
-		// We expect all the water blocks to turn to stone, all the lava blocks to turn to basalt, and anything not covered to be air.
+		// We expect all the water blocks to turn to stone, all the lava blocks to turn to basalt, and anything not covered to be air or delayed lava flow.
+		// The lava ends up flowing down in cases where the water doesn't since the water takes longer to flow so the water is already gone.
 		// NOTE:  Sources are currently unchanged by liquid flows, while other conflicts turn to air, but this will change.
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		short basaltNumber = ENV.items.getItemById("op.basalt").number();
 		short airNumber = ENV.special.AIR.item().number();
+		short lavaStrongNumber = lavaStrong.item().number();
+		short lavaWeakNumber = lavaWeak.item().number();
 		
 		Assert.assertEquals(stoneNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(0, 0, -1).getBlockAddress()));
 		Assert.assertEquals(stoneNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(0, 1, -1).getBlockAddress()));
@@ -2223,8 +2226,8 @@ public class TestTickRunner
 		Assert.assertEquals(stoneNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(1, 0, -1).getBlockAddress()));
 		Assert.assertEquals(stoneNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(1, 1, -1).getBlockAddress()));
 		Assert.assertEquals(airNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(1, 2, -1).getBlockAddress()));
-		Assert.assertEquals(stoneNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 0, -1).getBlockAddress()));
-		Assert.assertEquals(airNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 1, -1).getBlockAddress()));
+		Assert.assertEquals(lavaStrongNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 0, -1).getBlockAddress()));
+		Assert.assertEquals(lavaWeakNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 1, -1).getBlockAddress()));
 		Assert.assertEquals(airNumber, waterPoolCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getRelative(2, 2, -1).getBlockAddress()));
 		Assert.assertEquals(basaltNumber, lavaPoolCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getRelative(0, 0, -1).getBlockAddress()));
 		Assert.assertEquals(basaltNumber, lavaPoolCuboid.getData15(AspectRegistry.BLOCK, waterPlace.getRelative(0, 1, -1).getBlockAddress()));

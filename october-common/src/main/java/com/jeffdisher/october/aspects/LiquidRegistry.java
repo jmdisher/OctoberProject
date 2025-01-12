@@ -54,6 +54,9 @@ public class LiquidRegistry
 
 	/**
 	 * Determines the correct block should be given the current block state and the surrounding blocks.
+	 * There are a few noteworthy rules around how this liquid algorithm works:
+	 * -if this block can form a source and is horizontally-adjacent to at least 2 sources, it becomes a source
+	 * -if the block isn't above a solid block, it will become weak flow, at best (if not solid or air)
 	 * 
 	 * @param env The environment.
 	 * @param currentBlock The current block type.
@@ -67,11 +70,6 @@ public class LiquidRegistry
 	 */
 	public Block chooseEmptyLiquidBlock(Environment env, Block currentBlock, Block east, Block west, Block north, Block south, Block above, Block below)
 	{
-		// An "empty" block is one which is left over after breaking a block.
-		// It is usually not a liquid type (so return null).
-		// Rules for the empty type:
-		// -check 4 horizontal blocks, if there are >=2 sources, create a source, otherwise take the max - 1
-		// -check the block above and below, if the block below is empty, take the same as above, if not, take strong flow
 		// We will only apply either water OR lava, currently treating a conflict as "air".
 		int[] types = new int[6];
 		_checkBlock(east, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
@@ -85,6 +83,7 @@ public class LiquidRegistry
 		boolean currentlyLava = isLavaSource || (currentBlock == _lavaStrong) || (currentBlock == _lavaWeak);
 		boolean adjacentToWater = (types[0] + types[1] + types[2]) > 0;
 		boolean adjacentToLava = (types[3] + types[4] + types[5]) > 0;
+		boolean isAboveSolid = !env.blocks.canBeReplaced(below);
 		
 		int offset = adjacentToLava ? 3 : 0;
 		int strength = 0;
@@ -101,8 +100,11 @@ public class LiquidRegistry
 		}
 		else if (types[offset] >= 1)
 		{
-			// We are adjacent to at least 1 source, so we want to be strong flow.
-			strength = 2;
+			// We are adjacent to at least 1 source, so we want to be strong flow unless over an empty block.
+			strength = isAboveSolid
+					? 2
+					: 1
+			;
 		}
 		else if (types[offset + 1] >= 1)
 		{
@@ -134,8 +136,11 @@ public class LiquidRegistry
 			else
 			{
 				adjacentToWater = true;
-				// Flow from above is always strong.
-				aboveStrength = 2;
+				// Flow from above is weak unless flowing onto a solid block.
+				aboveStrength = isAboveSolid
+						? 2
+						: 1
+				;
 			}
 		}
 		if (aboveStrengthLava > 0)
@@ -150,8 +155,11 @@ public class LiquidRegistry
 			else
 			{
 				adjacentToLava = true;
-				// Flow from above is always strong.
-				aboveStrength = 2;
+				// Flow from above is weak unless flowing onto a solid block.
+				aboveStrength = isAboveSolid
+						? 2
+						: 1
+				;
 			}
 		}
 		
