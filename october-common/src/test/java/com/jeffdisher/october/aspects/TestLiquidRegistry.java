@@ -91,4 +91,20 @@ public class TestLiquidRegistry
 		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_STRONG, ENV.special.AIR, ENV.special.AIR);
 		Assert.assertEquals(WATER_WEAK, target);
 	}
+
+	@Test
+	public void queries() throws Throwable
+	{
+		// Check the millisecond delays on flows (based on known constants in the config).
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_SOURCE));
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_STRONG));
+		Assert.assertEquals(100L, ENV.liquids.flowDelayMillis(ENV, WATER_WEAK));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_SOURCE));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_STRONG));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, LAVA_WEAK));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, ENV.special.AIR));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, STONE));
+		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, BASALT));
+		Assert.assertEquals(100L, ENV.liquids.minFlowDelayMillis(ENV, WATER_SOURCE, BASALT));
+	}
 }

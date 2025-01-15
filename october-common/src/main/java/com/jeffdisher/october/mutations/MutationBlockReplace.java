@@ -69,7 +69,7 @@ public class MutationBlockReplace implements IMutationBlock
 			{
 				// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
 				Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location, _newType);
-				long millisDelay = env.liquids.flowDelayMillis(env, eventualType);
+				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualType, oldType);
 				if ((_newType != eventualType) && (millisDelay > 0L))
 				{
 					context.mutationSink.future(new MutationBlockLiquidFlowInto(_location), millisDelay);

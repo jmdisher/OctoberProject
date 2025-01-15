@@ -56,7 +56,7 @@ public class MutationBlockUpdate implements IMutationBlock
 			if (newType != thisBlock)
 			{
 				// This block needs to be changed due to some kind of flowing liquid so schedule the mutation to do that.
-				long millisDelay = env.liquids.flowDelayMillis(env, newType);
+				long millisDelay = env.liquids.minFlowDelayMillis(env, newType, thisBlock);
 				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				didApply = true;
 			}
@@ -75,7 +75,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 				if (emptyBlock != eventualBlock)
 				{
-					long millisDelay = env.liquids.flowDelayMillis(env, eventualBlock);
+					long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, thisBlock);
 					context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				}
 				

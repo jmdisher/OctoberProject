@@ -278,6 +278,17 @@ public class LiquidRegistry
 
 	public long flowDelayMillis(Environment env, Block type)
 	{
+		return _flowDelayMillis(env, type);
+	}
+
+	public long minFlowDelayMillis(Environment env, Block type1, Block type2)
+	{
+		return Math.min(_flowDelayMillis(env, type1), _flowDelayMillis(env, type2));
+	}
+
+
+	private long _flowDelayMillis(Environment env, Block type)
+	{
 		// TODO:  Generalize this in the future by moving this into data.
 		boolean isWater = (_waterSource == type) || (_waterStrong == type) || (_waterWeak == type);
 		boolean isLava = (_lavaSource == type) || (_lavaStrong == type) || (_lavaWeak == type);
@@ -288,7 +299,6 @@ public class LiquidRegistry
 					: FLOW_DELAY_MILLIS_SOLID
 		;
 	}
-
 
 	private static void _checkBlock(Block block, int[] types, Block... blocks)
 	{
