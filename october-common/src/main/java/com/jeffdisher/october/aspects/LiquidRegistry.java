@@ -1,8 +1,11 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -10,46 +13,73 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class LiquidRegistry
 {
-	// TODO:  Generalize this in the future by moving this into data.
-	public static final long FLOW_DELAY_MILLIS_WATER = 100L;
-	public static final long FLOW_DELAY_MILLIS_LAVA  = 1000L;
-	public static final long FLOW_DELAY_MILLIS_SOLID = 1000L;
-
-	// TODO:  Remove these ivars once this is pulled from a data file.
-	private final Block _waterSource;
-	private final Block _waterStrong;
-	private final Block _waterWeak;
-	private final Block _lavaSource;
-	private final Block _lavaStrong;
-	private final Block _lavaWeak;
-
-	private final Block _blockStone;
-	private final Block _blockBasalt;
-
+	private final Map<Block, Block> _blocksToSource;
+	private final Map<Block, Integer> _blocksToStrength;
+	private final Map<Block, Block> _sourceToSolid;
+	private final Map<Block, Block[]> _sourceToFlowStrengths;
+	private final Map<Block, Long> _sourceToDelayMillis;
+	private final Set<Block> _sourceCreationSources;
+	private final Map<Item, Block> _fullBucketToSource;
+	private final Map<Block, Item> _sourceToFullBucket;
 	private final Item _bucketEmpty;
-	private final Item _bucketWater;
-	private final Item _bucketLava;
+	private final long _defaultDelayMillis;
 
 	public LiquidRegistry(ItemRegistry items, BlockAspect blocks)
 	{
-		_waterSource = blocks.fromItem(items.getItemById("op.water_source"));
-		_waterStrong = blocks.fromItem(items.getItemById("op.water_strong"));
-		_waterWeak = blocks.fromItem(items.getItemById("op.water_weak"));
-		_lavaSource = blocks.fromItem(items.getItemById("op.lava_source"));
-		_lavaStrong = blocks.fromItem(items.getItemById("op.lava_strong"));
-		_lavaWeak = blocks.fromItem(items.getItemById("op.lava_weak"));
+		// TODO:  Source these from a data file.
+		Block waterSource = blocks.fromItem(items.getItemById("op.water_source"));
+		Block waterStrong = blocks.fromItem(items.getItemById("op.water_strong"));
+		Block waterWeak = blocks.fromItem(items.getItemById("op.water_weak"));
+		Block lavaSource = blocks.fromItem(items.getItemById("op.lava_source"));
+		Block lavaStrong = blocks.fromItem(items.getItemById("op.lava_strong"));
+		Block lavaWeak = blocks.fromItem(items.getItemById("op.lava_weak"));
 		
-		_blockStone = blocks.fromItem(items.getItemById("op.stone"));
-		_blockBasalt = blocks.fromItem(items.getItemById("op.basalt"));
+		Block blockStone = blocks.fromItem(items.getItemById("op.stone"));
+		Block blockBasalt = blocks.fromItem(items.getItemById("op.basalt"));
 		
-		_bucketEmpty = items.getItemById("op.bucket_empty");
-		_bucketWater = items.getItemById("op.bucket_water");
-		_bucketLava = items.getItemById("op.bucket_lava");
+		Item bucketEmpty = items.getItemById("op.bucket_empty");
+		Item bucketWater = items.getItemById("op.bucket_water");
+		Item bucketLava = items.getItemById("op.bucket_lava");
+		
+		_blocksToSource = Map.of(waterSource, waterSource
+				, waterStrong, waterSource
+				, waterWeak, waterSource
+				
+				, lavaSource, lavaSource
+				, lavaStrong, lavaSource
+				, lavaWeak, lavaSource
+		);
+		_blocksToStrength = Map.of(waterSource, 3
+				, waterStrong, 2
+				, waterWeak, 1
+				
+				, lavaSource, 3
+				, lavaStrong, 2
+				, lavaWeak, 1
+		);
+		_sourceToSolid = Map.of(waterSource, blockStone
+				, lavaSource, blockBasalt
+		);
+		_sourceToFlowStrengths = Map.of(waterSource, new Block[] {null, waterWeak, waterStrong, waterSource}
+				, lavaSource, new Block[] {null, lavaWeak, lavaStrong, lavaSource}
+		);
+		_sourceToDelayMillis = Map.of(waterSource, 100L
+				, lavaSource, 1000L
+		);
+		_sourceCreationSources = Set.of(waterSource);
+		_fullBucketToSource = Map.of(bucketWater, waterSource
+				, bucketLava, lavaSource
+		);
+		_sourceToFullBucket = Map.of(waterSource, bucketWater
+				, lavaSource, bucketLava
+		);
+		_bucketEmpty = bucketEmpty;
+		_defaultDelayMillis = _sourceToDelayMillis.values().stream().max((Long one, Long two) -> (int)(one - two)).get();
 	}
 
 	public boolean isSource(Block block)
 	{
-		return (_waterSource == block) || (_lavaSource == block);
+		return _sourceToSolid.containsKey(block);
 	}
 
 	/**
@@ -70,210 +100,164 @@ public class LiquidRegistry
 	 */
 	public Block chooseEmptyLiquidBlock(Environment env, Block currentBlock, Block east, Block west, Block north, Block south, Block above, Block below)
 	{
-		// We will only apply either water OR lava, currently treating a conflict as "air".
-		int[] types = new int[6];
-		_checkBlock(east, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
-		_checkBlock(west, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
-		_checkBlock(north, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
-		_checkBlock(south, types, _waterSource, _waterStrong, _waterWeak, _lavaSource, _lavaStrong, _lavaWeak);
-		
-		boolean isWaterSource = (currentBlock == _waterSource);
-		boolean isLavaSource = (currentBlock == _lavaSource);
-		boolean currentlyWater = isWaterSource || (currentBlock == _waterStrong) || (currentBlock == _waterWeak);
-		boolean currentlyLava = isLavaSource || (currentBlock == _lavaStrong) || (currentBlock == _lavaWeak);
-		boolean adjacentToWater = (types[0] + types[1] + types[2]) > 0;
-		boolean adjacentToLava = (types[3] + types[4] + types[5]) > 0;
-		boolean isAboveSolid = !env.blocks.canBeReplaced(below);
-		
-		int offset = adjacentToLava ? 3 : 0;
-		int strength = 0;
-		if (adjacentToWater && adjacentToLava)
+		// This takes a few steps:
+		// -check if horizontal liquids should act on currentBlock
+		// -check if vertical liquids should act on currentBlock
+		// -update currentBlock based on horizontal adjacent blocks
+		// -apply vertical liquid to the updated currentBlock
+		Block updatedBlock;
+		if (!env.blocks.canBeReplaced(currentBlock))
 		{
-			// This is a conflict which we currently treat as "air".
-			strength = 0;
-		}
-		else if (adjacentToWater && (types[offset] >= 2))
-		{
-			// We have at lest 2 adjacent sources, so make this a source.
-			// (we only generate sources with water).
-			strength = 3;
-		}
-		else if (types[offset] >= 1)
-		{
-			// We are adjacent to at least 1 source, so we want to be strong flow unless over an empty block.
-			strength = isAboveSolid
-					? 2
-					: 1
-			;
-		}
-		else if (types[offset + 1] >= 1)
-		{
-			// We are adjacent to at least 1 strong flow, so we want to be weak flow.
-			strength = 1;
-		}
-		
-		// Account for if this is already a source.
-		if ((adjacentToWater && isWaterSource && (strength > 0))
-				|| (adjacentToLava && isLavaSource && (strength > 0))
-		)
-		{
-			strength = 3;
-		}
-		
-		int aboveStrength = 0;
-		Block solidType = null;
-		int aboveStrengthWater = _index(above, null, _waterWeak, _waterStrong, _waterSource);
-		int aboveStrengthLava = _index(above, null, _lavaWeak, _lavaStrong, _lavaSource);
-		if (aboveStrengthWater > 0)
-		{
-			// Water is falling onto us.
-			if (adjacentToLava || currentlyLava)
-			{
-				adjacentToLava = false;
-				strength = 0;
-				solidType = _blockBasalt;
-			}
-			else
-			{
-				adjacentToWater = true;
-				// Flow from above is weak unless flowing onto a solid block.
-				aboveStrength = isAboveSolid
-						? 2
-						: 1
-				;
-			}
-		}
-		if (aboveStrengthLava > 0)
-		{
-			// Lava is falling onto us.
-			if (adjacentToWater || currentlyWater)
-			{
-				adjacentToWater = false;
-				strength = 0;
-				solidType = _blockStone;
-			}
-			else
-			{
-				adjacentToLava = true;
-				// Flow from above is weak unless flowing onto a solid block.
-				aboveStrength = isAboveSolid
-						? 2
-						: 1
-				;
-			}
-		}
-		
-		if (null == solidType)
-		{
-			if (-1 == aboveStrength)
-			{
-				aboveStrength = 0;
-			}
-			strength = Math.max(strength, aboveStrength);
-		}
-		
-		Block type;
-		if (null != solidType)
-		{
-			// We decided to solidify.
-			type = solidType;
+			// This can't be replaced so it isn't a liquid or air.
+			updatedBlock = currentBlock;
 		}
 		else
 		{
-			// We aren't going to solidify so just see what this should be.
-			switch (strength)
+			// Since we need to work on this block, see what type it is.
+			Block currentType = _blocksToSource.get(currentBlock);
+			boolean isAboveSolidBlock = !env.blocks.canBeReplaced(below);
+			boolean isCurrentlySource = _sourceToSolid.containsKey(currentBlock);
+			
+			// We first need to see what the adjacent horizontal blocks thing should be selected.
+			Block horizontalBlock = _candidateBlockHorizontal(env, east, west, north, south, above, isAboveSolidBlock);
+			Block horizontalType = _blocksToSource.get(horizontalBlock);
+			
+			// Check to see if this is a conflict to see what we should pass on to the next step.
+			Block newBlock;
+			Block blockToConflict;
+			if (currentType == horizontalType)
 			{
-			case 3:
-				type = adjacentToWater ? _waterSource : _lavaSource;
-				break;
-			case 2:
-				type = adjacentToWater ? _waterStrong : _lavaStrong;
-				break;
-			case 1:
-				type = adjacentToWater ? _waterWeak : _lavaWeak;
-				break;
-			case 0:
-				type = isWaterSource
-					? _waterSource
-					: isLavaSource
-						? _lavaSource
-						: env.special.AIR
+				// We agree so pick the new one unless the first is a source.
+				newBlock = isCurrentlySource
+						? currentBlock
+						: horizontalBlock
 				;
-				break;
-				default:
-					throw Assert.unreachable();
+				blockToConflict = newBlock;
+			}
+			else if (env.special.AIR == horizontalBlock)
+			{
+				// This means it should be nothing so just consider what we had for the conflict and only keep what we had if it was a source.
+				newBlock = isCurrentlySource
+						? currentBlock
+						: horizontalBlock
+				;
+				blockToConflict = currentBlock;
+			}
+			else if (env.special.AIR == currentBlock)
+			{
+				// This means we are replacing what was there so just consider this new block, directly.
+				newBlock = horizontalBlock;
+				blockToConflict = horizontalBlock;
+			}
+			else if (!env.blocks.canBeReplaced(horizontalBlock))
+			{
+				// Horizontal is suggesting solidification so we will use that end now.
+				newBlock = horizontalBlock;
+				blockToConflict = horizontalBlock;
+			}
+			else
+			{
+				// There is some kind of conflict so convert what was into a solid and we are done.
+				newBlock = _sourceToSolid.get(currentType);
+				blockToConflict = newBlock;
+			}
+			
+			// If we aren't yet forming a solid, check what is above the block.
+			if (env.blocks.canBeReplaced(blockToConflict))
+			{
+				Block verticalBlock = _candidateBlockVertical(env, above, isAboveSolidBlock);
+				Block conflictType = _blocksToSource.get(blockToConflict);
+				Block verticalType = _blocksToSource.get(verticalBlock);
+				if (conflictType == verticalType)
+				{
+					// We agree so pick the new one unless the first is a source.
+					updatedBlock = _sourceToSolid.containsKey(newBlock)
+							? newBlock
+							: verticalBlock
+					;
+				}
+				else if (env.special.AIR == verticalBlock)
+				{
+					// This means it should be nothing so just consider what we had for the conflict.
+					updatedBlock = newBlock;
+				}
+				else if (env.special.AIR == blockToConflict)
+				{
+					// This means we are replacing what was there so just consider what is falling.
+					updatedBlock = verticalBlock;
+				}
+				else
+				{
+					// There is some kind of conflict so convert what was into a solid and we are done.
+					updatedBlock = _sourceToSolid.get(conflictType);
+				}
+			}
+			else
+			{
+				// We already know the final state.
+				updatedBlock = newBlock;
 			}
 		}
-		return type;
+		return updatedBlock;
 	}
 
 	public boolean isBucketForUseOneBlock(Environment env, Item possibleBucket, Block possibleSource)
 	{
 		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
-		boolean isWaterBucket = (_bucketWater == possibleBucket);
-		boolean isLavaBucket = (_bucketLava == possibleBucket);
-		boolean isWaterSource = (_waterSource == possibleSource);
-		boolean isLavaSource = (_lavaSource == possibleSource);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
-		return (isEmptyBucket && (isWaterSource || isLavaSource))
-				|| (canBeReplaced && (isWaterBucket || isLavaBucket))
-		;
+		Block outputBlock = _fullBucketToSource.get(possibleBucket);
+		boolean canBeScooped = _sourceToFullBucket.containsKey(possibleSource);
+		return (isEmptyBucket && canBeScooped) || (canBeReplaced && (null != outputBlock));
 	}
 
 	public Item bucketAfterUse(Environment env, Item possibleBucket, Block possibleSource)
 	{
 		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
-		boolean isWaterBucket = (_bucketWater == possibleBucket);
-		boolean isLavaBucket = (_bucketLava == possibleBucket);
-		boolean isWaterSource = (_waterSource == possibleSource);
-		boolean isLavaSource = (_lavaSource == possibleSource);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
+		Item bucketAfterPickup = _sourceToFullBucket.get(possibleSource);
 		
-		Item bucketOutput = null;
-		if (isEmptyBucket)
+		Item outputBucket;
+		if (isEmptyBucket && (null != bucketAfterPickup))
 		{
-			if (isWaterSource)
-			{
-				bucketOutput = _bucketWater;
-			}
-			else if (isLavaSource)
-			{
-				bucketOutput = _bucketLava;
-			}
+			// We can pick up this block as a liquid source.
+			outputBucket = bucketAfterPickup;
 		}
-		else if (canBeReplaced && (isWaterBucket || isLavaBucket))
+		else if (canBeReplaced && _fullBucketToSource.containsKey(possibleBucket))
 		{
-			bucketOutput = _bucketEmpty;
+			// This is a full bucket and we can place it.
+			outputBucket = _bucketEmpty;
 		}
-		return bucketOutput;
+		else
+		{
+			// We can't apply this so null.
+			outputBucket = null;
+		}
+		return outputBucket;
 	}
 
 	public Block blockAfterBucketUse(Environment env, Item possibleBucket, Block possibleSource)
 	{
 		boolean isEmptyBucket = (_bucketEmpty == possibleBucket);
-		boolean isWaterBucket = (_bucketWater == possibleBucket);
-		boolean isLavaBucket = (_bucketLava == possibleBucket);
-		boolean isWaterSource = (_waterSource == possibleSource);
-		boolean isLavaSource = (_lavaSource == possibleSource);
 		boolean canBeReplaced = env.blocks.canBeReplaced(possibleSource);
+		Block sourceAfterDrop = _fullBucketToSource.get(possibleBucket);
 		
-		Block blockOutput = null;
-		if (isEmptyBucket && (isWaterSource || isLavaSource))
+		Block outputBlock;
+		if (isEmptyBucket && _sourceToFullBucket.containsKey(possibleSource))
 		{
-			blockOutput = env.special.AIR;
+			// We can pick up this block as a liquid source so make it air.
+			outputBlock = env.special.AIR;
 		}
-		else if (canBeReplaced)
+		else if (canBeReplaced && (null != sourceAfterDrop))
 		{
-			if (isWaterBucket)
-			{
-				blockOutput = _waterSource;
-			}
-			else if (isLavaBucket)
-			{
-				blockOutput = _lavaSource;
-			}
+			// This is what we placed.
+			outputBlock = sourceAfterDrop;
 		}
-		return blockOutput;
+		else
+		{
+			// We can't apply this so null.
+			outputBlock = null;
+		}
+		return outputBlock;
 	}
 
 	public long flowDelayMillis(Environment env, Block type)
@@ -289,37 +273,179 @@ public class LiquidRegistry
 
 	private long _flowDelayMillis(Environment env, Block type)
 	{
-		// TODO:  Generalize this in the future by moving this into data.
-		boolean isWater = (_waterSource == type) || (_waterStrong == type) || (_waterWeak == type);
-		boolean isLava = (_lavaSource == type) || (_lavaStrong == type) || (_lavaWeak == type);
-		return isWater
-				? FLOW_DELAY_MILLIS_WATER
-				: isLava
-					? FLOW_DELAY_MILLIS_LAVA
-					: FLOW_DELAY_MILLIS_SOLID
-		;
+		Block liquidType = _blocksToSource.get(type);
+		return _getFromMap(_sourceToDelayMillis, liquidType, _defaultDelayMillis);
 	}
 
-	private static void _checkBlock(Block block, int[] types, Block... blocks)
+	private Block _candidateBlockHorizontal(Environment env, Block east, Block west, Block north, Block south, Block above, boolean isAboveSolidBlock)
 	{
-		int index = _index(block, blocks);
-		if (index >= 0)
+		// Decide what block the horizontal blocks suggest.
+		// Check the adjacent blocks.
+		Block eastType = _getFromMap(_blocksToSource, east, null);
+		Block westType = _getFromMap(_blocksToSource, west, null);
+		Block northType = _getFromMap(_blocksToSource, north, null);
+		Block southType = _getFromMap(_blocksToSource, south, null);
+		
+		Set<Block> adjacentTypes = new HashSet<>();
+		if (null != eastType)
 		{
-			types[index] += 1;
+			adjacentTypes.add(eastType);
 		}
-	}
-
-	private static int _index(Block block, Block... blocks)
-	{
-		int index = -1;
-		for (int i = 0; i < blocks.length; ++i)
+		if (null != westType)
 		{
-			if (block == blocks[i])
+			adjacentTypes.add(westType);
+		}
+		if (null != northType)
+		{
+			adjacentTypes.add(northType);
+		}
+		if (null != southType)
+		{
+			adjacentTypes.add(southType);
+		}
+		
+		int size = adjacentTypes.size();
+		Block horizontalBlock;
+		if (0 == size)
+		{
+			// There is nothing so suggest an air block.
+			horizontalBlock = env.special.AIR;
+		}
+		else if (1 == size)
+		{
+			// This might become a liquid or it might remain air (if liquid is weak).
+			int eastStrength = _getFromMap(_blocksToStrength, east, 0);
+			int westStrength = _getFromMap(_blocksToStrength, west, 0);
+			int northStrength = _getFromMap(_blocksToStrength, north, 0);
+			int southStrength = _getFromMap(_blocksToStrength, south, 0);
+			int maxStrength = Math.max(Math.max(eastStrength, westStrength), Math.max(northStrength, southStrength));
+			if (maxStrength > 1)
 			{
-				index = i;
-				break;
+				// This is going to become the liquid so see if this becomes a source.
+				Block sourceType = adjacentTypes.iterator().next();
+				int idealStrength;
+				if (3 == maxStrength)
+				{
+					// We have at least one adjacent source so see if this should be a source.
+					
+					if (_sourceCreationSources.contains(sourceType))
+					{
+						int sourceCount = 0;
+						if (3 == eastStrength)
+						{
+							sourceCount += 1;
+						}
+						if (3 == westStrength)
+						{
+							sourceCount += 1;
+						}
+						if (3 == northStrength)
+						{
+							sourceCount += 1;
+						}
+						if (3 == southStrength)
+						{
+							sourceCount += 1;
+						}
+						if (sourceCount >= 2)
+						{
+							idealStrength = 3;
+						}
+						else
+						{
+							idealStrength = 2;
+						}
+					}
+					else
+					{
+						idealStrength = 2;
+					}
+				}
+				else
+				{
+					idealStrength = maxStrength - 1;
+				}
+				// Account for whether or not this is above an open space for strong flow.
+				if (!isAboveSolidBlock && (2 == idealStrength))
+				{
+					idealStrength = 1;
+				}
+				horizontalBlock = _sourceToFlowStrengths.get(sourceType)[idealStrength];
+			}
+			else
+			{
+				// The flow is too weak so this is air.
+				horizontalBlock = env.special.AIR;
 			}
 		}
-		return index;
+		else
+		{
+			// This will either solidify or remain air (if liquid is weak).
+			// Check the fastest flow type of strength at least 2 and solidify that (air if none are >= 2).
+			long chosenFlowRate = Long.MAX_VALUE;
+			Block chosenBlock = env.special.AIR;
+			if (_blocksToStrength.getOrDefault(east, 0) >= 2)
+			{
+				long flow = _sourceToDelayMillis.get(eastType);
+				if (flow < chosenFlowRate)
+				{
+					chosenFlowRate = flow;
+					chosenBlock = _sourceToSolid.get(eastType);
+				}
+			}
+			if (_blocksToStrength.getOrDefault(west, 0) >= 2)
+			{
+				long flow = _sourceToDelayMillis.get(westType);
+				if (flow < chosenFlowRate)
+				{
+					chosenFlowRate = flow;
+					chosenBlock = _sourceToSolid.get(westType);
+				}
+			}
+			if (_blocksToStrength.getOrDefault(north, 0) >= 2)
+			{
+				long flow = _sourceToDelayMillis.get(northType);
+				if (flow < chosenFlowRate)
+				{
+					chosenFlowRate = flow;
+					chosenBlock = _sourceToSolid.get(northType);
+				}
+			}
+			if (_blocksToStrength.getOrDefault(south, 0) >= 2)
+			{
+				long flow = _sourceToDelayMillis.get(southType);
+				if (flow < chosenFlowRate)
+				{
+					chosenFlowRate = flow;
+					chosenBlock = _sourceToSolid.get(southType);
+				}
+			}
+			horizontalBlock = chosenBlock;
+		}
+		return horizontalBlock;
+	}
+
+	private Block _candidateBlockVertical(Environment env, Block above, boolean isAboveSolidBlock)
+	{
+		// See what what is flowing from above and if it interacts with what we have here.
+		Block aboveType = _getFromMap(_blocksToSource, above, null);
+		Block verticalBlock;
+		if (null != aboveType)
+		{
+			// Above is always a weak flow unless it hits a solid block.
+			int strength = isAboveSolidBlock ? 2 : 1;
+			verticalBlock = _sourceToFlowStrengths.get(aboveType)[strength];
+		}
+		else
+		{
+			// Just default to air.
+			verticalBlock = env.special.AIR;
+		}
+		return verticalBlock;
+	}
+
+	private static <T> T _getFromMap(Map<Block, T> map, Block key, T defaultValue)
+	{
+		return (null != key) ? map.getOrDefault(key, defaultValue) : defaultValue;
 	}
 }

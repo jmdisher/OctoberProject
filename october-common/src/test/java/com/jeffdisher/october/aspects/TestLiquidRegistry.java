@@ -107,4 +107,42 @@ public class TestLiquidRegistry
 		Assert.assertEquals(1000L, ENV.liquids.flowDelayMillis(ENV, BASALT));
 		Assert.assertEquals(100L, ENV.liquids.minFlowDelayMillis(ENV, WATER_SOURCE, BASALT));
 	}
+
+	@Test
+	public void reflowOnUpdate() throws Throwable
+	{
+		// Show what happens when water flows over lava.
+		// -we should flow weak over a lava flow.
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, ENV.special.AIR, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, LAVA_WEAK);
+		Assert.assertEquals(WATER_WEAK, target);
+		
+		// -the lava should update to basalt.
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, LAVA_WEAK, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, WATER_WEAK, ENV.special.AIR);
+		Assert.assertEquals(BASALT, target);
+		
+		// -the weak flow above should now be strong.
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, BASALT);
+		Assert.assertEquals(WATER_STRONG, target);
+	}
+
+	@Test
+	public void standalone() throws Throwable
+	{
+		// We want to see what happens when we update a single location with no sources around it.
+		// -weak flow surrounded by blocks
+		Block target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, STONE, STONE, STONE, STONE, STONE, STONE);
+		Assert.assertEquals(ENV.special.AIR, target);
+		
+		// -weak flow with no blocks around
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_WEAK, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR);
+		Assert.assertEquals(ENV.special.AIR, target);
+		
+		// -source surrounded by blocks
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, STONE, STONE, STONE, STONE, STONE, STONE);
+		Assert.assertEquals(WATER_SOURCE, target);
+		
+		// -source without blocks
+		target = ENV.liquids.chooseEmptyLiquidBlock(ENV, WATER_SOURCE, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR, ENV.special.AIR);
+		Assert.assertEquals(WATER_SOURCE, target);
+	}
 }

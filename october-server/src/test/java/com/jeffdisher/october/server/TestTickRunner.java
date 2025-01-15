@@ -2110,13 +2110,13 @@ public class TestTickRunner
 		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, lavaPlace.getBlockAddress()));
 		// Check a walk through the space, based on what we experimentally verified to see (since the lava arrives later, it doesn't flow).
 		Assert.assertEquals(ENV.items.getItemById("op.lava_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(-2, 0, 0).getBlockAddress()));
-		Assert.assertEquals(ENV.special.AIR.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(-1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(ENV.items.getItemById("op.basalt").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(-1, 0, 0).getBlockAddress()));
 		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(0, 0, 0).getBlockAddress()));
 		Assert.assertEquals(ENV.items.getItemById("op.water_strong").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(1, 0, 0).getBlockAddress()));
 		Assert.assertEquals(ENV.items.getItemById("op.water_weak").number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 0).getBlockAddress()));
 		
 		// We also want to verify that the lava is providing light.
-		Assert.assertEquals(5, topCuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
+		Assert.assertEquals(3, topCuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
 		Assert.assertEquals(7, topCuboid.getData7(AspectRegistry.LIGHT, lavaPlace.getRelative(0, 0, 1).getBlockAddress()));
 		
 		runner.shutdown();
