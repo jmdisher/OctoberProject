@@ -83,7 +83,7 @@ public class Environment
 		ClassLoader loader = getClass().getClassLoader();
 		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
 		this.blocks = BlockAspect.loadRegistry(this.items, loader.getResourceAsStream("block_aspect.tablist"));
-		this.liquids = new LiquidRegistry(this.items, this.blocks);
+		this.liquids = LiquidRegistry.loadRegistry(this.items, this.blocks, loader.getResourceAsStream("liquid_registry.tablist"));
 		this.durability = DurabilityAspect.load(this.items, loader.getResourceAsStream("durability.tablist"));
 		this.encumbrance = InventoryEncumbrance.load(this.items
 				, loader.getResourceAsStream("inventory_encumbrance.tablist")

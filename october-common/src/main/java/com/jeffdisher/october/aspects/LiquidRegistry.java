@@ -1,11 +1,16 @@
 package com.jeffdisher.october.aspects;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -13,6 +18,165 @@ import com.jeffdisher.october.types.Item;
  */
 public class LiquidRegistry
 {
+	public static final String FLAG_CREATES_SOURCE = "creates_source";
+	public static final String SUB_FLOW_DELAY_MILLIS = "flow_delay_millis";
+	public static final String SUB_FULL_BUCKET = "full_bucket";
+	public static final String SUB_STRONG_FLOW = "strong_flow";
+	public static final String SUB_WEAK_FLOW = "weak_flow";
+	public static final String SUB_SOLID_BLOCK = "solid_block";
+
+
+	public static LiquidRegistry loadRegistry(ItemRegistry items, BlockAspect blocks, InputStream stream) throws IOException, TabListReader.TabListException
+	{
+		if (null == stream)
+		{
+			throw new IOException("Resource missing");
+		}
+		Map<Block, Block> blocksToSource = new HashMap<>();
+		Map<Block, Integer> blocksToStrength = new HashMap<>();
+		Map<Block, Block> sourceToSolid = new HashMap<>();
+		Map<Block, Block[]> sourceToFlowStrengths = new HashMap<>();
+		Map<Block, Long> sourceToDelayMillis = new HashMap<>();
+		Set<Block> sourceCreationSources = new HashSet<>();
+		Map<Item, Block> fullBucketToSource = new HashMap<>();
+		Map<Block, Item> sourceToFullBucket = new HashMap<>();
+		
+		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
+			private Block _currentSource;
+			private Block _strongFlow;
+			private Block _weakFlow;
+			@Override
+			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null == _currentSource);
+				_currentSource = _getBlock(name);
+				blocksToSource.put(_currentSource, _currentSource);
+				blocksToStrength.put(_currentSource, 3);
+				
+				// Read the flag list.
+				for (String value : parameters)
+				{
+					if (FLAG_CREATES_SOURCE.equals(value))
+					{
+						sourceCreationSources.add(_currentSource);
+					}
+					else
+					{
+						throw new TabListReader.TabListException("Unknown flag: \"" + value + "\"");
+					}
+				}
+			}
+			@Override
+			public void endRecord() throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentSource);
+				Assert.assertTrue(null != _strongFlow);
+				Assert.assertTrue(null != _weakFlow);
+				
+				Block[] strengths = new Block[] {null, _weakFlow, _strongFlow, _currentSource };
+				sourceToFlowStrengths.put(_currentSource, strengths);
+				
+				_currentSource = null;
+				_strongFlow = null;
+				_weakFlow = null;
+			}
+			@Override
+			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+			{
+				Assert.assertTrue(null != _currentSource);
+				// See which of the sublists this is an enter the correct state.
+				if (SUB_FLOW_DELAY_MILLIS.equals(name))
+				{
+					String delayMillis = _getSingleParam(SUB_FLOW_DELAY_MILLIS, name, parameters);
+					long millis = Long.parseLong(delayMillis);
+					sourceToDelayMillis.put(_currentSource, millis);
+				}
+				else if (SUB_FULL_BUCKET.equals(name))
+				{
+					String fullBucket = _getSingleParam(SUB_FULL_BUCKET, name, parameters);
+					Item bucket = _getItem(fullBucket);
+					fullBucketToSource.put(bucket, _currentSource);
+					sourceToFullBucket.put(_currentSource, bucket);
+				}
+				else if (SUB_STRONG_FLOW.equals(name))
+				{
+					Assert.assertTrue(null == _strongFlow);
+					String strongFlow = _getSingleParam(SUB_STRONG_FLOW, name, parameters);
+					_strongFlow = _getBlock(strongFlow);
+					blocksToSource.put(_strongFlow, _currentSource);
+					blocksToStrength.put(_strongFlow, 2);
+				}
+				else if (SUB_WEAK_FLOW.equals(name))
+				{
+					Assert.assertTrue(null == _weakFlow);
+					String weakFlow = _getSingleParam(SUB_WEAK_FLOW, name, parameters);
+					_weakFlow = _getBlock(weakFlow);
+					blocksToSource.put(_weakFlow, _currentSource);
+					blocksToStrength.put(_weakFlow, 1);
+				}
+				else if (SUB_SOLID_BLOCK.equals(name))
+				{
+					String solidBlock = _getSingleParam(SUB_SOLID_BLOCK, name, parameters);
+					Block block = _getBlock(solidBlock);
+					sourceToSolid.put(_currentSource, block);
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
+				}
+			}
+			private Item _getItem(String id) throws TabListReader.TabListException
+			{
+				Item item = items.getItemById(id);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
+				}
+				return item;
+			}
+			private Block _getBlock(String id) throws TabListReader.TabListException
+			{
+				Item item = items.getItemById(id);
+				if (null == item)
+				{
+					throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
+				}
+				Block block = blocks.fromItem(item);
+				if (null == block)
+				{
+					throw new TabListReader.TabListException("Not a block: \"" + id + "\"");
+				}
+				return block;
+			}
+			private String _getSingleParam(String search, String name, String[] parameters) throws TabListReader.TabListException
+			{
+				String found = null;
+				if (search.equals(name))
+				{
+					if (1 != parameters.length)
+					{
+						throw new TabListReader.TabListException("Expected single parameter: " + search);
+					}
+					found = parameters[0];
+				}
+				return found;
+			}
+		}, stream);
+		
+		Item bucketEmpty = items.getItemById("op.bucket_empty");
+		return new LiquidRegistry(blocksToSource
+			, blocksToStrength
+			, sourceToSolid
+			, sourceToFlowStrengths
+			, sourceToDelayMillis
+			, sourceCreationSources
+			, fullBucketToSource
+			, sourceToFullBucket
+			, bucketEmpty
+		);
+	}
+
+
 	private final Map<Block, Block> _blocksToSource;
 	private final Map<Block, Integer> _blocksToStrength;
 	private final Map<Block, Block> _sourceToSolid;
@@ -24,57 +188,30 @@ public class LiquidRegistry
 	private final Item _bucketEmpty;
 	private final long _defaultDelayMillis;
 
-	public LiquidRegistry(ItemRegistry items, BlockAspect blocks)
+	private LiquidRegistry(Map<Block, Block> blocksToSource
+			, Map<Block, Integer> blocksToStrength
+			, Map<Block, Block> sourceToSolid
+			, Map<Block, Block[]> sourceToFlowStrengths
+			, Map<Block, Long> sourceToDelayMillis
+			, Set<Block> sourceCreationSources
+			, Map<Item, Block> fullBucketToSource
+			, Map<Block, Item> sourceToFullBucket
+			, Item bucketEmpty
+	)
 	{
-		// TODO:  Source these from a data file.
-		Block waterSource = blocks.fromItem(items.getItemById("op.water_source"));
-		Block waterStrong = blocks.fromItem(items.getItemById("op.water_strong"));
-		Block waterWeak = blocks.fromItem(items.getItemById("op.water_weak"));
-		Block lavaSource = blocks.fromItem(items.getItemById("op.lava_source"));
-		Block lavaStrong = blocks.fromItem(items.getItemById("op.lava_strong"));
-		Block lavaWeak = blocks.fromItem(items.getItemById("op.lava_weak"));
+		Assert.assertTrue(null != bucketEmpty);
+		Assert.assertTrue(!sourceToDelayMillis.isEmpty());
 		
-		Block blockStone = blocks.fromItem(items.getItemById("op.stone"));
-		Block blockBasalt = blocks.fromItem(items.getItemById("op.basalt"));
-		
-		Item bucketEmpty = items.getItemById("op.bucket_empty");
-		Item bucketWater = items.getItemById("op.bucket_water");
-		Item bucketLava = items.getItemById("op.bucket_lava");
-		
-		_blocksToSource = Map.of(waterSource, waterSource
-				, waterStrong, waterSource
-				, waterWeak, waterSource
-				
-				, lavaSource, lavaSource
-				, lavaStrong, lavaSource
-				, lavaWeak, lavaSource
-		);
-		_blocksToStrength = Map.of(waterSource, 3
-				, waterStrong, 2
-				, waterWeak, 1
-				
-				, lavaSource, 3
-				, lavaStrong, 2
-				, lavaWeak, 1
-		);
-		_sourceToSolid = Map.of(waterSource, blockStone
-				, lavaSource, blockBasalt
-		);
-		_sourceToFlowStrengths = Map.of(waterSource, new Block[] {null, waterWeak, waterStrong, waterSource}
-				, lavaSource, new Block[] {null, lavaWeak, lavaStrong, lavaSource}
-		);
-		_sourceToDelayMillis = Map.of(waterSource, 100L
-				, lavaSource, 1000L
-		);
-		_sourceCreationSources = Set.of(waterSource);
-		_fullBucketToSource = Map.of(bucketWater, waterSource
-				, bucketLava, lavaSource
-		);
-		_sourceToFullBucket = Map.of(waterSource, bucketWater
-				, lavaSource, bucketLava
-		);
+		_blocksToSource = Map.copyOf(blocksToSource);
+		_blocksToStrength = Map.copyOf(blocksToStrength);
+		_sourceToSolid = Map.copyOf(sourceToSolid);
+		_sourceToFlowStrengths = Map.copyOf(sourceToFlowStrengths);
+		_sourceToDelayMillis = Map.copyOf(sourceToDelayMillis);
+		_sourceCreationSources = Set.copyOf(sourceCreationSources);
+		_fullBucketToSource = Map.copyOf(fullBucketToSource);
+		_sourceToFullBucket = Map.copyOf(sourceToFullBucket);
 		_bucketEmpty = bucketEmpty;
-		_defaultDelayMillis = _sourceToDelayMillis.values().stream().max((Long one, Long two) -> (int)(one - two)).get();
+		_defaultDelayMillis = sourceToDelayMillis.values().stream().max((Long one, Long two) -> (int)(one - two)).get();
 	}
 
 	public boolean isSource(Block block)
