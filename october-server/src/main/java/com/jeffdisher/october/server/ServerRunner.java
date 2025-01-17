@@ -154,12 +154,12 @@ public class ServerRunner
 			@Override
 			public void pauseTickProcessing()
 			{
-				_tickRunner.pause();
+				_tickAdvancer.pause();
 			}
 			@Override
 			public void resumeTickProcessing()
 			{
-				_tickRunner.resume();
+				_tickAdvancer.resume();
 			}
 		});
 		
@@ -174,6 +174,9 @@ public class ServerRunner
 	 */
 	public void shutdown()
 	{
+		// We first need to resume execution of the background thread if waiting in the tick advancer.
+		_tickAdvancer.resume();
+		
 		// Shut down the state manager in its own thread.
 		CountDownLatch latch = new CountDownLatch(1);
 		_messages.enqueue(() -> {
@@ -324,6 +327,7 @@ public class ServerRunner
 		// We expect that this class is a singleton so we will record relevant world state (config) changes which might require a notification to the clients.
 		private final WorldConfig _sharedConfig;
 		private int _previousDayStartTick;
+		private boolean _isPaused;
 		
 		public _TickAdvancer(WorldConfig config)
 		{
@@ -347,7 +351,31 @@ public class ServerRunner
 			// We send the end of tick to a "fake" client 0 so tests can rely on seeing that (real implementations should just ignore it).
 			_network.sendEndOfTick(FAKE_CLIENT_ID, snapshot.tickNumber(), 0L);
 			
+			// Before we schedule the next tick and start it processing, see if we should be running.
+			boolean shouldResetSchedule = false;
+			synchronized (this)
+			{
+				shouldResetSchedule = _isPaused;
+				while (_isPaused)
+				{
+					try
+					{
+						this.wait();
+					}
+					catch (InterruptedException e)
+					{
+						// We don't use interruption.
+						throw Assert.unexpected(e);
+					}
+				}
+			}
+			
 			// Determine when the next tick should run (we increment the previous time to not slide).
+			if (shouldResetSchedule)
+			{
+				// Act as though this was set for "now"
+				_nextTickMillis = _currentTimeMillisProvider.getAsLong();
+			}
 			_nextTickMillis += _millisPerTick;
 			// We will schedule the next tick once we get the completed callback.
 			_scheduledAdvancer = null;
@@ -381,6 +409,21 @@ public class ServerRunner
 				_stateManager.broadcastConfig(_sharedConfig);
 				_previousDayStartTick = _sharedConfig.dayStartTick;
 			}
+		}
+		
+		/**
+		 * Pauses the tick requests by blocking the background thread.
+		 * NOTE:  The background thread is blocked so that we also stop processing network packets, etc.
+		 */
+		public synchronized void pause()
+		{
+			_isPaused = true;
+		}
+		
+		public synchronized void resume()
+		{
+			_isPaused = false;
+			this.notifyAll();
 		}
 	}
 

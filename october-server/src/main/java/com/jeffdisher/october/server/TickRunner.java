@@ -94,7 +94,6 @@ public class TickRunner
 	private final _PartialHandoffData[] _partial;
 	private final ProcessorElement.PerThreadStats[] _threadStats;
 	private long _nextTick;
-	private boolean _isPaused;
 	
 	// We use an explicit lock to guard shared data, instead of overloading the monitor, since the monitor shouldn't be used purely for data guards.
 	private ReentrantLock _sharedDataLock;
@@ -334,27 +333,6 @@ public class TickRunner
 	}
 
 	/**
-	 * Pauses the receiver.  If there is currently a snapshot being produced, it will be the last one produced before
-	 * resume() is called.
-	 */
-	public synchronized void pause()
-	{
-		_isPaused = true;
-	}
-
-	/**
-	 * Resumes execution of the receiver.
-	 */
-	public synchronized void resume()
-	{
-		if (_isPaused)
-		{
-			_isPaused = false;
-			this.notifyAll();
-		}
-	}
-
-	/**
 	 * Shuts down the tick runner.  Note that this will block until all runner threads have joined.
 	 */
 	public void shutdown()
@@ -366,7 +344,6 @@ public class TickRunner
 			_locked_waitForTickComplete();
 			// If the next tick is a negative number, the system will exit.
 			_nextTick = -1;
-			_isPaused = false;
 			this.notifyAll();
 		}
 		
@@ -1098,7 +1075,7 @@ public class TickRunner
 	{
 		_snapshot = newSnapshot;
 		this.notifyAll();
-		while (_isPaused || (_snapshot.tickNumber == _nextTick))
+		while (_snapshot.tickNumber == _nextTick)
 		{
 			try
 			{

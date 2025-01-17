@@ -750,28 +750,24 @@ public class TestServerRunner
 		EntityLocation start = entity.location();
 		network.waitForCuboidAddedCount(clientId, 2);
 		
-		// Pause, wait for several ticks, and verify that we saw fewer ticks arrive, then resume and observe that falling continues.
+		// Pause for several ticks, observe the ticks stopped arriving, then resume and observe that the falling continues as expected.
 		monitoringAgent.getCommandSink().pauseTickProcessing();
 		// We will get the last tick number since at most 1 more will be produced before the pause is observed.
 		long lastTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
-		// Wait for some time and send a broadcast to verify that messages still work.
-		int updates1 = network.countClientUpdates(clientId);
+		// Pause for 5 ticks.
 		Thread.sleep(5 * millisPerTick);
-		network.receiveMessageFromClient(clientId, 0, "One to All");
-		int updates2 = network.countClientUpdates(clientId);
-		Assert.assertTrue((updates2 - updates1) < 3);
+		int updateCount = network.countClientUpdates(clientId);
 		long laterTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
 		Assert.assertTrue((laterTickNumber - lastTickNumber) <= 1);
-		Assert.assertEquals(clientId + ": One to All", network.waitForChatMessage(clientId, 0));
 		monitoringAgent.getCommandSink().resumeTickProcessing();
 		
-		Object change0 = network.waitForUpdate(clientId, updates2);
+		Object change0 = network.waitForUpdate(clientId, updateCount);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		MutableEntity mutable = MutableEntity.existing(entity);
 		((MutationEntitySetEntity)change0).applyToEntity(mutable);
 		Assert.assertTrue(mutable.newLocation.z() < start.z());
 		EntityLocation first = mutable.newLocation;
-		Object change1 = network.waitForUpdate(clientId, updates2 + 1);
+		Object change1 = network.waitForUpdate(clientId, updateCount + 1);
 		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
 		((MutationEntitySetEntity)change1).applyToEntity(mutable);
 		Assert.assertTrue(mutable.newLocation.z() < first.z());
