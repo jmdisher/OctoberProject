@@ -151,11 +151,26 @@ public class BlockAspect
 				else if (SUB_SPECIAL_DROP.equals(name))
 				{
 					// Note that duplicates are expected in this parameter list (empty also makes sense).
-					_DropChance[] drops = new _DropChance[parameters.length];
-					for (int i = 0; i < parameters.length; ++i)
+					// This list is always in pairs (probability<TAB>item).
+					if (0 != (parameters.length % 2))
 					{
-						Item item = _getItem(parameters[i]);
-						drops[i] = new _DropChance(item, RANDOM_DROP_LIMIT);
+						throw new TabListReader.TabListException("Drop parameters must be in pairs: " + _currentBlock);
+					}
+					int pairCount = parameters.length / 2;
+					_DropChance[] drops = new _DropChance[pairCount];
+					for (int i = 0; i < pairCount; ++i)
+					{
+						int probability;
+						try
+						{
+							probability = Integer.parseInt(parameters[2 * i]);
+						}
+						catch (NumberFormatException e)
+						{
+							throw new TabListReader.TabListException("Drop probability must be a number: " + _currentBlock);
+						}
+						Item item = _getItem(parameters[2 * i + 1]);
+						drops[i] = new _DropChance(item, probability);
 					}
 					specialBlockBreak.put(_currentBlock, drops);
 				}

@@ -2,7 +2,7 @@
 # ID<TAB>flag_list
 # [<TAB>block_material<TAB>material]
 # [<TAB>placed_from<TAB>ID]
-# [<TAB>requires_support<TAB>item_list]
+# [<TAB>requires_support<TAB>[probability item]*]
 # [<TAB>special_drop<TAB>ID]
 #
 # flag_list includes:
@@ -51,21 +51,21 @@ op.sapling
 	viscosity	10
 op.leaf
 	block_material	AXE
-	special_drop	op.sapling
+	special_drop	50	op.sapling
 # op.wheat_seed
 # op.wheat_item
 op.wheat_seedling
 	placed_from	op.wheat_seed
 	requires_support	op.dirt
-	special_drop	op.wheat_seed
+	special_drop	100	op.wheat_seed
 	viscosity	10
 op.wheat_young
 	requires_support	op.dirt
-	special_drop	op.wheat_seed
+	special_drop	100	op.wheat_seed
 	viscosity	10
 op.wheat_mature
 	requires_support	op.dirt
-	special_drop	op.wheat_seed	op.wheat_seed	op.wheat_item	op.wheat_item
+	special_drop	100	op.wheat_seed	50	op.wheat_seed	100	op.wheat_item	100	op.wheat_item
 	viscosity	10
 op.chest
 	block_material	AXE
@@ -73,28 +73,28 @@ op.door_closed
 	block_material	AXE
 op.door_open
 	block_material	AXE
-	special_drop	op.door_closed
+	special_drop	100	op.door_closed
 	viscosity	0
 op.hopper_down
 	block_material	AXE
 op.hopper_north
 	block_material	AXE
-	special_drop	op.hopper_down
+	special_drop	100	op.hopper_down
 op.hopper_south
 	block_material	AXE
-	special_drop	op.hopper_down
+	special_drop	100	op.hopper_down
 op.hopper_east
 	block_material	AXE
-	special_drop	op.hopper_down
+	special_drop	100	op.hopper_down
 op.hopper_west
 	block_material	AXE
-	special_drop	op.hopper_down
+	special_drop	100	op.hopper_down
 op.switch_off
 op.switch_on
-	special_drop	op.switch_off
+	special_drop	100	op.switch_off
 op.lamp_off
 op.lamp_on
-	special_drop	op.lamp_off
+	special_drop	100	op.lamp_off
 op.logic_wire
 op.quern
 	block_material	PICKAXE
@@ -106,15 +106,15 @@ op.torch
 op.carrot_seedling
 	placed_from	op.carrot_seed
 	requires_support	op.dirt
-	special_drop	op.carrot_seed
+	special_drop	100	op.carrot_seed
 	viscosity	10
 op.carrot_young
 	requires_support	op.dirt
-	special_drop	op.carrot_seed
+	special_drop	100	op.carrot_seed
 	viscosity	10
 op.carrot_mature
 	requires_support	op.dirt
-	special_drop	op.carrot_seed	op.carrot_seed	op.carrot_item	op.carrot_item
+	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
 op.bed
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick

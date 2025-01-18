@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Item;
 
@@ -35,5 +36,22 @@ public class TestMiscAspects
 		Assert.assertNull(ENV.armour.getBodyPart(bucket));
 		
 		Assert.assertEquals(10, ENV.armour.getDamageReduction(helmet));
+	}
+
+	@Test
+	public void dropProbabilities() throws Throwable
+	{
+		Block leaf = ENV.blocks.fromItem(ENV.items.getItemById("op.leaf"));
+		Block matureWheat = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_mature"));
+		
+		Item[] leafDrop0 = ENV.blocks.droppedBlocksOnBreak(leaf, 0);
+		Item[] leafDrop99 = ENV.blocks.droppedBlocksOnBreak(leaf, 99);
+		Item[] wheatDrop0 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 0);
+		Item[] wheatDrop99 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 99);
+		
+		Assert.assertEquals(1, leafDrop0.length);
+		Assert.assertEquals(0, leafDrop99.length);
+		Assert.assertEquals(4, wheatDrop0.length);
+		Assert.assertEquals(3, wheatDrop99.length);
 	}
 }
