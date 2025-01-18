@@ -51,7 +51,7 @@ op.sapling
 	viscosity	10
 op.leaf
 	block_material	AXE
-	special_drop	50	op.sapling
+	special_drop	50	op.sapling	20	op.stick	10	op.apple
 # op.wheat_seed
 # op.wheat_item
 op.wheat_seedling

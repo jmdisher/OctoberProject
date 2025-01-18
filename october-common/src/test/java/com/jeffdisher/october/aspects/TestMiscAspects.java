@@ -49,7 +49,7 @@ public class TestMiscAspects
 		Item[] wheatDrop0 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 0);
 		Item[] wheatDrop99 = ENV.blocks.droppedBlocksOnBreak(matureWheat, 99);
 		
-		Assert.assertEquals(1, leafDrop0.length);
+		Assert.assertEquals(3, leafDrop0.length);
 		Assert.assertEquals(0, leafDrop99.length);
 		Assert.assertEquals(4, wheatDrop0.length);
 		Assert.assertEquals(3, wheatDrop99.length);
