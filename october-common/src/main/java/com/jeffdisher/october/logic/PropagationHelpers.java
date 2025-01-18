@@ -194,7 +194,7 @@ public class PropagationHelpers
 	 * 
 	 * @param gameTick The current game tick.
 	 * @param ticksPerDay How many ticks exist within one full "day".
-	 * @param dayStartOffset The point in ticksPerDay interval where the day "starts".
+	 * @param dayStartOffset The value which, when added to a tick at the start of the day, will be a multiple of ticksPerDay.
 	 * @return The fraction of sky light for this time of day.
 	 */
 	public static float skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
@@ -208,7 +208,7 @@ public class PropagationHelpers
 	 * 
 	 * @param gameTick The current game tick.
 	 * @param ticksPerDay How many ticks exist within one full "day".
-	 * @param dayStartOffset The point in ticksPerDay interval where the day "starts".
+	 * @param dayStartOffset The value which, when added to a tick at the start of the day, will be a multiple of ticksPerDay.
 	 * @return The light value to apply to sky-exposed blocks.
 	 */
 	public static byte currentSkyLightValue(long gameTick, long ticksPerDay, long dayStartOffset)
@@ -510,8 +510,13 @@ public class PropagationHelpers
 
 	private static float _skyLightMultiplier(long gameTick, long ticksPerDay, long dayStartOffset)
 	{
-		// The dayStartOffset is usually 0, but is set to the offset into ticksPerDay where we should reposition the start of the day.
-		long step = (gameTick + dayStartOffset) % ticksPerDay;
+		// gameTick is the current game tick since the server was started (reset to 1 after start).
+		// dayStartOffset is a value derived from when the server last ended or when a bed was last used so that
+		// gameTick can be correctly interpreted as a time of day.  In short, (gameTick + dayStartOffset) refers to the
+		// "start" of the day.
+		// We want the day to "start" at dawn so 1/4 into the day should be when the light is brightest.
+		long threeQuarterDay = 3L * ticksPerDay / 4L;
+		long step = (gameTick + dayStartOffset + threeQuarterDay) % ticksPerDay;
 		// We actually need the light strength to cycle back and forth, not loop, so make this an abs function over half the day length.
 		long ticksPerHalfDay = ticksPerDay / 2;
 		return (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
