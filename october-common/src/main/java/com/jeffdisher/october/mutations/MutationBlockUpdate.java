@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -84,7 +85,8 @@ public class MutationBlockUpdate implements IMutationBlock
 				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 				
 				// Add this block's drops to the inventory.
-				for (Item dropped : env.blocks.droppedBlocksOnBreak(thisBlock))
+				int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
+				for (Item dropped : env.blocks.droppedBlocksOnBreak(thisBlock, random0to99))
 				{
 					newInventory.addItemsAllowingOverflow(dropped, 1);
 				}

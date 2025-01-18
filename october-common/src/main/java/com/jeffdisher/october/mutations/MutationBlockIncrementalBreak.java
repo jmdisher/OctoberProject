@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -90,7 +91,8 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					// Schedule a mutation to send it back to them (will drop at their feet on failure).
 					// This is usually just 1 element so send 1 mutation per item.
-					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+					int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
+					for (Item dropped : env.blocks.droppedBlocksOnBreak(block, random0to99))
 					{
 						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
 						context.newChangeSink.next(_optionalEntityForStorage, store);
@@ -99,7 +101,8 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				else
 				{
 					// Just drop this in the target location.
-					for (Item dropped : env.blocks.droppedBlocksOnBreak(block))
+					int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
+					for (Item dropped : env.blocks.droppedBlocksOnBreak(block, random0to99))
 					{
 						newInventory.addItemsAllowingOverflow(dropped, 1);
 					}

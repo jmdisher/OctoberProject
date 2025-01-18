@@ -6,6 +6,7 @@ import java.util.Set;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,10 @@ public class BlockAspect
 	 * A viscosity of at least this level, but less than SOLID is considered to allow and entity to swim.
 	 */
 	public static final int SWIMMABLE_VISCOSITY = 50;
+	/**
+	 * The limit for random drop chance calculations.
+	 */
+	public static final int RANDOM_DROP_LIMIT = 100;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
 	private static final String SUB_PLACED_FROM = "placed_from";
@@ -65,7 +70,7 @@ public class BlockAspect
 		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
 		Map<Item, Block> specialBlockPlacement = new HashMap<>();
-		Map<Block, Item[]> specialBlockBreak = new HashMap<>();
+		Map<Block, _DropChance[]> specialBlockBreak = new HashMap<>();
 		Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
 		
 		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
@@ -146,10 +151,11 @@ public class BlockAspect
 				else if (SUB_SPECIAL_DROP.equals(name))
 				{
 					// Note that duplicates are expected in this parameter list (empty also makes sense).
-					Item[] drops = new Item[parameters.length];
+					_DropChance[] drops = new _DropChance[parameters.length];
 					for (int i = 0; i < parameters.length; ++i)
 					{
-						drops[i] = _getItem(parameters[i]);
+						Item item = _getItem(parameters[i]);
+						drops[i] = new _DropChance(item, RANDOM_DROP_LIMIT);
 					}
 					specialBlockBreak.put(_currentBlock, drops);
 				}
@@ -227,7 +233,7 @@ public class BlockAspect
 	private final Map<Block, Integer> _nonSolidViscosity;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
-	private final Map<Block, Item[]> _specialBlockBreak;
+	private final Map<Block, _DropChance[]> _specialBlockBreak;
 	private final Map<Block, BlockMaterial> _blockMaterials;
 
 	private BlockAspect(ItemRegistry items
@@ -236,7 +242,7 @@ public class BlockAspect
 			, Map<Block, Integer> nonSolidViscosity
 			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
-			, Map<Block, Item[]> specialBlockBreak
+			, Map<Block, _DropChance[]> specialBlockBreak
 			, Map<Block, BlockMaterial> blockMaterials
 	)
 	{
@@ -378,16 +384,29 @@ public class BlockAspect
 	 * Returns the array of items which should be dropped when the given block is broken, in the world.
 	 * 
 	 * @param block The block to break.
+	 * @param random0to99 A random value between [0..99].
 	 * @return The array of items (never null).
 	 */
-	public Item[] droppedBlocksOnBreak(Block block)
+	public Item[] droppedBlocksOnBreak(Block block, int random0to99)
 	{
+		Assert.assertTrue(null != block);
+		Assert.assertTrue(random0to99 < RANDOM_DROP_LIMIT);
+		
 		// See if this is a special-case.
-		Item[] dropped = _specialBlockBreak.get(block);
-		if (null == dropped)
+		_DropChance[] chances = _specialBlockBreak.get(block);
+		Item[] dropped;
+		if (null == chances)
 		{
 			// By default, all other blocks just drop as their item type.
 			dropped = new Item[] { block.item() };
+		}
+		else
+		{
+			dropped = Arrays.stream(chances)
+					.filter((_DropChance one) -> (random0to99 < one.chance1to100))
+					.map((_DropChance one) -> one.item)
+					.toArray((int size) -> new Item[size])
+			;
 		}
 		return dropped;
 	}
@@ -408,4 +427,6 @@ public class BlockAspect
 				: BlockMaterial.NO_TOOL
 		;
 	}
+
+	private static record _DropChance(Item item, int chance1to100) {}
 }
