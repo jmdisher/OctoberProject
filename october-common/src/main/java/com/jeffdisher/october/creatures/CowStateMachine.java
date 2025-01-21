@@ -1,8 +1,5 @@
 package com.jeffdisher.october.creatures;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -84,7 +81,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	{
 		return (null != testing)
 				? new _ExtendedData(testing.inLoveMode
-						, testing.movementPlan
 						, testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.offspringLocation
@@ -107,7 +103,6 @@ public class CowStateMachine implements ICreatureStateMachine
 		_ExtendedData extended = (_ExtendedData) data;
 		return (null != extended)
 				? new Test_ExtendedData(extended.inLoveMode
-						, extended.movementPlan
 						, extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.offspringLocation
@@ -121,7 +116,6 @@ public class CowStateMachine implements ICreatureStateMachine
 
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
-	private List<AbsoluteLocation> _movementPlan;
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private EntityLocation _offspringLocation;
@@ -134,7 +128,6 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (null != data)
 		{
 			_inLoveMode = data.inLoveMode;
-			_movementPlan = data.movementPlan;
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_offspringLocation = data.offspringLocation;
@@ -144,7 +137,6 @@ public class CowStateMachine implements ICreatureStateMachine
 		else
 		{
 			_inLoveMode = false;
-			_movementPlan = null;
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_offspringLocation = null;
@@ -158,11 +150,13 @@ public class CowStateMachine implements ICreatureStateMachine
 	 * or the creature isn't in a state where it will have any effect.
 	 * 
 	 * @param itemType The type of item to apply.
+	 * @return True if the item did something.
 	 */
-	public void applyItem(Item itemType)
+	public boolean applyItem(Item itemType)
 	{
 		Environment env = Environment.getShared();
 		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
+		boolean didApply = false;
 		if (itemType == wheat)
 		{
 			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
@@ -172,16 +166,15 @@ public class CowStateMachine implements ICreatureStateMachine
 				_inLoveMode = true;
 				// Wipe any movement plan.
 				_clearPlans();
+				didApply = true;
 			}
 		}
+		return didApply;
 	}
 
 	@Override
 	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
-		// We can only call this if we don't already have a movement plan.
-		Assert.assertTrue(null == _movementPlan);
-		
 		EntityLocation targetLocation = null;
 		if (context.currentTick >= _nextDeliberateActTick)
 		{
@@ -213,27 +206,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			}
 		}
 		return targetLocation;
-	}
-
-	@Override
-	public List<AbsoluteLocation> getMovementPlan()
-	{
-		// The caller shouldn't change this.
-		return (null != _movementPlan)
-				? Collections.unmodifiableList(_movementPlan)
-				: null
-		;
-	}
-
-	@Override
-	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
-	{
-		// This can be null but never empty.
-		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-		_movementPlan = (null != movementPlan)
-				? new ArrayList<>(movementPlan)
-				: null
-		;
 	}
 
 	/**
@@ -341,8 +313,8 @@ public class CowStateMachine implements ICreatureStateMachine
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_inLoveMode || (null != _movementPlan) || (null != _offspringLocation) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
-				? new _ExtendedData(_inLoveMode, _movementPlan, _targetEntityId, _targetPreviousLocation, _offspringLocation, _nextDeliberateActTick, _nextIdleActTick)
+		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
+				? new _ExtendedData(_inLoveMode, _targetEntityId, _targetPreviousLocation, _offspringLocation, _nextDeliberateActTick, _nextIdleActTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -357,7 +329,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	{
 		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
-		_movementPlan = null;
 	}
 
 	private void _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId, int[] out_targetId, EntityLocation[] out_target)
@@ -412,7 +383,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
 	 */
 	public static record Test_ExtendedData(boolean inLoveMode
-			, List<AbsoluteLocation> movementPlan
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
@@ -422,7 +392,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	{}
 
 	private static record _ExtendedData(boolean inLoveMode
-			, List<AbsoluteLocation> movementPlan
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation

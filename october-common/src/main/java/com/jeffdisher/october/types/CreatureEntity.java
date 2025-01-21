@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import java.util.List;
+
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -24,6 +26,8 @@ public record CreatureEntity(int id
 		// The breath the entity has (for drowning).
 		, byte breath
 		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
+		// The current plan of steps to the creature should be following.
+		, List<AbsoluteLocation> movementPlan
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -55,6 +59,7 @@ public record CreatureEntity(int id
 				, (byte)0
 				, health
 				, EntityConstants.MAX_BREATH
+				, null
 				, null
 		);
 	}

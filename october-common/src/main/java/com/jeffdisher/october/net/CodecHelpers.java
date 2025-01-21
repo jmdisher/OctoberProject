@@ -260,6 +260,7 @@ public class CodecHelpers
 		byte breath = buffer.get();
 		
 		// Ephemeral data is just given default values.
+		List<AbsoluteLocation> movementPlan = null;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -269,6 +270,7 @@ public class CodecHelpers
 				, pitch
 				, health
 				, breath
+				, movementPlan
 				, extendedData
 		);
 	}

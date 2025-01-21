@@ -149,8 +149,7 @@ public class TestCreatureLogic
 				, 100L
 		);
 		Assert.assertNotNull(action);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-		List<AbsoluteLocation> plan = machine.getMovementPlan();
+		List<AbsoluteLocation> plan = mutable.newMovementPlan;
 		Assert.assertEquals(2, plan.get(plan.size() - 1).z());
 	}
 

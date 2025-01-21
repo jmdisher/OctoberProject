@@ -77,7 +77,11 @@ public class CreatureLogic
 		case COW:
 			Object originalData = creature.getExtendedData();
 			CowStateMachine cow = CowStateMachine.extractFromData(originalData);
-			cow.applyItem(itemType);
+			boolean didChangeState = cow.applyItem(itemType);
+			if (didChangeState)
+			{
+				creature.setMovementPlan(null);
+			}
 			Object updated = cow.freezeToData();
 			if (originalData != updated)
 			{
@@ -138,7 +142,7 @@ public class CreatureLogic
 		}
 		
 		// Get the movement plan and see if we should advance it.
-		List<AbsoluteLocation> movementPlan = machine.getMovementPlan();
+		List<AbsoluteLocation> movementPlan = mutable.newMovementPlan;
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 		boolean shouldMakePlan = (null == movementPlan);
 		if (shouldMakePlan)
@@ -150,7 +154,7 @@ public class CreatureLogic
 			movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
 		}
 		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-		machine.setMovementPlan(movementPlan);
+		mutable.newMovementPlan = movementPlan;
 		
 		IMutationEntity<IMutableCreatureEntity> actionProduced;
 		if (null != movementPlan)
@@ -188,6 +192,7 @@ public class CreatureLogic
 			didBecomePregnant = machine.setPregnant(spawnLocation);
 			if (didBecomePregnant)
 			{
+				creature.setMovementPlan(null);
 				creature.setExtendedData(machine.freezeToData());
 			}
 			break;
@@ -229,6 +234,7 @@ public class CreatureLogic
 			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 			if (isDone)
 			{
+				creature.setMovementPlan(null);
 				creature.setExtendedData(machine.freezeToData());
 			}
 			break;
@@ -246,6 +252,7 @@ public class CreatureLogic
 				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 				if (isDone)
 				{
+					creature.setMovementPlan(null);
 					creature.setExtendedData(machine.freezeToData());
 				}
 			}

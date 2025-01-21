@@ -1,7 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,9 +29,9 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)50
 				, EntityConstants.MAX_BREATH
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, List.of(), 0, null, null, 0L, 0L))
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
 		);
-		Assert.assertNotNull(CowStateMachine.decodeExtendedData(middle.extendedData()).movementPlan());
 		
 		MutableCreature mutable = MutableCreature.existing(middle);
 		mutable.setHealth((byte)20);

@@ -1,6 +1,5 @@
 package com.jeffdisher.october.creatures;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -42,8 +41,6 @@ public class TestOrcStateMachine
 		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
 		machine.selectDeliberateTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
-		// Set a movement plan so we store the extended data.
-		machine.setMovementPlan(List.of(orcLocation.getBlockLocation()));
 		
 		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertEquals(player.id(), testData.targetEntityId());
@@ -65,13 +62,12 @@ public class TestOrcStateMachine
 		
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), previousLocation, 0L, 0L, 0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(player.id(), previousLocation, 0L, 0L, 0L, Long.MAX_VALUE)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
 		
 		// We should see that the father has lost the target and path (they will need to re-find it on a future selection).
-		Assert.assertNull(machine.getMovementPlan());
 		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
 		Assert.assertNull(testData);
 	}
@@ -98,7 +94,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(List.of(), player.id(), player.location().getBlockLocation(), 0L, 0L, 0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(player.id(), player.location().getBlockLocation(), 0L, 0L, 0L, Long.MAX_VALUE)));
 		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		Assert.assertTrue(didTakeAction);
 		
@@ -144,7 +140,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);
 		
 		// Create the orc and ask it to check for deliberate actions to show that it updates its despawn timer.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(null, 0, null, 0L, 0L, 0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0, null, 0L, 0L, 0L, Long.MAX_VALUE)));
 		EntityLocation target = machine.selectDeliberateTarget(context,  new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
 		Assert.assertNull(target);
 		long idleTickDelay = (OrcStateMachine.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);

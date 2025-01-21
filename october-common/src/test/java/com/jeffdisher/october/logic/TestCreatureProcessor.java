@@ -162,7 +162,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertNotNull(CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan());
+		Assert.assertNotNull(updated.movementPlan());
 	}
 
 	@Test
@@ -201,7 +201,8 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
+				, movementPlan
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -216,7 +217,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(3.92f, updated.velocity().z(), 0.001f);
-		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
+		Assert.assertEquals(1, updated.movementPlan().size());
 	}
 
 	@Test
@@ -236,7 +237,8 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
+				, movementPlan
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -251,7 +253,7 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(2.94f, updated.velocity().z(), 0.001f);
-		Assert.assertEquals(1, CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan().size());
+		Assert.assertEquals(1, updated.movementPlan().size());
 	}
 
 	@Test
@@ -272,7 +274,8 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, movementPlan, 0, null, null, 0L, 0L))
+				, movementPlan
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
@@ -336,7 +339,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertNotNull(extended.movementPlan());
+		Assert.assertNotNull(updated.movementPlan());
 		long previousTickTimer = extended.nextIdleActTick();
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
@@ -383,7 +386,7 @@ public class TestCreatureProcessor
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close wheat.
-		List<AbsoluteLocation> movementPlan = CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.movementPlan();
 		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 		
@@ -406,7 +409,7 @@ public class TestCreatureProcessor
 		}
 		
 		// Make sure that the movement plan ends at the NEW close wheat location.
-		movementPlan = CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
+		movementPlan = updated.movementPlan();
 		endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 	}
@@ -443,7 +446,7 @@ public class TestCreatureProcessor
 		Assert.assertNotEquals(startLocation, updated.location());
 		
 		// Make sure that the movement plan ends at the close target cow.
-		List<AbsoluteLocation> movementPlan = CowStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.movementPlan();
 		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(targetCow.location().getBlockLocation(), endPoint);
 	}
@@ -524,7 +527,7 @@ public class TestCreatureProcessor
 		// Run another tick to observe that nothing special happens.
 		creaturesById.putAll(group.updatedCreatures());
 		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData());
-		Assert.assertNull(extended.movementPlan());
+		Assert.assertNull(creaturesById.get(cow2.id()).movementPlan());
 		Assert.assertNull(extended.offspringLocation());
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
@@ -584,7 +587,7 @@ public class TestCreatureProcessor
 		Assert.assertNotEquals(0.0f, updated.velocity().z());
 		
 		// Verify that the movement plan is the one we expected (since we depend on knowing which direction we are moving for the test).
-		List<AbsoluteLocation> movementPlan = OrcStateMachine.decodeExtendedData(updated.extendedData()).movementPlan();
+		List<AbsoluteLocation> movementPlan = updated.movementPlan();
 		Assert.assertEquals(3, movementPlan.size());
 		Assert.assertEquals(new AbsoluteLocation(8, 8, 2), movementPlan.get(0));
 		Assert.assertEquals(new AbsoluteLocation(7, 8, 2), movementPlan.get(1));
@@ -736,8 +739,7 @@ public class TestCreatureProcessor
 			}
 			else
 			{
-				OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(creature.extendedData());
-				Assert.assertNull(extended.movementPlan());
+				Assert.assertNull(creature.movementPlan());
 			}
 		}
 		// We should be in the same column but higher.

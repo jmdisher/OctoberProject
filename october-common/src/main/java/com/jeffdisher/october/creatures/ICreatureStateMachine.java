@@ -1,10 +1,8 @@
 package com.jeffdisher.october.creatures;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.logic.EntityCollection;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -15,20 +13,6 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public interface ICreatureStateMachine
 {
-	/**
-	 * An accessor for the read-only movement plan in the instance.
-	 * 
-	 * @return A read-only view of the current movement plan (could be null).
-	 */
-	List<AbsoluteLocation> getMovementPlan();
-
-	/**
-	 * Updates the movement plan to a copy of the one given.
-	 * 
-	 * @param movementPlan The movement plan (could be null).
-	 */
-	void setMovementPlan(List<AbsoluteLocation> mutablePlan);
-
 	/**
 	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
 	 * creatures in the loaded world.

@@ -1,8 +1,5 @@
 package com.jeffdisher.october.creatures;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Consumer;
 
 import com.jeffdisher.october.logic.EntityCollection;
@@ -16,7 +13,6 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -73,8 +69,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public static Object encodeExtendedData(Test_ExtendedData testing)
 	{
 		return (null != testing)
-				? new _ExtendedData(testing.movementPlan
-						, testing.targetEntityId
+				? new _ExtendedData(testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.lastAttackTick
 						, testing.nextDeliberateActTick
@@ -96,8 +91,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	{
 		_ExtendedData extended = (_ExtendedData) data;
 		return (null != extended)
-				? new Test_ExtendedData(extended.movementPlan
-						, extended.targetEntityId
+				? new Test_ExtendedData(extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.lastAttackTick
 						, extended.nextDeliberateActTick
@@ -110,7 +104,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 
 
 	private final _ExtendedData _originalData;
-	private List<AbsoluteLocation> _movementPlan;
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private long _lastAttackTick;
@@ -123,7 +116,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 		_originalData = data;
 		if (null != data)
 		{
-			_movementPlan = data.movementPlan;
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_lastAttackTick = data.lastAttackTick;
@@ -133,7 +125,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 		}
 		else
 		{
-			_movementPlan = null;
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_lastAttackTick = 0L;
@@ -147,9 +138,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
-		// We can only call this if we don't already have a movement plan.
-		Assert.assertTrue(null == _movementPlan);
-		
 		EntityLocation targetLocation = null;
 		if (context.currentTick >= _nextDeliberateActTick)
 		{
@@ -183,27 +171,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 			}
 		}
 		return targetLocation;
-	}
-
-	@Override
-	public List<AbsoluteLocation> getMovementPlan()
-	{
-		// The caller shouldn't change this.
-		return (null != _movementPlan)
-				? Collections.unmodifiableList(_movementPlan)
-				: null
-		;
-	}
-
-	@Override
-	public void setMovementPlan(List<AbsoluteLocation> movementPlan)
-	{
-		// This can be null but never empty.
-		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-		_movementPlan = (null != movementPlan)
-				? new ArrayList<>(movementPlan)
-				: null
-		;
 	}
 
 	@Override
@@ -287,8 +254,8 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = ((null != _movementPlan) || (NO_TARGET_ENTITY_ID != _targetEntityId) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
-				? new _ExtendedData(_movementPlan, _targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick, _idleDespawnTick)
+		_ExtendedData newData = ((NO_TARGET_ENTITY_ID != _targetEntityId) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
+				? new _ExtendedData(_targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick, _idleDespawnTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -303,7 +270,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	{
 		_targetEntityId = NO_TARGET_ENTITY_ID;
 		_targetPreviousLocation = null;
-		_movementPlan = null;
 	}
 
 	private _Target _findPlayerInRange(EntityCollection entityCollection, EntityLocation creatureLocation)
@@ -326,8 +292,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	/**
 	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
 	 */
-	public static record Test_ExtendedData(List<AbsoluteLocation> movementPlan
-			, int targetEntityId
+	public static record Test_ExtendedData(int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
 			, long nextDeliberateActTick
@@ -336,8 +301,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	)
 	{}
 
-	private static record _ExtendedData(List<AbsoluteLocation> movementPlan
-			, int targetEntityId
+	private static record _ExtendedData(int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
 			, long nextDeliberateActTick
