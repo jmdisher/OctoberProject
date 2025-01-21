@@ -20,10 +20,15 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
+import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 
@@ -177,6 +182,99 @@ public class TestCreatureLogic
 		}, 0);
 		List<AbsoluteLocation> path = CreatureLogic.test_findPathToRandomSpot(context, entity.location(), entity.type());
 		Assert.assertNull(path);
+	}
+
+	@Test
+	public void orcObserveTargetMove()
+	{
+		// Show an orc acquiring a target and then updating its path when the target moves.
+		EntityLocation orcLocation = new EntityLocation(2.0f, 2.0f, 1.0f);
+		CreatureEntity orc = CreatureEntity.create(-1, EntityType.ORC, orcLocation, (byte)100);
+		EntityLocation playerLocation = new EntityLocation(5.0f, 1.0f, 1.0f);
+		Entity[] player = new Entity[] { new Entity(1
+				, false
+				, playerLocation
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
+				, Inventory.start(10).finish()
+				, new int[1]
+				, 0
+				, null
+				, null
+				, (byte)0
+				, (byte)0
+				, EntityConstants.MAX_BREATH
+				, 0
+				, MutableEntity.TESTING_LOCATION
+				, 0L
+		) };
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		
+		// We should see them acquire this target.
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(location.getBlockAddress(), input)
+					: null
+			;
+		};
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+			MinimalEntity min;
+			switch (id)
+			{
+			case -1:
+				min = MinimalEntity.fromCreature(orc);
+				break;
+			case 1:
+				min = MinimalEntity.fromEntity(player[0]);
+				break;
+			default:
+				throw new AssertionError();
+			}
+			return min;
+		};
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		
+		// First, choose the target.
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+				, new EntityCollection(Set.of(player), Set.of(orc))
+				, mutableOrc
+				, 100L
+		);
+		Assert.assertNotNull(action);
+		Assert.assertEquals(playerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
+		
+		// Now, move the entity and see that the special action updates it.
+		EntityLocation newPlayerLocation = new EntityLocation(2.0f, 5.0f, 1.0f);
+		player[0] = new Entity(1
+				, false
+				, newPlayerLocation
+				, new EntityLocation(0.0f, 0.0f, 0.0f)
+				, (byte)0
+				, (byte)0
+				, Inventory.start(10).finish()
+				, new int[1]
+				, 0
+				, null
+				, null
+				, (byte)0
+				, (byte)0
+				, EntityConstants.MAX_BREATH
+				, 0
+				, MutableEntity.TESTING_LOCATION
+				, 0L
+		);
+		// Special action is where we account for this targeting update but it doesn't count as a special action.
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
+		Assert.assertFalse(didTakeAction);
+		// We should now see the updated movement plan.
+		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
 	}
 
 

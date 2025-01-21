@@ -200,6 +200,45 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
+	public EntityLocation didUpdateTargetLocation(TickProcessingContext context, EntityLocation creatureLocation)
+	{
+		// If we are tracking another entity, see if we can update our target location.
+		EntityLocation updatedLocation = null;
+		if (NO_TARGET_ENTITY_ID != _targetEntityId)
+		{
+			// See if they are still loaded.
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+			if (null != targetEntity)
+			{
+				// Make sure that they are still in our site range.
+				EntityLocation targetLocation = targetEntity.location();
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+				if (distance <= COW_PATH_DISTANCE)
+				{
+					// We can keep this but see if we need to update their location.
+					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
+					if (!newLocation.equals(_targetPreviousLocation))
+					{
+						_targetPreviousLocation = newLocation;
+						updatedLocation = targetLocation;
+					}
+				}
+				else
+				{
+					// They are out of range so forget them.
+					_clearPlans();
+				}
+			}
+			else
+			{
+				// The unloaded, so clear.
+				_clearPlans();
+			}
+		}
+		return updatedLocation;
+	}
+
+	@Override
 	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId)
 	{
 		// See if we are pregnant or searching for our mate.
@@ -216,35 +255,19 @@ public class CowStateMachine implements ICreatureStateMachine
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
 			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
-			if (null != targetEntity)
+			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
+			Assert.assertTrue(null != targetEntity);
+			
+			// See if they are within mating distance and we are the father.
+			EntityLocation targetLocation = targetEntity.location();
+			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+			if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < creatureId))
 			{
-				EntityLocation targetLocation = targetEntity.location();
-				
-				// First, see if we could impregnate them.
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-				if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < creatureId))
-				{
-					// Send the message to impregnate them.
-					EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
-					context.newChangeSink.creature(_targetEntityId, sperm);
-					// We can now exit love mode.
-					_inLoveMode = false;
-					_clearPlans();
-					didTakeAction = true;
-				}
-				else
-				{
-					// We can't so just see if they moved from our last plan.
-					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-					if (!newLocation.equals(_targetPreviousLocation))
-					{
-						_clearPlans();
-						didTakeAction = true;
-					}
-				}
-			}
-			else
-			{
+				// Send the message to impregnate them.
+				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
+				context.newChangeSink.creature(_targetEntityId, sperm);
+				// We can now exit love mode.
+				_inLoveMode = false;
 				_clearPlans();
 				didTakeAction = true;
 			}

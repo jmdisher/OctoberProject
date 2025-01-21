@@ -48,7 +48,7 @@ public class TestOrcStateMachine
 	}
 
 	@Test
-	public void dropTargetOnMovement()
+	public void updateTargetOnMovement()
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation location = new EntityLocation(4.0f, 0.0f, 0.0f);
@@ -63,13 +63,15 @@ public class TestOrcStateMachine
 		// See that the orc targets the entity.
 		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
 		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(player.id(), previousLocation, 0L, Long.MAX_VALUE)));
+		EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, orcLocation);
+		Assert.assertEquals(location, updatedLocation);
 		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
 		// (they are still out of range so we didn't hit them)
 		Assert.assertFalse(didTakeAction);
 		
-		// We should see that the father has lost the target and path (they will need to re-find it on a future selection).
+		// We should see that they are still targeting.
 		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertNull(testData);
+		Assert.assertEquals(location.getBlockLocation(), testData.targetPreviousLocation());
 	}
 
 	@Test

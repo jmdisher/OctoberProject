@@ -13,6 +13,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -144,6 +145,45 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
+	public EntityLocation didUpdateTargetLocation(TickProcessingContext context, EntityLocation creatureLocation)
+	{
+		// If we are tracking another entity, see if we can update our target location.
+		EntityLocation updatedLocation = null;
+		if (NO_TARGET_ENTITY_ID != _targetEntityId)
+		{
+			// See if they are still loaded.
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+			if (null != targetEntity)
+			{
+				// Make sure that they are still in our site range.
+				EntityLocation targetLocation = targetEntity.location();
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+				if (distance <= ORC_PATH_DISTANCE)
+				{
+					// We can keep this but see if we need to update their location.
+					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
+					if (!newLocation.equals(_targetPreviousLocation))
+					{
+						_targetPreviousLocation = newLocation;
+						updatedLocation = targetLocation;
+					}
+				}
+				else
+				{
+					// They are out of range so forget them.
+					_clearPlans();
+				}
+			}
+			else
+			{
+				// The unloaded, so clear.
+				_clearPlans();
+			}
+		}
+		return updatedLocation;
+	}
+
+	@Override
 	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
@@ -155,37 +195,23 @@ public class OrcStateMachine implements ICreatureStateMachine
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
 			// movement plans unless they are close enough for other actions).
 			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
-			if (null != targetEntity)
+			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
+			Assert.assertTrue(null != targetEntity);
+			
+			// See if they are in attack range.
+			EntityLocation targetLocation = targetEntity.location();
+			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+			if (distance <= ORC_ATTACK_DISTANCE)
 			{
-				EntityLocation targetLocation = targetEntity.location();
-				
-				// Should we attack them.
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-				if (distance <= ORC_ATTACK_DISTANCE)
-				{
-					// We can attack them so choose the target.
-					int index = context.randomInt.applyAsInt(BodyPart.values().length);
-					BodyPart target = BodyPart.values()[index];
-					EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, ORC_DAMAGE, creatureId);
-					context.newChangeSink.next(_targetEntityId, takeDamage);
-					// Set us on to cooldown.
-					_lastAttackTick = context.currentTick;
-					// We only count a successful attack as an "action".
-					didTakeAction = true;
-				}
-				else
-				{
-					// We can't so just see if they moved from our last plan.
-					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-					if (!newLocation.equals(_targetPreviousLocation))
-					{
-						_clearPlans();
-					}
-				}
-			}
-			else
-			{
-				_clearPlans();
+				// We can attack them so choose the target.
+				int index = context.randomInt.applyAsInt(BodyPart.values().length);
+				BodyPart target = BodyPart.values()[index];
+				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, ORC_DAMAGE, creatureId);
+				context.newChangeSink.next(_targetEntityId, takeDamage);
+				// Set us on to cooldown.
+				_lastAttackTick = context.currentTick;
+				// We only count a successful attack as an "action".
+				didTakeAction = true;
 			}
 		}
 		if (!didTakeAction && (context.currentTick >= _idleDespawnTick))

@@ -26,6 +26,17 @@ public interface ICreatureStateMachine
 	EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
 
 	/**
+	 * Called before doneSpecialActions() to allow the receiver to update its tracking on a target entity, in case it
+	 * has moved, returning the new location if it did.
+	 * If a non-null value is returned, it will be used to rebuild the entity's movement plan.
+	 * 
+	 * @param context The context of the current tick.
+	 * @param creatureLocation The creature's location.
+	 * @return The updated location of the target entity, null if there isn't one or it didn't move meaningfully.
+	 */
+	EntityLocation didUpdateTargetLocation(TickProcessingContext context, EntityLocation creatureLocation);
+
+	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending
 	 * actions to other entities or requesting a creature to be spawned.
 	 * If it returns true, the system will assume that this is all the creature wanted to do in this tick.

@@ -140,14 +140,14 @@ public class TestCowStateMachine
 		
 		// Start with them both in a love mode and give the father a non-null path and with the target of the mother (a "previous" location).
 		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, mother.id(), new AbsoluteLocation(3, 0, 0), null)));
-		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.id());
-		Assert.assertTrue(didTakeAction);
+		EntityLocation updatedLocation = fatherMachine.didUpdateTargetLocation(context, father.location());
+		Assert.assertNotNull(updatedLocation);
 		
-		// We should see that the father has lost the target (they will need to re-find it on a future selection).
+		// We should see that the father still has the target and an updated target location.
 		CowStateMachine.Test_ExtendedData testData = CowStateMachine.decodeExtendedData(fatherMachine.freezeToData());
 		Assert.assertTrue(testData.inLoveMode());
-		Assert.assertEquals(0, testData.targetEntityId());
-		Assert.assertNull(testData.targetPreviousLocation());
+		Assert.assertEquals(mother.id(), testData.targetEntityId());
+		Assert.assertEquals(mother.location().getBlockLocation(), testData.targetPreviousLocation());
 	}
 
 

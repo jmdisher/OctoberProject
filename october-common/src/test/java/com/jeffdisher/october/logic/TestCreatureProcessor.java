@@ -18,6 +18,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
+import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
@@ -402,25 +403,72 @@ public class TestCreatureProcessor
 		// Move the target entity and observe that the plan changes.
 		closeWheat = _createEntity(1, new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		
-		// We need to finish the previous step before a new one will be created so loop 6 times (5 to finish the step and one to decide on new).
-		for (int i = 0; i < 6; ++i)
-		{
-			context = _updateContextWithPlayer(context, closeWheat);
-			creaturesById = group.updatedCreatures();
-			group = CreatureProcessor.processCreatureGroupParallel(thread
-					, creaturesById
-					, context
-					, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
-					, changesToRun
-			);
-			updated = group.updatedCreatures().get(creature.id());
-			Assert.assertNotNull(updated);
-		}
+		// Run the processor to observe the movement of the target entity.
+		context = _updateContextWithPlayer(context, closeWheat);
+		creaturesById = group.updatedCreatures();
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
+				, changesToRun
+		);
+		updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotNull(updated);
 		
 		// Make sure that the movement plan ends at the NEW close wheat location.
 		movementPlan = updated.movementPlan();
 		endPoint = movementPlan.get(movementPlan.size() - 1);
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
+	}
+
+	@Test
+	public void orcTrackTarget()
+	{
+		// Create an orc and a player, showing that the orc follows the player when they move.
+		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
+		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
+		CreatureEntity creature = CreatureEntity.create(-1, EntityType.ORC, startLocation, (byte)100);
+		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
+		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
+		TickProcessingContext context = _createContext();
+		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
+		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(player), creaturesById.values())
+				, changesToRun
+		);
+		
+		// We should see that the orc has targeted the player and started moving toward them.
+		CreatureEntity updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotEquals(startLocation, updated.location());
+		OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(updated.extendedData());
+		Assert.assertEquals(1, extended.targetEntityId());
+		
+		// Make sure that the movement plan ends at the player.
+		List<AbsoluteLocation> movementPlan = updated.movementPlan();
+		AbsoluteLocation endPoint = movementPlan.get(movementPlan.size() - 1);
+		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
+		
+		// Move the player and observe that the plan changes.
+		player = _createEntity(1, new EntityLocation(3.0f, 3.0f, 0.0f), null, null);
+		
+		// We will run the processor to see them update their target location.
+		context = _updateContextWithPlayer(context, player);
+		creaturesById = group.updatedCreatures();
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(player), creaturesById.values())
+				, changesToRun
+		);
+		updated = group.updatedCreatures().get(creature.id());
+		Assert.assertNotNull(updated);
+		
+		// Make sure that the movement plan ends at the NEW player location.
+		movementPlan = updated.movementPlan();
+		endPoint = movementPlan.get(movementPlan.size() - 1);
+		Assert.assertEquals(player.location().getBlockLocation(), endPoint);
 	}
 
 	@Test

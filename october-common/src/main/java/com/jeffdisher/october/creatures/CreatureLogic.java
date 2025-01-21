@@ -240,6 +240,14 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
+			EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, creature.getLocation());
+			if (null != updatedLocation)
+			{
+				EntityVolume volume = EntityConstants.getVolume(creature.getType());
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+				creature.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, creature.getLocation(), updatedLocation, machine.getPathDistance()));
+				creature.setExtendedData(machine.freezeToData());
+			}
 			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 			if (isDone)
 			{
@@ -259,6 +267,14 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
+				EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, creature.getLocation());
+				if (null != updatedLocation)
+				{
+					EntityVolume volume = EntityConstants.getVolume(creature.getType());
+					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+					creature.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, creature.getLocation(), updatedLocation, machine.getPathDistance()));
+					creature.setExtendedData(machine.freezeToData());
+				}
 				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
 				if (isDone)
 				{
