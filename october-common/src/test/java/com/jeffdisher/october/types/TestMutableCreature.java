@@ -29,8 +29,11 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)50
 				, EntityConstants.MAX_BREATH
+				
 				, null
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
+				, 0L
+				, 0L
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
 		);
 		
 		MutableCreature mutable = MutableCreature.existing(middle);

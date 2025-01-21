@@ -33,15 +33,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	// We will only allow one attack per second.
 	public static final long ATTACK_COOLDOWN_MILLIS = 1000L;
 	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
-	 */
-	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
-	 * there was no good deliberate option.
-	 */
-	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
-	/**
 	 * The amount of time will orc will continue to live if not taking any deliberate action before despawn (5 minutes).
 	 */
 	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
@@ -72,8 +63,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 				? new _ExtendedData(testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.lastAttackTick
-						, testing.nextDeliberateActTick
-						, testing.nextIdleActTick
 						, testing.idleDespawnTick
 				)
 				: null
@@ -94,8 +83,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 				? new Test_ExtendedData(extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.lastAttackTick
-						, extended.nextDeliberateActTick
-						, extended.nextIdleActTick
 						, extended.idleDespawnTick
 				)
 				: null
@@ -107,8 +94,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private long _lastAttackTick;
-	private long _nextDeliberateActTick;
-	private long _nextIdleActTick;
 	private long _idleDespawnTick;
 	
 	private OrcStateMachine(_ExtendedData data)
@@ -119,8 +104,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_lastAttackTick = data.lastAttackTick;
-			_nextDeliberateActTick = data.nextDeliberateActTick;
-			_nextIdleActTick = data.nextIdleActTick;
 			_idleDespawnTick = data.idleDespawnTick;
 		}
 		else
@@ -128,8 +111,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_lastAttackTick = 0L;
-			_nextDeliberateActTick = 0L;
-			_nextIdleActTick = 0L;
 			// We will initialize this when making the first deliberate action.
 			_idleDespawnTick = Long.MAX_VALUE;
 		}
@@ -139,36 +120,25 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		EntityLocation targetLocation = null;
-		if (context.currentTick >= _nextDeliberateActTick)
+		// Orcs only have a single target:  Any player in range.
+		_Target target = _findPlayerInRange(entityCollection, creatureLocation);
+		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
+		if (null != target)
 		{
-			// Orcs only have a single target:  Any player in range.
-			_Target target = _findPlayerInRange(entityCollection, creatureLocation);
-			// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
-			if (null != target)
-			{
-				_targetEntityId = target.id;
-				_targetPreviousLocation = target.location.getBlockLocation();
-				targetLocation = target.location;
-			}
-			else
-			{
-				_targetEntityId = NO_TARGET_ENTITY_ID;
-				_targetPreviousLocation = null;
-				targetLocation = null;
-			}
-			
-			// Update our next action ticks.
-			_nextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
-			if (null != target)
-			{
-				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
-				_nextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
-			}
-			if ((null != target) || (Long.MAX_VALUE == _idleDespawnTick))
-			{
-				// We made a deliberate action or just started so delay our idle despawn.
-				_idleDespawnTick = context.currentTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
-			}
+			_targetEntityId = target.id;
+			_targetPreviousLocation = target.location.getBlockLocation();
+			targetLocation = target.location;
+		}
+		else
+		{
+			_targetEntityId = NO_TARGET_ENTITY_ID;
+			_targetPreviousLocation = null;
+			targetLocation = null;
+		}
+		if ((null != target) || (Long.MAX_VALUE == _idleDespawnTick))
+		{
+			// We made a deliberate action or just started so delay our idle despawn.
+			_idleDespawnTick = context.currentTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 		}
 		return targetLocation;
 	}
@@ -210,7 +180,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 					if (!newLocation.equals(_targetPreviousLocation))
 					{
 						_clearPlans();
-						_nextDeliberateActTick = 0L;
 					}
 				}
 			}
@@ -240,22 +209,10 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean canMakeIdleMovement(TickProcessingContext context)
-	{
-		boolean canMove = (context.currentTick >= _nextIdleActTick);
-		if (canMove)
-		{
-			// We want to "consume" this decision.
-			_nextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
-		}
-		return canMove;
-	}
-
-	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = ((NO_TARGET_ENTITY_ID != _targetEntityId) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
-				? new _ExtendedData(_targetEntityId, _targetPreviousLocation, _lastAttackTick, _nextDeliberateActTick, _nextIdleActTick, _idleDespawnTick)
+		_ExtendedData newData = ((NO_TARGET_ENTITY_ID != _targetEntityId) || (Long.MAX_VALUE != _idleDespawnTick))
+				? new _ExtendedData(_targetEntityId, _targetPreviousLocation, _lastAttackTick, _idleDespawnTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -295,8 +252,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	public static record Test_ExtendedData(int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
-			, long nextDeliberateActTick
-			, long nextIdleActTick
 			, long idleDespawnTick
 	)
 	{}
@@ -304,8 +259,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private static record _ExtendedData(int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, long lastAttackTick
-			, long nextDeliberateActTick
-			, long nextIdleActTick
 			, long idleDespawnTick
 	)
 	{}

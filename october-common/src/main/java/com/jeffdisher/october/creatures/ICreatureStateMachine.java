@@ -50,17 +50,6 @@ public interface ICreatureStateMachine
 	boolean isPlanDeliberate();
 
 	/**
-	 * Called if selectDeliberateTarget() returns null to ask if the creature should make an idle movement (since that
-	 * is currently generalized across all creature types).
-	 * Returns true if a random plan should be attempted or false to do nothing.
-	 * NOTE:  The implementation may change state in response to this call!
-	 * 
-	 * @param context The context of the current tick.
-	 * @return True if a random plan should be made in this tick.
-	 */
-	boolean canMakeIdleMovement(TickProcessingContext context);
-
-	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
 	 * the original instance.
 	 * NOTE:  The receiver should be considered invalid after this call.

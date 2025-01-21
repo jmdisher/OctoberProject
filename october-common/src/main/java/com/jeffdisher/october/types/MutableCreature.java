@@ -37,7 +37,10 @@ public class MutableCreature implements IMutableCreatureEntity
 	public byte newPitch;
 	public byte newHealth;
 	public byte newBreath;
+
 	public List<AbsoluteLocation> newMovementPlan;
+	public long newNextDeliberateActTick;
+	public long newNextIdleActTick;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -49,7 +52,10 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newPitch = creature.pitch();
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
+		
 		this.newMovementPlan = creature.movementPlan();
+		this.newNextDeliberateActTick = creature.nextDeliberateActTick();
+		this.newNextIdleActTick = creature.nextIdleActTick();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -135,6 +141,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		// Whenever a creature's health changes, we will wipe its AI state.
 		// TODO:  In the future, we should make this about taking damage from a specific source.
 		this.newMovementPlan = null;
+		this.newNextDeliberateActTick = 0L;
+		this.newNextIdleActTick = 0L;
 		this.newExtendedData = null;
 	}
 
@@ -211,6 +219,12 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
+	public void resetDeliberateTick()
+	{
+		this.newNextDeliberateActTick = 0L;
+	}
+
+	@Override
 	public Object getExtendedData()
 	{
 		return this.newExtendedData;
@@ -244,7 +258,10 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newPitch
 					, this.newHealth
 					, this.newBreath
+					
 					, (null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
+					, this.newNextDeliberateActTick
+					, this.newNextIdleActTick
 					, this.newExtendedData
 			);
 			// See if these are identical.

@@ -34,15 +34,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	// Use 2x the view distance to account for obstacles.
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
 	public static final int NO_TARGET_ENTITY_ID = 0;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
-	 */
-	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
-	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
-	 * there was no good deliberate option.
-	 */
-	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
 
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
@@ -84,8 +75,6 @@ public class CowStateMachine implements ICreatureStateMachine
 						, testing.targetEntityId
 						, testing.targetPreviousLocation
 						, testing.offspringLocation
-						, testing.nextDeliberateActTick
-						, testing.nextIdleActTick
 				)
 				: null
 		;
@@ -106,8 +95,6 @@ public class CowStateMachine implements ICreatureStateMachine
 						, extended.targetEntityId
 						, extended.targetPreviousLocation
 						, extended.offspringLocation
-						, extended.nextDeliberateActTick
-						, extended.nextIdleActTick
 				)
 				: null
 		;
@@ -119,8 +106,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	private int _targetEntityId;
 	private AbsoluteLocation _targetPreviousLocation;
 	private EntityLocation _offspringLocation;
-	private long _nextDeliberateActTick;
-	private long _nextIdleActTick;
 	
 	private CowStateMachine(_ExtendedData data)
 	{
@@ -131,8 +116,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			_targetEntityId = data.targetEntityId;
 			_targetPreviousLocation = data.targetPreviousLocation;
 			_offspringLocation = data.offspringLocation;
-			_nextDeliberateActTick = data.nextDeliberateActTick;
-			_nextIdleActTick = data.nextIdleActTick;
 		}
 		else
 		{
@@ -140,8 +123,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			_targetEntityId = NO_TARGET_ENTITY_ID;
 			_targetPreviousLocation = null;
 			_offspringLocation = null;
-			_nextDeliberateActTick = 0L;
-			_nextIdleActTick = 0L;
 		}
 	}
 
@@ -175,37 +156,24 @@ public class CowStateMachine implements ICreatureStateMachine
 	@Override
 	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
-		EntityLocation targetLocation = null;
-		if (context.currentTick >= _nextDeliberateActTick)
+		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
+		// We will just use arrays to pass this "by reference".
+		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
+		EntityLocation[] target = new EntityLocation[1];
+		if (_inLoveMode)
 		{
-			// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
-			// We will just use arrays to pass this "by reference".
-			int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
-			EntityLocation[] target = new EntityLocation[1];
-			if (_inLoveMode)
-			{
-				// Find another cow in breeding mode.
-				_findBreedableCow(entityCollection, creatureLocation, creatureId, targetId, target);
-			}
-			else
-			{
-				// We will keep this simple:  Find the closest player holding wheat, up to our limit.
-				_findWheatTarget(entityCollection, creatureLocation, targetId, target);
-			}
-			// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
-			_targetEntityId = targetId[0];
-			_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
-			targetLocation = target[0];
-			
-			// Update our next action ticks.
-			_nextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
-			if (null != _targetPreviousLocation)
-			{
-				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
-				_nextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
-			}
+			// Find another cow in breeding mode.
+			_findBreedableCow(entityCollection, creatureLocation, creatureId, targetId, target);
 		}
-		return targetLocation;
+		else
+		{
+			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
+			_findWheatTarget(entityCollection, creatureLocation, targetId, target);
+		}
+		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
+		_targetEntityId = targetId[0];
+		_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
+		return target[0];
 	}
 
 	/**
@@ -226,7 +194,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			_inLoveMode = false;
 			_clearPlans();
 			_offspringLocation = offspringLocation;
-			_nextDeliberateActTick = 0L;
 			didBecomePregnant = true;
 		}
 		return didBecomePregnant;
@@ -272,7 +239,6 @@ public class CowStateMachine implements ICreatureStateMachine
 					if (!newLocation.equals(_targetPreviousLocation))
 					{
 						_clearPlans();
-						_nextDeliberateActTick = 0L;
 						didTakeAction = true;
 					}
 				}
@@ -299,22 +265,10 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean canMakeIdleMovement(TickProcessingContext context)
-	{
-		boolean canMove = (context.currentTick >= _nextIdleActTick);
-		if (canMove)
-		{
-			// We want to "consume" this decision.
-			_nextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
-		}
-		return canMove;
-	}
-
-	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation) || (_nextDeliberateActTick > 0L) || (_nextIdleActTick > 0L))
-				? new _ExtendedData(_inLoveMode, _targetEntityId, _targetPreviousLocation, _offspringLocation, _nextDeliberateActTick, _nextIdleActTick)
+		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation) || (NO_TARGET_ENTITY_ID != _targetEntityId))
+				? new _ExtendedData(_inLoveMode, _targetEntityId, _targetPreviousLocation, _offspringLocation)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -386,8 +340,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
-			, long nextDeliberateActTick
-			, long nextIdleActTick
 	)
 	{}
 
@@ -395,8 +347,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			, int targetEntityId
 			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
-			, long nextDeliberateActTick
-			, long nextIdleActTick
 	)
 	{}
 }

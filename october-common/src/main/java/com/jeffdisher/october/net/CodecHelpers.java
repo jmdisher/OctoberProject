@@ -261,6 +261,8 @@ public class CodecHelpers
 		
 		// Ephemeral data is just given default values.
 		List<AbsoluteLocation> movementPlan = null;
+		long nextDeliberateActTick = 0L;
+		long nextIdleActTick = 0L;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -270,7 +272,10 @@ public class CodecHelpers
 				, pitch
 				, health
 				, breath
+				
 				, movementPlan
+				, nextDeliberateActTick
+				, nextIdleActTick
 				, extendedData
 		);
 	}

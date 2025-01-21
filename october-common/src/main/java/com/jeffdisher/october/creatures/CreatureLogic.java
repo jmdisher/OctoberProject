@@ -34,6 +34,15 @@ import com.jeffdisher.october.utils.Assert;
 public class CreatureLogic
 {
 	public static final float RANDOM_MOVEMENT_DISTANCE = 3.5f;
+	/**
+	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
+	 */
+	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
+	/**
+	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
+	 * there was no good deliberate option.
+	 */
+	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
 
 
 	/**
@@ -151,10 +160,9 @@ public class CreatureLogic
 		}
 		else
 		{
-			movementPlan = _advanceMovementPlan(blockKindLookup, mutable.getLocation(), movementPlan);
+			movementPlan = _advanceMovementPlan(blockKindLookup, mutable, movementPlan);
 		}
 		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
-		mutable.newMovementPlan = movementPlan;
 		
 		IMutationEntity<IMutableCreatureEntity> actionProduced;
 		if (null != movementPlan)
@@ -193,6 +201,7 @@ public class CreatureLogic
 			if (didBecomePregnant)
 			{
 				creature.setMovementPlan(null);
+				creature.resetDeliberateTick();
 				creature.setExtendedData(machine.freezeToData());
 			}
 			break;
@@ -235,6 +244,7 @@ public class CreatureLogic
 			if (isDone)
 			{
 				creature.setMovementPlan(null);
+				creature.resetDeliberateTick();
 				creature.setExtendedData(machine.freezeToData());
 			}
 			break;
@@ -253,6 +263,7 @@ public class CreatureLogic
 				if (isDone)
 				{
 					creature.setMovementPlan(null);
+					creature.resetDeliberateTick();
 					creature.setExtendedData(machine.freezeToData());
 				}
 			}
@@ -296,9 +307,7 @@ public class CreatureLogic
 		List<AbsoluteLocation> movementPlan = _buildDeliberatePath(context
 				, blockKindLookup
 				, entityCollection
-				, mutable.getLocation()
-				, mutable.getType()
-				, mutable.getId()
+				, mutable
 				, machine
 		);
 		if (null != movementPlan)
@@ -316,7 +325,7 @@ public class CreatureLogic
 			// movements are "safe").
 			boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
 			if (isInDanger
-					|| machine.canMakeIdleMovement(context)
+					|| _canMakeIdleMovement(context, mutable)
 			)
 			{
 				// We couldn't find a player so just make a random move.
@@ -327,6 +336,7 @@ public class CreatureLogic
 				);
 			}
 		}
+		mutable.newMovementPlan = movementPlan;
 		return movementPlan;
 	}
 
@@ -365,25 +375,38 @@ public class CreatureLogic
 	private static List<AbsoluteLocation> _buildDeliberatePath(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockPermitsPassage
 			, EntityCollection entityCollection
-			, EntityLocation creatureLocation
-			, EntityType type
-			, int creatureId
+			, MutableCreature mutable
 			, ICreatureStateMachine machine
 	)
 	{
-		EntityLocation targetLocation = machine.selectDeliberateTarget(context, entityCollection, creatureLocation, creatureId);
+		EntityLocation creatureLocation = mutable.getLocation();
+		EntityType type = mutable.getType();
+		int creatureId = mutable.getId();
+		
 		List<AbsoluteLocation> path = null;
-		if (null != targetLocation)
+		if (context.currentTick >= mutable.newNextDeliberateActTick)
 		{
-			// We have a target so try to build a path (we will use double the distance for pathing overhead).
-			// If this fails, it will return null which is already our failure case.
-			EntityVolume volume = EntityConstants.getVolume(type);
-			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, machine.getPathDistance());
-			// We want to strip away the first step, since it is the current location.
-			if (null != path)
+			EntityLocation targetLocation = machine.selectDeliberateTarget(context, entityCollection, creatureLocation, creatureId);
+			if (null != targetLocation)
 			{
-				path.remove(0);
-				// (we will still return an empty path just to communicate that we made a decision.
+				// We have a target so try to build a path (we will use double the distance for pathing overhead).
+				// If this fails, it will return null which is already our failure case.
+				EntityVolume volume = EntityConstants.getVolume(type);
+				path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, machine.getPathDistance());
+				// We want to strip away the first step, since it is the current location.
+				if (null != path)
+				{
+					path.remove(0);
+					// (we will still return an empty path just to communicate that we made a decision.
+				}
+			}
+			
+			// Update our next action ticks.
+			mutable.newNextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
+			if (null != targetLocation)
+			{
+				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
+				mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
 			}
 		}
 		return path;
@@ -435,12 +458,13 @@ public class CreatureLogic
 	}
 
 	private static List<AbsoluteLocation> _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
-			, EntityLocation entityLocation
+			, MutableCreature mutable
 			, List<AbsoluteLocation> existingPlan
 	)
 	{
 		// First, check to see if we are already in our next location.
 		AbsoluteLocation thisStep = existingPlan.get(0);
+		EntityLocation entityLocation = mutable.getLocation();
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		
 		List<AbsoluteLocation> updatedPlan;
@@ -487,6 +511,7 @@ public class CreatureLogic
 				updatedPlan = null;
 			}
 		}
+		mutable.newMovementPlan = updatedPlan;
 		return updatedPlan;
 	}
 
@@ -580,5 +605,18 @@ public class CreatureLogic
 			}
 		}
 		return goodTargets;
+	}
+
+	private static boolean _canMakeIdleMovement(TickProcessingContext context
+			, MutableCreature mutable
+	)
+	{
+		boolean canMove = (context.currentTick >= mutable.newNextIdleActTick);
+		if (canMove)
+		{
+			// We want to "consume" this decision.
+			mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
+		}
+		return canMove;
 	}
 }

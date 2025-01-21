@@ -365,8 +365,10 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
 		
 		// Load in the cuboids and creatures.
-		CreatureEntity nearCreature = new CreatureEntity(-1, EntityType.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100, null, null);
-		CreatureEntity farCreature = new CreatureEntity(-2, EntityType.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100, null, null);
+		CreatureEntity nearCreature = new CreatureEntity(-1, EntityType.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+				, null, 0L, 0L, null);
+		CreatureEntity farCreature = new CreatureEntity(-2, EntityType.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+				, null, 0L, 0L, null);
 		
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);
 		CuboidData farCuboid = CuboidGenerator.createFilledCuboid(far.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);

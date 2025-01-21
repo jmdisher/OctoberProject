@@ -71,7 +71,7 @@ public class TestCowStateMachine
 		TickProcessingContext context = _createContext(Map.of(father.id(), father, mother.id(), mother), messageAcceptor, assigner);
 		
 		// Start with them both in a love mode.
-		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, mother.id(), mother.location().getBlockLocation(), null, 0L, 0L)));
+		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, mother.id(), mother.location().getBlockLocation(), null)));
 		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.id());
 		Assert.assertTrue(didTakeAction);
 		// We should see the father sending a message
@@ -80,7 +80,7 @@ public class TestCowStateMachine
 		Assert.assertTrue(message[0] instanceof EntityChangeImpregnateCreature);
 		message[0] = null;
 		
-		CowStateMachine motherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, father.id(), father.location().getBlockLocation(), null, 0L, 0L)));
+		CowStateMachine motherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, father.id(), father.location().getBlockLocation(), null)));
 		// The mother should not take any action since they are waiting for the father.
 		didTakeAction = motherMachine.doneSpecialActions(context, null, null, mother.location(), mother.id());
 		Assert.assertFalse(didTakeAction);
@@ -98,7 +98,7 @@ public class TestCowStateMachine
 	@Test
 	public void becomePregnant()
 	{
-		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, 0, null, null, 0L, 0L));
+		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, 0, null, null));
 		CowStateMachine machine = CowStateMachine.extractFromData(extendedData);
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		machine.setPregnant(location);
@@ -112,7 +112,7 @@ public class TestCowStateMachine
 	public void spawnOffspring()
 	{
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, location, 0L, 0L));
+		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, location));
 		CowStateMachine machine = CowStateMachine.extractFromData(extendedData);
 		TickProcessingContext context = _createContext(null, null, new CreatureIdAssigner());
 		CreatureEntity[] offspring = new CreatureEntity[1];
@@ -139,7 +139,7 @@ public class TestCowStateMachine
 		TickProcessingContext context = _createContext(Map.of(father.id(), father, mother.id(), mother), null, assigner);
 		
 		// Start with them both in a love mode and give the father a non-null path and with the target of the mother (a "previous" location).
-		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, mother.id(), new AbsoluteLocation(3, 0, 0), null, 0L, 0L)));
+		CowStateMachine fatherMachine = CowStateMachine.extractFromData(CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, mother.id(), new AbsoluteLocation(3, 0, 0), null)));
 		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.id());
 		Assert.assertTrue(didTakeAction);
 		

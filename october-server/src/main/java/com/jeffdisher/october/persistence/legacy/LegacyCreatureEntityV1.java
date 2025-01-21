@@ -75,7 +75,10 @@ public record LegacyCreatureEntityV1(int id
 				, pitch
 				, this.health
 				, this.breath
+				
 				, movementPlan
+				, 0L
+				, 0L
 				, extendedData
 		);
 	}

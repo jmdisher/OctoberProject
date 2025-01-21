@@ -23,6 +23,10 @@ public interface IMutableCreatureEntity extends IMutableMinimalEntity
 	 */
 	void setMovementPlan(List<AbsoluteLocation> movementPlan);
 	/**
+	 * Resets the internal next deliberate tick counter so that one will be attempted in the next tick.
+	 */
+	void resetDeliberateTick();
+	/**
 	 * WARNING:  This extended data should be immutable!
 	 * 
 	 * @return Returns the extended data object for this creature (could be null).

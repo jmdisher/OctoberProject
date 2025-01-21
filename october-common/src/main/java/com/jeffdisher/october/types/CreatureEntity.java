@@ -25,9 +25,14 @@ public record CreatureEntity(int id
 		, byte health
 		// The breath the entity has (for drowning).
 		, byte breath
+		
 		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
 		// The current plan of steps to the creature should be following.
 		, List<AbsoluteLocation> movementPlan
+		// The next tick where we will attempt to make a deliberate act.
+		, long nextDeliberateActTick
+		// The next tick where we will attempt to make an idle movement, if there is nothing deliberate to do.
+		, long nextIdleActTick
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -59,7 +64,10 @@ public record CreatureEntity(int id
 				, (byte)0
 				, health
 				, EntityConstants.MAX_BREATH
+				
 				, null
+				, 0L
+				, 0L
 				, null
 		);
 	}

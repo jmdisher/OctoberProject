@@ -18,7 +18,6 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
@@ -201,8 +200,11 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
+				
 				, movementPlan
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
+				, 0L
+				, 0L
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -237,8 +239,11 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
+				
 				, movementPlan
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
+				, 0L
+				, 0L
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -274,8 +279,11 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)100
 				, EntityConstants.MAX_BREATH
+				
 				, movementPlan
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null, 0L, 0L))
+				, 0L
+				, 0L
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
@@ -339,8 +347,9 @@ public class TestCreatureProcessor
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
 		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(updated.extendedData());
+		Assert.assertNull(extended);
 		Assert.assertNotNull(updated.movementPlan());
-		long previousTickTimer = extended.nextIdleActTick();
+		long previousTickTimer = updated.nextIdleActTick();
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		creaturesById = group.updatedCreatures();
@@ -359,7 +368,7 @@ public class TestCreatureProcessor
 		updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth - damage, updated.health());
 		extended = CowStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertEquals(previousTickTimer + 1, extended.nextIdleActTick());
+		Assert.assertEquals(previousTickTimer + 1, updated.nextIdleActTick());
 	}
 
 	@Test
@@ -528,7 +537,7 @@ public class TestCreatureProcessor
 		creaturesById.putAll(group.updatedCreatures());
 		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData());
 		Assert.assertNull(creaturesById.get(cow2.id()).movementPlan());
-		Assert.assertNull(extended.offspringLocation());
+		Assert.assertNull(extended);
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -649,7 +658,7 @@ public class TestCreatureProcessor
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -709,7 +718,7 @@ public class TestCreatureProcessor
 		for (int i = 0; i < 13; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -843,7 +852,7 @@ public class TestCreatureProcessor
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
 				.lookups((AbsoluteLocation location) -> {
 						return ((short)-1 == location.z())
 							? new BlockProxy(location.getBlockAddress(), stoneCuboid)
@@ -863,7 +872,7 @@ public class TestCreatureProcessor
 	{
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(OrcStateMachine.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
 				.lookups((AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -891,7 +900,7 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
 	{
-		TickProcessingContext context = ContextBuilder.nextTick(existing, (OrcStateMachine.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick))
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick))
 				.lookups(existing.previousBlockLookUp, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null)
 				.sinks(null, null)
 				.assigner(null)
