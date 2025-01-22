@@ -56,21 +56,8 @@ public class CreatureLogic
 	 */
 	public static boolean canUseOnEntity(Item item, EntityType entityType)
 	{
-		Environment env = Environment.getShared();
-		boolean canUse;
-		if (env.creatures.COW == entityType)
-		{
-			canUse = CowStateMachine.canUseItem(item);
-		}
-		else if (env.creatures.ORC == entityType)
-		{
-			canUse = false;
-		}
-		else
-		{
-			throw Assert.unreachable();
-		}
-		return canUse;
+		// We only worry about use of item for breeding (at least for now).
+		return (item == entityType.breedingItem());
 	}
 
 	/**

@@ -102,7 +102,7 @@ public class Environment
 		this.armour = ArmourRegistry.load(this.items, loader.getResourceAsStream("armour_registry.tablist"));
 		this.stations = StationRegistry.load(this.items, this.blocks, this.crafting, loader.getResourceAsStream("station_registry.tablist"));
 		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
-		this.creatures = new CreatureRegistry();
+		this.creatures = new CreatureRegistry(this.items);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }

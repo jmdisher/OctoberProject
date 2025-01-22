@@ -25,24 +25,10 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CowStateMachine implements ICreatureStateMachine
 {
-	public static final String ITEM_NAME_WHEAT = "op.wheat_item";
 	public static final float COW_VIEW_DISTANCE = 7.0f;
 	public static final float COW_MATING_DISTANCE = 1.0f;
 	// Use 2x the view distance to account for obstacles.
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
-
-	/**
-	 * A helper to determine if the given item can be used an instance of this type.
-	 * 
-	 * @param item The item.
-	 * @return True if this item could potentially be applied to this type (may do nothing but _can_ do something).
-	 */
-	public static boolean canUseItem(Item item)
-	{
-		Environment env = Environment.getShared();
-		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
-		return (wheat == item);
-	}
 
 	/**
 	 * TESTING ONLY!
@@ -80,6 +66,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 
+	private final Item _breedingItem;
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
 	private EntityLocation _offspringLocation;
@@ -89,9 +76,10 @@ public class CowStateMachine implements ICreatureStateMachine
 	 * 
 	 * @param extendedData The cow's extended data (previously created by this class).
 	 */
-	public CowStateMachine(Object extendedData)
+	public CowStateMachine(Item breedingItem, Object extendedData)
 	{
 		_ExtendedData data = (_ExtendedData) extendedData;
+		_breedingItem = breedingItem;
 		_originalData = data;
 		if (null != data)
 		{
@@ -108,10 +96,8 @@ public class CowStateMachine implements ICreatureStateMachine
 	@Override
 	public boolean applyItem(Item itemType)
 	{
-		Environment env = Environment.getShared();
-		Item wheat = env.items.getItemById(ITEM_NAME_WHEAT);
 		boolean didApply = false;
-		if (itemType == wheat)
+		if (_breedingItem == itemType)
 		{
 			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
 			if (null == _offspringLocation)
@@ -244,13 +230,11 @@ public class CowStateMachine implements ICreatureStateMachine
 	{
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		Environment environment = Environment.getShared();
-		Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
 		entityCollection.walkPlayersInRange(creatureLocation, COW_VIEW_DISTANCE, (Entity player) -> {
 			// See if this player has wheat in their hand.
 			int itemKey = player.hotbarItems()[player.hotbarIndex()];
 			Items itemsInHand = player.inventory().getStackForKey(itemKey);
-			if ((null != itemsInHand) && (wheat == itemsInHand.type()))
+			if ((null != itemsInHand) && (_breedingItem == itemsInHand.type()))
 			{
 				EntityLocation end = player.location();
 				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
