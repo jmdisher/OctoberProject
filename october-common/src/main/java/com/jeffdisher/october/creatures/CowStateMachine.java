@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
@@ -33,7 +32,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	public static final float COW_MATING_DISTANCE = 1.0f;
 	// Use 2x the view distance to account for obstacles.
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
-	public static final int NO_TARGET_ENTITY_ID = 0;
 
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
@@ -72,8 +70,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	{
 		return (null != testing)
 				? new _ExtendedData(testing.inLoveMode
-						, testing.targetEntityId
-						, testing.targetPreviousLocation
 						, testing.offspringLocation
 				)
 				: null
@@ -92,8 +88,6 @@ public class CowStateMachine implements ICreatureStateMachine
 		_ExtendedData extended = (_ExtendedData) data;
 		return (null != extended)
 				? new Test_ExtendedData(extended.inLoveMode
-						, extended.targetEntityId
-						, extended.targetPreviousLocation
 						, extended.offspringLocation
 				)
 				: null
@@ -103,8 +97,6 @@ public class CowStateMachine implements ICreatureStateMachine
 
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
-	private int _targetEntityId;
-	private AbsoluteLocation _targetPreviousLocation;
 	private EntityLocation _offspringLocation;
 	
 	private CowStateMachine(_ExtendedData data)
@@ -113,15 +105,11 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (null != data)
 		{
 			_inLoveMode = data.inLoveMode;
-			_targetEntityId = data.targetEntityId;
-			_targetPreviousLocation = data.targetPreviousLocation;
 			_offspringLocation = data.offspringLocation;
 		}
 		else
 		{
 			_inLoveMode = false;
-			_targetEntityId = NO_TARGET_ENTITY_ID;
-			_targetPreviousLocation = null;
 			_offspringLocation = null;
 		}
 	}
@@ -145,8 +133,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			{
 				// If this is already true, the item is lost as this is a saturating operation.
 				_inLoveMode = true;
-				// Wipe any movement plan.
-				_clearPlans();
 				didApply = true;
 			}
 		}
@@ -154,26 +140,20 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
+	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
-		// As a cow, we have 2 explicit reasons for movement:  another cow when in love mode or a player holding wheat when not.
-		// We will just use arrays to pass this "by reference".
-		int[] targetId = new int[] { NO_TARGET_ENTITY_ID };
-		EntityLocation[] target = new EntityLocation[1];
+		ICreatureStateMachine.TargetEntity target;
 		if (_inLoveMode)
 		{
 			// Find another cow in breeding mode.
-			_findBreedableCow(entityCollection, creatureLocation, creatureId, targetId, target);
+			target = _findBreedableCow(entityCollection, creatureLocation, creatureId);
 		}
 		else
 		{
 			// We will keep this simple:  Find the closest player holding wheat, up to our limit.
-			_findWheatTarget(entityCollection, creatureLocation, targetId, target);
+			target = _findWheatTarget(entityCollection, creatureLocation);
 		}
-		// We store the entity we are targeting (will default to 0 if nothing) so we know who to contact when we get close enough.
-		_targetEntityId = targetId[0];
-		_targetPreviousLocation = (null != target[0]) ? target[0].getBlockLocation() : null;
-		return target[0];
+		return target;
 	}
 
 	/**
@@ -192,7 +172,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			Assert.assertTrue(null == _offspringLocation);
 			
 			_inLoveMode = false;
-			_clearPlans();
 			_offspringLocation = offspringLocation;
 			didBecomePregnant = true;
 		}
@@ -200,46 +179,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public EntityLocation didUpdateTargetLocation(TickProcessingContext context, EntityLocation creatureLocation)
-	{
-		// If we are tracking another entity, see if we can update our target location.
-		EntityLocation updatedLocation = null;
-		if (NO_TARGET_ENTITY_ID != _targetEntityId)
-		{
-			// See if they are still loaded.
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
-			if (null != targetEntity)
-			{
-				// Make sure that they are still in our site range.
-				EntityLocation targetLocation = targetEntity.location();
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-				if (distance <= COW_PATH_DISTANCE)
-				{
-					// We can keep this but see if we need to update their location.
-					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-					if (!newLocation.equals(_targetPreviousLocation))
-					{
-						_targetPreviousLocation = newLocation;
-						updatedLocation = targetLocation;
-					}
-				}
-				else
-				{
-					// They are out of range so forget them.
-					_clearPlans();
-				}
-			}
-			else
-			{
-				// The unloaded, so clear.
-				_clearPlans();
-			}
-		}
-		return updatedLocation;
-	}
-
-	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId)
 	{
 		// See if we are pregnant or searching for our mate.
 		boolean didTakeAction = false;
@@ -250,11 +190,10 @@ public class CowStateMachine implements ICreatureStateMachine
 			_offspringLocation = null;
 			didTakeAction = true;
 		}
-		else if (0 != _targetEntityId)
+		else if (CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId)
 		{
-			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
-			// movement plans unless they are close enough for other actions).
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(_targetEntityId);
+			// We have a target so see if we are in love mode and if they are in range to breed.
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(targetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
 			Assert.assertTrue(null != targetEntity);
 			
@@ -265,10 +204,9 @@ public class CowStateMachine implements ICreatureStateMachine
 			{
 				// Send the message to impregnate them.
 				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
-				context.newChangeSink.creature(_targetEntityId, sperm);
+				context.newChangeSink.creature(targetEntityId, sperm);
 				// We can now exit love mode.
 				_inLoveMode = false;
-				_clearPlans();
 				didTakeAction = true;
 			}
 		}
@@ -282,16 +220,10 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean isPlanDeliberate()
-	{
-		return (NO_TARGET_ENTITY_ID != _targetEntityId);
-	}
-
-	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation) || (NO_TARGET_ENTITY_ID != _targetEntityId))
-				? new _ExtendedData(_inLoveMode, _targetEntityId, _targetPreviousLocation, _offspringLocation)
+		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation))
+				? new _ExtendedData(_inLoveMode, _offspringLocation)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -302,14 +234,9 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 
-	private void _clearPlans()
+	private ICreatureStateMachine.TargetEntity _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId)
 	{
-		_targetEntityId = NO_TARGET_ENTITY_ID;
-		_targetPreviousLocation = null;
-	}
-
-	private void _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId, int[] out_targetId, EntityLocation[] out_target)
-	{
+		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the right type.
@@ -323,17 +250,18 @@ public class CowStateMachine implements ICreatureStateMachine
 					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 					if (distance < distanceToTarget[0])
 					{
-						out_targetId[0] = check.id();
-						out_target[0] = end;
+						target[0] = new ICreatureStateMachine.TargetEntity(check.id(), end);
 						distanceToTarget[0] = distance;
 					}
 				}
 			}
 		});
+		return target[0];
 	}
 
-	private void _findWheatTarget(EntityCollection entityCollection, EntityLocation creatureLocation, int[] out_targetId, EntityLocation[] out_target)
+	private ICreatureStateMachine.TargetEntity _findWheatTarget(EntityCollection entityCollection, EntityLocation creatureLocation)
 	{
+		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		Environment environment = Environment.getShared();
 		Item wheat = environment.items.getItemById(ITEM_NAME_WHEAT);
@@ -347,12 +275,12 @@ public class CowStateMachine implements ICreatureStateMachine
 				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 				if (distance < distanceToTarget[0])
 				{
-					out_targetId[0] = player.id();
-					out_target[0] = end;
+					target[0] = new ICreatureStateMachine.TargetEntity(player.id(), end);
 					distanceToTarget[0] = distance;
 				}
 			}
 		});
+		return target[0];
 	}
 
 
@@ -360,15 +288,11 @@ public class CowStateMachine implements ICreatureStateMachine
 	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
 	 */
 	public static record Test_ExtendedData(boolean inLoveMode
-			, int targetEntityId
-			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
 	)
 	{}
 
 	private static record _ExtendedData(boolean inLoveMode
-			, int targetEntityId
-			, AbsoluteLocation targetPreviousLocation
 			, EntityLocation offspringLocation
 	)
 	{}

@@ -33,7 +33,9 @@ public class TestMutableCreature
 				, null
 				, 0L
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
+				, CreatureEntity.NO_TARGET_ENTITY_ID
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		
 		MutableCreature mutable = MutableCreature.existing(middle);

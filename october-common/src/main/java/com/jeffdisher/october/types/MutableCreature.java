@@ -41,6 +41,8 @@ public class MutableCreature implements IMutableCreatureEntity
 	public List<AbsoluteLocation> newMovementPlan;
 	public long newNextDeliberateActTick;
 	public long newNextIdleActTick;
+	public int newTargetEntityId;
+	public AbsoluteLocation newTargetPreviousLocation;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -56,6 +58,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newMovementPlan = creature.movementPlan();
 		this.newNextDeliberateActTick = creature.nextDeliberateActTick();
 		this.newNextIdleActTick = creature.nextIdleActTick();
+		this.newTargetEntityId = creature.targetEntityId();
+		this.newTargetPreviousLocation = creature.targetPreviousLocation();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -262,6 +266,8 @@ public class MutableCreature implements IMutableCreatureEntity
 					, (null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
 					, this.newNextDeliberateActTick
 					, this.newNextIdleActTick
+					, this.newTargetEntityId
+					, this.newTargetPreviousLocation
 					, this.newExtendedData
 			);
 			// See if these are identical.

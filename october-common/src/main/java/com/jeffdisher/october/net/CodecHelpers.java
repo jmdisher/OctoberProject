@@ -263,6 +263,8 @@ public class CodecHelpers
 		List<AbsoluteLocation> movementPlan = null;
 		long nextDeliberateActTick = 0L;
 		long nextIdleActTick = 0L;
+		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+		AbsoluteLocation targetPreviousLocation = null;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -276,6 +278,8 @@ public class CodecHelpers
 				, movementPlan
 				, nextDeliberateActTick
 				, nextIdleActTick
+				, targetEntityId
+				, targetPreviousLocation
 				, extendedData
 		);
 	}

@@ -11,6 +11,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PathFinder;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -22,6 +23,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -240,15 +242,12 @@ public class CreatureLogic
 		{
 		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
-			EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, creature.getLocation());
-			if (null != updatedLocation)
-			{
-				EntityVolume volume = EntityConstants.getVolume(creature.getType());
-				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-				creature.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, creature.getLocation(), updatedLocation, machine.getPathDistance()));
-				creature.setExtendedData(machine.freezeToData());
-			}
-			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
+			
+			// Before we attempt to take a special action, see if we have a target which has moved.
+			_updatePathIfTargetMoved(context, creature, machine.getPathDistance());
+			
+			// Now, account for the special actions.
+			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
 			if (isDone)
 			{
 				creature.setMovementPlan(null);
@@ -267,15 +266,12 @@ public class CreatureLogic
 			else
 			{
 				OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
-				EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, creature.getLocation());
-				if (null != updatedLocation)
-				{
-					EntityVolume volume = EntityConstants.getVolume(creature.getType());
-					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-					creature.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, creature.getLocation(), updatedLocation, machine.getPathDistance()));
-					creature.setExtendedData(machine.freezeToData());
-				}
-				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId());
+				
+				// Before we attempt to take a special action, see if we have a target which has moved.
+				_updatePathIfTargetMoved(context, creature, machine.getPathDistance());
+				
+				// Now, account for the special actions.
+				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
 				if (isDone)
 				{
 					creature.setMovementPlan(null);
@@ -368,7 +364,7 @@ public class CreatureLogic
 		
 		Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
 		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
-		boolean isIdleMovement = !machine.isPlanDeliberate();
+		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.newTargetEntityId);
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
 		AbsoluteLocation directionHint = existingPlan.get(0);
@@ -402,9 +398,12 @@ public class CreatureLogic
 		List<AbsoluteLocation> path = null;
 		if (context.currentTick >= mutable.newNextDeliberateActTick)
 		{
-			EntityLocation targetLocation = machine.selectDeliberateTarget(context, entityCollection, creatureLocation, creatureId);
-			if (null != targetLocation)
+			ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, creatureId);
+			if (null != newTarget)
 			{
+				EntityLocation targetLocation = newTarget.location();
+				mutable.newTargetEntityId = newTarget.id();
+				mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
 				// We have a target so try to build a path (we will use double the distance for pathing overhead).
 				// If this fails, it will return null which is already our failure case.
 				EntityVolume volume = EntityConstants.getVolume(type);
@@ -419,7 +418,7 @@ public class CreatureLogic
 			
 			// Update our next action ticks.
 			mutable.newNextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
-			if (null != targetLocation)
+			if (null != newTarget)
 			{
 				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
 				mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
@@ -634,5 +633,49 @@ public class CreatureLogic
 			mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
 		}
 		return canMove;
+	}
+
+	private static void _updatePathIfTargetMoved(TickProcessingContext context, MutableCreature mutable, float pathDistance)
+	{
+		// If we are tracking another entity, see if we can update our target location.
+		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.newTargetEntityId)
+		{
+			// See if they are still loaded.
+			MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
+			if (null != targetEntity)
+			{
+				// Make sure that they are still in our site range.
+				EntityLocation creatureLocation = mutable.getLocation();
+				EntityLocation targetLocation = targetEntity.location();
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+				if (distance <= pathDistance)
+				{
+					// We can keep this but see if we need to update their location.
+					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
+					if (!newLocation.equals(mutable.newTargetPreviousLocation))
+					{
+						// They moved by at least a block so update their location and build a new path.
+						mutable.newTargetPreviousLocation = newLocation;
+						EntityVolume volume = EntityConstants.getVolume(mutable.getType());
+						Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+						mutable.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, mutable.getLocation(), targetLocation, pathDistance));
+					}
+				}
+				else
+				{
+					// They are out of range so forget them.
+					mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+					mutable.newTargetPreviousLocation = null;
+					mutable.newMovementPlan = null;
+				}
+			}
+			else
+			{
+				// The unloaded, so clear.
+				mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+				mutable.newTargetPreviousLocation = null;
+				mutable.newMovementPlan = null;
+			}
+		}
 	}
 }

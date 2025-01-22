@@ -21,20 +21,9 @@ public interface ICreatureStateMachine
 	 * @param entityCollection The collection of entities in the world.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureId The creature's ID.
-	 * @return The location of the target entity or null if there is no target.
+	 * @return A description of the target entity or null if there is no target.
 	 */
-	EntityLocation selectDeliberateTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
-
-	/**
-	 * Called before doneSpecialActions() to allow the receiver to update its tracking on a target entity, in case it
-	 * has moved, returning the new location if it did.
-	 * If a non-null value is returned, it will be used to rebuild the entity's movement plan.
-	 * 
-	 * @param context The context of the current tick.
-	 * @param creatureLocation The creature's location.
-	 * @return The updated location of the target entity, null if there isn't one or it didn't move meaningfully.
-	 */
-	EntityLocation didUpdateTargetLocation(TickProcessingContext context, EntityLocation creatureLocation);
+	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
 
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending
@@ -46,19 +35,15 @@ public interface ICreatureStateMachine
 	 * @param requestDespawnWithoutDrops Called to request that this creature be despawned without dropping anything.
 	 * @param creatureLocation The creature's location.
 	 * @param creatureId The creature's ID.
+	 * @param targetEntityId The ID of the currently-selected target (could be 0).
 	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId);
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId);
 
 	/**
 	 * @return The maximum pathing distance this creature should use when planning the path to a target.
 	 */
 	int getPathDistance();
-
-	/**
-	 * @return True if the current plan has deliberate intent (false if no plan or just idle wandering).
-	 */
-	boolean isPlanDeliberate();
 
 	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
@@ -68,4 +53,10 @@ public interface ICreatureStateMachine
 	 * @return An opaque extended data object (could be null).
 	 */
 	Object freezeToData();
+
+
+	/**
+	 * A record which contains the information about an entity selected as a target.
+	 */
+	public static record TargetEntity(int id, EntityLocation location) {}
 }

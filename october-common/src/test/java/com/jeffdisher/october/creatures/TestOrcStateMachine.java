@@ -12,7 +12,6 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
@@ -40,38 +39,12 @@ public class TestOrcStateMachine
 		
 		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
-		machine.selectDeliberateTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
+		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
 		
+		Assert.assertEquals(player.id(), target.id());
+		Assert.assertEquals(player.location(), target.location());
 		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(player.id(), testData.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), testData.targetPreviousLocation());
-	}
-
-	@Test
-	public void updateTargetOnMovement()
-	{
-		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		EntityLocation location = new EntityLocation(4.0f, 0.0f, 0.0f);
-		MutableEntity mutable = MutableEntity.createForTest(1);
-		mutable.newLocation = location;
-		Entity player = mutable.freeze();
-		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
-		
-		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
-		
-		// See that the orc targets the entity.
-		AbsoluteLocation previousLocation = new AbsoluteLocation(5, 1, 0);
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(player.id(), previousLocation, 0L, Long.MAX_VALUE)));
-		EntityLocation updatedLocation = machine.didUpdateTargetLocation(context, orcLocation);
-		Assert.assertEquals(location, updatedLocation);
-		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
-		// (they are still out of range so we didn't hit them)
-		Assert.assertFalse(didTakeAction);
-		
-		// We should see that they are still targeting.
-		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(location.getBlockLocation(), testData.targetPreviousLocation());
+		Assert.assertNotNull(testData);
 	}
 
 	@Test
@@ -96,8 +69,11 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(player.id(), player.location().getBlockLocation(), 0L, Long.MAX_VALUE)));
-		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
+		Assert.assertEquals(player.id(), target.id());
+		Assert.assertEquals(player.location(), target.location());
+		boolean didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id(), player.id());
 		Assert.assertTrue(didTakeAction);
 		
 		// We should see the orc send the attack message
@@ -108,26 +84,22 @@ public class TestOrcStateMachine
 		
 		// The orc should still target them.
 		OrcStateMachine.Test_ExtendedData result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(player.id(), result.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// A second attack on the following tick should fail since we are on cooldown.
-		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, null, orc.location(), orc.id()));
+		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, null, orc.location(), orc.id(), player.id()));
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 		
 		// But will work if we advance tick number further.
 		long ticksToAdvance = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick;
 		context = _advanceTick(context, ticksToAdvance);
-		didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id());
+		didTakeAction = machine.doneSpecialActions(context, null, null, orc.location(), orc.id(), player.id());
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;
 		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamageFromEntity);
 		message[0] = null;
 		result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(player.id(), result.targetEntityId());
-		Assert.assertEquals(player.location().getBlockLocation(), result.targetPreviousLocation());
 		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 	}
 
@@ -141,16 +113,16 @@ public class TestOrcStateMachine
 		long startTick = 1000L;
 		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);
 		
-		// Create the orc and ask it to check for deliberate actions to show that it updates its despawn timer.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0, null, 0L, Long.MAX_VALUE)));
-		EntityLocation target = machine.selectDeliberateTarget(context,  new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
+		// Create the orc and ask it to select a target to show that it updates its despawn timer.
+		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
 		Assert.assertNull(target);
 		long idleTickDelay = (OrcStateMachine.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 		Assert.assertEquals(startTick + idleTickDelay, OrcStateMachine.decodeExtendedData(machine.freezeToData()).idleDespawnTick());
 		
-		// Now, update the tick number to the despawn tick, ask them for another deliberate action, and show that nothing changed.
+		// Now, update the tick number to the despawn tick, ask them for another target, and show that nothing changed.
 		context = _createContextForTick(startTick + idleTickDelay, Map.of(orc.id(), orc), Map.of(), null, assigner);
-		target = machine.selectDeliberateTarget(context,  new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
+		target = machine.selectTarget(context, new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
 		Assert.assertNull(target);
 		Assert.assertEquals(startTick + idleTickDelay, OrcStateMachine.decodeExtendedData(machine.freezeToData()).idleDespawnTick());
 		
@@ -158,7 +130,7 @@ public class TestOrcStateMachine
 		boolean[] shouldDespawn = new boolean[1];
 		machine.doneSpecialActions(context, null, () -> {
 			shouldDespawn[0] = true;
-		}, orc.location(), orc.id());
+		}, orc.location(), orc.id(), CreatureEntity.NO_TARGET_ENTITY_ID);
 		Assert.assertTrue(shouldDespawn[0]);
 	}
 

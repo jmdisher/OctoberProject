@@ -205,7 +205,9 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
+				, CreatureEntity.NO_TARGET_ENTITY_ID
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -244,7 +246,9 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
+				, CreatureEntity.NO_TARGET_ENTITY_ID
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -284,7 +288,9 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, 0, null, null))
+				, CreatureEntity.NO_TARGET_ENTITY_ID
+				, null
+				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
@@ -442,8 +448,9 @@ public class TestCreatureProcessor
 		// We should see that the orc has targeted the player and started moving toward them.
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
+		Assert.assertEquals(1, updated.targetEntityId());
 		OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertEquals(1, extended.targetEntityId());
+		Assert.assertNotNull(extended);
 		
 		// Make sure that the movement plan ends at the player.
 		List<AbsoluteLocation> movementPlan = updated.movementPlan();

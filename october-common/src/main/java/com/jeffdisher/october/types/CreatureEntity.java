@@ -33,10 +33,16 @@ public record CreatureEntity(int id
 		, long nextDeliberateActTick
 		// The next tick where we will attempt to make an idle movement, if there is nothing deliberate to do.
 		, long nextIdleActTick
+		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
+		, int targetEntityId
+		// The last block location of the target which was used to determine the movementPlan.
+		, AbsoluteLocation targetPreviousLocation
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
 {
+	public static final int NO_TARGET_ENTITY_ID = 0;
+
 	/**
 	 * A helper to handle the common case of needing to create one of these with default/starting values.
 	 * 
@@ -68,6 +74,8 @@ public record CreatureEntity(int id
 				, null
 				, 0L
 				, 0L
+				, NO_TARGET_ENTITY_ID
+				, null
 				, null
 		);
 	}
