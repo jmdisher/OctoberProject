@@ -9,6 +9,7 @@ import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -25,11 +26,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CowStateMachine implements ICreatureStateMachine
 {
-	public static final float COW_VIEW_DISTANCE = 7.0f;
-	public static final float COW_MATING_DISTANCE = 1.0f;
-	// Use 2x the view distance to account for obstacles.
-	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
-
 	/**
 	 * TESTING ONLY!
 	 * Packages the given testing data into the extended data object for a cow.
@@ -66,6 +62,9 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 
+	private final float _viewDistance;
+	private final float _matingDistance;
+	private final int _pathDistance;
 	private final Item _breedingItem;
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
@@ -74,12 +73,17 @@ public class CowStateMachine implements ICreatureStateMachine
 	/**
 	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
 	 * 
+	 * @param type The type being acted upon.
 	 * @param extendedData The cow's extended data (previously created by this class).
 	 */
-	public CowStateMachine(Item breedingItem, Object extendedData)
+	public CowStateMachine(EntityType type, Object extendedData)
 	{
 		_ExtendedData data = (_ExtendedData) extendedData;
-		_breedingItem = breedingItem;
+		_viewDistance = type.viewDistance();
+		_matingDistance = type.actionDistance();
+		// Use 2x the view distance to account for obstacles.
+		_pathDistance = 2 * (int)_viewDistance;
+		_breedingItem = type.breedingItem();
 		_originalData = data;
 		if (null != data)
 		{
@@ -166,7 +170,7 @@ public class CowStateMachine implements ICreatureStateMachine
 			// See if they are within mating distance and we are the father.
 			EntityLocation targetLocation = targetEntity.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-			if (_inLoveMode && (distance <= COW_MATING_DISTANCE) && (targetEntity.id() < creatureId))
+			if (_inLoveMode && (distance <= _matingDistance) && (targetEntity.id() < creatureId))
 			{
 				// Send the message to impregnate them.
 				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
@@ -182,7 +186,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	@Override
 	public int getPathDistance()
 	{
-		return COW_PATH_DISTANCE;
+		return _pathDistance;
 	}
 
 	@Override
@@ -205,7 +209,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		Environment env = Environment.getShared();
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
+		entityCollection.walkCreaturesInRange(creatureLocation, _viewDistance, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the right type.
 			if ((thisCreatureId != check.id()) && (env.creatures.COW == check.type()))
 			{
@@ -230,7 +234,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	{
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(creatureLocation, COW_VIEW_DISTANCE, (Entity player) -> {
+		entityCollection.walkPlayersInRange(creatureLocation, _viewDistance, (Entity player) -> {
 			// See if this player has wheat in their hand.
 			int itemKey = player.hotbarItems()[player.hotbarIndex()];
 			Items itemsInHand = player.inventory().getStackForKey(itemKey);

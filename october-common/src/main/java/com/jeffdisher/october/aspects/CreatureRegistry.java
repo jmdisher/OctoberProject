@@ -1,6 +1,10 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import com.jeffdisher.october.creatures.CowStateMachine;
+import com.jeffdisher.october.creatures.ICreatureStateMachine;
 import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -23,36 +27,44 @@ public class CreatureRegistry
 
 	public CreatureRegistry(ItemRegistry items)
 	{
-		this.PLAYER = new EntityType((byte)1
+		this.PLAYER = _packageEntity((byte)1
 				, "op.player"
 				, "PLAYER"
 				, new EntityVolume(0.9f, 0.4f)
 				, 4.0f
 				, (byte)100
+				, 0.0f
+				, 0.0f
+				, (byte)0
 				, null
 				, null
 		);
-		Item wheatItem = items.getItemById("op.wheat_item");
-		this.COW = new EntityType((byte)2
+		this.COW = _packageEntity((byte)2
 				, "op.cow"
 				, "COW"
 				, new EntityVolume(0.7f, 0.8f)
 				, 2.0f
 				, (byte)40
-				, wheatItem
-				, (Object extendedData) -> {
-					return new CowStateMachine(wheatItem, extendedData);
+				, 7.0f
+				, 1.0f
+				, (byte)0
+				, items.getItemById("op.wheat_item")
+				, (EntityType type, Object extendedData) -> {
+					return new CowStateMachine(type, extendedData);
 				}
 		);
-		this.ORC = new EntityType((byte)3
+		this.ORC = _packageEntity((byte)3
 				, "op.orc"
 				, "ORC"
 				, new EntityVolume(0.7f, 0.4f)
 				, 3.0f
 				, (byte)20
+				, 8.0f
+				, 1.0f
+				, (byte)5
 				, null
-				, (Object extendedData) -> {
-					return new OrcStateMachine(extendedData);
+				, (EntityType type, Object extendedData) -> {
+					return new OrcStateMachine(type, extendedData);
 				}
 		);
 		
@@ -64,5 +76,38 @@ public class CreatureRegistry
 		};
 		Assert.assertTrue(null == this.ENTITY_BY_NUMBER[0]);
 		Assert.assertTrue(this.ENTITY_BY_NUMBER.length <= 254);
+	}
+
+	private static EntityType _packageEntity(byte number
+			, String id
+			, String name
+			, EntityVolume volume
+			, float blocksPerSecond
+			, byte maxHealth
+			, float viewDistance
+			, float actionDistance
+			, byte attackDamage
+			, Item breedingItem
+			, BiFunction<EntityType, Object, ICreatureStateMachine> stateMachineFactory
+	)
+	{
+		// We need to use an indirect container to push this type into the factory.
+		EntityType[] container = new EntityType[1];
+		Function<Object, ICreatureStateMachine> innerFactory = (Object extendedData) -> {
+			return stateMachineFactory.apply(container[0], extendedData);
+		};
+		container[0] = new EntityType(number
+				, id
+				, name
+				, volume
+				, blocksPerSecond
+				, maxHealth
+				, viewDistance
+				, actionDistance
+				, attackDamage
+				, breedingItem
+				, innerFactory
+		);
+		return container[0];
 	}
 }

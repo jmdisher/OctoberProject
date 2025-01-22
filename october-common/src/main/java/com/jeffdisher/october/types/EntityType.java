@@ -14,6 +14,9 @@ public record EntityType(byte number
 		, EntityVolume volume
 		, float blocksPerSecond
 		, byte maxHealth
+		, float viewDistance
+		, float actionDistance
+		, byte attackDamage
 		, Item breedingItem
 		, Function<Object, ICreatureStateMachine> stateMachineFactory
 ) {}

@@ -9,6 +9,7 @@ import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -25,11 +26,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class OrcStateMachine implements ICreatureStateMachine
 {
-	public static final float ORC_VIEW_DISTANCE = 8.0f;
-	public static final float ORC_ATTACK_DISTANCE = 1.0f;
-	public static final byte ORC_DAMAGE = 5;
-	// Use 2x the view distance to account for obstacles.
-	public static final int ORC_PATH_DISTANCE = 2 * (int) ORC_VIEW_DISTANCE;
 	// We will only allow one attack per second.
 	public static final long ATTACK_COOLDOWN_MILLIS = 1000L;
 	/**
@@ -73,6 +69,10 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 
+	private final float _viewDistance;
+	private final float _attackDistance;
+	private final byte _attackDamage;
+	private final int _pathDistance;
 	private final _ExtendedData _originalData;
 	private long _lastAttackTick;
 	private long _idleDespawnTick;
@@ -80,11 +80,17 @@ public class OrcStateMachine implements ICreatureStateMachine
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
 	 * 
+	 * @param type The type being acted upon.
 	 * @param extendedData The orc extended data (previously created by this class).
 	 */
-	public OrcStateMachine(Object extendedData)
+	public OrcStateMachine(EntityType type, Object extendedData)
 	{
 		_ExtendedData data = (_ExtendedData) extendedData;
+		_viewDistance = type.viewDistance();
+		_attackDistance = type.actionDistance();
+		_attackDamage = type.attackDamage();
+		// Use 2x the view distance to account for obstacles.
+		_pathDistance = 2 * (int)_viewDistance;
 		_originalData = data;
 		if (null != data)
 		{
@@ -143,12 +149,12 @@ public class OrcStateMachine implements ICreatureStateMachine
 			// See if they are in attack range.
 			EntityLocation targetLocation = targetEntity.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-			if (distance <= ORC_ATTACK_DISTANCE)
+			if (distance <= _attackDistance)
 			{
 				// We can attack them so choose the target.
 				int index = context.randomInt.applyAsInt(BodyPart.values().length);
 				BodyPart target = BodyPart.values()[index];
-				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, ORC_DAMAGE, creatureId);
+				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, _attackDamage, creatureId);
 				context.newChangeSink.next(targetEntityId, takeDamage);
 				// Set us on to cooldown.
 				_lastAttackTick = context.currentTick;
@@ -167,7 +173,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public int getPathDistance()
 	{
-		return ORC_PATH_DISTANCE;
+		return _pathDistance;
 	}
 
 	@Override
@@ -189,7 +195,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	{
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(creatureLocation, ORC_VIEW_DISTANCE, (Entity player) -> {
+		entityCollection.walkPlayersInRange(creatureLocation, _viewDistance, (Entity player) -> {
 			EntityLocation end = player.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 			if (distance < distanceToTarget[0])
