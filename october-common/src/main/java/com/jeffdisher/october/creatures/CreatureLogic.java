@@ -219,7 +219,7 @@ public class CreatureLogic
 			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 			
 			// Before we attempt to take a special action, see if we have a target which has moved.
-			_updatePathIfTargetMoved(context, creature, machine.getPathDistance());
+			_updatePathIfTargetMoved(context, creature);
 			
 			// Now, account for the special actions.
 			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
@@ -243,7 +243,7 @@ public class CreatureLogic
 				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 				
 				// Before we attempt to take a special action, see if we have a target which has moved.
-				_updatePathIfTargetMoved(context, creature, machine.getPathDistance());
+				_updatePathIfTargetMoved(context, creature);
 				
 				// Now, account for the special actions.
 				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
@@ -380,7 +380,7 @@ public class CreatureLogic
 				// We have a target so try to build a path (we will use double the distance for pathing overhead).
 				// If this fails, it will return null which is already our failure case.
 				EntityVolume volume = type.volume();
-				path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, machine.getPathDistance());
+				path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, type.getPathDistance());
 				// We want to strip away the first step, since it is the current location.
 				if (null != path)
 				{
@@ -608,7 +608,7 @@ public class CreatureLogic
 		return canMove;
 	}
 
-	private static void _updatePathIfTargetMoved(TickProcessingContext context, MutableCreature mutable, float pathDistance)
+	private static void _updatePathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
 	{
 		// If we are tracking another entity, see if we can update our target location.
 		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.newTargetEntityId)
@@ -621,6 +621,7 @@ public class CreatureLogic
 				EntityLocation creatureLocation = mutable.getLocation();
 				EntityLocation targetLocation = targetEntity.location();
 				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+				float pathDistance = mutable.getType().getPathDistance();
 				if (distance <= pathDistance)
 				{
 					// We can keep this but see if we need to update their location.

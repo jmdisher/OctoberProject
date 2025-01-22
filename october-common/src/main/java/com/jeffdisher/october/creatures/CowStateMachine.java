@@ -64,7 +64,6 @@ public class CowStateMachine implements ICreatureStateMachine
 
 	private final float _viewDistance;
 	private final float _matingDistance;
-	private final int _pathDistance;
 	private final Item _breedingItem;
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
@@ -81,8 +80,6 @@ public class CowStateMachine implements ICreatureStateMachine
 		_ExtendedData data = (_ExtendedData) extendedData;
 		_viewDistance = type.viewDistance();
 		_matingDistance = type.actionDistance();
-		// Use 2x the view distance to account for obstacles.
-		_pathDistance = 2 * (int)_viewDistance;
 		_breedingItem = type.breedingItem();
 		_originalData = data;
 		if (null != data)
@@ -181,12 +178,6 @@ public class CowStateMachine implements ICreatureStateMachine
 			}
 		}
 		return didTakeAction;
-	}
-
-	@Override
-	public int getPathDistance()
-	{
-		return _pathDistance;
 	}
 
 	@Override

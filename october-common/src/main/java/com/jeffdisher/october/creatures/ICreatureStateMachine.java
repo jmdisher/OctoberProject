@@ -60,11 +60,6 @@ public interface ICreatureStateMachine
 	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId);
 
 	/**
-	 * @return The maximum pathing distance this creature should use when planning the path to a target.
-	 */
-	int getPathDistance();
-
-	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
 	 * the original instance.
 	 * NOTE:  The receiver should be considered invalid after this call.

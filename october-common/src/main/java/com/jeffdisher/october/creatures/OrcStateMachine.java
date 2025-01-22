@@ -72,7 +72,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private final float _viewDistance;
 	private final float _attackDistance;
 	private final byte _attackDamage;
-	private final int _pathDistance;
 	private final _ExtendedData _originalData;
 	private long _lastAttackTick;
 	private long _idleDespawnTick;
@@ -89,8 +88,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 		_viewDistance = type.viewDistance();
 		_attackDistance = type.actionDistance();
 		_attackDamage = type.attackDamage();
-		// Use 2x the view distance to account for obstacles.
-		_pathDistance = 2 * (int)_viewDistance;
 		_originalData = data;
 		if (null != data)
 		{
@@ -168,12 +165,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 			requestDespawnWithoutDrops.run();
 		}
 		return didTakeAction;
-	}
-
-	@Override
-	public int getPathDistance()
-	{
-		return _pathDistance;
 	}
 
 	@Override

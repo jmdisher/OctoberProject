@@ -19,4 +19,11 @@ public record EntityType(byte number
 		, byte attackDamage
 		, Item breedingItem
 		, Function<Object, ICreatureStateMachine> stateMachineFactory
-) {}
+)
+{
+	public float getPathDistance()
+	{
+		// Use 2x the view distance to account for obstacles.
+		return 2.0f * this.viewDistance;
+	}
+}
