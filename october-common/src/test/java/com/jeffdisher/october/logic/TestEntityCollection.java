@@ -3,10 +3,12 @@ package com.jeffdisher.october.logic;
 import java.util.Collection;
 import java.util.Set;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
@@ -16,6 +18,18 @@ import com.jeffdisher.october.types.MutableEntity;
 
 public class TestEntityCollection
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void checkEmpty()
 	{
@@ -88,6 +102,6 @@ public class TestEntityCollection
 
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
-		return CreatureEntity.create(id, CreatureRegistry.COW, location, (byte)10);
+		return CreatureEntity.create(id, ENV.creatures.COW, location, (byte)10);
 	}
 }

@@ -17,7 +17,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
@@ -911,7 +910,7 @@ public class TestSpeculativeProjection
 		// (note that 0.4 is the limit for one tick)
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
@@ -1550,7 +1549,7 @@ public class TestSpeculativeProjection
 		// (note that 0.4 is the limit for one tick)
 		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
@@ -1989,7 +1988,7 @@ public class TestSpeculativeProjection
 		Entity localEntity = MutableEntity.createForTest(entityId).freeze();
 		projector.setThisEntity(localEntity);
 		int creatureId = -1;
-		CreatureEntity orc = CreatureEntity.create(creatureId, CreatureRegistry.ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50);
+		CreatureEntity orc = CreatureEntity.create(creatureId, ENV.creatures.ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50);
 		long currentTimeMillis = 1L;
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);

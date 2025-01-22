@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 
 
 /**
@@ -19,8 +19,9 @@ public record MinimalEntity(int id
 		MinimalEntity result = null;
 		if (null != entity)
 		{
+			Environment env = Environment.getShared();
 			result = new MinimalEntity(entity.id()
-					, CreatureRegistry.PLAYER
+					, env.creatures.PLAYER
 					, entity.location()
 			);
 		}

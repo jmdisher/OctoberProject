@@ -2,7 +2,6 @@ package com.jeffdisher.october.creatures;
 
 import java.util.function.Consumer;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -184,8 +183,9 @@ public class CowStateMachine implements ICreatureStateMachine
 		boolean didTakeAction = false;
 		if (null != _offspringLocation)
 		{
+			Environment env = Environment.getShared();
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.COW, _offspringLocation, CreatureRegistry.COW.maxHealth()));
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), env.creatures.COW, _offspringLocation, env.creatures.COW.maxHealth()));
 			_offspringLocation = null;
 			didTakeAction = true;
 		}
@@ -235,11 +235,12 @@ public class CowStateMachine implements ICreatureStateMachine
 
 	private ICreatureStateMachine.TargetEntity _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId)
 	{
+		Environment env = Environment.getShared();
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the right type.
-			if ((thisCreatureId != check.id()) && (CreatureRegistry.COW == check.type()))
+			if ((thisCreatureId != check.id()) && (env.creatures.COW == check.type()))
 			{
 				// See if they are also in love mode.
 				_ExtendedData other = (_ExtendedData) check.extendedData();

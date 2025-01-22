@@ -15,7 +15,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CowStateMachine;
@@ -78,7 +77,7 @@ public class TestCreatureProcessor
 	public void singleChange()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
@@ -103,7 +102,7 @@ public class TestCreatureProcessor
 	public void killEntity()
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		IMutationBlock[] mutationHolder = new IMutationBlock[1];
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
@@ -149,7 +148,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.COW, startLocation, (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -170,7 +169,7 @@ public class TestCreatureProcessor
 	{
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.ORC, startLocation, (byte)50);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.ORC, startLocation, (byte)50);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContextWithOptions(Difficulty.PEACEFUL, null);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -194,7 +193,7 @@ public class TestCreatureProcessor
 			, new AbsoluteLocation(0, 1, 1)
 		);
 		CreatureEntity creature = new CreatureEntity(-1
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, startLocation
 				, velocity
 				, (byte)0
@@ -235,7 +234,7 @@ public class TestCreatureProcessor
 		List<AbsoluteLocation> movementPlan = List.of(new AbsoluteLocation(0, 1, 1)
 		);
 		CreatureEntity creature = new CreatureEntity(-1
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, startLocation
 				, velocity
 				, (byte)0
@@ -277,7 +276,7 @@ public class TestCreatureProcessor
 		);
 		int creatureId = -1;
 		CreatureEntity creature = new CreatureEntity(creatureId
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, startLocation
 				, velocity
 				, (byte)0
@@ -338,7 +337,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		byte startHealth = 100;
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.COW, startLocation, startHealth);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.COW, startLocation, startHealth);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		_Events events = new _Events();
 		TickProcessingContext context = _createContextWithEvents(events);
@@ -384,7 +383,7 @@ public class TestCreatureProcessor
 		// Create 3 entities, 2 holding wheat and one holding a tool, to show that we always path to the closest with wheat.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.COW, startLocation, (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
@@ -433,7 +432,7 @@ public class TestCreatureProcessor
 		// Create an orc and a player, showing that the orc follows the player when they move.
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(1.0f, 1.0f, 0.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.ORC, startLocation, (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
 		TickProcessingContext context = _createContext();
@@ -485,11 +484,11 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(0.19f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
-		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, CreatureRegistry.COW, startLocation, (byte)100));
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(-1, ENV.creatures.COW, startLocation, (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity fedCow = mutable.freeze();
-		CreatureEntity otherCow = CreatureEntity.create(-2, CreatureRegistry.COW, new EntityLocation(2.0f, 0.0f, 0.0f),(byte)100);
-		mutable = MutableCreature.existing(CreatureEntity.create(-3, CreatureRegistry.COW, new EntityLocation(5.0f, 0.0f, 0.0f), (byte)100));
+		CreatureEntity otherCow = CreatureEntity.create(-2, ENV.creatures.COW, new EntityLocation(2.0f, 0.0f, 0.0f),(byte)100);
+		mutable = MutableCreature.existing(CreatureEntity.create(-3, ENV.creatures.COW, new EntityLocation(5.0f, 0.0f, 0.0f), (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity targetCow = mutable.freeze();
 		Map<Integer, CreatureEntity> creaturesById = Map.of(fedCow.id(), fedCow
@@ -524,10 +523,10 @@ public class TestCreatureProcessor
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation location2 = new EntityLocation(0.9f, 0.0f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
-		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), CreatureRegistry.COW, location1, (byte)100));
+		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), ENV.creatures.COW, location1, (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity cow1 = mutable.freeze();
-		mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), CreatureRegistry.COW, location2, (byte)100));
+		mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), ENV.creatures.COW, location2, (byte)100));
 		CreatureLogic.applyItemToCreature(wheat_item, mutable);
 		CreatureEntity cow2 = mutable.freeze();
 		
@@ -586,7 +585,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(1, group.newlySpawnedCreatures().size());
 		CreatureEntity offspring = group.newlySpawnedCreatures().get(0);
 		Assert.assertEquals(-3, offspring.id());
-		Assert.assertEquals(CreatureRegistry.COW, offspring.type());
+		Assert.assertEquals(ENV.creatures.COW, offspring.type());
 		
 		// Run another tick to observe that nothing special happens.
 		creaturesById.putAll(group.updatedCreatures());
@@ -617,7 +616,7 @@ public class TestCreatureProcessor
 		
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		EntityLocation startLocation = new EntityLocation(8.5f, 8.0f, 1.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.ORC, startLocation, (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.ORC, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createSingleCuboidContext(cuboid);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
@@ -695,8 +694,8 @@ public class TestCreatureProcessor
 		
 		EntityLocation waterStart = new EntityLocation(2.0f, 2.0f, 1.0f);
 		EntityLocation airStart = new EntityLocation(2.0f, 2.0f, 17.0f);
-		CreatureEntity waterCreature = CreatureEntity.create(-1, CreatureRegistry.ORC, waterStart, (byte)100);
-		CreatureEntity airCreature = CreatureEntity.create(-2, CreatureRegistry.ORC, airStart, (byte)100);
+		CreatureEntity waterCreature = CreatureEntity.create(-1, ENV.creatures.ORC, waterStart, (byte)100);
+		CreatureEntity airCreature = CreatureEntity.create(-2, ENV.creatures.ORC, airStart, (byte)100);
 		float targetDistance = 4.0f;
 		Entity waterTarget = _createEntity(1, new EntityLocation(waterStart.x() + targetDistance, waterStart.y(), waterStart.z()), null, null);
 		Entity airTarget = _createEntity(2, new EntityLocation(airStart.x() + targetDistance, airStart.y(), airStart.z()), null, null);
@@ -760,7 +759,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		
 		EntityLocation startLocation = new EntityLocation(8.0f, 8.0f, 1.0f);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.ORC, startLocation, (byte)100);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.ORC, startLocation, (byte)100);
 		// We need to reduce their breath to trigger this response.
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newBreath -= 1;
@@ -823,7 +822,7 @@ public class TestCreatureProcessor
 		float fallingVelocity = TickUtils.DECELERATION_DAMAGE_THRESHOLD + (TickUtils.DECELERATION_DAMAGE_RANGE / 2.0f);
 		EntityLocation startLocation = new EntityLocation(16.8f, 16.8f, 16.1f);
 		EntityLocation startVelocity = new EntityLocation(0.0f, 0.0f, fallingVelocity);
-		CreatureEntity creature = CreatureEntity.create(-1, CreatureRegistry.ORC, startLocation, health);
+		CreatureEntity creature = CreatureEntity.create(-1, ENV.creatures.ORC, startLocation, health);
 		MutableCreature mutable = MutableCreature.existing(creature);
 		mutable.newVelocity = startVelocity;
 		creature = mutable.freeze();

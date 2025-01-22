@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -216,6 +215,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
+		Environment env = Environment.getShared();
 		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
 		_SubField subField = new _SubField(seeds, 0, 0);
 		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(subField);
@@ -316,7 +316,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int cuboidSeed = subField.get(0, 0);
 		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
-		EntityType herdTypeToSpawn = _generateFlora(data, cuboidBase, cuboidSeed, heightMap, biome);
+		EntityType herdTypeToSpawn = _generateFlora(env, data, cuboidBase, cuboidSeed, heightMap, biome);
 		
 		// Spawn any creatures associated with this cuboid.
 		List<CreatureEntity> entities = new ArrayList<>();
@@ -331,7 +331,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, CreatureRegistry.COW
+						, env.creatures.COW
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
 						, (byte)100
 				));
@@ -786,7 +786,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private EntityType _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
+	private EntityType _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
 	{
 		EntityType typeToSpawn = null;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
@@ -854,7 +854,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			// If this is a field, and we could fill a gully, spawn a small herd of cows in the centre of the cuboid.
 			if ((FIELD_CODE == biome.code) && didFillGully)
 			{
-				typeToSpawn = CreatureRegistry.COW;
+				typeToSpawn = env.creatures.COW;
 			}
 		}
 		return typeToSpawn;

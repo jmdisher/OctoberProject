@@ -3,7 +3,6 @@ package com.jeffdisher.october.logic;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -232,11 +231,11 @@ public class CreatureSpawner
 			EntityLocation location = goodSpawningLocation.toEntityLocation();
 			
 			// For now, we only dynamically spawn orcs.
-			EntityVolume creatureVolume = CreatureRegistry.ORC.volume();
+			EntityVolume creatureVolume = env.creatures.ORC.volume();
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
-				spawned = CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.ORC, location, CreatureRegistry.ORC.maxHealth());
+				spawned = CreatureEntity.create(context.idAssigner.next(), env.creatures.ORC, location, env.creatures.ORC.maxHealth());
 			}
 			else
 			{

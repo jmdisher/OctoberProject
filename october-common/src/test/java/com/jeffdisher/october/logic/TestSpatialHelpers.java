@@ -7,7 +7,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -250,7 +249,7 @@ public class TestSpatialHelpers
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
-		MinimalEntity entity2 = new MinimalEntity(2, CreatureRegistry.COW, location2);
+		MinimalEntity entity2 = new MinimalEntity(2, ENV.creatures.COW, location2);
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
 		float entityDistance = SpatialHelpers.distanceFromEyeToEntitySurface(entity1, entity2);
@@ -264,10 +263,10 @@ public class TestSpatialHelpers
 	{
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		EntityLocation base1 = location1;
-		EntityVolume volume1 = CreatureRegistry.PLAYER.volume();
+		EntityVolume volume1 = ENV.creatures.PLAYER.volume();
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
 		EntityLocation base2 = location2;
-		EntityVolume volume2 = CreatureRegistry.COW.volume();
+		EntityVolume volume2 = ENV.creatures.COW.volume();
 		
 		float distance1 = SpatialHelpers.distanceFromLocationToVolume(location1, base2, volume2);
 		float distance2 = SpatialHelpers.distanceFromLocationToVolume(location2, base1, volume1);

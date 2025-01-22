@@ -10,21 +10,21 @@ import com.jeffdisher.october.types.EntityVolume;
 public class CreatureRegistry
 {
 	// TODO:  Remove these constants once we have generalized the callers.
-	public static final EntityType PLAYER = new EntityType((byte)1
+	public final EntityType PLAYER = new EntityType((byte)1
 			, "op.player"
 			, "PLAYER"
 			, new EntityVolume(0.9f, 0.4f)
 			, 4.0f
 			, (byte)100
 	);
-	public static final EntityType COW = new EntityType((byte)2
+	public final EntityType COW = new EntityType((byte)2
 			, "op.cow"
 			, "COW"
 			, new EntityVolume(0.7f, 0.8f)
 			, 2.0f
 			, (byte)40
 	);
-	public static final EntityType ORC = new EntityType((byte)3
+	public final EntityType ORC = new EntityType((byte)3
 			, "op.orc"
 			, "ORC"
 			, new EntityVolume(0.7f, 0.4f)
@@ -33,7 +33,7 @@ public class CreatureRegistry
 	);
 
 	// For historical reasons, there is a limit of 254 entity types, where 0 is reserved as an error value.
-	public static final EntityType[] ENTITY_BY_NUMBER = { null
+	public final EntityType[] ENTITY_BY_NUMBER = { null
 			, PLAYER
 			, COW
 			, ORC

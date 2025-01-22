@@ -1,15 +1,29 @@
 package com.jeffdisher.october.types;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CowStateMachine;
 
 
 public class TestMutableCreature
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void noChange() throws Throwable
 	{
@@ -24,7 +38,7 @@ public class TestMutableCreature
 	public void healthClearsPlan()
 	{
 		CreatureEntity middle = new CreatureEntity(-1
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)0
@@ -51,7 +65,7 @@ public class TestMutableCreature
 	private static CreatureEntity _buildTestEntity()
 	{
 		return CreatureEntity.create(-1
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
 		);

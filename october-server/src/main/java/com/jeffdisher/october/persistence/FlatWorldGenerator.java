@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -127,11 +126,11 @@ public class FlatWorldGenerator implements IWorldGenerator
 			AbsoluteLocation baseOfCuboid = address.getBase();
 			entities = (0 == address.z())
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
-							, CreatureRegistry.COW
+							, env.creatures.COW
 							, baseOfCuboid.toEntityLocation()
 							, (byte)100
 						), CreatureEntity.create(creatureIdAssigner.next()
-							, CreatureRegistry.COW
+							, env.creatures.COW
 							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
 							, (byte)100
 					))

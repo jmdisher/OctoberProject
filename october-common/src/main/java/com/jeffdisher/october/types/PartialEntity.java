@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
+
 
 /**
  * A variant of "Entity" for the cases where this is something which can move in the world, but the client can't see its
@@ -20,8 +21,9 @@ public record PartialEntity(int id
 {
 	public static PartialEntity fromEntity(Entity entity)
 	{
+		Environment env = Environment.getShared();
 		return new PartialEntity(entity.id()
-				, CreatureRegistry.PLAYER
+				, env.creatures.PLAYER
 				, entity.location()
 				, entity.yaw()
 				, entity.pitch()

@@ -1,9 +1,11 @@
 package com.jeffdisher.october.logic;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -15,6 +17,18 @@ import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 public class TestCreatureMovementHelpers
 {
+	private static Environment ENV;
+	@BeforeClass
+	public static void setup()
+	{
+		ENV = Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void noMoveCentre()
 	{
@@ -176,6 +190,6 @@ public class TestCreatureMovementHelpers
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
-		return CreatureEntity.create(-1, CreatureRegistry.COW, location, (byte)10);
+		return CreatureEntity.create(-1, ENV.creatures.COW, location, (byte)10);
 	}
 }

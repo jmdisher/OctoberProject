@@ -8,7 +8,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -205,7 +204,7 @@ public class TestEntityMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 0), STONE.item().number());
 		_Entity entity = new _Entity();
-		entity.type = CreatureRegistry.ORC;
+		entity.type = ENV.creatures.ORC;
 		entity.location = new EntityLocation(16.8f, 16.8f, 1.11f);
 		entity.vector = new EntityLocation(0.0f, 0.0f, -17.64f);
 		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
@@ -288,7 +287,7 @@ public class TestEntityMovementHelpers
 
 	private static class _Entity implements IMutableMinimalEntity
 	{
-		public EntityType type = CreatureRegistry.PLAYER;
+		public EntityType type = ENV.creatures.PLAYER;
 		public EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		public EntityLocation vector = new EntityLocation(0.0f, 0.0f, 0.0f);
 		public int cost = 0;

@@ -1,6 +1,6 @@
 package com.jeffdisher.october.types;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -55,6 +55,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		// We don't want to allow non-positive entity IDs (since those will be reserved for errors or future uses).
 		Assert.assertTrue(id > 0);
 		Assert.assertTrue(null != location);
+		Environment env = Environment.getShared();
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
 		Entity entity = new Entity(id
 				, false
@@ -67,7 +68,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
 				, null
-				, CreatureRegistry.PLAYER.maxHealth()
+				, env.creatures.PLAYER.maxHealth()
 				, MiscConstants.PLAYER_MAX_FOOD
 				, MiscConstants.MAX_BREATH
 				, 0
@@ -175,7 +176,8 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public EntityType getType()
 	{
-		return CreatureRegistry.PLAYER;
+		Environment env = Environment.getShared();
+		return env.creatures.PLAYER;
 	}
 
 	@Override
@@ -224,6 +226,8 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public void handleEntityDeath(TickProcessingContext context)
 	{
+		Environment env = Environment.getShared();
+		
 		// Drop their inventory.
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		for (Integer key : this.newInventory.freeze().sortedKeys())
@@ -237,7 +241,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		// Respawn them.
 		this.newInventory.clearInventory(null);
 		this.newLocation = this.newSpawn;
-		this.newHealth = CreatureRegistry.PLAYER.maxHealth();
+		this.newHealth = env.creatures.PLAYER.maxHealth();
 		this.newFood = MiscConstants.PLAYER_MAX_FOOD;
 		// Wipe all the hotbar slots.
 		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)

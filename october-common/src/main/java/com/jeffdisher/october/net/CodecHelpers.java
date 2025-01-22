@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
@@ -213,9 +212,10 @@ public class CodecHelpers
 
 	public static PartialEntity readPartialEntity(ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		int id = buffer.getInt();
 		byte ordinal = buffer.get();
-		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
+		EntityType type = env.creatures.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
@@ -249,10 +249,11 @@ public class CodecHelpers
 
 	public static CreatureEntity readCreatureEntity(int idToAssign, ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		// The IDs for creatures are assigned late.
 		int id = idToAssign;
 		byte ordinal = buffer.get();
-		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
+		EntityType type = env.creatures.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		byte yaw = buffer.get();

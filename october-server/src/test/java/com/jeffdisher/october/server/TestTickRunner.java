@@ -11,7 +11,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
@@ -1697,7 +1696,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, CreatureRegistry.COW, entityLocation, (byte)15);
+		CreatureEntity creature = CreatureEntity.create(creatureId, ENV.creatures.COW, entityLocation, (byte)15);
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -1768,7 +1767,7 @@ public class TestTickRunner
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, CreatureRegistry.COW, entityLocation, (byte)15);
+		CreatureEntity creature = CreatureEntity.create(creatureId, ENV.creatures.COW, entityLocation, (byte)15);
 		
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())

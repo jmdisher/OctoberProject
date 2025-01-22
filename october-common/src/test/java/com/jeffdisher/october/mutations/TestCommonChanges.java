@@ -10,7 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
@@ -77,7 +76,7 @@ public class TestCommonChanges
 		// Check that the move works if the blocks are air.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
@@ -98,7 +97,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the blocks are stone.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, -16.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
@@ -118,7 +117,7 @@ public class TestCommonChanges
 	{
 		// Check that the move fails if the target cuboid is missing.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = ContextBuilder.build()
@@ -141,7 +140,7 @@ public class TestCommonChanges
 	{
 		// Position us in an air block and make sure that we fall.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		TickProcessingContext context = _createSimpleContext();
@@ -468,7 +467,7 @@ public class TestCommonChanges
 	{
 		// We will try to place a breaking a block of the wrong type or too far away.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		
 		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);
@@ -825,7 +824,7 @@ public class TestCommonChanges
 		
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
 		Assert.assertTrue(takeDamage.applyChange(context, target));
-		Assert.assertEquals(CreatureRegistry.PLAYER.maxHealth(), target.newHealth);
+		Assert.assertEquals(ENV.creatures.PLAYER.maxHealth(), target.newHealth);
 		Assert.assertEquals(MiscConstants.PLAYER_MAX_FOOD, target.newFood);
 		Assert.assertEquals(0, target.newInventory.freeze().sortedKeys().size());
 		Assert.assertEquals(Entity.NO_SELECTION, target.getSelectedKey());
@@ -970,7 +969,7 @@ public class TestCommonChanges
 	{
 		// Break a block with a tool with 1 durability to observe it break.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
 		// We assume that this is 1.
@@ -998,7 +997,7 @@ public class TestCommonChanges
 		// Break a block with a nearly full inventory and verify that it doesn't add the new item.
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		Item plank = ENV.items.getItemById("op.plank");
 		newEntity.newInventory.addItemsBestEfforts(plank, newEntity.newInventory.maxVacancyForItem(plank) - 1);
 		int initialEncumbrance = newEntity.newInventory.getCurrentEncumbrance();
@@ -1047,7 +1046,7 @@ public class TestCommonChanges
 		int startDurability = 100;
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		newEntity.setSelectedKey(1);
 		
@@ -1097,7 +1096,7 @@ public class TestCommonChanges
 		short lavaSourceItemNumber = ENV.items.getItemById("op.lava_source").number();
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(waterBucket, 0));
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, 0));
 		// Start with the water.
@@ -1347,7 +1346,7 @@ public class TestCommonChanges
 		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
@@ -1407,7 +1406,7 @@ public class TestCommonChanges
 		// We assume that this is key 1.
 		entity.newHotbar[0] = 1;
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, CreatureRegistry.COW
+				, ENV.creatures.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
@@ -1820,7 +1819,7 @@ public class TestCommonChanges
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
 				, null
-				, CreatureRegistry.PLAYER.maxHealth()
+				, ENV.creatures.PLAYER.maxHealth()
 				, MiscConstants.PLAYER_MAX_FOOD
 				, MiscConstants.MAX_BREATH
 				, 0
@@ -1933,7 +1932,7 @@ public class TestCommonChanges
 		// Create an entity in creative mode and verify that it ignores changes to health, food, and breath.
 		int entityId = 1;
 		Inventory inventory = Inventory.start(StationRegistry.CAPACITY_PLAYER).finish();
-		byte health = (byte)(CreatureRegistry.PLAYER.maxHealth() / 2);
+		byte health = (byte)(ENV.creatures.PLAYER.maxHealth() / 2);
 		byte food = MiscConstants.PLAYER_MAX_FOOD / 2;
 		byte breath = MiscConstants.MAX_BREATH / 2;
 		int energyDeficit = 50;
@@ -1996,7 +1995,7 @@ public class TestCommonChanges
 	{
 		// Break a block with a tool with 1 durability, while in creative mode, to observe it does NOT break and only takes one hit.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		newEntity.isCreativeMode = true;
 		Item pickItem = ENV.items.getItemById("op.iron_pickaxe");
 		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickItem, 1));
@@ -2069,7 +2068,7 @@ public class TestCommonChanges
 	{
 		// Try to repair a damaged block, an undamaged block, a block of the wrong type, and a block too far away.
 		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = new EntityLocation(6.0f - CreatureRegistry.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
 		
 		AbsoluteLocation tooFar = new AbsoluteLocation(8, 2, 10);
 		AbsoluteLocation wrongType = new AbsoluteLocation(5, 0, 10);

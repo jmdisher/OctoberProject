@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
@@ -57,12 +56,13 @@ public class CreatureLogic
 	 */
 	public static boolean canUseOnEntity(Item item, EntityType entityType)
 	{
+		Environment env = Environment.getShared();
 		boolean canUse;
-		if (CreatureRegistry.COW == entityType)
+		if (env.creatures.COW == entityType)
 		{
 			canUse = CowStateMachine.canUseItem(item);
 		}
-		else if (CreatureRegistry.ORC == entityType)
+		else if (env.creatures.ORC == entityType)
 		{
 			canUse = false;
 		}
@@ -83,7 +83,8 @@ public class CreatureLogic
 	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature)
 	{
 		boolean didApply;
-		if (CreatureRegistry.COW == creature.getType())
+		Environment env = Environment.getShared();
+		if (env.creatures.COW == creature.getType())
 		{
 			Object originalData = creature.getExtendedData();
 			CowStateMachine cow = CowStateMachine.extractFromData(originalData);
@@ -103,7 +104,7 @@ public class CreatureLogic
 				didApply = false;
 			}
 		}
-		else if (CreatureRegistry.ORC == creature.getType())
+		else if (env.creatures.ORC == creature.getType())
 		{
 			didApply = false;
 		}
@@ -132,14 +133,15 @@ public class CreatureLogic
 			, long timeLimitMillis
 	)
 	{
-		ICreatureStateMachine machine;
+		Environment env = Environment.getShared();
 		
 		// The machine must be decoded based on type but the planning logic is common (at least for now).
-		if (CreatureRegistry.COW == mutable.getType())
+		ICreatureStateMachine machine;
+		if (env.creatures.COW == mutable.getType())
 		{
 			machine = CowStateMachine.extractFromData(mutable.newExtendedData);
 		}
-		else if (CreatureRegistry.ORC == mutable.getType())
+		else if (env.creatures.ORC == mutable.getType())
 		{
 			machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
 		}
@@ -184,8 +186,9 @@ public class CreatureLogic
 	 */
 	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
 	{
+		Environment env = Environment.getShared();
 		boolean didBecomePregnant;
-		if (CreatureRegistry.COW == creature.getType())
+		if (env.creatures.COW == creature.getType())
 		{
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
 			// Average the locations.
@@ -202,7 +205,7 @@ public class CreatureLogic
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
-		else if (CreatureRegistry.ORC == creature.getType())
+		else if (env.creatures.ORC == creature.getType())
 		{
 			// This case shouldn't be reachable since a cow should only target another cow and IDs are never reused.
 			throw Assert.unreachable();
@@ -229,12 +232,13 @@ public class CreatureLogic
 			, MutableCreature creature
 	)
 	{
+		Environment env = Environment.getShared();
 		Runnable requestDespawnWithoutDrops = () -> {
 			// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
 			creature.setHealth((byte)0);
 		};
 		boolean isDone;
-		if (CreatureRegistry.COW == creature.getType())
+		if (env.creatures.COW == creature.getType())
 		{
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
 			
@@ -250,7 +254,7 @@ public class CreatureLogic
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
-		else if (CreatureRegistry.ORC == creature.getType())
+		else if (env.creatures.ORC == creature.getType())
 		{
 			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
 			if (Difficulty.PEACEFUL == context.config.difficulty)

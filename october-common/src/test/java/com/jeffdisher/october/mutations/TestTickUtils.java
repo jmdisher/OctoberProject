@@ -10,7 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
-import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -68,7 +67,7 @@ public class TestTickUtils
 		int[] damage = new int[creatureCount];
 		for (int i = 0; i < creatureCount; ++i)
 		{
-			CreatureEntity creature = CreatureEntity.create(id, CreatureRegistry.ORC, startLocation, health);
+			CreatureEntity creature = CreatureEntity.create(id, ENV.creatures.ORC, startLocation, health);
 			creatures.put(creature.id(), creature);
 			id -= 1;
 			startLocation = new EntityLocation(startLocation.x(), startLocation.y(), startLocation.z() + spreadZ);

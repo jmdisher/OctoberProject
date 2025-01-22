@@ -3,7 +3,7 @@ package com.jeffdisher.october.persistence.legacy;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -26,9 +26,10 @@ public record LegacyCreatureEntityV1(int id
 {
 	public static LegacyCreatureEntityV1 load(int idToAssign, ByteBuffer buffer)
 	{
+		Environment env = Environment.getShared();
 		int id = idToAssign;
 		byte ordinal = buffer.get();
-		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
+		EntityType type = env.creatures.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = CodecHelpers.readEntityLocation(buffer);
 		EntityLocation velocity = CodecHelpers.readEntityLocation(buffer);
 		byte health = buffer.get();
