@@ -10,6 +10,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -35,19 +36,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	 * The amount of time will orc will continue to live if not taking any deliberate action before despawn (5 minutes).
 	 */
 	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
-
-	/**
-	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
-	 * 
-	 * @param extendedData The orc extended data (previously created by this class).
-	 * @return The mutable state machine.
-	 */
-	public static OrcStateMachine extractFromData(Object extendedData)
-	{
-		// This MUST be an orc.
-		_ExtendedData data = (_ExtendedData) extendedData;
-		return new OrcStateMachine(data);
-	}
 
 	/**
 	 * TESTING ONLY!
@@ -88,9 +76,15 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private final _ExtendedData _originalData;
 	private long _lastAttackTick;
 	private long _idleDespawnTick;
-	
-	private OrcStateMachine(_ExtendedData data)
+
+	/**
+	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
+	 * 
+	 * @param extendedData The orc extended data (previously created by this class).
+	 */
+	public OrcStateMachine(Object extendedData)
 	{
+		_ExtendedData data = (_ExtendedData) extendedData;
 		_originalData = data;
 		if (null != data)
 		{
@@ -106,6 +100,13 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
+	public boolean applyItem(Item itemType)
+	{
+		// This shouldn't be called.
+		throw Assert.unreachable();
+	}
+
+	@Override
 	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
 	{
 		ICreatureStateMachine.TargetEntity target = _findPlayerInRange(entityCollection, creatureLocation);
@@ -115,6 +116,13 @@ public class OrcStateMachine implements ICreatureStateMachine
 			_idleDespawnTick = context.currentTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 		}
 		return target;
+	}
+
+	@Override
+	public boolean setPregnant(EntityLocation offspringLocation)
+	{
+		// This shouldn't be called.
+		throw Assert.unreachable();
 	}
 
 	@Override

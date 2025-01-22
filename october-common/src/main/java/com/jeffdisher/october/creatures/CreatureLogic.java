@@ -84,10 +84,11 @@ public class CreatureLogic
 	{
 		boolean didApply;
 		Environment env = Environment.getShared();
-		if (env.creatures.COW == creature.getType())
+		EntityType creatureType = creature.getType();
+		if (env.creatures.COW == creatureType)
 		{
 			Object originalData = creature.getExtendedData();
-			CowStateMachine cow = CowStateMachine.extractFromData(originalData);
+			ICreatureStateMachine cow = creatureType.stateMachineFactory().apply(originalData);
 			boolean didChangeState = cow.applyItem(itemType);
 			if (didChangeState)
 			{
@@ -104,7 +105,7 @@ public class CreatureLogic
 				didApply = false;
 			}
 		}
-		else if (env.creatures.ORC == creature.getType())
+		else if (env.creatures.ORC == creatureType)
 		{
 			didApply = false;
 		}
@@ -133,22 +134,8 @@ public class CreatureLogic
 			, long timeLimitMillis
 	)
 	{
-		Environment env = Environment.getShared();
-		
-		// The machine must be decoded based on type but the planning logic is common (at least for now).
-		ICreatureStateMachine machine;
-		if (env.creatures.COW == mutable.getType())
-		{
-			machine = CowStateMachine.extractFromData(mutable.newExtendedData);
-		}
-		else if (env.creatures.ORC == mutable.getType())
-		{
-			machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
-		}
-		else
-		{
-			throw Assert.unreachable();
-		}
+		EntityType creatureType = mutable.getType();
+		ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(mutable.newExtendedData);
 		
 		// Get the movement plan and see if we should advance it.
 		List<AbsoluteLocation> movementPlan = mutable.newMovementPlan;
@@ -188,9 +175,10 @@ public class CreatureLogic
 	{
 		Environment env = Environment.getShared();
 		boolean didBecomePregnant;
-		if (env.creatures.COW == creature.getType())
+		EntityType creatureType = creature.getType();
+		if (env.creatures.COW == creatureType)
 		{
-			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
+			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 			// Average the locations.
 			EntityLocation parentLocation = creature.getLocation();
 			EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
@@ -205,7 +193,7 @@ public class CreatureLogic
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
-		else if (env.creatures.ORC == creature.getType())
+		else if (env.creatures.ORC == creatureType)
 		{
 			// This case shouldn't be reachable since a cow should only target another cow and IDs are never reused.
 			throw Assert.unreachable();
@@ -238,9 +226,10 @@ public class CreatureLogic
 			creature.setHealth((byte)0);
 		};
 		boolean isDone;
-		if (env.creatures.COW == creature.getType())
+		EntityType creatureType = creature.getType();
+		if (env.creatures.COW == creatureType)
 		{
-			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
+			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 			
 			// Before we attempt to take a special action, see if we have a target which has moved.
 			_updatePathIfTargetMoved(context, creature, machine.getPathDistance());
@@ -254,7 +243,7 @@ public class CreatureLogic
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
-		else if (env.creatures.ORC == creature.getType())
+		else if (env.creatures.ORC == creatureType)
 		{
 			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
 			if (Difficulty.PEACEFUL == context.config.difficulty)
@@ -264,7 +253,7 @@ public class CreatureLogic
 			}
 			else
 			{
-				OrcStateMachine machine = OrcStateMachine.extractFromData(creature.newExtendedData);
+				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 				
 				// Before we attempt to take a special action, see if we have a target which has moved.
 				_updatePathIfTargetMoved(context, creature, machine.getPathDistance());

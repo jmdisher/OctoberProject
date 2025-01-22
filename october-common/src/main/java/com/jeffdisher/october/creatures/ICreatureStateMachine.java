@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -13,6 +14,15 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public interface ICreatureStateMachine
 {
+	/**
+	 * Applies the given item to the cow.  Note that this may do nothing if the item can't be applied to this creature
+	 * or the creature isn't in a state where it will have any effect.
+	 * 
+	 * @param itemType The type of item to apply.
+	 * @return True if the item did something.
+	 */
+	boolean applyItem(Item itemType);
+
 	/**
 	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
 	 * creatures in the loaded world.
@@ -24,6 +34,15 @@ public interface ICreatureStateMachine
 	 * @return A description of the target entity or null if there is no target.
 	 */
 	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
+
+	/**
+	 * Sets the state of the cow to be ready to produce offspring at a specific location if it is in love mode but not
+	 * already pregnant.
+	 * 
+	 * @param offspringLocation The location where the offspring should be created.
+	 * @return True if the cow became pregnant.
+	 */
+	boolean setPregnant(EntityLocation offspringLocation);
 
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending

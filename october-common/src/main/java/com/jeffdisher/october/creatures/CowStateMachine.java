@@ -32,19 +32,6 @@ public class CowStateMachine implements ICreatureStateMachine
 	public static final int COW_PATH_DISTANCE = 2 * (int) COW_VIEW_DISTANCE;
 
 	/**
-	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
-	 * 
-	 * @param extendedData The cow's extended data (previously created by this class).
-	 * @return The mutable state machine.
-	 */
-	public static CowStateMachine extractFromData(Object extendedData)
-	{
-		// This MUST be a cow.
-		_ExtendedData data = (_ExtendedData) extendedData;
-		return new CowStateMachine(data);
-	}
-
-	/**
 	 * A helper to determine if the given item can be used an instance of this type.
 	 * 
 	 * @param item The item.
@@ -96,9 +83,15 @@ public class CowStateMachine implements ICreatureStateMachine
 	private final _ExtendedData _originalData;
 	private boolean _inLoveMode;
 	private EntityLocation _offspringLocation;
-	
-	private CowStateMachine(_ExtendedData data)
+
+	/**
+	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
+	 * 
+	 * @param extendedData The cow's extended data (previously created by this class).
+	 */
+	public CowStateMachine(Object extendedData)
 	{
+		_ExtendedData data = (_ExtendedData) extendedData;
 		_originalData = data;
 		if (null != data)
 		{
@@ -112,13 +105,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		}
 	}
 
-	/**
-	 * Applies the given item to the cow.  Note that this may do nothing if the item can't be applied to this creature
-	 * or the creature isn't in a state where it will have any effect.
-	 * 
-	 * @param itemType The type of item to apply.
-	 * @return True if the item did something.
-	 */
+	@Override
 	public boolean applyItem(Item itemType)
 	{
 		Environment env = Environment.getShared();
@@ -154,13 +141,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		return target;
 	}
 
-	/**
-	 * Sets the state of the cow to be ready to produce offspring at a specific location if it is in love mode but not
-	 * already pregnant.
-	 * 
-	 * @param offspringLocation The location where the offspring should be created.
-	 * @return True if the cow became pregnant.
-	 */
+	@Override
 	public boolean setPregnant(EntityLocation offspringLocation)
 	{
 		boolean didBecomePregnant = false;

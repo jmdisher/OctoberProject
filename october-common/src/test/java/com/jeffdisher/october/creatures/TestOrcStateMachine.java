@@ -51,7 +51,7 @@ public class TestOrcStateMachine
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ENV.creatures.ORC, orcLocation, (byte)100);
 		
-		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
+		OrcStateMachine machine = new OrcStateMachine(null);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
 		
@@ -83,7 +83,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = new OrcStateMachine(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.id());
 		Assert.assertEquals(player.id(), target.id());
 		Assert.assertEquals(player.location(), target.location());
@@ -128,7 +128,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);
 		
 		// Create the orc and ask it to select a target to show that it updates its despawn timer.
-		OrcStateMachine machine = OrcStateMachine.extractFromData(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = new OrcStateMachine(OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.id());
 		Assert.assertNull(target);
 		long idleTickDelay = (OrcStateMachine.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
