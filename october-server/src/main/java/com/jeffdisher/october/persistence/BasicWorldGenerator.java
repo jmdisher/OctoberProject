@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -330,7 +331,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, EntityType.COW
+						, CreatureRegistry.COW
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
 						, (byte)100
 				));
@@ -853,7 +854,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			// If this is a field, and we could fill a gully, spawn a small herd of cows in the centre of the cuboid.
 			if ((FIELD_CODE == biome.code) && didFillGully)
 			{
-				typeToSpawn = EntityType.COW;
+				typeToSpawn = CreatureRegistry.COW;
 			}
 		}
 		return typeToSpawn;

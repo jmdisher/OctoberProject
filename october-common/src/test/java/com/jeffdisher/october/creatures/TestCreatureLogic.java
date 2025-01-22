@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -23,7 +24,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -52,7 +52,7 @@ public class TestCreatureLogic
 	{
 		// Verify that all possible idle paths end on the ground.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, CreatureRegistry.ORC, entityLocation, (byte)100);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -92,7 +92,7 @@ public class TestCreatureLogic
 	{
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, CreatureRegistry.ORC, entityLocation, (byte)100);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -133,7 +133,7 @@ public class TestCreatureLogic
 	{
 		// Verify that idle movement will avoid stopping in the water (these should all jump).
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, CreatureRegistry.ORC, entityLocation, (byte)100);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
@@ -163,7 +163,7 @@ public class TestCreatureLogic
 	{
 		// Verify that we will choose to do nothing if there are no idle movement targets.
 		EntityLocation entityLocation = new EntityLocation(16.0f, 16.0f, 1.0f);
-		CreatureEntity entity = CreatureEntity.create(-1, EntityType.ORC, entityLocation, (byte)100);
+		CreatureEntity entity = CreatureEntity.create(-1, CreatureRegistry.ORC, entityLocation, (byte)100);
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
@@ -189,7 +189,7 @@ public class TestCreatureLogic
 	{
 		// Show an orc acquiring a target and then updating its path when the target moves.
 		EntityLocation orcLocation = new EntityLocation(2.0f, 2.0f, 1.0f);
-		CreatureEntity orc = CreatureEntity.create(-1, EntityType.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(-1, CreatureRegistry.ORC, orcLocation, (byte)100);
 		EntityLocation playerLocation = new EntityLocation(5.0f, 1.0f, 1.0f);
 		Entity[] player = new Entity[] { new Entity(1
 				, false

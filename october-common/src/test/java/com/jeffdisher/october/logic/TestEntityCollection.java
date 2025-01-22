@@ -6,11 +6,11 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.MutableEntity;
 
 
@@ -88,6 +88,6 @@ public class TestEntityCollection
 
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
-		return CreatureEntity.create(id, EntityType.COW, location, (byte)10);
+		return CreatureEntity.create(id, CreatureRegistry.COW, location, (byte)10);
 	}
 }

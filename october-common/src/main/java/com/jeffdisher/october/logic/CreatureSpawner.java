@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.Iterator;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -16,7 +17,6 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Encoding;
@@ -237,7 +237,7 @@ public class CreatureSpawner
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
-				spawned = CreatureEntity.create(context.idAssigner.next(), EntityType.ORC, location, EntityConstants.ORC_MAX_HEALTH);
+				spawned = CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.ORC, location, EntityConstants.ORC_MAX_HEALTH);
 			}
 			else
 			{

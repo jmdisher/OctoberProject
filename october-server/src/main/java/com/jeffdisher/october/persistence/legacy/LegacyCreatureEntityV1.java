@@ -3,6 +3,7 @@ package com.jeffdisher.october.persistence.legacy;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -27,7 +28,7 @@ public record LegacyCreatureEntityV1(int id
 	{
 		int id = idToAssign;
 		byte ordinal = buffer.get();
-		EntityType type = EntityType.values()[ordinal];
+		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = CodecHelpers.readEntityLocation(buffer);
 		EntityLocation velocity = CodecHelpers.readEntityLocation(buffer);
 		byte health = buffer.get();
@@ -47,14 +48,14 @@ public record LegacyCreatureEntityV1(int id
 		// NOTE:  This is just for testing.
 		// We just use the logic which was used in CodecHelpers to load this in V1.
 		// Note that the ID is not part of the CreatureEntity serialized shape.
-		int ordinal = this.type().ordinal();
-		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
+		byte ordinal = this.type().number();
+		Assert.assertTrue((byte)0 != ordinal);
 		EntityLocation location = this.location();
 		EntityLocation velocity = this.velocity();
 		byte health = this.health();
 		byte breath = this.breath();
 		
-		buffer.put((byte)ordinal);
+		buffer.put(ordinal);
 		CodecHelpers.writeEntityLocation(buffer, location);
 		CodecHelpers.writeEntityLocation(buffer, velocity);
 		buffer.put(health);

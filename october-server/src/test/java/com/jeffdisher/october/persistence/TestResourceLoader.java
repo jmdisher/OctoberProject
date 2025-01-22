@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -639,7 +640,7 @@ public class TestResourceLoader
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		
 		int id = -5;
-		EntityType type = EntityType.COW;
+		EntityType type = CreatureRegistry.COW;
 		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
 		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
 		byte health = 50;

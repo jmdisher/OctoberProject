@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
@@ -31,7 +32,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -1347,7 +1347,7 @@ public class TestCommonChanges
 		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, EntityType.COW
+				, CreatureRegistry.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
@@ -1407,7 +1407,7 @@ public class TestCommonChanges
 		// We assume that this is key 1.
 		entity.newHotbar[0] = 1;
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, EntityType.COW
+				, CreatureRegistry.COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);

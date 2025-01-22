@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -19,7 +20,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.Item;
@@ -179,7 +179,7 @@ public class AutoWalkingClient
 	private static boolean _isOutsideOfBlock(AbsoluteLocation block, Entity entity)
 	{
 		EntityLocation base = entity.location();
-		EntityVolume volume = EntityConstants.getVolume(EntityType.PLAYER);
+		EntityVolume volume = EntityConstants.getVolume(CreatureRegistry.PLAYER);
 		EntityLocation edge = new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z() + volume.height());
 		
 		// We will say that we are out of this block if neither the base nor the edge are within this block (note that this could fail if the volume is larger than 1 block in any direction).

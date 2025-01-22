@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -173,7 +174,7 @@ public class MutableEntity implements IMutablePlayerEntity
 	@Override
 	public EntityType getType()
 	{
-		return EntityType.PLAYER;
+		return CreatureRegistry.PLAYER;
 	}
 
 	@Override

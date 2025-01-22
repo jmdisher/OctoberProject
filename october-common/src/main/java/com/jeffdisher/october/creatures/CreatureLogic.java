@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
@@ -57,17 +58,16 @@ public class CreatureLogic
 	public static boolean canUseOnEntity(Item item, EntityType entityType)
 	{
 		boolean canUse;
-		switch (entityType)
+		if (CreatureRegistry.COW == entityType)
 		{
-		case COW:
 			canUse = CowStateMachine.canUseItem(item);
-			break;
-		case ORC:
+		}
+		else if (CreatureRegistry.ORC == entityType)
+		{
 			canUse = false;
-			break;
-		case ERROR:
-		case PLAYER:
-		default:
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return canUse;
@@ -83,9 +83,8 @@ public class CreatureLogic
 	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature)
 	{
 		boolean didApply;
-		switch (creature.getType())
+		if (CreatureRegistry.COW == creature.getType())
 		{
-		case COW:
 			Object originalData = creature.getExtendedData();
 			CowStateMachine cow = CowStateMachine.extractFromData(originalData);
 			boolean didChangeState = cow.applyItem(itemType);
@@ -103,13 +102,13 @@ public class CreatureLogic
 			{
 				didApply = false;
 			}
-			break;
-		case ORC:
+		}
+		else if (CreatureRegistry.ORC == creature.getType())
+		{
 			didApply = false;
-			break;
-		case ERROR:
-		case PLAYER:
-		default:
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return didApply;
@@ -136,19 +135,16 @@ public class CreatureLogic
 		ICreatureStateMachine machine;
 		
 		// The machine must be decoded based on type but the planning logic is common (at least for now).
-		switch (mutable.getType())
+		if (CreatureRegistry.COW == mutable.getType())
 		{
-		case COW: {
 			machine = CowStateMachine.extractFromData(mutable.newExtendedData);
 		}
-			break;
-		case ORC: {
+		else if (CreatureRegistry.ORC == mutable.getType())
+		{
 			machine = OrcStateMachine.extractFromData(mutable.newExtendedData);
 		}
-			break;
-		case ERROR:
-		case PLAYER:
-		default:
+		else
+		{
 			throw Assert.unreachable();
 		}
 		
@@ -189,9 +185,8 @@ public class CreatureLogic
 	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
 	{
 		boolean didBecomePregnant;
-		switch (creature.getType())
+		if (CreatureRegistry.COW == creature.getType())
 		{
-		case COW:{
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
 			// Average the locations.
 			EntityLocation parentLocation = creature.getLocation();
@@ -206,13 +201,14 @@ public class CreatureLogic
 				creature.resetDeliberateTick();
 				creature.setExtendedData(machine.freezeToData());
 			}
-			break;
 		}
-		case ORC:
+		else if (CreatureRegistry.ORC == creature.getType())
+		{
 			// This case shouldn't be reachable since a cow should only target another cow and IDs are never reused.
-		case ERROR:
-		case PLAYER:
-		default:
+			throw Assert.unreachable();
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return didBecomePregnant;
@@ -238,9 +234,8 @@ public class CreatureLogic
 			creature.setHealth((byte)0);
 		};
 		boolean isDone;
-		switch (creature.getType())
+		if (CreatureRegistry.COW == creature.getType())
 		{
-		case COW: {
 			CowStateMachine machine = CowStateMachine.extractFromData(creature.getExtendedData());
 			
 			// Before we attempt to take a special action, see if we have a target which has moved.
@@ -254,9 +249,9 @@ public class CreatureLogic
 				creature.resetDeliberateTick();
 				creature.setExtendedData(machine.freezeToData());
 			}
-			break;
 		}
-		case ORC: {
+		else if (CreatureRegistry.ORC == creature.getType())
+		{
 			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
 			if (Difficulty.PEACEFUL == context.config.difficulty)
 			{
@@ -280,10 +275,8 @@ public class CreatureLogic
 				}
 			}
 		}
-			break;
-		case ERROR:
-		case PLAYER:
-		default:
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return isDone;

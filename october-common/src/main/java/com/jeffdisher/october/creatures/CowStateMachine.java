@@ -2,6 +2,7 @@ package com.jeffdisher.october.creatures;
 
 import java.util.function.Consumer;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -10,7 +11,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -186,7 +186,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (null != _offspringLocation)
 		{
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), EntityType.COW, _offspringLocation, EntityConstants.COW_MAX_HEALTH));
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.COW, _offspringLocation, EntityConstants.COW_MAX_HEALTH));
 			_offspringLocation = null;
 			didTakeAction = true;
 		}
@@ -240,7 +240,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, COW_VIEW_DISTANCE, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the right type.
-			if ((thisCreatureId != check.id()) && (EntityType.COW == check.type()))
+			if ((thisCreatureId != check.id()) && (CreatureRegistry.COW == check.type()))
 			{
 				// See if they are also in love mode.
 				_ExtendedData other = (_ExtendedData) check.extendedData();

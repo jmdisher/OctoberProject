@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -112,19 +113,18 @@ public class MutableCreature implements IMutableCreatureEntity
 		Environment env = Environment.getShared();
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
 		Items toDrop;
-		switch (_creature.type())
+		if (CreatureRegistry.COW == _creature.type())
 		{
-		case COW:
 			// We will try to drop 5 beef, although they may not all fit if the storage overflows.
 			toDrop = new Items(env.items.getItemById("op.beef"), 5);
-			break;
-		case ORC:
+		}
+		else if (CreatureRegistry.ORC == _creature.type())
+		{
 			// We will drop iron dust from the orc, creating an incentive to attack them (although this might be over-powered).
 			toDrop = new Items(env.items.getItemById("op.iron_dust"), 1);
-			break;
-		case ERROR:
-		case PLAYER:
-		default:
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));

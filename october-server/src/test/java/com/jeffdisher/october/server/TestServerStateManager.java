@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -36,7 +37,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -365,9 +365,9 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
 		
 		// Load in the cuboids and creatures.
-		CreatureEntity nearCreature = new CreatureEntity(-1, EntityType.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+		CreatureEntity nearCreature = new CreatureEntity(-1, CreatureRegistry.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
 				, null, 0L, 0L, CreatureEntity.NO_TARGET_ENTITY_ID, null, null);
-		CreatureEntity farCreature = new CreatureEntity(-2, EntityType.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+		CreatureEntity farCreature = new CreatureEntity(-2, CreatureRegistry.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
 				, null, 0L, 0L, CreatureEntity.NO_TARGET_ENTITY_ID, null, null);
 		
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);

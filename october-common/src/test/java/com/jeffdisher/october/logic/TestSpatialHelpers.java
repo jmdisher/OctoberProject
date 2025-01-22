@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -15,7 +16,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -251,7 +251,7 @@ public class TestSpatialHelpers
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
-		MinimalEntity entity2 = new MinimalEntity(2, EntityType.COW, location2);
+		MinimalEntity entity2 = new MinimalEntity(2, CreatureRegistry.COW, location2);
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
 		float entityDistance = SpatialHelpers.distanceFromEyeToEntitySurface(entity1, entity2);

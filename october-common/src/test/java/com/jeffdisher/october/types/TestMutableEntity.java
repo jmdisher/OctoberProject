@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 
 
@@ -78,7 +79,7 @@ public class TestMutableEntity
 		byte yaw = 64;
 		byte pitch = 0;
 		byte health = 50;
-		PartialEntity input = new PartialEntity(1, EntityType.PLAYER, location0, yaw, pitch, health);
+		PartialEntity input = new PartialEntity(1, CreatureRegistry.PLAYER, location0, yaw, pitch, health);
 		MutablePartialEntity mutable = MutablePartialEntity.existing(input);
 		mutable.newLocation = new EntityLocation(1.0f, 0.0f, 0.0f);
 		mutable.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);

@@ -3,6 +3,7 @@ package com.jeffdisher.october.types;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.creatures.CowStateMachine;
 
 
@@ -22,7 +23,7 @@ public class TestMutableCreature
 	public void healthClearsPlan()
 	{
 		CreatureEntity middle = new CreatureEntity(-1
-				, EntityType.COW
+				, CreatureRegistry.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)0
@@ -49,7 +50,7 @@ public class TestMutableCreature
 	private static CreatureEntity _buildTestEntity()
 	{
 		return CreatureEntity.create(-1
-				, EntityType.COW
+				, CreatureRegistry.COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
 		);

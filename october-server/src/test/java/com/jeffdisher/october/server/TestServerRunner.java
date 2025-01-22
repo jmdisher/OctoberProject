@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
@@ -49,7 +50,6 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -451,7 +451,7 @@ public class TestServerRunner
 		
 		// We expect to see a cow.
 		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
-		Assert.assertEquals(EntityType.COW, cow.type());
+		Assert.assertEquals(CreatureRegistry.COW, cow.type());
 		
 		// Disconnect.
 		server.clientDisconnected(clientId1);
@@ -466,7 +466,7 @@ public class TestServerRunner
 		
 		// NOTE:  In the future, this may not be a valid check since this assumes that they are renumbered since they are being reloaded.
 		cow = network.waitForPeerEntity(clientId1, -2);
-		Assert.assertEquals(EntityType.COW, cow.type());
+		Assert.assertEquals(CreatureRegistry.COW, cow.type());
 		
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(1, network.clientPartialEntities.get(clientId1).size());
@@ -552,10 +552,10 @@ public class TestServerRunner
 		Assert.assertNotNull(entity2);
 		
 		// We expect them both to see a cow and the other client.
-		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId1, -1).type());
-		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
-		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId2, -1).type());
-		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
+		Assert.assertEquals(CreatureRegistry.COW, network.waitForPeerEntity(clientId1, -1).type());
+		Assert.assertEquals(CreatureRegistry.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
+		Assert.assertEquals(CreatureRegistry.COW, network.waitForPeerEntity(clientId2, -1).type());
+		Assert.assertEquals(CreatureRegistry.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
 		
 		// Now, teleport one of the entities to the other island.
 		EntityLocation islandBase = otherIsland.getBase().toEntityLocation();
@@ -566,15 +566,15 @@ public class TestServerRunner
 		// Wait for the old entities to disappear and the new cow to appear.
 		network.waitForEntityRemoval(clientId2, -1);
 		network.waitForEntityRemoval(clientId2, clientId1);
-		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId2, -2).type());
+		Assert.assertEquals(CreatureRegistry.COW, network.waitForPeerEntity(clientId2, -2).type());
 		network.waitForEntityRemoval(clientId1, clientId2);
 		
 		// Move the other entity to this same location and observe the updates from their perspective.
 		monitoringAgent.getCommandSink().submitEntityMutation(clientId1, command);
 		network.waitForEntityRemoval(clientId1, -1);
-		Assert.assertEquals(EntityType.COW, network.waitForPeerEntity(clientId1, -2).type());
-		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
-		Assert.assertEquals(EntityType.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
+		Assert.assertEquals(CreatureRegistry.COW, network.waitForPeerEntity(clientId1, -2).type());
+		Assert.assertEquals(CreatureRegistry.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
+		Assert.assertEquals(CreatureRegistry.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
 		
 		server.clientDisconnected(clientId1);
 		server.clientDisconnected(clientId2);
@@ -1143,7 +1143,7 @@ public class TestServerRunner
 				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
 				EntityLocation base = address.getBase().toEntityLocation();
 				CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
-						, EntityType.COW
+						, CreatureRegistry.COW
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, (byte)100
 				);

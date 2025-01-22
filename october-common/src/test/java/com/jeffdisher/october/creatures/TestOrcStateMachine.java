@@ -8,6 +8,7 @@ import java.util.function.Function;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
@@ -16,7 +17,6 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -35,7 +35,7 @@ public class TestOrcStateMachine
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), CreatureRegistry.ORC, orcLocation, (byte)100);
 		
 		OrcStateMachine machine = OrcStateMachine.extractFromData(null);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
@@ -56,7 +56,7 @@ public class TestOrcStateMachine
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), CreatureRegistry.ORC, orcLocation, (byte)100);
 		
 		int[] targetId = new int[1];
 		IMutationEntity<?>[] message = new IMutationEntity<?>[1];
@@ -108,7 +108,7 @@ public class TestOrcStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), EntityType.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), CreatureRegistry.ORC, orcLocation, (byte)100);
 		
 		long startTick = 1000L;
 		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);

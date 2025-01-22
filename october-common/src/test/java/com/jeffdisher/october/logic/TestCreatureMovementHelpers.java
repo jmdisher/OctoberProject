@@ -3,13 +3,13 @@ package com.jeffdisher.october.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 
@@ -176,6 +176,6 @@ public class TestCreatureMovementHelpers
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
-		return CreatureEntity.create(-1, EntityType.COW, location, (byte)10);
+		return CreatureEntity.create(-1, CreatureRegistry.COW, location, (byte)10);
 	}
 }

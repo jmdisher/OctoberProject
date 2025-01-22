@@ -1,5 +1,6 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -34,18 +35,20 @@ public class EntityConstants
 	public static EntityVolume getVolume(EntityType type)
 	{
 		EntityVolume volume;
-		switch (type)
+		if (CreatureRegistry.PLAYER == type)
 		{
-		case PLAYER:
 			volume = VOLUME_PLAYER;
-			break;
-		case COW:
+		}
+		else if (CreatureRegistry.COW == type)
+		{
 			volume = VOLUME_COW;
-			break;
-		case ORC:
+		}
+		else if (CreatureRegistry.ORC == type)
+		{
 			volume = VOLUME_ORC;
-			break;
-		default:
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return volume;
@@ -54,18 +57,20 @@ public class EntityConstants
 	public static float getBlocksPerSecondSpeed(EntityType type)
 	{
 		float speed;
-		switch (type)
+		if (CreatureRegistry.PLAYER == type)
 		{
-		case PLAYER:
 			speed = SPEED_PLAYER;
-			break;
-		case COW:
+		}
+		else if (CreatureRegistry.COW == type)
+		{
 			speed = SPEED_COW;
-			break;
-		case ORC:
+		}
+		else if (CreatureRegistry.ORC == type)
+		{
 			speed = SPEED_ORC;
-			break;
-		default:
+		}
+		else
+		{
 			throw Assert.unreachable();
 		}
 		return speed;

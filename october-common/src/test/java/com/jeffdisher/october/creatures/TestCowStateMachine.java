@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
@@ -16,7 +17,6 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
-import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -55,9 +55,9 @@ public class TestCowStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
-		CreatureEntity father = CreatureEntity.create(assigner.next(), EntityType.COW, fatherLocation, (byte)100);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), CreatureRegistry.COW, fatherLocation, (byte)100);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), EntityType.COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), CreatureRegistry.COW, motherLocation, (byte)100);
 		
 		int[] targetId = new int[1];
 		IMutationEntity<?>[] message = new IMutationEntity<?>[1];

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
@@ -214,7 +215,7 @@ public class CodecHelpers
 	{
 		int id = buffer.getInt();
 		byte ordinal = buffer.get();
-		EntityType type = EntityType.values()[ordinal];
+		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
@@ -231,15 +232,15 @@ public class CodecHelpers
 	public static void writePartialEntity(ByteBuffer buffer, PartialEntity entity)
 	{
 		int id = entity.id();
-		int ordinal = entity.type().ordinal();
-		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
+		byte ordinal = entity.type().number();
+		Assert.assertTrue((byte)0 != ordinal);
 		EntityLocation location = entity.location();
 		byte health = entity.health();
 		byte yaw = entity.yaw();
 		byte pitch = entity.pitch();
 		
 		buffer.putInt(id);
-		buffer.put((byte)ordinal);
+		buffer.put(ordinal);
 		_writeEntityLocation(buffer, location);
 		buffer.put(yaw);
 		buffer.put(pitch);
@@ -251,7 +252,7 @@ public class CodecHelpers
 		// The IDs for creatures are assigned late.
 		int id = idToAssign;
 		byte ordinal = buffer.get();
-		EntityType type = EntityType.values()[ordinal];
+		EntityType type = CreatureRegistry.ENTITY_BY_NUMBER[ordinal];
 		EntityLocation location = _readEntityLocation(buffer);
 		EntityLocation velocity = _readEntityLocation(buffer);
 		byte yaw = buffer.get();
@@ -287,8 +288,8 @@ public class CodecHelpers
 	public static void writeCreatureEntity(ByteBuffer buffer, CreatureEntity entity)
 	{
 		// Note that we don't serialize the IDs for creatures.
-		int ordinal = entity.type().ordinal();
-		Assert.assertTrue(ordinal <= Byte.MAX_VALUE);
+		byte ordinal = entity.type().number();
+		Assert.assertTrue((byte)0 != ordinal);
 		EntityLocation location = entity.location();
 		EntityLocation velocity = entity.velocity();
 		byte yaw = entity.yaw();
@@ -296,7 +297,7 @@ public class CodecHelpers
 		byte health = entity.health();
 		byte breath = entity.breath();
 		
-		buffer.put((byte)ordinal);
+		buffer.put(ordinal);
 		_writeEntityLocation(buffer, location);
 		_writeEntityLocation(buffer, velocity);
 		buffer.put(yaw);

@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
+
 
 /**
  * The minimal part of an Entity which is common for all kinds of moving entities within the world (be they player,
@@ -18,7 +20,7 @@ public record MinimalEntity(int id
 		if (null != entity)
 		{
 			result = new MinimalEntity(entity.id()
-					, EntityType.PLAYER
+					, CreatureRegistry.PLAYER
 					, entity.location()
 			);
 		}
