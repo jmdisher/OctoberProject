@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -24,7 +25,6 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -664,7 +664,7 @@ public class TestCommonMutations
 		int entityId = 1;
 		MutableEntity entity = MutableEntity.createForTest(entityId);
 		entity.setBreath((byte)1);
-		entity.setHealth((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND));
+		entity.setHealth((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND));
 		
 		// Run a tick which isn't end of the second - should change nothing.
 		TickProcessingContext context = ContextBuilder.build()
@@ -678,7 +678,7 @@ public class TestCommonMutations
 		
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)1, entity.getBreath());
-		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		
 		// Now, do one at the end of the second to see the breath run out.
 		@SuppressWarnings("unchecked")
@@ -713,20 +713,20 @@ public class TestCommonMutations
 		
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
-		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		Assert.assertNull(holder[0]);
 		
 		// Run again to show the damage taken.
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
-		Assert.assertEquals((byte)(2 * EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
+		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
 		Assert.assertNotNull(holder[0]);
 		
 		// Run this mutation.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entityId, 0));
 		holder[0].applyChange(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
-		Assert.assertEquals(EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
+		Assert.assertEquals(MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
 	}
 
 	@Test

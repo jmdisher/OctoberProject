@@ -6,7 +6,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -90,7 +89,7 @@ public class EntityMovementHelpers
 				: 1.0f
 		;
 		float initialZVector = oldVector.z();
-		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
+		EntityVolume volume = newEntity.getType().volume();
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		float velocityFraction = (1.0f - viscosityFraction);
 		float newZVector;

@@ -1,6 +1,7 @@
 package com.jeffdisher.october.types;
 
 import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
@@ -66,9 +67,9 @@ public class MutableEntity implements IMutablePlayerEntity
 				, 0
 				, new NonStackableItem[BodyPart.values().length]
 				, null
-				, EntityConstants.PLAYER_MAX_HEALTH
-				, EntityConstants.PLAYER_MAX_FOOD
-				, EntityConstants.MAX_BREATH
+				, CreatureRegistry.PLAYER.maxHealth()
+				, MiscConstants.PLAYER_MAX_FOOD
+				, MiscConstants.MAX_BREATH
 				, 0
 				, spawn
 				, 0L
@@ -236,8 +237,8 @@ public class MutableEntity implements IMutablePlayerEntity
 		// Respawn them.
 		this.newInventory.clearInventory(null);
 		this.newLocation = this.newSpawn;
-		this.newHealth = EntityConstants.PLAYER_MAX_HEALTH;
-		this.newFood = EntityConstants.PLAYER_MAX_FOOD;
+		this.newHealth = CreatureRegistry.PLAYER.maxHealth();
+		this.newFood = MiscConstants.PLAYER_MAX_FOOD;
 		// Wipe all the hotbar slots.
 		for (int i = 0; i < Entity.HOTBAR_SIZE; ++i)
 		{

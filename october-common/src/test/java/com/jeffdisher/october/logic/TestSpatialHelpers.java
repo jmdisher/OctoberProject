@@ -14,7 +14,6 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -265,10 +264,10 @@ public class TestSpatialHelpers
 	{
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		EntityLocation base1 = location1;
-		EntityVolume volume1 = EntityConstants.VOLUME_PLAYER;
+		EntityVolume volume1 = CreatureRegistry.PLAYER.volume();
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
 		EntityLocation base2 = location2;
-		EntityVolume volume2 = EntityConstants.VOLUME_COW;
+		EntityVolume volume2 = CreatureRegistry.COW.volume();
 		
 		float distance1 = SpatialHelpers.distanceFromLocationToVolume(location1, base2, volume2);
 		float distance2 = SpatialHelpers.distanceFromLocationToVolume(location2, base1, volume1);

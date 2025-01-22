@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -28,7 +29,6 @@ import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.MutableEntity;
@@ -138,7 +138,7 @@ public class TestProcesses
 		// Move the client, slightly, and verify that we see the update.
 		// (since we are using the real clock, wait for this move to be valid)
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		float speed = EntityConstants.SPEED_PLAYER;
+		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		Thread.sleep(millisInStep);
 		client.moveHorizontalFully(EntityChangeMove.Direction.EAST, System.currentTimeMillis());
@@ -289,7 +289,7 @@ public class TestProcesses
 		EntityLocation location1 = startLocation;
 		EntityLocation location2 = startLocation;
 		// We will manually account for movement based on the limit per tick.
-		float horizontalDistancePerTick = EntityConstants.SPEED_PLAYER * (float)MILLIS_PER_TICK / 1000.0f;
+		float horizontalDistancePerTick = CreatureRegistry.PLAYER.blocksPerSecond() * (float)MILLIS_PER_TICK / 1000.0f;
 		for (int i = 0; i < 5; ++i)
 		{
 			location1 = new EntityLocation(location1.x() + horizontalDistancePerTick, location1.y(), location1.z());

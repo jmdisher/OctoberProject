@@ -7,7 +7,6 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -63,7 +62,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 		EntityLocation vector = newEntity.getVelocityVector();
 		if (_canJump(context.previousBlockLookUp
 				, location
-				, EntityConstants.getVolume(newEntity.getType())
+				, newEntity.getType().volume()
 				, vector
 		))
 		{

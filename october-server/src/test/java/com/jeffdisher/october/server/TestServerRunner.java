@@ -48,7 +48,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -361,7 +360,7 @@ public class TestServerRunner
 		network.waitForCuboidAddedCount(clientId1, 6);
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
-		float speed = EntityConstants.SPEED_PLAYER;
+		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, -0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.WEST);
 		network.receiveFromClient(clientId1, move, 1L);

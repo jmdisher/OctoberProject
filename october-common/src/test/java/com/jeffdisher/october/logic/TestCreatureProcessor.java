@@ -17,6 +17,7 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.creatures.OrcStateMachine;
@@ -37,7 +38,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -200,7 +200,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)0
 				, (byte)100
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				
 				, movementPlan
 				, 0L
@@ -241,7 +241,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)0
 				, (byte)100
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				
 				, movementPlan
 				, 0L
@@ -283,7 +283,7 @@ public class TestCreatureProcessor
 				, (byte)0
 				, (byte)0
 				, (byte)100
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				
 				, movementPlan
 				, 0L
@@ -998,7 +998,7 @@ public class TestCreatureProcessor
 				, null
 				, (byte)0
 				, (byte)0
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
 				, 0L

@@ -6,7 +6,6 @@ import java.util.function.Predicate;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -364,7 +363,7 @@ public class SpatialHelpers
 	{
 		EntityLocation eye = _getEyeLocation(eyeEntity);
 		EntityLocation target = targetEntity.location();
-		EntityVolume targetVolume = EntityConstants.getVolume(targetEntity.type());
+		EntityVolume targetVolume = targetEntity.type().volume();
 		
 		return _distanceToTarget(eye, target, targetVolume);
 	}
@@ -491,7 +490,7 @@ public class SpatialHelpers
 	private static EntityLocation _getCentreFeetLocation(IMutableMinimalEntity entity)
 	{
 		EntityLocation entityLocation = entity.getLocation();
-		EntityVolume volume = EntityConstants.getVolume(entity.getType());
+		EntityVolume volume = entity.getType().volume();
 		// (we want the block under our centre).
 		float widthOffset = volume.width() / 2.0f;
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
@@ -502,7 +501,7 @@ public class SpatialHelpers
 		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
 		// We will say that their eyes are 90% of the way up their body from their feet.
 		float entityEyeHeightMultiplier = 0.9f;
-		EntityVolume volume = EntityConstants.getVolume(entity.getType());
+		EntityVolume volume = entity.getType().volume();
 		
 		float widthOffset = volume.width() / 2.0f;
 		float heightOffset = volume.height() * entityEyeHeightMultiplier;

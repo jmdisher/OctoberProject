@@ -2,6 +2,7 @@ package com.jeffdisher.october.types;
 
 import java.util.List;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -69,7 +70,7 @@ public record CreatureEntity(int id
 				, (byte)0
 				, (byte)0
 				, health
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				
 				, null
 				, 0L

@@ -9,7 +9,6 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -186,7 +185,7 @@ public class CowStateMachine implements ICreatureStateMachine
 		if (null != _offspringLocation)
 		{
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.COW, _offspringLocation, EntityConstants.COW_MAX_HEALTH));
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), CreatureRegistry.COW, _offspringLocation, CreatureRegistry.COW.maxHealth()));
 			_offspringLocation = null;
 			didTakeAction = true;
 		}

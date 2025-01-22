@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -122,7 +121,7 @@ public class EntityChangeMove<T extends IMutableMinimalEntity> implements IMutat
 			newEntity.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
 			
 			// Find our speed and determine the components of movement.
-			float maxSpeed = EntityConstants.getBlocksPerSecondSpeed(newEntity.getType());
+			float maxSpeed = newEntity.getType().blocksPerSecond();
 			float yawRadians = OrientationHelpers.getYawRadians(newEntity.getYaw());
 			float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
 			float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);

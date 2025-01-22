@@ -5,7 +5,6 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -44,7 +43,7 @@ public class CreatureMovementHelpers
 	{
 		// Find our current location.
 		AbsoluteLocation baseLocation = creatureLocation.getBlockLocation();
-		float width = EntityConstants.getVolume(creatureType).width();
+		float width = creatureType.volume().width();
 		
 		// First, make sure that any edge of the entity isn't outside of its current block or directionHint.
 		// NOTE:  These bounds are for the specific base location, not width (as it accounts for width).
@@ -132,7 +131,7 @@ public class CreatureMovementHelpers
 		}
 		
 		// Now, move.
-		float speed = EntityConstants.getBlocksPerSecondSpeed(creatureType);
+		float speed = creatureType.blocksPerSecond();
 		// We will apply the viscosity directly to speed.
 		float effectiveSpeed = (1.0f - viscosityFraction) * speed;
 		float speedMultipler = isIdleMovement
@@ -198,7 +197,7 @@ public class CreatureMovementHelpers
 			float stepX = creatureLocation.x();
 			float stepY = creatureLocation.y();
 			AbsoluteLocation creatureBase = creatureLocation.getBlockLocation();
-			float width = EntityConstants.getVolume(creatureType).width();
+			float width = creatureType.volume().width();
 			if (targetBlock.x() > creatureBase.x())
 			{
 				stepX = targetBlock.x() + FLOAT_THRESHOLD;
@@ -223,7 +222,7 @@ public class CreatureMovementHelpers
 			float maxHorizontal = Math.max(distanceX, distanceY);
 			if (maxHorizontal > FLOAT_THRESHOLD)
 			{
-				float baseSpeed = EntityConstants.getBlocksPerSecondSpeed(creatureType);
+				float baseSpeed = creatureType.blocksPerSecond();
 				// We will apply the viscosity directly to speed.
 				float effectiveSpeed = (1.0f - viscosityFraction) * baseSpeed;
 				float speedMultipler = isIdleMovement

@@ -3,8 +3,8 @@ package com.jeffdisher.october.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 
@@ -128,7 +128,7 @@ public class TestRayCastHelpers
 		// Show that we move the full distance of the velocity vector when we don't hit anything.
 		EntityLocation start = new EntityLocation(-1.2f, -2.3f, -3.4f);
 		EntityLocation vector = new EntityLocation(7.8f, 6.7f, 5.6f);
-		RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(start, EntityConstants.VOLUME_PLAYER, vector, (AbsoluteLocation l) -> {
+		RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(start, CreatureRegistry.PLAYER.volume(), vector, (AbsoluteLocation l) -> {
 			return false;
 		});
 		Assert.assertNotNull(result);
@@ -143,7 +143,7 @@ public class TestRayCastHelpers
 		// Show that we move as far as being fully pressed against the ceiling, if that is what we hit.
 		EntityLocation start = new EntityLocation(-1.2f, -2.3f, -3.4f);
 		EntityLocation vector = new EntityLocation(7.8f, 6.7f, 5.6f);
-		EntityVolume volume = EntityConstants.VOLUME_PLAYER;
+		EntityVolume volume = CreatureRegistry.PLAYER.volume();
 		RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(start, volume, vector, (AbsoluteLocation l) -> {
 			return 0 == l.z();
 		});

@@ -7,9 +7,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.MutableEntity;
 
@@ -79,7 +79,7 @@ public class TestEntityCollection
 				, null
 				, (byte)0
 				, (byte)0
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
 				, 0L

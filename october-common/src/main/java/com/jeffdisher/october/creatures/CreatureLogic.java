@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
@@ -18,7 +19,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Difficulty;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -328,7 +328,7 @@ public class CreatureLogic
 			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
 			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
 			// movements are "safe").
-			boolean isInDanger = (mutable.newBreath < EntityConstants.MAX_BREATH);
+			boolean isInDanger = (mutable.newBreath < MiscConstants.MAX_BREATH);
 			if (isInDanger
 					|| _canMakeIdleMovement(context, mutable)
 			)
@@ -399,7 +399,7 @@ public class CreatureLogic
 				mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
 				// We have a target so try to build a path (we will use double the distance for pathing overhead).
 				// If this fails, it will return null which is already our failure case.
-				EntityVolume volume = EntityConstants.getVolume(type);
+				EntityVolume volume = type.volume();
 				path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, machine.getPathDistance());
 				// We want to strip away the first step, since it is the current location.
 				if (null != path)
@@ -426,7 +426,7 @@ public class CreatureLogic
 			, EntityType type
 	)
 	{
-		EntityVolume volume = EntityConstants.getVolume(type);
+		EntityVolume volume = type.volume();
 		float limitSteps = RANDOM_MOVEMENT_DISTANCE;
 		Map<AbsoluteLocation, AbsoluteLocation> possiblePaths = PathFinder.findPlacesWithinLimit(blockPermitsUser, volume, creatureLocation, limitSteps);
 		
@@ -649,7 +649,7 @@ public class CreatureLogic
 					{
 						// They moved by at least a block so update their location and build a new path.
 						mutable.newTargetPreviousLocation = newLocation;
-						EntityVolume volume = EntityConstants.getVolume(mutable.getType());
+						EntityVolume volume = mutable.getType().volume();
 						Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
 						mutable.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, mutable.getLocation(), targetLocation, pathDistance));
 					}

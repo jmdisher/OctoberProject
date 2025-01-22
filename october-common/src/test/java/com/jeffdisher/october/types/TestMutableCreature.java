@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CreatureRegistry;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CowStateMachine;
 
 
@@ -29,7 +30,7 @@ public class TestMutableCreature
 				, (byte)0
 				, (byte)0
 				, (byte)50
-				, EntityConstants.MAX_BREATH
+				, MiscConstants.MAX_BREATH
 				
 				, null
 				, 0L

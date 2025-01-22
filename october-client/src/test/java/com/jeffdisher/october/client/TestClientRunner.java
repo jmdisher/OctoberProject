@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.CreatureRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -35,7 +36,6 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -264,7 +264,7 @@ public class TestClientRunner
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
-		float stepDistance = EntityConstants.SPEED_PLAYER / 10.0f;
+		float stepDistance = CreatureRegistry.PLAYER.blocksPerSecond() / 10.0f;
 		Assert.assertEquals(new EntityLocation(stepDistance, 0.0f, 0.0f), projection.thisEntity.location());
 		Assert.assertTrue(projection.events.isEmpty());
 	}

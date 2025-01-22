@@ -7,4 +7,7 @@ package com.jeffdisher.october.types;
 public record EntityType(byte number
 		, String id
 		, String name
+		, EntityVolume volume
+		, float blocksPerSecond
+		, byte maxHealth
 ) {}

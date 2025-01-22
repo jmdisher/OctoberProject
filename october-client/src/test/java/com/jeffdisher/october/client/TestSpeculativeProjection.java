@@ -59,7 +59,6 @@ import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -912,7 +911,7 @@ public class TestSpeculativeProjection
 		// (note that 0.4 is the limit for one tick)
 		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
-		float speed = EntityConstants.SPEED_PLAYER;
+		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
@@ -1551,7 +1550,7 @@ public class TestSpeculativeProjection
 		// (note that 0.4 is the limit for one tick)
 		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
-		float speed = EntityConstants.SPEED_PLAYER;
+		float speed = CreatureRegistry.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
 		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
 		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);

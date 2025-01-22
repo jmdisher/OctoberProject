@@ -3,11 +3,11 @@ package com.jeffdisher.october.mutations;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.EntityConstants;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
@@ -91,7 +91,7 @@ public class TickUtils
 	{
 		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
 		EntityLocation footLocation = newEntity.getLocation();
-		EntityVolume volume = EntityConstants.getVolume(newEntity.getType());
+		EntityVolume volume = newEntity.getType().volume();
 		float halfWidth = volume.width() / 2.0f;
 		// (we use the floor since that is the block address)
 		AbsoluteLocation headLocation = new AbsoluteLocation((int)Math.floor(footLocation.x() + halfWidth)
@@ -106,7 +106,7 @@ public class TickUtils
 			if (isBreathable)
 			{
 				// Reset breath.
-				newEntity.setBreath(EntityConstants.MAX_BREATH);
+				newEntity.setBreath(MiscConstants.MAX_BREATH);
 			}
 			else
 			{
@@ -114,7 +114,7 @@ public class TickUtils
 				byte breath = newEntity.getBreath();
 				if (breath > 0)
 				{
-					breath -= EntityConstants.SUFFOCATION_BREATH_PER_SECOND;
+					breath -= MiscConstants.SUFFOCATION_BREATH_PER_SECOND;
 					if (breath < 0)
 					{
 						breath = 0;
@@ -127,12 +127,12 @@ public class TickUtils
 					int id = newEntity.getId();
 					if (id > 0)
 					{
-						EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
+						EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
 						context.newChangeSink.next(id, takeDamage);
 					}
 					else
 					{
-						EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, (byte)EntityConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
+						EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
 						context.newChangeSink.creature(id, takeDamage);
 					}
 				}
