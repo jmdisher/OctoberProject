@@ -1,0 +1,35 @@
+# Entries here have the form:
+# ID<TAB>name
+# <TAB>volume<TAB>height_float<tab>width_float
+# <TAB>blocks_per_second<TAB>float
+# <TAB>max_health<TAB>byte
+# <TAB>view_distance<TAB>float
+# <TAB>action_distance<TAB>float
+# <TAB>drops<TAB>item_id<tab>count_int
+# <TAB>logic<TAB>(LIVESTOCK|MONSTER)
+# [<TAB>attack_damage<TAB>byte]
+# [<TAB>breeding_item<TAB>item_id]
+#
+# Note that all entries listed here will be numbered in order, starting at 2 (as 1 is hard-coded as "PLAYER" and 0 is a
+# reserved error value.
+# "attack_damage" defaults to 0 (non-hostile) when omitted.
+# "breeding_item" presence means that the creature can be bread.
+
+op.cow	Cow
+	volume	0.7	0.8
+	blocks_per_second	2.0
+	max_health	40
+	view_distance	7.0
+	action_distance	1.0
+	drops	op.beef	5
+	logic	LIVESTOCK
+	breeding_item	op.wheat_item
+op.orc	Orc
+	volume	0.7	0.4
+	blocks_per_second	3.0
+	max_health	20
+	view_distance	8.0
+	action_distance	1.0
+	drops	op.iron_dust	1
+	logic	MONSTER
+	attack_damage	5
