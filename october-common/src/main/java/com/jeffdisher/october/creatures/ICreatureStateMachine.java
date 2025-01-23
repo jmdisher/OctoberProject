@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -30,10 +31,11 @@ public interface ICreatureStateMachine
 	 * @param context The context of the current tick.
 	 * @param entityCollection The collection of entities in the world.
 	 * @param creatureLocation The creature's location.
-	 * @param creatureId The creature's ID.
+	 * @param thisType This creature's type.
+	 * @param thisCreatureId This creature's ID.
 	 * @return A description of the target entity or null if there is no target.
 	 */
-	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId);
+	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId);
 
 	/**
 	 * Sets the state of the cow to be ready to produce offspring at a specific location if it is in love mode but not
@@ -53,11 +55,12 @@ public interface ICreatureStateMachine
 	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param requestDespawnWithoutDrops Called to request that this creature be despawned without dropping anything.
 	 * @param creatureLocation The creature's location.
-	 * @param creatureId The creature's ID.
+	 * @param thisType This creature's type.
+	 * @param thisCreatureId This creature's ID.
 	 * @param targetEntityId The ID of the currently-selected target (could be 0).
 	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId);
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId);
 
 	/**
 	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or

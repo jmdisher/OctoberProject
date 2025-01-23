@@ -2,7 +2,6 @@ package com.jeffdisher.october.creatures;
 
 import java.util.function.Consumer;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
@@ -112,13 +111,13 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
+	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
 	{
 		ICreatureStateMachine.TargetEntity target;
 		if (_inLoveMode)
 		{
 			// Find another cow in breeding mode.
-			target = _findBreedableCow(entityCollection, creatureLocation, creatureId);
+			target = _findBreedableCow(entityCollection, creatureLocation, thisType, thisCreatureId);
 		}
 		else
 		{
@@ -145,15 +144,14 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
 	{
 		// See if we are pregnant or searching for our mate.
 		boolean didTakeAction = false;
 		if (null != _offspringLocation)
 		{
-			Environment env = Environment.getShared();
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), env.creatures.COW, _offspringLocation, env.creatures.COW.maxHealth()));
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), thisType, _offspringLocation, thisType.maxHealth()));
 			_offspringLocation = null;
 			didTakeAction = true;
 		}
@@ -167,7 +165,7 @@ public class CowStateMachine implements ICreatureStateMachine
 			// See if they are within mating distance and we are the father.
 			EntityLocation targetLocation = targetEntity.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-			if (_inLoveMode && (distance <= _matingDistance) && (targetEntity.id() < creatureId))
+			if (_inLoveMode && (distance <= _matingDistance) && (targetEntity.id() < thisCreatureId))
 			{
 				// Send the message to impregnate them.
 				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
@@ -195,14 +193,13 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 
-	private ICreatureStateMachine.TargetEntity _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, int thisCreatureId)
+	private ICreatureStateMachine.TargetEntity _findBreedableCow(EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
 	{
-		Environment env = Environment.getShared();
 		ICreatureStateMachine.TargetEntity[] target = new ICreatureStateMachine.TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, _viewDistance, (CreatureEntity check) -> {
-			// Ignore ourselves and make sure that they are the right type.
-			if ((thisCreatureId != check.id()) && (env.creatures.COW == check.type()))
+			// Ignore ourselves and make sure that they are the same type.
+			if ((thisCreatureId != check.id()) && (thisType == check.type()))
 			{
 				// See if they are also in love mode.
 				_ExtendedData other = (_ExtendedData) check.extendedData();

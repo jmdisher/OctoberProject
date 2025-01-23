@@ -70,9 +70,8 @@ public class CreatureLogic
 	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature)
 	{
 		boolean didApply;
-		Environment env = Environment.getShared();
 		EntityType creatureType = creature.getType();
-		if (env.creatures.COW == creatureType)
+		if (creatureType.breedingItem() == itemType)
 		{
 			Object originalData = creature.getExtendedData();
 			ICreatureStateMachine cow = creatureType.stateMachineFactory().apply(originalData);
@@ -92,13 +91,9 @@ public class CreatureLogic
 				didApply = false;
 			}
 		}
-		else if (env.creatures.ORC == creatureType)
-		{
-			didApply = false;
-		}
 		else
 		{
-			throw Assert.unreachable();
+			didApply = false;
 		}
 		return didApply;
 	}
@@ -160,10 +155,10 @@ public class CreatureLogic
 	 */
 	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
 	{
-		Environment env = Environment.getShared();
+		// We can only attempt set the pregnant state if this is a breedable entity type.
 		boolean didBecomePregnant;
 		EntityType creatureType = creature.getType();
-		if (env.creatures.COW == creatureType)
+		if (null != creatureType.breedingItem())
 		{
 			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 			// Average the locations.
@@ -180,14 +175,9 @@ public class CreatureLogic
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
-		else if (env.creatures.ORC == creatureType)
-		{
-			// This case shouldn't be reachable since a cow should only target another cow and IDs are never reused.
-			throw Assert.unreachable();
-		}
 		else
 		{
-			throw Assert.unreachable();
+			didBecomePregnant = false;
 		}
 		return didBecomePregnant;
 	}
@@ -207,14 +197,15 @@ public class CreatureLogic
 			, MutableCreature creature
 	)
 	{
-		Environment env = Environment.getShared();
-		Runnable requestDespawnWithoutDrops = () -> {
-			// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
-			creature.setHealth((byte)0);
-		};
 		boolean isDone;
 		EntityType creatureType = creature.getType();
-		if (env.creatures.COW == creatureType)
+		// If we are peaceful, we want to despawn any creatures which inflict damage.
+		if ((creatureType.attackDamage() > 0) && (Difficulty.PEACEFUL == context.config.difficulty))
+		{
+			creature.newHealth = (byte)0;
+			isDone = true;
+		}
+		else
 		{
 			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
 			
@@ -222,42 +213,17 @@ public class CreatureLogic
 			_updatePathIfTargetMoved(context, creature);
 			
 			// Now, account for the special actions.
-			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
+			Runnable requestDespawnWithoutDrops = () -> {
+				// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
+				creature.setHealth((byte)0);
+			};
+			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId);
 			if (isDone)
 			{
 				creature.setMovementPlan(null);
 				creature.resetDeliberateTick();
 				creature.setExtendedData(machine.freezeToData());
 			}
-		}
-		else if (env.creatures.ORC == creatureType)
-		{
-			// Orcs are hostile mobs so we will kill this entity off if in peaceful mode.
-			if (Difficulty.PEACEFUL == context.config.difficulty)
-			{
-				creature.newHealth = (byte)0;
-				isDone = true;
-			}
-			else
-			{
-				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
-				
-				// Before we attempt to take a special action, see if we have a target which has moved.
-				_updatePathIfTargetMoved(context, creature);
-				
-				// Now, account for the special actions.
-				isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getId(), creature.newTargetEntityId);
-				if (isDone)
-				{
-					creature.setMovementPlan(null);
-					creature.resetDeliberateTick();
-					creature.setExtendedData(machine.freezeToData());
-				}
-			}
-		}
-		else
-		{
-			throw Assert.unreachable();
 		}
 		return isDone;
 	}
@@ -371,7 +337,7 @@ public class CreatureLogic
 		List<AbsoluteLocation> path = null;
 		if (context.currentTick >= mutable.newNextDeliberateActTick)
 		{
-			ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, creatureId);
+			ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, type, creatureId);
 			if (null != newTarget)
 			{
 				EntityLocation targetLocation = newTarget.location();

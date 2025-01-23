@@ -110,7 +110,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, int creatureId)
+	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
 	{
 		ICreatureStateMachine.TargetEntity target = _findPlayerInRange(entityCollection, creatureLocation);
 		if ((null != target) || (Long.MAX_VALUE == _idleDespawnTick))
@@ -129,7 +129,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, int creatureId, int targetEntityId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
@@ -151,7 +151,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 				// We can attack them so choose the target.
 				int index = context.randomInt.applyAsInt(BodyPart.values().length);
 				BodyPart target = BodyPart.values()[index];
-				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, _attackDamage, creatureId);
+				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, _attackDamage, thisCreatureId);
 				context.newChangeSink.next(targetEntityId, takeDamage);
 				// Set us on to cooldown.
 				_lastAttackTick = context.currentTick;
