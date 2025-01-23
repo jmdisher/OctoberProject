@@ -36,6 +36,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -47,10 +48,12 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestServerStateManager
 {
 	private static Environment ENV;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -364,9 +367,9 @@ public class TestServerStateManager
 		Assert.assertEquals(1, callouts.joinedClients.get(clientId2).size());
 		
 		// Load in the cuboids and creatures.
-		CreatureEntity nearCreature = new CreatureEntity(-1, ENV.creatures.COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+		CreatureEntity nearCreature = new CreatureEntity(-1, COW, near.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
 				, null, 0L, 0L, CreatureEntity.NO_TARGET_ENTITY_ID, null, null);
-		CreatureEntity farCreature = new CreatureEntity(-2, ENV.creatures.COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
+		CreatureEntity farCreature = new CreatureEntity(-2, COW, far.newLocation, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)0, (byte)0, (byte)1, (byte)100
 				, null, 0L, 0L, CreatureEntity.NO_TARGET_ENTITY_ID, null, null);
 		
 		CuboidData nearCuboid = CuboidGenerator.createFilledCuboid(near.newLocation.getBlockLocation().getCuboidAddress(), ENV.special.AIR);

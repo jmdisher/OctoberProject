@@ -59,6 +59,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -81,6 +82,7 @@ public class TestSpeculativeProjection
 	private static Item CRAFTING_TABLE_ITEM;
 	private static Item FURNACE_ITEM;
 	private static Block STONE;
+	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
@@ -92,6 +94,7 @@ public class TestSpeculativeProjection
 		CRAFTING_TABLE_ITEM = ENV.items.getItemById("op.crafting_table");
 		FURNACE_ITEM = ENV.items.getItemById("op.furnace");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1988,7 +1991,7 @@ public class TestSpeculativeProjection
 		Entity localEntity = MutableEntity.createForTest(entityId).freeze();
 		projector.setThisEntity(localEntity);
 		int creatureId = -1;
-		CreatureEntity orc = CreatureEntity.create(creatureId, ENV.creatures.ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50);
+		CreatureEntity orc = CreatureEntity.create(creatureId, ORC, new EntityLocation(1.0f, 0.0f, 0.0f), (byte)50);
 		long currentTimeMillis = 1L;
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(airAddress, ENV.special.AIR);

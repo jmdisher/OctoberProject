@@ -31,12 +31,14 @@ public class TestEntityMovementHelpers
 	private static Environment ENV;
 	private static Block AIR;
 	private static Block STONE;
+	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -204,7 +206,7 @@ public class TestEntityMovementHelpers
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 0), STONE.item().number());
 		_Entity entity = new _Entity();
-		entity.type = ENV.creatures.ORC;
+		entity.type = ORC;
 		entity.location = new EntityLocation(16.8f, 16.8f, 1.11f);
 		entity.vector = new EntityLocation(0.0f, 0.0f, -17.64f);
 		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {

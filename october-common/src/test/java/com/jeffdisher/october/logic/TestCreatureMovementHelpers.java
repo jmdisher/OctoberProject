@@ -12,16 +12,19 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 
 
 public class TestCreatureMovementHelpers
 {
 	private static Environment ENV;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -190,6 +193,6 @@ public class TestCreatureMovementHelpers
 
 	private static CreatureEntity _createCow(EntityLocation location)
 	{
-		return CreatureEntity.create(-1, ENV.creatures.COW, location, (byte)10);
+		return CreatureEntity.create(-1, COW, location, (byte)10);
 	}
 }

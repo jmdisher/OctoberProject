@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
 import com.jeffdisher.october.worldgen.StructureLoader;
@@ -123,14 +124,15 @@ public class FlatWorldGenerator implements IWorldGenerator
 		else
 		{
 			// Load in 2 cows near the base of this cuboid if it is at z=0.
+			EntityType cow = env.creatures.getTypeById("op.cow");
 			AbsoluteLocation baseOfCuboid = address.getBase();
 			entities = (0 == address.z())
 					? List.of(CreatureEntity.create(creatureIdAssigner.next()
-							, env.creatures.COW
+							, cow
 							, baseOfCuboid.toEntityLocation()
 							, (byte)100
 						), CreatureEntity.create(creatureIdAssigner.next()
-							, env.creatures.COW
+							, cow
 							, baseOfCuboid.getRelative(5, 5, 0).toEntityLocation()
 							, (byte)100
 					))

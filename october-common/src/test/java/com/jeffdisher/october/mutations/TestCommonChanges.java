@@ -31,6 +31,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -54,6 +55,7 @@ public class TestCommonChanges
 	private static Item PLANK_ITEM;
 	private static Item CHARCOAL_ITEM;
 	private static Block STONE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
@@ -63,6 +65,7 @@ public class TestCommonChanges
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1346,7 +1349,7 @@ public class TestCommonChanges
 		MutableEntity attacker = MutableEntity.createForTest(attackerId);
 		attacker.newLocation = new EntityLocation(10.0f, 10.0f, 0.0f);
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, ENV.creatures.COW
+				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);
@@ -1406,7 +1409,7 @@ public class TestCommonChanges
 		// We assume that this is key 1.
 		entity.newHotbar[0] = 1;
 		CreatureEntity creature = CreatureEntity.create(targetId
-				, ENV.creatures.COW
+				, COW
 				, new EntityLocation(9.0f, 9.0f, 0.0f)
 				, (byte) 100
 		);

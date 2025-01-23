@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MinimalEntity;
@@ -29,10 +30,12 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class TestOrcStateMachine
 {
 	private static Environment ENV;
+	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -49,9 +52,9 @@ public class TestOrcStateMachine
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ENV.creatures.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
 		
-		OrcStateMachine machine = new OrcStateMachine(ENV.creatures.ORC, null);
+		OrcStateMachine machine = new OrcStateMachine(ORC, null);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.type(), orc.id());
 		
@@ -70,7 +73,7 @@ public class TestOrcStateMachine
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ENV.creatures.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
 		
 		int[] targetId = new int[1];
 		IMutationEntity<?>[] message = new IMutationEntity<?>[1];
@@ -83,7 +86,7 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = new OrcStateMachine(ENV.creatures.ORC, OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = new OrcStateMachine(ORC, OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.type(), orc.id());
 		Assert.assertEquals(player.id(), target.id());
 		Assert.assertEquals(player.location(), target.location());
@@ -122,13 +125,13 @@ public class TestOrcStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity orc = CreatureEntity.create(assigner.next(), ENV.creatures.ORC, orcLocation, (byte)100);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
 		
 		long startTick = 1000L;
 		TickProcessingContext context = _createContextForTick(startTick, Map.of(orc.id(), orc), Map.of(), null, assigner);
 		
 		// Create the orc and ask it to select a target to show that it updates its despawn timer.
-		OrcStateMachine machine = new OrcStateMachine(ENV.creatures.ORC, OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
+		OrcStateMachine machine = new OrcStateMachine(ORC, OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L, Long.MAX_VALUE)));
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(), Set.of(orc)), orc.location(), orc.type(), orc.id());
 		Assert.assertNull(target);
 		long idleTickDelay = (OrcStateMachine.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);

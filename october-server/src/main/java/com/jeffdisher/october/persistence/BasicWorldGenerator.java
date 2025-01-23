@@ -183,6 +183,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockCarrotMature;
 	private final Block _blockIronOre;
 	private final Block _blockWaterSource;
+	private final EntityType _cow;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
 	private final Structure _basicTree;
@@ -204,6 +205,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
 		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
+		
+		_cow = env.creatures.getTypeById("op.cow");
 		
 		StructureLoader loader = new StructureLoader(env.items, env.blocks);
 		_coalNode = loader.loadFromStrings(COAL_NODE);
@@ -331,7 +334,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, env.creatures.COW
+						, _cow
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
 						, (byte)100
 				));
@@ -854,7 +857,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			// If this is a field, and we could fill a gully, spawn a small herd of cows in the centre of the cuboid.
 			if ((FIELD_CODE == biome.code) && didFillGully)
 			{
-				typeToSpawn = env.creatures.COW;
+				typeToSpawn = _cow;
 			}
 		}
 		return typeToSpawn;

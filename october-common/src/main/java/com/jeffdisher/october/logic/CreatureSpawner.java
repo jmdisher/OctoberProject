@@ -15,6 +15,7 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Encoding;
@@ -230,12 +231,14 @@ public class CreatureSpawner
 		{
 			EntityLocation location = goodSpawningLocation.toEntityLocation();
 			
-			// For now, we only dynamically spawn orcs.
-			EntityVolume creatureVolume = env.creatures.ORC.volume();
+			// Spawn a hostile mob at random (in the future, this will need to account for size).
+			int spawnIndex = context.randomInt.applyAsInt(env.creatures.HOSTILE_MOBS.length);
+			EntityType spawnType = env.creatures.HOSTILE_MOBS[spawnIndex];
+			EntityVolume creatureVolume = spawnType.volume();
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
-				spawned = CreatureEntity.create(context.idAssigner.next(), env.creatures.ORC, location, env.creatures.ORC.maxHealth());
+				spawned = CreatureEntity.create(context.idAssigner.next(), spawnType, location, spawnType.maxHealth());
 			}
 			else
 			{

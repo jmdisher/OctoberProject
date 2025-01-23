@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
@@ -25,11 +26,13 @@ public class TestSpatialHelpers
 	private static final EntityVolume VOLUME = new EntityVolume(1.8f, 0.5f);
 	private static Environment ENV;
 	private static Block STONE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -249,7 +252,7 @@ public class TestSpatialHelpers
 		EntityLocation location1 = new EntityLocation(1.0f, -1.0f, 12.0f);
 		MutableEntity entity1 = MutableEntity.createWithLocation(1, location1, location1);
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
-		MinimalEntity entity2 = new MinimalEntity(2, ENV.creatures.COW, location2);
+		MinimalEntity entity2 = new MinimalEntity(2, COW, location2);
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
 		float entityDistance = SpatialHelpers.distanceFromEyeToEntitySurface(entity1, entity2);
@@ -266,7 +269,7 @@ public class TestSpatialHelpers
 		EntityVolume volume1 = ENV.creatures.PLAYER.volume();
 		EntityLocation location2 = new EntityLocation(1.8f, -1.8f, 12.6f);
 		EntityLocation base2 = location2;
-		EntityVolume volume2 = ENV.creatures.COW.volume();
+		EntityVolume volume2 = COW.volume();
 		
 		float distance1 = SpatialHelpers.distanceFromLocationToVolume(location1, base2, volume2);
 		float distance2 = SpatialHelpers.distanceFromLocationToVolume(location2, base1, volume1);

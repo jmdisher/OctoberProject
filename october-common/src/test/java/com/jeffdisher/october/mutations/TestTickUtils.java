@@ -19,6 +19,7 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.worldgen.CuboidGenerator;
@@ -29,12 +30,14 @@ public class TestTickUtils
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Block STONE;
+	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -67,7 +70,7 @@ public class TestTickUtils
 		int[] damage = new int[creatureCount];
 		for (int i = 0; i < creatureCount; ++i)
 		{
-			CreatureEntity creature = CreatureEntity.create(id, ENV.creatures.ORC, startLocation, health);
+			CreatureEntity creature = CreatureEntity.create(id, ORC, startLocation, health);
 			creatures.put(creature.id(), creature);
 			id -= 1;
 			startLocation = new EntityLocation(startLocation.x(), startLocation.y(), startLocation.z() + spreadZ);

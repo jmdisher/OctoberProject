@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
@@ -66,12 +67,14 @@ public class TestServerRunner
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Block STONE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -449,7 +452,7 @@ public class TestServerRunner
 		
 		// We expect to see a cow.
 		PartialEntity cow = network.waitForPeerEntity(clientId1, -1);
-		Assert.assertEquals(ENV.creatures.COW, cow.type());
+		Assert.assertEquals(COW, cow.type());
 		
 		// Disconnect.
 		server.clientDisconnected(clientId1);
@@ -464,7 +467,7 @@ public class TestServerRunner
 		
 		// NOTE:  In the future, this may not be a valid check since this assumes that they are renumbered since they are being reloaded.
 		cow = network.waitForPeerEntity(clientId1, -2);
-		Assert.assertEquals(ENV.creatures.COW, cow.type());
+		Assert.assertEquals(COW, cow.type());
 		
 		// We shouldn't see any other entities (no duplicated creature state).
 		Assert.assertEquals(1, network.clientPartialEntities.get(clientId1).size());
@@ -550,9 +553,9 @@ public class TestServerRunner
 		Assert.assertNotNull(entity2);
 		
 		// We expect them both to see a cow and the other client.
-		Assert.assertEquals(ENV.creatures.COW, network.waitForPeerEntity(clientId1, -1).type());
+		Assert.assertEquals(COW, network.waitForPeerEntity(clientId1, -1).type());
 		Assert.assertEquals(ENV.creatures.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
-		Assert.assertEquals(ENV.creatures.COW, network.waitForPeerEntity(clientId2, -1).type());
+		Assert.assertEquals(COW, network.waitForPeerEntity(clientId2, -1).type());
 		Assert.assertEquals(ENV.creatures.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
 		
 		// Now, teleport one of the entities to the other island.
@@ -564,13 +567,13 @@ public class TestServerRunner
 		// Wait for the old entities to disappear and the new cow to appear.
 		network.waitForEntityRemoval(clientId2, -1);
 		network.waitForEntityRemoval(clientId2, clientId1);
-		Assert.assertEquals(ENV.creatures.COW, network.waitForPeerEntity(clientId2, -2).type());
+		Assert.assertEquals(COW, network.waitForPeerEntity(clientId2, -2).type());
 		network.waitForEntityRemoval(clientId1, clientId2);
 		
 		// Move the other entity to this same location and observe the updates from their perspective.
 		monitoringAgent.getCommandSink().submitEntityMutation(clientId1, command);
 		network.waitForEntityRemoval(clientId1, -1);
-		Assert.assertEquals(ENV.creatures.COW, network.waitForPeerEntity(clientId1, -2).type());
+		Assert.assertEquals(COW, network.waitForPeerEntity(clientId1, -2).type());
 		Assert.assertEquals(ENV.creatures.PLAYER, network.waitForPeerEntity(clientId1, clientId2).type());
 		Assert.assertEquals(ENV.creatures.PLAYER, network.waitForPeerEntity(clientId2, clientId1).type());
 		
@@ -1141,7 +1144,7 @@ public class TestServerRunner
 				CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(raw);
 				EntityLocation base = address.getBase().toEntityLocation();
 				CreatureEntity cow = CreatureEntity.create(creatureIdAssigner.next()
-						, ENV.creatures.COW
+						, COW
 						, new EntityLocation(base.x() + 30.0f, base.y() + 0.0f, base.z() + 1.0f)
 						, (byte)100
 				);

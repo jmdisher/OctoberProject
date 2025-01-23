@@ -13,10 +13,12 @@ import com.jeffdisher.october.creatures.CowStateMachine;
 public class TestMutableCreature
 {
 	private static Environment ENV;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -38,7 +40,7 @@ public class TestMutableCreature
 	public void healthClearsPlan()
 	{
 		CreatureEntity middle = new CreatureEntity(-1
-				, ENV.creatures.COW
+				, COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)0
@@ -65,7 +67,7 @@ public class TestMutableCreature
 	private static CreatureEntity _buildTestEntity()
 	{
 		return CreatureEntity.create(-1
-				, ENV.creatures.COW
+				, COW
 				, new EntityLocation(0.0f, 0.0f, 0.0f)
 				, (byte)50
 		);

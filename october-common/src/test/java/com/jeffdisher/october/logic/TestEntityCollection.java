@@ -13,16 +13,19 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.MutableEntity;
 
 
 public class TestEntityCollection
 {
 	private static Environment ENV;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -102,6 +105,6 @@ public class TestEntityCollection
 
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
-		return CreatureEntity.create(id, ENV.creatures.COW, location, (byte)10);
+		return CreatureEntity.create(id, COW, location, (byte)10);
 	}
 }

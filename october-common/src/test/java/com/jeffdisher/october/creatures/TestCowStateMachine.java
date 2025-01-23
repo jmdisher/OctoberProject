@@ -16,6 +16,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
@@ -27,11 +28,13 @@ public class TestCowStateMachine
 {
 	private static Environment ENV;
 	private static Item WHEAT;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		WHEAT = ENV.items.getItemById("op.wheat_item");
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -42,7 +45,7 @@ public class TestCowStateMachine
 	@Test
 	public void enterLoveMode()
 	{
-		CowStateMachine machine = new CowStateMachine(ENV.creatures.COW, null);
+		CowStateMachine machine = new CowStateMachine(COW, null);
 		machine.applyItem(WHEAT);
 		Object extendedData = machine.freezeToData();
 		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(extendedData);
@@ -54,9 +57,9 @@ public class TestCowStateMachine
 	{
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
 		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
-		CreatureEntity father = CreatureEntity.create(assigner.next(), ENV.creatures.COW, fatherLocation, (byte)100);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100);
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CreatureEntity mother = CreatureEntity.create(assigner.next(), ENV.creatures.COW, motherLocation, (byte)100);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		
 		int[] targetId = new int[1];
 		IMutationEntity<?>[] message = new IMutationEntity<?>[1];
@@ -69,7 +72,7 @@ public class TestCowStateMachine
 		TickProcessingContext context = _createContext(Map.of(father.id(), father, mother.id(), mother), messageAcceptor, assigner);
 		
 		// Start with them both in a love mode.
-		CowStateMachine fatherMachine = new CowStateMachine(ENV.creatures.COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
+		CowStateMachine fatherMachine = new CowStateMachine(COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
 		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.type(), father.id(), mother.id());
 		Assert.assertTrue(didTakeAction);
 		// We should see the father sending a message
@@ -78,7 +81,7 @@ public class TestCowStateMachine
 		Assert.assertTrue(message[0] instanceof EntityChangeImpregnateCreature);
 		message[0] = null;
 		
-		CowStateMachine motherMachine = new CowStateMachine(ENV.creatures.COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
+		CowStateMachine motherMachine = new CowStateMachine(COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
 		// The mother should not take any action since they are waiting for the father.
 		didTakeAction = motherMachine.doneSpecialActions(context, null, null, mother.location(), mother.type(), mother.id(), father.id());
 		Assert.assertFalse(didTakeAction);
@@ -96,7 +99,7 @@ public class TestCowStateMachine
 	public void becomePregnant()
 	{
 		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
-		CowStateMachine machine = new CowStateMachine(ENV.creatures.COW, extendedData);
+		CowStateMachine machine = new CowStateMachine(COW, extendedData);
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		machine.setPregnant(location);
 		extendedData = machine.freezeToData();
@@ -110,13 +113,13 @@ public class TestCowStateMachine
 	{
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
 		Object extendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, location));
-		CowStateMachine machine = new CowStateMachine(ENV.creatures.COW, extendedData);
+		CowStateMachine machine = new CowStateMachine(COW, extendedData);
 		TickProcessingContext context = _createContext(null, null, new CreatureIdAssigner());
 		CreatureEntity[] offspring = new CreatureEntity[1];
 		boolean didTakeAction = machine.doneSpecialActions(context, (CreatureEntity spawn) -> {
 			Assert.assertNull(offspring[0]);
 			offspring[0] = spawn;
-		}, null, null, ENV.creatures.COW, 0, 0);
+		}, null, null, COW, 0, 0);
 		Assert.assertTrue(didTakeAction);
 		extendedData = machine.freezeToData();
 		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(extendedData);

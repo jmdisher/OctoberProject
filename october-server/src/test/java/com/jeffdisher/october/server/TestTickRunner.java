@@ -53,6 +53,7 @@ import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -84,6 +85,7 @@ public class TestTickRunner
 	private static Item WATER_STRONG;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
@@ -105,6 +107,7 @@ public class TestTickRunner
 		WATER_STRONG = ENV.items.getItemById("op.water_strong");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -1696,7 +1699,7 @@ public class TestTickRunner
 		cuboid.setData15(AspectRegistry.BLOCK, spawn.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, ENV.creatures.COW, entityLocation, (byte)15);
+		CreatureEntity creature = CreatureEntity.create(creatureId, COW, entityLocation, (byte)15);
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
@@ -1767,7 +1770,7 @@ public class TestTickRunner
 		AbsoluteLocation spawn = address.getBase().getRelative(0, 6, 7);
 		EntityLocation entityLocation = spawn.toEntityLocation();
 		int creatureId = -1;
-		CreatureEntity creature = CreatureEntity.create(creatureId, ENV.creatures.COW, entityLocation, (byte)15);
+		CreatureEntity creature = CreatureEntity.create(creatureId, COW, entityLocation, (byte)15);
 		
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(creature), List.of(), Map.of())

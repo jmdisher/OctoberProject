@@ -67,12 +67,14 @@ public class TestResourceLoader
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Block STONE;
+	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -639,7 +641,7 @@ public class TestResourceLoader
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		
 		int id = -5;
-		EntityType type = ENV.creatures.COW;
+		EntityType type = COW;
 		EntityLocation location = new EntityLocation(1.0f, 2.0f, 3.0f);
 		EntityLocation velocity = new EntityLocation(4.0f, 5.0f, 6.0f);
 		byte health = 50;
