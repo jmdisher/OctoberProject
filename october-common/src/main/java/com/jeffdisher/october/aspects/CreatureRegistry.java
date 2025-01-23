@@ -9,6 +9,7 @@ import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Item;
+import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -38,7 +39,9 @@ public class CreatureRegistry
 				, (byte)0
 				, null
 				, null
+				, null
 		);
+		Item beef = items.getItemById("op.beef");
 		this.COW = _packageEntity((byte)2
 				, "op.cow"
 				, "COW"
@@ -48,11 +51,13 @@ public class CreatureRegistry
 				, 7.0f
 				, 1.0f
 				, (byte)0
+				, new Items[] { new Items(beef, 5) }
 				, items.getItemById("op.wheat_item")
 				, (EntityType type, Object extendedData) -> {
 					return new CowStateMachine(type, extendedData);
 				}
 		);
+		Item ironDust = items.getItemById("op.iron_dust");
 		this.ORC = _packageEntity((byte)3
 				, "op.orc"
 				, "ORC"
@@ -62,6 +67,7 @@ public class CreatureRegistry
 				, 8.0f
 				, 1.0f
 				, (byte)5
+				, new Items[] { new Items(ironDust, 1) }
 				, null
 				, (EntityType type, Object extendedData) -> {
 					return new OrcStateMachine(type, extendedData);
@@ -87,6 +93,7 @@ public class CreatureRegistry
 			, float viewDistance
 			, float actionDistance
 			, byte attackDamage
+			, Items[] drops
 			, Item breedingItem
 			, BiFunction<EntityType, Object, ICreatureStateMachine> stateMachineFactory
 	)
@@ -105,6 +112,7 @@ public class CreatureRegistry
 				, viewDistance
 				, actionDistance
 				, attackDamage
+				, drops
 				, breedingItem
 				, innerFactory
 		);

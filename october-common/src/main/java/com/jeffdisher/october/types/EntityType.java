@@ -17,6 +17,7 @@ public record EntityType(byte number
 		, float viewDistance
 		, float actionDistance
 		, byte attackDamage
+		, Items[] drops
 		, Item breedingItem
 		, Function<Object, ICreatureStateMachine> stateMachineFactory
 )

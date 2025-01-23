@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
@@ -108,25 +107,11 @@ public class MutableCreature implements IMutableCreatureEntity
 	@Override
 	public void handleEntityDeath(TickProcessingContext context)
 	{
-		// TODO:  Define this drop loot table in data once we have a better sense of what mob information should be represented declaratively.
-		Environment env = Environment.getShared();
 		EntityLocation entityCentre = SpatialHelpers.getCentreFeetLocation(this);
-		Items toDrop;
-		if (env.creatures.COW == _creature.type())
+		for (Items toDrop : _creature.type().drops())
 		{
-			// We will try to drop 5 beef, although they may not all fit if the storage overflows.
-			toDrop = new Items(env.items.getItemById("op.beef"), 5);
+			context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		}
-		else if (env.creatures.ORC == _creature.type())
-		{
-			// We will drop iron dust from the orc, creating an incentive to attack them (although this might be over-powered).
-			toDrop = new Items(env.items.getItemById("op.iron_dust"), 1);
-		}
-		else
-		{
-			throw Assert.unreachable();
-		}
-		context.mutationSink.next(new MutationBlockStoreItems(entityCentre.getBlockLocation(), toDrop, null, Inventory.INVENTORY_ASPECT_INVENTORY));
 		this.newHealth = 0;
 	}
 
