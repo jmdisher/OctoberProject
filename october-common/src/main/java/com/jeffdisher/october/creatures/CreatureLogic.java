@@ -79,6 +79,7 @@ public class CreatureLogic
 			if (didChangeState)
 			{
 				creature.setMovementPlan(null);
+				creature.resetDeliberateTick();
 			}
 			Object updated = cow.freezeToData();
 			if (originalData != updated)

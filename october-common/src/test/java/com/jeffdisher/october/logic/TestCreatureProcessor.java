@@ -22,6 +22,7 @@ import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.mutations.EntityChangeApplyItemToCreature;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationBlock;
@@ -527,27 +528,60 @@ public class TestCreatureProcessor
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
 		EntityLocation location2 = new EntityLocation(0.9f, 0.0f, 0.0f);
+		EntityLocation playerLocation = new EntityLocation(0.5f, 0.5f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
-		MutableCreature mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), COW, location1, (byte)100));
-		CreatureLogic.applyItemToCreature(wheat_item, mutable);
-		CreatureEntity cow1 = mutable.freeze();
-		mutable = MutableCreature.existing(CreatureEntity.create(idAssigner.next(), COW, location2, (byte)100));
-		CreatureLogic.applyItemToCreature(wheat_item, mutable);
-		CreatureEntity cow2 = mutable.freeze();
+		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
+		mutablePlayer.newInventory.addAllItems(wheat_item, 3);
+		mutablePlayer.setSelectedKey(1);
+		Entity player = mutablePlayer.freeze();
+		CreatureEntity cow1 = CreatureEntity.create(idAssigner.next(), COW, location1, (byte)100);
+		CreatureEntity cow2 = CreatureEntity.create(idAssigner.next(), COW, location2, (byte)100);
 		
+		// First step, we should see the cows both take notice of the player since it has wheat in its hand.
 		Map<Integer, CreatureEntity> creaturesById = new HashMap<>(Map.of(cow1.id(), cow1
 				, cow2.id(), cow2
 		));
 		TickProcessingContext context = _createContext();
+		context = _updateContextWithPlayer(context, player);
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), creaturesById.values())
+				, new EntityCollection(Set.of(player), creaturesById.values())
 				, Map.of()
 		);
+		creaturesById.putAll(group.updatedCreatures());
+		
+		// Verify that they have set the targets.
+		Assert.assertEquals(player.id(), creaturesById.get(cow1.id()).targetEntityId());
+		Assert.assertEquals(player.id(), creaturesById.get(cow2.id()).targetEntityId());
+		
+		// Now, feed them using the mutations we would expect.
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(player), creaturesById.values())
+				, Map.of(cow1.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
+						, cow2.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
+				)
+		);
+		creaturesById.putAll(group.updatedCreatures());
+		
+		// Run another tick so that they see each other in love mode.
+		group = CreatureProcessor.processCreatureGroupParallel(thread
+				, creaturesById
+				, context
+				, new EntityCollection(Set.of(player), creaturesById.values())
+				, Map.of(cow1.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
+						, cow2.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
+				)
+		);
+		creaturesById.putAll(group.updatedCreatures());
+		
+		// Verify that they now target each other.
+		Assert.assertEquals(cow2.id(), creaturesById.get(cow1.id()).targetEntityId());
+		Assert.assertEquals(cow1.id(), creaturesById.get(cow2.id()).targetEntityId());
 		
 		// Nothing should have happened yet, as they just found their mating partners so run the next tick.
-		creaturesById.putAll(group.updatedCreatures());
 		Map<Integer, IMutationEntity<IMutableCreatureEntity>> changes = new HashMap<>();
 		context = _updateContextWithCreatures(context, creaturesById.values(), new IChangeSink() {
 			@Override
