@@ -210,6 +210,7 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, false
+				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -251,6 +252,7 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, false
+				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -293,6 +295,7 @@ public class TestCreatureProcessor
 				, movementPlan
 				, 0L
 				, false
+				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -454,8 +457,9 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(1, updated.targetEntityId());
+		// We haven't yet attacked so there will be no extended data.
 		OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertNotNull(extended);
+		Assert.assertNull(extended);
 		
 		// Make sure that the movement plan ends at the player.
 		List<AbsoluteLocation> movementPlan = updated.movementPlan();
@@ -787,9 +791,9 @@ public class TestCreatureProcessor
 			Assert.assertTrue(airCreature.location().x() > oldAir);
 			// Make sure that the air creature is further ahead.
 			Assert.assertTrue(airCreature.location().x() > waterCreature.location().x());
-			// Make sure we still have our plans.
-			Assert.assertNotNull(waterCreature.extendedData());
-			Assert.assertNotNull(airCreature.extendedData());
+			// We haven't yet attacked so there will be no extended data.
+			Assert.assertNull(waterCreature.extendedData());
+			Assert.assertNull(airCreature.extendedData());
 		}
 		Assert.assertEquals(3.5f, waterCreature.location().x(), 0.01f);
 		Assert.assertEquals(5.0f, airCreature.location().x(), 0.01f);
@@ -843,10 +847,12 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
+			// We haven't yet attacked so there will be no extended data.
+			Assert.assertNull(creature.extendedData());
 			// We expect the 13th iteration to be the final one (since we now swim up quickly).
 			if (i < 12)
 			{
-				Assert.assertNotNull(creature.extendedData());
+				Assert.assertNotNull(creature.movementPlan());
 			}
 			else
 			{
@@ -1082,6 +1088,7 @@ public class TestCreatureProcessor
 				, movementPlan
 				, entity.lastActionTick()
 				, shouldTakeImmediateAction
+				, entity.despawnKeepAliveTick()
 				, targetEntityId
 				, targetPreviousLocation
 				, entity.extendedData()

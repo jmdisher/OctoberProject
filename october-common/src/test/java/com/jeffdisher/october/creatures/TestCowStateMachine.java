@@ -73,7 +73,7 @@ public class TestCowStateMachine
 		
 		// Start with them both in a love mode.
 		CowStateMachine fatherMachine = new CowStateMachine(COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
-		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, null, father.location(), father.type(), father.id(), mother.id());
+		boolean didTakeAction = fatherMachine.doneSpecialActions(context, null, father.location(), father.type(), father.id(), mother.id());
 		Assert.assertTrue(didTakeAction);
 		// We should see the father sending a message
 		Assert.assertEquals(mother.id(), targetId[0]);
@@ -83,7 +83,7 @@ public class TestCowStateMachine
 		
 		CowStateMachine motherMachine = new CowStateMachine(COW, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null)));
 		// The mother should not take any action since they are waiting for the father.
-		didTakeAction = motherMachine.doneSpecialActions(context, null, null, mother.location(), mother.type(), mother.id(), father.id());
+		didTakeAction = motherMachine.doneSpecialActions(context, null, mother.location(), mother.type(), mother.id(), father.id());
 		Assert.assertFalse(didTakeAction);
 		// The mother should be unchanged.
 		Assert.assertNull(message[0]);
@@ -119,7 +119,7 @@ public class TestCowStateMachine
 		boolean didTakeAction = machine.doneSpecialActions(context, (CreatureEntity spawn) -> {
 			Assert.assertNull(offspring[0]);
 			offspring[0] = spawn;
-		}, null, null, COW, 0, 0);
+		}, null, COW, 0, 0);
 		Assert.assertTrue(didTakeAction);
 		extendedData = machine.freezeToData();
 		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(extendedData);

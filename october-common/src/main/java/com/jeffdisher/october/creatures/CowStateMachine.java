@@ -144,7 +144,7 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
 	{
 		// See if we are pregnant or searching for our mate.
 		boolean didTakeAction = false;

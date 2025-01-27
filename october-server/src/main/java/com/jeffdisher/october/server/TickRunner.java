@@ -839,8 +839,10 @@ public class TickRunner
 						Assert.assertTrue(null == old);
 						
 						// Load any creatures associated with this cuboid.
-						for (CreatureEntity creature : suspended.creatures())
+						for (CreatureEntity loadedCreature : suspended.creatures())
 						{
+							// We initialize the creature's despawn keep-alive tick to now.
+							CreatureEntity creature = loadedCreature.updateKeepAliveTick(_snapshot.tickNumber);
 							mutableCreatureState.put(creature.id(), creature);
 						}
 						

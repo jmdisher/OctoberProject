@@ -44,6 +44,11 @@ public class CreatureLogic
 	 * The chance of making an idle action instead, of we fail to make a deliberate action when acting.
 	 */
 	public static final int IDLE_ACTION_DENOMINATOR = 30;
+	/**
+	 * The amount of time a hostile mob will continue to live if not taking any deliberate action before despawn (5
+	 * minutes).
+	 */
+	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 
 	/**
@@ -207,22 +212,28 @@ public class CreatureLogic
 		}
 		else
 		{
-			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
-			
-			// Before we attempt to take a special action, see if we have a target which has moved.
-			_updatePathIfTargetMoved(context, creature);
-			
-			// Now, account for the special actions.
-			Runnable requestDespawnWithoutDrops = () -> {
+			// See if this should despawn.
+			long despawnTick = creature.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
+			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
+			{
 				// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
 				creature.setHealth((byte)0);
-			};
-			isDone = machine.doneSpecialActions(context, creatureSpawner, requestDespawnWithoutDrops, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId);
-			if (isDone)
+				isDone = true;
+			}
+			else
 			{
-				creature.setMovementPlan(null);
-				creature.setReadyForAction();
-				creature.setExtendedData(machine.freezeToData());
+				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
+				
+				// Before we attempt to take a special action, see if we have a target which has moved.
+				_updatePathIfTargetMoved(context, creature);
+				
+				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId);
+				if (isDone)
+				{
+					creature.setMovementPlan(null);
+					creature.setReadyForAction();
+					creature.setExtendedData(machine.freezeToData());
+				}
 			}
 		}
 		return isDone;
@@ -360,6 +371,8 @@ public class CreatureLogic
 				path.remove(0);
 				// (we will still return an empty path just to communicate that we made a decision.
 			}
+			// As long as we found a new deliberate target, reset our despawn timeout.
+			mutable.newDespawnKeepAliveTick = context.currentTick;
 		}
 		return path;
 	}

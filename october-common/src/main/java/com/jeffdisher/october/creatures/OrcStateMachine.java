@@ -28,10 +28,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 {
 	// We will only allow one attack per second.
 	public static final long ATTACK_COOLDOWN_MILLIS = 1000L;
-	/**
-	 * The amount of time will orc will continue to live if not taking any deliberate action before despawn (5 minutes).
-	 */
-	public static final long MILLIS_UNTIL_NO_ACTION_DESPAWN = 5L * 60L * 1_000L;
 
 	/**
 	 * TESTING ONLY!
@@ -44,7 +40,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	{
 		return (null != testing)
 				? new _ExtendedData(testing.lastAttackTick
-						, testing.idleDespawnTick
 				)
 				: null
 		;
@@ -62,7 +57,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 		_ExtendedData extended = (_ExtendedData) data;
 		return (null != extended)
 				? new Test_ExtendedData(extended.lastAttackTick
-						, extended.idleDespawnTick
 				)
 				: null
 		;
@@ -74,7 +68,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 	private final byte _attackDamage;
 	private final _ExtendedData _originalData;
 	private long _lastAttackTick;
-	private long _idleDespawnTick;
 
 	/**
 	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
@@ -92,13 +85,10 @@ public class OrcStateMachine implements ICreatureStateMachine
 		if (null != data)
 		{
 			_lastAttackTick = data.lastAttackTick;
-			_idleDespawnTick = data.idleDespawnTick;
 		}
 		else
 		{
 			_lastAttackTick = 0L;
-			// We will initialize this when making the first deliberate action.
-			_idleDespawnTick = Long.MAX_VALUE;
 		}
 	}
 
@@ -112,13 +102,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
 	{
-		ICreatureStateMachine.TargetEntity target = _findPlayerInRange(entityCollection, creatureLocation);
-		if ((null != target) || (Long.MAX_VALUE == _idleDespawnTick))
-		{
-			// We made a deliberate action or just started so delay our idle despawn.
-			_idleDespawnTick = context.currentTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
-		}
-		return target;
+		return _findPlayerInRange(entityCollection, creatureLocation);
 	}
 
 	@Override
@@ -129,7 +113,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, Runnable requestDespawnWithoutDrops, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
@@ -159,19 +143,14 @@ public class OrcStateMachine implements ICreatureStateMachine
 				didTakeAction = true;
 			}
 		}
-		if (!didTakeAction && (context.currentTick >= _idleDespawnTick))
-		{
-			// We aren't doing anything so despawn without drops.
-			requestDespawnWithoutDrops.run();
-		}
 		return didTakeAction;
 	}
 
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (Long.MAX_VALUE != _idleDespawnTick)
-				? new _ExtendedData(_lastAttackTick, _idleDespawnTick)
+		_ExtendedData newData = (_lastAttackTick > 0L)
+				? new _ExtendedData(_lastAttackTick)
 				: null
 		;
 		_ExtendedData matchingData = (null != _originalData)
@@ -203,12 +182,10 @@ public class OrcStateMachine implements ICreatureStateMachine
 	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
 	 */
 	public static record Test_ExtendedData(long lastAttackTick
-			, long idleDespawnTick
 	)
 	{}
 
 	private static record _ExtendedData(long lastAttackTick
-			, long idleDespawnTick
 	)
 	{}
 }

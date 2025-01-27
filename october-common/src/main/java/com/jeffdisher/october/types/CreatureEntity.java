@@ -34,6 +34,8 @@ public record CreatureEntity(int id
 		, long lastActionTick
 		// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
 		, boolean shouldTakeImmediateAction
+		// The last tick where some action was taken to stop this creature from despawning (if it is a despawning type).
+		, long despawnKeepAliveTick
 		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
 		, int targetEntityId
 		// The last block location of the target which was used to determine the movementPlan.
@@ -75,9 +77,31 @@ public record CreatureEntity(int id
 				, null
 				, 0L
 				, false
+				, 0L
 				, NO_TARGET_ENTITY_ID
 				, null
 				, null
+		);
+	}
+
+	public CreatureEntity updateKeepAliveTick(long tick)
+	{
+		return new CreatureEntity(this.id
+				, this.type
+				, this.location
+				, this.velocity
+				, this.yaw
+				, this.pitch
+				, this.health
+				, this.breath
+				
+				, this.movementPlan
+				, this.lastActionTick
+				, this.shouldTakeImmediateAction
+				, tick
+				, this.targetEntityId
+				, this.targetPreviousLocation
+				, this.extendedData
 		);
 	}
 }

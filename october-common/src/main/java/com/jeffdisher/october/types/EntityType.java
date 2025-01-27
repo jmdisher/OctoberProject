@@ -27,4 +27,10 @@ public record EntityType(byte number
 		// Use 2x the view distance to account for obstacles.
 		return 2.0f * this.viewDistance;
 	}
+
+	public boolean canDespawn()
+	{
+		// Anything which can't breed can despawn.
+		return (null == this.breedingItem);
+	}
 }

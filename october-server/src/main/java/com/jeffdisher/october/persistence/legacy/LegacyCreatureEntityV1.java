@@ -81,6 +81,7 @@ public record LegacyCreatureEntityV1(int id
 				, movementPlan
 				, 0L
 				, false
+				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, extendedData

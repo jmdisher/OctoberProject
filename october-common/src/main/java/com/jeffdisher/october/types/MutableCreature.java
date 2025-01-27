@@ -40,6 +40,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public List<AbsoluteLocation> newMovementPlan;
 	public long newLastActionTick;
 	public boolean newShouldTakeAction;
+	public long newDespawnKeepAliveTick;
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
 	public Object newExtendedData;
@@ -57,6 +58,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newMovementPlan = creature.movementPlan();
 		this.newLastActionTick = creature.lastActionTick();
 		this.newShouldTakeAction = creature.shouldTakeImmediateAction();
+		this.newDespawnKeepAliveTick = creature.despawnKeepAliveTick();
 		this.newTargetEntityId = creature.targetEntityId();
 		this.newTargetPreviousLocation = creature.targetPreviousLocation();
 		this.newExtendedData = creature.extendedData();
@@ -255,6 +257,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, (null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
 					, this.newLastActionTick
 					, this.newShouldTakeAction
+					, this.newDespawnKeepAliveTick
 					, this.newTargetEntityId
 					, this.newTargetPreviousLocation
 					, this.newExtendedData

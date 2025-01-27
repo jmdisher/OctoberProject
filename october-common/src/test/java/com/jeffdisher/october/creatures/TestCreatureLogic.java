@@ -14,6 +14,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -36,11 +37,13 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestCreatureLogic
 {
 	private static Environment ENV;
+	private static EntityType COW;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		COW = ENV.creatures.getTypeById("op.cow");
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
@@ -283,6 +286,55 @@ public class TestCreatureLogic
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
 		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
+	}
+
+	@Test
+	public void despawnAfterIdleTimeout()
+	{
+		// We will show that orcs despawn when idle while cows don't.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		long startTick = 1000L;
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAliveTick(startTick);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100).updateKeepAliveTick(startTick);
+		
+		// We will take a special action where nothing should happen.
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return location.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(location.getBlockAddress(), input)
+					: null
+			;
+		};
+		// (we won't expose any of the entities since we don't expect targeting).
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> null;
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(startTick)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		MutableCreature mutableCow = MutableCreature.existing(cow);
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		boolean didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableCow);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals((byte)100, mutableCow.newHealth);
+		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals((byte)100, mutableOrc.newHealth);
+		
+		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
+		context = ContextBuilder.build()
+				.tick(startTick + (CreatureLogic.MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick))
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableCow);
+		Assert.assertFalse(didAct);
+		Assert.assertEquals((byte)100, mutableCow.newHealth);
+		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
+		Assert.assertTrue(didAct);
+		Assert.assertEquals((byte)0,mutableOrc.newHealth);
 	}
 
 

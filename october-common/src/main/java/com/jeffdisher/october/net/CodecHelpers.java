@@ -265,6 +265,7 @@ public class CodecHelpers
 		List<AbsoluteLocation> movementPlan = null;
 		long lastActionTick = 0L;
 		boolean shouldTakeImmediateAction = false;
+		long despawnKeepAliveTick = 0L;
 		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
 		AbsoluteLocation targetPreviousLocation = null;
 		Object extendedData = null;
@@ -280,6 +281,7 @@ public class CodecHelpers
 				, movementPlan
 				, lastActionTick
 				, shouldTakeImmediateAction
+				, despawnKeepAliveTick
 				, targetEntityId
 				, targetPreviousLocation
 				, extendedData
