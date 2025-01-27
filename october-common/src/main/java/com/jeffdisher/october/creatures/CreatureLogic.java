@@ -230,8 +230,13 @@ public class CreatureLogic
 				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId, creature.newLastAttackTick);
 				if (isDone)
 				{
-					creature.setMovementPlan(null);
-					creature.setReadyForAction();
+					// If we took a special action and are livestock, we should clear our plan.
+					// TODO:  These assumptions can be cleaned up when the machien implementations are inlined.
+					if (null != creatureType.breedingItem())
+					{
+						creature.setMovementPlan(null);
+						creature.setReadyForAction();
+					}
 					// Set us on to cooldown.
 					creature.newLastAttackTick = context.currentTick;
 					creature.setExtendedData(machine.freezeToData());

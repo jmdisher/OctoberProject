@@ -1,7 +1,10 @@
 package com.jeffdisher.october.creatures;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -16,6 +19,9 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
+import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
+import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
@@ -26,7 +32,9 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
@@ -37,12 +45,14 @@ import com.jeffdisher.october.worldgen.CuboidGenerator;
 public class TestCreatureLogic
 {
 	private static Environment ENV;
+	private static Item WHEAT;
 	private static EntityType COW;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
+		WHEAT = ENV.items.getItemById("op.wheat_item");
 		COW = ENV.creatures.getTypeById("op.cow");
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
@@ -335,6 +345,321 @@ public class TestCreatureLogic
 		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
 		Assert.assertTrue(didAct);
 		Assert.assertEquals((byte)0,mutableOrc.newHealth);
+	}
+
+	@Test
+	public void enterLoveMode()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
+		MutableCreature mutable = MutableCreature.existing(cow);
+		CreatureLogic.applyItemToCreature(WHEAT, mutable);
+		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
+		Assert.assertTrue(result.inLoveMode());
+	}
+
+	@Test
+	public void sendImpregnate()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
+		CreatureEntity father = CreatureEntity.create(assigner.next(), COW, fatherLocation, (byte)100);
+		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		// Start with them both in a love mode.
+		MutableCreature mutable = MutableCreature.existing(father);
+		mutable.newTargetEntityId = mother.id();
+		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		father = mutable.freeze();
+		mutable = MutableCreature.existing(mother);
+		mutable.newTargetEntityId = father.id();
+		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		mother = mutable.freeze();
+		Map<Integer, CreatureEntity> creatures = new HashMap<>();
+		creatures.put(father.id(), father);
+		creatures.put(mother.id(), mother);
+		
+		int[] targetId = new int[1];
+		IMutationEntity<?>[] message = new IMutationEntity<?>[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+						Assert.assertEquals(0, targetId[0]);
+						Assert.assertNull(message[0]);
+						targetId[0] = targetCreatureId;
+						message[0] = change;
+					}})
+				.lookups(null, (Integer entityId) -> {
+					return creatures.containsKey(entityId)
+							? MinimalEntity.fromCreature(creatures.get(entityId))
+							: null
+					;
+				})
+				.finish()
+		;
+		
+		// We should see the father sending a message
+		mutable = MutableCreature.existing(father);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, null
+				, mutable
+		);
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(mother.id(), targetId[0]);
+		targetId[0] = 0;
+		Assert.assertTrue(message[0] instanceof EntityChangeImpregnateCreature);
+		message[0] = null;
+		father = mutable.freeze();
+		creatures.put(father.id(), father);
+		
+		// The mother should not take any action since they are waiting for the father.
+		mutable = MutableCreature.existing(mother);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, null
+				, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertNull(message[0]);
+		mother = mutable.freeze();
+		creatures.put(mother.id(), mother);
+		
+		// The father should no longer be in love mode but the mother should be.
+		CowStateMachine.Test_ExtendedData fatherResult = CowStateMachine.decodeExtendedData(father.extendedData());
+		Assert.assertNull(fatherResult);
+		CowStateMachine.Test_ExtendedData motherResult = CowStateMachine.decodeExtendedData(mother.extendedData());
+		Assert.assertTrue(motherResult.inLoveMode());
+	}
+
+	@Test
+	public void becomePregnant()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation fatherLocation = new EntityLocation(0.8f, 0.0f, 0.0f);
+		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		MutableCreature mutable = MutableCreature.existing(mother);
+		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		
+		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
+		Assert.assertTrue(didBecomePregnant);
+		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
+		Assert.assertFalse(result.inLoveMode());
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), result.offspringLocation());
+	}
+
+	@Test
+	public void spawnOffspring()
+	{
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation offspringLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
+		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
+		MutableCreature mutable = MutableCreature.existing(mother);
+		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, offspringLocation));
+		
+		TickProcessingContext context = ContextBuilder.build()
+				.assigner(assigner)
+				.finish()
+		;
+		CreatureEntity[] offspring = new CreatureEntity[1];
+		Consumer<CreatureEntity> creatureSpawner = (CreatureEntity spawn) -> {
+			Assert.assertNull(offspring[0]);
+			offspring[0] = spawn;
+		};
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, creatureSpawner
+				, mutable
+		);
+		Assert.assertTrue(didTakeAction);
+		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
+		Assert.assertNull(result);
+		Assert.assertEquals(offspringLocation, offspring[0].location());
+	}
+
+	@Test
+	public void startTarget()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation location = new EntityLocation(4.0f, 0.0f, 1.0f);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = location;
+		Entity player = mutable.freeze();
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					: null
+			;
+		};
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+			MinimalEntity min;
+			switch (id)
+			{
+			case -1:
+				min = MinimalEntity.fromCreature(orc);
+				break;
+			case 1:
+				min = MinimalEntity.fromEntity(player);
+				break;
+			default:
+				throw new AssertionError();
+			}
+			return min;
+		};
+		long millisPerTick = 100L;
+		TickProcessingContext context = ContextBuilder.build()
+				.millisPerTick(millisPerTick)
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+				, new EntityCollection(List.of(player), List.of(orc))
+				, mutableOrc
+				, 100L
+		);
+		Assert.assertTrue(action instanceof EntityChangeMove<IMutableCreatureEntity>);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertNotNull(mutableOrc.newMovementPlan);
+	}
+
+	@Test
+	public void sendAttack()
+	{
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation location = new EntityLocation(1.0f, 0.0f, 1.0f);
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = location;
+		Entity player = mutable.freeze();
+		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					: null
+			;
+		};
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> {
+			MinimalEntity min;
+			switch (id)
+			{
+			case -1:
+				min = MinimalEntity.fromCreature(orc);
+				break;
+			case 1:
+				min = MinimalEntity.fromEntity(player);
+				break;
+			default:
+				throw new AssertionError();
+			}
+			return min;
+		};
+		int[] ref_targetEntityId = new int[1];
+		@SuppressWarnings("unchecked")
+		IMutationEntity<IMutablePlayerEntity>[] ref_change = new IMutationEntity[1];
+		TickProcessingContext.IChangeSink changeSink = new TickProcessingContext.IChangeSink() {
+			@Override
+			public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+			{
+				Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
+				ref_targetEntityId[0] = targetEntityId;
+				Assert.assertNull(ref_change[0]);
+				ref_change[0] = change;
+			}
+			@Override
+			public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+			{
+				Assert.fail();
+			}
+			@Override
+			public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+			{
+				Assert.fail();
+			}
+		};
+		long millisPerTick = 100L;
+		TickProcessingContext context = ContextBuilder.build()
+				.millisPerTick(millisPerTick)
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
+				.sinks(null, changeSink)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		
+		// Start with the orc targeting the player.
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		mutableOrc.newTargetEntityId = player.id();
+		mutableOrc.newTargetPreviousLocation = player.location().getBlockLocation();
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+				, new EntityCollection(List.of(player), List.of(orc))
+				, mutableOrc
+				, 100L
+		);
+		// We will try to walk toward them still.
+		Assert.assertTrue(action instanceof EntityChangeMove<IMutableCreatureEntity>);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.newTargetPreviousLocation);
+		
+		// Now, allow it to perform the attack.
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, null
+				, mutableOrc
+		);
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
+		// We should see the orc send the attack message
+		Assert.assertTrue(ref_change[0] instanceof EntityChangeTakeDamageFromEntity);
+		ref_targetEntityId[0] = CreatureEntity.NO_TARGET_ENTITY_ID;
+		ref_change[0] = null;
+		
+		// A second attack on the following tick should fail since we are on cooldown.
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, null
+				, mutableOrc
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, ref_targetEntityId[0]);
+		Assert.assertNull(ref_change[0]);
+		
+		// But will work if we advance tick number further.
+		context = ContextBuilder.build()
+				.tick(context.currentTick + OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick)
+				.sinks(null, changeSink)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, null
+				, mutableOrc
+		);
+		Assert.assertTrue(didTakeAction);
+		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
+		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
+		Assert.assertTrue(ref_change[0] instanceof EntityChangeTakeDamageFromEntity);
 	}
 
 
