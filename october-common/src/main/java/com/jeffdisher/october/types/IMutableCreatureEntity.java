@@ -23,9 +23,9 @@ public interface IMutableCreatureEntity extends IMutableMinimalEntity
 	 */
 	void setMovementPlan(List<AbsoluteLocation> movementPlan);
 	/**
-	 * Resets the internal next deliberate tick counter so that one will be attempted in the next tick.
+	 * Sets the flag to trigger a deliberate action on the next tick.
 	 */
-	void resetDeliberateTick();
+	void setReadyForAction();
 	/**
 	 * WARNING:  This extended data should be immutable!
 	 * 

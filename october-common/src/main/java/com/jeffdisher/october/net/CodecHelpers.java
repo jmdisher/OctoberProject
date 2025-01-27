@@ -263,8 +263,8 @@ public class CodecHelpers
 		
 		// Ephemeral data is just given default values.
 		List<AbsoluteLocation> movementPlan = null;
-		long nextDeliberateActTick = 0L;
-		long nextIdleActTick = 0L;
+		long lastActionTick = 0L;
+		boolean shouldTakeImmediateAction = false;
 		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
 		AbsoluteLocation targetPreviousLocation = null;
 		Object extendedData = null;
@@ -278,8 +278,8 @@ public class CodecHelpers
 				, breath
 				
 				, movementPlan
-				, nextDeliberateActTick
-				, nextIdleActTick
+				, lastActionTick
+				, shouldTakeImmediateAction
 				, targetEntityId
 				, targetPreviousLocation
 				, extendedData

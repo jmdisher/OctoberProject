@@ -142,12 +142,17 @@ public class TestCreatureLogic
 		_setLayer(input, (byte)1, "op.water_source");
 		
 		// Even though this is only the idle timeout, we will see a plan made and that it ends above water.
-		TickProcessingContext context = _createContext((AbsoluteLocation location) -> {
-			return location.getCuboidAddress().equals(cuboidAddress)
-					? new BlockProxy(location.getBlockAddress(), input)
-					: null
-			;
-		}, 12);
+		TickProcessingContext context = ContextBuilder.build()
+				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
+				.lookups((AbsoluteLocation location) -> {
+					return location.getCuboidAddress().equals(cuboidAddress)
+							? new BlockProxy(location.getBlockAddress(), input)
+							: null
+					;
+				}, null)
+				.fixedRandom(0)
+				.finish()
+		;
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
@@ -238,6 +243,7 @@ public class TestCreatureLogic
 			return min;
 		};
 		TickProcessingContext context = ContextBuilder.build()
+				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / 100L) + 1L)
 				.lookups(previousBlockLookUp, previousEntityLookUp)
 				.finish()
 		;

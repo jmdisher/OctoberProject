@@ -30,10 +30,10 @@ public record CreatureEntity(int id
 		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
 		// The current plan of steps to the creature should be following.
 		, List<AbsoluteLocation> movementPlan
-		// The next tick where we will attempt to make a deliberate act.
-		, long nextDeliberateActTick
-		// The next tick where we will attempt to make an idle movement, if there is nothing deliberate to do.
-		, long nextIdleActTick
+		// The last tick number when this creature's AI made a decision or did something.
+		, long lastActionTick
+		// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
+		, boolean shouldTakeImmediateAction
 		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
 		, int targetEntityId
 		// The last block location of the target which was used to determine the movementPlan.
@@ -74,7 +74,7 @@ public record CreatureEntity(int id
 				
 				, null
 				, 0L
-				, 0L
+				, false
 				, NO_TARGET_ENTITY_ID
 				, null
 				, null

@@ -38,8 +38,8 @@ public class MutableCreature implements IMutableCreatureEntity
 	public byte newBreath;
 
 	public List<AbsoluteLocation> newMovementPlan;
-	public long newNextDeliberateActTick;
-	public long newNextIdleActTick;
+	public long newLastActionTick;
+	public boolean newShouldTakeAction;
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
 	public Object newExtendedData;
@@ -55,8 +55,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newBreath = creature.breath();
 		
 		this.newMovementPlan = creature.movementPlan();
-		this.newNextDeliberateActTick = creature.nextDeliberateActTick();
-		this.newNextIdleActTick = creature.nextIdleActTick();
+		this.newLastActionTick = creature.lastActionTick();
+		this.newShouldTakeAction = creature.shouldTakeImmediateAction();
 		this.newTargetEntityId = creature.targetEntityId();
 		this.newTargetPreviousLocation = creature.targetPreviousLocation();
 		this.newExtendedData = creature.extendedData();
@@ -129,8 +129,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		// Whenever a creature's health changes, we will wipe its AI state.
 		// TODO:  In the future, we should make this about taking damage from a specific source.
 		this.newMovementPlan = null;
-		this.newNextDeliberateActTick = 0L;
-		this.newNextIdleActTick = 0L;
+		this.newShouldTakeAction = true;
 		this.newExtendedData = null;
 	}
 
@@ -204,12 +203,18 @@ public class MutableCreature implements IMutableCreatureEntity
 				? new ArrayList<>(movementPlan)
 				: null
 		;
+		if (null == movementPlan)
+		{
+			// If we are clearing the plan, clear the target.
+			this.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+			this.newTargetPreviousLocation = null;
+		}
 	}
 
 	@Override
-	public void resetDeliberateTick()
+	public void setReadyForAction()
 	{
-		this.newNextDeliberateActTick = 0L;
+		this.newShouldTakeAction = true;
 	}
 
 	@Override
@@ -248,8 +253,8 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newBreath
 					
 					, (null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
-					, this.newNextDeliberateActTick
-					, this.newNextIdleActTick
+					, this.newLastActionTick
+					, this.newShouldTakeAction
 					, this.newTargetEntityId
 					, this.newTargetPreviousLocation
 					, this.newExtendedData

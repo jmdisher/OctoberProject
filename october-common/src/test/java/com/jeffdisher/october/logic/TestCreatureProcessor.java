@@ -209,7 +209,7 @@ public class TestCreatureProcessor
 				
 				, movementPlan
 				, 0L
-				, 0L
+				, false
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -250,7 +250,7 @@ public class TestCreatureProcessor
 				
 				, movementPlan
 				, 0L
-				, 0L
+				, false
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -292,7 +292,7 @@ public class TestCreatureProcessor
 				
 				, movementPlan
 				, 0L
-				, 0L
+				, false
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
@@ -361,7 +361,7 @@ public class TestCreatureProcessor
 		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(updated.extendedData());
 		Assert.assertNull(extended);
 		Assert.assertNotNull(updated.movementPlan());
-		long previousTickTimer = updated.nextIdleActTick();
+		Assert.assertEquals(context.currentTick, updated.lastActionTick());
 		
 		// Now, hit them and see this clears their movement plan so we should see a plan with new timers.
 		creaturesById = group.updatedCreatures();
@@ -380,7 +380,7 @@ public class TestCreatureProcessor
 		updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth - damage, updated.health());
 		extended = CowStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertEquals(previousTickTimer + 1, updated.nextIdleActTick());
+		Assert.assertEquals(context.currentTick, updated.lastActionTick());
 	}
 
 	@Test
@@ -566,13 +566,22 @@ public class TestCreatureProcessor
 		);
 		creaturesById.putAll(group.updatedCreatures());
 		
+		// The feeding will reset them but they can't yet see each other so they will pick an idle wander.
+		Assert.assertFalse(creaturesById.get(cow1.id()).shouldTakeImmediateAction());
+		Assert.assertFalse(creaturesById.get(cow1.id()).movementPlan().isEmpty());
+		Assert.assertFalse(creaturesById.get(cow2.id()).shouldTakeImmediateAction());
+		Assert.assertFalse(creaturesById.get(cow2.id()).movementPlan().isEmpty());
+		// We want to clear this to observe the rest of the behaviour (otherwise, we would need to wait for them to move).
+		creaturesById.put(cow1.id(), _takeAction(creaturesById.get(cow1.id())));
+		creaturesById.put(cow2.id(), _takeAction(creaturesById.get(cow2.id())));
+		
 		// Run another tick so that they see each other in love mode.
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Set.of(player), creaturesById.values())
-				, Map.of(cow1.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
-						, cow2.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
+				, Map.of(cow1.id(), List.of()
+						, cow2.id(), List.of()
 				)
 		);
 		creaturesById.putAll(group.updatedCreatures());
@@ -751,7 +760,7 @@ public class TestCreatureProcessor
 					, airTarget.id(), MinimalEntity.fromEntity(airTarget)
 			);
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -811,7 +820,7 @@ public class TestCreatureProcessor
 		for (int i = 0; i < 13; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
-					.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 					.lookups((AbsoluteLocation location) -> {
 							return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 								? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -945,7 +954,7 @@ public class TestCreatureProcessor
 		WorldConfig config = new WorldConfig();
 		config.difficulty = difficulty;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.tick((CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick) + 1L)
 				.lookups((AbsoluteLocation location) -> {
 						return ((short)-1 == location.z())
 							? new BlockProxy(location.getBlockAddress(), stoneCuboid)
@@ -965,7 +974,7 @@ public class TestCreatureProcessor
 	{
 		long millisPerTick = 100L;
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(CreatureLogic.MINIMUM_MILLIS_TO_IDLE_ACTION / millisPerTick)
+				.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
 				.lookups((AbsoluteLocation location) -> {
 					return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -993,7 +1002,7 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
 	{
-		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_DELIBERATE_ACTION / existing.millisPerTick))
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
 				.lookups(existing.previousBlockLookUp, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null)
 				.sinks(null, null)
 				.assigner(null)
@@ -1004,7 +1013,7 @@ public class TestCreatureProcessor
 
 	private static TickProcessingContext _updateContextForTick(TickProcessingContext existing)
 	{
-		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
+		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
 				.finish()
 		;
 		return context;
@@ -1052,6 +1061,31 @@ public class TestCreatureProcessor
 				cuboid.setData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z), number);
 			}
 		}
+	}
+
+	private static CreatureEntity _takeAction(CreatureEntity entity)
+	{
+		List<AbsoluteLocation> movementPlan = null;
+		boolean shouldTakeImmediateAction = true;
+		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+		AbsoluteLocation targetPreviousLocation = null;
+		
+		return new CreatureEntity(entity.id()
+				, entity.type()
+				, entity.location()
+				, entity.velocity()
+				, entity.yaw()
+				, entity.pitch()
+				, entity.health()
+				, entity.breath()
+				
+				, movementPlan
+				, entity.lastActionTick()
+				, shouldTakeImmediateAction
+				, targetEntityId
+				, targetPreviousLocation
+				, entity.extendedData()
+		);
 	}
 
 	private static class _Events implements TickProcessingContext.IEventSink

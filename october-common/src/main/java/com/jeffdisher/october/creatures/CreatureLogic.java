@@ -39,12 +39,11 @@ public class CreatureLogic
 	/**
 	 * The minimum number of millis we can wait from our last action until we decide to make a deliberate plan.
 	 */
-	public static final long MINIMUM_MILLIS_TO_DELIBERATE_ACTION = 1_000L;
+	public static final long MINIMUM_MILLIS_TO_ACTION = 1_000L;
 	/**
-	 * The minimum number of millis we can wait from our last action until we decide to make an idling plan, assuming
-	 * there was no good deliberate option.
+	 * The chance of making an idle action instead, of we fail to make a deliberate action when acting.
 	 */
-	public static final long MINIMUM_MILLIS_TO_IDLE_ACTION = 30_000L;
+	public static final int IDLE_ACTION_DENOMINATOR = 30;
 
 
 	/**
@@ -79,7 +78,7 @@ public class CreatureLogic
 			if (didChangeState)
 			{
 				creature.setMovementPlan(null);
-				creature.resetDeliberateTick();
+				creature.setReadyForAction();
 			}
 			Object updated = cow.freezeToData();
 			if (originalData != updated)
@@ -172,7 +171,7 @@ public class CreatureLogic
 			if (didBecomePregnant)
 			{
 				creature.setMovementPlan(null);
-				creature.resetDeliberateTick();
+				creature.setReadyForAction();
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
@@ -222,7 +221,7 @@ public class CreatureLogic
 			if (isDone)
 			{
 				creature.setMovementPlan(null);
-				creature.resetDeliberateTick();
+				creature.setReadyForAction();
 				creature.setExtendedData(machine.freezeToData());
 			}
 		}
@@ -256,37 +255,46 @@ public class CreatureLogic
 	)
 	{
 		// We will first see if they can make a deliberate plan.
-		List<AbsoluteLocation> movementPlan = _buildDeliberatePath(context
-				, blockKindLookup
-				, entityCollection
-				, mutable
-				, machine
-		);
-		if (null != movementPlan)
+		long nextDeliberateActionTick = mutable.newLastActionTick + _ticksBetweenActions(context.millisPerTick);
+		boolean canMakeAction = mutable.newShouldTakeAction || ( context.currentTick >= nextDeliberateActionTick);
+		List<AbsoluteLocation> movementPlan;
+		if (canMakeAction)
 		{
-			// We made a deliberate plan but it might not have any steps.
-			if (movementPlan.isEmpty())
+			movementPlan = _buildDeliberatePath(context
+					, blockKindLookup
+					, entityCollection
+					, mutable
+					, machine
+			);
+			if (null == movementPlan)
 			{
+				// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
+				// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
+				// movements are "safe").
+				boolean isInDanger = (mutable.newBreath < MiscConstants.MAX_BREATH);
+				// We use "1" here just because it makes some testing simpler but any number < IDLE_ACTION_DENOMINATOR would work.
+				boolean canMakeIdleAction = (1 == context.randomInt.applyAsInt(IDLE_ACTION_DENOMINATOR));
+				if (isInDanger || canMakeIdleAction)
+				{
+					movementPlan = _findPathToRandomSpot(context
+							, blockKindLookup
+							, mutable.getLocation()
+							, mutable.getType()
+					);
+					Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+				}
+			}
+			else if (movementPlan.isEmpty())
+			{
+				// This can return an empty array just so we know a decision was made but we want to null it.
 				movementPlan = null;
 			}
+			mutable.newLastActionTick = context.currentTick;
+			mutable.newShouldTakeAction = false;
 		}
 		else
 		{
-			// If we don't have anything deliberate to do, we will just do some random "idle" movement but this is
-			// somewhat expensive so only do it if we have been waiting a while or if we are in danger (since the random
-			// movements are "safe").
-			boolean isInDanger = (mutable.newBreath < MiscConstants.MAX_BREATH);
-			if (isInDanger
-					|| _canMakeIdleMovement(context, mutable)
-			)
-			{
-				// We couldn't find a player so just make a random move.
-				movementPlan = _findPathToRandomSpot(context
-						, blockKindLookup
-						, mutable.getLocation()
-						, mutable.getType()
-				);
-			}
+			movementPlan = null;
 		}
 		mutable.newMovementPlan = movementPlan;
 		return movementPlan;
@@ -336,32 +344,21 @@ public class CreatureLogic
 		int creatureId = mutable.getId();
 		
 		List<AbsoluteLocation> path = null;
-		if (context.currentTick >= mutable.newNextDeliberateActTick)
+		ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, type, creatureId);
+		if (null != newTarget)
 		{
-			ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, type, creatureId);
-			if (null != newTarget)
+			EntityLocation targetLocation = newTarget.location();
+			mutable.newTargetEntityId = newTarget.id();
+			mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
+			// We have a target so try to build a path (we will use double the distance for pathing overhead).
+			// If this fails, it will return null which is already our failure case.
+			EntityVolume volume = type.volume();
+			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, type.getPathDistance());
+			// We want to strip away the first step, since it is the current location.
+			if (null != path)
 			{
-				EntityLocation targetLocation = newTarget.location();
-				mutable.newTargetEntityId = newTarget.id();
-				mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
-				// We have a target so try to build a path (we will use double the distance for pathing overhead).
-				// If this fails, it will return null which is already our failure case.
-				EntityVolume volume = type.volume();
-				path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, type.getPathDistance());
-				// We want to strip away the first step, since it is the current location.
-				if (null != path)
-				{
-					path.remove(0);
-					// (we will still return an empty path just to communicate that we made a decision.
-				}
-			}
-			
-			// Update our next action ticks.
-			mutable.newNextDeliberateActTick = context.currentTick + (MINIMUM_MILLIS_TO_DELIBERATE_ACTION / context.millisPerTick);
-			if (null != newTarget)
-			{
-				// If we found someone, we also want to delay idle actions (we should fall into idle movement if we keep failing here).
-				mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
+				path.remove(0);
+				// (we will still return an empty path just to communicate that we made a decision.
 			}
 		}
 		return path;
@@ -562,19 +559,6 @@ public class CreatureLogic
 		return goodTargets;
 	}
 
-	private static boolean _canMakeIdleMovement(TickProcessingContext context
-			, MutableCreature mutable
-	)
-	{
-		boolean canMove = (context.currentTick >= mutable.newNextIdleActTick);
-		if (canMove)
-		{
-			// We want to "consume" this decision.
-			mutable.newNextIdleActTick = context.currentTick + (MINIMUM_MILLIS_TO_IDLE_ACTION / context.millisPerTick);
-		}
-		return canMove;
-	}
-
 	private static void _updatePathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
 	{
 		// If we are tracking another entity, see if we can update our target location.
@@ -618,5 +602,10 @@ public class CreatureLogic
 				mutable.newMovementPlan = null;
 			}
 		}
+	}
+
+	private static long _ticksBetweenActions(long millisPerTick)
+	{
+		return (MINIMUM_MILLIS_TO_ACTION / millisPerTick);
 	}
 }

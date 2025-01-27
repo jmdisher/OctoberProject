@@ -50,7 +50,7 @@ public class TestMutableCreature
 				
 				, null
 				, 0L
-				, 0L
+				, false
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
