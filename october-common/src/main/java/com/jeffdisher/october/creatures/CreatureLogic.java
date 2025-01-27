@@ -77,19 +77,23 @@ public class CreatureLogic
 		EntityType creatureType = creature.getType();
 		if (creatureType.breedingItem() == itemType)
 		{
-			Object originalData = creature.getExtendedData();
-			ICreatureStateMachine cow = creatureType.stateMachineFactory().apply(originalData);
-			boolean didChangeState = cow.applyItem(itemType);
-			if (didChangeState)
+			ICreatureStateMachine cow = creatureType.stateMachineFactory().apply(null);
+			// Don't redundantly enter love mode.
+			if (!creature.isInLoveMode())
 			{
-				creature.setMovementPlan(null);
-				creature.setReadyForAction();
-			}
-			Object updated = cow.freezeToData();
-			if (originalData != updated)
-			{
-				creature.setExtendedData(updated);
-				didApply = true;
+				boolean didChangeState = cow.applyItem(itemType, creature.getOffspringLocation());
+				if (didChangeState)
+				{
+					// If we applied this, put us into love mode and clear other plans.
+					creature.setLoveMode(true);
+					creature.setMovementPlan(null);
+					creature.setReadyForAction();
+					didApply = true;
+				}
+				else
+				{
+					didApply = false;
+				}
 			}
 			else
 			{
@@ -122,7 +126,7 @@ public class CreatureLogic
 	)
 	{
 		EntityType creatureType = mutable.getType();
-		ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(mutable.newExtendedData);
+		ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(null);
 		
 		// Get the movement plan and see if we should advance it.
 		List<AbsoluteLocation> movementPlan = mutable.newMovementPlan;
@@ -147,7 +151,6 @@ public class CreatureLogic
 		{
 			actionProduced = null;
 		}
-		mutable.newExtendedData = machine.freezeToData();
 		return actionProduced;
 	}
 
@@ -165,19 +168,21 @@ public class CreatureLogic
 		EntityType creatureType = creature.getType();
 		if (null != creatureType.breedingItem())
 		{
-			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
+			ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(null);
 			// Average the locations.
 			EntityLocation parentLocation = creature.getLocation();
 			EntityLocation spawnLocation = new EntityLocation((sireLocation.x() + parentLocation.x()) / 2.0f
 					, (sireLocation.y() + parentLocation.y()) / 2.0f
 					, (sireLocation.z() + parentLocation.z()) / 2.0f
 			);
-			didBecomePregnant = machine.setPregnant(spawnLocation);
+			didBecomePregnant = machine.setPregnant(spawnLocation, creature.isInLoveMode());
 			if (didBecomePregnant)
 			{
+				// Clear the love mode, set the spawn location, and clear existing plans.
+				creature.setLoveMode(false);
+				creature.setOffspringLocation(spawnLocation);
 				creature.setMovementPlan(null);
 				creature.setReadyForAction();
-				creature.setExtendedData(machine.freezeToData());
 			}
 		}
 		else
@@ -222,24 +227,32 @@ public class CreatureLogic
 			}
 			else
 			{
-				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(creature.getExtendedData());
+				ICreatureStateMachine machine = creatureType.stateMachineFactory().apply(null);
 				
 				// Before we attempt to take a special action, see if we have a target which has moved.
 				_updatePathIfTargetMoved(context, creature);
 				
-				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId, creature.newLastAttackTick);
+				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId, creature.newLastAttackTick, creature.newInLoveMode, creature.newOffspringLocation);
 				if (isDone)
 				{
 					// If we took a special action and are livestock, we should clear our plan.
 					// TODO:  These assumptions can be cleaned up when the machien implementations are inlined.
 					if (null != creatureType.breedingItem())
 					{
+						// Interpret any of the breeding state we may have influenced.
+						if (null != creature.newOffspringLocation)
+						{
+							creature.newOffspringLocation = null;
+						}
+						else if (creature.isInLoveMode())
+						{
+							creature.newInLoveMode = false;
+						}
 						creature.setMovementPlan(null);
 						creature.setReadyForAction();
 					}
 					// Set us on to cooldown.
 					creature.newLastAttackTick = context.currentTick;
-					creature.setExtendedData(machine.freezeToData());
 				}
 			}
 		}
@@ -362,7 +375,7 @@ public class CreatureLogic
 		int creatureId = mutable.getId();
 		
 		List<AbsoluteLocation> path = null;
-		ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, type, creatureId);
+		ICreatureStateMachine.TargetEntity newTarget = machine.selectTarget(context, entityCollection, creatureLocation, type, creatureId, mutable.newInLoveMode);
 		if (null != newTarget)
 		{
 			EntityLocation targetLocation = newTarget.location();

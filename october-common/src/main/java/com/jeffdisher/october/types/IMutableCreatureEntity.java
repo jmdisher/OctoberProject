@@ -27,16 +27,23 @@ public interface IMutableCreatureEntity extends IMutableMinimalEntity
 	 */
 	void setReadyForAction();
 	/**
-	 * WARNING:  This extended data should be immutable!
+	 * Sets the location of a breedable creature's offspring.  This is received by the "mother" in an entity pairing.
 	 * 
-	 * @return Returns the extended data object for this creature (could be null).
+	 * @param spawnLocation The location where the offspring should be spawned.
 	 */
-	Object getExtendedData();
+	void setOffspringLocation(EntityLocation spawnLocation);
 	/**
-	 * Sets the extended data object for this creature.
-	 * WARNING:  This extended data should be immutable!
-	 * 
-	 * @param data The new data object.
+	 * @return The location where any offspring should be spawned.
 	 */
-	void setExtendedData(Object data);
+	EntityLocation getOffspringLocation();
+	/**
+	 * Sets whether a breedable creature is in "love mode", where it will seek out other of the same type to breed.
+	 * 
+	 * @param isInLoveMode 
+	 */
+	void setLoveMode(boolean isInLoveMode);
+	/**
+	 * @return Whether or not this creature is in "love mode".
+	 */
+	boolean isInLoveMode();
 }

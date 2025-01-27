@@ -42,8 +42,10 @@ public record CreatureEntity(int id
 		, AbsoluteLocation targetPreviousLocation
 		// The tick when this creature last sent an attack.
 		, long lastAttackTick
-		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
-		, Object extendedData
+		// True if this is a breedable creature which should now search for a partner.
+		, boolean inLoveMode
+		// Non-null if this is a breedable creature who is ready to spawn offspring.
+		, EntityLocation offspringLocation
 )
 {
 	public static final int NO_TARGET_ENTITY_ID = 0;
@@ -83,6 +85,7 @@ public record CreatureEntity(int id
 				, NO_TARGET_ENTITY_ID
 				, null
 				, 0L
+				, false
 				, null
 		);
 	}
@@ -105,7 +108,8 @@ public record CreatureEntity(int id
 				, this.targetEntityId
 				, this.targetPreviousLocation
 				, this.lastAttackTick
-				, this.extendedData
+				, this.inLoveMode
+				, this.offspringLocation
 		);
 	}
 }

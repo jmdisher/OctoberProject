@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.creatures.CowStateMachine;
 
 
 public class TestMutableCreature
@@ -55,14 +54,14 @@ public class TestMutableCreature
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
+				, false
+				, null
 		);
 		
 		MutableCreature mutable = MutableCreature.existing(middle);
 		mutable.setHealth((byte)20);
 		CreatureEntity output = mutable.freeze();
-		
-		Assert.assertNull(CowStateMachine.decodeExtendedData(output.extendedData()));
+		Assert.assertNotEquals(middle, output);
 	}
 
 

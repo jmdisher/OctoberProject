@@ -354,8 +354,7 @@ public class TestCreatureLogic
 		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, new EntityLocation(0.0f, 0.0f, 0.0f), (byte)100);
 		MutableCreature mutable = MutableCreature.existing(cow);
 		CreatureLogic.applyItemToCreature(WHEAT, mutable);
-		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
-		Assert.assertTrue(result.inLoveMode());
+		Assert.assertTrue(mutable.newInLoveMode);
 	}
 
 	@Test
@@ -369,11 +368,11 @@ public class TestCreatureLogic
 		// Start with them both in a love mode.
 		MutableCreature mutable = MutableCreature.existing(father);
 		mutable.newTargetEntityId = mother.id();
-		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		mutable.newInLoveMode = true;
 		father = mutable.freeze();
 		mutable = MutableCreature.existing(mother);
 		mutable.newTargetEntityId = father.id();
-		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		mutable.newInLoveMode = true;
 		mother = mutable.freeze();
 		Map<Integer, CreatureEntity> creatures = new HashMap<>();
 		creatures.put(father.id(), father);
@@ -436,10 +435,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		CowStateMachine.Test_ExtendedData fatherResult = CowStateMachine.decodeExtendedData(father.extendedData());
-		Assert.assertNull(fatherResult);
-		CowStateMachine.Test_ExtendedData motherResult = CowStateMachine.decodeExtendedData(mother.extendedData());
-		Assert.assertTrue(motherResult.inLoveMode());
+		Assert.assertFalse(father.inLoveMode());
+		Assert.assertTrue(mother.inLoveMode());
 	}
 
 	@Test
@@ -450,13 +447,12 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(true, null));
+		mutable.newInLoveMode = true;
 		
 		boolean didBecomePregnant = CreatureLogic.setCreaturePregnant(mutable, fatherLocation);
 		Assert.assertTrue(didBecomePregnant);
-		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
-		Assert.assertFalse(result.inLoveMode());
-		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), result.offspringLocation());
+		Assert.assertFalse(mutable.newInLoveMode);
+		Assert.assertEquals(new EntityLocation(0.4f, 0.0f, 0.0f), mutable.newOffspringLocation);
 	}
 
 	@Test
@@ -467,7 +463,7 @@ public class TestCreatureLogic
 		EntityLocation motherLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity mother = CreatureEntity.create(assigner.next(), COW, motherLocation, (byte)100);
 		MutableCreature mutable = MutableCreature.existing(mother);
-		mutable.newExtendedData = CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, offspringLocation));
+		mutable.newOffspringLocation = offspringLocation;
 		
 		TickProcessingContext context = ContextBuilder.build()
 				.assigner(assigner)
@@ -483,8 +479,7 @@ public class TestCreatureLogic
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
-		CowStateMachine.Test_ExtendedData result = CowStateMachine.decodeExtendedData(mutable.newExtendedData);
-		Assert.assertNull(result);
+		Assert.assertNull(mutable.newOffspringLocation);
 		Assert.assertEquals(offspringLocation, offspring[0].location());
 	}
 

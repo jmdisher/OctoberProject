@@ -42,7 +42,7 @@ public class CreatureRegistry
 
 	private static final String FAKE_PLAYER_ID = "op.player";
 	private static final BiFunction<EntityType, Object, ICreatureStateMachine> FACTORY_LIVESTOCK = (EntityType type, Object extendedData) -> {
-		return new CowStateMachine(type, extendedData);
+		return new CowStateMachine(type);
 	};
 	private static final BiFunction<EntityType, Object, ICreatureStateMachine> FACTORY_MONSTER = (EntityType type, Object extendedData) -> {
 		return new OrcStateMachine(type);

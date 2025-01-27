@@ -17,7 +17,6 @@ import org.junit.Test;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -213,7 +212,8 @@ public class TestCreatureProcessor
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
+				, false
+				, null
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -256,7 +256,8 @@ public class TestCreatureProcessor
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
+				, false
+				, null
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		TickProcessingContext context = _createContext();
@@ -300,7 +301,8 @@ public class TestCreatureProcessor
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, 0L
-				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
+				, false
+				, null
 		);
 		
 		// We will create a stone platform for the context so that the entity will fall into the expected block.
@@ -339,7 +341,6 @@ public class TestCreatureProcessor
 		}
 		// We should be in the final location with a cleared movement plan by this point.
 		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 1.0f), creature.location());
-		Assert.assertNull(creature.extendedData());
 	}
 
 	@Test
@@ -363,8 +364,6 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth, updated.health());
 		Assert.assertNotEquals(startLocation, updated.location());
-		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertNull(extended);
 		Assert.assertNotNull(updated.movementPlan());
 		Assert.assertEquals(context.currentTick, updated.lastActionTick());
 		
@@ -384,7 +383,6 @@ public class TestCreatureProcessor
 		
 		updated = group.updatedCreatures().get(creature.id());
 		Assert.assertEquals(startHealth - damage, updated.health());
-		extended = CowStateMachine.decodeExtendedData(updated.extendedData());
 		Assert.assertEquals(context.currentTick, updated.lastActionTick());
 	}
 
@@ -640,9 +638,7 @@ public class TestCreatureProcessor
 		
 		// Run another tick to observe that nothing special happens.
 		creaturesById.putAll(group.updatedCreatures());
-		CowStateMachine.Test_ExtendedData extended = CowStateMachine.decodeExtendedData(creaturesById.get(cow2.id()).extendedData());
 		Assert.assertNull(creaturesById.get(cow2.id()).movementPlan());
-		Assert.assertNull(extended);
 		creaturesById.put(offspring.id(), offspring);
 		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -790,9 +786,6 @@ public class TestCreatureProcessor
 			Assert.assertTrue(airCreature.location().x() > oldAir);
 			// Make sure that the air creature is further ahead.
 			Assert.assertTrue(airCreature.location().x() > waterCreature.location().x());
-			// We haven't yet attacked so there will be no extended data.
-			Assert.assertNull(waterCreature.extendedData());
-			Assert.assertNull(airCreature.extendedData());
 		}
 		Assert.assertEquals(3.5f, waterCreature.location().x(), 0.01f);
 		Assert.assertEquals(5.0f, airCreature.location().x(), 0.01f);
@@ -846,8 +839,6 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We haven't yet attacked so there will be no extended data.
-			Assert.assertNull(creature.extendedData());
 			// We expect the 13th iteration to be the final one (since we now swim up quickly).
 			if (i < 12)
 			{
@@ -1091,7 +1082,8 @@ public class TestCreatureProcessor
 				, targetEntityId
 				, targetPreviousLocation
 				, entity.lastAttackTick()
-				, entity.extendedData()
+				, entity.inLoveMode()
+				, entity.offspringLocation()
 		);
 	}
 

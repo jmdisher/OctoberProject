@@ -25,85 +25,31 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class CowStateMachine implements ICreatureStateMachine
 {
-	/**
-	 * TESTING ONLY!
-	 * Packages the given testing data into the extended data object for a cow.
-	 * 
-	 * @param testing The testing data.
-	 * @return The packaged extended object.
-	 */
-	public static Object encodeExtendedData(Test_ExtendedData testing)
-	{
-		return (null != testing)
-				? new _ExtendedData(testing.inLoveMode
-						, testing.offspringLocation
-				)
-				: null
-		;
-	}
-
-	/**
-	 * TESTING ONLY!
-	 * Unpackages the testing data from the extended data object for a cow.
-	 * 
-	 * @param creature The creature to read.
-	 * @return The testing data, potentially null.
-	 */
-	public static Test_ExtendedData decodeExtendedData(Object data)
-	{
-		_ExtendedData extended = (_ExtendedData) data;
-		return (null != extended)
-				? new Test_ExtendedData(extended.inLoveMode
-						, extended.offspringLocation
-				)
-				: null
-		;
-	}
-
-
 	private final float _viewDistance;
 	private final float _matingDistance;
 	private final Item _breedingItem;
-	private final _ExtendedData _originalData;
-	private boolean _inLoveMode;
-	private EntityLocation _offspringLocation;
 
 	/**
-	 * Creates a mutable state machine for a cow based on the given extendedData opaque type (could be null).
+	 * Creates a mutable state machine for a cow.
 	 * 
 	 * @param type The type being acted upon.
-	 * @param extendedData The cow's extended data (previously created by this class).
 	 */
-	public CowStateMachine(EntityType type, Object extendedData)
+	public CowStateMachine(EntityType type)
 	{
-		_ExtendedData data = (_ExtendedData) extendedData;
 		_viewDistance = type.viewDistance();
 		_matingDistance = type.actionDistance();
 		_breedingItem = type.breedingItem();
-		_originalData = data;
-		if (null != data)
-		{
-			_inLoveMode = data.inLoveMode;
-			_offspringLocation = data.offspringLocation;
-		}
-		else
-		{
-			_inLoveMode = false;
-			_offspringLocation = null;
-		}
 	}
 
 	@Override
-	public boolean applyItem(Item itemType)
+	public boolean applyItem(Item itemType, EntityLocation offspringLocation)
 	{
 		boolean didApply = false;
 		if (_breedingItem == itemType)
 		{
 			// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
-			if (null == _offspringLocation)
+			if (null == offspringLocation)
 			{
-				// If this is already true, the item is lost as this is a saturating operation.
-				_inLoveMode = true;
 				didApply = true;
 			}
 		}
@@ -111,10 +57,10 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
+	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, boolean isInLoveMode)
 	{
 		ICreatureStateMachine.TargetEntity target;
-		if (_inLoveMode)
+		if (isInLoveMode)
 		{
 			// Find another cow in breeding mode.
 			target = _findBreedableCow(entityCollection, creatureLocation, thisType, thisCreatureId);
@@ -128,31 +74,25 @@ public class CowStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean setPregnant(EntityLocation offspringLocation)
+	public boolean setPregnant(EntityLocation offspringLocation, boolean isInLoveMode)
 	{
 		boolean didBecomePregnant = false;
-		if (_inLoveMode)
+		if (isInLoveMode)
 		{
-			// Must not already be pregnant if in love mode.
-			Assert.assertTrue(null == _offspringLocation);
-			
-			_inLoveMode = false;
-			_offspringLocation = offspringLocation;
 			didBecomePregnant = true;
 		}
 		return didBecomePregnant;
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick, boolean isInLoveMode, EntityLocation offspringLocation)
 	{
 		// See if we are pregnant or searching for our mate.
 		boolean didTakeAction = false;
-		if (null != _offspringLocation)
+		if (null != offspringLocation)
 		{
 			// We need to spawn an entity here (we use a placeholder since ID is re-assigned in the consumer).
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), thisType, _offspringLocation, thisType.maxHealth()));
-			_offspringLocation = null;
+			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), thisType, offspringLocation, thisType.maxHealth()));
 			didTakeAction = true;
 		}
 		else if (CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId)
@@ -165,31 +105,15 @@ public class CowStateMachine implements ICreatureStateMachine
 			// See if they are within mating distance and we are the father.
 			EntityLocation targetLocation = targetEntity.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-			if (_inLoveMode && (distance <= _matingDistance) && (targetEntity.id() < thisCreatureId))
+			if (isInLoveMode && (distance <= _matingDistance) && (targetEntity.id() < thisCreatureId))
 			{
 				// Send the message to impregnate them.
 				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creatureLocation);
 				context.newChangeSink.creature(targetEntityId, sperm);
-				// We can now exit love mode.
-				_inLoveMode = false;
 				didTakeAction = true;
 			}
 		}
 		return didTakeAction;
-	}
-
-	@Override
-	public Object freezeToData()
-	{
-		_ExtendedData newData = (_inLoveMode || (null != _offspringLocation))
-				? new _ExtendedData(_inLoveMode, _offspringLocation)
-				: null
-		;
-		_ExtendedData matchingData = (null != _originalData)
-				? (_originalData.equals(newData) ? _originalData : newData)
-				: newData
-		;
-		return matchingData;
 	}
 
 
@@ -202,8 +126,7 @@ public class CowStateMachine implements ICreatureStateMachine
 			if ((thisCreatureId != check.id()) && (thisType == check.type()))
 			{
 				// See if they are also in love mode.
-				_ExtendedData other = (_ExtendedData) check.extendedData();
-				if ((null != other) && other.inLoveMode)
+				if (check.inLoveMode())
 				{
 					EntityLocation end = check.location();
 					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
@@ -239,18 +162,4 @@ public class CowStateMachine implements ICreatureStateMachine
 		});
 		return target[0];
 	}
-
-
-	/**
-	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
-	 */
-	public static record Test_ExtendedData(boolean inLoveMode
-			, EntityLocation offspringLocation
-	)
-	{}
-
-	private static record _ExtendedData(boolean inLoveMode
-			, EntityLocation offspringLocation
-	)
-	{}
 }

@@ -68,7 +68,8 @@ public record LegacyCreatureEntityV1(int id
 		byte yaw = 0;
 		byte pitch = 0;
 		List<AbsoluteLocation> movementPlan= null;
-		Object extendedData = null;
+		boolean inLoveMode = false;
+		EntityLocation offspringLocation = null;
 		return new CreatureEntity(this.id
 				, this.type
 				, this.location
@@ -85,7 +86,8 @@ public record LegacyCreatureEntityV1(int id
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
 				, 0L
-				, extendedData
+				, inLoveMode
+				, offspringLocation
 		);
 	}
 }

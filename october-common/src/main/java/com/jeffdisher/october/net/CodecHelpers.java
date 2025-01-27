@@ -269,7 +269,8 @@ public class CodecHelpers
 		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
 		AbsoluteLocation targetPreviousLocation = null;
 		long lastAttackTick = 0L;
-		Object extendedData = null;
+		boolean inLoveMode = false;
+		EntityLocation offspringLocation = null;
 		return new CreatureEntity(id
 				, type
 				, location
@@ -286,7 +287,8 @@ public class CodecHelpers
 				, targetEntityId
 				, targetPreviousLocation
 				, lastAttackTick
-				, extendedData
+				, inLoveMode
+				, offspringLocation
 		);
 	}
 

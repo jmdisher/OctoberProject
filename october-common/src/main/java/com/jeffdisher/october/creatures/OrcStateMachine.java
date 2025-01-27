@@ -47,27 +47,27 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean applyItem(Item itemType)
+	public boolean applyItem(Item itemType, EntityLocation offspringLocation)
 	{
 		// This shouldn't be called.
 		throw Assert.unreachable();
 	}
 
 	@Override
-	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
+	public ICreatureStateMachine.TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, boolean isInLoveMode)
 	{
 		return _findPlayerInRange(entityCollection, creatureLocation);
 	}
 
 	@Override
-	public boolean setPregnant(EntityLocation offspringLocation)
+	public boolean setPregnant(EntityLocation offspringLocation, boolean isInLoveMode)
 	{
 		// This shouldn't be called.
 		throw Assert.unreachable();
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick, boolean isInLoveMode, EntityLocation offspringLocation)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
@@ -96,12 +96,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 			}
 		}
 		return didTakeAction;
-	}
-
-	@Override
-	public Object freezeToData()
-	{
-		return null;
 	}
 
 

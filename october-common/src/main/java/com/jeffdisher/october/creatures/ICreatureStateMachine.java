@@ -20,9 +20,10 @@ public interface ICreatureStateMachine
 	 * or the creature isn't in a state where it will have any effect.
 	 * 
 	 * @param itemType The type of item to apply.
+	 * @param offspringLocation The location where offspring should spawn, if non-null.
 	 * @return True if the item did something.
 	 */
-	boolean applyItem(Item itemType);
+	boolean applyItem(Item itemType, EntityLocation offspringLocation);
 
 	/**
 	 * Asks the creature to pick a new target entity location based on its currently location and the other players or
@@ -33,18 +34,20 @@ public interface ICreatureStateMachine
 	 * @param creatureLocation The creature's location.
 	 * @param thisType This creature's type.
 	 * @param thisCreatureId This creature's ID.
+	 * @param isInLoveMode True if this creature should look for a breeding partner.
 	 * @return A description of the target entity or null if there is no target.
 	 */
-	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId);
+	TargetEntity selectTarget(TickProcessingContext context, EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, boolean isInLoveMode);
 
 	/**
 	 * Sets the state of the cow to be ready to produce offspring at a specific location if it is in love mode but not
 	 * already pregnant.
 	 * 
 	 * @param offspringLocation The location where the offspring should be created.
+	 * @param isInLoveMode True if this creature is in love mode.
 	 * @return True if the cow became pregnant.
 	 */
-	boolean setPregnant(EntityLocation offspringLocation);
+	boolean setPregnant(EntityLocation offspringLocation, boolean isInLoveMode);
 
 	/**
 	 * Allows an opportunity for the creature to take a special action in this tick.  This includes things like sending
@@ -58,18 +61,11 @@ public interface ICreatureStateMachine
 	 * @param thisCreatureId This creature's ID.
 	 * @param targetEntityId The ID of the currently-selected target (could be 0).
 	 * @param lastAttackTick The tick number of the last time this creature attacked (could be 0).
+	 * @param isInLoveMode True if this creature is in love mode.
+	 * @param offspringLocation The location where offspring should spawn, if non-null.
 	 * @return True if this creature wants to skip any other actions for this tick.
 	 */
-	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick);
-
-	/**
-	 * Freezes the current state of the creature's extended data into an opaque read-only instance.  May return null or
-	 * the original instance.
-	 * NOTE:  The receiver should be considered invalid after this call.
-	 * 
-	 * @return An opaque extended data object (could be null).
-	 */
-	Object freezeToData();
+	boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick, boolean isInLoveMode, EntityLocation offspringLocation);
 
 
 	/**

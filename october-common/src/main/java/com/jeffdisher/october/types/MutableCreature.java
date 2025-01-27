@@ -44,7 +44,8 @@ public class MutableCreature implements IMutableCreatureEntity
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
 	public long newLastAttackTick;
-	public Object newExtendedData;
+	public boolean newInLoveMode;
+	public EntityLocation newOffspringLocation;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -63,7 +64,8 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newTargetEntityId = creature.targetEntityId();
 		this.newTargetPreviousLocation = creature.targetPreviousLocation();
 		this.newLastAttackTick = creature.lastAttackTick();
-		this.newExtendedData = creature.extendedData();
+		this.newInLoveMode = creature.inLoveMode();
+		this.newOffspringLocation = creature.offspringLocation();
 	}
 
 	@Override
@@ -134,7 +136,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		// TODO:  In the future, we should make this about taking damage from a specific source.
 		this.newMovementPlan = null;
 		this.newShouldTakeAction = true;
-		this.newExtendedData = null;
 	}
 
 	@Override
@@ -222,15 +223,27 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
-	public Object getExtendedData()
+	public void setOffspringLocation(EntityLocation spawnLocation)
 	{
-		return this.newExtendedData;
+		this.newOffspringLocation = spawnLocation;
 	}
 
 	@Override
-	public void setExtendedData(Object data)
+	public EntityLocation getOffspringLocation()
 	{
-		this.newExtendedData = data;
+		return this.newOffspringLocation;
+	}
+
+	@Override
+	public void setLoveMode(boolean isInLoveMode)
+	{
+		this.newInLoveMode = isInLoveMode;
+	}
+
+	@Override
+	public boolean isInLoveMode()
+	{
+		return this.newInLoveMode;
 	}
 
 	/**
@@ -263,7 +276,8 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newTargetEntityId
 					, this.newTargetPreviousLocation
 					, this.newLastAttackTick
-					, this.newExtendedData
+					, this.newInLoveMode
+					, this.newOffspringLocation
 			);
 			// See if these are identical.
 			newInstance = _creature.equals(immutable)
