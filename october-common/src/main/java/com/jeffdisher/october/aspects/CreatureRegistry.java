@@ -45,7 +45,7 @@ public class CreatureRegistry
 		return new CowStateMachine(type, extendedData);
 	};
 	private static final BiFunction<EntityType, Object, ICreatureStateMachine> FACTORY_MONSTER = (EntityType type, Object extendedData) -> {
-		return new OrcStateMachine(type, extendedData);
+		return new OrcStateMachine(type);
 	};
 
 	/**

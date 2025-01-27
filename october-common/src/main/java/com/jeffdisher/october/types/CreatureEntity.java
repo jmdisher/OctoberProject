@@ -40,6 +40,8 @@ public record CreatureEntity(int id
 		, int targetEntityId
 		// The last block location of the target which was used to determine the movementPlan.
 		, AbsoluteLocation targetPreviousLocation
+		// The tick when this creature last sent an attack.
+		, long lastAttackTick
 		// This data field is defined by helpers based on the type (remember that it is NOT persistent).
 		, Object extendedData
 )
@@ -80,6 +82,7 @@ public record CreatureEntity(int id
 				, 0L
 				, NO_TARGET_ENTITY_ID
 				, null
+				, 0L
 				, null
 		);
 	}
@@ -101,6 +104,7 @@ public record CreatureEntity(int id
 				, tick
 				, this.targetEntityId
 				, this.targetPreviousLocation
+				, this.lastAttackTick
 				, this.extendedData
 		);
 	}

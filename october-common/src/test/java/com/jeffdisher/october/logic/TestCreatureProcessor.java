@@ -19,7 +19,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.creatures.CowStateMachine;
 import com.jeffdisher.october.creatures.CreatureLogic;
-import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.mutations.EntityChangeApplyItemToCreature;
@@ -213,6 +212,7 @@ public class TestCreatureProcessor
 				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
+				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -255,6 +255,7 @@ public class TestCreatureProcessor
 				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
+				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -298,6 +299,7 @@ public class TestCreatureProcessor
 				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
+				, 0L
 				, CowStateMachine.encodeExtendedData(new CowStateMachine.Test_ExtendedData(false, null))
 		);
 		
@@ -457,9 +459,6 @@ public class TestCreatureProcessor
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
 		Assert.assertEquals(1, updated.targetEntityId());
-		// We haven't yet attacked so there will be no extended data.
-		OrcStateMachine.Test_ExtendedData extended = OrcStateMachine.decodeExtendedData(updated.extendedData());
-		Assert.assertNull(extended);
 		
 		// Make sure that the movement plan ends at the player.
 		List<AbsoluteLocation> movementPlan = updated.movementPlan();
@@ -1091,6 +1090,7 @@ public class TestCreatureProcessor
 				, entity.despawnKeepAliveTick()
 				, targetEntityId
 				, targetPreviousLocation
+				, entity.lastAttackTick()
 				, entity.extendedData()
 		);
 	}

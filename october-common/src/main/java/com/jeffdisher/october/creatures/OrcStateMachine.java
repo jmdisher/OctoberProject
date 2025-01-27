@@ -29,67 +29,21 @@ public class OrcStateMachine implements ICreatureStateMachine
 	// We will only allow one attack per second.
 	public static final long ATTACK_COOLDOWN_MILLIS = 1000L;
 
-	/**
-	 * TESTING ONLY!
-	 * Packages the given testing data into the extended data object for an orc.
-	 * 
-	 * @param testing The testing data.
-	 * @return The packaged extended object.
-	 */
-	public static Object encodeExtendedData(Test_ExtendedData testing)
-	{
-		return (null != testing)
-				? new _ExtendedData(testing.lastAttackTick
-				)
-				: null
-		;
-	}
-
-	/**
-	 * TESTING ONLY!
-	 * Unpackages the testing data from the extended data object for an orc.
-	 * 
-	 * @param creature The creature to read.
-	 * @return The testing data, potentially null.
-	 */
-	public static Test_ExtendedData decodeExtendedData(Object data)
-	{
-		_ExtendedData extended = (_ExtendedData) data;
-		return (null != extended)
-				? new Test_ExtendedData(extended.lastAttackTick
-				)
-				: null
-		;
-	}
-
 
 	private final float _viewDistance;
 	private final float _attackDistance;
 	private final byte _attackDamage;
-	private final _ExtendedData _originalData;
-	private long _lastAttackTick;
 
 	/**
-	 * Creates a mutable state machine for a orc based on the given extendedData opaque type (could be null).
+	 * Creates a mutable state machine for a orc..
 	 * 
 	 * @param type The type being acted upon.
-	 * @param extendedData The orc extended data (previously created by this class).
 	 */
-	public OrcStateMachine(EntityType type, Object extendedData)
+	public OrcStateMachine(EntityType type)
 	{
-		_ExtendedData data = (_ExtendedData) extendedData;
 		_viewDistance = type.viewDistance();
 		_attackDistance = type.actionDistance();
 		_attackDamage = type.attackDamage();
-		_originalData = data;
-		if (null != data)
-		{
-			_lastAttackTick = data.lastAttackTick;
-		}
-		else
-		{
-			_lastAttackTick = 0L;
-		}
 	}
 
 	@Override
@@ -113,12 +67,12 @@ public class OrcStateMachine implements ICreatureStateMachine
 	}
 
 	@Override
-	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId)
+	public boolean doneSpecialActions(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId, int targetEntityId, long lastAttackTick)
 	{
 		// The only special action we will take is attacking but this path will also reset our tracking if the target moves.
 		boolean didTakeAction = false;
 		// We don't have an objective measurement of time but the tick rate is considered constant within a server instance so we will estimate time passed.
-		long millisSinceLastAttack = (context.currentTick - _lastAttackTick) * context.millisPerTick;
+		long millisSinceLastAttack = (context.currentTick - lastAttackTick) * context.millisPerTick;
 		if ((CreatureEntity.NO_TARGET_ENTITY_ID != targetEntityId) && (millisSinceLastAttack >= ATTACK_COOLDOWN_MILLIS))
 		{
 			// We are tracking a target so see if they have moved (since we would need to clear our existing targets and
@@ -137,8 +91,6 @@ public class OrcStateMachine implements ICreatureStateMachine
 				BodyPart target = BodyPart.values()[index];
 				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, _attackDamage, thisCreatureId);
 				context.newChangeSink.next(targetEntityId, takeDamage);
-				// Set us on to cooldown.
-				_lastAttackTick = context.currentTick;
 				// We only count a successful attack as an "action".
 				didTakeAction = true;
 			}
@@ -149,15 +101,7 @@ public class OrcStateMachine implements ICreatureStateMachine
 	@Override
 	public Object freezeToData()
 	{
-		_ExtendedData newData = (_lastAttackTick > 0L)
-				? new _ExtendedData(_lastAttackTick)
-				: null
-		;
-		_ExtendedData matchingData = (null != _originalData)
-				? (_originalData.equals(newData) ? _originalData : newData)
-				: newData
-		;
-		return matchingData;
+		return null;
 	}
 
 
@@ -176,16 +120,4 @@ public class OrcStateMachine implements ICreatureStateMachine
 		});
 		return target[0];
 	}
-
-
-	/**
-	 * This is a testing variant of _ExtendedData which only exists to make unit tests simpler.
-	 */
-	public static record Test_ExtendedData(long lastAttackTick
-	)
-	{}
-
-	private static record _ExtendedData(long lastAttackTick
-	)
-	{}
 }

@@ -43,6 +43,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public long newDespawnKeepAliveTick;
 	public int newTargetEntityId;
 	public AbsoluteLocation newTargetPreviousLocation;
+	public long newLastAttackTick;
 	public Object newExtendedData;
 
 	private MutableCreature(CreatureEntity creature)
@@ -61,6 +62,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newDespawnKeepAliveTick = creature.despawnKeepAliveTick();
 		this.newTargetEntityId = creature.targetEntityId();
 		this.newTargetPreviousLocation = creature.targetPreviousLocation();
+		this.newLastAttackTick = creature.lastAttackTick();
 		this.newExtendedData = creature.extendedData();
 	}
 
@@ -260,6 +262,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newDespawnKeepAliveTick
 					, this.newTargetEntityId
 					, this.newTargetPreviousLocation
+					, this.newLastAttackTick
 					, this.newExtendedData
 			);
 			// See if these are identical.

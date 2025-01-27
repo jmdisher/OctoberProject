@@ -268,6 +268,7 @@ public class CodecHelpers
 		long despawnKeepAliveTick = 0L;
 		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
 		AbsoluteLocation targetPreviousLocation = null;
+		long lastAttackTick = 0L;
 		Object extendedData = null;
 		return new CreatureEntity(id
 				, type
@@ -284,6 +285,7 @@ public class CodecHelpers
 				, despawnKeepAliveTick
 				, targetEntityId
 				, targetPreviousLocation
+				, lastAttackTick
 				, extendedData
 		);
 	}

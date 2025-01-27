@@ -227,11 +227,13 @@ public class CreatureLogic
 				// Before we attempt to take a special action, see if we have a target which has moved.
 				_updatePathIfTargetMoved(context, creature);
 				
-				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId);
+				isDone = machine.doneSpecialActions(context, creatureSpawner, creature.getLocation(), creature.getType(), creature.getId(), creature.newTargetEntityId, creature.newLastAttackTick);
 				if (isDone)
 				{
 					creature.setMovementPlan(null);
 					creature.setReadyForAction();
+					// Set us on to cooldown.
+					creature.newLastAttackTick = context.currentTick;
 					creature.setExtendedData(machine.freezeToData());
 				}
 			}

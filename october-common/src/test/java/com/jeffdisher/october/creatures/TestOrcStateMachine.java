@@ -54,15 +54,12 @@ public class TestOrcStateMachine
 		EntityLocation orcLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
 		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
 		
-		OrcStateMachine machine = new OrcStateMachine(ORC, null);
+		OrcStateMachine machine = new OrcStateMachine(ORC);
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), null, assigner);
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.type(), orc.id());
 		
 		Assert.assertEquals(player.id(), target.id());
 		Assert.assertEquals(player.location(), target.location());
-		// We haven't yet attacked so there will be no extended data.
-		OrcStateMachine.Test_ExtendedData testData = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertNull(testData);
 	}
 
 	@Test
@@ -87,12 +84,13 @@ public class TestOrcStateMachine
 		TickProcessingContext context = _createContext(Map.of(orc.id(), orc), Map.of(player.id(), player), messageAcceptor, assigner);
 		
 		// Start with the orc targeting the player.
-		OrcStateMachine machine = new OrcStateMachine(ORC, OrcStateMachine.encodeExtendedData(new OrcStateMachine.Test_ExtendedData(0L)));
+		OrcStateMachine machine = new OrcStateMachine(ORC);
 		ICreatureStateMachine.TargetEntity target = machine.selectTarget(context, new EntityCollection(Set.of(player), Set.of(orc)), orc.location(), orc.type(), orc.id());
 		Assert.assertEquals(player.id(), target.id());
 		Assert.assertEquals(player.location(), target.location());
-		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.type(), orc.id(), player.id());
+		boolean didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.type(), orc.id(), player.id(), orc.lastAttackTick());
 		Assert.assertTrue(didTakeAction);
+		long attackTick = context.currentTick;
 		
 		// We should see the orc send the attack message
 		Assert.assertEquals(player.id(), targetId[0]);
@@ -100,25 +98,18 @@ public class TestOrcStateMachine
 		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamageFromEntity);
 		message[0] = null;
 		
-		// The orc should still target them.
-		OrcStateMachine.Test_ExtendedData result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(context.currentTick, result.lastAttackTick());
-		
 		// A second attack on the following tick should fail since we are on cooldown.
-		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc.location(), orc.type(), orc.id(), player.id()));
-		Assert.assertEquals(context.currentTick, result.lastAttackTick());
+		Assert.assertFalse(machine.doneSpecialActions(_advanceTick(context, 1L), null, orc.location(), orc.type(), orc.id(), player.id(), attackTick));
 		
 		// But will work if we advance tick number further.
 		long ticksToAdvance = OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick;
 		context = _advanceTick(context, ticksToAdvance);
-		didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.type(), orc.id(), player.id());
+		didTakeAction = machine.doneSpecialActions(context, null, orc.location(), orc.type(), orc.id(), player.id(), attackTick);
 		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals(player.id(), targetId[0]);
 		targetId[0] = 0;
 		Assert.assertTrue(message[0] instanceof EntityChangeTakeDamageFromEntity);
 		message[0] = null;
-		result = OrcStateMachine.decodeExtendedData(machine.freezeToData());
-		Assert.assertEquals(context.currentTick, result.lastAttackTick());
 	}
 
 

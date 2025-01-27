@@ -84,6 +84,7 @@ public record LegacyCreatureEntityV1(int id
 				, 0L
 				, CreatureEntity.NO_TARGET_ENTITY_ID
 				, null
+				, 0L
 				, extendedData
 		);
 	}
