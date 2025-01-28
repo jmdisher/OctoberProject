@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -92,7 +91,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -136,7 +135,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -159,7 +158,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -180,7 +179,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -221,7 +220,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -265,7 +264,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -318,7 +317,7 @@ public class TestCreatureProcessor
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(), Set.of())
+					, new EntityCollection(Map.of(), Map.of())
 					, changesToRun
 			);
 			creature = group.updatedCreatures().get(creatureId);
@@ -333,7 +332,7 @@ public class TestCreatureProcessor
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(), Set.of())
+					, new EntityCollection(Map.of(), Map.of())
 					, changesToRun
 			);
 			creature = group.updatedCreatures().get(creatureId);
@@ -357,7 +356,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -377,7 +376,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, changesToRun
 		);
 		
@@ -395,14 +394,14 @@ public class TestCreatureProcessor
 		CreatureEntity creature = CreatureEntity.create(-1, COW, startLocation, (byte)100);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity farWheat = _createEntity(1, new EntityLocation(5.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
-		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
-		Entity nonWheat = _createEntity(1, new EntityLocation(2.0f, 0.0f, 0.0f), null, new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
+		Entity closeWheat = _createEntity(2, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+		Entity nonWheat = _createEntity(3, new EntityLocation(2.0f, 0.0f, 0.0f), null, new NonStackableItem(ENV.items.getItemById("op.iron_pickaxe"), 100));
 		TickProcessingContext context = _createContext();
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
+				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
 				, changesToRun
 		);
 		
@@ -415,7 +414,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(closeWheat.location().getBlockLocation(), endPoint);
 		
 		// Move the target entity and observe that the plan changes.
-		closeWheat = _createEntity(1, new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
+		closeWheat = _createEntity(closeWheat.id(), new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		
 		// Run the processor to observe the movement of the target entity.
 		context = _updateContextWithPlayer(context, closeWheat);
@@ -423,7 +422,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(farWheat, closeWheat, nonWheat), creaturesById.values())
+				, new EntityCollection(Map.of(farWheat.id(), farWheat, closeWheat.id(), closeWheat, nonWheat.id(), nonWheat), creaturesById)
 				, changesToRun
 		);
 		updated = group.updatedCreatures().get(creature.id());
@@ -449,7 +448,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(player), creaturesById.values())
+				, new EntityCollection(Map.of(player.id(), player), creaturesById)
 				, changesToRun
 		);
 		
@@ -472,7 +471,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(player), creaturesById.values())
+				, new EntityCollection(Map.of(player.id(), player), creaturesById)
 				, changesToRun
 		);
 		updated = group.updatedCreatures().get(creature.id());
@@ -508,7 +507,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(fedCow.id(), fedCow)
 				, context
-				, new EntityCollection(Set.of(closeWheat), creaturesById.values())
+				, new EntityCollection(Map.of(closeWheat.id(), closeWheat), creaturesById)
 				, changesToRun
 		);
 		
@@ -547,7 +546,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(player), creaturesById.values())
+				, new EntityCollection(Map.of(player.id(), player), creaturesById)
 				, Map.of()
 		);
 		creaturesById.putAll(group.updatedCreatures());
@@ -560,7 +559,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(player), creaturesById.values())
+				, new EntityCollection(Map.of(player.id(), player), creaturesById)
 				, Map.of(cow1.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
 						, cow2.id(), List.of(new EntityChangeApplyItemToCreature(wheat_item))
 				)
@@ -580,7 +579,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(player), creaturesById.values())
+				, new EntityCollection(Map.of(player.id(), player), creaturesById)
 				, Map.of(cow1.id(), List.of()
 						, cow2.id(), List.of()
 				)
@@ -614,7 +613,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), creaturesById.values())
+				, new EntityCollection(Map.of(), creaturesById)
 				, Map.of()
 		);
 		
@@ -628,7 +627,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), creaturesById.values())
+				, new EntityCollection(Map.of(), creaturesById)
 				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
 		);
 		Assert.assertEquals(1, group.newlySpawnedCreatures().size());
@@ -644,7 +643,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), creaturesById.values())
+				, new EntityCollection(Map.of(), creaturesById)
 				, Map.of()
 		);
 	}
@@ -670,7 +669,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
-				, new EntityCollection(Set.of(), creaturesById.values())
+				, new EntityCollection(Map.of(), creaturesById)
 				, changesToRun
 		);
 		
@@ -684,7 +683,7 @@ public class TestCreatureProcessor
 			group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(), creaturesById.values())
+					, new EntityCollection(Map.of(), creaturesById)
 					, changesToRun
 			);
 			updated = group.updatedCreatures().get(creature.id());
@@ -713,7 +712,7 @@ public class TestCreatureProcessor
 			group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(), creaturesById.values())
+					, new EntityCollection(Map.of(), creaturesById)
 					, changesToRun
 			);
 			justUpdated = group.updatedCreatures().get(creature.id());
@@ -773,7 +772,7 @@ public class TestCreatureProcessor
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(waterTarget, airTarget), creaturesById.values())
+					, new EntityCollection(Map.of(waterTarget.id(), waterTarget, airTarget.id(), airTarget), creaturesById)
 					, changesToRun
 			);
 			creaturesById = group.updatedCreatures();
@@ -830,7 +829,7 @@ public class TestCreatureProcessor
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 					, creaturesById
 					, context
-					, new EntityCollection(Set.of(), creaturesById.values())
+					, new EntityCollection(Map.of(), creaturesById)
 					, changesToRun
 			);
 			creaturesById = group.updatedCreatures();
@@ -906,7 +905,7 @@ public class TestCreatureProcessor
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(creature.id(), creature)
 				, context
-				, new EntityCollection(Set.of(), List.of(creature))
+				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
 				, Map.of()
 		);
 		creature = group.updatedCreatures().get(creature.id());
@@ -920,7 +919,7 @@ public class TestCreatureProcessor
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, group.updatedCreatures()
 				, context
-				, new EntityCollection(Set.of(), List.of(creature))
+				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
 				, Map.of(creature.id(), new ArrayList<>(outChanges))
 		);
 		creature = group.updatedCreatures().get(creature.id());

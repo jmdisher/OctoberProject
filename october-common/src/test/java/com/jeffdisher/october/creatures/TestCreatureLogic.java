@@ -3,7 +3,6 @@ package com.jeffdisher.october.creatures;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -169,7 +168,7 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
-				, new EntityCollection(Set.of(), Set.of(entity))
+				, new EntityCollection(Map.of(), Map.of(entity.id(), entity))
 				, mutable
 				, 100L
 		);
@@ -264,7 +263,7 @@ public class TestCreatureLogic
 		
 		// First, choose the target.
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
-				, new EntityCollection(Set.of(player), Set.of(orc))
+				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
 				, mutableOrc
 				, 100L
 		);
@@ -527,7 +526,7 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
-				, new EntityCollection(List.of(player), List.of(orc))
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 				, 100L
 		);
@@ -608,7 +607,7 @@ public class TestCreatureLogic
 		mutableOrc.newTargetEntityId = player.id();
 		mutableOrc.newTargetPreviousLocation = player.location().getBlockLocation();
 		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
-				, new EntityCollection(List.of(player), List.of(orc))
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, mutableOrc
 				, 100L
 		);

@@ -447,7 +447,7 @@ public class TickRunner
 					, _millisPerTick
 					, currentTickTimeMillis
 			);
-			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities.values(), thisTickMaterials.completedCreatures.values());
+			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities, thisTickMaterials.completedCreatures);
 			
 			// We will have the first thread attempt the monster spawning algorithm.
 			CreatureEntity spawned = null;

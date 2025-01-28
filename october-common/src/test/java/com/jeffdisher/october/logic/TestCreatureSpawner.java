@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
@@ -59,7 +58,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -79,7 +78,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		TickProcessingContext context = _createSunnyContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -114,7 +113,7 @@ public class TestCreatureSpawner
 		;
 		
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -133,7 +132,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(cuboidMaps);
 		TickProcessingContext context = _createContext(completedCuboids, 1);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -158,7 +157,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -177,7 +176,7 @@ public class TestCreatureSpawner
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(MutableEntity.createForTest(1).freeze()), Set.of())
+				, new EntityCollection(Map.of(1, MutableEntity.createForTest(1).freeze()), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
@@ -197,7 +196,7 @@ public class TestCreatureSpawner
 		ColumnHeightMap columnMap = ColumnHeightMap.build().freeze();
 		TickProcessingContext context = _createContext(completedCuboids, 5);
 		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
-				, new EntityCollection(Set.of(), Set.of())
+				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, Map.of(cuboid.getCuboidAddress().getColumn(), columnMap)
 				, Map.of()

@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
-import java.util.Collection;
-import java.util.Set;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -36,8 +35,8 @@ public class TestEntityCollection
 	@Test
 	public void checkEmpty()
 	{
-		Collection<Entity> players = Set.of();
-		Collection<CreatureEntity> creatures = Set.of();
+		Map<Integer, Entity> players = Map.of();
+		Map<Integer, CreatureEntity> creatures = Map.of();
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
@@ -49,8 +48,8 @@ public class TestEntityCollection
 	@Test
 	public void noneInRange()
 	{
-		Collection<Entity> players = Set.of(_buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f)));
-		Collection<CreatureEntity> creatures = Set.of(_buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f)));
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f)));
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f)));
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
 		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
@@ -62,11 +61,11 @@ public class TestEntityCollection
 	@Test
 	public void someInRange()
 	{
-		Collection<Entity> players = Set.of(_buildPlayer(1, new EntityLocation(1.0f, -1.0f, 1.0f))
-				, _buildPlayer(2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, -1.0f, 1.0f))
+				, 2, _buildPlayer(2, new EntityLocation(-1.0f, 1.0f, 1.0f))
 		);
-		Collection<CreatureEntity> creatures = Set.of(_buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
-				, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
+				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
 		);
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
@@ -78,6 +77,24 @@ public class TestEntityCollection
 		
 		Assert.assertEquals(2, counts[0]);
 		Assert.assertEquals(2, counts[1]);
+	}
+
+	@Test
+	public void directQueries()
+	{
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, -1.0f, 1.0f))
+				, 2, _buildPlayer(2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		);
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
+				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+		);
+		EntityCollection collection = new EntityCollection(players, creatures);
+		Assert.assertNotNull(collection.getPlayerById(1));
+		Assert.assertNotNull(collection.getPlayerById(2));
+		Assert.assertNull(collection.getPlayerById(3));
+		Assert.assertNotNull(collection.getCreatureById(-1));
+		Assert.assertNotNull(collection.getCreatureById(-2));
+		Assert.assertNull(collection.getCreatureById(-3));
 	}
 
 
