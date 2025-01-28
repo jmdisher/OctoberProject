@@ -642,7 +642,7 @@ public class TestCreatureLogic
 		
 		// But will work if we advance tick number further.
 		context = ContextBuilder.build()
-				.tick(context.currentTick + OrcStateMachine.ATTACK_COOLDOWN_MILLIS / context.millisPerTick)
+				.tick(context.currentTick + CreatureLogic.MILLIS_ATTACK_COOLDOWN / context.millisPerTick)
 				.sinks(null, changeSink)
 				.lookups(previousBlockLookUp, previousEntityLookUp)
 				.finish()

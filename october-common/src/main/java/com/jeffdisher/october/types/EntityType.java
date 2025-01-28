@@ -1,9 +1,5 @@
 package com.jeffdisher.october.types;
 
-import java.util.function.Function;
-
-import com.jeffdisher.october.creatures.ICreatureStateMachine;
-
 
 /**
  * This is used closely by CreatureRegistry to determine server-side behaviour but also client-side audio, etc.
@@ -19,7 +15,6 @@ public record EntityType(byte number
 		, byte attackDamage
 		, Items[] drops
 		, Item breedingItem
-		, Function<Object, ICreatureStateMachine> stateMachineFactory
 )
 {
 	public float getPathDistance()
@@ -32,5 +27,11 @@ public record EntityType(byte number
 	{
 		// Anything which can't breed can despawn.
 		return (null == this.breedingItem);
+	}
+
+	public boolean isLivestock()
+	{
+		// Anything which has a breedable item is considered livestock.
+		return (null != this.breedingItem);
 	}
 }

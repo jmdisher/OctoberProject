@@ -6,7 +6,6 @@
 # <TAB>view_distance<TAB>float
 # <TAB>action_distance<TAB>float
 # <TAB>drops<TAB>item_id<tab>count_int
-# <TAB>logic<TAB>(LIVESTOCK|MONSTER)
 # [<TAB>attack_damage<TAB>byte]
 # [<TAB>breeding_item<TAB>item_id]
 #
@@ -22,7 +21,6 @@ op.cow	Cow
 	view_distance	7.0
 	action_distance	1.0
 	drops	op.beef	5
-	logic	LIVESTOCK
 	breeding_item	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
@@ -31,5 +29,4 @@ op.orc	Orc
 	view_distance	8.0
 	action_distance	1.0
 	drops	op.iron_dust	1
-	logic	MONSTER
 	attack_damage	5

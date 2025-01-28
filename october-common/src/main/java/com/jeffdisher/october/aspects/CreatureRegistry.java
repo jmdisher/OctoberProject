@@ -9,13 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import com.jeffdisher.october.config.TabListReader;
-import com.jeffdisher.october.creatures.CowStateMachine;
-import com.jeffdisher.october.creatures.ICreatureStateMachine;
-import com.jeffdisher.october.creatures.OrcStateMachine;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.Item;
@@ -34,19 +29,10 @@ public class CreatureRegistry
 	private static final String SUB_VIEW_DISTANCE = "view_distance";
 	private static final String SUB_ACTION_DISTANCE = "action_distance";
 	private static final String SUB_DROPS = "drops";
-	private static final String SUB_LOGIC = "logic";
-	private static final String LOGIC_FLAG_LIVESTOCK = "LIVESTOCK";
-	private static final String LOGIC_FLAG_MONSTER = "MONSTER";
 	private static final String SUB_OPT_ATTACK_DAMAGE = "attack_damage";
 	private static final String SUB_OPT_BREEDING_ITEM = "breeding_item";
 
 	private static final String FAKE_PLAYER_ID = "op.player";
-	private static final BiFunction<EntityType, Object, ICreatureStateMachine> FACTORY_LIVESTOCK = (EntityType type, Object extendedData) -> {
-		return new CowStateMachine(type);
-	};
-	private static final BiFunction<EntityType, Object, ICreatureStateMachine> FACTORY_MONSTER = (EntityType type, Object extendedData) -> {
-		return new OrcStateMachine(type);
-	};
 
 	/**
 	 * Loads the creature registry from the tablist in the given stream, sourcing Items from the given items registry.
@@ -78,7 +64,6 @@ public class CreatureRegistry
 			private byte _attackDamage = 0;
 			private Items[] _drops = null;
 			private Item _breedingItem = null;
-			private BiFunction<EntityType, Object, ICreatureStateMachine> _stateMachineFactory = null;
 			
 			@Override
 			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -109,7 +94,6 @@ public class CreatureRegistry
 				// optional _attackDamage
 				_assert(SUB_DROPS, null != _drops);
 				// optional _breedingItem
-				_assert(SUB_LOGIC, null != _stateMachineFactory);
 				
 				// Add 2 to the number since 0 is reserved as an error and 1 is for the player.
 				Assert.assertTrue(creatures.size() < 253);
@@ -125,7 +109,6 @@ public class CreatureRegistry
 						, _attackDamage
 						, _drops
 						, _breedingItem
-						, _stateMachineFactory
 				);
 				creatures.add(type);
 				
@@ -139,7 +122,6 @@ public class CreatureRegistry
 				_attackDamage = 0;
 				_drops = null;
 				_breedingItem = null;
-				_stateMachineFactory = null;
 			}
 			@Override
 			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
@@ -197,26 +179,6 @@ public class CreatureRegistry
 					Item item = _getItem(parameters[0]);
 					int count = _getInt(parameters[1]);
 					_drops = new Items[] { new Items(item, count) };
-				}
-				else if (SUB_LOGIC.equals(name))
-				{
-					if (1 != parameters.length)
-					{
-						throw new TabListReader.TabListException(_id + ": Expected 1 parameter for " + SUB_LOGIC);
-					}
-					String type = parameters[0];
-					if (LOGIC_FLAG_LIVESTOCK.equals(type))
-					{
-						_stateMachineFactory = FACTORY_LIVESTOCK;
-					}
-					else if (LOGIC_FLAG_MONSTER.equals(type))
-					{
-						_stateMachineFactory = FACTORY_MONSTER;
-					}
-					else
-					{
-						throw new TabListReader.TabListException(_id + ": Unknown logic type " + type);
-					}
 				}
 				else if (SUB_OPT_ATTACK_DAMAGE.equals(name))
 				{
@@ -323,7 +285,6 @@ public class CreatureRegistry
 				, (byte)0
 				, null
 				, null
-				, null
 		);
 		ENTITY_BY_NUMBER = new EntityType[creatures.size() + 2];
 		ENTITY_BY_NUMBER[1] = this.PLAYER;
@@ -373,15 +334,9 @@ public class CreatureRegistry
 			, byte attackDamage
 			, Items[] drops
 			, Item breedingItem
-			, BiFunction<EntityType, Object, ICreatureStateMachine> stateMachineFactory
 	)
 	{
-		// We need to use an indirect container to push this type into the factory.
-		EntityType[] container = new EntityType[1];
-		Function<Object, ICreatureStateMachine> innerFactory = (Object extendedData) -> {
-			return stateMachineFactory.apply(container[0], extendedData);
-		};
-		container[0] = new EntityType(number
+		return new EntityType(number
 				, id
 				, name
 				, volume
@@ -392,8 +347,6 @@ public class CreatureRegistry
 				, attackDamage
 				, drops
 				, breedingItem
-				, innerFactory
 		);
-		return container[0];
 	}
 }
