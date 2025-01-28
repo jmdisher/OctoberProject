@@ -83,35 +83,18 @@ public class CreatureLogic
 	 */
 	public static boolean applyItemToCreature(Item itemType, IMutableCreatureEntity creature)
 	{
-		boolean didApply;
+		boolean didApply = false;
 		EntityType creatureType = creature.getType();
-		if (creatureType.breedingItem() == itemType)
+		// The only item application case which currently exists is breeding items so make sure that is the case.
+		// Don't redundantly enter love mode.
+		// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
+		if (!creature.isInLoveMode() && (null == creature.getOffspringLocation()) && (creatureType.breedingItem() == itemType))
 		{
-			// Don't redundantly enter love mode.
-			if (!creature.isInLoveMode())
-			{
-				// We can't enter love mode if already pregnant (although that would only remain the case for a single tick).
-				if (null == creature.getOffspringLocation())
-				{
-					// If we applied this, put us into love mode and clear other plans.
-					creature.setLoveMode(true);
-					creature.setMovementPlan(null);
-					creature.setReadyForAction();
-					didApply = true;
-				}
-				else
-				{
-					didApply = false;
-				}
-			}
-			else
-			{
-				didApply = false;
-			}
-		}
-		else
-		{
-			didApply = false;
+			// If we applied this, put us into love mode and clear other plans.
+			creature.setLoveMode(true);
+			creature.setMovementPlan(null);
+			creature.setReadyForAction();
+			didApply = true;
 		}
 		return didApply;
 	}
@@ -135,29 +118,24 @@ public class CreatureLogic
 	)
 	{
 		// Get the movement plan and see if we should advance it.
-		List<AbsoluteLocation> movementPlan = mutable.newMovementPlan;
 		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-		boolean shouldMakePlan = (null == movementPlan);
+		boolean shouldMakePlan = (null == mutable.newMovementPlan);
 		if (shouldMakePlan)
 		{
-			movementPlan = _makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+			_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
 		}
 		else
 		{
-			movementPlan = _advanceMovementPlan(blockKindLookup, mutable, movementPlan);
+			_advanceMovementPlan(blockKindLookup, mutable);
 		}
-		Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
+		// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
+		Assert.assertTrue((null == mutable.newMovementPlan) || !mutable.newMovementPlan.isEmpty());
 		
-		IMutationEntity<IMutableCreatureEntity> actionProduced;
-		if (null != movementPlan)
-		{
-			actionProduced = _produceNextAction(context, blockKindLookup, mutable, movementPlan, timeLimitMillis);
-		}
-		else
-		{
-			actionProduced = null;
-		}
-		return actionProduced;
+		// We will only be able to produce an action if we have a movement plan.
+		return (null != mutable.newMovementPlan)
+				? _produceNextAction(context, blockKindLookup, mutable, mutable.newMovementPlan, timeLimitMillis)
+				: null
+		;
 	}
 
 	/**
@@ -169,9 +147,9 @@ public class CreatureLogic
 	 */
 	public static boolean setCreaturePregnant(IMutableCreatureEntity creature, EntityLocation sireLocation)
 	{
-		// We can only attempt set the pregnant state if this is a breedable entity type.
-		boolean didBecomePregnant;
+		boolean didBecomePregnant = false;
 		EntityType creatureType = creature.getType();
+		// We can only attempt set the pregnant state if this creature is in love mode.
 		if (null != creatureType.breedingItem())
 		{
 			// Average the locations.
@@ -180,23 +158,12 @@ public class CreatureLogic
 					, (sireLocation.y() + parentLocation.y()) / 2.0f
 					, (sireLocation.z() + parentLocation.z()) / 2.0f
 			);
-			if (creature.isInLoveMode())
-			{
-				// Clear the love mode, set the spawn location, and clear existing plans.
-				creature.setLoveMode(false);
-				creature.setOffspringLocation(spawnLocation);
-				creature.setMovementPlan(null);
-				creature.setReadyForAction();
-				didBecomePregnant = true;
-			}
-			else
-			{
-				didBecomePregnant = false;
-			}
-		}
-		else
-		{
-			didBecomePregnant = false;
+			// Clear the love mode, set the spawn location, and clear existing plans.
+			creature.setLoveMode(false);
+			creature.setOffspringLocation(spawnLocation);
+			creature.setMovementPlan(null);
+			creature.setReadyForAction();
+			didBecomePregnant = true;
 		}
 		return didBecomePregnant;
 	}
@@ -218,19 +185,18 @@ public class CreatureLogic
 	{
 		boolean isDone;
 		EntityType creatureType = creature.getType();
-		// If we are peaceful, we want to despawn any creatures which inflict damage.
-		if ((creatureType.attackDamage() > 0) && (Difficulty.PEACEFUL == context.config.difficulty))
+		if (creatureType.isHostile() && (Difficulty.PEACEFUL == context.config.difficulty))
 		{
+			// If we are peaceful, we want to despawn any creatures which are hostile.
 			creature.newHealth = (byte)0;
 			isDone = true;
 		}
 		else
 		{
-			// See if this should despawn.
+			// See if this should despawn due to a timeout.
 			long despawnTick = creature.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
 			{
-				// If we want to despawn them without drops, just set their health to zero without asking the creature to handle the death.
 				creature.setHealth((byte)0);
 				isDone = true;
 			}
@@ -245,28 +211,9 @@ public class CreatureLogic
 				}
 				else
 				{
+					// We assume that anything is either livestock or hostile.
+					Assert.assertTrue(creatureType.isHostile());
 					isDone = _didTakeHostileAction(context, creature);
-				}
-				if (isDone)
-				{
-					// If we took a special action and are livestock, we should clear our plan.
-					// TODO:  These assumptions can be cleaned up when the machien implementations are inlined.
-					if (null != creatureType.breedingItem())
-					{
-						// Interpret any of the breeding state we may have influenced.
-						if (null != creature.newOffspringLocation)
-						{
-							creature.newOffspringLocation = null;
-						}
-						else if (creature.isInLoveMode())
-						{
-							creature.newInLoveMode = false;
-						}
-						creature.setMovementPlan(null);
-						creature.setReadyForAction();
-					}
-					// Set us on to cooldown.
-					creature.newLastAttackTick = context.currentTick;
 				}
 			}
 		}
@@ -292,7 +239,7 @@ public class CreatureLogic
 	}
 
 
-	private static List<AbsoluteLocation> _makeMovementPlan(TickProcessingContext context
+	private static void _makeMovementPlan(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, EntityCollection entityCollection
 			, MutableCreature mutable
@@ -324,6 +271,7 @@ public class CreatureLogic
 							, mutable.getLocation()
 							, mutable.getType()
 					);
+					// We can't plan an empty path.
 					Assert.assertTrue((null == movementPlan) || !movementPlan.isEmpty());
 				}
 			}
@@ -340,7 +288,6 @@ public class CreatureLogic
 			movementPlan = null;
 		}
 		mutable.newMovementPlan = movementPlan;
-		return movementPlan;
 	}
 
 	private static IMutationEntity<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
@@ -383,10 +330,10 @@ public class CreatureLogic
 		EntityLocation creatureLocation = mutable.getLocation();
 		EntityType type = mutable.getType();
 		
-		List<AbsoluteLocation> path = null;
 		_TargetEntity newTarget;
 		if (type.isLivestock())
 		{
+			// This is livestock so choose our target based on whether we are looking for a partner or food.
 			if (mutable.isInLoveMode())
 			{
 				// Find another of this type in breeding mode.
@@ -403,23 +350,28 @@ public class CreatureLogic
 			// This is hostile so just search for a player.
 			newTarget = _findPlayerInRange(entityCollection, creatureLocation, type);
 		}
+		
+		// Determine the path if we found a target.
+		List<AbsoluteLocation> path = null;
 		if (null != newTarget)
 		{
-			EntityLocation targetLocation = newTarget.location();
-			mutable.newTargetEntityId = newTarget.id();
-			mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
+			// We want to verify that we have a path before we update our state.
 			// We have a target so try to build a path (we will use double the distance for pathing overhead).
+			EntityLocation targetLocation = newTarget.location();
 			// If this fails, it will return null which is already our failure case.
 			EntityVolume volume = type.volume();
 			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, type.getPathDistance());
-			// We want to strip away the first step, since it is the current location.
 			if (null != path)
 			{
+				// The path was valid so set our target.
+				mutable.newTargetEntityId = newTarget.id();
+				mutable.newTargetPreviousLocation = targetLocation.getBlockLocation();
+				// We want to strip away the first step, since it is the current location.
 				path.remove(0);
 				// (we will still return an empty path just to communicate that we made a decision.
+				// As long as we found a new deliberate target, reset our despawn timeout.
+				mutable.newDespawnKeepAliveTick = context.currentTick;
 			}
-			// As long as we found a new deliberate target, reset our despawn timeout.
-			mutable.newDespawnKeepAliveTick = context.currentTick;
 		}
 		return path;
 	}
@@ -457,6 +409,7 @@ public class CreatureLogic
 			Assert.assertTrue(plannedPath.size() > 0);
 			// We want to strip away the first step, since it is the current location.
 			plannedPath.remove(0);
+			// If the path ends up being empty, don't choose it.
 			if (plannedPath.isEmpty())
 			{
 				plannedPath = null;
@@ -469,17 +422,18 @@ public class CreatureLogic
 		return plannedPath;
 	}
 
-	private static List<AbsoluteLocation> _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	// Note:  This will update mutable.newMovementPlan
+	private static void _advanceMovementPlan(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, MutableCreature mutable
-			, List<AbsoluteLocation> existingPlan
 	)
 	{
-		// First, check to see if we are already in our next location.
+		List<AbsoluteLocation> existingPlan = mutable.newMovementPlan;
 		AbsoluteLocation thisStep = existingPlan.get(0);
 		EntityLocation entityLocation = mutable.getLocation();
 		AbsoluteLocation currentLocation = entityLocation.getBlockLocation();
 		
 		List<AbsoluteLocation> updatedPlan;
+		// First, check to see if we are already in our next location.
 		if (currentLocation.equals(thisStep))
 		{
 			// If we are, that means that we can remove this from the path and plan to move to the next step.
@@ -524,7 +478,6 @@ public class CreatureLogic
 			}
 		}
 		mutable.newMovementPlan = updatedPlan;
-		return updatedPlan;
 	}
 
 	private static IMutationEntity<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
@@ -649,17 +602,12 @@ public class CreatureLogic
 				else
 				{
 					// They are out of range so forget them.
-					mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
-					mutable.newTargetPreviousLocation = null;
-					mutable.newMovementPlan = null;
+					_clearTargetAndPlan(mutable);
 				}
 			}
 			else
 			{
-				// The unloaded, so clear.
-				mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
-				mutable.newTargetPreviousLocation = null;
-				mutable.newMovementPlan = null;
+				_clearTargetAndPlan(mutable);
 			}
 		}
 	}
@@ -674,19 +622,16 @@ public class CreatureLogic
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, thisType.viewDistance(), (CreatureEntity check) -> {
-			// Ignore ourselves and make sure that they are the same type.
-			if ((thisCreatureId != check.id()) && (thisType == check.type()))
+			// Ignore ourselves and make sure that they are the same type and in love mode.
+			if ((thisCreatureId != check.id()) && (thisType == check.type()) && check.inLoveMode())
 			{
-				// See if they are also in love mode.
-				if (check.inLoveMode())
+				// See how far away they are so we choose the closest.
+				EntityLocation end = check.location();
+				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+				if (distance < distanceToTarget[0])
 				{
-					EntityLocation end = check.location();
-					float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
-					if (distance < distanceToTarget[0])
-					{
-						target[0] = new _TargetEntity(check.id(), end);
-						distanceToTarget[0] = distance;
-					}
+					target[0] = new _TargetEntity(check.id(), end);
+					distanceToTarget[0] = distance;
 				}
 			}
 		});
@@ -703,6 +648,7 @@ public class CreatureLogic
 			Items itemsInHand = player.inventory().getStackForKey(itemKey);
 			if ((null != itemsInHand) && (thisType.breedingItem() == itemsInHand.type()))
 			{
+				// See how far away they are so we choose the closest.
 				EntityLocation end = player.location();
 				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 				if (distance < distanceToTarget[0])
@@ -720,6 +666,7 @@ public class CreatureLogic
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkPlayersInRange(creatureLocation, thisType.viewDistance(), (Entity player) -> {
+			// We are looking for any player so just choose the closest.
 			EntityLocation end = player.location();
 			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
 			if (distance < distanceToTarget[0])
@@ -733,16 +680,20 @@ public class CreatureLogic
 
 	private static boolean _didTakeLivestockAction(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, MutableCreature creature)
 	{
-		boolean isDone;
+		boolean isDone = false;
 		EntityType creatureType = creature.getType();
 		// See if we are pregnant or searching for our mate.
 		if (null != creature.newOffspringLocation)
 		{
+			// Spawn the creature and clear our offspring location.
 			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), creatureType, creature.newOffspringLocation, creatureType.maxHealth()));
+			creature.newOffspringLocation = null;
+			_clearTargetAndPlan(creature);
 			isDone = true;
 		}
-		else if (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId)
+		else if (creature.newInLoveMode && (CreatureEntity.NO_TARGET_ENTITY_ID != creature.newTargetEntityId))
 		{
+			// We are in love mode, and have found a target, so see if we are close enough to impregnate our target.
 			// We have a target so see if we are in love mode and if they are in range to breed.
 			MinimalEntity targetEntity = context.previousEntityLookUp.apply(creature.newTargetEntityId);
 			// If we got here, they must not have unloaded (we would have observed that in didUpdateTargetLocation.
@@ -752,22 +703,16 @@ public class CreatureLogic
 			EntityLocation targetLocation = targetEntity.location();
 			float distance = SpatialHelpers.distanceBetween(creature.newLocation, targetLocation);
 			float matingDistance = creatureType.actionDistance();
-			if (creature.isInLoveMode() && (distance <= matingDistance) && (targetEntity.id() < creature.getId()))
+			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
 			{
 				// Send the message to impregnate them.
 				EntityChangeImpregnateCreature sperm = new EntityChangeImpregnateCreature(creature.newLocation);
 				context.newChangeSink.creature(creature.newTargetEntityId, sperm);
+				// We can also now clear our plans since we are done with them.
+				creature.newInLoveMode = false;
+				_clearTargetAndPlan(creature);
 				isDone = true;
 			}
-			else
-			{
-				isDone = false;
-			}
-		}
-		else
-		{
-			// Nothing to do.
-			isDone = false;
 		}
 		return isDone;
 	}
@@ -798,6 +743,8 @@ public class CreatureLogic
 				BodyPart target = BodyPart.values()[index];
 				EntityChangeTakeDamageFromEntity<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromEntity<>(target, creatureType.attackDamage(), creature.getId());
 				context.newChangeSink.next(creature.newTargetEntityId, takeDamage);
+				// Since we sent the attack, put us on attack cooldown.
+				creature.newLastAttackTick = context.currentTick;
 				// We only count a successful attack as an "action".
 				isDone = true;
 			}
@@ -813,6 +760,13 @@ public class CreatureLogic
 			isDone = false;
 		}
 		return isDone;
+	}
+
+	private static void _clearTargetAndPlan(MutableCreature mutable)
+	{
+		mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
+		mutable.newTargetPreviousLocation = null;
+		mutable.newMovementPlan = null;
 	}
 
 
