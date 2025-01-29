@@ -62,6 +62,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int SHIFT_XCENTRE = 21;
 	public static final int WATER_Z_LEVEL = 0;
 	public static final int STONE_PEAK_Z_LEVEL = 16;
+	public static final int LAVA_Z_DEPTH = -100;
 
 	public static final char FOREST_CODE = 'R';
 	public static final char FIELD_CODE = 'F';
@@ -183,6 +184,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockCarrotMature;
 	private final Block _blockIronOre;
 	private final Block _blockWaterSource;
+	private final Block _blockBasalt;
+	private final Block _blockLavaSource;
 	private final EntityType _cow;
 	private final Structure _coalNode;
 	private final Structure _ironNode;
@@ -205,6 +208,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
 		_blockWaterSource = env.blocks.fromItem(env.items.getItemById("op.water_source"));
+		_blockBasalt = env.blocks.fromItem(env.items.getItemById("op.basalt"));
+		_blockLavaSource = env.blocks.fromItem(env.items.getItemById("op.lava_source"));
 		
 		_cow = env.creatures.getTypeById("op.cow");
 		
@@ -272,6 +277,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
 				int height = heightMap.getHeight(x, y);
+				// Note that the mantle height will be basalt and everything below will be lava.
+				int mantleHeight = height + LAVA_Z_DEPTH;
 				for (int z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 				{
 					int thisZ = cuboidZ + z;
@@ -283,8 +290,22 @@ public class BasicWorldGenerator implements IWorldGenerator
 					}
 					else if (thisZ < height)
 					{
-						// This is stone.
-						blockToWrite = _blockStone;
+						// This is underground so see what it is.
+						if (thisZ == mantleHeight)
+						{
+							// The mantle barrier, so this is basalt.
+							blockToWrite = _blockBasalt;
+						}
+						else if (thisZ < mantleHeight)
+						{
+							// We are in the mantle so just lava.
+							blockToWrite = _blockLavaSource;
+						}
+						else
+						{
+							// This is in the crust so just use stone.
+							blockToWrite = _blockStone;
+						}
 					}
 					else
 					{

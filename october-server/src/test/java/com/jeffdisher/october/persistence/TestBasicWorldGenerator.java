@@ -344,6 +344,28 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(data, 32668, 0, iron, 0, 0, 0, 0, 0);
 	}
 
+	@Test
+	public void mantleBarrier() throws Throwable
+	{
+		// Show the transition between the crust and the mantle.
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		
+		// Verify the surface shape.
+		CuboidAddress highAddress = CuboidAddress.fromInt(-1, 2, 0);
+		CuboidData highData = generator.generateCuboid(null, highAddress).cuboid();
+		
+		// Verify the transition shape.
+		CuboidAddress lowAddress = CuboidAddress.fromInt(-1, 2, -3);
+		CuboidData lowData = generator.generateCuboid(null, lowAddress).cuboid();
+		
+		// We expect that the surface lines up with the mantle.
+		Assert.assertEquals("SSSSSSSSDAAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 5, 22));
+		Assert.assertEquals("LLLLBSSSSSSSSSSSSSSSSSSSSSSSSSSS", _coreSample(lowData, 5, 22));
+		Assert.assertEquals("SSSSSSSSSDAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 9, 1));
+		Assert.assertEquals("LLLLLBSSSSSSSSSSSSSSSSSSSSSSSSSS", _coreSample(lowData, 9, 1));
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
 	{
@@ -424,5 +446,42 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(leaf, leafCount);
 		Assert.assertEquals(wheat, wheatCount);
 		Assert.assertEquals(carrot, carrotCount);
+	}
+
+	private static String _coreSample(CuboidData cuboid, int x, int y)
+	{
+		String sample = "";
+		short airBlock = ENV.items.getItemById("op.air").number();
+		short dirtBlock = ENV.items.getItemById("op.dirt").number();
+		short stoneBlock = ENV.items.getItemById("op.stone").number();
+		short basaltBlock = ENV.items.getItemById("op.basalt").number();
+		short lavaBlock = ENV.items.getItemById("op.lava_source").number();
+		for (int i = 0; i < Encoding.CUBOID_EDGE_SIZE; ++i)
+		{
+			short value = cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, i));
+			char c = '?';
+			if (airBlock == value)
+			{
+				c = 'A';
+			}
+			else if (dirtBlock == value)
+			{
+				c = 'D';
+			}
+			else if (stoneBlock == value)
+			{
+				c = 'S';
+			}
+			else if (basaltBlock == value)
+			{
+				c = 'B';
+			}
+			else if (lavaBlock == value)
+			{
+				c = 'L';
+			}
+			sample += c;
+		}
+		return sample;
 	}
 }
