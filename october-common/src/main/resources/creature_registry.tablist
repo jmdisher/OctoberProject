@@ -16,7 +16,7 @@
 
 op.cow	Cow
 	volume	0.7	0.8
-	blocks_per_second	2.0
+	blocks_per_second	1.0
 	max_health	40
 	view_distance	7.0
 	action_distance	1.0
@@ -24,7 +24,7 @@ op.cow	Cow
 	breeding_item	op.wheat_item
 op.orc	Orc
 	volume	0.7	0.4
-	blocks_per_second	3.0
+	blocks_per_second	2.0
 	max_health	20
 	view_distance	8.0
 	action_distance	1.0

@@ -323,10 +323,10 @@ public class TestCreatureProcessor
 			creature = group.updatedCreatures().get(creatureId);
 			Assert.assertNotNull(creature);
 		}
-		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 1.0f), creature.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.1f, 1.0f), creature.location());
 		
-		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 9 in total.
-		for (int i = 0; i < 9; ++i)
+		// There should now be just 1 step in the movement plan and the next invocation will cause us to convert it into steps, 19 in total.
+		for (int i = 0; i < 19; ++i)
 		{
 			Map<Integer, CreatureEntity> creaturesById = Map.of(creatureId, creature);
 			CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
@@ -529,7 +529,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation location2 = new EntityLocation(1.5f, 0.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(1.3f, 0.0f, 0.0f);
 		EntityLocation playerLocation = new EntityLocation(0.5f, 0.5f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
@@ -679,8 +679,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		// The cow should first position itself against the wall before making the jump.
-		// Note that it will take 3 steps, instead of 2, since this is an idle movement (half-speed but also ends in a jump).
-		for (int i = 0; i < 3; ++i)
+		// Note that it will take 4 steps, instead of 3, since this is an idle movement (half-speed but also ends in a jump).
+		for (int i = 0; i < 4; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();
@@ -790,8 +790,8 @@ public class TestCreatureProcessor
 			// Make sure that the air creature is further ahead.
 			Assert.assertTrue(airCreature.location().x() > waterCreature.location().x());
 		}
-		Assert.assertEquals(3.5f, waterCreature.location().x(), 0.01f);
-		Assert.assertEquals(5.0f, airCreature.location().x(), 0.01f);
+		Assert.assertEquals(3.0f, waterCreature.location().x(), 0.01f);
+		Assert.assertEquals(4.0f, airCreature.location().x(), 0.01f);
 	}
 
 	@Test
