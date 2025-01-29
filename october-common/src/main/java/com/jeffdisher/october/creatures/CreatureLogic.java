@@ -100,42 +100,39 @@ public class CreatureLogic
 	}
 
 	/**
-	 * Called when newStepsToNextMove is null in order to determine the next action for the entity.  This is an
-	 * opportunity for the creature to either just return the next actions for newStepsToNextMove from an existing plan
-	 * or update/change its existing plan.
-	 * Of special note, this is also where hostile mobs will be killed if in peaceful mode.
+	 * Called multiple times per tick to use up time in movement.
+	 * If there is no plan or the next action in the plan would take too long, it should return null.
+	 * Internally, it shouldn't try to build a new plan in this call.
 	 * 
 	 * @param context The context of the current tick.
-	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @return The next action to take (null if there is nothing to do).
 	 */
 	public static IMutationEntity<IMutableCreatureEntity> planNextAction(TickProcessingContext context
-			, EntityCollection entityCollection
 			, MutableCreature mutable
 			, long timeLimitMillis
 	)
 	{
-		// Get the movement plan and see if we should advance it.
-		Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-		boolean shouldMakePlan = (null == mutable.newMovementPlan);
-		if (shouldMakePlan)
+		IMutationEntity<IMutableCreatureEntity> action;
+		if (null != mutable.newMovementPlan)
 		{
-			_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+			// If we have a movement plan, we want to try to advance it and then produce the next action.
+			Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+			_advanceMovementPlan(blockKindLookup, mutable);
+			// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
+			Assert.assertTrue((null == mutable.newMovementPlan) || !mutable.newMovementPlan.isEmpty());
+			action = (null != mutable.newMovementPlan)
+					? _produceNextAction(context, blockKindLookup, mutable, mutable.newMovementPlan, timeLimitMillis)
+					: null
+			;
 		}
 		else
 		{
-			_advanceMovementPlan(blockKindLookup, mutable);
+			// We have no plan so do nothing.
+			action = null;
 		}
-		// We never want to leave an empty movement plan so we expect that has been addressed before we got here.
-		Assert.assertTrue((null == mutable.newMovementPlan) || !mutable.newMovementPlan.isEmpty());
-		
-		// We will only be able to produce an action if we have a movement plan.
-		return (null != mutable.newMovementPlan)
-				? _produceNextAction(context, blockKindLookup, mutable, mutable.newMovementPlan, timeLimitMillis)
-				: null
-		;
+		return action;
 	}
 
 	/**
@@ -171,49 +168,63 @@ public class CreatureLogic
 	/**
 	 * Called by CreatureProcessor at the beginning of each tick for each creature so that they can take special
 	 * actions.
+	 * This includes despawning if hostile in a peaceful world or if the mob is a despawning type and is idle.
+	 * Normally, however, it involves finding a target and/or creating a movement plan.
 	 * 
 	 * @param context The context of the current tick.
+	 * @param entityCollection The read-only collection of entities in the world.
 	 * @param creatureSpawner A consumer for any new entities spawned.
-	 * @param creature The mutable creature object currently being evaluated.
+	 * @param mutable The mutable creature object currently being evaluated.
 	 * @return True if some special action was taken, meaning that this tick's actions should be skipped for this
 	 * creature.
 	 */
 	public static boolean didTakeSpecialActions(TickProcessingContext context
+			, EntityCollection entityCollection
 			, Consumer<CreatureEntity> creatureSpawner
-			, MutableCreature creature
+			, MutableCreature mutable
 	)
 	{
 		boolean isDone;
-		EntityType creatureType = creature.getType();
+		EntityType creatureType = mutable.getType();
 		if (creatureType.isHostile() && (Difficulty.PEACEFUL == context.config.difficulty))
 		{
 			// If we are peaceful, we want to despawn any creatures which are hostile.
-			creature.newHealth = (byte)0;
+			mutable.newHealth = (byte)0;
 			isDone = true;
 		}
 		else
 		{
 			// See if this should despawn due to a timeout.
-			long despawnTick = creature.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
+			long despawnTick = mutable.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
 			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
 			{
-				creature.setHealth((byte)0);
+				mutable.setHealth((byte)0);
 				isDone = true;
 			}
 			else
 			{
-				// Before we attempt to take a special action, see if we have a target which has moved.
-				_updatePathIfTargetMoved(context, creature);
+				// See if we already have a plan.
+				if (null != mutable.newMovementPlan)
+				{
+					// We have a plan so just see if we need to update it due to target movement, etc.
+					_updatePathIfTargetMoved(context, mutable);
+				}
+				else
+				{
+					// We have no plan so make a new one.
+					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+					_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+				}
 				
 				if (creatureType.isLivestock())
 				{
-					isDone = _didTakeLivestockAction(context, creatureSpawner, creature);
+					isDone = _didTakeLivestockAction(context, creatureSpawner, mutable);
 				}
 				else
 				{
 					// We assume that anything is either livestock or hostile.
 					Assert.assertTrue(creatureType.isHostile());
-					isDone = _didTakeHostileAction(context, creature);
+					isDone = _didTakeHostileAction(context, mutable);
 				}
 			}
 		}

@@ -77,13 +77,13 @@ public class CreatureProcessor
 				}
 				
 				// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
-				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, creatureSpawner, mutable);
+				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, creatureSpawner, mutable);
 				
 				// If we have any time left, see what other actions we can take.
 				if (!didSpecial && (millisAtEndOfTick > 0L))
 				{
 					// If we didn't perform a special action, we can proceed with movement.
-					millisAtEndOfTick = _runInternalChanges(processor, context, damageApplication, entityCollection, mutable, millisAtEndOfTick);
+					millisAtEndOfTick = _runInternalChanges(processor, context, damageApplication, mutable, millisAtEndOfTick);
 				}
 				
 				// Account for time passing.
@@ -144,7 +144,6 @@ public class CreatureProcessor
 	private static long _runInternalChanges(ProcessorElement processor
 			, TickProcessingContext context
 			, TickUtils.IFallDamage damageApplication
-			, EntityCollection entityCollection
 			, MutableCreature mutable
 			, long millisAtEndOfTick
 	)
@@ -153,7 +152,7 @@ public class CreatureProcessor
 		while (canSchedule)
 		{
 			// Note that this may still return a null list of next steps if there is nothing to do.
-			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, entityCollection, mutable, millisAtEndOfTick);
+			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
 			if (null != change)
 			{
 				long timeCostMillis = change.getTimeCostMillis();

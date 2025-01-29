@@ -22,6 +22,7 @@ import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -167,8 +168,13 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutable = MutableCreature.existing(entity);
 		mutable.newBreath -= 1;
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(entity.id(), entity))
+				, null
+				, mutable
+		);
+		Assert.assertFalse(didTakeAction);
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutable
 				, 100L
 		);
@@ -262,8 +268,13 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		
 		// First, choose the target.
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, null
+				, mutableOrc
+		);
+		Assert.assertFalse(didTakeAction);
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -291,7 +302,11 @@ public class TestCreatureLogic
 				, 0L
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
+				, null
+				, mutableOrc
+		);
 		Assert.assertFalse(didTakeAction);
 		// We should now see the updated movement plan.
 		Assert.assertEquals(newPlayerLocation.getBlockLocation(), mutableOrc.newMovementPlan.get(mutableOrc.newMovementPlan.size() - 1));
@@ -325,11 +340,19 @@ public class TestCreatureLogic
 		;
 		MutableCreature mutableCow = MutableCreature.existing(cow);
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		boolean didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableCow);
-		Assert.assertFalse(didAct);
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
-		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
-		Assert.assertFalse(didAct);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, null
+				, mutableOrc
+		);
+		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableOrc.newHealth);
 		
 		// Now, advance time and do the same, seeing the despawn of the orc but not the cow.
@@ -338,11 +361,19 @@ public class TestCreatureLogic
 				.lookups(previousBlockLookUp, previousEntityLookUp)
 				.finish()
 		;
-		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableCow);
-		Assert.assertFalse(didAct);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
-		didAct = CreatureLogic.didTakeSpecialActions(context, null, mutableOrc);
-		Assert.assertTrue(didAct);
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
+				, null
+				, mutableOrc
+		);
+		Assert.assertTrue(didTakeAction);
 		Assert.assertEquals((byte)0,mutableOrc.newHealth);
 	}
 
@@ -411,6 +442,7 @@ public class TestCreatureLogic
 		// We should see the father sending a message
 		mutable = MutableCreature.existing(father);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), creatures)
 				, null
 				, mutable
 		);
@@ -425,6 +457,7 @@ public class TestCreatureLogic
 		// The mother should not take any action since they are waiting for the father.
 		mutable = MutableCreature.existing(mother);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), creatures)
 				, null
 				, mutable
 		);
@@ -474,6 +507,7 @@ public class TestCreatureLogic
 			offspring[0] = spawn;
 		};
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(), Map.of(mother.id(), mother))
 				, creatureSpawner
 				, mutable
 		);
@@ -525,8 +559,13 @@ public class TestCreatureLogic
 				.finish()
 		;
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, null
+				, mutableOrc
+		);
+		Assert.assertFalse(didTakeAction);
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -542,7 +581,7 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		EntityLocation location = new EntityLocation(1.0f, 0.0f, 1.0f);
+		EntityLocation location = new EntityLocation(1.1f, 0.0f, 1.0f);
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
@@ -606,8 +645,13 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.newTargetEntityId = player.id();
 		mutableOrc.newTargetPreviousLocation = player.location().getBlockLocation();
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, null
+				, mutableOrc
+		);
+		Assert.assertFalse(didTakeAction);
+		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
@@ -616,8 +660,13 @@ public class TestCreatureLogic
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.newTargetPreviousLocation);
 		
+		// Update the player to be close enough.
+		Assert.assertTrue(action.applyChange(context, mutableOrc));
+		TickUtils.allowMovement(context.previousBlockLookUp, null, mutableOrc, action.getTimeCostMillis());
+		
 		// Now, allow it to perform the attack.
-		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, null
 				, mutableOrc
 		);
@@ -631,6 +680,7 @@ public class TestCreatureLogic
 		
 		// A second attack on the following tick should fail since we are on cooldown.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, null
 				, mutableOrc
 		);
@@ -647,6 +697,7 @@ public class TestCreatureLogic
 				.finish()
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, null
 				, mutableOrc
 		);

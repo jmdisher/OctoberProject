@@ -417,7 +417,7 @@ public class TestCreatureProcessor
 		closeWheat = _createEntity(closeWheat.id(), new EntityLocation(2.0f, 1.0f, 0.0f), new Items(ENV.items.getItemById("op.wheat_item"), 2), null);
 		
 		// Run the processor to observe the movement of the target entity.
-		context = _updateContextWithPlayer(context, closeWheat);
+		context = _updateContextWithPlayerAndCreatures(context, closeWheat, creaturesById);
 		creaturesById = group.updatedCreatures();
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -444,6 +444,7 @@ public class TestCreatureProcessor
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
 		Entity player = _createEntity(1, new EntityLocation(5.0f, 1.0f, 0.0f), null, null);
 		TickProcessingContext context = _createContext();
+		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -466,7 +467,7 @@ public class TestCreatureProcessor
 		player = _createEntity(1, new EntityLocation(3.0f, 3.0f, 0.0f), null, null);
 		
 		// We will run the processor to see them update their target location.
-		context = _updateContextWithPlayer(context, player);
+		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		creaturesById = group.updatedCreatures();
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
@@ -503,6 +504,7 @@ public class TestCreatureProcessor
 		);
 		Entity closeWheat = _createEntity(1, new EntityLocation(3.0f, 0.0f, 0.0f), new Items(wheat_item, 2), null);
 		TickProcessingContext context = _createContext();
+		context = _updateContextWithPlayerAndCreatures(context, null, creaturesById);
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(fedCow.id(), fedCow)
@@ -527,7 +529,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation location2 = new EntityLocation(0.9f, 0.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(1.5f, 0.0f, 0.0f);
 		EntityLocation playerLocation = new EntityLocation(0.5f, 0.5f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
@@ -542,7 +544,7 @@ public class TestCreatureProcessor
 				, cow2.id(), cow2
 		));
 		TickProcessingContext context = _createContext();
-		context = _updateContextWithPlayer(context, player);
+		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -556,6 +558,7 @@ public class TestCreatureProcessor
 		Assert.assertEquals(player.id(), creaturesById.get(cow2.id()).targetEntityId());
 		
 		// Now, feed them using the mutations we would expect.
+		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -576,6 +579,7 @@ public class TestCreatureProcessor
 		creaturesById.put(cow2.id(), _takeAction(creaturesById.get(cow2.id())));
 		
 		// Run another tick so that they see each other in love mode.
+		context = _updateContextWithPlayerAndCreatures(context, player, creaturesById);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -995,10 +999,24 @@ public class TestCreatureProcessor
 		return context;
 	}
 
-	private static TickProcessingContext _updateContextWithPlayer(TickProcessingContext existing, Entity player)
+	private static TickProcessingContext _updateContextWithPlayerAndCreatures(TickProcessingContext existing, Entity player, Map<Integer, CreatureEntity> creatures)
 	{
 		TickProcessingContext context = ContextBuilder.nextTick(existing, (CreatureLogic.MINIMUM_MILLIS_TO_ACTION / existing.millisPerTick))
-				.lookups(existing.previousBlockLookUp, (Integer id) -> (id == player.id()) ? MinimalEntity.fromEntity(player) : null)
+				.lookups(existing.previousBlockLookUp, (Integer id) -> {
+					MinimalEntity ret;
+					if ((null != player) && (id == player.id()))
+					{
+						ret = MinimalEntity.fromEntity(player);
+					}
+					else
+					{
+						ret = creatures.containsKey(id)
+								? MinimalEntity.fromCreature(creatures.get(id))
+								: null
+						;
+					}
+					return ret;
+				})
 				.sinks(null, null)
 				.assigner(null)
 				.finish()
