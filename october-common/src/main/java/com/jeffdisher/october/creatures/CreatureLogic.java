@@ -185,47 +185,50 @@ public class CreatureLogic
 	)
 	{
 		boolean isDone;
-		EntityType creatureType = mutable.getType();
-		if (creatureType.isHostile() && (Difficulty.PEACEFUL == context.config.difficulty))
+		if (_didDespawn(context, mutable))
 		{
-			// If we are peaceful, we want to despawn any creatures which are hostile.
-			mutable.newHealth = (byte)0;
+			// This counts as being "done" since we should skip any walking.
 			isDone = true;
 		}
 		else
 		{
-			// See if this should despawn due to a timeout.
-			long despawnTick = mutable.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
-			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
+			EntityType creatureType = mutable.getType();
+			// We want to update our state so check the relevant variables.
+			if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.newTargetEntityId)
 			{
-				mutable.setHealth((byte)0);
-				isDone = true;
+				// We have some target so see if they are still valid and update our path to them.
+				boolean isTargetValid = _isTargetValid(entityCollection, mutable);
+				
+				if (isTargetValid)
+				{
+					// The target is valid so we want to see if we should update our plan of just drop it, if close enough.
+					_updateValidPathIfTargetMoved(context, mutable);
+				}
+				else
+				{
+					// The target is invalid so clear our state.
+					_clearTargetAndPlan(mutable);
+					mutable.setReadyForAction();
+				}
+				// If there is no plan, just skip movement.
+				isDone = (null == mutable.newMovementPlan);
+			}
+			else if (null == mutable.newMovementPlan)
+			{
+				// We have no plan so make a new one.
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+				_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
+			}
+			
+			if (creatureType.isLivestock())
+			{
+				isDone = _didTakeLivestockAction(context, creatureSpawner, mutable);
 			}
 			else
 			{
-				// See if we already have a plan.
-				if (null != mutable.newMovementPlan)
-				{
-					// We have a plan so just see if we need to update it due to target movement, etc.
-					_updatePathIfTargetMoved(context, mutable);
-				}
-				else
-				{
-					// We have no plan so make a new one.
-					Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-					_makeMovementPlan(context, blockKindLookup, entityCollection, mutable);
-				}
-				
-				if (creatureType.isLivestock())
-				{
-					isDone = _didTakeLivestockAction(context, creatureSpawner, mutable);
-				}
-				else
-				{
-					// We assume that anything is either livestock or hostile.
-					Assert.assertTrue(creatureType.isHostile());
-					isDone = _didTakeHostileAction(context, mutable);
-				}
+				// We assume that anything is either livestock or hostile.
+				Assert.assertTrue(creatureType.isHostile());
+				isDone = _didTakeHostileAction(context, mutable);
 			}
 		}
 		return isDone;
@@ -583,42 +586,33 @@ public class CreatureLogic
 		return goodTargets;
 	}
 
-	private static void _updatePathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
+	private static void _updateValidPathIfTargetMoved(TickProcessingContext context, MutableCreature mutable)
 	{
-		// If we are tracking another entity, see if we can update our target location.
-		if (CreatureEntity.NO_TARGET_ENTITY_ID != mutable.newTargetEntityId)
+		// We know that the target is valid and in range when we get here so the exist and are in range.
+		MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
+		EntityLocation creatureLocation = mutable.getLocation();
+		EntityLocation targetLocation = targetEntity.location();
+		float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+		EntityType creatureType = mutable.getType();
+		float pathDistance = creatureType.getPathDistance();
+		Assert.assertTrue(distance <= pathDistance);
+		if (distance < creatureType.actionDistance())
 		{
-			// See if they are still loaded.
-			MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
-			if (null != targetEntity)
+			// They are close enough that we don't need to bother with the movement plan.
+			mutable.newTargetPreviousLocation = null;
+			mutable.newMovementPlan = null;
+		}
+		else
+		{
+			// We can keep this but see if we need to update their location.
+			AbsoluteLocation newLocation = targetLocation.getBlockLocation();
+			if (!newLocation.equals(mutable.newTargetPreviousLocation))
 			{
-				// Make sure that they are still in our site range.
-				EntityLocation creatureLocation = mutable.getLocation();
-				EntityLocation targetLocation = targetEntity.location();
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
-				float pathDistance = mutable.getType().getPathDistance();
-				if (distance <= pathDistance)
-				{
-					// We can keep this but see if we need to update their location.
-					AbsoluteLocation newLocation = targetLocation.getBlockLocation();
-					if (!newLocation.equals(mutable.newTargetPreviousLocation))
-					{
-						// They moved by at least a block so update their location and build a new path.
-						mutable.newTargetPreviousLocation = newLocation;
-						EntityVolume volume = mutable.getType().volume();
-						Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
-						mutable.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, mutable.getLocation(), targetLocation, pathDistance));
-					}
-				}
-				else
-				{
-					// They are out of range so forget them.
-					_clearTargetAndPlan(mutable);
-				}
-			}
-			else
-			{
-				_clearTargetAndPlan(mutable);
+				// They moved by at least a block so update their location and build a new path.
+				mutable.newTargetPreviousLocation = newLocation;
+				EntityVolume volume = mutable.getType().volume();
+				Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup = _createLookupHelper(context);
+				mutable.setMovementPlan(PathFinder.findPathWithLimit(blockKindLookup, volume, mutable.getLocation(), targetLocation, pathDistance));
 			}
 		}
 	}
@@ -655,9 +649,7 @@ public class CreatureLogic
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkPlayersInRange(creatureLocation, thisType.viewDistance(), (Entity player) -> {
 			// See if this player has the breeding item in their hand.
-			int itemKey = player.hotbarItems()[player.hotbarIndex()];
-			Items itemsInHand = player.inventory().getStackForKey(itemKey);
-			if ((null != itemsInHand) && (thisType.breedingItem() == itemsInHand.type()))
+			if (thisType.breedingItem() == _itemInPlayerHand(player))
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = player.location();
@@ -778,6 +770,97 @@ public class CreatureLogic
 		mutable.newTargetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
 		mutable.newTargetPreviousLocation = null;
 		mutable.newMovementPlan = null;
+	}
+
+	private static Item _itemInPlayerHand(Entity player)
+	{
+		int itemKey = player.hotbarItems()[player.hotbarIndex()];
+		Items itemsInHand = player.inventory().getStackForKey(itemKey);
+		return (null != itemsInHand)
+				? itemsInHand.type()
+				: null
+		;
+	}
+
+	private static boolean _isTargetValid(EntityCollection entityCollection, MutableCreature mutable)
+	{
+		// We can only call this if there is a target.
+		int targetId = mutable.newTargetEntityId;
+		Assert.assertTrue(CreatureEntity.NO_TARGET_ENTITY_ID != targetId);
+		
+		// How we look at the target depends on our type and state.
+		EntityType creatureType = mutable.getType();
+		boolean isValid = false;
+		if (creatureType.isLivestock())
+		{
+			// This may be a player or a partner creature, depending on state.
+			if (mutable.newInLoveMode)
+			{
+				// We must be looking at a partner so make sure that they are here and still in breeding mode.
+				CreatureEntity partner = entityCollection.getCreatureById(targetId);
+				isValid = (null != partner)
+						? partner.inLoveMode()
+						: false
+				;
+			}
+			else
+			{
+				// We must be looking at a player so make sure they still have food.
+				isValid = _isPlayerVisibleAndHoldingFeed(entityCollection, creatureType, mutable.newLocation, targetId);
+			}
+		}
+		else
+		{
+			// We currently must be one of these.
+			Assert.assertTrue(creatureType.isHostile());
+			
+			// Make sure that they still exist, are in range.
+			Entity player = entityCollection.getPlayerById(targetId);
+			if (null != player)
+			{
+				float distance = SpatialHelpers.distanceBetween(mutable.newLocation, player.location());
+				isValid = (distance <= creatureType.viewDistance());
+			}
+		}
+		return isValid;
+	}
+
+	private static boolean _isPlayerVisibleAndHoldingFeed(EntityCollection entityCollection, EntityType creatureType, EntityLocation creatureLocation, int targetId)
+	{
+		boolean isValid = false;
+		Entity player = entityCollection.getPlayerById(targetId);
+		if (null != player)
+		{
+			float distance = SpatialHelpers.distanceBetween(creatureLocation, player.location());
+			if (distance <= creatureType.viewDistance())
+			{
+				isValid = (creatureType.breedingItem() == _itemInPlayerHand(player));
+			}
+		}
+		return isValid;
+	}
+
+	private static boolean _didDespawn(TickProcessingContext context, MutableCreature mutable)
+	{
+		boolean didDespawn = false;
+		EntityType creatureType = mutable.getType();
+		if (creatureType.isHostile() && (Difficulty.PEACEFUL == context.config.difficulty))
+		{
+			// If we are peaceful, we want to despawn any creatures which are hostile.
+			mutable.newHealth = (byte)0;
+			didDespawn = true;
+		}
+		else
+		{
+			// See if this should despawn due to a timeout.
+			long despawnTick = mutable.newDespawnKeepAliveTick + (MILLIS_UNTIL_NO_ACTION_DESPAWN / context.millisPerTick);
+			if (creatureType.canDespawn() && (despawnTick <= context.currentTick))
+			{
+				mutable.setHealth((byte)0);
+				didDespawn = true;
+			}
+		}
+		return didDespawn;
 	}
 
 

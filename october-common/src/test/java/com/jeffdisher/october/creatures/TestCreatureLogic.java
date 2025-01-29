@@ -644,7 +644,6 @@ public class TestCreatureLogic
 		// Start with the orc targeting the player.
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		mutableOrc.newTargetEntityId = player.id();
-		mutableOrc.newTargetPreviousLocation = player.location().getBlockLocation();
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
 				, null
@@ -705,6 +704,100 @@ public class TestCreatureLogic
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertEquals(player.id(), ref_targetEntityId[0]);
 		Assert.assertTrue(ref_change[0] instanceof EntityChangeTakeDamageFromEntity);
+	}
+
+	@Test
+	public void targetChangeWithDistance()
+	{
+		// Show how a cow responds to targeting a player as they move around.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation location = new EntityLocation(4.0f, 0.0f, 1.0f);
+		MutableEntity mutablePlayer = MutableEntity.createForTest(1);
+		mutablePlayer.newLocation = location;
+		mutablePlayer.newInventory.addAllItems(WHEAT, 1);
+		mutablePlayer.setSelectedKey(1);
+		Entity player = mutablePlayer.freeze();
+		EntityLocation cowLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
+		CreatureEntity cow = CreatureEntity.create(assigner.next(), COW, cowLocation, (byte)100);
+		MutableCreature mutableCow = MutableCreature.existing(cow);
+		
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					: null
+			;
+		};
+		Map<Integer, MinimalEntity> entities = new HashMap<>();
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(1000L)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.finish()
+		;
+		
+		// Acquire target.
+		entities.put(player.id(), MinimalEntity.fromEntity(player));
+		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.newTargetPreviousLocation);
+		Assert.assertNotNull(mutableCow.newMovementPlan);
+		
+		// Move close.
+		mutablePlayer.newLocation = new EntityLocation(0.8f, 0.0f, 1.0f);
+		player = mutablePlayer.freeze();
+		entities.put(player.id(), MinimalEntity.fromEntity(player));
+		cow = mutableCow.freeze();
+		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
+		Assert.assertNull(mutableCow.newTargetPreviousLocation);
+		Assert.assertNull(mutableCow.newMovementPlan);
+		
+		// Move far.
+		mutablePlayer.newLocation = new EntityLocation(5.0f, 0.0f, 1.0f);
+		player = mutablePlayer.freeze();
+		entities.put(player.id(), MinimalEntity.fromEntity(player));
+		cow = mutableCow.freeze();
+		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(player.id(), mutableCow.newTargetEntityId);
+		Assert.assertEquals(player.location().getBlockLocation(), mutableCow.newTargetPreviousLocation);
+		Assert.assertNotNull(mutableCow.newMovementPlan);
+		
+		// Switch out wheat.
+		mutablePlayer.setSelectedKey(Entity.NO_SELECTION);
+		player = mutablePlayer.freeze();
+		entities.put(player.id(), MinimalEntity.fromEntity(player));
+		cow = mutableCow.freeze();
+		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
+		didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
+				, null
+				, mutableCow
+		);
+		Assert.assertFalse(didTakeAction);
+		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableCow.newTargetEntityId);
+		Assert.assertNull(mutableCow.newTargetPreviousLocation);
+		Assert.assertNull(mutableCow.newMovementPlan);
 	}
 
 
