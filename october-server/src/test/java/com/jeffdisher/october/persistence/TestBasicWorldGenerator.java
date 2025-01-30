@@ -366,6 +366,27 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals("LLLLLBSSSSSSSSSSSSSSSSSSSSSSSSSS", _coreSample(lowData, 9, 1));
 	}
 
+	@Test
+	public void randomFauna() throws Throwable
+	{
+		// We will test that some cows will spawn at random (based on cuboid seed), even if there is no gully.
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		// We know that this cuboid is a field so it will have some random wheat.
+		// (this will spawn cows so make sure we have an ID assigner).
+		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, CuboidAddress.fromInt(1, -9, 0));
+		
+		// Verify that some wheat is present (numbers experimentally derived).
+		CuboidData cuboid = suspended.cuboid();
+		_checkBlockTypes(cuboid, 3242, 5, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 4, 0);
+		
+		// Verify that cows are spawned.
+		List<CreatureEntity> creatures = suspended.creatures();
+		Assert.assertEquals(1, creatures.size());
+		Assert.assertEquals(new EntityLocation(49.0f, -270.0f, 3.0f), creatures.get(0).location());
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
 	{

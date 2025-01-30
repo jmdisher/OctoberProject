@@ -175,6 +175,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int FIELD_WHEAT_COUNT = 4;
 	public static final int FIELD_CARROT_COUNT = 3;
 	public static final int HERD_SIZE = 5;
+	public static final int RANDOM_FAUNA_DENOMINATOR = 20;
 
 	private final Environment _env;
 	private final int _seed;
@@ -340,24 +341,28 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int cuboidSeed = subField.get(0, 0);
 		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
-		EntityType herdTypeToSpawn = _generateFlora(env, data, cuboidBase, cuboidSeed, heightMap, biome);
+		int herdSizeToSpawn = _generateFlora(env, data, cuboidBase, cuboidSeed, heightMap, biome);
+		EntityType faunaType = (FIELD_CODE == biome.code)
+				? _cow
+				: null
+		;
 		
 		// Spawn any creatures associated with this cuboid.
 		List<CreatureEntity> entities = new ArrayList<>();
-		if (null != herdTypeToSpawn)
+		if ((null != faunaType) && (herdSizeToSpawn > 0))
 		{
 			// We don't often do herd spawning so we will try 5 times in random locations on the surface.
 			Random random = new Random(cuboidSeed);
-			for (int i = 0; i < HERD_SIZE; ++i)
+			for (int i = 0; i < herdSizeToSpawn; ++i)
 			{
 				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				// Choose the block above the dirt.
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
 				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, _cow
+						, faunaType
 						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
-						, (byte)100
+						, faunaType.maxHealth()
 				));
 			}
 		}
@@ -810,9 +815,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private EntityType _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
+	private int _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
 	{
-		EntityType typeToSpawn = null;
+		int herdSize = 0;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
 		{
 			// We only want to replace air (since this could be under water).
@@ -853,6 +858,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 					? FIELD_WHEAT_COUNT
 					: FIELD_CARROT_COUNT
 			;
+			int randomPlantCount = 0;
 			for (int i = 0; i < count; ++i)
 			{
 				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
@@ -871,17 +877,29 @@ public class BasicWorldGenerator implements IWorldGenerator
 							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, address.getRelativeInt(0, 0, -1)));
 						}
 						data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+						randomPlantCount += 1;
 					}
 				}
 			}
 			
-			// If this is a field, and we could fill a gully, spawn a small herd of cows in the centre of the cuboid.
-			if ((FIELD_CODE == biome.code) && didFillGully)
+			// If this is a gully, we want to spawn a herd of the native fauna.
+			if (didFillGully)
 			{
-				typeToSpawn = _cow;
+				herdSize = HERD_SIZE;
+			}
+			else
+			{
+				// We want to take a random spawn chance for each plant.
+				for (int i = 0; i < randomPlantCount; ++i)
+				{
+					if (0 == random.nextInt(RANDOM_FAUNA_DENOMINATOR))
+					{
+						herdSize += 1;
+					}
+				}
 			}
 		}
-		return typeToSpawn;
+		return herdSize;
 	}
 
 	private int _findGully(ColumnHeightMap heightMap)
