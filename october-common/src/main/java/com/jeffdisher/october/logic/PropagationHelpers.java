@@ -333,8 +333,16 @@ public class PropagationHelpers
 					int x = location.x() - base.x();
 					int y = location.y() - base.y();
 					int z = location.z() - base.z();
-					byte previous = lightChanges.set(x, y, z, (byte)0);
-					Assert.assertTrue(IByteLookup.NOT_FOUND == previous);
+					// NOTE: This usually is only set once but can replace a positive light value if it was lit by unblocking a source which was removed in the same batch. 
+					lightChanges.set(x, y, z, (byte)0);
+					
+					// If we are setting something day, make sure it isn't also a source.
+					BlockProxy proxy = lazyGlobalCache.apply(location);
+					byte emission = (null != proxy)
+							? accessor.getEmissionForBlock(proxy.getBlock())
+							: IByteLookup.NOT_FOUND
+					;
+					Assert.assertTrue(0 == emission);
 				}
 				@Override
 				public byte getOpacity(AbsoluteLocation location)

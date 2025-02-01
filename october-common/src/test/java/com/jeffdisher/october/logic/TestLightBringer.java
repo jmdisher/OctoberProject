@@ -3,8 +3,10 @@ package com.jeffdisher.october.logic;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -759,6 +761,90 @@ public class TestLightBringer
 		{
 			cuboid.setData7(AspectRegistry.LIGHT, update.getKey().getBlockAddress(), update.getValue());
 		}
+	}
+
+	@Test
+	public void addRemoveInLine()
+	{
+		// We want to show what happens when we add a light source (like block removal) at the same time we remove the light source illuminating it at the same time.
+		
+		// This test only involves 4 blocks:  Empty block (light 0), removed block (light from 0 to 2), existing block (light 3), removed source (light from 4 to 0).
+		int emptyX = 7;
+		int litX = 8;
+		int existingX = 9;
+		int darkenedX = 10;
+		int fixedY = 5;
+		int fixedZ = 6;
+		Set<AbsoluteLocation> darkUpdateSet = new HashSet<>();
+		
+		HashMap<AbsoluteLocation, Byte> existingLights = new HashMap<>();
+		LightBringer.IBlockDataOverlay overlay = new LightBringer.IBlockDataOverlay() {
+			private HashMap<AbsoluteLocation, Byte> _lights = new HashMap<>();
+			@Override
+			public byte getLight(AbsoluteLocation location)
+			{
+				return _lights.containsKey(location)
+						? _lights.get(location)
+						: existingLights.containsKey(location)
+							? existingLights.get(location)
+							: (byte)0
+				;
+			}
+			@Override
+			public void setLight(AbsoluteLocation location, byte value)
+			{
+				_lights.put(location, value);
+			}
+			@Override
+			public void setDark(AbsoluteLocation location)
+			{
+				boolean isSet = _lights.containsKey(location);
+				if (isSet)
+				{
+					// We want to record which blocks are cleared after being set.
+					Assert.assertTrue(darkUpdateSet.add(location));
+				}
+				_lights.put(location, (byte)0);
+			}
+			@Override
+			public byte getOpacity(AbsoluteLocation location)
+			{
+				// Our 3 blocks have opacity 1 while everything else is max.
+				byte opacity = LightAspect.MAX_LIGHT;
+				int locX = location.x();
+				if ((fixedY == location.y()) && (fixedZ == location.z())
+						&& ((emptyX == locX) || (litX == locX) || (existingX == locX) || (darkenedX == locX))
+				)
+				{
+					opacity = 1;
+				}
+				return opacity;
+			}
+			@Override
+			public byte getLightSource(AbsoluteLocation location)
+			{
+				// There are no sources in this test.
+				return 0;
+			}
+		};
+		// Set the existing light locations.
+		existingLights.put(new AbsoluteLocation(emptyX, fixedY, fixedZ), (byte)0);
+		existingLights.put(new AbsoluteLocation(litX, fixedY, fixedZ), (byte)0);
+		existingLights.put(new AbsoluteLocation(existingX, fixedY, fixedZ), (byte)3);
+		existingLights.put(new AbsoluteLocation(darkenedX, fixedY, fixedZ), (byte)4);
+		
+		// We also need to update the ones we are explicitly changing, in the overlay.
+		overlay.setLight(new AbsoluteLocation(litX, fixedY, fixedZ), (byte)2);
+		overlay.setDark(new AbsoluteLocation(darkenedX, fixedY, fixedZ));
+		LightBringer.batchProcessLight(overlay
+				, List.of(new LightBringer.Light(new AbsoluteLocation(litX, fixedY, fixedZ), (byte)2))
+				, List.of(new LightBringer.Light(new AbsoluteLocation(darkenedX, fixedY, fixedZ), (byte)4))
+		);
+		
+		// We expect to see 2 cases where we redundantly darkened this:  The block we light and the block behind it (since both were lit before their light source was removed).
+		Assert.assertEquals(2, darkUpdateSet.size());
+		Assert.assertTrue(darkUpdateSet.contains(new AbsoluteLocation(emptyX, fixedY, fixedZ)));
+		Assert.assertTrue(darkUpdateSet.contains(new AbsoluteLocation(litX, fixedY, fixedZ)));
 	}
 
 

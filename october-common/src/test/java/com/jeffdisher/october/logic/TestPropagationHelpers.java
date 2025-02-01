@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
@@ -438,6 +439,58 @@ public class TestPropagationHelpers
 		currentTick += 20L;
 		multiplier = PropagationHelpers.skyLightMultiplier(currentTick, ticksPerDay, dayStartTick);
 		Assert.assertEquals(0.7f, multiplier, 0.01f);
+	}
+
+	@Test
+	public void removeBarrierAndLightInOneTick()
+	{
+		// Show that we correctly handle the case where the barrier to a light source and the light source are both removed in the same tick.
+		Block blockStone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		
+		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, blockStone);
+		AbsoluteLocation source = address.getBase().getRelative(16, 16, 16);
+		AbsoluteLocation open = source.getRelative(1, 0, 0);
+		AbsoluteLocation wall = source.getRelative(2, 0, 0);
+		
+		// Set the cuboid block and light states to what they would be after breaking the source and wall.
+		cuboid.setData15(AspectRegistry.BLOCK, source.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, source.getBlockAddress(), (byte)15);
+		cuboid.setData15(AspectRegistry.BLOCK, open.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData7(AspectRegistry.LIGHT, open.getBlockAddress(), (byte)14);
+		cuboid.setData15(AspectRegistry.BLOCK, wall.getBlockAddress(), ENV.special.AIR.item().number());
+		
+		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
+		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
+		PropagationHelpers.processPreviousTickLightUpdates(address
+				, Map.of(address, List.of(source, wall))
+				, (AbsoluteLocation location) -> {
+					MutableBlockProxy proxy = lazyLocalCache.get(location);
+					if (null == proxy)
+					{
+						proxy = new MutableBlockProxy(location, cuboid);
+						lazyLocalCache.put(location, proxy);
+					}
+					return proxy;
+				}
+				, (AbsoluteLocation location) -> {
+					BlockProxy proxy = lazyGlobalCache.get(location);
+					if (null == proxy)
+					{
+						proxy = new BlockProxy(location.getBlockAddress(), cuboid);
+						lazyGlobalCache.put(location, proxy);
+					}
+					return proxy;
+				}
+		);
+		
+		// See that these have changed to all be dark.
+		Assert.assertEquals(3, lazyLocalCache.size());
+		for (MutableBlockProxy proxy : lazyLocalCache.values())
+		{
+			byte light = proxy.getLight();
+			Assert.assertEquals(0, light);
+		}
 	}
 
 
