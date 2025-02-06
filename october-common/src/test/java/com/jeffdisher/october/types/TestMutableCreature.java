@@ -47,15 +47,7 @@ public class TestMutableCreature
 				, (byte)50
 				, MiscConstants.MAX_BREATH
 				
-				, null
-				, 0L
-				, false
-				, 0L
-				, CreatureEntity.NO_TARGET_ENTITY_ID
-				, null
-				, 0L
-				, false
-				, null
+				, CreatureEntity.EMPTY_DATA
 		);
 		
 		MutableCreature mutable = MutableCreature.existing(middle);

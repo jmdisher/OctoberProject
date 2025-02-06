@@ -57,15 +57,15 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newHealth = creature.health();
 		this.newBreath = creature.breath();
 		
-		this.newMovementPlan = creature.movementPlan();
-		this.newLastActionTick = creature.lastActionTick();
-		this.newShouldTakeAction = creature.shouldTakeImmediateAction();
-		this.newDespawnKeepAliveTick = creature.despawnKeepAliveTick();
-		this.newTargetEntityId = creature.targetEntityId();
-		this.newTargetPreviousLocation = creature.targetPreviousLocation();
-		this.newLastAttackTick = creature.lastAttackTick();
-		this.newInLoveMode = creature.inLoveMode();
-		this.newOffspringLocation = creature.offspringLocation();
+		this.newMovementPlan = creature.ephemeral().movementPlan();
+		this.newLastActionTick = creature.ephemeral().lastActionTick();
+		this.newShouldTakeAction = creature.ephemeral().shouldTakeImmediateAction();
+		this.newDespawnKeepAliveTick = creature.ephemeral().despawnKeepAliveTick();
+		this.newTargetEntityId = creature.ephemeral().targetEntityId();
+		this.newTargetPreviousLocation = creature.ephemeral().targetPreviousLocation();
+		this.newLastAttackTick = creature.ephemeral().lastAttackTick();
+		this.newInLoveMode = creature.ephemeral().inLoveMode();
+		this.newOffspringLocation = creature.ephemeral().offspringLocation();
 	}
 
 	@Override
@@ -260,6 +260,17 @@ public class MutableCreature implements IMutableCreatureEntity
 		{
 			Assert.assertTrue(0.0f == this.newVelocity.x());
 			Assert.assertTrue((null == this.newMovementPlan) || !this.newMovementPlan.isEmpty());
+			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
+					(null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
+							, this.newLastActionTick
+							, this.newShouldTakeAction
+							, this.newDespawnKeepAliveTick
+							, this.newTargetEntityId
+							, this.newTargetPreviousLocation
+							, this.newLastAttackTick
+							, this.newInLoveMode
+							, this.newOffspringLocation
+			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
 					, _creature.type()
 					, this.newLocation
@@ -269,15 +280,7 @@ public class MutableCreature implements IMutableCreatureEntity
 					, this.newHealth
 					, this.newBreath
 					
-					, (null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
-					, this.newLastActionTick
-					, this.newShouldTakeAction
-					, this.newDespawnKeepAliveTick
-					, this.newTargetEntityId
-					, this.newTargetPreviousLocation
-					, this.newLastAttackTick
-					, this.newInLoveMode
-					, this.newOffspringLocation
+					, ephemeral.equals(_creature.ephemeral()) ? _creature.ephemeral() : ephemeral
 			);
 			// See if these are identical.
 			newInstance = _creature.equals(immutable)

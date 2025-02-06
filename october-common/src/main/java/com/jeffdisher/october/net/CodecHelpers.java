@@ -150,7 +150,6 @@ public class CodecHelpers
 		byte breath = buffer.get();
 		int energyDeficit = buffer.getInt();
 		EntityLocation spawn = _readEntityLocation(buffer);
-		long ephemeral_lastSpecialActionMillis = 0L;
 		
 		return new Entity(id
 				, isCreativeMode
@@ -168,7 +167,7 @@ public class CodecHelpers
 				, breath
 				, energyDeficit
 				, spawn
-				, ephemeral_lastSpecialActionMillis
+				, Entity.EMPTY_DATA
 		);
 	}
 
@@ -261,16 +260,6 @@ public class CodecHelpers
 		byte health = buffer.get();
 		byte breath = buffer.get();
 		
-		// Ephemeral data is just given default values.
-		List<AbsoluteLocation> movementPlan = null;
-		long lastActionTick = 0L;
-		boolean shouldTakeImmediateAction = false;
-		long despawnKeepAliveTick = 0L;
-		int targetEntityId = CreatureEntity.NO_TARGET_ENTITY_ID;
-		AbsoluteLocation targetPreviousLocation = null;
-		long lastAttackTick = 0L;
-		boolean inLoveMode = false;
-		EntityLocation offspringLocation = null;
 		return new CreatureEntity(id
 				, type
 				, location
@@ -280,15 +269,7 @@ public class CodecHelpers
 				, health
 				, breath
 				
-				, movementPlan
-				, lastActionTick
-				, shouldTakeImmediateAction
-				, despawnKeepAliveTick
-				, targetEntityId
-				, targetPreviousLocation
-				, lastAttackTick
-				, inLoveMode
-				, offspringLocation
+				, CreatureEntity.EMPTY_DATA
 		);
 	}
 

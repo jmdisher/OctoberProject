@@ -73,7 +73,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, MiscConstants.MAX_BREATH
 				, 0
 				, spawn
-				, 0L
+				, Entity.EMPTY_DATA
 		);
 		return new MutableEntity(entity);
 	}
@@ -117,7 +117,7 @@ public class MutableEntity implements IMutablePlayerEntity
 		this.newBreath = original.breath();
 		this.newEnergyDeficit = original.energyDeficit();
 		this.isCreativeMode = original.isCreativeMode();
-		this.ephemeral_lastSpecialActionMillis = original.ephemeral_lastSpecialActionMillis();
+		this.ephemeral_lastSpecialActionMillis = original.ephemeral().lastSpecialActionMillis();
 		this.newSpawn = original.spawnLocation();
 	}
 
@@ -434,6 +434,8 @@ public class MutableEntity implements IMutablePlayerEntity
 				break;
 			}
 		}
+		Entity.Ephemeral ephemeral = new Entity.Ephemeral(this.ephemeral_lastSpecialActionMillis
+		);
 		Entity newInstance = new Entity(_original.id()
 				, this.isCreativeMode
 				, this.newLocation
@@ -450,7 +452,7 @@ public class MutableEntity implements IMutablePlayerEntity
 				, this.newBreath
 				, this.newEnergyDeficit
 				, this.newSpawn
-				, this.ephemeral_lastSpecialActionMillis
+				, ephemeral.equals(_original.ephemeral()) ? _original.ephemeral() : ephemeral
 		);
 		// See if these are identical.
 		return _original.equals(newInstance)

@@ -1,11 +1,9 @@
 package com.jeffdisher.october.persistence.legacy;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -67,9 +65,6 @@ public record LegacyCreatureEntityV1(int id
 	{
 		byte yaw = 0;
 		byte pitch = 0;
-		List<AbsoluteLocation> movementPlan= null;
-		boolean inLoveMode = false;
-		EntityLocation offspringLocation = null;
 		return new CreatureEntity(this.id
 				, this.type
 				, this.location
@@ -79,15 +74,7 @@ public record LegacyCreatureEntityV1(int id
 				, this.health
 				, this.breath
 				
-				, movementPlan
-				, 0L
-				, false
-				, 0L
-				, CreatureEntity.NO_TARGET_ENTITY_ID
-				, null
-				, 0L
-				, inLoveMode
-				, offspringLocation
+				, CreatureEntity.EMPTY_DATA
 		);
 	}
 }

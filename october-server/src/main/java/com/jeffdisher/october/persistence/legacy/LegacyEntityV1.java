@@ -116,7 +116,6 @@ public record LegacyEntityV1(int id
 	{
 		byte yaw = 0;
 		byte pitch = 0;
-		long ephemeral_lastSpecialActionMillis = 0L;
 		return new Entity(this.id
 				, this.isCreativeMode
 				, this.location
@@ -133,7 +132,7 @@ public record LegacyEntityV1(int id
 				, this.breath
 				, this.energyDeficit
 				, this.spawnLocation
-				, ephemeral_lastSpecialActionMillis
+				, Entity.EMPTY_DATA
 		);
 	}
 }

@@ -27,28 +27,48 @@ public record CreatureEntity(int id
 		// The breath the entity has (for drowning).
 		, byte breath
 		
-		// ----- Data elements below this line are considered ephemeral and will NOT be persisted. -----
-		// The current plan of steps to the creature should be following.
-		, List<AbsoluteLocation> movementPlan
-		// The last tick number when this creature's AI made a decision or did something.
-		, long lastActionTick
-		// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
-		, boolean shouldTakeImmediateAction
-		// The last tick where some action was taken to stop this creature from despawning (if it is a despawning type).
-		, long despawnKeepAliveTick
-		// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
-		, int targetEntityId
-		// The last block location of the target which was used to determine the movementPlan.
-		, AbsoluteLocation targetPreviousLocation
-		// The tick when this creature last sent an attack.
-		, long lastAttackTick
-		// True if this is a breedable creature which should now search for a partner.
-		, boolean inLoveMode
-		// Non-null if this is a breedable creature who is ready to spawn offspring.
-		, EntityLocation offspringLocation
+		// Note that ephemeral data isn't persisted or passed over the network.
+		, Ephemeral ephemeral
 )
 {
 	public static final int NO_TARGET_ENTITY_ID = 0;
+	/**
+	 * The empty ephemeral data used when loading a new instance.
+	 */
+	public static final Ephemeral EMPTY_DATA = new Ephemeral(null
+			, 0L
+			, false
+			, 0L
+			, NO_TARGET_ENTITY_ID
+			, null
+			, 0L
+			, false
+			, null
+	);
+
+	/**
+	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
+	 */
+	public static record Ephemeral(
+			// The current plan of steps to the creature should be following.
+			List<AbsoluteLocation> movementPlan
+			// The last tick number when this creature's AI made a decision or did something.
+			, long lastActionTick
+			// If something special happens, we want to force a new deliberate action, no matter lastActionTick.
+			, boolean shouldTakeImmediateAction
+			// The last tick where some action was taken to stop this creature from despawning (if it is a despawning type).
+			, long despawnKeepAliveTick
+			// The ID of the entity this creature is currently targeting (or NO_TARGET_ENTITY_ID if none).
+			, int targetEntityId
+			// The last block location of the target which was used to determine the movementPlan.
+			, AbsoluteLocation targetPreviousLocation
+			// The tick when this creature last sent an attack.
+			, long lastAttackTick
+			// True if this is a breedable creature which should now search for a partner.
+			, boolean inLoveMode
+			// Non-null if this is a breedable creature who is ready to spawn offspring.
+			, EntityLocation offspringLocation
+	) {}
 
 	/**
 	 * A helper to handle the common case of needing to create one of these with default/starting values.
@@ -78,15 +98,7 @@ public record CreatureEntity(int id
 				, health
 				, MiscConstants.MAX_BREATH
 				
-				, null
-				, 0L
-				, false
-				, 0L
-				, NO_TARGET_ENTITY_ID
-				, null
-				, 0L
-				, false
-				, null
+				, EMPTY_DATA
 		);
 	}
 
@@ -101,15 +113,17 @@ public record CreatureEntity(int id
 				, this.health
 				, this.breath
 				
-				, this.movementPlan
-				, this.lastActionTick
-				, this.shouldTakeImmediateAction
-				, tick
-				, this.targetEntityId
-				, this.targetPreviousLocation
-				, this.lastAttackTick
-				, this.inLoveMode
-				, this.offspringLocation
+				, new Ephemeral(
+						this.ephemeral.movementPlan
+						, this.ephemeral.lastActionTick
+						, this.ephemeral.shouldTakeImmediateAction
+						, tick
+						, this.ephemeral.targetEntityId
+						, this.ephemeral.targetPreviousLocation
+						, this.ephemeral.lastAttackTick
+						, this.ephemeral.inLoveMode
+						, this.ephemeral.offspringLocation
+				)
 		);
 	}
 }

@@ -37,8 +37,8 @@ public record Entity(int id
 		// The location where the entity is sent when they spawn for the first time or die and respawn.
 		, EntityLocation spawnLocation
 		
-		// ***** Values below this point are considered ephemeral and local:  They are not persisted, nor send over the network.
-		, long ephemeral_lastSpecialActionMillis
+		// Note that ephemeral data isn't persisted or passed over the network.
+		, Ephemeral ephemeral
 )
 {
 	public static final int HOTBAR_SIZE = 9;
@@ -48,4 +48,17 @@ public record Entity(int id
 	 * code which would otherwise just have an inline constant 0.
 	 */
 	public static final int NO_SELECTION = 0;
+	/**
+	 * The empty ephemeral data used when loading a new instance.
+	 */
+	public static final Ephemeral EMPTY_DATA = new Ephemeral(0L
+	);
+
+	/**
+	 * All data stored in this class is considered ephemeral and local:  It is not persisted, nor sent over the network.
+	 */
+	public static record Ephemeral(
+			// The last millisecond when the entity took a special action.
+			long lastSpecialActionMillis
+	) {}
 }

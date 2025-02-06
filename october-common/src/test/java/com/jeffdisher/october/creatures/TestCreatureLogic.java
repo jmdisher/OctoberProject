@@ -232,7 +232,7 @@ public class TestCreatureLogic
 				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
-				, 0L
+				, Entity.EMPTY_DATA
 		) };
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
@@ -299,7 +299,7 @@ public class TestCreatureLogic
 				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
-				, 0L
+				, Entity.EMPTY_DATA
 		);
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
@@ -467,8 +467,8 @@ public class TestCreatureLogic
 		creatures.put(mother.id(), mother);
 		
 		// The father should no longer be in love mode but the mother should be.
-		Assert.assertFalse(father.inLoveMode());
-		Assert.assertTrue(mother.inLoveMode());
+		Assert.assertFalse(father.ephemeral().inLoveMode());
+		Assert.assertTrue(mother.ephemeral().inLoveMode());
 	}
 
 	@Test

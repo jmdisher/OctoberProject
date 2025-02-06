@@ -116,7 +116,7 @@ public class TestEntityCollection
 				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
-				, 0L
+				, Entity.EMPTY_DATA
 		);
 	}
 

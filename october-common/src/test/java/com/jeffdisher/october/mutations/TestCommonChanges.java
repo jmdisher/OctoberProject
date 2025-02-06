@@ -1827,7 +1827,7 @@ public class TestCommonChanges
 				, MiscConstants.MAX_BREATH
 				, 0
 				, MutableEntity.TESTING_LOCATION
-				, 0L
+				, Entity.EMPTY_DATA
 		);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation targetLocation = new AbsoluteLocation(0, 0, 0);
@@ -1955,7 +1955,7 @@ public class TestCommonChanges
 				, breath
 				, energyDeficit
 				, MutableEntity.TESTING_LOCATION
-				, 0L
+				, Entity.EMPTY_DATA
 		);
 		
 		// Try to change these values and verify that nothing happens.

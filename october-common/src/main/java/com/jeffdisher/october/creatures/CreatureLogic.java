@@ -628,7 +628,7 @@ public class CreatureLogic
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
 		entityCollection.walkCreaturesInRange(creatureLocation, thisType.viewDistance(), (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the same type and in love mode.
-			if ((thisCreatureId != check.id()) && (thisType == check.type()) && check.inLoveMode())
+			if ((thisCreatureId != check.id()) && (thisType == check.type()) && check.ephemeral().inLoveMode())
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = check.location();
@@ -799,7 +799,7 @@ public class CreatureLogic
 				// We must be looking at a partner so make sure that they are here and still in breeding mode.
 				CreatureEntity partner = entityCollection.getCreatureById(targetId);
 				isValid = (null != partner)
-						? partner.inLoveMode()
+						? partner.ephemeral().inLoveMode()
 						: false
 				;
 			}
