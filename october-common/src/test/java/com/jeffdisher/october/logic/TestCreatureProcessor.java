@@ -111,6 +111,7 @@ public class TestCreatureProcessor
 		CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), null)
 				.sinks(new IMutationSink() {
 					@Override
@@ -214,6 +215,7 @@ public class TestCreatureProcessor
 					, 0L
 					, false
 					, null
+					, 0L
 				)
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -260,6 +262,7 @@ public class TestCreatureProcessor
 					, 0L
 					, false
 					, null
+					, 0L
 				)
 		);
 		Map<Integer, CreatureEntity> creaturesById = Map.of(creature.id(), creature);
@@ -307,6 +310,7 @@ public class TestCreatureProcessor
 					, 0L
 					, false
 					, null
+					, 0L
 				)
 		);
 		
@@ -884,7 +888,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
-				.tick(1L)
+				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.lookups((AbsoluteLocation location) -> {
 						return (cuboid.getCuboidAddress().equals(location.getCuboidAddress()))
 							? new BlockProxy(location.getBlockAddress(), cuboid)
@@ -1108,6 +1112,7 @@ public class TestCreatureProcessor
 					, entity.ephemeral().lastAttackTick()
 					, entity.ephemeral().inLoveMode()
 					, entity.ephemeral().offspringLocation()
+					, entity.ephemeral().lastDamageTakenMillis()
 				)
 		);
 	}

@@ -57,7 +57,7 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 		// We will move the respawn into the next tick so that they don't keep taking damage from within this tick.
 		boolean didApply = false;
 		byte health = newEntity.getHealth();
-		if (health > 0)
+		if ((health > 0) && newEntity.updateDamageTimeoutIfValid(context.currentTickTimeMillis))
 		{
 			// Determine how much actual damage to apply by looking at target and armour.
 			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);

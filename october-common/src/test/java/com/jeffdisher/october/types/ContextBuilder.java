@@ -15,6 +15,8 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
  */
 public class ContextBuilder
 {
+	public static final long DEFAULT_MILLIS_PER_TICK = 100L;
+
 	public static ContextBuilder build()
 	{
 		return new ContextBuilder();
@@ -57,7 +59,7 @@ public class ContextBuilder
 			return random.nextInt(bound);
 		};
 		this.config = new WorldConfig();
-		this.millisPerTick = 100L;
+		this.millisPerTick = DEFAULT_MILLIS_PER_TICK;
 	}
 
 	public ContextBuilder tick(long tickNumber)

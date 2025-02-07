@@ -384,5 +384,10 @@ public class TestEntityMovementHelpers
 		{
 			this.cost += cost;
 		}
+		@Override
+		public boolean updateDamageTimeoutIfValid(long currentTickMillis)
+		{
+			throw new AssertionError("Not in test");
+		}
 	}
 }

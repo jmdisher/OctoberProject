@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.utils.Assert;
@@ -46,6 +47,7 @@ public class MutableCreature implements IMutableCreatureEntity
 	public long newLastAttackTick;
 	public boolean newInLoveMode;
 	public EntityLocation newOffspringLocation;
+	public long newLastDamageTakenMillis;
 
 	private MutableCreature(CreatureEntity creature)
 	{
@@ -66,6 +68,7 @@ public class MutableCreature implements IMutableCreatureEntity
 		this.newLastAttackTick = creature.ephemeral().lastAttackTick();
 		this.newInLoveMode = creature.ephemeral().inLoveMode();
 		this.newOffspringLocation = creature.ephemeral().offspringLocation();
+		this.newLastDamageTakenMillis = creature.ephemeral().lastDamageTakenMillis();
 	}
 
 	@Override
@@ -190,6 +193,18 @@ public class MutableCreature implements IMutableCreatureEntity
 	}
 
 	@Override
+	public boolean updateDamageTimeoutIfValid(long currentTickMillis)
+	{
+		long nextValidTime = this.newLastDamageTakenMillis + MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS;
+		boolean canUpdate = (currentTickMillis >= nextValidTime);
+		if (canUpdate)
+		{
+			this.newLastDamageTakenMillis = currentTickMillis;
+		}
+		return canUpdate;
+	}
+
+	@Override
 	public List<AbsoluteLocation> getMovementPlan()
 	{
 		// The caller shouldn't change this.
@@ -270,6 +285,7 @@ public class MutableCreature implements IMutableCreatureEntity
 							, this.newLastAttackTick
 							, this.newInLoveMode
 							, this.newOffspringLocation
+							, this.newLastDamageTakenMillis
 			);
 			CreatureEntity immutable = new CreatureEntity(_creature.id()
 					, _creature.type()

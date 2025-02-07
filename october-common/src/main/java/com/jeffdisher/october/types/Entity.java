@@ -52,6 +52,7 @@ public record Entity(int id
 	 * The empty ephemeral data used when loading a new instance.
 	 */
 	public static final Ephemeral EMPTY_DATA = new Ephemeral(0L
+			, 0L
 	);
 
 	/**
@@ -60,5 +61,7 @@ public record Entity(int id
 	public static record Ephemeral(
 			// The last millisecond when the entity took a special action.
 			long lastSpecialActionMillis
+			// The millisecond time when this entity last took damage.
+			, long lastDamageTakenMillis
 	) {}
 }

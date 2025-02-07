@@ -44,6 +44,7 @@ public record CreatureEntity(int id
 			, 0L
 			, false
 			, null
+			, 0L
 	);
 
 	/**
@@ -68,6 +69,8 @@ public record CreatureEntity(int id
 			, boolean inLoveMode
 			// Non-null if this is a breedable creature who is ready to spawn offspring.
 			, EntityLocation offspringLocation
+			// The millisecond time when this creature last took damage.
+			, long lastDamageTakenMillis
 	) {}
 
 	/**
@@ -123,6 +126,7 @@ public record CreatureEntity(int id
 						, this.ephemeral.lastAttackTick
 						, this.ephemeral.inLoveMode
 						, this.ephemeral.offspringLocation
+						, this.ephemeral().lastDamageTakenMillis
 				)
 		);
 	}

@@ -826,6 +826,10 @@ public class TestCommonChanges
 		Assert.assertNull(blockHolder[0]);
 		
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_KILLED, EventRecord.Cause.ATTACKED, target.newLocation.getBlockLocation(), targetId, attackerId));
+		// We shouldn't be able to take more damage until the damage timeout has passed.
+		Assert.assertFalse(takeDamage.applyChange(context, target));
+		
+		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(takeDamage.applyChange(context, target));
 		Assert.assertEquals(ENV.creatures.PLAYER.maxHealth(), target.newHealth);
 		Assert.assertEquals(MiscConstants.PLAYER_MAX_FOOD, target.newFood);
@@ -1212,18 +1216,21 @@ public class TestCommonChanges
 		
 		// Hit them in the head with 1 damage and see it applied, with no durability loss.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 1, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)89, mutable.newHealth);
 		Assert.assertEquals(startDurability, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage (what the armour blocks) see the durability loss and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)88, mutable.newHealth);
 		Assert.assertEquals(6, mutable.newArmour[BodyPart.HEAD.ordinal()].durability());
 		
 		// Hit them in the head with 10 damage, again to see the armour break and damage reduced.
 		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.ATTACKED, mutable.newLocation.getBlockLocation(), entityId, attackerId));
+		context = ContextBuilder.nextTick(context, MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK).finish();
 		Assert.assertTrue(new EntityChangeTakeDamageFromEntity<IMutablePlayerEntity>(BodyPart.HEAD, 10, attackerId).applyChange(context,  mutable));
 		Assert.assertEquals((byte)87, mutable.newHealth);
 		Assert.assertNull(mutable.newArmour[BodyPart.HEAD.ordinal()]);
@@ -2132,6 +2139,7 @@ public class TestCommonChanges
 		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
 		TickProcessingContext context = ContextBuilder.build()
+				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
 				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), (location.z() >= 0) ? air : stone), null)
 				.eventSink(events)
 				.finish()

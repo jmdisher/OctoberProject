@@ -56,4 +56,12 @@ public interface IMutableMinimalEntity
 	 * @param cost The cost associated with the change.
 	 */
 	void applyEnergyCost(int cost);
+
+	/**
+	 * Updates the last damage taken timeout, but only if the timeout has already expired.
+	 * 
+	 * @param currentTickMillis The current tick millisecond timer.
+	 * @return True if the timeout was updated.
+	 */
+	boolean updateDamageTimeoutIfValid(long currentTickMillis);
 }

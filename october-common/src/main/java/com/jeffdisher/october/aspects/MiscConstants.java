@@ -39,4 +39,9 @@ public class MiscConstants
 	 * If the player's food reaches zero, this is the starvation damage they will receieve, per second.
 	 */
 	public static final byte STARVATION_DAMAGE_PER_SECOND = 5;
+
+	/**
+	 * A given creature or entity can only take damage at most once every half a second.
+	 */
+	public static final long DAMAGE_TAKEN_TIMEOUT_MILLIS = 500L;
 }
