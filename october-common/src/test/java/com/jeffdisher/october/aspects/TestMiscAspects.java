@@ -54,4 +54,16 @@ public class TestMiscAspects
 		Assert.assertEquals(4, wheatDrop0.length);
 		Assert.assertEquals(3, wheatDrop99.length);
 	}
+
+	@Test
+	public void blockDamage() throws Throwable
+	{
+		Block air = ENV.special.AIR;
+		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
+		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
+		
+		Assert.assertEquals(0, ENV.blocks.getBlockDamage(air));
+		Assert.assertEquals(0, ENV.blocks.getBlockDamage(waterSource));
+		Assert.assertEquals(10, ENV.blocks.getBlockDamage(lavaWeak));
+	}
 }

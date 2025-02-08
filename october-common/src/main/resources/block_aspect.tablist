@@ -4,6 +4,8 @@
 # [<TAB>placed_from<TAB>ID]
 # [<TAB>requires_support<TAB>[probability item]*]
 # [<TAB>special_drop<TAB>ID]
+# [<TAB>viscosity<TAB>number]
+# [<TAB>damage<TAB>number]
 #
 # flag_list includes:
 # -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
@@ -13,6 +15,8 @@
 # special_drop means that the block drops as the given item, instead of itself, when broken.
 # viscosity is a number in [0..100] describing the resistance of the block (100 is default and means "solid" - lower
 #  numbers mean entities and items can exist in the block).  Values in the range [50..99] are considered "swimmable".
+# damage is a number in [0..100] indicating the amount of damage applied per damage tick to entities standing in this
+#  block.  Note that any value >0 will also destroy items.  Default is 0.
 #
 # Anything not referenced here is an item which cannot be placed at all.
 # Note that the ID references are against item_registry.tablist.
@@ -123,7 +127,10 @@ op.basalt
 	block_material	PICKAXE
 op.lava_source	can_be_replaced
 	viscosity	80
+	damage	10
 op.lava_strong	can_be_replaced
 	viscosity	80
+	damage	10
 op.lava_weak	can_be_replaced
 	viscosity	80
+	damage	10

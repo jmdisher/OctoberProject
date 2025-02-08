@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import com.jeffdisher.october.config.TabListReader;
+import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.utils.Assert;
@@ -47,6 +48,7 @@ public class BlockAspect
 	private static final String SUB_SPECIAL_DROP = "special_drop";
 	private static final String SUB_BLOCK_MATERIAL = "block_material";
 	private static final String SUB_VISCOSITY = "viscosity";
+	private static final String SUB_DAMAGE = "damage";
 
 	/**
 	 * Loads the block aspect from the tablist in the given stream, sourcing Items from the given items registry.
@@ -68,6 +70,7 @@ public class BlockAspect
 		
 		Set<Block> canBeReplaced = new HashSet<>();
 		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
+		Map<Block, Integer> blockDamage = new HashMap<>();
 		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
 		Map<Item, Block> specialBlockPlacement = new HashMap<>();
 		Map<Block, _DropChance[]> specialBlockBreak = new HashMap<>();
@@ -189,25 +192,18 @@ public class BlockAspect
 				}
 				else if (SUB_VISCOSITY.equals(name))
 				{
-					int viscosity = -1;
-					if (1 == parameters.length)
-					{
-						try
-						{
-							viscosity = Integer.parseInt(parameters[0]);
-						}
-						catch (NumberFormatException e)
-						{
-							viscosity = -1;
-						}
-					}
-					if ((viscosity < 0) || (viscosity > SOLID_VISCOSITY))
-					{
-						throw new TabListReader.TabListException("One value in [0..100] required for viscosity");
-					}
+					int viscosity = _readIntInRange(parameters, 0, SOLID_VISCOSITY, SUB_VISCOSITY);
 					if (viscosity < SOLID_VISCOSITY)
 					{
 						nonSolidViscosity.put(_currentBlock, viscosity);
+					}
+				}
+				else if (SUB_DAMAGE.equals(name))
+				{
+					int damage = _readIntInRange(parameters, 0, 100, SUB_DAMAGE);
+					if (damage > 0)
+					{
+						blockDamage.put(_currentBlock, damage);
 					}
 				}
 				else
@@ -224,6 +220,27 @@ public class BlockAspect
 				}
 				return item;
 			}
+			private int _readIntInRange(String[] parameters, int low, int high, String name) throws TabListException
+			{
+				int value = -1;
+				if (1 == parameters.length)
+				{
+					try
+					{
+						value = Integer.parseInt(parameters[0]);
+					}
+					catch (NumberFormatException e)
+					{
+						value = -1;
+					}
+				}
+				if ((value < low) || (value > high))
+				{
+					String message = String.format("One value in [%d..%d] required for %s", low, high, name);
+					throw new TabListReader.TabListException(message);
+				}
+				return value;
+			}
 		}, stream);
 		
 		Block[] blocksByType = new Block[items.ITEMS_BY_TYPE.length];
@@ -236,6 +253,7 @@ public class BlockAspect
 				, blocksByType
 				, canBeReplaced
 				, nonSolidViscosity
+				, blockDamage
 				, specialBlockSupport
 				, specialBlockPlacement
 				, specialBlockBreak
@@ -246,6 +264,7 @@ public class BlockAspect
 	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
 	private final Map<Block, Integer> _nonSolidViscosity;
+	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
 	private final Map<Block, _DropChance[]> _specialBlockBreak;
@@ -255,6 +274,7 @@ public class BlockAspect
 			, Block[] blocksByType
 			, Set<Block> canBeReplaced
 			, Map<Block, Integer> nonSolidViscosity
+			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
 			, Map<Block, _DropChance[]> specialBlockBreak
@@ -265,6 +285,7 @@ public class BlockAspect
 		
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
 		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
+		_blockDamage = Collections.unmodifiableMap(blockDamage);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
 		_specialBlockBreak = Collections.unmodifiableMap(specialBlockBreak);
@@ -440,6 +461,20 @@ public class BlockAspect
 		return (null != special)
 				? special
 				: BlockMaterial.NO_TOOL
+		;
+	}
+
+	/**
+	 * Returs the damage which should be applied to entities in this block.
+	 * 
+	 * @param block The block to check.
+	 * @return The damage (or 0).
+	 */
+	public int getBlockDamage(Block block)
+	{
+		return _blockDamage.containsKey(block)
+				? _blockDamage.get(block)
+				: 0
 		;
 	}
 
