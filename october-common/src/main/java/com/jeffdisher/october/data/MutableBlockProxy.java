@@ -93,6 +93,9 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	@Override
 	public void setInventory(Inventory inv)
 	{
+		// This shouldn't be called if the block destroys inventories.
+		Assert.assertTrue(0 == _env.blocks.getBlockDamage(_cachedBlock));
+		
 		// If this is empty, we want to store null, instead.
 		if (0 == inv.currentEncumbrance)
 		{

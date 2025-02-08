@@ -2119,6 +2119,42 @@ public class TestCommonChanges
 		Assert.assertTrue(holder.mutation instanceof MutationBlockIncrementalRepair);
 	}
 
+	@Test
+	public void lavaBucketDestroysItems() throws Throwable
+	{
+		// Show that placing a lava bucket in a block with items will destroy them.
+		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
+		Item lavaBucket = ENV.items.getItemById("op.bucket_lava");
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		short lavaSourceItemNumber = ENV.items.getItemById("op.lava_source").number();
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(lavaBucket, 0));
+		newEntity.setSelectedKey(1);
+		
+		AbsoluteLocation target = new AbsoluteLocation(6, 0, 10);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), stone);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(10).addStackable(CHARCOAL_ITEM, 2).finish());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// Place the lava source.
+		EntityChangeUseSelectedItemOnBlock exchange = new EntityChangeUseSelectedItemOnBlock(target);
+		Assert.assertTrue(exchange.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockReplace replace = (MutationBlockReplace) holder.mutation;
+		holder.mutation = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(replace.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(0, proxy.getInventory().getCount(CHARCOAL_ITEM));
+		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
+		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

@@ -258,8 +258,12 @@ public class CommonBlockMutationHelpers
 		newBlock.setBlockAndClear(block);
 		if ((null != original) && (!env.blocks.isSolid(block) || (0 != env.stations.getNormalInventorySize(block))))
 		{
-			// We need to restore this since it is an empty block or a normal inventory.
-			newBlock.setInventory(original);
+			// Note that we only want to store the inventory if this block doesn't destroy it.
+			if (0 == env.blocks.getBlockDamage(block))
+			{
+				// We need to restore this since it is an empty block or a normal inventory.
+				newBlock.setInventory(original);
+			}
 			// We have resolved this.
 			original = null;
 		}
