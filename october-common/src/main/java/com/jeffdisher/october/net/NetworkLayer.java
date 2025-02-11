@@ -50,7 +50,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		InetSocketAddress address = new InetSocketAddress(port);
 		ServerSocketChannel socket = ServerSocketChannel.open();
 		socket.bind(address);
-		return new NetworkLayer<>(PacketFromClient.class, listener, socket, null);
+		return new NetworkLayer<>(PacketFromClient.class, listener, socket, null, "Server Network Layer");
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 	public static NetworkLayer<PacketFromServer, PacketFromClient> connectToServer(IListener listener, InetAddress host, int port) throws IOException
 	{
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port));
-		return new NetworkLayer<>(PacketFromServer.class, listener, null, client);
+		return new NetworkLayer<>(PacketFromServer.class, listener, null, client, "Client Network Layer");
 	}
 
 
@@ -88,7 +88,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 	private final ServerSocketChannel _acceptorSocket;
 	private final SelectionKey _acceptorKey;
 
-	private NetworkLayer(Class<IN> inClass, IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket) throws IOException
+	private NetworkLayer(Class<IN> inClass, IListener listener, ServerSocketChannel serverSocket, SocketChannel clientSocket, String threadName) throws IOException
 	{
 		// We can only be running in server mode OR client mode.
 		Assert.assertTrue((null != serverSocket) != (null != clientSocket));
@@ -100,7 +100,7 @@ public class NetworkLayer<IN extends Packet, OUT extends Packet>
 		
 		_internalThread = new Thread(() -> {
 			_backgroundThreadMain();
-		}, "Server IO thread");
+		}, threadName);
 		_listener = listener;
 		_selector = Selector.open();
 		_connectedPeers = new IdentityHashMap<>();
