@@ -47,9 +47,10 @@ public class TestMutationEntityCodec
 	}
 
 	@Test
-	public void takeDamageOther() throws Throwable
+	public void deprecatedTakeDamageOther() throws Throwable
 	{
 		int damage = 50;
+		@SuppressWarnings("deprecation")
 		EntityChangeTakeDamageFromOther<IMutablePlayerEntity> change = new EntityChangeTakeDamageFromOther<>(BodyPart.HEAD, damage, EntityChangeTakeDamageFromOther.CAUSE_FALL);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);

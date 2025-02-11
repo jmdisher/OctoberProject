@@ -17,7 +17,7 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.TAKE_DAMAGE_FROM_OTHER;
+	public static final MutationEntityType TYPE = MutationEntityType.OLD_TAKE_DAMAGE_FROM_OTHER_V4;
 	public static final byte CAUSE_STARVATION = 1;
 	public static final byte CAUSE_SUFFOCATION = 2;
 	public static final byte CAUSE_FALL = 3;
@@ -52,6 +52,7 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 	private final int _damage;
 	private final byte _cause;
 
+	@Deprecated
 	public EntityChangeTakeDamageFromOther(BodyPart target, int damage, byte cause)
 	{
 		Assert.assertTrue(damage > 0);

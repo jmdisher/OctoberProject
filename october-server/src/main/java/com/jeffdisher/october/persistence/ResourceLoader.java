@@ -60,21 +60,25 @@ public class ResourceLoader
 	 * Version 1 was used in v1.0.1 and earlier, and is supported.
 	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
 	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
+	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
 	 */
 	public static final int VERSION_CUBOID_V1 = 1;
 	public static final int VERSION_CUBOID_V2 = 2;
 	public static final int VERSION_CUBOID_V3 = 3;
-	public static final int VERSION_CUBOID = 4;
+	public static final int VERSION_CUBOID_V4 = 4;
+	public static final int VERSION_CUBOID = 5;
 	/**
 	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
 	 * Version 1 was used in v1.0.1 and earlier, and is supported.
 	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
 	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
+	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
 	 */
 	public static final int VERSION_ENTITY_V1 = 1;
 	public static final int VERSION_ENTITY_V2 = 2;
 	public static final int VERSION_ENTITY_V3 = 3;
-	public static final int VERSION_ENTITY = 4;
+	public static final int VERSION_ENTITY_V4 = 4;
+	public static final int VERSION_ENTITY = 5;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -421,9 +425,11 @@ public class ResourceLoader
 			int version = buffer.getInt();
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if (VERSION_CUBOID == version)
+			if ((VERSION_CUBOID == version)
+					|| (VERSION_CUBOID_V4 == version)
+			)
 			{
-				// V4 is similar to V3 but has some additional types and makes an explicit distinction between periodic and scheduled mutations
+				// V5 and V4 just permit different types but have the same layout.
 				dataReader = () -> {
 					CuboidData cuboid = _background_readCuboid(address, buffer);
 					
@@ -704,9 +710,13 @@ public class ResourceLoader
 			int version = buffer.getInt();
 			
 			Supplier<SuspendedEntity> dataReader;
-			if ((VERSION_ENTITY == version) || (VERSION_ENTITY_V2 == version) || (VERSION_ENTITY_V3 == version))
+			if ((VERSION_ENTITY == version)
+					|| (VERSION_ENTITY_V2 == version)
+					|| (VERSION_ENTITY_V3 == version)
+					|| (VERSION_ENTITY_V4 == version)
+			)
 			{
-				// V2 is a subset of V3 (which is a subset of V4) so do nothing special - just stops old versions from being broken.
+				// Do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
 					Entity entity = CodecHelpers.readEntity(buffer);
 					
