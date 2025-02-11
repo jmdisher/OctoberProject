@@ -35,6 +35,7 @@ public class TestTickUtils
 	private static Environment ENV;
 	private static Item STONE_ITEM;
 	private static Block STONE;
+	private static Block LAVA_SOURCE;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
@@ -42,6 +43,7 @@ public class TestTickUtils
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		LAVA_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
@@ -127,5 +129,37 @@ public class TestTickUtils
 		Assert.assertEquals(0, player.newBreath);
 		Assert.assertEquals(startHealth - MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, player.newHealth);
 		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
+	}
+
+	@Test
+	public void lava()
+	{
+		// Show that we take lava damage at the end of a tick.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LAVA_SOURCE);
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		};
+		long millisPerTick = 100L;
+		EventRecord[] out_events = new EventRecord[1];
+		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
+			Assert.assertNull(out_events[0]);
+			out_events[0] = event;
+		};
+		TickProcessingContext context = ContextBuilder.build()
+				.millisPerTick(millisPerTick)
+				.tick(MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS * millisPerTick)
+				.lookups(previousBlockLookUp, null)
+				.eventSink(eventSink)
+				.finish()
+		;
+		byte startBreath = 50;
+		byte startHealth = 50;
+		MutableEntity player = MutableEntity.createForTest(1);
+		player.newBreath = startBreath;
+		player.newHealth = startHealth;
+		TickUtils.endOfTick(context, player);
+		Assert.assertEquals(startBreath - MiscConstants.SUFFOCATION_BREATH_PER_SECOND, player.newBreath);
+		Assert.assertEquals(startHealth - 10, player.newHealth);
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.BLOCK_DAMAGE, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
 	}
 }

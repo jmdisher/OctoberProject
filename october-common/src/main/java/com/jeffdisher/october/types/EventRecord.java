@@ -24,5 +24,9 @@ public record EventRecord(Type type
 		STARVATION,
 		SUFFOCATION,
 		FALL,
+		/**
+		 * A block touching the entity applies damage.
+		 */
+		BLOCK_DAMAGE,
 	}
 }

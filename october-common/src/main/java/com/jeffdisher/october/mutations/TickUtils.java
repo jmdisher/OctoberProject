@@ -8,6 +8,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.EventRecord;
@@ -80,28 +81,23 @@ public class TickUtils
 			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerInterval));
 			if (isBeginningOfSecond)
 			{
-				_applyBreathMechanics(context, newEntity);
+				_applyEndOfTickLocationChanges(context, newEntity);
 			}
 		}
 	}
 
 
-	private static void _applyBreathMechanics(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	private static void _applyEndOfTickLocationChanges(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
-		EntityLocation footLocation = newEntity.getLocation();
-		EntityVolume volume = newEntity.getType().volume();
-		float halfWidth = volume.width() / 2.0f;
-		// (we use the floor since that is the block address)
-		AbsoluteLocation headLocation = new AbsoluteLocation((int)Math.floor(footLocation.x() + halfWidth)
-				, (int)Math.floor(footLocation.y() + halfWidth)
-				, (int)Math.floor(footLocation.z() + volume.height())
-		);
-		BlockProxy headProxy = context.previousBlockLookUp.apply(headLocation);
+		BlockProxy headProxy = _getHeadProxy(context, newEntity);
 		if (null != headProxy)
 		{
 			Environment env = Environment.getShared();
-			boolean isBreathable = env.blocks.canBreatheInBlock(headProxy.getBlock());
+			Block headBlock = headProxy.getBlock();
+			
+			// Check if we need to apply breath mechanics.
+			boolean isBreathable = env.blocks.canBreatheInBlock(headBlock);
 			if (isBreathable)
 			{
 				// Reset breath.
@@ -126,6 +122,13 @@ public class TickUtils
 					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EventRecord.Cause.SUFFOCATION);
 				}
 			}
+			
+			// See if this block actually applies damage.
+			int blockDamage = env.blocks.getBlockDamage(headBlock);
+			if (blockDamage > 0)
+			{
+				EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)blockDamage, EventRecord.Cause.BLOCK_DAMAGE);
+			}
 		}
 	}
 
@@ -146,6 +149,19 @@ public class TickUtils
 			damage = 0;
 		}
 		return damage;
+	}
+
+	private static BlockProxy _getHeadProxy(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	{
+		EntityLocation footLocation = newEntity.getLocation();
+		EntityVolume volume = newEntity.getType().volume();
+		float halfWidth = volume.width() / 2.0f;
+		// (we use the floor since that is the block address)
+		AbsoluteLocation headLocation = new AbsoluteLocation((int)Math.floor(footLocation.x() + halfWidth)
+				, (int)Math.floor(footLocation.y() + halfWidth)
+				, (int)Math.floor(footLocation.z() + volume.height())
+		);
+		return context.previousBlockLookUp.apply(headLocation);
 	}
 
 
