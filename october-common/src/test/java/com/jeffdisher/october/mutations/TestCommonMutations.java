@@ -717,16 +717,11 @@ public class TestCommonMutations
 		Assert.assertNull(holder[0]);
 		
 		// Run again to show the damage taken.
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entity.getId(), 0));
 		TickUtils.endOfTick(context, entity);
 		Assert.assertEquals((byte)0, entity.getBreath());
-		Assert.assertEquals((byte)(2 * MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND), entity.getHealth());
-		Assert.assertNotNull(holder[0]);
-		
-		// Run this mutation.
-		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.SUFFOCATION, entity.newLocation.getBlockLocation(), entityId, 0));
-		holder[0].applyChange(context, entity);
-		Assert.assertEquals((byte)0, entity.getBreath());
 		Assert.assertEquals(MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, entity.getHealth());
+		Assert.assertNull(holder[0]);
 	}
 
 	@Test

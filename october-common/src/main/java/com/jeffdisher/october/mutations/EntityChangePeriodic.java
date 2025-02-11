@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -123,10 +124,8 @@ public class EntityChangePeriodic implements IMutationEntity<IMutablePlayerEntit
 		else
 		{
 			// They are starving so we want to apply damage.
-			// We apply damage using the TakeDamage change.
 			// The damage isn't applied to a specific body part.
-			EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, MiscConstants.STARVATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_STARVATION);
-			context.newChangeSink.next(newEntity.getId(), takeDamage);
+			EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.STARVATION_DAMAGE_PER_SECOND, EventRecord.Cause.STARVATION);
 		}
 	}
 }

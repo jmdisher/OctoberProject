@@ -1,6 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -884,7 +883,6 @@ public class TestCreatureProcessor
 		mutable.newVelocity = startVelocity;
 		creature = mutable.freeze();
 		
-		List<IMutationEntity<IMutableCreatureEntity>> outChanges = new ArrayList<>();
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
@@ -895,27 +893,10 @@ public class TestCreatureProcessor
 							: null
 						;
 					}, null)
-				.sinks(null, new TickProcessingContext.IChangeSink() {
-					@Override
-					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
-					{
-						Assert.fail("Not in test");
-					}
-					@Override
-					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
-					{
-						Assert.fail("Not in test");
-					}
-					@Override
-					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
-					{
-						Assert.assertEquals(-1, targetCreatureId);
-						outChanges.add(change);
-					}
-				})
 				.eventSink(events)
 				.finish()
 		;
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
 		CreatureProcessor.CreatureGroup group = CreatureProcessor.processCreatureGroupParallel(thread
 				, Map.of(creature.id(), creature)
 				, context
@@ -926,22 +907,7 @@ public class TestCreatureProcessor
 		
 		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
-		Assert.assertEquals(health, creature.health());
-		Assert.assertEquals(1, outChanges.size());
-		
-		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.FALL, creature.location().getBlockLocation(), creature.id(), 0));
-		group = CreatureProcessor.processCreatureGroupParallel(thread
-				, group.updatedCreatures()
-				, context
-				, new EntityCollection(Map.of(), Map.of(creature.id(), creature))
-				, Map.of(creature.id(), new ArrayList<>(outChanges))
-		);
-		creature = group.updatedCreatures().get(creature.id());
-		
-		Assert.assertEquals(new EntityLocation(16.8f, 16.8f, 16.0f), creature.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), creature.velocity());
 		Assert.assertEquals((byte)37, creature.health());
-		Assert.assertEquals(1, outChanges.size());
 	}
 
 

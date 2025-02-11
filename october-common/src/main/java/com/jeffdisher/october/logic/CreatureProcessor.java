@@ -11,6 +11,7 @@ import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -64,8 +65,7 @@ public class CreatureProcessor
 				
 				MutableCreature mutable = MutableCreature.existing(creature);
 				TickUtils.IFallDamage damageApplication = (int damage) ->{
-					EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, damage, EntityChangeTakeDamageFromOther.CAUSE_FALL);
-					context.newChangeSink.creature(id, takeDamage);
+					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, mutable, (byte)damage, EventRecord.Cause.FALL);
 				};
 				
 				// Determine if we need to schedule movements.

@@ -44,4 +44,8 @@ public class MiscConstants
 	 * A given creature or entity can only take damage at most once every half a second.
 	 */
 	public static final long DAMAGE_TAKEN_TIMEOUT_MILLIS = 500L;
+	/**
+	 * A given creature or entity is only checked for environmental data once every second (suffocation, etc).
+	 */
+	public static final long DAMAGE_ENVIRONMENT_CHECK_MILLIS = 1_000L;
 }

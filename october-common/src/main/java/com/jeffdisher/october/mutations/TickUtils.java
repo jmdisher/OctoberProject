@@ -10,9 +10,8 @@ import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
-import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -77,8 +76,8 @@ public class TickUtils
 		// Note that currentTick is set to 0 when running speculatively on the client so skip it there (always >0 when run on server).
 		if (context.currentTick > 0L)
 		{
-			long ticksPerSecond = (1_000L / context.millisPerTick);
-			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerSecond));
+			long ticksPerInterval = (MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS / context.millisPerTick);
+			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerInterval));
 			if (isBeginningOfSecond)
 			{
 				_applyBreathMechanics(context, newEntity);
@@ -123,18 +122,8 @@ public class TickUtils
 				}
 				else
 				{
-					// The damage isn't applied to a specific body part.
-					int id = newEntity.getId();
-					if (id > 0)
-					{
-						EntityChangeTakeDamageFromOther<IMutablePlayerEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
-						context.newChangeSink.next(id, takeDamage);
-					}
-					else
-					{
-						EntityChangeTakeDamageFromOther<IMutableCreatureEntity> takeDamage = new EntityChangeTakeDamageFromOther<>(null, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EntityChangeTakeDamageFromOther.CAUSE_SUFFOCATION);
-						context.newChangeSink.creature(id, takeDamage);
-					}
+					// Apply the damage directly inline.
+					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EventRecord.Cause.SUFFOCATION);
 				}
 			}
 		}

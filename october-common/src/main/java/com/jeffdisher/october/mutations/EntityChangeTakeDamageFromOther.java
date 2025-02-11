@@ -30,6 +30,23 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 		return new EntityChangeTakeDamageFromOther<>(target, damage, cause);
 	}
 
+	/**
+	 * Applies damage directly to the given newEntity.  Internally, this will either reduce their health or kill them,
+	 * emitting the corresponding event.
+	 * This is intended to be applied at the end of tick when processing environment damage factors applied to the
+	 * entity.
+	 * 
+	 * @param context The current tick context.
+	 * @param newEntity The entity to modify.
+	 * @param damageToApply The damage to apply (must be > 0).
+	 * @param cause The cause of the damage when emiting the event for the damage.
+	 */
+	public static void applyDamageDirectlyAndPostEvent(TickProcessingContext context, IMutableMinimalEntity newEntity, byte damageToApply, EventRecord.Cause cause)
+	{
+		Assert.assertTrue(damageToApply > 0);
+		_applyDamageDirectlyAndPostEvent(context, newEntity, damageToApply, cause);
+	}
+
 
 	private final BodyPart _target;
 	private final int _damage;
@@ -61,22 +78,6 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 		{
 			// Determine how much actual damage to apply by looking at target and armour.
 			int damageToApply = CommonEntityMutationHelpers.damageToApplyAfterArmour(newEntity, _target, _damage);
-			int finalHealth = health - damageToApply;
-			AbsoluteLocation entityLocation = newEntity.getLocation().getBlockLocation();
-			EventRecord.Type type;
-			if (finalHealth > 0)
-			{
-				// We can apply the damage.
-				newEntity.setHealth((byte)finalHealth);
-				type = EventRecord.Type.ENTITY_HURT;
-			}
-			else
-			{
-				// The entity is dead so use the type-specific death logic.
-				newEntity.handleEntityDeath(context);
-				type = EventRecord.Type.ENTITY_KILLED;
-			}
-			
 			EventRecord.Cause cause;
 			switch (_cause)
 			{
@@ -93,12 +94,7 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 				// This is an undefined type.
 				throw Assert.unreachable();
 			}
-			context.eventSink.post(new EventRecord(type
-					, cause
-					, entityLocation
-					, newEntity.getId()
-					, 0
-			));
+			_applyDamageDirectlyAndPostEvent(context, newEntity, (byte)damageToApply, cause);
 			
 			didApply = true;
 		}
@@ -130,5 +126,36 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 	public String toString()
 	{
 		return "Take " + _damage + " damage to " + _target + " because " + _cause;
+	}
+
+
+	private static void _applyDamageDirectlyAndPostEvent(TickProcessingContext context, IMutableMinimalEntity newEntity, byte damageToApply, EventRecord.Cause cause) throws AssertionError
+	{
+		int finalHealth = newEntity.getHealth() - damageToApply;
+		if (finalHealth < 0)
+		{
+			finalHealth = 0;
+		}
+		AbsoluteLocation entityLocation = newEntity.getLocation().getBlockLocation();
+		EventRecord.Type type;
+		if (finalHealth > 0)
+		{
+			// We can apply the damage.
+			newEntity.setHealth((byte)finalHealth);
+			type = EventRecord.Type.ENTITY_HURT;
+		}
+		else
+		{
+			// The entity is dead so use the type-specific death logic.
+			newEntity.handleEntityDeath(context);
+			type = EventRecord.Type.ENTITY_KILLED;
+		}
+		
+		context.eventSink.post(new EventRecord(type
+				, cause
+				, entityLocation
+				, newEntity.getId()
+				, 0
+		));
 	}
 }

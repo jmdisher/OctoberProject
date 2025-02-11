@@ -907,8 +907,10 @@ public class TestCommonChanges
 	public void entityPeriodic()
 	{
 		CommonChangeSink changeSink = new CommonChangeSink();
+		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
 				.sinks(null, changeSink)
+				.eventSink(events)
 				.finish()
 		;
 		int entityId = 1;
@@ -931,13 +933,11 @@ public class TestCommonChanges
 		
 		// Show what happens when we starve.
 		newEntity.newFood = 0;
+		events.expected(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.STARVATION, newEntity.newLocation.getBlockLocation(), entityId, 0));
 		Assert.assertTrue(periodic.applyChange(context, newEntity));
 		Assert.assertEquals((byte)0, newEntity.newFood);
-		// The health change will be applied by the TakeDamage change.
-		Assert.assertEquals((byte)100, newEntity.newHealth);
-		
-		// We should see one call enqueued for each call except the starving one, where we should see 2.
-		Assert.assertEquals(19 + 3 + 1, changeSink.takeExportedChanges().get(entityId).size());
+		// The health change is applied inline.
+		Assert.assertEquals((byte)100 - MiscConstants.STARVATION_DAMAGE_PER_SECOND, newEntity.newHealth);
 	}
 
 	@Test
