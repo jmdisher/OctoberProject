@@ -65,16 +65,7 @@ public class MutationBlockReplace implements IMutationBlock
 			}
 			
 			// See if we might need to reflow water (consider if this was a bucket picking up a source).
-			if (env.blocks.canBeReplaced(_newType))
-			{
-				// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
-				Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location, _newType);
-				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualType, oldType);
-				if ((_newType != eventualType) && (millisDelay > 0L))
-				{
-					context.mutationSink.future(new MutationBlockLiquidFlowInto(_location), millisDelay);
-				}
-			}
+			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);
 			
 			didApply = true;
 		}

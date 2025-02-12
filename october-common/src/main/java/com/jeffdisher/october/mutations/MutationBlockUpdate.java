@@ -69,11 +69,12 @@ public class MutationBlockUpdate implements IMutationBlock
 			AbsoluteLocation belowBlockLocation = _blockLocation.getRelative(0, 0, -1);
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(belowBlockLocation);
 			boolean blockIsSupported = env.blocks.canExistOnBlock(thisBlock, (null != belowBlock) ? belowBlock.getBlock() : null);
+			Block emptyBlock = env.special.AIR;
+			Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
+			
 			if (!blockIsSupported)
 			{
 				// The block isn't supported so break it (replace with air) and then see if a liquid needs to change anything).
-				Block emptyBlock = env.special.AIR;
-				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, emptyBlock);
 				if (emptyBlock != eventualBlock)
 				{
 					long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, thisBlock);
@@ -94,6 +95,13 @@ public class MutationBlockUpdate implements IMutationBlock
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
 				newBlock.setBlockAndClear(emptyBlock);
 				newBlock.setInventory(newInventory.freeze());
+				didApply = true;
+			}
+			else if (env.blocks.isBrokenByFlowingLiquid(thisBlock) && (emptyBlock != eventualBlock))
+			{
+				// The block is supported but can be broken by a flowing liquid and flowing liquid should touch it so schedule this update.
+				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, thisBlock);
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(_blockLocation), millisDelay);
 				didApply = true;
 			}
 		}

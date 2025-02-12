@@ -465,7 +465,7 @@ public class BlockAspect
 	}
 
 	/**
-	 * Returs the damage which should be applied to entities in this block.
+	 * Returns the damage which should be applied to entities in this block.
 	 * 
 	 * @param block The block to check.
 	 * @return The damage (or 0).
@@ -477,6 +477,19 @@ public class BlockAspect
 				: 0
 		;
 	}
+
+	/**
+	 * Used to check if a flowing liquid should implicitly break this block type.
+	 * 
+	 * @param block The block to check.
+	 * @return True if a flowing liquid can break this block.
+	 */
+	public boolean isBrokenByFlowingLiquid(Block block)
+	{
+		// We will say that any block which requires special support is broken by flowing liquids.
+		return _specialBlockSupport.containsKey(block);
+	}
+
 
 	private static record _DropChance(Item item, int chance1to100) {}
 }

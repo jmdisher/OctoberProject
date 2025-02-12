@@ -118,6 +118,10 @@ public class CommonBlockMutationHelpers
 		{
 			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
 		}
+		if (didApply)
+		{
+			_scheduleLiquidFlowIfRequired(env, context, location, oldBlock, blockType);
+		}
 		return didApply;
 	}
 
@@ -153,6 +157,21 @@ public class CommonBlockMutationHelpers
 	public static void pushInventoryToNeighbour(Environment env, TickProcessingContext context, AbsoluteLocation location, Inventory inventoryToMove, boolean skipAbove)
 	{
 		_pushInventoryToNeighbour(env, context, location, inventoryToMove, skipAbove);
+	}
+
+	/**
+	 * Checks the blocks around a location where one is being replaced and schedules a liquid flow mutation for the
+	 * future if there should be a flow into that location.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for scheduling the follow-up flow mutation or looking up blocks.
+	 * @param location The location where oldType was replaced by newType.
+	 * @param oldType The previous block type in this location.
+	 * @param newType The updated block type in this location.
+	 */
+	public static void scheduleLiquidFlowIfRequired(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
+	{
+		_scheduleLiquidFlowIfRequired(env, context, location, oldType, newType);
 	}
 
 
@@ -301,6 +320,34 @@ public class CommonBlockMutationHelpers
 					context.mutationSink.next(new MutationBlockStoreItems(target, stackable, nonStackable, Inventory.INVENTORY_ASPECT_INVENTORY));
 				}
 				didPlace = true;
+			}
+		}
+	}
+
+	private static void _scheduleLiquidFlowIfRequired(Environment env, TickProcessingContext context, AbsoluteLocation location, Block oldType, Block newType)
+	{
+		boolean didScheduleLiquid = false;
+		if (env.blocks.canBeReplaced(newType))
+		{
+			// We need to make sure that the eventual type is a mismatch but also that it has a flow rate (otherwise, placing a water source surrounded by air will think it should be air, meaning it should reflow immediately).
+			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, newType);
+			long millisDelay = env.liquids.minFlowDelayMillis(env, eventualType, oldType);
+			if ((newType != eventualType) && (millisDelay > 0L))
+			{
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+				didScheduleLiquid = true;
+			}
+		}
+		// See if this block might actually need to be broken, now, due to neighbours.
+		if (!didScheduleLiquid && env.blocks.isBrokenByFlowingLiquid(newType))
+		{
+			Block emptyBlock = env.special.AIR;
+			Block eventualType = CommonBlockMutationHelpers.determineEmptyBlockType(context, location, emptyBlock);
+			if (emptyBlock != eventualType)
+			{
+				long millisDelay = env.liquids.minFlowDelayMillis(env, eventualType, oldType);
+				context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+				didScheduleLiquid = true;
 			}
 		}
 	}

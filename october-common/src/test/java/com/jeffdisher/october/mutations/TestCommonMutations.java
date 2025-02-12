@@ -970,6 +970,74 @@ public class TestCommonMutations
 		Assert.assertEquals(0, proxy.getInventory().getCount(CHARCOAL_ITEM));
 	}
 
+	@Test
+	public void waterFlowBreaksItems()
+	{
+		// We want to verify what happens when a block adjacent to a liquid source, which should be broken by it, will cause it to flow and break the block.
+		Block lavaSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_source"));
+		Block dirtBlock = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.dirt"));
+		Block wheatMatureBlock = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
+		AbsoluteLocation water = new AbsoluteLocation(15, 15, 15);
+		AbsoluteLocation lava = water.getRelative(2, 0, 0);
+		AbsoluteLocation wheat1 = water.getRelative( 1, 0, 0);
+		AbsoluteLocation wheat2 = water.getRelative(-1, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(water.getCuboidAddress(), dirtBlock);
+		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, lava.getBlockAddress(), lavaSource.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, wheat1.getBlockAddress(), wheatMatureBlock.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, wheat2.getBlockAddress(), wheatMatureBlock.item().number());
+		
+		_Events events = new _Events();
+		IMutationBlock[] out_mutation = new IMutationBlock[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.fixedRandom(0)
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+						@Override
+						public void next(IMutationBlock mutation)
+						{
+							Assert.fail();
+						}
+						@Override
+						public void future(IMutationBlock mutation, long millisToDelay)
+						{
+							Assert.assertNull(out_mutation[0]);
+							out_mutation[0] = mutation;
+						}
+					}, null)
+				.eventSink(events)
+				.finish()
+		;
+		
+		// We should see the block between the water and lava replaced by water, thus destroying the block inventory.
+		MutableBlockProxy proxy1 = new MutableBlockProxy(wheat1, cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(wheat1).applyMutation(context, proxy1));
+		proxy1.writeBack(cuboid);
+		Assert.assertEquals(wheatMatureBlock, proxy1.getBlock());
+		MutationBlockLiquidFlowInto internal = (MutationBlockLiquidFlowInto)out_mutation[0];
+		Assert.assertTrue(internal instanceof MutationBlockLiquidFlowInto);
+		out_mutation[0] = null;
+		Assert.assertTrue(internal.applyMutation(context, proxy1));
+		proxy1.writeBack(cuboid);
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertNull(proxy1.getInventory());
+		Assert.assertEquals(STONE, proxy1.getBlock());
+		
+		// We should see the block next to to the water contain the dropped items.
+		MutableBlockProxy proxy2 = new MutableBlockProxy(wheat2, cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(wheat2).applyMutation(context, proxy2));
+		proxy2.writeBack(cuboid);
+		Assert.assertEquals(wheatMatureBlock, proxy2.getBlock());
+		internal = (MutationBlockLiquidFlowInto)out_mutation[0];
+		Assert.assertTrue(internal instanceof MutationBlockLiquidFlowInto);
+		out_mutation[0] = null;
+		Assert.assertTrue(internal.applyMutation(context, proxy2));
+		proxy2.writeBack(cuboid);
+		Assert.assertNull(out_mutation[0]);
+		Assert.assertEquals(6, proxy2.getInventory().currentEncumbrance);
+		Assert.assertEquals(WATER_STRONG, proxy2.getBlock());
+	}
+
 
 	private static class ProcessingSinks
 	{
