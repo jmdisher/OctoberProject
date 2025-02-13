@@ -39,6 +39,9 @@ public class CuboidGenerator
 		OctreeObject fuelledData = OctreeObject.create();
 		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
 		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
+		OctreeInflatedByte flagsData = OctreeInflatedByte.empty();
+		OctreeInflatedByte orientationData = OctreeInflatedByte.empty();
+		OctreeObject multiBlockRootData = OctreeObject.create();
 		return CuboidData.createNew(cuboidAddress, new IOctree[] { blockData
 				, inventoryData
 				, damageData
@@ -46,6 +49,11 @@ public class CuboidGenerator
 				, fuelledData
 				, lightData
 				, logicData
+				
+				// Added in version 5.
+				, flagsData
+				, orientationData
+				, multiBlockRootData
 		});
 	}
 }

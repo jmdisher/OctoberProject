@@ -8,9 +8,11 @@ import com.jeffdisher.october.data.FuelledAspectCodec;
 import com.jeffdisher.october.data.IAspectCodec;
 import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.InventoryAspectCodec;
+import com.jeffdisher.october.data.MultiBlockRootAspectCodec;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.data.OctreeObject;
 import com.jeffdisher.october.data.OctreeShort;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
@@ -113,6 +115,43 @@ public class AspectRegistry
 			// IAspectCodec only exists for OctreeObject types.
 			, null
 	);
+	/**
+	 * Block "special flags".  While most entries are "0", there are some special flags for things like "burning", etc.
+	 */
+	public static final Aspect<Byte, OctreeInflatedByte> FLAGS = registerAspect(Byte.class
+			, OctreeInflatedByte.class
+			, () -> OctreeInflatedByte.empty()
+			, (OctreeInflatedByte original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
+	/**
+	 * Block orientation bits.  These are currently only used for multi-block arrangements but may be used for other
+	 * block orientation applications, in the future.
+	 */
+	public static final Aspect<Byte, OctreeInflatedByte> ORIENTATION = registerAspect(Byte.class
+			, OctreeInflatedByte.class
+			, () -> OctreeInflatedByte.empty()
+			, (OctreeInflatedByte original) -> {
+				return original.cloneData();
+			}
+			// IAspectCodec only exists for OctreeObject types.
+			, null
+	);
+	/**
+	 * The root block location reference for multi-block arrangements but null for all other block types.
+	 */
+	public static final Aspect<AbsoluteLocation, OctreeObject> MULTI_BLOCK_ROOT = registerAspect(AbsoluteLocation.class
+			, OctreeObject.class
+			, () -> OctreeObject.create()
+			, (OctreeObject original) -> {
+				// These are immutable so create the shallow clone.
+				return original.cloneMapShallow();
+			}
+			, new MultiBlockRootAspectCodec()
+	);
 
 	private static int _nextIndex = 0;
 	public static final Aspect<?,?>[] ALL_ASPECTS;
@@ -125,6 +164,9 @@ public class AspectRegistry
 		Assert.assertTrue(4 == FUELLED.index());
 		Assert.assertTrue(5 == LIGHT.index());
 		Assert.assertTrue(6 == LOGIC.index());
+		Assert.assertTrue(7 == FLAGS.index());
+		Assert.assertTrue(8 == ORIENTATION.index());
+		Assert.assertTrue(9 == MULTI_BLOCK_ROOT.index());
 		
 		// Create the finished array, in-order.
 		ALL_ASPECTS = new Aspect<?,?>[] {
@@ -135,6 +177,11 @@ public class AspectRegistry
 			FUELLED,
 			LIGHT,
 			LOGIC,
+			
+			// These were added in version 5.
+			FLAGS,
+			ORIENTATION,
+			MULTI_BLOCK_ROOT,
 		};
 	}
 

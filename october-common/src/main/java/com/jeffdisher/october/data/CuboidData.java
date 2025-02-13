@@ -153,6 +153,31 @@ public class CuboidData implements IReadOnlyCuboidData
 	public Object deserializeResumable(Object lastCallState, ByteBuffer buffer)
 	{
 		_ResumableState previousCall = (_ResumableState) lastCallState;
+		return _deserializeResumablePartial(previousCall, buffer, AspectRegistry.ALL_ASPECTS.length);
+	}
+
+	public void deserializeSomeAspectsFully(ByteBuffer buffer, int aspectCount)
+	{
+		_ResumableState resume = _deserializeResumablePartial(null, buffer, aspectCount);
+		// This is only used when reading from disk, when the buffer is fully mapped.
+		Assert.assertTrue(null == resume);
+	}
+
+	/**
+	 * NOTE:  This helper allows mutable access to the internal data trees of the instance so it should only be used in
+	 * cases which are explicitly unsafe as the data structure should generally be considered copy-on-write with this
+	 * data array being very private.
+	 * 
+	 * @return A reference the internal data octrees of the receiver.
+	 */
+	public IOctree[] unsafeDataAccess()
+	{
+		return _data;
+	}
+
+
+	private _ResumableState _deserializeResumablePartial(_ResumableState previousCall, ByteBuffer buffer, int aspectCount)
+	{
 		int startIndex = (null != previousCall)
 				? previousCall.currentAspectIndex
 				: 0
@@ -163,7 +188,7 @@ public class CuboidData implements IReadOnlyCuboidData
 		;
 		
 		_ResumableState resume = null;
-		for (int i = startIndex; (null == resume) && (i < AspectRegistry.ALL_ASPECTS.length); ++i)
+		for (int i = startIndex; (null == resume) && (i < aspectCount); ++i)
 		{
 			if (buffer.hasRemaining())
 			{
@@ -183,18 +208,6 @@ public class CuboidData implements IReadOnlyCuboidData
 			}
 		}
 		return resume;
-	}
-
-	/**
-	 * NOTE:  This helper allows mutable access to the internal data trees of the instance so it should only be used in
-	 * cases which are explicitly unsafe as the data structure should generally be considered copy-on-write with this
-	 * data array being very private.
-	 * 
-	 * @return A reference the internal data octrees of the receiver.
-	 */
-	public IOctree[] unsafeDataAccess()
-	{
-		return _data;
 	}
 
 

@@ -21,6 +21,9 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.data.OctreeInflatedByte;
+import com.jeffdisher.october.data.OctreeObject;
+import com.jeffdisher.october.data.OctreeShort;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -327,8 +330,8 @@ public class TestResourceLoader
 		// Make sure that we see this written back.
 		File cuboidFile = new File(worldDirectory, "cuboid_" + airAddress.x() + "_" + airAddress.y() + "_" + airAddress.z() + ".cuboid");
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 57 bytes.
-		Assert.assertEquals(57L, cuboidFile.length());
+		// Experimentally, we know that this is 63 bytes.
+		Assert.assertEquals(63L, cuboidFile.length());
 		
 		// Now, create a new loader, load, and resave this.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -342,8 +345,8 @@ public class TestResourceLoader
 		
 		// Verify that the file has been truncated.
 		Assert.assertTrue(cuboidFile.isFile());
-		// Experimentally, we know that this is 34 bytes.
-		Assert.assertEquals(34L, cuboidFile.length());
+		// Experimentally, we know that this is 40 bytes.
+		Assert.assertEquals(40L, cuboidFile.length());
 		
 		// Load it again and verify that the mutation is missing and we parsed without issue.
 		loader = new ResourceLoader(worldDirectory, null, null);
@@ -638,7 +641,13 @@ public class TestResourceLoader
 		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
 		
 		// This is a test of our ability to read the V1 cuboid data.  We manually write a file and then attempt to read it, verifying the result is sensible.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		OctreeShort blockData = OctreeShort.create(STONE.item().number());
+		OctreeObject inventoryData = OctreeObject.create();
+		OctreeShort damageData = OctreeShort.create((short) 0);
+		OctreeObject craftingData = OctreeObject.create();
+		OctreeObject fuelledData = OctreeObject.create();
+		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
+		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
 		
 		int id = -5;
 		EntityType type = COW;
@@ -659,9 +668,16 @@ public class TestResourceLoader
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V1);
 		
-		Object state = cuboid.serializeResumable(null, buffer);
-		Assert.assertTrue(null == state);
+		// We want to manually write the cuboid in V1 shape.
+		Assert.assertNull(blockData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[0].codec()));
+		Assert.assertNull(inventoryData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[1].codec()));
+		Assert.assertNull(damageData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[2].codec()));
+		Assert.assertNull(craftingData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[3].codec()));
+		Assert.assertNull(fuelledData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[4].codec()));
+		Assert.assertNull(lightData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[5].codec()));
+		Assert.assertNull(logicData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[6].codec()));
 		
+		// Now, proceed to write creatures and mutations.
 		buffer.putInt(1);
 		legacy.test_writeToBuffer(buffer);
 		buffer.putInt(1);
@@ -718,7 +734,13 @@ public class TestResourceLoader
 		AbsoluteLocation periodicLocation = address.getBase().relativeForBlock(periodicBlock);
 		
 		// This is a test of our ability to read the V3 cuboid data, showing the different mutation types.  We manually write a file and then attempt to read it, verifying the result is sensible.
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
+		OctreeShort blockData = OctreeShort.create(STONE.item().number());
+		OctreeObject inventoryData = OctreeObject.create();
+		OctreeShort damageData = OctreeShort.create((short) 0);
+		OctreeObject craftingData = OctreeObject.create();
+		OctreeObject fuelledData = OctreeObject.create();
+		OctreeInflatedByte lightData = OctreeInflatedByte.empty();
+		OctreeInflatedByte logicData = OctreeInflatedByte.empty();
 		
 		// We will save a normal store mutation (immediate) and a periodic mutation (delayed) and verify that both are read correctly.
 		MutationBlockStoreItems store = new MutationBlockStoreItems(address.getBase(), new Items(STONE_ITEM, 2), null, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -728,8 +750,14 @@ public class TestResourceLoader
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V3);
 		
-		Object state = cuboid.serializeResumable(null, buffer);
-		Assert.assertTrue(null == state);
+		// We want to manually write the cuboid in V3 shape.
+		Assert.assertNull(blockData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[0].codec()));
+		Assert.assertNull(inventoryData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[1].codec()));
+		Assert.assertNull(damageData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[2].codec()));
+		Assert.assertNull(craftingData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[3].codec()));
+		Assert.assertNull(fuelledData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[4].codec()));
+		Assert.assertNull(lightData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[5].codec()));
+		Assert.assertNull(logicData.serializeResumable(null, buffer, AspectRegistry.ALL_ASPECTS[6].codec()));
 		
 		// 0 creatures.
 		buffer.putInt(0);

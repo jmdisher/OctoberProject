@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
@@ -425,13 +426,37 @@ public class ResourceLoader
 			int version = buffer.getInt();
 			
 			Supplier<SuspendedCuboid<CuboidData>> dataReader;
-			if ((VERSION_CUBOID == version)
-					|| (VERSION_CUBOID_V4 == version)
-			)
+			if (VERSION_CUBOID == version)
 			{
-				// V5 and V4 just permit different types but have the same layout.
 				dataReader = () -> {
 					CuboidData cuboid = _background_readCuboid(address, buffer);
+					
+					// Load any creatures associated with the cuboid.
+					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					// ... and any periodic mutations.
+					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, pendingMutations
+							, periodicMutations
+					);
+				};
+			}
+			else if (VERSION_CUBOID_V4 == version)
+			{
+				// V4 needs to re-write for orientation aspects.
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -458,7 +483,7 @@ public class ResourceLoader
 			{
 				// V2 is a subset of V3 so do nothing special - just stops old versions from being broken.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -485,7 +510,7 @@ public class ResourceLoader
 			{
 				// The V1 entity is has less data.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboidPre5(address, buffer);
 					
 					// Load any creatures associated with the cuboid.
 					int creatureCount = buffer.getInt();
@@ -537,9 +562,19 @@ public class ResourceLoader
 	private CuboidData _background_readCuboid(CuboidAddress address, MappedByteBuffer buffer)
 	{
 		CuboidData cuboid = CuboidData.createEmpty(address);
-		Object state = cuboid.deserializeResumable(null, buffer);
-		// There should be no resumable state since the file is complete.
-		Assert.assertTrue(null == state);
+		cuboid.deserializeSomeAspectsFully(buffer, AspectRegistry.ALL_ASPECTS.length);
+		return cuboid;
+	}
+
+	private CuboidData _background_readCuboidPre5(CuboidAddress address, MappedByteBuffer buffer)
+	{
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		
+		// Prior to version 5, only the aspects up to and including LOGIC were included.
+		int aspectCount = 7;
+		cuboid.deserializeSomeAspectsFully(buffer, aspectCount);
+		
+		// We will leave the other aspects in their default state.
 		return cuboid;
 	}
 
