@@ -106,8 +106,8 @@ public class MutationBlockUpdate implements IMutationBlock
 			}
 		}
 		
-		// Check to see if this has an inventory which should fall.
-		if (!env.blocks.isSolid(thisBlock) && (newBlock.getInventory().currentEncumbrance > 0))
+		// Check to see if this has an inventory which should fall (an empty block inventory).
+		if (env.blocks.hasEmptyBlockInventory(thisBlock) && (newBlock.getInventory().currentEncumbrance > 0))
 		{
 			// We want to say that this did apply if anything happened, including dropping the inventory.
 			didApply = CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _blockLocation, newBlock)

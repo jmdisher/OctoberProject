@@ -27,7 +27,7 @@ public class BlockProxy implements IBlockProxy
 		if (0 == size)
 		{
 			// If this is 0, it means that it isn't a station so we will also check if this is a block which is "empty".
-			if (!env.blocks.isSolid(block))
+			if (env.blocks.hasEmptyBlockInventory(block))
 			{
 				size = StationRegistry.CAPACITY_BLOCK_EMPTY;
 			}

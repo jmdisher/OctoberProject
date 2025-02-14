@@ -200,7 +200,7 @@ public class CommonBlockMutationHelpers
 		Environment env = Environment.getShared();
 		
 		// Note that this should ONLY be called if the existing block is "empty".
-		Assert.assertTrue(!env.blocks.isSolid(newBlock.getBlock()));
+		Assert.assertTrue(env.blocks.hasEmptyBlockInventory(newBlock.getBlock()));
 		// This should also have a non-empty inventory (otherwise, this shouldn't be called).
 		Assert.assertTrue(newBlock.getInventory().currentEncumbrance > 0);
 		
@@ -208,7 +208,7 @@ public class CommonBlockMutationHelpers
 		boolean didDropInventory = false;
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && !env.blocks.isSolid(below.getBlock()))
+		if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock()))
 		{
 			// We want to drop this inventory into the below block.
 			Inventory inventory = newBlock.getInventory();
@@ -275,7 +275,9 @@ public class CommonBlockMutationHelpers
 			original = null;
 		}
 		newBlock.setBlockAndClear(block);
-		if ((null != original) && (!env.blocks.isSolid(block) || (0 != env.stations.getNormalInventorySize(block))))
+		
+		// If we have an inventory and the block type is either empty with an inventory or a station with an inventory, store there.
+		if ((null != original) && (env.blocks.hasEmptyBlockInventory(block) || (0 != env.stations.getNormalInventorySize(block))))
 		{
 			// Note that we only want to store the inventory if this block doesn't destroy it.
 			if (0 == env.blocks.getBlockDamage(block))
@@ -309,7 +311,7 @@ public class CommonBlockMutationHelpers
 		{
 			AbsoluteLocation target = locations[i];
 			BlockProxy test = context.previousBlockLookUp.apply(target);
-			if ((null != test) && !env.blocks.isSolid(test.getBlock()))
+			if ((null != test) && env.blocks.hasEmptyBlockInventory(test.getBlock()))
 			{
 				for (Integer key : inventoryToMove.sortedKeys())
 				{

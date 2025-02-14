@@ -325,10 +325,20 @@ public class BlockAspect
 	 */
 	public boolean isSolid(Block block)
 	{
-		return (_nonSolidViscosity.containsKey(block))
-				? (SOLID_VISCOSITY == _nonSolidViscosity.get(block))
-				: true
-		;
+		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY).
+		return !_nonSolidViscosity.containsKey(block);
+	}
+
+	/**
+	 * Checks if this block isn't solid, thus allowing items to be dropped directly into it.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block can contain an inventory as an empty block (not a station).
+	 */
+	public boolean hasEmptyBlockInventory(Block block)
+	{
+		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY) and we allow ALL non-solid blocks to contain inventories.
+		return _nonSolidViscosity.containsKey(block);
 	}
 
 	/**
