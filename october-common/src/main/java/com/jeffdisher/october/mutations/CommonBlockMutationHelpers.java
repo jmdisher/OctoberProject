@@ -1,5 +1,6 @@
 package com.jeffdisher.october.mutations;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
@@ -10,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.FuelState;
 import com.jeffdisher.october.types.Inventory;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.NonStackableItem;
@@ -33,9 +35,9 @@ public class CommonBlockMutationHelpers
 	 * @param newBlock The block being checked and modified.
 	 * @return True if the block below can accept items.
 	 */
-	public static boolean dropInventoryIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+	public static boolean dropInventoryDownIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
-		return _dropInventoryIfNeeded(context, location, newBlock);
+		return _dropInventoryDownIfNeeded(context, location, newBlock);
 	}
 
 	/**
@@ -174,6 +176,37 @@ public class CommonBlockMutationHelpers
 		_scheduleLiquidFlowIfRequired(env, context, location, oldType, newType);
 	}
 
+	/**
+	 * Adds any dropped items from breaking a block of type "block" into the inventory provided by out_inventory.  Note
+	 * that this does NOT include any inventory dropped by a specific container block.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for requesting random numbers.
+	 * @param out_inventory The inventory to populate with any dropped items.
+	 * @param block The block type being broken.
+	 */
+	public static void populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
+	{
+		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
+		{
+			out_inventory.addItemsAllowingOverflow(dropped, 1);
+		}
+	}
+
+	/**
+	 * Returns the list of items dropped by breaking a block of type "block".  Note that this does NOT include any
+	 * inventory dropped by a specific container block.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for requesting random numbers.
+	 * @param block The block type being broken.
+	 * @return The list of items dropped.
+	 */
+	public static Item[] getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
+	{
+		return _getItemsDroppedWhenBreakingBlock(env, context, block);
+	}
+
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{
@@ -195,7 +228,7 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static boolean _dropInventoryIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
+	private static boolean _dropInventoryDownIfNeeded(TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock)
 	{
 		Environment env = Environment.getShared();
 		
@@ -352,5 +385,11 @@ public class CommonBlockMutationHelpers
 				didScheduleLiquid = true;
 			}
 		}
+	}
+
+	private static Item[] _getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
+	{
+		int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
+		return env.blocks.droppedBlocksOnBreak(block, random0to99);
 	}
 }

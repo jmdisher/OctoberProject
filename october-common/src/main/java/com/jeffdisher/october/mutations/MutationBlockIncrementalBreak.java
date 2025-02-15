@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
@@ -64,13 +63,14 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 		
 		// We want to see if this is a kind of block which can be broken.
 		Block block = newBlock.getBlock();
-		if (DamageAspect.UNBREAKABLE != env.damage.getToughness(block))
+		short toughness = env.damage.getToughness(block);
+		if (DamageAspect.UNBREAKABLE != toughness)
 		{
 			// Apply the damage.
 			short damage = (short)(newBlock.getDamage() + _damageToApply);
 			
 			// See if this is broken (note that damage could overflow).
-			if ((damage >= env.damage.getToughness(block)) || (damage < 0))
+			if ((damage >= toughness) || (damage < 0))
 			{
 				// We want to see if there are any liquids around this block which we will need to handle.
 				Block emptyBlock = env.special.AIR;
@@ -91,8 +91,8 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				{
 					// Schedule a mutation to send it back to them (will drop at their feet on failure).
 					// This is usually just 1 element so send 1 mutation per item.
-					int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
-					for (Item dropped : env.blocks.droppedBlocksOnBreak(block, random0to99))
+					Item[] droppedItems = CommonBlockMutationHelpers.getItemsDroppedWhenBreakingBlock(env, context, block);
+					for (Item dropped : droppedItems)
 					{
 						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
 						context.newChangeSink.next(_optionalEntityForStorage, store);
@@ -101,11 +101,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				else
 				{
 					// Just drop this in the target location.
-					int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
-					for (Item dropped : env.blocks.droppedBlocksOnBreak(block, random0to99))
-					{
-						newInventory.addItemsAllowingOverflow(dropped, 1);
-					}
+					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, block);
 				}
 				
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
@@ -116,7 +112,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				// See if the inventory should drop from this block.
 				if (inventory.currentEncumbrance > 0)
 				{
-					CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _location, newBlock);
+					CommonBlockMutationHelpers.dropInventoryDownIfNeeded(context, _location, newBlock);
 				}
 				
 				// This also triggers an event.

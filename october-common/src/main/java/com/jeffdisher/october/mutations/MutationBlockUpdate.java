@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -10,7 +9,6 @@ import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
@@ -86,11 +84,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 				
 				// Add this block's drops to the inventory.
-				int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
-				for (Item dropped : env.blocks.droppedBlocksOnBreak(thisBlock, random0to99))
-				{
-					newInventory.addItemsAllowingOverflow(dropped, 1);
-				}
+				CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
 				
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
 				newBlock.setBlockAndClear(emptyBlock);
@@ -110,7 +104,7 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (env.blocks.hasEmptyBlockInventory(thisBlock) && (newBlock.getInventory().currentEncumbrance > 0))
 		{
 			// We want to say that this did apply if anything happened, including dropping the inventory.
-			didApply = CommonBlockMutationHelpers.dropInventoryIfNeeded(context, _blockLocation, newBlock)
+			didApply = CommonBlockMutationHelpers.dropInventoryDownIfNeeded(context, _blockLocation, newBlock)
 					|| didApply;
 		}
 		

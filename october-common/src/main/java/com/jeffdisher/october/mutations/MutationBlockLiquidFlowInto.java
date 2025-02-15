@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -10,7 +9,6 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableInventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -78,11 +76,7 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 				{
 					MutableInventory newInventory = new MutableInventory(inv);
 					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
-					int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
-					for (Item dropped : env.blocks.droppedBlocksOnBreak(thisBlock, random0to99))
-					{
-						newInventory.addItemsAllowingOverflow(dropped, 1);
-					}
+					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
 					// Break the block and replace it with the flowing type, storing the inventory into it (may be over-filled).
 					newBlock.setBlockAndClear(eventualBlock);
 					newBlock.setInventory(newInventory.freeze());
