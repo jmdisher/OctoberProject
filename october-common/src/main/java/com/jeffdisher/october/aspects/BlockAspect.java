@@ -43,6 +43,8 @@ public class BlockAspect
 	public static final int RANDOM_DROP_LIMIT = 100;
 
 	private static final String FLAG_CAN_BE_REPLACED = "can_be_replaced";
+	private static final String FLAG_IS_FLAMMABLE = "is_flammable";
+	private static final String FLAG_IS_FIRE_SOURCE = "is_fire_source";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
 	private static final String SUB_SPECIAL_DROP = "special_drop";
@@ -69,6 +71,8 @@ public class BlockAspect
 		Map<Item, Block> blocksByItemType = new HashMap<>();
 		
 		Set<Block> canBeReplaced = new HashSet<>();
+		Set<Block> isFlammable = new HashSet<>();
+		Set<Block> isFireSource = new HashSet<>();
 		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		Map<Block, Integer> blockDamage = new HashMap<>();
 		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
@@ -92,6 +96,22 @@ public class BlockAspect
 					if (FLAG_CAN_BE_REPLACED.equals(value))
 					{
 						canBeReplaced.add(_currentBlock);
+					}
+					else if (FLAG_IS_FLAMMABLE.equals(value))
+					{
+						if (isFireSource.contains(_currentBlock))
+						{
+							throw new TabListReader.TabListException("A block cannot be both flammable and a fire source: \"" + name + "\"");
+						}
+						isFlammable.add(_currentBlock);
+					}
+					else if (FLAG_IS_FIRE_SOURCE.equals(value))
+					{
+						if (isFlammable.contains(_currentBlock))
+						{
+							throw new TabListReader.TabListException("A block cannot be both flammable and a fire source: \"" + name + "\"");
+						}
+						isFireSource.add(_currentBlock);
 					}
 					else
 					{
@@ -252,6 +272,8 @@ public class BlockAspect
 		return new BlockAspect(items
 				, blocksByType
 				, canBeReplaced
+				, isFlammable
+				, isFireSource
 				, nonSolidViscosity
 				, blockDamage
 				, specialBlockSupport
@@ -263,6 +285,8 @@ public class BlockAspect
 
 	private final Block[] _blocksByItemNumber;
 	private final Set<Block> _canBeReplaced;
+	private final Set<Block> _isFlammable;
+	private final Set<Block> _isFireSource;
 	private final Map<Block, Integer> _nonSolidViscosity;
 	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
@@ -273,6 +297,8 @@ public class BlockAspect
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
 			, Set<Block> canBeReplaced
+			, Set<Block> isFlammable
+			, Set<Block> isFireSource
 			, Map<Block, Integer> nonSolidViscosity
 			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
@@ -284,6 +310,8 @@ public class BlockAspect
 		_blocksByItemNumber = blocksByType;
 		
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
+		_isFlammable = Collections.unmodifiableSet(isFlammable);
+		_isFireSource = Collections.unmodifiableSet(isFireSource);
 		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
 		_blockDamage = Collections.unmodifiableMap(blockDamage);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
@@ -315,6 +343,29 @@ public class BlockAspect
 	public boolean canBeReplaced(Block block)
 	{
 		return _canBeReplaced.contains(block);
+	}
+
+	/**
+	 * Checks if a given block is a flammable type.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block type can be set on fire.
+	 */
+	public boolean isFlammable(Block block)
+	{
+		return _isFlammable.contains(block);
+	}
+
+	/**
+	 * Checks if a given block type should be considered a fire source (not that these are not flammable but can be
+	 * sources of fire spread to other blocks).
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block type is a fire source.
+	 */
+	public boolean isFireSource(Block block)
+	{
+		return _isFireSource.contains(block);
 	}
 
 	/**

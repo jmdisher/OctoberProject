@@ -9,6 +9,8 @@
 #
 # flag_list includes:
 # -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
+# -is_flammable (the block can catch fire and be destroyed by fire)
+# -is_fire_source (the block can start fires nearby)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
 # requires_support means that this block requires one of the given blocks under it.
@@ -25,13 +27,13 @@ op.air	can_be_replaced
 	viscosity	0
 op.stone
 	block_material	PICKAXE
-op.log
+op.log	is_flammable
 	block_material	AXE
-op.plank
+op.plank	is_flammable
 	block_material	AXE
 op.stone_brick
 	block_material	PICKAXE
-op.crafting_table
+op.crafting_table	is_flammable
 	block_material	AXE
 op.furnace
 	block_material	PICKAXE
@@ -50,10 +52,10 @@ op.water_weak	can_be_replaced
 	viscosity	50
 op.lantern
 # op.iron_ingot
-op.sapling
+op.sapling	is_flammable
 	requires_support	op.dirt
 	viscosity	10
-op.leaf
+op.leaf	is_flammable
 	block_material	AXE
 	special_drop	50	op.sapling	20	op.stick	10	op.apple
 # op.wheat_seed
@@ -71,11 +73,11 @@ op.wheat_mature
 	requires_support	op.dirt
 	special_drop	100	op.wheat_seed	50	op.wheat_seed	100	op.wheat_item	100	op.wheat_item
 	viscosity	10
-op.chest
+op.chest	is_flammable
 	block_material	AXE
-op.door_closed
+op.door_closed	is_flammable
 	block_material	AXE
-op.door_open
+op.door_open	is_flammable
 	block_material	AXE
 	special_drop	100	op.door_closed
 	viscosity	0
@@ -120,17 +122,17 @@ op.carrot_mature
 	requires_support	op.dirt
 	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
-op.bed
+op.bed	is_flammable
 	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick
 	block_material	AXE
 op.basalt
 	block_material	PICKAXE
-op.lava_source	can_be_replaced
+op.lava_source	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
-op.lava_strong	can_be_replaced
+op.lava_strong	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
-op.lava_weak	can_be_replaced
+op.lava_weak	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
