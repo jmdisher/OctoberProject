@@ -87,7 +87,7 @@ public class MutationBlockUpdate implements IMutationBlock
 				CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
 				
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
-				newBlock.setBlockAndClear(emptyBlock);
+				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, emptyBlock);
 				newBlock.setInventory(newInventory.freeze());
 				didApply = true;
 			}

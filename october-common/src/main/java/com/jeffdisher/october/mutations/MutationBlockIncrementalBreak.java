@@ -105,7 +105,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 				}
 				
 				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
-				newBlock.setBlockAndClear(emptyBlock);
+				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _location, newBlock, emptyBlock);
 				Inventory inventory = newInventory.freeze();
 				newBlock.setInventory(inventory);
 				

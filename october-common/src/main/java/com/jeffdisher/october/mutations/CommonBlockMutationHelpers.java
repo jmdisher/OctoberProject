@@ -101,7 +101,7 @@ public class CommonBlockMutationHelpers
 			if (blockIsSupported)
 			{
 				// Do the standard inventory handling.
-				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, newBlock, newType);
+				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, newType);
 				if (null != inventoryToMove)
 				{
 					_pushInventoryToNeighbour(env, context, location, inventoryToMove, false);
@@ -135,14 +135,16 @@ public class CommonBlockMutationHelpers
 	 * with it.
 	 * 
 	 * @param env The environment.
+	 * @param context The context for scheduling any follow-up mutations related to fire.
+	 * @param location The location of newBlock.
 	 * @param newBlock The block to modify.
 	 * @param block The new block type to set.
 	 * @return Null if there was no inventory or if it could be restored (only non-null when there is an inventory this
 	 * helper can't restore).
 	 */
-	public static Inventory replaceBlockAndRestoreInventory(Environment env, IMutableBlockProxy newBlock, Block block)
+	public static Inventory replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
 	{
-		return _replaceBlockAndRestoreInventory(env, newBlock, block);
+		return _replaceBlockAndRestoreInventory(env, context, location, newBlock, block);
 	}
 
 	/**
@@ -205,6 +207,21 @@ public class CommonBlockMutationHelpers
 	public static Item[] getItemsDroppedWhenBreakingBlock(Environment env, TickProcessingContext context, Block block)
 	{
 		return _getItemsDroppedWhenBreakingBlock(env, context, block);
+	}
+
+	/**
+	 * Sets the block in proxy, at location, to newType.  Internally, checks if fire-related mutations should be
+	 * scheduled for this or a neighbouring block and schedules those mutations.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 * @param newType The new type to assign to proxy.
+	 */
+	public static void setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
+	{
+		_setBlockCheckingFire(env, context, location, proxy, newType);
 	}
 
 
@@ -297,7 +314,7 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
-	private static Inventory _replaceBlockAndRestoreInventory(Environment env, IMutableBlockProxy newBlock, Block block)
+	private static Inventory _replaceBlockAndRestoreInventory(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy newBlock, Block block)
 	{
 		// Get the existing inventory (note that this will return an empty inventory if the block type can support an
 		// inventory but there is nothing there).
@@ -307,7 +324,7 @@ public class CommonBlockMutationHelpers
 			// We will ignore empty inventories.
 			original = null;
 		}
-		newBlock.setBlockAndClear(block);
+		_setBlockCheckingFire(env, context, location, newBlock, block);
 		
 		// If we have an inventory and the block type is either empty with an inventory or a station with an inventory, store there.
 		if ((null != original) && (env.blocks.hasEmptyBlockInventory(block) || (0 != env.stations.getNormalInventorySize(block))))
@@ -391,5 +408,11 @@ public class CommonBlockMutationHelpers
 	{
 		int random0to99 = context.randomInt.applyAsInt(BlockAspect.RANDOM_DROP_LIMIT);
 		return env.blocks.droppedBlocksOnBreak(block, random0to99);
+	}
+
+	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
+	{
+		// TODO:  Add fire mutations when they are added.
+		proxy.setBlockAndClear(newType);
 	}
 }

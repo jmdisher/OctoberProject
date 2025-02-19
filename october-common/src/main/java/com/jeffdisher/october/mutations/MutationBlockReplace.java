@@ -58,7 +58,7 @@ public class MutationBlockReplace implements IMutationBlock
 		if (oldType == _originalType)
 		{
 			Environment env = Environment.getShared();
-			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, _newType);
+			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _newType);
 			if (null != inventoryToMove)
 			{
 				CommonBlockMutationHelpers.pushInventoryToNeighbour(env, context, _location, inventoryToMove, false);

@@ -91,7 +91,7 @@ public class PlantHelpers
 		if (null != nextPhase)
 		{
 			// Become that next phase.
-			Inventory inventory = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, nextPhase);
+			Inventory inventory = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, location, newBlock, nextPhase);
 			// Normal plants should always be able to hold inventories.
 			Assert.assertTrue(null == inventory);
 			// Reschedule if that block is also growable.
@@ -117,7 +117,7 @@ public class PlantHelpers
 		Block leaf = env.blocks.fromItem(env.items.getItemById("op.leaf"));
 		// Replace this with a log and leaf blocks.
 		// TODO:  Figure out how to make more interesting trees.
-		Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, log);
+		Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, location, newBlock, log);
 		if (null != inventoryToMove)
 		{
 			// Since we know we are placing a block above this one, skip trying to drop the inventory there.

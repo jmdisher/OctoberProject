@@ -45,4 +45,8 @@ public interface IBlockProxy
 	 * @return The logic value for this block ([0..15]).
 	 */
 	byte getLogic();
+	/**
+	 * @return The flags for this block (as defined in FlagsAspect).
+	 */
+	byte getFlags();
 }

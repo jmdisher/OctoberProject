@@ -113,6 +113,12 @@ public class BlockProxy implements IBlockProxy
 		return _getData7(AspectRegistry.LOGIC);
 	}
 
+	@Override
+	public byte getFlags()
+	{
+		return _getData7(AspectRegistry.FLAGS);
+	}
+
 	/**
 	 * Checks if the receiver and the given other are backed by the same aspect values.  Note that this depends on the
 	 * underlying aspect value type implementing .equals(), which most don't, so changes to this type instance will

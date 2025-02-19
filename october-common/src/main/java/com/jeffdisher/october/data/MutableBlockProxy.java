@@ -76,6 +76,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		_setDataSpecial(AspectRegistry.CRAFTING, null);
 		_setDataSpecial(AspectRegistry.FUELLED, null);
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
+		
+		_setData7(AspectRegistry.FLAGS, (byte)0);
 	}
 
 	@Override
@@ -190,6 +192,18 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	{
 		Assert.assertTrue((logic >= 0) && (logic <= LogicAspect.MAX_LEVEL));
 		_setData7(AspectRegistry.LOGIC, logic);
+	}
+
+	@Override
+	public byte getFlags()
+	{
+		return _getData7(AspectRegistry.FLAGS);
+	}
+
+	@Override
+	public void setFlags(byte flags)
+	{
+		_setData7(AspectRegistry.FLAGS, flags);
 	}
 
 	@Override

@@ -56,7 +56,7 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			Block newType = CommonBlockMutationHelpers.determineEmptyBlockType(context, _blockLocation, thisBlock);
 			if (newType != thisBlock)
 			{
-				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, newBlock, newType);
+				Inventory inv = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _blockLocation, newBlock, newType);
 				// The inventory should be restored if these are all empty block types.
 				Assert.assertTrue(null == inv);
 				thisBlock = newType;
@@ -78,12 +78,12 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 					CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
 					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, thisBlock);
 					// Break the block and replace it with the flowing type, storing the inventory into it (may be over-filled).
-					newBlock.setBlockAndClear(eventualBlock);
+					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
 					newBlock.setInventory(newInventory.freeze());
 				}
 				else
 				{
-					newBlock.setBlockAndClear(eventualBlock);
+					CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, eventualBlock);
 				}
 				
 				didApply = true;

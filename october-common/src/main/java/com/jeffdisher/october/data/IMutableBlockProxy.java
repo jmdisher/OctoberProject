@@ -49,6 +49,10 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 */
 	void setLogic(byte logic);
 	/**
+	 * @param flags The new flags for this block (as defined in FlagsAspect).
+	 */
+	void setFlags(byte flags);
+	/**
 	 * Serializes all known aspects for this block into the given buffer.
 	 * 
 	 * @param buffer The buffer which should contain the serialized value of this block's aspects.
