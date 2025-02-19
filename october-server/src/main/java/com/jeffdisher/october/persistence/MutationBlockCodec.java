@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.MutationBlockBurnDown;
 import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
@@ -17,6 +18,7 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
+import com.jeffdisher.october.mutations.MutationBlockStartFire;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
 import com.jeffdisher.october.mutations.MutationBlockUpdate;
@@ -49,6 +51,8 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalRepair.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockLiquidFlowInto.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLiquidFlowInto.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStartFire.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockBurnDown.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

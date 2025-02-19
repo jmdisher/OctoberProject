@@ -1038,6 +1038,106 @@ public class TestCommonMutations
 		Assert.assertEquals(WATER_STRONG, proxy2.getBlock());
 	}
 
+	@Test
+	public void lavaStartsFires()
+	{
+		// Place a lava source, much like a bucket would, and observe the progression of fires.
+		AbsoluteLocation lavaSpot = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation woodSpot1 = new AbsoluteLocation(6, 5, 5);
+		AbsoluteLocation woodSpot2 = new AbsoluteLocation(7, 5, 5);
+		Item log = ENV.items.getItemById("op.log");
+		Block lavaSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_source"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, lavaSpot.getBlockAddress(), ENV.special.AIR.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, woodSpot1.getBlockAddress(), log.number());
+		cuboid.setData15(AspectRegistry.BLOCK, woodSpot2.getBlockAddress(), log.number());
+		
+		// Create the context we want to use.
+		MutationBlockStartFire[] out_startFire = new MutationBlockStartFire[1];
+		MutationBlockBurnDown[] out_burnDown = new MutationBlockBurnDown[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail("Not used");
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						// We only expect one of each.
+						if (mutation instanceof MutationBlockStartFire)
+						{
+							Assert.assertNull(out_startFire[0]);
+							Assert.assertEquals(MutationBlockStartFire.IGNITION_DELAY_MILLIS, millisToDelay);
+							out_startFire[0] = (MutationBlockStartFire) mutation;
+						}
+						else if (mutation instanceof MutationBlockBurnDown)
+						{
+							Assert.assertNull(out_burnDown[0]);
+							Assert.assertEquals(MutationBlockBurnDown.BURN_DELAY_MILLIS, millisToDelay);
+							out_burnDown[0] = (MutationBlockBurnDown) mutation;
+						}
+						else
+						{
+							// In this case, we expect the liquid movement but we don't actually want to apply that.
+							Assert.assertTrue(mutation instanceof MutationBlockLiquidFlowInto);
+						}
+					}
+				}, null)
+				.finish()
+		;
+		
+		// Place the source and observe the ignition mutation scheduled.
+		MutableBlockProxy proxy = new MutableBlockProxy(lavaSpot, cuboid);
+		MutationBlockReplace placeLava = new MutationBlockReplace(lavaSpot, ENV.special.AIR, lavaSource);
+		Assert.assertTrue(placeLava.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Apply the ignition mutation.
+		MutationBlockStartFire ignite = out_startFire[0];
+		out_startFire[0] = null;
+		proxy = new MutableBlockProxy(ignite.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(ignite.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Capture the first burn down.
+		MutationBlockBurnDown burnDown = out_burnDown[0];
+		out_burnDown[0] = null;
+		
+		// Apply the next ignition mutation.
+		ignite = out_startFire[0];
+		out_startFire[0] = null;
+		proxy = new MutableBlockProxy(ignite.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(ignite.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Apply the first burn down.
+		proxy = new MutableBlockProxy(burnDown.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(burnDown.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Apply the second burn down.
+		burnDown = out_burnDown[0];
+		out_burnDown[0] = null;
+		proxy = new MutableBlockProxy(burnDown.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(burnDown.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Verify final state.
+		Assert.assertNull(out_burnDown[0]);
+		Assert.assertNull(out_startFire[0]);
+		Assert.assertEquals(lavaSource.item().number(), cuboid.getData15(AspectRegistry.BLOCK, lavaSpot.getBlockAddress()));
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, lavaSpot.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, woodSpot1.getBlockAddress()));
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, woodSpot1.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, woodSpot2.getBlockAddress()));
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, woodSpot2.getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{

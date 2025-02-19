@@ -1,10 +1,14 @@
 package com.jeffdisher.october.mutations;
 
+import java.util.List;
+
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -224,6 +228,20 @@ public class CommonBlockMutationHelpers
 		_setBlockCheckingFire(env, context, location, proxy, newType);
 	}
 
+	/**
+	 * Ignites the proxy, at location.  Internally, schedules the burn-down for this block and fire spread for any
+	 * flammable neighbouring blocks.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 */
+	public static void igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	{
+		_igniteBlockAndSpread(env, context, location, proxy);
+	}
+
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{
@@ -412,7 +430,51 @@ public class CommonBlockMutationHelpers
 
 	private static void _setBlockCheckingFire(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, Block newType)
 	{
-		// TODO:  Add fire mutations when they are added.
+		Block oldType = proxy.getBlock();
+		
+		// If this changed into a fire source block, schedule the ignition mutations around it.
+		if (env.blocks.isFireSource(newType) && !env.blocks.isFireSource(oldType))
+		{
+			List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
+			for (AbsoluteLocation neighour : flammable)
+			{
+				MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
+				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+			}
+		}
+		
+		// If this block changed into a flammable type, see if it should receive an ignition mutation.
+		if (env.blocks.isFlammable(newType) && !env.blocks.isFlammable(oldType))
+		{
+			boolean shouldIgnite = FireHelpers.isNearFireSource(env, context, location);
+			if (shouldIgnite)
+			{
+				MutationBlockStartFire startFire = new MutationBlockStartFire(location);
+				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+			}
+		}
 		proxy.setBlockAndClear(newType);
+	}
+
+	private static void _igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
+	{
+		byte flags = proxy.getFlags();
+		
+		// Make sure that this isn't already on fire.
+		Assert.assertTrue(!FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING));
+		// Set us on fire (in the future, this will probably be made random).
+		flags = FlagsAspect.set(flags, FlagsAspect.FLAG_BURNING);
+		proxy.setFlags(flags);
+		
+		// Schedule the mutation to finish burning.
+		context.mutationSink.future(new MutationBlockBurnDown(location), MutationBlockBurnDown.BURN_DELAY_MILLIS);
+		
+		// See if there are any ignition blocks around this.
+		List<AbsoluteLocation> flammable = FireHelpers.findFlammableNeighbours(env, context, location);
+		for (AbsoluteLocation neighour : flammable)
+		{
+			MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
+			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+		}
 	}
 }
