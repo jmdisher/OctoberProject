@@ -124,6 +124,13 @@ public class MutationBlockUpdate implements IMutationBlock
 			newBlock.setFlags(flags);
 			didApply = true;
 		}
+		
+		// Check if we need to destroy any inventory due to fire.
+		if (FireHelpers.shouldBurnUpItems(env, context, _blockLocation, newBlock))
+		{
+			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, thisBlock));
+			didApply = true;
+		}
 		return didApply;
 	}
 

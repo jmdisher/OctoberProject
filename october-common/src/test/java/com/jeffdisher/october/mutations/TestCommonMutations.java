@@ -1171,6 +1171,89 @@ public class TestCommonMutations
 		Assert.assertEquals(log.number(), cuboid.getData15(AspectRegistry.BLOCK, burning.getBlockAddress()));
 	}
 
+	@Test
+	public void burningDestroysItems()
+	{
+		// We want to verify that items are destroyed when dropped on a burning block or when a block starts on fire but not if in a chest.
+		Item logItem = ENV.items.getItemById("op.log");
+		Block log = ENV.blocks.getAsPlaceableBlock(logItem);
+		Block chest = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.chest"));
+		AbsoluteLocation centre = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(centre.getCuboidAddress(), ENV.special.AIR);
+		// 1) A block which starts on fire and we drop items on top.
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), log.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		// 2) A block with items on it which we then start on fire.
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(1, 0, 0).getBlockAddress(), log.item().number());
+		// 3) A block which starts on fire and we put items in a chest on top.
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 0).getBlockAddress(), log.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, centre.getRelative(2, 0, 0).getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(2, 0, 1).getBlockAddress(), chest.item().number());
+		// 4) A block with items in a chest on top which we then start on fire.
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(3, 0, 0).getBlockAddress(), log.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getRelative(3, 0, 1).getBlockAddress(), chest.item().number());
+		
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.finish()
+		;
+		
+		// Create the mutations to fill the inventories.
+		MutableBlockProxy proxy = new MutableBlockProxy(centre.getRelative(0, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre.getRelative(0, 0, 1), new Items(logItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(centre.getRelative(1, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre.getRelative(1, 0, 1), new Items(logItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(centre.getRelative(2, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre.getRelative(2, 0, 1), new Items(logItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(centre.getRelative(3, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre.getRelative(3, 0, 1), new Items(logItem, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Now, ignite the other blocks, verify that these changes should cause updates.
+		context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail("Not in test");
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						// We only expect these to be to schedule the fire spreading or burning down.
+						Assert.assertTrue((mutation instanceof MutationBlockStartFire) || (mutation instanceof MutationBlockBurnDown));
+					}
+				}, null)
+				.finish()
+		;
+		proxy = new MutableBlockProxy(centre.getRelative(1, 0, 0), cuboid);
+		Assert.assertTrue(new MutationBlockStartFire(centre.getRelative(1, 0, 0)).applyMutation(context, proxy));
+		Assert.assertTrue(proxy.shouldTriggerUpdateEvent());
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(centre.getRelative(3, 0, 0), cuboid);
+		Assert.assertTrue(new MutationBlockStartFire(centre.getRelative(3, 0, 0)).applyMutation(context, proxy));
+		Assert.assertTrue(proxy.shouldTriggerUpdateEvent());
+		proxy.writeBack(cuboid);
+		
+		// Now run the updates and show that they destroy the items, unless in a chest.
+		proxy = new MutableBlockProxy(centre.getRelative(1, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockUpdate(centre.getRelative(1, 0, 1)).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		proxy = new MutableBlockProxy(centre.getRelative(3, 0, 1), cuboid);
+		Assert.assertFalse(new MutationBlockUpdate(centre.getRelative(3, 0, 1)).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Verify that only the chest inventories survived.
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertNotNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(2, 0, 1).getBlockAddress()));
+		Assert.assertNotNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(3, 0, 1).getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{

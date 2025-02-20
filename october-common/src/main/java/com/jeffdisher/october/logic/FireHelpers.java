@@ -123,6 +123,28 @@ public class FireHelpers
 		;
 	}
 
+	/**
+	 * Checks if there is an inventory in the current block which should be burned up due to fire in the block under it.
+	 * This is read-only and will not schedule any mutations or change anything.
+	 * 
+	 * @param env The environment.
+	 * @param context The current tick's context.
+	 * @param check The block location to check.
+	 * @param proxy The block proxy.
+	 * @return True if the inventory in this block should be destroyed by fire.
+	 */
+	public static boolean shouldBurnUpItems(Environment env, TickProcessingContext context, AbsoluteLocation check, IBlockProxy proxy)
+	{
+		boolean shouldBurn = false;
+		Block thisBlock = proxy.getBlock();
+		if (env.blocks.hasEmptyBlockInventory(thisBlock) && (proxy.getInventory().currentEncumbrance > 0))
+		{
+			BlockProxy belowBlock = context.previousBlockLookUp.apply(check.getRelative(0, 0, -1));
+			shouldBurn = ((null != belowBlock) && FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_BURNING));
+		}
+		return shouldBurn;
+	}
+
 
 	private static boolean _isNearFireSource(Environment env, TickProcessingContext context, AbsoluteLocation check)
 	{
