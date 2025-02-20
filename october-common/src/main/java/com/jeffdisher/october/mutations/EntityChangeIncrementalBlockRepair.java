@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -14,7 +15,7 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Issues a "MutationBlockIncrementalRepair" to incrementally break the target block.
+ * Issues a "MutationBlockIncrementalRepair" to incrementally repair the target block or extinguish a fire within it.
  * Note that we typically use a long to apply time values but the underlying damage being changed is a short so we use
  * that instead.
  */
@@ -54,7 +55,7 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		// Repairing a block requires a few things:
 		// 1) There must be nothing in the entity's hand.
 		// 2) They must be able to reach the target block.
-		// 3) The block must have a positive damage value.
+		// 3) The block must have a positive damage value or be on fire.
 		
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
@@ -66,13 +67,17 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
 		
 		// We will short-circuit this to avoid the cost of the look-up.
-		boolean hasPositiveDamage = (isHandEmpty && isReachable)
+		boolean hasPositiveDamage = (isHandEmpty && isReachable && (null != proxy))
 				? (proxy.getDamage() > 0)
+				: false
+		;
+		boolean isOnFire = (isHandEmpty && isReachable && (null != proxy))
+				? FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_BURNING)
 				: false
 		;
 		
 		boolean didApply = false;
-		if (hasPositiveDamage)
+		if (hasPositiveDamage || isOnFire)
 		{
 			// We can do something so send the mutation to the block (it will apply the change with bounds checks).
 			MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(_targetBlock, _millisToApply);

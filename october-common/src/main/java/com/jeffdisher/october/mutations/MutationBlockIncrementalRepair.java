@@ -2,7 +2,10 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -56,6 +59,24 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 			newBlock.setDamage(updatedDamage);
 			didApply = true;
 		}
+		
+		// We also use this path to extinguish a fire in the block.
+		byte flags = newBlock.getFlags();
+		if (FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING))
+		{
+			flags = FlagsAspect.clear(flags, FlagsAspect.FLAG_BURNING);
+			newBlock.setFlags(flags);
+			didApply = true;
+			
+			// See if this is still something which can be re-ignited.
+			Environment env = Environment.getShared();
+			if (FireHelpers.canIgnite(env, context, _location, newBlock))
+			{
+				MutationBlockStartFire startFire = new MutationBlockStartFire(_location);
+				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+			}
+		}
+		
 		return didApply;
 	}
 

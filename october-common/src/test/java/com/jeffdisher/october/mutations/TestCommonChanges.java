@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
@@ -2153,6 +2154,35 @@ public class TestCommonChanges
 		Assert.assertEquals(emptyBucket, newEntity.newInventory.getNonStackableForKey(1).type());
 		Assert.assertEquals(lavaSourceItemNumber, cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+	}
+
+	@Test
+	public void extinguishFire() throws Throwable
+	{
+		// Show that a repair mutation will put out a fire in a block.
+		Block log = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(10.0f, 10.0f, 10.0f);
+		
+		AbsoluteLocation target = new AbsoluteLocation(10, 10, 9);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), log.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, target.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
+		
+		// Extinguish the fire.
+		EntityChangeIncrementalBlockRepair repair = new EntityChangeIncrementalBlockRepair(target, (short)50);
+		Assert.assertTrue(repair.applyChange(holder.context, newEntity));
+		Assert.assertNotNull(holder.mutation);
+		MutationBlockIncrementalRepair followUp = (MutationBlockIncrementalRepair) holder.mutation;
+		holder.mutation = null;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		Assert.assertTrue(followUp.applyMutation(holder.context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(log.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
 	}
 
 
