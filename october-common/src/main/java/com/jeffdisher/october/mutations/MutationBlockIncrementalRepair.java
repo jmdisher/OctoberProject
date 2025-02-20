@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -43,16 +42,13 @@ public class MutationBlockIncrementalRepair implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
-		Environment env = Environment.getShared();
 		boolean didApply = false;
 		
-		// This block could have changed since the mutation was created so check that this is not replaceable and has positive damage.
-		boolean isReplaceable = env.blocks.canBeReplaced(newBlock.getBlock());
-		
+		// Check that this block is damaged.
 		short damage = newBlock.getDamage();
 		boolean hasPositiveDamage = (damage > 0);
 		
-		if (!isReplaceable && hasPositiveDamage)
+		if (hasPositiveDamage)
 		{
 			// Repair up to the maximum damage.
 			short repair = (short)Math.min(_damageToRepair, damage);

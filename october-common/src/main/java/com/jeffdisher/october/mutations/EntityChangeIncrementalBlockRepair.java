@@ -2,7 +2,6 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -52,12 +51,10 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 	@Override
 	public boolean applyChange(TickProcessingContext context, IMutablePlayerEntity newEntity)
 	{
-		Environment env = Environment.getShared();
 		// Repairing a block requires a few things:
 		// 1) There must be nothing in the entity's hand.
 		// 2) They must be able to reach the target block.
-		// 3) The target block must be loaded and not a replaceable block.
-		// 4) The block must have a positive damage value.
+		// 3) The block must have a positive damage value.
 		
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
@@ -67,10 +64,9 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
 		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isReplaceable = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
 		
 		// We will short-circuit this to avoid the cost of the look-up.
-		boolean hasPositiveDamage = (isHandEmpty && isReachable && !isReplaceable)
+		boolean hasPositiveDamage = (isHandEmpty && isReachable)
 				? (proxy.getDamage() > 0)
 				: false
 		;
