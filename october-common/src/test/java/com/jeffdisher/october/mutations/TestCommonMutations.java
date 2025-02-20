@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.aspects.StationRegistry;
@@ -1136,6 +1137,38 @@ public class TestCommonMutations
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, woodSpot1.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), cuboid.getData15(AspectRegistry.BLOCK, woodSpot2.getBlockAddress()));
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, woodSpot2.getBlockAddress()));
+	}
+
+	@Test
+	public void extinguishFire()
+	{
+		// Create a burning block with a water source on top of it and show that a block update in the fire block extinguishes it.
+		AbsoluteLocation burning = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation water = burning.getRelative(0, 0, 1);
+		Item log = ENV.items.getItemById("op.log");
+		Item waterSource = ENV.items.getItemById("op.water_source");
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, burning.getBlockAddress(), log.number());
+		cuboid.setData7(AspectRegistry.FLAGS, burning.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), waterSource.number());
+		
+		// Create the context we want to use.
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.finish()
+		;
+		
+		// We apply an update mutation to the log as though the water was just placed.
+		MutableBlockProxy proxy = new MutableBlockProxy(burning, cuboid);
+		MutationBlockUpdate update = new MutationBlockUpdate(burning);
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		// Verify final state.
+		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, burning.getBlockAddress()));
+		Assert.assertEquals(log.number(), cuboid.getData15(AspectRegistry.BLOCK, burning.getBlockAddress()));
 	}
 
 

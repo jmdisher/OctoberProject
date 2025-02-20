@@ -5,6 +5,7 @@ import java.util.List;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -69,6 +70,61 @@ public class FireHelpers
 	 * @return True if check is near any fire sources.
 	 */
 	public static boolean isNearFireSource(Environment env, TickProcessingContext context, AbsoluteLocation check)
+	{
+		return _isNearFireSource(env, context, check);
+	}
+
+	/**
+	 * Checks if the block at check location can be ignited.  This means that these 4 qualities must hold:  (1) it is
+	 * flammable, (2) it is not already burning, (3) the block above it isn't a fire retardant, and (4) there is a
+	 * nearby fire source.
+	 * Note that this is read-only and sends no mutations.
+	 * 
+	 * @param env The environment.
+	 * @param context The current tick's context.
+	 * @param check The block location to check.
+	 * @param proxy The block proxy.
+	 * @return True if this can be ignited.
+	 */
+	public static boolean canIgnite(Environment env, TickProcessingContext context, AbsoluteLocation check, IBlockProxy proxy)
+	{
+		Block block = proxy.getBlock();
+		byte flags = proxy.getFlags();
+		BlockProxy blockAbove = context.previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+		
+		// There are 4 cases here:
+		// 1) Is a flammable block.
+		// 2) Is not already burning.
+		// 3) Not under a fire retardant.
+		// 4) Has a nearby fire source.
+		return (env.blocks.isFlammable(block)
+				&& !FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING)
+				&& ((null != blockAbove) && !env.blocks.doesStopFire(blockAbove.getBlock()))
+				&& _isNearFireSource(env, context, check)
+		);
+	}
+
+	/**
+	 * Checks if the block at check location should be extinguished.  This means that 2 qualitites must hold:  (1) the
+	 * block is already on fire and (2) the block above is a fire retardant.
+	 * 
+	 * @param env The environment.
+	 * @param context The current tick's context.
+	 * @param check The block location to check.
+	 * @param proxy The block proxy.
+	 * @return True if the block should be extinguished.
+	 */
+	public static boolean shouldExtinguish(Environment env, TickProcessingContext context, AbsoluteLocation check, IBlockProxy proxy)
+	{
+		byte flags = proxy.getFlags();
+		BlockProxy blockAbove = context.previousBlockLookUp.apply(check.getRelative(0, 0, 1));
+		return FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING)
+				&& ((null != blockAbove) && env.blocks.doesStopFire(blockAbove.getBlock()))
+		;
+	}
+
+
+	private static boolean _isNearFireSource(Environment env, TickProcessingContext context, AbsoluteLocation check)
 	{
 		// We check the reverse of the check list in findFlammableNeighbours().
 		List<AbsoluteLocation> toCheck = List.of(

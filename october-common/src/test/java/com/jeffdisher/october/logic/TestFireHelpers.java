@@ -27,12 +27,14 @@ public class TestFireHelpers
 	private static Environment ENV;
 	private static Block STONE;
 	private static Block LOG;
+	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		LOG = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -88,5 +90,53 @@ public class TestFireHelpers
 		;
 		Assert.assertTrue(FireHelpers.isNearFireSource(ENV, context, centre.getRelative(1, 0, 0)));
 		Assert.assertFalse(FireHelpers.isNearFireSource(ENV, context, centre.getRelative(2, 0, 0)));
+	}
+
+	@Test
+	public void canIgnite()
+	{
+		// Check a few blocks next to a fire source with some under water and some already burning.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LOG);
+		AbsoluteLocation centre = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
+		AbsoluteLocation canStart = centre.getRelative(1, 0, 0);
+		AbsoluteLocation cannotStart = centre.getRelative(-1, 0, 0);
+		AbsoluteLocation alreadyBurning = centre.getRelative(0, 1, 0);
+		cuboid.setData7(AspectRegistry.FLAGS, centre.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		cuboid.setData15(AspectRegistry.BLOCK, cannotStart.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, alreadyBurning.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.finish()
+		;
+		Assert.assertTrue(FireHelpers.canIgnite(ENV, context, canStart, new BlockProxy(canStart.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, cannotStart, new BlockProxy(cannotStart.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.canIgnite(ENV, context, alreadyBurning, new BlockProxy(alreadyBurning.getBlockAddress(), cuboid)));
+	}
+
+	@Test
+	public void shouldExtinguish()
+	{
+		// Check some burning and not blocks, some with water above.
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), LOG);
+		AbsoluteLocation burnNoWater = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
+		AbsoluteLocation noBurnNoWater = burnNoWater.getRelative(1, 0, 0);
+		AbsoluteLocation noBurnWater = burnNoWater.getRelative(2, 0, 0);
+		AbsoluteLocation burnWater = burnNoWater.getRelative(3, 0, 0);
+		cuboid.setData7(AspectRegistry.FLAGS, burnNoWater.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		cuboid.setData15(AspectRegistry.BLOCK, noBurnWater.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, burnWater.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		cuboid.setData15(AspectRegistry.BLOCK, burnWater.getRelative(0, 0, 1).getBlockAddress(), WATER_SOURCE.item().number());
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+					return new BlockProxy(location.getBlockAddress(), cuboid);
+				}, null)
+				.finish()
+		;
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, burnNoWater, new BlockProxy(burnNoWater.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnNoWater, new BlockProxy(noBurnNoWater.getBlockAddress(), cuboid)));
+		Assert.assertFalse(FireHelpers.shouldExtinguish(ENV, context, noBurnWater, new BlockProxy(noBurnWater.getBlockAddress(), cuboid)));
+		Assert.assertTrue(FireHelpers.shouldExtinguish(ENV, context, burnWater, new BlockProxy(burnWater.getBlockAddress(), cuboid)));
 	}
 }

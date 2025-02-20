@@ -11,6 +11,7 @@
 # -can_be_replaced (the block is considered "empty" when attempting to place one inside of it)
 # -is_flammable (the block can catch fire and be destroyed by fire)
 # -is_fire_source (the block can start fires nearby)
+# -stops_fire (the block will extinguish a fire below it and prevent the block below from igniting)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
 # requires_support means that this block requires one of the given blocks under it.
@@ -44,11 +45,11 @@ op.iron_ore
 	block_material	PICKAXE
 op.dirt
 	block_material	SHOVEL
-op.water_source	can_be_replaced
+op.water_source	can_be_replaced	stops_fire
 	viscosity	50
-op.water_strong	can_be_replaced
+op.water_strong	can_be_replaced	stops_fire
 	viscosity	50
-op.water_weak	can_be_replaced
+op.water_weak	can_be_replaced	stops_fire
 	viscosity	50
 op.lantern
 # op.iron_ingot

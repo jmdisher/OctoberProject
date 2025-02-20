@@ -3,12 +3,10 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
-import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -51,16 +49,10 @@ public class MutationBlockStartFire implements IMutationBlock
 		
 		// Check if this is flammable and isn't already burning.
 		Environment env = Environment.getShared();
-		Block block = newBlock.getBlock();
-		byte flags = newBlock.getFlags();
-		if (env.blocks.isFlammable(block) && !FlagsAspect.isSet(flags, FlagsAspect.FLAG_BURNING))
+		if (FireHelpers.canIgnite(env, context, _blockLocation, newBlock))
 		{
-			// See if there is a source.
-			if (FireHelpers.isNearFireSource(env, context, _blockLocation))
-			{
-				CommonBlockMutationHelpers.igniteBlockAndSpread(env, context, _blockLocation, newBlock);
-				didApply = true;
-			}
+			CommonBlockMutationHelpers.igniteBlockAndSpread(env, context, _blockLocation, newBlock);
+			didApply = true;
 		}
 		return didApply;
 	}

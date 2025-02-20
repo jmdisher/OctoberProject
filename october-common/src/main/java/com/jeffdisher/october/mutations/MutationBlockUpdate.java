@@ -3,8 +3,10 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.FireHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -112,6 +114,15 @@ public class MutationBlockUpdate implements IMutationBlock
 		if (!didApply && HopperHelpers.isHopper(_blockLocation, newBlock))
 		{
 			newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_HOPPER_CALLS);
+		}
+		
+		// Check if this was burning and should be extinguished (happens when water flows on top).
+		if (FireHelpers.shouldExtinguish(env, context, _blockLocation, newBlock))
+		{
+			byte flags = newBlock.getFlags();
+			flags = FlagsAspect.clear(flags, FlagsAspect.FLAG_BURNING);
+			newBlock.setFlags(flags);
+			didApply = true;
 		}
 		return didApply;
 	}

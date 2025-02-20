@@ -444,16 +444,13 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
-		if (env.blocks.isFlammable(newType) && !env.blocks.isFlammable(oldType))
-		{
-			boolean shouldIgnite = FireHelpers.isNearFireSource(env, context, location);
-			if (shouldIgnite)
-			{
-				MutationBlockStartFire startFire = new MutationBlockStartFire(location);
-				context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
-			}
-		}
+		// (set type first since this helper reads it).
 		proxy.setBlockAndClear(newType);
+		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
+		{
+			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
+			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+		}
 	}
 
 	private static void _igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
