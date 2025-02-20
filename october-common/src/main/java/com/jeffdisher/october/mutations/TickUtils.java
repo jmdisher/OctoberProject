@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
@@ -81,13 +82,13 @@ public class TickUtils
 			boolean isBeginningOfSecond = (0 == (context.currentTick % ticksPerInterval));
 			if (isBeginningOfSecond)
 			{
-				_applyEndOfTickLocationChanges(context, newEntity);
+				_applyEndOfTickBreathAndDamage(context, newEntity);
 			}
 		}
 	}
 
 
-	private static void _applyEndOfTickLocationChanges(TickProcessingContext context, IMutableMinimalEntity newEntity)
+	private static void _applyEndOfTickBreathAndDamage(TickProcessingContext context, IMutableMinimalEntity newEntity)
 	{
 		// Note that we handle food/starvation in EntityChangePeriodic, since it is specific to player entities, but we handle breath/drowning here, since it is common.
 		BlockProxy headProxy = _getHeadProxy(context, newEntity);
@@ -128,6 +129,15 @@ public class TickUtils
 			if (blockDamage > 0)
 			{
 				EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)blockDamage, EventRecord.Cause.BLOCK_DAMAGE);
+			}
+			else
+			{
+				// If not damaging us directly, see if the block under us is on fire.
+				BlockProxy underFoot = context.previousBlockLookUp.apply(newEntity.getLocation().getBlockLocation().getRelative(0, 0, -1));
+				if ((null != underFoot) && FlagsAspect.isSet(underFoot.getFlags(), FlagsAspect.FLAG_BURNING))
+				{
+					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.FIRE_DAMAGE_PER_SECOND, EventRecord.Cause.BLOCK_DAMAGE);
+				}
 			}
 		}
 	}

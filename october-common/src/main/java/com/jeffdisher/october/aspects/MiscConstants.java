@@ -41,6 +41,11 @@ public class MiscConstants
 	public static final byte STARVATION_DAMAGE_PER_SECOND = 5;
 
 	/**
+	 * This is the damage per second to the entity when standing on a burning block.
+	 */
+	public static byte FIRE_DAMAGE_PER_SECOND = 5;
+
+	/**
 	 * A given creature or entity can only take damage at most once every half a second.
 	 */
 	public static final long DAMAGE_TAKEN_TIMEOUT_MILLIS = 500L;

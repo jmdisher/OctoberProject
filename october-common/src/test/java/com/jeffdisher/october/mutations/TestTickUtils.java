@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -160,6 +161,40 @@ public class TestTickUtils
 		TickUtils.endOfTick(context, player);
 		Assert.assertEquals(startBreath - MiscConstants.SUFFOCATION_BREATH_PER_SECOND, player.newBreath);
 		Assert.assertEquals(startHealth - 10, player.newHealth);
+		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.BLOCK_DAMAGE, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
+	}
+
+	@Test
+	public void fireDamage()
+	{
+		// Show that we take fire damage at the end of a tick.
+		Block log = ENV.blocks.fromItem(ENV.items.getItemById("op.log"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		AbsoluteLocation platform = cuboid.getCuboidAddress().getBase().getRelative(16, 16, 16);
+		cuboid.setData15(AspectRegistry.BLOCK, platform.getBlockAddress(), log.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, platform.getBlockAddress(), FlagsAspect.FLAG_BURNING);
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
+			return new BlockProxy(location.getBlockAddress(), cuboid);
+		};
+		long millisPerTick = 100L;
+		EventRecord[] out_events = new EventRecord[1];
+		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
+			Assert.assertNull(out_events[0]);
+			out_events[0] = event;
+		};
+		TickProcessingContext context = ContextBuilder.build()
+				.millisPerTick(millisPerTick)
+				.tick(MiscConstants.DAMAGE_ENVIRONMENT_CHECK_MILLIS * millisPerTick)
+				.lookups(previousBlockLookUp, null)
+				.eventSink(eventSink)
+				.finish()
+		;
+		byte startHealth = 50;
+		MutableEntity player = MutableEntity.createForTest(1);
+		player.newHealth = startHealth;
+		player.newLocation = platform.getRelative(0, 0, 1).toEntityLocation();
+		TickUtils.endOfTick(context, player);
+		Assert.assertEquals(startHealth - MiscConstants.FIRE_DAMAGE_PER_SECOND, player.newHealth);
 		Assert.assertEquals(new EventRecord(EventRecord.Type.ENTITY_HURT, EventRecord.Cause.BLOCK_DAMAGE, player.newLocation.getBlockLocation(), player.getId(), 0), out_events[0]);
 	}
 }
