@@ -18,6 +18,7 @@ import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
+import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStartFire;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationBlockType;
@@ -53,6 +54,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockLiquidFlowInto.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLiquidFlowInto.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStartFire.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockBurnDown.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetLogicState.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

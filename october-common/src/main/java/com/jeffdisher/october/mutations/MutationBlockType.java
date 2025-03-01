@@ -22,6 +22,7 @@ public enum MutationBlockType
 	LIQUID_FLOW_INTO,
 	START_FIRE,
 	BURN_DOWN,
+	SET_LOGIC_STATE,
 	
 	END_OF_LIST,
 }

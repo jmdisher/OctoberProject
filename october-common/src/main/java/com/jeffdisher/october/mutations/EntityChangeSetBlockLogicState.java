@@ -15,8 +15,8 @@ import com.jeffdisher.october.utils.Assert;
 
 
 /**
- * Called to change the logical block state of a block.  Note that for now (at least), this involves changing the block
- * type so this will issue a "MutationBlockReplace" if the block can be changed to a different logical state equivalent.
+ * Called to change the logical block state of a block when being manually set by an entity.
+ * This calls MutationBlockSetLogicState to change the logic state of the underlying block.
  * This is typically used for things like setting a door to the open or closed state.
  */
 public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutablePlayerEntity>
@@ -78,16 +78,10 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 			Environment env = Environment.getShared();
 			Block previousBlock = previous.getBlock();
 			
-			if (env.logic.isAware(previousBlock))
+			if (env.logic.isManual(previousBlock))
 			{
-				// As long as these are opposites, change to the alternative.
-				boolean areOpposite = _setHigh == !env.logic.isHigh(previousBlock);
-				if (areOpposite)
-				{
-					Block alternate = env.logic.getAlternate(previousBlock);
-					context.mutationSink.next(new MutationBlockReplace(_targetBlock, previousBlock, alternate));
-					didApply = true;
-				}
+				context.mutationSink.next(new MutationBlockSetLogicState(_targetBlock, _setHigh));
+				didApply = true;
 			}
 		}
 		return didApply;

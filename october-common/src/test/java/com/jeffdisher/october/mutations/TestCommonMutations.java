@@ -1254,6 +1254,37 @@ public class TestCommonMutations
 		Assert.assertNotNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(3, 0, 1).getBlockAddress()));
 	}
 
+	@Test
+	public void setLogicState()
+	{
+		// We will show that we can change the logic state of something like a door but not a lamp (since it isn't manual).
+		AbsoluteLocation doorLocation = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation lampLocation = new AbsoluteLocation(6, 6, 6);
+		Item doorClosed = ENV.items.getItemById("op.door_closed");
+		Item doorOpen = ENV.items.getItemById("op.door_open");
+		Item lampOff = ENV.items.getItemById("op.lamp_off");
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorClosed.number());
+		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lampOff.number());
+		
+		// Test with the door.
+		MutableBlockProxy proxy = new MutableBlockProxy(doorLocation, cuboid);
+		MutationBlockSetLogicState mutation = new MutationBlockSetLogicState(doorLocation, true);
+		Assert.assertTrue(mutation.applyMutation(null, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		
+		// Show that it fails if the value is already high.
+		Assert.assertFalse(mutation.applyMutation(null, proxy));
+		
+		// Test with the lamp and show that it doesn't pass.
+		proxy = new MutableBlockProxy(lampLocation, cuboid);
+		mutation = new MutationBlockSetLogicState(lampLocation, true);
+		Assert.assertFalse(mutation.applyMutation(null, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(lampOff.number(), cuboid.getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{
