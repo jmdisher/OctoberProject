@@ -4,16 +4,11 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.DamageAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EventRecord;
-import com.jeffdisher.october.types.Inventory;
-import com.jeffdisher.october.types.Item;
-import com.jeffdisher.october.types.MutableInventory;
-import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
@@ -72,48 +67,7 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			// See if this is broken (note that damage could overflow).
 			if ((damage >= toughness) || (damage < 0))
 			{
-				// We want to see if there are any liquids around this block which we will need to handle.
-				Block emptyBlock = env.special.AIR;
-				Block eventualBlock = CommonBlockMutationHelpers.determineEmptyBlockType(context, _location, emptyBlock);
-				if (emptyBlock != eventualBlock)
-				{
-					long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, block);
-					context.mutationSink.future(new MutationBlockLiquidFlowInto(_location), millisDelay);
-				}
-				
-				// Create the inventory for this type.
-				MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));
-				CommonBlockMutationHelpers.fillInventoryFromBlockWithoutLimit(newInventory, newBlock);
-				
-				// We are going to break this block so see if we should send it back to an entity.
-				// (note that we drop the existing inventory on the ground, either way).
-				if (_optionalEntityForStorage > 0)
-				{
-					// Schedule a mutation to send it back to them (will drop at their feet on failure).
-					// This is usually just 1 element so send 1 mutation per item.
-					Item[] droppedItems = CommonBlockMutationHelpers.getItemsDroppedWhenBreakingBlock(env, context, block);
-					for (Item dropped : droppedItems)
-					{
-						MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
-						context.newChangeSink.next(_optionalEntityForStorage, store);
-					}
-				}
-				else
-				{
-					// Just drop this in the target location.
-					CommonBlockMutationHelpers.populateInventoryWhenBreakingBlock(env, context, newInventory, block);
-				}
-				
-				// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
-				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _location, newBlock, emptyBlock);
-				Inventory inventory = newInventory.freeze();
-				newBlock.setInventory(inventory);
-				
-				// See if the inventory should drop from this block.
-				if (inventory.currentEncumbrance > 0)
-				{
-					CommonBlockMutationHelpers.dropInventoryDownIfNeeded(context, _location, newBlock);
-				}
+				CommonBlockMutationHelpers.breakBlockAndHandleFollowUp(env, context, _location, newBlock, _optionalEntityForStorage);
 				
 				// This also triggers an event.
 				context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_BROKEN

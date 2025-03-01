@@ -193,10 +193,7 @@ public class CommonBlockMutationHelpers
 	 */
 	public static void populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
 	{
-		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
-		{
-			out_inventory.addItemsAllowingOverflow(dropped, 1);
-		}
+		_populateInventoryWhenBreakingBlock(env, context, out_inventory, block);
 	}
 
 	/**
@@ -240,6 +237,68 @@ public class CommonBlockMutationHelpers
 	public static void igniteBlockAndSpread(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy)
 	{
 		_igniteBlockAndSpread(env, context, location, proxy);
+	}
+
+	/**
+	 * Handles the complex idiom of breaking a block:
+	 * 1) Determine the appropriate block to put in its place (potentially scheduling liquid movement).
+	 * 2) Drop any inventory on the ground.
+	 * 3) Determine the block type and add it to the inventory or send it back to the entity.
+	 * 4) Determine if any fires need to start or spread (never, in this case).
+	 * 5) Schedule the inventory to fall into a lower block, if applicable.
+	 * 
+	 * @param env The environment.
+	 * @param context The context for looking up blocks and scheduling mutations.
+	 * @param location The location of proxy.
+	 * @param proxy The block to modify.
+	 * @param optionalEntityForStorage If >0, the dropped block will be sent here, instead of to the ground.
+	 */
+	public static void breakBlockAndHandleFollowUp(Environment env, TickProcessingContext context, AbsoluteLocation location, IMutableBlockProxy proxy, int optionalEntityForStorage)
+	{
+		// We want to see if there are any liquids around this block which we will need to handle.
+		Block block = proxy.getBlock();
+		Block emptyBlock = env.special.AIR;
+		Block eventualBlock = _determineEmptyBlockType(context, location, emptyBlock);
+		if (emptyBlock != eventualBlock)
+		{
+			long millisDelay = env.liquids.minFlowDelayMillis(env, eventualBlock, block);
+			context.mutationSink.future(new MutationBlockLiquidFlowInto(location), millisDelay);
+		}
+		
+		// Create the inventory for this type.
+		MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));
+		_fillInventoryFromBlockWithoutLimit(newInventory, proxy);
+		
+		// We are going to break this block so see if we should send it back to an entity.
+		// (note that we drop the existing inventory on the ground, either way).
+		if (optionalEntityForStorage > 0)
+		{
+			// Schedule a mutation to send it back to them (will drop at their feet on failure).
+			// This is usually just 1 element so send 1 mutation per item.
+			Item[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
+			for (Item dropped : droppedItems)
+			{
+				MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
+				context.newChangeSink.next(optionalEntityForStorage, store);
+			}
+		}
+		else
+		{
+			// Just drop this in the target location.
+			_populateInventoryWhenBreakingBlock(env, context, newInventory, block);
+		}
+		
+		// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
+		// NOTE:  We use this common helper just as a consistent idiom but setting to air never starts fires.
+		_setBlockCheckingFire(env, context, location, proxy, emptyBlock);
+		Inventory inventory = newInventory.freeze();
+		proxy.setInventory(inventory);
+		
+		// See if the inventory should drop from this block.
+		if (inventory.currentEncumbrance > 0)
+		{
+			_dropInventoryDownIfNeeded(context, location, proxy);
+		}
 	}
 
 
@@ -472,6 +531,14 @@ public class CommonBlockMutationHelpers
 		{
 			MutationBlockStartFire startFire = new MutationBlockStartFire(neighour);
 			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+		}
+	}
+
+	private static void _populateInventoryWhenBreakingBlock(Environment env, TickProcessingContext context, MutableInventory out_inventory, Block block)
+	{
+		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
+		{
+			out_inventory.addItemsAllowingOverflow(dropped, 1);
 		}
 	}
 }
