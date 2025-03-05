@@ -2185,6 +2185,34 @@ public class TestCommonChanges
 		Assert.assertEquals(0x0, cuboid.getData7(AspectRegistry.FLAGS, target.getBlockAddress()));
 	}
 
+	@Test
+	public void multiBlockDoorUsage() throws Throwable
+	{
+		Item itemDoorClosed = ENV.items.getItemById("op.double_door_closed_base");
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> {
+					return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
+							? new BlockProxy(location.getBlockAddress(), cuboid)
+							: null
+					;
+				}, null)
+				.finish()
+		;
+		
+		int entityId = 1;
+		MutableEntity newEntity = MutableEntity.createForTest(entityId);
+		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
+		newEntity.newInventory.addAllItems(itemDoorClosed, 1);
+		newEntity.setSelectedKey(1);
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 10);
+		
+		// Show that we fail to place when using the wrong helper.
+		MutationPlaceSelectedBlock fail = new MutationPlaceSelectedBlock(target, target);
+		Assert.assertFalse(fail.applyChange(context, newEntity));
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

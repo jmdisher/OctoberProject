@@ -37,3 +37,11 @@ op.lamp_on	sink
 	value	high
 	alternate	op.lamp_off
 	manual	false
+op.double_door_closed_base	sink
+	value	low
+	alternate	op.double_door_open_base
+	manual	true
+op.double_door_open_base	sink
+	value	high
+	alternate	op.double_door_closed_base
+	manual	true

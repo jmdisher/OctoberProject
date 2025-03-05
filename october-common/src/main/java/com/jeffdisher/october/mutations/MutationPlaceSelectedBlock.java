@@ -78,6 +78,11 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 		Item itemType = (null != stack) ? stack.type() : null;
 		// Note that we will get a null from the asBlock if this can't be placed.
 		Block blockType = (null != itemType) ? env.blocks.getAsPlaceableBlock(itemType) : null;
+		// We can't place this using this helper if it is a multi-block.
+		if ((null != blockType) && env.blocks.isMultiBlock(blockType))
+		{
+			blockType = null;
+		}
 		boolean isItemSelected = (null != blockType);
 		
 		// Find the distance from the eye to the target.

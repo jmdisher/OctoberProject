@@ -74,3 +74,5 @@ op.lava_strong	Lava (Strong Flow)
 op.lava_weak	Lava (Weak Flow)
 op.bucket_lava	Lava Bucket
 op.apple	Apple
+op.double_door_closed_base	Double Door
+op.double_door_open_base	Double Door (Open)

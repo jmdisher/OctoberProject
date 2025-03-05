@@ -41,3 +41,5 @@ op.carrot_young	30
 op.carrot_mature	30
 op.bed	100
 op.basalt	3000
+op.double_door_closed_base	200
+op.double_door_open_base	200

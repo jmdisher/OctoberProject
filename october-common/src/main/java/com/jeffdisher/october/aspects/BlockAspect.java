@@ -46,6 +46,7 @@ public class BlockAspect
 	private static final String FLAG_IS_FLAMMABLE = "is_flammable";
 	private static final String FLAG_IS_FIRE_SOURCE = "is_fire_source";
 	private static final String FLAG_STOPS_FIRE = "stops_fire";
+	private static final String FLAG_IS_MULTIBLOCK = "is_multiblock";
 	private static final String SUB_PLACED_FROM = "placed_from";
 	private static final String SUB_REQUIRES_SUPPORT = "requires_support";
 	private static final String SUB_SPECIAL_DROP = "special_drop";
@@ -75,6 +76,7 @@ public class BlockAspect
 		Set<Block> isFlammable = new HashSet<>();
 		Set<Block> isFireSource = new HashSet<>();
 		Set<Block> stopsFire = new HashSet<>();
+		Set<Block> isMultiBlock = new HashSet<>();
 		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
 		Map<Block, Integer> blockDamage = new HashMap<>();
 		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
@@ -122,6 +124,10 @@ public class BlockAspect
 							throw new TabListReader.TabListException("A block cannot be both a fire retardant and flammable or a source: \"" + name + "\"");
 						}
 						stopsFire.add(_currentBlock);
+					}
+					else if (FLAG_IS_MULTIBLOCK.equals(value))
+					{
+						isMultiBlock.add(_currentBlock);
 					}
 					else
 					{
@@ -285,6 +291,7 @@ public class BlockAspect
 				, isFlammable
 				, isFireSource
 				, stopsFire
+				, isMultiBlock
 				, nonSolidViscosity
 				, blockDamage
 				, specialBlockSupport
@@ -299,6 +306,7 @@ public class BlockAspect
 	private final Set<Block> _isFlammable;
 	private final Set<Block> _isFireSource;
 	private final Set<Block> _stopsFire;
+	private final Set<Block> _isMultiBlock;
 	private final Map<Block, Integer> _nonSolidViscosity;
 	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
@@ -312,6 +320,7 @@ public class BlockAspect
 			, Set<Block> isFlammable
 			, Set<Block> isFireSource
 			, Set<Block> stopsFire
+			, Set<Block> isMultiBlock
 			, Map<Block, Integer> nonSolidViscosity
 			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
@@ -326,6 +335,7 @@ public class BlockAspect
 		_isFlammable = Collections.unmodifiableSet(isFlammable);
 		_isFireSource = Collections.unmodifiableSet(isFireSource);
 		_stopsFire = Collections.unmodifiableSet(stopsFire);
+		_isMultiBlock = Collections.unmodifiableSet(isMultiBlock);
 		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
 		_blockDamage = Collections.unmodifiableMap(blockDamage);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
@@ -391,6 +401,17 @@ public class BlockAspect
 	public boolean doesStopFire(Block block)
 	{
 		return _stopsFire.contains(block);
+	}
+
+	/**
+	 * Checks if a given block type can only exist as part of a multi-block structure.
+	 * 
+	 * @param block The block to check.
+	 * @return True if this block type can only exist as part of a multi-block structure.
+	 */
+	public boolean isMultiBlock(Block block)
+	{
+		return _isMultiBlock.contains(block);
 	}
 
 	/**

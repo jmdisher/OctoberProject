@@ -12,6 +12,7 @@
 # -is_flammable (the block can catch fire and be destroyed by fire)
 # -is_fire_source (the block can start fires nearby)
 # -stops_fire (the block will extinguish a fire below it and prevent the block below from igniting)
+# -is_multiblock (the block is part of a multi-block structure so it can exist but isn't placeable via normal mutations)
 # block_material is a BlockMaterial enum constant (default of NO_TOOL if not specified).
 # placed_from means that this block is generated, instead of the normal block, when the given item is placed.
 # requires_support means that this block requires one of the given blocks under it.
@@ -137,3 +138,9 @@ op.lava_strong	can_be_replaced	is_fire_source
 op.lava_weak	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
+op.double_door_closed_base	is_multiblock
+	block_material	AXE
+op.double_door_open_base	is_multiblock
+	block_material	AXE
+	special_drop	100	op.double_door_closed_base
+	viscosity	0
