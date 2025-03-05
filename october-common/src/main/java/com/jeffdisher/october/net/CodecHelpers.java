@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
@@ -81,17 +82,33 @@ public class CodecHelpers
 
 	public static AbsoluteLocation readAbsoluteLocation(ByteBuffer buffer)
 	{
-		int x = buffer.getInt();
-		int y = buffer.getInt();
-		int z = buffer.getInt();
-		return new AbsoluteLocation(x, y, z);
+		return _readAbsoluteLocation(buffer);
 	}
 
 	public static void writeAbsoluteLocation(ByteBuffer buffer, AbsoluteLocation location)
 	{
-		buffer.putInt(location.x());
-		buffer.putInt(location.y());
-		buffer.putInt(location.z());
+		_writeAbsoluteLocation(buffer, location);
+	}
+
+	public static AbsoluteLocation readNullableAbsoluteLocation(ByteBuffer buffer)
+	{
+		AbsoluteLocation location = null;
+		boolean isNonNull = _readBoolean(buffer);
+		if (isNonNull)
+		{
+			location = _readAbsoluteLocation(buffer);
+		}
+		return location;
+	}
+
+	public static void writeNullableAbsoluteLocation(ByteBuffer buffer, AbsoluteLocation location)
+	{
+		boolean isNonNull = (null != location);
+		_writeBoolean(buffer, isNonNull);
+		if (isNonNull)
+		{
+			_writeAbsoluteLocation(buffer, location);
+		}
 	}
 
 	public static Item readItem(ByteBuffer buffer)
@@ -387,6 +404,18 @@ public class CodecHelpers
 		_writeBoolean(buffer, flag);
 	}
 
+	public static OrientationAspect.Direction readOrientation(ByteBuffer buffer)
+	{
+		byte val = buffer.get();
+		return OrientationAspect.Direction.values()[val];
+	}
+
+	public static void writeOrientation(ByteBuffer buffer, OrientationAspect.Direction orientation)
+	{
+		byte val = (byte) orientation.ordinal();
+		buffer.put(val);
+	}
+
 
 	private static Item _readItem(ByteBuffer buffer)
 	{
@@ -645,5 +674,20 @@ public class CodecHelpers
 	{
 		byte value = (byte)(flag ? 1 : 0);
 		buffer.put(value);
+	}
+
+	private static AbsoluteLocation _readAbsoluteLocation(ByteBuffer buffer)
+	{
+		int x = buffer.getInt();
+		int y = buffer.getInt();
+		int z = buffer.getInt();
+		return new AbsoluteLocation(x, y, z);
+	}
+
+	private static void _writeAbsoluteLocation(ByteBuffer buffer, AbsoluteLocation location)
+	{
+		buffer.putInt(location.x());
+		buffer.putInt(location.y());
+		buffer.putInt(location.z());
 	}
 }

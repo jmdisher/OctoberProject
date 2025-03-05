@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Item;
@@ -65,5 +66,13 @@ public class TestMiscAspects
 		Assert.assertEquals(0, ENV.blocks.getBlockDamage(air));
 		Assert.assertEquals(0, ENV.blocks.getBlockDamage(waterSource));
 		Assert.assertEquals(10, ENV.blocks.getBlockDamage(lavaWeak));
+	}
+
+	@Test
+	public void orientationRotate() throws Throwable
+	{
+		AbsoluteLocation start = new AbsoluteLocation(1, -2, 3);
+		Assert.assertEquals(start, OrientationAspect.Direction.POS_Y.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(-2, -1, 3), OrientationAspect.Direction.NEG_X.rotateAboutZ(start));
 	}
 }
