@@ -49,7 +49,7 @@ public class MutationBlockLogicChange implements IMutationBlock
 		Block thisBlock = newBlock.getBlock();
 		
 		boolean didApply = false;
-		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock) && !_isMultiBlockExtension(env, newBlock))
+		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
 			// This block is sensitive so check the surrounding blocks to see what they are emitting.
 			if (_getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 0, -1))
@@ -108,13 +108,6 @@ public class MutationBlockLogicChange implements IMutationBlock
 				: 0
 		;
 		return (value > 0);
-	}
-
-	private static boolean _isMultiBlockExtension(Environment env, IBlockProxy proxy)
-	{
-		return env.blocks.isMultiBlock(proxy.getBlock())
-				&& (null != proxy.getMultiBlockRoot())
-		;
 	}
 
 	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation location, IBlockProxy proxy)
