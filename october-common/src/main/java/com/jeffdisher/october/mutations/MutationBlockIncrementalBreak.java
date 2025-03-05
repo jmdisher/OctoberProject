@@ -67,15 +67,20 @@ public class MutationBlockIncrementalBreak implements IMutationBlock
 			// See if this is broken (note that damage could overflow).
 			if ((damage >= toughness) || (damage < 0))
 			{
+				// Check if this is a multi-block before we break it.
+				boolean isMultiBlockExtension = MultiBlockUtils.isMultiBlockExtension(env, newBlock);
 				CommonBlockMutationHelpers.breakBlockAndHandleFollowUp(env, context, _location, newBlock, _optionalEntityForStorage);
 				
-				// This also triggers an event.
-				context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_BROKEN
-						, EventRecord.Cause.NONE
-						, _location
-						, 0
-						, _optionalEntityForStorage
-				));
+				// This also triggers an event if this was not a multi-block extension.
+				if (!isMultiBlockExtension)
+				{
+					context.eventSink.post(new EventRecord(EventRecord.Type.BLOCK_BROKEN
+							, EventRecord.Cause.NONE
+							, _location
+							, 0
+							, _optionalEntityForStorage
+					));
+				}
 			}
 			else
 			{

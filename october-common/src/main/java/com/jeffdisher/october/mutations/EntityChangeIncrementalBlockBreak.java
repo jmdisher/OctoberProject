@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -61,16 +60,20 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 		// Find the distance from the eye to the target.
 		float distance = SpatialHelpers.distanceFromEyeToBlockSurface(newEntity, _targetBlock);
 		boolean isLocationClose = (distance <= MiscConstants.REACH_BLOCK);
-		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
-		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
-		boolean isAir = (null == proxy) || env.blocks.canBeReplaced(proxy.getBlock());
-		IMutableInventory mutableInventory = newEntity.accessMutableInventory();
+		
+		MultiBlockUtils.Lookup lookup = isLocationClose
+				? MultiBlockUtils.getLoadedRoot(env, context, _targetBlock)
+				: null
+		;
+		
+		boolean isAir = (null == lookup) || env.blocks.canBeReplaced(lookup.rootProxy().getBlock());
 		
 		boolean didApply = false;
 		if (isLocationClose && !isAir)
 		{
 			// We know that tools are non-stackable so just check for those types.
 			int selectedKey = newEntity.getSelectedKey();
+			IMutableInventory mutableInventory = newEntity.accessMutableInventory();
 			NonStackableItem selected = mutableInventory.getNonStackableForKey(selectedKey);
 			Item selectedItem = (null != selected)
 					? selected.type()
@@ -85,7 +88,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 			else
 			{
 				int speedMultiplier;
-				if (env.blocks.getBlockMaterial(proxy.getBlock()) == env.tools.toolTargetMaterial(selectedItem))
+				if (env.blocks.getBlockMaterial(lookup.rootProxy().getBlock()) == env.tools.toolTargetMaterial(selectedItem))
 				{
 					// The tool material matches so set the multiplier.
 					speedMultiplier = env.tools.toolSpeedModifier(selectedItem);
@@ -97,8 +100,10 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 				}
 				damageToApply = (short)(speedMultiplier * _millisToApply);
 			}
-			MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(_targetBlock, damageToApply, newEntity.getId());
-			context.mutationSink.next(mutation);
+			MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
+				MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(location, damageToApply, newEntity.getId());
+				return mutation;
+			}, lookup);
 			
 			// If we have a tool with finite durability equipped, apply this amount of time to wear it down.
 			if ((null != selected) && !newEntity.isCreativeMode())

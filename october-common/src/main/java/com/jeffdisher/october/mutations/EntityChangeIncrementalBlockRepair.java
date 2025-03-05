@@ -2,9 +2,9 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -56,6 +56,7 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		// 1) There must be nothing in the entity's hand.
 		// 2) They must be able to reach the target block.
 		// 3) The block must have a positive damage value or be on fire.
+		Environment env = Environment.getShared();
 		
 		boolean isHandEmpty = (Entity.NO_SELECTION == newEntity.getSelectedKey());
 		
@@ -64,24 +65,27 @@ public class EntityChangeIncrementalBlockRepair implements IMutationEntity<IMuta
 		boolean isReachable = (distance <= MiscConstants.REACH_BLOCK);
 		
 		// Note that the cuboid could theoretically not be loaded (although this shouldn't happen in normal clients).
-		BlockProxy proxy = context.previousBlockLookUp.apply(_targetBlock);
+		MultiBlockUtils.Lookup lookup = (isHandEmpty && isReachable)
+				? MultiBlockUtils.getLoadedRoot(env, context, _targetBlock)
+				: null
+		;
 		
-		// We will short-circuit this to avoid the cost of the look-up.
-		boolean hasPositiveDamage = (isHandEmpty && isReachable && (null != proxy))
-				? (proxy.getDamage() > 0)
-				: false
-		;
-		boolean isOnFire = (isHandEmpty && isReachable && (null != proxy))
-				? FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_BURNING)
-				: false
-		;
+		boolean canRepairSomething = false;
+		if (null != lookup)
+		{
+			boolean hasPositiveDamage = (lookup.rootProxy().getDamage() > 0);
+			boolean isOnFire = FlagsAspect.isSet(lookup.rootProxy().getFlags(), FlagsAspect.FLAG_BURNING);
+			canRepairSomething = (hasPositiveDamage || isOnFire);
+		}
 		
 		boolean didApply = false;
-		if (hasPositiveDamage || isOnFire)
+		if (canRepairSomething)
 		{
 			// We can do something so send the mutation to the block (it will apply the change with bounds checks).
-			MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(_targetBlock, _millisToApply);
-			context.mutationSink.next(mutation);
+			MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
+				MutationBlockIncrementalRepair mutation = new MutationBlockIncrementalRepair(location, _millisToApply);
+				return mutation;
+			}, lookup);
 			didApply = true;
 			
 			// Do other state reset.

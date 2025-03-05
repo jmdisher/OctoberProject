@@ -2189,7 +2189,7 @@ public class TestCommonChanges
 	@Test
 	public void multiBlockDoorUsage() throws Throwable
 	{
-		// Give the entity a door, have them place it, open it, close it, and open it.
+		// Give the entity a door, have them place it, open it, close it, open it, break it, and verify it is a normal door in the inventory.
 		Item itemDoorClosed = ENV.items.getItemById("op.double_door_closed_base");
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(itemDoorClosed);
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.double_door_open_base"));
@@ -2317,6 +2317,44 @@ public class TestCommonChanges
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertEquals(openedDoor, proxy.getBlock());
 		proxy.writeBack(cuboid);
+		
+		// Break it in 2 steps across the surface and verify it is a closed door in the inventory.
+		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		Assert.assertTrue(breaker.applyChange(context, newEntity));
+		breaker = new EntityChangeIncrementalBlockBreak(target.getRelative(0, 0, 1), (short)100);
+		Assert.assertTrue(breaker.applyChange(context, newEntity));
+		
+		// Each break will send an incremental break to each block in the multi-block (4 blocks).
+		Assert.assertEquals(8, mutations.size());
+		for (int i = 0; i < 4; ++i)
+		{
+			mutation = mutations.remove(0);
+			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+		}
+		Assert.assertEquals(4, mutations.size());
+		for (int i = 0; i < 4; ++i)
+		{
+			mutation = mutations.remove(0);
+			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
+		}
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, entityId), out_record[0]);
+		Assert.assertEquals(0, mutations.size());
+		
+		// We should see the inventory storage mutation here so apply it.
+		Assert.assertNotNull(out_store[0]);
+		Assert.assertTrue(out_store[0].applyChange(context, newEntity));
+		out_record[0] = null;
+		Assert.assertEquals(0, mutations.size());
+		
+		// Check our inventory.
+		Inventory inventory = newEntity.freeze().inventory();
+		Assert.assertEquals(1, inventory.sortedKeys().size());
+		Assert.assertEquals(1, inventory.getCount(itemDoorClosed));
 	}
 
 

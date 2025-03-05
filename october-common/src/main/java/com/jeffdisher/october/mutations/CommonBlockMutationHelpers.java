@@ -271,21 +271,26 @@ public class CommonBlockMutationHelpers
 		
 		// We are going to break this block so see if we should send it back to an entity.
 		// (note that we drop the existing inventory on the ground, either way).
-		if (optionalEntityForStorage > 0)
+		// We don't want to drop the block if it is a multi-block extension.
+		boolean isMultiBlockExtension = (env.blocks.isMultiBlock(block) && (null != proxy.getMultiBlockRoot()));
+		if (!isMultiBlockExtension)
 		{
-			// Schedule a mutation to send it back to them (will drop at their feet on failure).
-			// This is usually just 1 element so send 1 mutation per item.
-			Item[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
-			for (Item dropped : droppedItems)
+			if (optionalEntityForStorage > 0)
 			{
-				MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
-				context.newChangeSink.next(optionalEntityForStorage, store);
+				// Schedule a mutation to send it back to them (will drop at their feet on failure).
+				// This is usually just 1 element so send 1 mutation per item.
+				Item[] droppedItems = _getItemsDroppedWhenBreakingBlock(env, context, block);
+				for (Item dropped : droppedItems)
+				{
+					MutationEntityStoreToInventory store = new MutationEntityStoreToInventory(new Items(dropped, 1), null);
+					context.newChangeSink.next(optionalEntityForStorage, store);
+				}
 			}
-		}
-		else
-		{
-			// Just drop this in the target location.
-			_populateInventoryWhenBreakingBlock(env, context, newInventory, block);
+			else
+			{
+				// Just drop this in the target location.
+				_populateInventoryWhenBreakingBlock(env, context, newInventory, block);
+			}
 		}
 		
 		// Break the block and replace it with the empty type, storing the inventory into it (may be over-filled).
