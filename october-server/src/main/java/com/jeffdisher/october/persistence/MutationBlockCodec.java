@@ -10,6 +10,8 @@ import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
+import com.jeffdisher.october.mutations.MutationBlockPhase2Multi;
+import com.jeffdisher.october.mutations.MutationBlockPlaceMultiBlock;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
@@ -55,6 +57,8 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStartFire.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockBurnDown.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetLogicState.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockPlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPlaceMultiBlock.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPhase2Multi.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

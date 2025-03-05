@@ -23,6 +23,8 @@ public enum MutationBlockType
 	START_FIRE,
 	BURN_DOWN,
 	SET_LOGIC_STATE,
+	MULTI_PHASE1,
+	MULTI_PHASE2,
 	
 	END_OF_LIST,
 }

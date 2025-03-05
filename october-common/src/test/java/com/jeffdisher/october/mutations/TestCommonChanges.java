@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
@@ -2188,9 +2189,17 @@ public class TestCommonChanges
 	@Test
 	public void multiBlockDoorUsage() throws Throwable
 	{
+		// Give the entity a door, have them place it, open it, close it, and open it.
 		Item itemDoorClosed = ENV.items.getItemById("op.double_door_closed_base");
+		Block closedDoor = ENV.blocks.getAsPlaceableBlock(itemDoorClosed);
+		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.double_door_open_base"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		
+		// We know that multiple mutations are sent for multi-block changes so we will capture in a list.
+		List<IMutationBlock> mutations = new ArrayList<>();
+		List<IMutationBlock> futureMutations = new ArrayList<>();
+		MutationEntityStoreToInventory[] out_store = new MutationEntityStoreToInventory[1];
+		EventRecord[] out_record = new EventRecord[1];
 		TickProcessingContext context = ContextBuilder.build()
 				.lookups((AbsoluteLocation location) -> {
 					return location.getCuboidAddress().equals(cuboid.getCuboidAddress())
@@ -2198,6 +2207,44 @@ public class TestCommonChanges
 							: null
 					;
 				}, null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						mutations.add(mutation);
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.assertTrue(ContextBuilder.DEFAULT_MILLIS_PER_TICK == millisToDelay);
+						futureMutations.add(mutation);
+					}
+				}, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+						Assert.assertNull(out_store[0]);
+						out_store[0] = (MutationEntityStoreToInventory) change;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail("Not in test");
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+						Assert.fail("Not in test");
+					}
+				})
+				.eventSink(new TickProcessingContext.IEventSink() {
+					@Override
+					public void post(EventRecord event)
+					{
+						Assert.assertNull(out_record[0]);
+						out_record[0] = event;
+					}
+				})
 				.finish()
 		;
 		
@@ -2211,6 +2258,65 @@ public class TestCommonChanges
 		// Show that we fail to place when using the wrong helper.
 		MutationPlaceSelectedBlock fail = new MutationPlaceSelectedBlock(target, target);
 		Assert.assertFalse(fail.applyChange(context, newEntity));
+		Assert.assertEquals(0, mutations.size());
+		
+		// Show that we correctly place when using the right helper.
+		EntityChangePlaceMultiBlock place = new EntityChangePlaceMultiBlock(target, OrientationAspect.Direction.POS_Y);
+		Assert.assertTrue(place.applyChange(context, newEntity));
+		
+		// We also need to apply the actual mutations.
+		Assert.assertEquals(4, mutations.size());
+		for (IMutationBlock mutation : mutations)
+		{
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertEquals(closedDoor, proxy.getBlock());
+		}
+		// We expect the event only for the root.
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, target, 0, entityId), out_record[0]);
+		out_record[0] = null;
+		mutations.clear();
+		
+		// Apply the follow-up mutations.
+		Assert.assertEquals(4, futureMutations.size());
+		for (IMutationBlock mutation : futureMutations)
+		{
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertNull(out_record[0]);
+		}
+		futureMutations.clear();
+		
+		// Open the door.
+		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, true);
+		Assert.assertTrue(open.applyChange(context, newEntity));
+		Assert.assertEquals(1, mutations.size());
+		IMutationBlock mutation = mutations.remove(0);
+		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertEquals(openedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		
+		// Close the door.
+		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, false);
+		Assert.assertTrue(close.applyChange(context, newEntity));
+		Assert.assertEquals(1, mutations.size());
+		mutation = mutations.remove(0);
+		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertEquals(closedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
+		
+		// Open it again.
+		Assert.assertTrue(open.applyChange(context, newEntity));
+		Assert.assertEquals(1, mutations.size());
+		mutation = mutations.remove(0);
+		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(mutation.applyMutation(context, proxy));
+		Assert.assertEquals(openedDoor, proxy.getBlock());
+		proxy.writeBack(cuboid);
 	}
 
 
