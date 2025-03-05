@@ -76,6 +76,7 @@ public class Environment
 	public final StationRegistry stations;
 	public final LogicAspect logic;
 	public final CreatureRegistry creatures;
+	public final MultiBlockRegistry multiBlocks;
 	public final SpecialConstants special;
 
 	private Environment() throws IOException, TabListException
@@ -103,6 +104,7 @@ public class Environment
 		this.stations = StationRegistry.load(this.items, this.blocks, this.crafting, loader.getResourceAsStream("station_registry.tablist"));
 		this.logic = LogicAspect.load(this.items, this.blocks, loader.getResourceAsStream("logic.tablist"));
 		this.creatures = CreatureRegistry.loadRegistry(this.items, loader.getResourceAsStream("creature_registry.tablist"));
+		this.multiBlocks = new MultiBlockRegistry(this.items, this.blocks);
 		this.special = new SpecialConstants(this.items, this.blocks);
 	}
 }

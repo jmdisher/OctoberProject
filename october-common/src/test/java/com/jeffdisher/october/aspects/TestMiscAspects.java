@@ -1,5 +1,7 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -74,5 +76,17 @@ public class TestMiscAspects
 		AbsoluteLocation start = new AbsoluteLocation(1, -2, 3);
 		Assert.assertEquals(start, OrientationAspect.Direction.POS_Y.rotateAboutZ(start));
 		Assert.assertEquals(new AbsoluteLocation(-2, -1, 3), OrientationAspect.Direction.NEG_X.rotateAboutZ(start));
+	}
+
+	@Test
+	public void multiBlock() throws Throwable
+	{
+		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		AbsoluteLocation start = new AbsoluteLocation(0, 0, 0);
+		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.POS_Y);
+		Assert.assertEquals(3, extensions.size());
+		Assert.assertEquals(new AbsoluteLocation(0, 0, 1), extensions.get(0));
+		Assert.assertEquals(new AbsoluteLocation(1, 0, 1), extensions.get(1));
+		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(2));
 	}
 }
