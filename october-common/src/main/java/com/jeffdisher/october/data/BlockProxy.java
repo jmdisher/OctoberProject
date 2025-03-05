@@ -6,7 +6,9 @@ import java.util.Set;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CraftOperation;
@@ -117,6 +119,19 @@ public class BlockProxy implements IBlockProxy
 	public byte getFlags()
 	{
 		return _getData7(AspectRegistry.FLAGS);
+	}
+
+	@Override
+	public OrientationAspect.Direction getOrientation()
+	{
+		byte ordinal = _getData7(AspectRegistry.ORIENTATION);
+		return OrientationAspect.Direction.values()[ordinal];
+	}
+
+	@Override
+	public AbsoluteLocation getMultiBlockRoot()
+	{
+		return _getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT);
 	}
 
 	/**

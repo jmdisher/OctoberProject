@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -78,6 +79,8 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
 		
 		_setData7(AspectRegistry.FLAGS, (byte)0);
+		_setData7(AspectRegistry.ORIENTATION, (byte)OrientationAspect.Direction.IDENTITY.ordinal());
+		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
 	}
 
 	@Override
@@ -204,6 +207,32 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public void setFlags(byte flags)
 	{
 		_setData7(AspectRegistry.FLAGS, flags);
+	}
+
+	@Override
+	public OrientationAspect.Direction getOrientation()
+	{
+		byte ordinal = _getData7(AspectRegistry.ORIENTATION);
+		return OrientationAspect.Direction.values()[ordinal];
+	}
+
+	@Override
+	public void setOrientation(OrientationAspect.Direction direction)
+	{
+		byte ordinal = (byte)direction.ordinal();
+		_setData7(AspectRegistry.ORIENTATION, ordinal);
+	}
+
+	@Override
+	public AbsoluteLocation getMultiBlockRoot()
+	{
+		return _getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT);
+	}
+
+	@Override
+	public void setMultiBlockRoot(AbsoluteLocation rootLocation)
+	{
+		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, rootLocation);
 	}
 
 	@Override

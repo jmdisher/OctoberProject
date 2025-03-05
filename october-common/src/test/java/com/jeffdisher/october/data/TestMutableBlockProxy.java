@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -135,5 +136,45 @@ public class TestMutableBlockProxy
 		
 		Assert.assertEquals(STONE.item().number(), input.getData15(AspectRegistry.BLOCK, address));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.INVENTORY, address));
+	}
+
+	@Test
+	public void multiBlock()
+	{
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		AbsoluteLocation rootLocation = new AbsoluteLocation(1, 1, 1);
+		AbsoluteLocation extensionLocation = rootLocation.getRelative(0, 0, 1);
+		CuboidData input = CuboidGenerator.createFilledCuboid(rootLocation.getCuboidAddress(), ENV.special.AIR);
+		
+		MutableBlockProxy rootProxy = new MutableBlockProxy(rootLocation, input);
+		rootProxy.setBlockAndClear(door);
+		rootProxy.setOrientation(OrientationAspect.Direction.POS_Y);
+		Assert.assertTrue(rootProxy.didChange());
+		rootProxy.writeBack(input);
+		MutableBlockProxy extensionProxy = new MutableBlockProxy(extensionLocation, input);
+		extensionProxy.setBlockAndClear(door);
+		extensionProxy.setMultiBlockRoot(rootLocation);
+		Assert.assertTrue(extensionProxy.didChange());
+		extensionProxy.writeBack(input);
+		
+		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
+		Assert.assertEquals((byte)OrientationAspect.Direction.POS_Y.ordinal(), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
+		Assert.assertEquals(rootLocation, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
+		
+		// Now clear these with the usual helper.
+		rootProxy = new MutableBlockProxy(rootLocation, input);
+		rootProxy.setBlockAndClear(ENV.special.AIR);
+		Assert.assertTrue(rootProxy.didChange());
+		rootProxy.writeBack(input);
+		extensionProxy = new MutableBlockProxy(extensionLocation, input);
+		extensionProxy.setBlockAndClear(ENV.special.AIR);
+		Assert.assertTrue(extensionProxy.didChange());
+		extensionProxy.writeBack(input);
+		
+		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
+		Assert.assertEquals((byte)OrientationAspect.Direction.IDENTITY.ordinal(), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
+		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
 	}
 }

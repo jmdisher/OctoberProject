@@ -1,5 +1,7 @@
 package com.jeffdisher.october.data;
 
+import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
@@ -49,4 +51,12 @@ public interface IBlockProxy
 	 * @return The flags for this block (as defined in FlagsAspect).
 	 */
 	byte getFlags();
+	/**
+	 * @return The orientation of this block (never null but could be IDENTITY).
+	 */
+	OrientationAspect.Direction getOrientation();
+	/**
+	 * @return The location of this multi-block root (null if this isn't a multi-block or is the root).
+	 */
+	AbsoluteLocation getMultiBlockRoot();
 }

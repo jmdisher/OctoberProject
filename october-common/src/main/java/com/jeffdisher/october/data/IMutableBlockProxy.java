@@ -2,6 +2,8 @@ package com.jeffdisher.october.data;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CraftOperation;
 import com.jeffdisher.october.types.FuelState;
@@ -88,4 +90,16 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 * @param millisToDelay Milliseconds to delay before running the mutation (must be positive).
 	 */
 	void requestFutureMutation(long millisToDelay);
+	/**
+	 * Sets the orientation of this block (currently just used for multi-block roots).
+	 * 
+	 * @param direction The direction to set.
+	 */
+	void setOrientation(OrientationAspect.Direction direction);
+	/**
+	 * Sets the location of the root block of this multi-block.
+	 * 
+	 * @param rootLocation The multi-block root location.
+	 */
+	void setMultiBlockRoot(AbsoluteLocation rootLocation);
 }
