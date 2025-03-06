@@ -1,4 +1,4 @@
-package com.jeffdisher.october.persistence;
+package com.jeffdisher.october.worldgen;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -19,8 +20,6 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.CuboidGenerator;
-import com.jeffdisher.october.worldgen.Structure;
-import com.jeffdisher.october.worldgen.StructureLoader;
 
 
 /**

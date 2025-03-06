@@ -1,7 +1,8 @@
-package com.jeffdisher.october.persistence;
+package com.jeffdisher.october.worldgen;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 

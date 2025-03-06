@@ -61,6 +61,8 @@ import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
+import com.jeffdisher.october.worldgen.FlatWorldGenerator;
+import com.jeffdisher.october.worldgen.IWorldGenerator;
 
 
 public class TestResourceLoader

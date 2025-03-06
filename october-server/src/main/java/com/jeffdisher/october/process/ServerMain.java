@@ -5,9 +5,6 @@ import java.io.IOException;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.PropagationHelpers;
-import com.jeffdisher.october.persistence.BasicWorldGenerator;
-import com.jeffdisher.october.persistence.FlatWorldGenerator;
-import com.jeffdisher.october.persistence.IWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.ServerRunner;
@@ -15,6 +12,9 @@ import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.worldgen.BasicWorldGenerator;
+import com.jeffdisher.october.worldgen.FlatWorldGenerator;
+import com.jeffdisher.october.worldgen.IWorldGenerator;
 
 
 public class ServerMain

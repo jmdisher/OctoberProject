@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.MessageQueue;
+import com.jeffdisher.october.worldgen.IWorldGenerator;
 
 
 /**

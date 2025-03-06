@@ -36,8 +36,6 @@ import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
-import com.jeffdisher.october.persistence.FlatWorldGenerator;
-import com.jeffdisher.october.persistence.IWorldGenerator;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -58,6 +56,8 @@ import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
+import com.jeffdisher.october.worldgen.FlatWorldGenerator;
+import com.jeffdisher.october.worldgen.IWorldGenerator;
 
 
 public class TestServerRunner
