@@ -21,7 +21,7 @@ import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.CuboidAddress;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestPropagationHelpers

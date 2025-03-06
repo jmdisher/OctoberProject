@@ -50,7 +50,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.types.TickProcessingContext.IChangeSink;
 import com.jeffdisher.october.types.TickProcessingContext.IMutationSink;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestCreatureProcessor

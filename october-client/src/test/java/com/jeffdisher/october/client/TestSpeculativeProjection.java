@@ -68,7 +68,7 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestSpeculativeProjection

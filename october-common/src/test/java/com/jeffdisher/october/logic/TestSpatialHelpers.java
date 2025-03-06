@@ -18,7 +18,7 @@ import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestSpatialHelpers

@@ -18,7 +18,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 /**

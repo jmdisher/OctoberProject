@@ -15,8 +15,8 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestHeightMapHelpers

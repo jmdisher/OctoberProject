@@ -1,4 +1,4 @@
-package com.jeffdisher.october.worldgen;
+package com.jeffdisher.october.utils;
 
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
@@ -11,9 +11,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 
 /**
  * A utility class to generate common shapes for cuboids.
- * In the future, this will likely be adapted into the generalized dynamic cuboid generator but it currently just exists
- * to generate common world idioms for testing.
- * It is in the server package since, although it is used by tests, it is ultimately only called on the server-side.
+ * This isn't used for real worldgen, just for tests or other isolated situations where a basic cuboid needs to be
+ * quickly built as input for some utility or common logic.
  */
 public class CuboidGenerator
 {

@@ -23,8 +23,8 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.utils.Assert;
+import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
 import com.jeffdisher.october.worldgen.Structure;
 import com.jeffdisher.october.worldgen.StructureLoader;
 

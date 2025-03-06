@@ -19,7 +19,7 @@ import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestFireHelpers

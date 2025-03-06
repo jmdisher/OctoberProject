@@ -60,8 +60,8 @@ import com.jeffdisher.october.types.Items;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.WorldConfig;
+import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestTickRunner

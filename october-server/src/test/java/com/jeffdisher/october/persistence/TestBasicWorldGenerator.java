@@ -19,8 +19,8 @@ import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.utils.CuboidGenerator;
 import com.jeffdisher.october.utils.Encoding;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
 
 
 public class TestBasicWorldGenerator

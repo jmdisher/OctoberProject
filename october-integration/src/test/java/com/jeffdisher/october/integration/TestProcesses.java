@@ -33,7 +33,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
-import com.jeffdisher.october.worldgen.CuboidGenerator;
+import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 /**
