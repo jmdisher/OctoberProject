@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -26,7 +28,19 @@ public class RayCastHelpers
 	 */
 	public static RayBlock findFirstCollision(EntityLocation start, EntityLocation end, Predicate<AbsoluteLocation> stopPredicate)
 	{
-		return _findFirstCollision(start, end, stopPredicate);
+		_ResultBuilder<RayBlock> builder = (boolean wasStopped
+				, List<AbsoluteLocation> path
+				, AbsoluteLocation stopBlock
+				, AbsoluteLocation preStopBlock
+				, Axis collisionAxis
+				, float rayDistance
+		) -> {
+			return wasStopped
+					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
+					: null
+			;
+		};
+		return _findFirstCollision(builder, start, end, stopPredicate);
 	}
 
 	/**
@@ -55,6 +69,18 @@ public class RayCastHelpers
 				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z()),
 				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z() + volume.height()),
 		};
+		_ResultBuilder<RayBlock> builder = (boolean wasStopped
+				, List<AbsoluteLocation> path
+				, AbsoluteLocation stopBlock
+				, AbsoluteLocation preStopBlock
+				, Axis collisionAxis
+				, float rayDistance
+		) -> {
+			return wasStopped
+					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
+					: null
+			;
+		};
 		
 		float rayLength = (float)Math.sqrt(vX * vX + vY * vY + vZ * vZ);
 		float distance = rayLength;
@@ -63,7 +89,7 @@ public class RayCastHelpers
 		{
 			EntityLocation point = points[i];
 			EntityLocation edge = new EntityLocation(point.x() + vX, point.y() + vY, point.z() + vZ);
-			RayBlock result = _findFirstCollision(point, edge, stopPredicate);
+			RayBlock result = _findFirstCollision(builder, point, edge, stopPredicate);
 			if (null != result)
 			{
 				float one = result.rayDistance;
@@ -99,8 +125,25 @@ public class RayCastHelpers
 		return new RayMovement(finalState, axis, distance);
 	}
 
+	public static List<AbsoluteLocation> findFullLine(AbsoluteLocation start, AbsoluteLocation end)
+	{
+		_ResultBuilder<List<AbsoluteLocation>> builder = (boolean wasStopped
+				, List<AbsoluteLocation> path
+				, AbsoluteLocation stopBlock
+				, AbsoluteLocation preStopBlock
+				, Axis collisionAxis
+				, float rayDistance
+		) -> {
+			return path;
+		};
+		EntityLocation floatStart = start.toEntityLocation();
+		EntityLocation floatEnd = end.toEntityLocation();
+		Predicate<AbsoluteLocation> stopPredicate = (AbsoluteLocation location) -> false;
+		return _findFirstCollision(builder, floatStart, floatEnd, stopPredicate);
+	}
 
-	private static RayBlock _findFirstCollision(EntityLocation start, EntityLocation end, Predicate<AbsoluteLocation> stopPredicate)
+
+	private static <T> T _findFirstCollision(_ResultBuilder<T> builder, EntityLocation start, EntityLocation end, Predicate<AbsoluteLocation> stopPredicate)
 	{
 		AbsoluteLocation startBlock = start.getBlockLocation();
 		AbsoluteLocation endBlock = end.getBlockLocation();
@@ -140,12 +183,14 @@ public class RayCastHelpers
 		float distanceY = firstY;
 		float distanceZ = firstZ;
 		
+		List<AbsoluteLocation> path = new ArrayList<>();
 		AbsoluteLocation thisStep = startBlock;
 		AbsoluteLocation lastFalse = null;
 		Axis axis = null;
 		boolean stop = stopPredicate.test(thisStep);
 		while (!stop && !thisStep.equals(endBlock))
 		{
+			path.add(thisStep);
 			lastFalse = thisStep;
 			if (null != axis)
 			{
@@ -200,6 +245,8 @@ public class RayCastHelpers
 			
 			stop = stopPredicate.test(thisStep);
 		}
+		path.add(thisStep);
+		
 		float rayDistance;
 		if (null != axis)
 		{
@@ -223,10 +270,7 @@ public class RayCastHelpers
 		{
 			rayDistance = 0.0f;
 		}
-		return stop
-				? new RayBlock(thisStep, lastFalse, axis, rayDistance)
-				: null
-		;
+		return builder.build(stop, path, thisStep, lastFalse, axis, rayDistance);
 	}
 
 
@@ -242,4 +286,15 @@ public class RayCastHelpers
 	) {}
 
 	public static enum Axis { X, Y, Z,}
+
+	private static interface _ResultBuilder<T>
+	{
+		T build(boolean wasStopped
+				, List<AbsoluteLocation> path
+				, AbsoluteLocation stopBlock
+				, AbsoluteLocation preStopBlock
+				, Axis collisionAxis
+				, float rayDistance
+		);
+	}
 }

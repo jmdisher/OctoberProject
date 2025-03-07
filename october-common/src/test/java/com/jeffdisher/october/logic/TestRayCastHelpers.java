@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import java.util.List;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -165,5 +167,32 @@ public class TestRayCastHelpers
 		Assert.assertEquals(new EntityLocation(2.28f, 0.69f, -volume.height()), result.location());
 		Assert.assertEquals(5.23f, result.rayDistance(), 0.01f);
 		Assert.assertEquals(RayCastHelpers.Axis.Z, result.collisionAxis());
+	}
+
+	@Test
+	public void lineSegment() throws Throwable
+	{
+		// Show that we can find a line passing through every block between start and end blocks.
+		AbsoluteLocation start = new AbsoluteLocation(-1, -2, 0);
+		AbsoluteLocation end = new AbsoluteLocation(1, 1, 1);
+		List<AbsoluteLocation> path = RayCastHelpers.findFullLine(start, end);
+		// We just want to make sure that the path starts and ends at the right places and each step differs by only one block.
+		Assert.assertEquals(7, path.size());
+		Assert.assertEquals(start, path.get(0));
+		Assert.assertEquals(end, path.get(path.size() - 1));
+		for (int i = 1; i < path.size(); ++i)
+		{
+			AbsoluteLocation prev = path.get(i - 1);
+			AbsoluteLocation current = path.get(i);
+			int dX = Math.abs(current.x() - prev.x());
+			int dY = Math.abs(current.y() - prev.y());
+			int dZ = Math.abs(current.z() - prev.z());
+			Assert.assertEquals(1, dX + dY + dZ);
+		}
+		
+		// Check 1.
+		path = RayCastHelpers.findFullLine(start, start);
+		Assert.assertEquals(1, path.size());
+		Assert.assertEquals(start, path.get(0));
 	}
 }
