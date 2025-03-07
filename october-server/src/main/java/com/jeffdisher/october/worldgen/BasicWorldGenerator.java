@@ -1,8 +1,6 @@
 package com.jeffdisher.october.worldgen;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -224,24 +222,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
 		Environment env = Environment.getShared();
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
-		_SubField subField = new _SubField(seeds, 0, 0);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
+		PerColumnRandomSeedField.View subField = seeds.view();
 		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(subField);
-		int minHeight = 0;
-		int maxHeight = Integer.MAX_VALUE;
-		int totalHeight = 0;
-		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
-		{
-			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
-			{
-				int height = heightMap.getHeight(x, y);
-				minHeight = Math.min(minHeight, height);
-				maxHeight = Math.max(maxHeight, height);
-				totalHeight += height;
-			}
-		}
-		int count = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE;
-		int averageHeight = totalHeight / count;
+		int averageHeight = _getAverageHeightInColumn(heightMap);
 		AbsoluteLocation cuboidBase = address.getBase();
 		int cuboidZ = cuboidBase.z();
 		
@@ -272,99 +256,16 @@ public class BasicWorldGenerator implements IWorldGenerator
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, defaultBlock);
 		
 		// Now, walk the height map and make any required adjustments.
-		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
-		{
-			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
-			{
-				int height = heightMap.getHeight(x, y);
-				// Note that the mantle height will be basalt and everything below will be lava.
-				int mantleHeight = height + LAVA_Z_DEPTH;
-				for (int z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
-				{
-					int thisZ = cuboidZ + z;
-					Block blockToWrite;
-					if (thisZ > height)
-					{
-						// This is whatever the air block is.
-						blockToWrite = defaultEmptyBlock;
-					}
-					else if (thisZ < height)
-					{
-						// This is underground so see what it is.
-						if (thisZ == mantleHeight)
-						{
-							// The mantle barrier, so this is basalt.
-							blockToWrite = _blockBasalt;
-						}
-						else if (thisZ < mantleHeight)
-						{
-							// We are in the mantle so just lava.
-							blockToWrite = _blockLavaSource;
-						}
-						else
-						{
-							// This is in the crust so just use stone.
-							blockToWrite = _blockStone;
-						}
-					}
-					else
-					{
-						// We want to make sure that peaks generate without dirt on them so we apply this extra check.
-						if (thisZ >= STONE_PEAK_Z_LEVEL)
-						{
-							// Stone peak.
-							blockToWrite = _blockStone;
-						}
-						else
-						{
-							// Dirt surface.
-							blockToWrite = _blockDirt;
-						}
-					}
-					if (blockToWrite != defaultBlock)
-					{
-						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
-					}
-				}
-			}
-		}
+		_adjustHighAndLowBlocks(heightMap, data, cuboidZ, defaultEmptyBlock, defaultBlock);
 		
 		// Generate the ore nodes and other structures (including trees).
-		CuboidHeightMap cuboidLocalMap = _generateOreNodesAndStructures(subField, address, data);
-		if (null == cuboidLocalMap)
-		{
-			// Generate the default map from the column.
-			cuboidLocalMap = _extractFromColumn(heightMap, cuboidZ);
-		}
+		_generateOreNodesAndStructures(subField, address, data);
 		
-		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
-		int cuboidSeed = subField.get(0, 0);
-		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
-		int herdSizeToSpawn = _generateFlora(env, data, cuboidBase, cuboidSeed, heightMap, biome);
-		EntityType faunaType = (FIELD_CODE == biome.code)
-				? _cow
-				: null
-		;
+		// We have finished populating the cuboid so we can generate the cuboid-local height map.
+		CuboidHeightMap cuboidLocalMap = HeightMapHelpers.buildHeightMap(data);
 		
-		// Spawn any creatures associated with this cuboid.
-		List<CreatureEntity> entities = new ArrayList<>();
-		if ((null != faunaType) && (herdSizeToSpawn > 0))
-		{
-			// We don't often do herd spawning so we will try 5 times in random locations on the surface.
-			Random random = new Random(cuboidSeed);
-			for (int i = 0; i < herdSizeToSpawn; ++i)
-			{
-				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-				// Choose the block above the dirt.
-				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
-				entities.add(CreatureEntity.create(creatureIdAssigner.next()
-						, faunaType
-						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
-						, faunaType.maxHealth()
-				));
-			}
-		}
+		// Spawn the creatures within the cuboid.
+		List<CreatureEntity> entities = _spawnCreatures(env, creatureIdAssigner, subField, heightMap, data, cuboidBase);
 		
 		// We don't currently require any mutations for anything we spawned.
 		List<ScheduledMutation> mutations = List.of();
@@ -380,8 +281,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	@Override
 	public EntityLocation getDefaultSpawnLocation()
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, (short)0, (short)0);
-		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, (short)0, (short)0);
+		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(seeds.view());
 		// Find the largest value here and spawn there (note that this may not be in the zero-z cuboid).
 		int maxZ = Integer.MIN_VALUE;
 		int targetX = -1;
@@ -411,7 +312,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public int test_getCuboidSeed(short cuboidX, short cuboidY)
 	{
-		return _deterministicRandom(_seed, cuboidX, cuboidY);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		return seeds.get(0, 0);
 	}
 
 	/**
@@ -423,8 +325,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public int test_getBiome(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		_SubField subField = new _SubField(seeds, 0, 0);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		PerColumnRandomSeedField.View subField = seeds.view();
 		return _buildBiomeFromSeeds5x5(subField);
 	}
 
@@ -438,8 +340,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public char test_getBiomeCode(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		_SubField subField = new _SubField(seeds, 0, 0);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		PerColumnRandomSeedField.View subField = seeds.view();
 		int biome = _buildBiomeFromSeeds5x5(subField);
 		return BIOMES[biome].code;
 	}
@@ -453,10 +355,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public BlockAddress test_getCentre(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
 		int[][] yCentres = new int[3][3];
 		int[][] xCentres = new int[3][3];
-		_buildCentreField3x3(new _SubField(seeds, 0, 0), yCentres, xCentres);
+		_buildCentreField3x3(seeds.view(), yCentres, xCentres);
 		
 		return BlockAddress.fromInt(xCentres[1][1], yCentres[1][1], 0);
 	}
@@ -471,8 +373,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public int test_getRawPeak(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		return _buildHeightTotal(new _SubField(seeds, 0, 0));
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		return _buildHeightTotal(seeds.view());
 	}
 
 	/**
@@ -485,8 +387,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public int test_getAdjustedPeak(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		_SubField subField = new _SubField(seeds, 0, 0);
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		PerColumnRandomSeedField.View subField = seeds.view();
 		return _peakWithinBiome(subField);
 	}
 
@@ -499,8 +401,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public ColumnHeightMap test_getHeightMap(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		return _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		return _generateHeightMapForCuboidColumn(seeds.view());
 	}
 
 	/**
@@ -511,9 +413,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public void test_generateOreNodes(CuboidAddress address, CuboidData data)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, address.x(), address.y());
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
 		// (we ignore the updated height map)
-		_generateOreNodesAndStructures(new _SubField(seeds, 0, 0), address, data);
+		_generateOreNodesAndStructures(seeds.view(), address, data);
 	}
 
 	/**
@@ -525,13 +427,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 	 */
 	public int test_getGullyDepth(short cuboidX, short cuboidY)
 	{
-		_SeedField seeds = _SeedField.buildSeedField5x5(_seed, cuboidX, cuboidY);
-		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(new _SubField(seeds, 0, 0));
+		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
+		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(seeds.view());
 		return _findGully(heightMap);
 	}
 
 
-	private ColumnHeightMap _generateHeightMapForCuboidColumn(_SubField subField)
+	private ColumnHeightMap _generateHeightMapForCuboidColumn(PerColumnRandomSeedField.View subField)
 	{
 		// Note that we need to consider "biome" and "cuboid centre height" which requires that we generate the seed values for 5x5 cuboids around this one.
 		// centres
@@ -563,27 +465,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return ColumnHeightMap.wrap(heightMapForCuboidColumn);
 	}
 
-	private static int _deterministicRandom(int seed, int x, int y)
-	{
-		// This "deterministic random" is random since it is based on the given random seed but "deterministic" in that
-		// it will be the same for a given seed-y-x triplet.
-		// We write these into the buffer in various combinations just because it seems to give the hash better distribution.
-		ByteBuffer buffer = ByteBuffer.allocate(4 * Integer.BYTES);
-		buffer.putInt(y);
-		buffer.putInt(x);
-		buffer.putInt(x ^ y);
-		buffer.putInt(x + y);
-		int hash = Arrays.hashCode(buffer.array());
-		return seed ^ hash;
-	}
-
 	private static int _biomeVote(int i)
 	{
 		// We need to pick a value in [0..15]:
 		return (MASK_BIOME & i) >> SHIFT_BIOME;
 	}
 
-	private int _buildHeightTotal(_SubField field)
+	private int _buildHeightTotal(PerColumnRandomSeedField.View field)
 	{
 		int total = 0;
 		for (int y = -1; y <= 1; ++y)
@@ -614,7 +502,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return (MASK_XCENTRE & i) >> SHIFT_XCENTRE;
 	}
 
-	private int _findHeight(_SubField subField, int[][] yCentres, int[][] xCentres, int thisY, int thisX)
+	private int _findHeight(PerColumnRandomSeedField.View subField, int[][] yCentres, int[][] xCentres, int thisY, int thisX)
 	{
 		// We only want to average the heights of the 3 nearest peaks (if we average all 9, we get subtle breaks along cuboid boundaries which will look bad).
 		double[] closestDistances = new double[] { 100.0, 100.0, 100.0 };
@@ -624,7 +512,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		{
 			for (int x = -1; x <= 1; ++x)
 			{
-				int peak = _peakWithinBiome(subField.relativeField(x, y));
+				int peak = _peakWithinBiome(subField.relativeView(x, y));
 				int yC = yCentres[1 + y][1 + x] + (Encoding.CUBOID_EDGE_SIZE * y);
 				int xC = xCentres[1 + y][1 + x] + (Encoding.CUBOID_EDGE_SIZE * x);
 				int dY = thisY - yC;
@@ -661,7 +549,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return Math.round((float)(total / totalWeight));//Math.round((float)Math.sqrt(total) / 9.0f);
 	}
 
-	private int _buildBiomeFromSeeds5x5(_SubField subField)
+	private int _buildBiomeFromSeeds5x5(PerColumnRandomSeedField.View subField)
 	{
 		int biomeTotal = 0;
 		for (int y = -2; y <= 2; ++y)
@@ -692,7 +580,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return biome;
 	}
 
-	private void _buildCentreField3x3(_SubField subField, int[][] yCentres, int[][] xCentres)
+	private void _buildCentreField3x3(PerColumnRandomSeedField.View subField, int[][] yCentres, int[][] xCentres)
 	{
 		for (int y = -1; y <= 1; ++y)
 		{
@@ -707,7 +595,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private int _peakWithinBiome(_SubField subField)
+	private int _peakWithinBiome(PerColumnRandomSeedField.View subField)
 	{
 		int rawHeight = _buildHeightTotal(subField);
 		int biome = _buildBiomeFromSeeds5x5(subField);
@@ -715,34 +603,32 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return rawHeight + offset;
 	}
 
-	// Returns non-null if this generation changed the height map for this cuboid (returns the new map).
-	private CuboidHeightMap _generateOreNodesAndStructures(_SubField subField, CuboidAddress address, CuboidData data)
+	private void _generateOreNodesAndStructures(PerColumnRandomSeedField.View subField, CuboidAddress address, CuboidData data)
 	{
 		// Since the nodes can cross cuboid boundaries, we will consider the 9 chunk columns around this one and apply all generated nodes to this cuboid.
 		// (in the future, we might short-circuit this to avoid cases where the generation isn't possibly here - for now, we always do it to test the code path)
 		AbsoluteLocation base = address.getBase();
 		short airNumber = _env.special.AIR.item().number();
-		CuboidHeightMap newMap = null;
 		for (int y = -1; y <= 1; ++y)
 		{
 			for (int x = -1; x <= 1; ++x)
 			{
 				CuboidAddress sideAddress = address.getRelative(x, y, 0);
-				_SubField relField = subField.relativeField(x, y);
-				int cuboidSeed = relField.get(0, 0);
+				PerColumnRandomSeedField.View relField = subField.relativeView(x, y);
+				int columnSeed = relField.get(0, 0);
 				AbsoluteLocation sideBase = sideAddress.getBase();
 				int relativeBaseX = sideBase.x() - base.x();
 				int relativeBaseY = sideBase.y() - base.y();
 				int targetCuboidBaseZ = base.z();
-				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
-				_applyOreNodes(data, cuboidSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
+				_applyOreNodes(data, columnSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, COAL_NODES_PER_CUBOID_COLUMN, COAL_MIN_Z, COAL_MAX_Z, _coalNode);
+				_applyOreNodes(data, columnSeed, relativeBaseX, relativeBaseY, targetCuboidBaseZ, IRON_NODES_PER_CUBOID_COLUMN, IRON_MIN_Z, IRON_MAX_Z, _ironNode);
 				
 				// If this is a forest, also generate random trees.
 				int biome = _buildBiomeFromSeeds5x5(relField);
 				if (FOREST_CODE == BIOMES[biome].code)
 				{
 					ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(relField);
-					Random random = new Random(cuboidSeed);
+					Random random = new Random(columnSeed);
 					for (int i = 0; i < FOREST_TREE_COUNT; ++i)
 					{
 						int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
@@ -765,11 +651,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 							_basicTree.applyToCuboid(data, relativeBase, airNumber);
 						}
 					}
-					// We generated trees into this so update the cuboid height map.
-					if ((0 == x) && (0 == y))
-					{
-						newMap = HeightMapHelpers.buildHeightMap(data);
-					}
 				}
 			}
 		}
@@ -778,9 +659,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int extraIronAttemptCount = Math.max(IRON_EXTRA_MIN, Math.min(IRON_EXTRA_MAX, -address.z()));
 		short stoneNumber = _blockStone.item().number();
 		short ironNumber = _blockIronOre.item().number();
-		_SubField relField = subField.relativeField(0, 0);
-		int cuboidSeed = relField.get(0, 0);
-		Random random = new Random(cuboidSeed);
+		int columnSeed = subField.get(0, 0);
+		Random random = new Random(columnSeed);
 		for (int i = 0; i < extraIronAttemptCount; ++i)
 		{
 			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
@@ -795,14 +675,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 				data.setData15(AspectRegistry.BLOCK, blockAddress, ironNumber);
 			}
 		}
-		return newMap;
 	}
 
-	private void _applyOreNodes(CuboidData data, int cuboidSeed, int relativeBaseX, int relativeBaseY, int targetCuboidBaseZ, int tries, int minZ, int maxZ, Structure node)
+	private void _applyOreNodes(CuboidData data, int columnSeed, int relativeBaseX, int relativeBaseY, int targetCuboidBaseZ, int tries, int minZ, int maxZ, Structure node)
 	{
 		short stoneNumber = _blockStone.item().number();
 		int range = maxZ - minZ;
-		Random random = new Random(cuboidSeed);
+		Random random = new Random(columnSeed);
 		for (int i = 0; i < tries; ++i)
 		{
 			int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
@@ -814,7 +693,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private int _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int cuboidSeed, ColumnHeightMap heightMap, _Biome biome)
+	private int _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int columnSeed, ColumnHeightMap heightMap, _Biome biome)
 	{
 		int herdSize = 0;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
@@ -852,7 +731,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			}
 			
 			// Now, inject a few random ones.
-			Random random = new Random(cuboidSeed);
+			Random random = new Random(columnSeed);
 			int count = (FIELD_CODE == biome.code)
 					? FIELD_WHEAT_COUNT
 					: FIELD_CARROT_COUNT
@@ -953,87 +832,119 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private static CuboidHeightMap _extractFromColumn(ColumnHeightMap column, int baseZ)
+	private int _getAverageHeightInColumn(ColumnHeightMap heightMap)
 	{
-		byte[][] localMap = new byte[Encoding.CUBOID_EDGE_SIZE][Encoding.CUBOID_EDGE_SIZE];
+		int minHeight = 0;
+		int maxHeight = Integer.MAX_VALUE;
+		int totalHeight = 0;
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
-				int absoluteHeight = column.getHeight(x, y);
-				int local = absoluteHeight - baseZ;
-				byte localHeight;
-				if (local > Encoding.CUBOID_EDGE_SIZE)
-				{
-					// NOTE:  Here we assume that the world is solid below the column height map (only true for the current state of this world generator).
-					localHeight = Encoding.CUBOID_EDGE_SIZE - 1;
-				}
-				else if (local >= 0)
-				{
-					// This is within our cuboid so we know the height.
-					localHeight = (byte)local;
-				}
-				else
-				{
-					// If the actual height is below this cuboid, we are clearly empty.
-					localHeight = CuboidHeightMap.UNKNOWN_HEIGHT;
-				}
-				localMap[y][x] = localHeight;
+				int height = heightMap.getHeight(x, y);
+				minHeight = Math.min(minHeight, height);
+				maxHeight = Math.max(maxHeight, height);
+				totalHeight += height;
 			}
 		}
-		return CuboidHeightMap.wrap(localMap);
+		int count = Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE;
+		int averageHeight = totalHeight / count;
+		return averageHeight;
 	}
 
-
-	private static class _SeedField
+	private void _adjustHighAndLowBlocks(ColumnHeightMap heightMap, CuboidData data, int cuboidZ, Block defaultEmptyBlock, Block defaultBlock)
 	{
-		public static _SeedField buildSeedField5x5(int seed, short cuboidX, short cuboidY)
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
-			int[][] seeds = new int[9][9];
-			for (int y = -4; y <= 4; ++y)
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
 			{
-				for (int x = -4; x <= 4; ++x)
+				int height = heightMap.getHeight(x, y);
+				// Note that the mantle height will be basalt and everything below will be lava.
+				int mantleHeight = height + LAVA_Z_DEPTH;
+				for (int z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
 				{
-					seeds[4 + y][4 + x] = _deterministicRandom(seed, cuboidX + x, cuboidY + y);
+					int thisZ = cuboidZ + z;
+					Block blockToWrite;
+					if (thisZ > height)
+					{
+						// This is whatever the air block is.
+						blockToWrite = defaultEmptyBlock;
+					}
+					else if (thisZ < height)
+					{
+						// This is underground so see what it is.
+						if (thisZ == mantleHeight)
+						{
+							// The mantle barrier, so this is basalt.
+							blockToWrite = _blockBasalt;
+						}
+						else if (thisZ < mantleHeight)
+						{
+							// We are in the mantle so just lava.
+							blockToWrite = _blockLavaSource;
+						}
+						else
+						{
+							// This is in the crust so just use stone.
+							blockToWrite = _blockStone;
+						}
+					}
+					else
+					{
+						// We want to make sure that peaks generate without dirt on them so we apply this extra check.
+						if (thisZ >= STONE_PEAK_Z_LEVEL)
+						{
+							// Stone peak.
+							blockToWrite = _blockStone;
+						}
+						else
+						{
+							// Dirt surface.
+							blockToWrite = _blockDirt;
+						}
+					}
+					if (blockToWrite != defaultBlock)
+					{
+						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
+					}
 				}
 			}
-			return new _SeedField(seeds);
-		}
-		
-		private final int[][] _seeds;
-		
-		private _SeedField(int[][] seeds)
-		{
-			Assert.assertTrue(9 == seeds.length);
-			_seeds = seeds;
-		}
-		public int get(int relX, int relY)
-		{
-			return _seeds[4 + relY][4 + relX];
 		}
 	}
 
-	private static class _SubField
+	private List<CreatureEntity> _spawnCreatures(Environment env, CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase)
 	{
-		private final _SeedField _field;
-		private final int _relX;
-		private final int _relY;
+		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
+		int columnSeed = subField.get(0, 0);
+		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
+		int herdSizeToSpawn = _generateFlora(env, data, cuboidBase, columnSeed, heightMap, biome);
+		EntityType faunaType = (FIELD_CODE == biome.code)
+				? _cow
+				: null
+		;
 		
-		private _SubField(_SeedField field, int relX, int relY)
+		// Spawn any creatures associated with this cuboid.
+		List<CreatureEntity> entities = new ArrayList<>();
+		if ((null != faunaType) && (herdSizeToSpawn > 0))
 		{
-			_field = field;
-			_relX = relX;
-			_relY = relY;
+			// We don't often do herd spawning so we will try 5 times in random locations on the surface.
+			Random random = new Random(columnSeed);
+			for (int i = 0; i < herdSizeToSpawn; ++i)
+			{
+				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+				// Choose the block above the dirt.
+				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBase.z() + 1;
+				entities.add(CreatureEntity.create(creatureIdAssigner.next()
+						, faunaType
+						, cuboidBase.getRelative(relativeX, relativeY, relativeZ).toEntityLocation()
+						, faunaType.maxHealth()
+				));
+			}
 		}
-		public _SubField relativeField(int relX, int relY)
-		{
-			return new _SubField(_field, _relX + relX, _relY + relY);
-		}
-		public int get(int relX, int relY)
-		{
-			return _field.get(_relX + relX, _relY + relY);
-		}
+		return entities;
 	}
+
 
 	private static record _Biome(String name
 			, char code
