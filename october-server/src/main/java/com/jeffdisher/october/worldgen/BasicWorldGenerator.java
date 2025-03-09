@@ -225,38 +225,14 @@ public class BasicWorldGenerator implements IWorldGenerator
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
 		PerColumnRandomSeedField.View subField = seeds.view();
 		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(subField);
-		int averageHeight = _getAverageHeightInColumn(heightMap);
+		
+		// Generate the starting-point of the cuboid, containing only stone and empty (air/water/lava) blocks.
+		CuboidData data = _generateStoneCrustCuboid(address, heightMap);
+		
+		// Replace the top and bottom of the crust with the appropriate transition blocks.
 		AbsoluteLocation cuboidBase = address.getBase();
 		int cuboidZ = cuboidBase.z();
-		
-		// Determine how to start this based on the height compared to this z.
-		Block defaultEmptyBlock;
-		if (cuboidZ >= WATER_Z_LEVEL)
-		{
-			// Air.
-			defaultEmptyBlock = _env.special.AIR;
-		}
-		else
-		{
-			// Water.
-			defaultEmptyBlock = _blockWaterSource;
-		}
-		
-		Block defaultBlock;
-		if (averageHeight >= cuboidZ)
-		{
-			// This cuboid is either underground or intersecting with the surface so start with stone.
-			defaultBlock = _blockStone;
-		}
-		else
-		{
-			// This cuboid is at least mostly above the surface so fill with either air or water.
-			defaultBlock = defaultEmptyBlock;
-		}
-		CuboidData data = CuboidGenerator.createFilledCuboid(address, defaultBlock);
-		
-		// Now, walk the height map and make any required adjustments.
-		_adjustHighAndLowBlocks(heightMap, data, cuboidZ, defaultEmptyBlock, defaultBlock);
+		_replaceCrustTopAndBottom(heightMap, data, cuboidZ);
 		
 		// Generate the ore nodes and other structures (including trees).
 		_generateOreNodesAndStructures(subField, address, data);
@@ -852,8 +828,49 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return averageHeight;
 	}
 
-	private void _adjustHighAndLowBlocks(ColumnHeightMap heightMap, CuboidData data, int cuboidZ, Block defaultEmptyBlock, Block defaultBlock)
+	private CuboidData _generateStoneCrustCuboid(CuboidAddress address, ColumnHeightMap heightMap)
 	{
+		int averageHeight = _getAverageHeightInColumn(heightMap);
+		int cuboidZ = address.getBase().z();
+		
+		// Determine how to start this based on the height compared to this z.
+		Block defaultEmptyBlock;
+		if (cuboidZ >= WATER_Z_LEVEL)
+		{
+			// Air.
+			defaultEmptyBlock = _env.special.AIR;
+		}
+		else
+		{
+			// Water.
+			defaultEmptyBlock = _blockWaterSource;
+		}
+		
+		Block defaultBlock;
+		if (averageHeight >= cuboidZ)
+		{
+			// This cuboid is either underground or intersecting with the surface so start with stone.
+			defaultBlock = _blockStone;
+		}
+		else
+		{
+			// This cuboid is at least mostly above the surface so fill with either air or water.
+			defaultBlock = defaultEmptyBlock;
+		}
+		CuboidData data = CuboidGenerator.createFilledCuboid(address, defaultBlock);
+		
+		// Now, walk the height map and make any required adjustments so that we end up with only empty (air/water) blocks and stone crust.
+		_finishShapingStoneCrust(heightMap, data, cuboidZ, defaultEmptyBlock, defaultBlock);
+		return data;
+	}
+
+	private void _finishShapingStoneCrust(ColumnHeightMap heightMap, CuboidData data, int cuboidZ, Block defaultEmptyBlock, Block defaultBlock)
+	{
+		// This function carves the block from a uniform default into a formed crust of only stone.
+		// Verify that the default blocks are the cases we are assuming.
+		Assert.assertTrue((_blockWaterSource == defaultEmptyBlock) || (_env.special.AIR == defaultEmptyBlock));
+		Assert.assertTrue((_blockStone == defaultBlock) || (_blockWaterSource == defaultBlock) || (_env.special.AIR == defaultBlock));
+		
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
@@ -867,30 +884,47 @@ public class BasicWorldGenerator implements IWorldGenerator
 					Block blockToWrite;
 					if (thisZ > height)
 					{
-						// This is whatever the air block is.
+						// This is above the crust so use whatever the empty block should be.
 						blockToWrite = defaultEmptyBlock;
 					}
-					else if (thisZ < height)
+					else if (thisZ < mantleHeight)
 					{
-						// This is underground so see what it is.
-						if (thisZ == mantleHeight)
-						{
-							// The mantle barrier, so this is basalt.
-							blockToWrite = _blockBasalt;
-						}
-						else if (thisZ < mantleHeight)
-						{
-							// We are in the mantle so just lava.
-							blockToWrite = _blockLavaSource;
-						}
-						else
-						{
-							// This is in the crust so just use stone.
-							blockToWrite = _blockStone;
-						}
+						// The mantle is never the default block, and is the same everywhere, so we just apply lava.
+						blockToWrite = _blockLavaSource;
 					}
 					else
 					{
+						// This is the crust layer, so replace this with stone.
+						blockToWrite = _blockStone;
+					}
+					if (blockToWrite != defaultBlock)
+					{
+						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
+					}
+				}
+			}
+		}
+	}
+
+	private void _replaceCrustTopAndBottom(ColumnHeightMap heightMap, CuboidData data, int cuboidZ)
+	{
+		// This function replaces the top block and bottom block of the crust with the appropriate block.
+		// It assumes that the crust is completely made of stone and will only replace stone (meaning gaps or special blocks will NOT be replaced).
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				int height = heightMap.getHeight(x, y);
+				// Note that the mantle height will be basalt and everything below will be lava.
+				int mantleHeight = height + LAVA_Z_DEPTH;
+				for (int z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
+				{
+					int thisZ = cuboidZ + z;
+					Block blockToWrite;
+					
+					if (thisZ == height)
+					{
+						// This is the top of the crust so see what kind of regolith to use.
 						// We want to make sure that peaks generate without dirt on them so we apply this extra check.
 						if (thisZ >= STONE_PEAK_Z_LEVEL)
 						{
@@ -903,9 +937,26 @@ public class BasicWorldGenerator implements IWorldGenerator
 							blockToWrite = _blockDirt;
 						}
 					}
-					if (blockToWrite != defaultBlock)
+					else if (thisZ == mantleHeight)
 					{
-						data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), blockToWrite.item().number());
+						// The mantle barrier, so this is basalt.
+						blockToWrite = _blockBasalt;
+					}
+					else
+					{
+						// We don't care about the other cases.
+						blockToWrite = null;
+					}
+					
+					// Make sure that we have something to write, is not stone, and it is actually changing the value.
+					if ((null != blockToWrite) && (_blockStone != blockToWrite))
+					{
+						BlockAddress blockAddress = BlockAddress.fromInt(x, y, z);
+						short blockValue = blockToWrite.item().number();
+						if (blockValue != data.getData15(AspectRegistry.BLOCK, blockAddress))
+						{
+							data.setData15(AspectRegistry.BLOCK, blockAddress, blockValue);
+						}
 					}
 				}
 			}
