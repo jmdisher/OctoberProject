@@ -64,6 +64,21 @@ public class PathDigger
 	}
 
 
+	private static void _hollowOutSphere(_CuboidWrapper wrapper, AbsoluteLocation centre, float radius)
+	{
+		// For now, we will just use a simple algorithm, nothing too clever:
+		// 1) Consider the sphere as a stack of circles (stacked in z)
+		// 2) Fill each circle, and fill its reflection (in the xy plane)
+		float mainRadiusSquared = radius * radius;
+		int limitRadius = Math.round(radius);
+		_hollowOutCircle(wrapper, centre, mainRadiusSquared, 0);
+		for (int z = 1; z <= limitRadius; ++z)
+		{
+			float oneRadiusSquared = mainRadiusSquared - (z * z);
+			_hollowOutCircle(wrapper, centre.getRelative(0, 0, z), oneRadiusSquared, -2 * z);
+		}
+	}
+
 	private static void _hollowOutCircle(_CuboidWrapper wrapper, AbsoluteLocation centre, float radiusSquared, int zOffset)
 	{
 		// We are solving y = sqrt(x^2 + r^2)
@@ -130,16 +145,21 @@ public class PathDigger
 		}
 		
 		private final CuboidData _data;
+		private final AbsoluteLocation _cuboidBase;
 		private final boolean[][][] _shouldWriteZYX;
 		private final short _blockToAdd;
 		private _CuboidWrapper(CuboidData data, boolean[][][] shouldWrite, short blockToAdd)
 		{
 			_data = data;
+			_cuboidBase = data.getCuboidAddress().getBase();
 			_shouldWriteZYX = shouldWrite;
 			_blockToAdd = blockToAdd;
 		}
-		public void set(int x, int y, int z)
+		public void set(int globalX, int globalY, int globalZ)
 		{
+			int x = globalX - _cuboidBase.x();
+			int y = globalY - _cuboidBase.y();
+			int z = globalZ - _cuboidBase.z();
 			if ((x >= 0) && (x < Encoding.CUBOID_EDGE_SIZE)
 					&& (y >= 0) && (y < Encoding.CUBOID_EDGE_SIZE)
 					&& (z >= 0) && (z < Encoding.CUBOID_EDGE_SIZE)
@@ -151,21 +171,6 @@ public class PathDigger
 				_data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), _blockToAdd);
 				_shouldWriteZYX[z][y][x] = false;
 			}
-		}
-	}
-
-	private static void _hollowOutSphere(_CuboidWrapper wrapper, AbsoluteLocation centre, float radius)
-	{
-		// For now, we will just use a simple algorithm, nothing too clever:
-		// 1) Consider the sphere as a stack of circles (stacked in z)
-		// 2) Fill each circle, and fill its reflection (in the xy plane)
-		float mainRadiusSquared = radius * radius;
-		int limitRadius = Math.round(radius);
-		_hollowOutCircle(wrapper, centre, mainRadiusSquared, 0);
-		for (int z = 1; z <= limitRadius; ++z)
-		{
-			float oneRadiusSquared = mainRadiusSquared - (z * z);
-			_hollowOutCircle(wrapper, centre.getRelative(0, 0, z), oneRadiusSquared, -2 * z);
 		}
 	}
 }

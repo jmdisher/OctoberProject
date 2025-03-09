@@ -34,7 +34,7 @@ public class TestPathDigger
 	@Test
 	public void sphere()
 	{
-		AbsoluteLocation centre = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation centre = new AbsoluteLocation(37, 5, 69);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(centre.getCuboidAddress(), STONE);
 		PathDigger.hollowOutSphere(cuboid, centre, 7, STONE.item().number(), ENV.special.AIR.item().number());
 		_verifyBlockCount(cuboid, 939, 85);
