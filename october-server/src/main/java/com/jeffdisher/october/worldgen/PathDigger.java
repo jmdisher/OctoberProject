@@ -1,8 +1,11 @@
 package com.jeffdisher.october.worldgen;
 
+import java.util.List;
+
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
+import com.jeffdisher.october.logic.RayCastHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.utils.Encoding;
@@ -28,15 +31,35 @@ public class PathDigger
 		// First, we want to convert the data into a local cache we can use for quickly making decisions.
 		_CuboidWrapper wrapper = _CuboidWrapper.wrap(data, blockToRemove, blockToAdd);
 		
-		// For now, we will just use a simple algorithm, nothing too clever:
-		// 1) Consider the sphere as a stack of circles (stacked in z)
-		// 2) Fill each circle, and fill its reflection (in the xy plane)
-		float mainRadiusSquared = radius * radius;
-		_hollowOutCircle(wrapper, centre, mainRadiusSquared, 0);
-		for (int z = 1; z <= radius; ++z)
+		_hollowOutSphere(wrapper, centre, radius);
+	}
+
+	/**
+	 * Hollows out any instances of blockToRemove in data which intersect with a path consisting of spheres from start
+	 * to end, with corresponding radii, replacing them with blockToAdd.
+	 * 
+	 * @param data The cuboid to read and write (only the BLOCK aspect will be modified).
+	 * @param start The start of the sphere path.
+	 * @param startRadius The radius at the start.
+	 * @param end The end of the sphere path.
+	 * @param endRadius The radius at the end.
+	 * @param blockToRemove The block value of the blocks we should be replacing with blockToAdd.
+	 * @param blockToAdd The block value of the blocks we should be writing over instances of blockToRemove.
+	 */
+	public static void hollowOutPath(CuboidData data, AbsoluteLocation start, int startRadius, AbsoluteLocation end, int endRadius, short blockToRemove, short blockToAdd)
+	{
+		// First, we want to convert the data into a local cache we can use for quickly making decisions.
+		_CuboidWrapper wrapper = _CuboidWrapper.wrap(data, blockToRemove, blockToAdd);
+		
+		// We will walk the path from the start to end, hollowing out a sphere at each step, and will interpolate radii between start and end.
+		List<AbsoluteLocation> path = RayCastHelpers.findFullLine(start, end);
+		float oneRadius = (float)startRadius;
+		float radiusChange = ((float)endRadius - oneRadius) / (float)path.size();
+		
+		for (AbsoluteLocation step : path)
 		{
-			float oneRadiusSquared = mainRadiusSquared - (z * z);
-			_hollowOutCircle(wrapper, centre.getRelative(0, 0, z), oneRadiusSquared, -2 * z);
+			_hollowOutSphere(wrapper, step, oneRadius);
+			oneRadius += radiusChange;
 		}
 	}
 
@@ -128,6 +151,21 @@ public class PathDigger
 				_data.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, z), _blockToAdd);
 				_shouldWriteZYX[z][y][x] = false;
 			}
+		}
+	}
+
+	private static void _hollowOutSphere(_CuboidWrapper wrapper, AbsoluteLocation centre, float radius)
+	{
+		// For now, we will just use a simple algorithm, nothing too clever:
+		// 1) Consider the sphere as a stack of circles (stacked in z)
+		// 2) Fill each circle, and fill its reflection (in the xy plane)
+		float mainRadiusSquared = radius * radius;
+		int limitRadius = Math.round(radius);
+		_hollowOutCircle(wrapper, centre, mainRadiusSquared, 0);
+		for (int z = 1; z <= limitRadius; ++z)
+		{
+			float oneRadiusSquared = mainRadiusSquared - (z * z);
+			_hollowOutCircle(wrapper, centre.getRelative(0, 0, z), oneRadiusSquared, -2 * z);
 		}
 	}
 }

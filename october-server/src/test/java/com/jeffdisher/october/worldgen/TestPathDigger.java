@@ -37,6 +37,22 @@ public class TestPathDigger
 		AbsoluteLocation centre = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(centre.getCuboidAddress(), STONE);
 		PathDigger.hollowOutSphere(cuboid, centre, 7, STONE.item().number(), ENV.special.AIR.item().number());
+		_verifyBlockCount(cuboid, 939, 85);
+	}
+
+	@Test
+	public void path()
+	{
+		AbsoluteLocation start = new AbsoluteLocation(-5, -5, -5);
+		AbsoluteLocation end = new AbsoluteLocation(10, 10, 5);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(end.getCuboidAddress(), STONE);
+		PathDigger.hollowOutPath(cuboid, start, 7, end, 5, STONE.item().number(), ENV.special.AIR.item().number());
+		_verifyBlockCount(cuboid, 868, 156);
+	}
+
+
+	private static void _verifyBlockCount(CuboidData cuboid, int expectedStone, int expectedAir)
+	{
 		int stoneCount = 0;
 		int airCount = 0;
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
@@ -58,7 +74,7 @@ public class TestPathDigger
 				}
 			}
 		}
-		Assert.assertEquals(939, stoneCount);
-		Assert.assertEquals(85, airCount);
+		Assert.assertEquals(expectedStone, stoneCount);
+		Assert.assertEquals(expectedAir, airCount);
 	}
 }
