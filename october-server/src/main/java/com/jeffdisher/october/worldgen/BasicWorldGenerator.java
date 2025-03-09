@@ -173,6 +173,8 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public static final int FIELD_CARROT_COUNT = 3;
 	public static final int HERD_SIZE = 5;
 	public static final int RANDOM_FAUNA_DENOMINATOR = 20;
+	public static final int CAVERN_LIMIT_RADIUS = 7;
+	public static final int RANDOM_CAVERN_DENOMINATOR = 4;
 
 	private final Environment _env;
 	private final int _seed;
@@ -221,7 +223,6 @@ public class BasicWorldGenerator implements IWorldGenerator
 	public SuspendedCuboid<CuboidData> generateCuboid(CreatureIdAssigner creatureIdAssigner, CuboidAddress address)
 	{
 		// For now, we will just place dirt at the peak block in each column, stone below that, and either air or water sources above.
-		Environment env = Environment.getShared();
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, address.x(), address.y());
 		PerColumnRandomSeedField.View subField = seeds.view();
 		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(subField);
@@ -229,8 +230,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 		// Generate the starting-point of the cuboid, containing only stone and empty (air/water/lava) blocks.
 		CuboidData data = _generateStoneCrustCuboid(address, heightMap);
 		
-		// Replace the top and bottom of the crust with the appropriate transition blocks.
+		// Create caves.
 		AbsoluteLocation cuboidBase = address.getBase();
+		_carveOutCaves(data, cuboidBase);
+		
+		// Replace the top and bottom of the crust with the appropriate transition blocks.
 		int cuboidZ = cuboidBase.z();
 		_replaceCrustTopAndBottom(heightMap, data, cuboidZ);
 		
@@ -241,7 +245,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		CuboidHeightMap cuboidLocalMap = HeightMapHelpers.buildHeightMap(data);
 		
 		// Spawn the creatures within the cuboid.
-		List<CreatureEntity> entities = _spawnCreatures(env, creatureIdAssigner, subField, heightMap, data, cuboidBase);
+		List<CreatureEntity> entities = _spawnCreatures(creatureIdAssigner, subField, heightMap, data, cuboidBase);
 		
 		// We don't currently require any mutations for anything we spawned.
 		List<ScheduledMutation> mutations = List.of();
@@ -406,6 +410,17 @@ public class BasicWorldGenerator implements IWorldGenerator
 		PerColumnRandomSeedField seeds = PerColumnRandomSeedField.buildSeedField9x9(_seed, cuboidX, cuboidY);
 		ColumnHeightMap heightMap = _generateHeightMapForCuboidColumn(seeds.view());
 		return _findGully(heightMap);
+	}
+
+	/**
+	 * Used by tests:  Modifies the given data by carving out caves which intersect it.
+	 * 
+	 * @param data The cuboid to modify.
+	 */
+	public void test_carveOutCaves(CuboidData data)
+	{
+		AbsoluteLocation cuboidBase = data.getCuboidAddress().getBase();
+		_carveOutCaves(data, cuboidBase);
 	}
 
 
@@ -619,11 +634,10 @@ public class BasicWorldGenerator implements IWorldGenerator
 							// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 							AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
 							// Make sure that these are over dirt.
-							AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
-							if (dirtLocation.getCuboidAddress().equals(address))
-							{
-								Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
-							}
+							// AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
+							// TODO:  To determine if this dirtLocation is _actually_ dirt, we would need to do a more
+							// complete generation of these other cuboids.  As it stands, this could generate trees
+							// floating over caves.
 							_basicTree.applyToCuboid(data, relativeBase, airNumber);
 						}
 					}
@@ -669,7 +683,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private int _generateFlora(Environment env, CuboidData data, AbsoluteLocation cuboidBase, int columnSeed, ColumnHeightMap heightMap, _Biome biome)
+	private int _generateFlora(CuboidData data, AbsoluteLocation cuboidBase, int columnSeed, ColumnHeightMap heightMap, _Biome biome)
 	{
 		int herdSize = 0;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
@@ -726,12 +740,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 					if (blockToReplace == original)
 					{
 						// Make sure that these are over dirt.
-						if (address.z() > 0)
+						if (_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, address.getRelativeInt(0, 0, -1)))
 						{
-							Assert.assertTrue(_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, address.getRelativeInt(0, 0, -1)));
+							data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
+							randomPlantCount += 1;
 						}
-						data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
-						randomPlantCount += 1;
 					}
 				}
 			}
@@ -963,12 +976,12 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private List<CreatureEntity> _spawnCreatures(Environment env, CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase)
+	private List<CreatureEntity> _spawnCreatures(CreatureIdAssigner creatureIdAssigner, PerColumnRandomSeedField.View subField, ColumnHeightMap heightMap, CuboidData data, AbsoluteLocation cuboidBase)
 	{
 		// We want to spawn the flora.  This is only ever done within a single cuboid column if it is the appropriate biome type and contains a "gully".
 		int columnSeed = subField.get(0, 0);
 		_Biome biome = BIOMES[_buildBiomeFromSeeds5x5(subField)];
-		int herdSizeToSpawn = _generateFlora(env, data, cuboidBase, columnSeed, heightMap, biome);
+		int herdSizeToSpawn = _generateFlora(data, cuboidBase, columnSeed, heightMap, biome);
 		EntityType faunaType = (FIELD_CODE == biome.code)
 				? _cow
 				: null
@@ -996,10 +1009,102 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return entities;
 	}
 
+	private void _carveOutCaves(CuboidData data, AbsoluteLocation cuboidBase)
+	{
+		// We generate the cave system by checking whether or not a cavern should be generated in this cuboid and each of the 26 around it.
+		_Cavern[][][] caverns = new _Cavern[5][5][5];
+		CuboidAddress address = data.getCuboidAddress();
+		for (int z = -1; z <= 1; ++z)
+		{
+			for (int y = -1; y <= 1; ++y)
+			{
+				for (int x = -1; x <= 1; ++x)
+				{
+					int seed = _getSeedForCuboid(address.getRelative(x, y, z));
+					Random random = new Random(seed);
+					if (0 == random.nextInt(RANDOM_CAVERN_DENOMINATOR))
+					{
+						byte cavernX = (byte) random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						byte cavernY = (byte) random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						byte cavernZ = (byte) random.nextInt(Encoding.CUBOID_EDGE_SIZE);
+						byte cavernRadius = (byte) random.nextInt(CAVERN_LIMIT_RADIUS);
+						caverns[2 + z][2 + y][2 + x] = new _Cavern(cavernX, cavernY, cavernZ, cavernRadius);
+					}
+				}
+			}
+		}
+		
+		// We then connect those caverns to adjacent caverns in the 6 adjacent cuboids, if they exist.
+		short stoneNumber = _blockStone.item().number();
+		short airNumber = _env.special.AIR.item().number();
+		for (int z = -1; z <= 1; ++z)
+		{
+			for (int y = -1; y <= 1; ++y)
+			{
+				for (int x = -1; x <= 1; ++x)
+				{
+					_Cavern cavern = caverns[2 + z][2 + y][2 + x];
+					if (null != cavern)
+					{
+						CuboidAddress thisAddress = address.getRelative(x, y, z);
+						AbsoluteLocation centre = thisAddress.getBase().getRelative(cavern.x, cavern.y, cavern.z);
+						int radius = cavern.radius;
+						Assert.assertTrue(centre.getCuboidAddress().equals(thisAddress));
+						PathDigger.hollowOutSphere(data, centre, radius, stoneNumber, airNumber);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z + 1, y, x, centre, radius);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z - 1, y, x, centre, radius);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z, y + 1, x, centre, radius);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z, y - 1, x, centre, radius);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z, y, x + 1, centre, radius);
+						_hollowPath(data, caverns, address, stoneNumber, airNumber, z, y, x - 1, centre, radius);
+					}
+				}
+			}
+		}
+	}
+
+	private static void _hollowPath(CuboidData data
+			, _Cavern[][][] caverns
+			, CuboidAddress address
+			, short stoneNumber
+			, short airNumber
+			, int z
+			, int y
+			, int x
+			, AbsoluteLocation centre
+			, int radius
+	)
+	{
+		_Cavern one = caverns[2 + z][2 + y][2 + x];
+		if (null != one)
+		{
+			CuboidAddress oneAddress = address.getRelative(x, y, z);
+			AbsoluteLocation oneCentre = oneAddress.getBase().getRelative(one.x, one.y, one.z);
+			int oneRadius = one.radius;
+			PathDigger.hollowOutPath(data, centre, radius, oneCentre, oneRadius, stoneNumber, airNumber);
+		}
+	}
+
+	private static int _getSeedForCuboid(CuboidAddress address)
+	{
+		// We will just combine these by shifting them over a bit to fill out the int.
+		return ((int)address.x() << 16)
+				| ((int)address.y() << 8)
+				| (int)address.z()
+		;
+	}
+
 
 	private static record _Biome(String name
 			, char code
 			, int heightOffset
+	)
+	{}
+
+	private static record _Cavern(byte x
+			, byte y
+			, byte z
+			, byte radius
 	)
 	{}
 }

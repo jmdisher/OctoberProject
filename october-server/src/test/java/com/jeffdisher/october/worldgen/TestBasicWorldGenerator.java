@@ -388,6 +388,18 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(new EntityLocation(49.0f, -270.0f, 3.0f), creatures.get(0).location());
 	}
 
+	@Test
+	public void caves() throws Throwable
+	{
+		// Tests that caves carve out some of the stone from the cuboid.
+		int seed = 10256;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -2, 3), stone);
+		generator.test_carveOutCaves(cuboid);
+		_checkBlockTypes(cuboid, 31045, 0, 0, 0, 0, 0, 0, 0);
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
 	{
