@@ -214,15 +214,29 @@ public class RayCastHelpers
 				// See which is smaller, the X or Z.
 				if (stepX < stepZ)
 				{
-					stepX += deltaX;
 					axis = Axis.X;
 					thisStep = thisStep.getRelative(dirX, 0, 0);
+					if (endBlock.x() == thisStep.x())
+					{
+						stepX = Float.MAX_VALUE;
+					}
+					else
+					{
+						stepX += deltaX;
+					}
 				}
 				else
 				{
-					stepZ += deltaZ;
 					axis = Axis.Z;
 					thisStep = thisStep.getRelative(0, 0, dirZ);
+					if (endBlock.z() == thisStep.z())
+					{
+						stepZ = Float.MAX_VALUE;
+					}
+					else
+					{
+						stepZ += deltaZ;
+					}
 				}
 			}
 			else
@@ -231,15 +245,29 @@ public class RayCastHelpers
 				// See which is smaller, the Y or Z.
 				if (stepY < stepZ)
 				{
-					stepY += deltaY;
 					axis = Axis.Y;
 					thisStep = thisStep.getRelative(0, dirY, 0);
+					if (endBlock.y() == thisStep.y())
+					{
+						stepY = Float.MAX_VALUE;
+					}
+					else
+					{
+						stepY += deltaY;
+					}
 				}
 				else
 				{
-					stepZ += deltaZ;
 					axis = Axis.Z;
 					thisStep = thisStep.getRelative(0, 0, dirZ);
+					if (endBlock.z() == thisStep.z())
+					{
+						stepZ = Float.MAX_VALUE;
+					}
+					else
+					{
+						stepZ += deltaZ;
+					}
 				}
 			}
 			

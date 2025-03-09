@@ -180,6 +180,31 @@ public class TestRayCastHelpers
 		Assert.assertEquals(7, path.size());
 		Assert.assertEquals(start, path.get(0));
 		Assert.assertEquals(end, path.get(path.size() - 1));
+		_checkPathOneBlockStep(path);
+		
+		// Check 1.
+		path = RayCastHelpers.findFullLine(start, start);
+		Assert.assertEquals(1, path.size());
+		Assert.assertEquals(start, path.get(0));
+	}
+
+	@Test
+	public void lineError() throws Throwable
+	{
+		// A test to fix a bug in the DDA algorithm we found when building a line.
+		AbsoluteLocation start = new AbsoluteLocation(-303, 273, 11);
+		AbsoluteLocation end = new AbsoluteLocation(-281, 264, 26);
+		List<AbsoluteLocation> path = RayCastHelpers.findFullLine(start, end);
+		// We just want to make sure that the path starts and ends at the right places and each step differs by only one block.
+		Assert.assertEquals(47, path.size());
+		Assert.assertEquals(start, path.get(0));
+		Assert.assertEquals(end, path.get(path.size() - 1));
+		_checkPathOneBlockStep(path);
+	}
+
+
+	private static void _checkPathOneBlockStep(List<AbsoluteLocation> path)
+	{
 		for (int i = 1; i < path.size(); ++i)
 		{
 			AbsoluteLocation prev = path.get(i - 1);
@@ -189,10 +214,5 @@ public class TestRayCastHelpers
 			int dZ = Math.abs(current.z() - prev.z());
 			Assert.assertEquals(1, dX + dY + dZ);
 		}
-		
-		// Check 1.
-		path = RayCastHelpers.findFullLine(start, start);
-		Assert.assertEquals(1, path.size());
-		Assert.assertEquals(start, path.get(0));
 	}
 }
