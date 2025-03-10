@@ -119,6 +119,7 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(0, 0, 0));
 		CuboidData cuboid = suspended.cuboid();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
+		short grassNumber = ENV.items.getItemById("op.grass").number();
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
 		short coalNumber = ENV.items.getItemById("op.coal_ore").number();
 		short ironNumber = ENV.items.getItemById("op.iron_ore").number();
@@ -128,6 +129,7 @@ public class TestBasicWorldGenerator
 		// We will just verify that this has air above stone with a dirt layer between.
 		int minDirt = Integer.MAX_VALUE;
 		int maxDirt = 0;
+		int grassCount = 0;
 		int dirtCount = 0;
 		int coalCount = 0;
 		int ironCount = 0;
@@ -145,7 +147,14 @@ public class TestBasicWorldGenerator
 					short number = cuboid.getData15(AspectRegistry.BLOCK, new BlockAddress(x, y, z));
 					if (!foundDirt)
 					{
-						if (dirtNumber == number)
+						if (grassNumber == number)
+						{
+							foundDirt = true;
+							minDirt = Math.min(minDirt, z);
+							maxDirt = Math.max(maxDirt, z);
+							grassCount += 1;
+						}
+						else if (dirtNumber == number)
 						{
 							foundDirt = true;
 							minDirt = Math.min(minDirt, z);
@@ -190,7 +199,8 @@ public class TestBasicWorldGenerator
 		}
 		Assert.assertEquals(7, minDirt);
 		Assert.assertEquals(9, maxDirt);
-		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, dirtCount);
+		Assert.assertEquals(Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 18, grassCount);
+		Assert.assertEquals(18, dirtCount);
 		Assert.assertEquals(4, coalCount);
 		Assert.assertEquals(0, ironCount);
 		Assert.assertEquals(36, logCount);
@@ -221,19 +231,19 @@ public class TestBasicWorldGenerator
 		CuboidAddress address = CuboidAddress.fromInt(5, 2, -1);
 		CuboidData data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32642, 44, 82, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32642, 44, 82, 0, 0, 0, 0, 0, 0);
 		
 		// This one is at 0 so it should see some coal, but no iron.
 		address = CuboidAddress.fromInt(5, 1, 0);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32736, 32, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32736, 32, 0, 0, 0, 0, 0, 0, 0);
 		
 		// This one is too deep for either.
 		address = CuboidAddress.fromInt(5, 1, -5);
 		data = CuboidGenerator.createFilledCuboid(address, stoneBlock);
 		generator.test_generateOreNodes(address, data);
-		_checkBlockTypes(data, 32763, 0, 5, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32763, 0, 5, 0, 0, 0, 0, 0, 0);
 	}
 
 	@Test
@@ -259,7 +269,8 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-10, -9, 0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 34, 69, 0, 0);
+		int dirtBlocks = 18;
+		_checkBlockTypes(cuboid, 6039, 16, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - dirtBlocks, dirtBlocks, 34, 69, 0, 0);
 	}
 
 	@Test
@@ -285,7 +296,7 @@ public class TestBasicWorldGenerator
 		// Verify the wheat field.
 		// This is a large field (56 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 2, 56 + 4, 0);
+		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 4, 4, 0, 2, 56 + 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -306,7 +317,8 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-9, -5, 0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a small field (3 in gully + 3).
-		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 0, 3 + 3);
+		int dirtBlocks = 3;
+		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - dirtBlocks, dirtBlocks, 0, 0, 0, 3 + 3);
 	}
 
 	@Test
@@ -317,7 +329,8 @@ public class TestBasicWorldGenerator
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(1, -1, 0));
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 11918, 24, 1, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10, 34, 69, 0, 0);
+		int dirtBlocks = 17;
+		_checkBlockTypes(cuboid, 11918, 24, 1, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 10 - dirtBlocks, dirtBlocks, 34, 69, 0, 0);
 	}
 
 	@Test
@@ -334,7 +347,7 @@ public class TestBasicWorldGenerator
 		generator.test_generateOreNodes(address, data);
 		// We generate at least 1 ore.
 		int iron = 1;
-		_checkBlockTypes(data, 32767, 0, iron, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32767, 0, iron, 0, 0, 0, 0, 0, 0);
 		
 		// Try one deep underground.
 		address = CuboidAddress.fromInt(5, 1, -200);
@@ -342,7 +355,7 @@ public class TestBasicWorldGenerator
 		generator.test_generateOreNodes(address, data);
 		// We generate at most 100 ore.
 		iron = 100;
-		_checkBlockTypes(data, 32668, 0, iron, 0, 0, 0, 0, 0);
+		_checkBlockTypes(data, 32668, 0, iron, 0, 0, 0, 0, 0, 0);
 	}
 
 	@Test
@@ -361,9 +374,9 @@ public class TestBasicWorldGenerator
 		CuboidData lowData = generator.generateCuboid(null, lowAddress).cuboid();
 		
 		// We expect that the surface lines up with the mantle.
-		Assert.assertEquals("SSSSSSSSDAAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 5, 22));
+		Assert.assertEquals("SSSSSSSSGAAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 5, 22));
 		Assert.assertEquals("LLLLBSSSSSSSSSSSSSSSSSSSSSSSSSSS", _coreSample(lowData, 5, 22));
-		Assert.assertEquals("SSSSSSSSSDAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 9, 1));
+		Assert.assertEquals("SSSSSSSSSGAAAAAAAAAAAAAAAAAAAAAA", _coreSample(highData, 9, 1));
 		Assert.assertEquals("LLLLLBSSSSSSSSSSSSSSSSSSSSSSSSSS", _coreSample(lowData, 9, 1));
 	}
 
@@ -380,7 +393,7 @@ public class TestBasicWorldGenerator
 		
 		// Verify that some wheat is present (numbers experimentally derived).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 3242, 5, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE, 0, 0, 4, 0);
+		_checkBlockTypes(cuboid, 3242, 5, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 4, 4, 0, 0, 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -397,16 +410,17 @@ public class TestBasicWorldGenerator
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -2, 3), stone);
 		generator.test_carveOutCaves(cuboid);
-		_checkBlockTypes(cuboid, 31045, 0, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(cuboid, 31045, 0, 0, 0, 0, 0, 0, 0, 0);
 	}
 
 
-	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int dirt, int log, int leaf, int wheat, int carrot)
+	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int grass, int dirt, int log, int leaf, int wheat, int carrot)
 	{
 		short airNumber = ENV.items.getItemById("op.air").number();
 		short stoneNumber = ENV.items.getItemById("op.stone").number();
 		short coalNumber = ENV.items.getItemById("op.coal_ore").number();
 		short ironNumber = ENV.items.getItemById("op.iron_ore").number();
+		short grassNumber = ENV.items.getItemById("op.grass").number();
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
 		short logNumber = ENV.items.getItemById("op.log").number();
 		short leafNumber = ENV.items.getItemById("op.leaf").number();
@@ -416,6 +430,7 @@ public class TestBasicWorldGenerator
 		int stoneCount = 0;
 		int coalCount = 0;
 		int ironCount = 0;
+		int grassCount = 0;
 		int dirtCount = 0;
 		int logCount = 0;
 		int leafCount = 0;
@@ -448,6 +463,10 @@ public class TestBasicWorldGenerator
 					{
 						dirtCount += 1;
 					}
+					else if (grassNumber == value)
+					{
+						grassCount += 1;
+					}
 					else if (logNumber == value)
 					{
 						logCount += 1;
@@ -475,6 +494,7 @@ public class TestBasicWorldGenerator
 		Assert.assertEquals(stone, stoneCount);
 		Assert.assertEquals(coal, coalCount);
 		Assert.assertEquals(iron, ironCount);
+		Assert.assertEquals(grass, grassCount);
 		Assert.assertEquals(dirt, dirtCount);
 		Assert.assertEquals(log, logCount);
 		Assert.assertEquals(leaf, leafCount);
@@ -486,6 +506,7 @@ public class TestBasicWorldGenerator
 	{
 		String sample = "";
 		short airBlock = ENV.items.getItemById("op.air").number();
+		short grassBlock = ENV.items.getItemById("op.grass").number();
 		short dirtBlock = ENV.items.getItemById("op.dirt").number();
 		short stoneBlock = ENV.items.getItemById("op.stone").number();
 		short basaltBlock = ENV.items.getItemById("op.basalt").number();
@@ -501,6 +522,10 @@ public class TestBasicWorldGenerator
 			else if (dirtBlock == value)
 			{
 				c = 'D';
+			}
+			else if (grassBlock == value)
+			{
+				c = 'G';
 			}
 			else if (stoneBlock == value)
 			{

@@ -179,6 +179,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Environment _env;
 	private final int _seed;
 	private final Block _blockStone;
+	private final Block _blockGrass;
 	private final Block _blockDirt;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
@@ -203,6 +204,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_seed = seed;
 		
 		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
+		_blockGrass = env.blocks.fromItem(env.items.getItemById("op.grass"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
@@ -634,10 +636,19 @@ public class BasicWorldGenerator implements IWorldGenerator
 							// NOTE:  This relativeBase is NOT an absolute location but is relative to the cuboid base.
 							AbsoluteLocation relativeBase = new AbsoluteLocation(relativeBaseX + relativeX - 1, relativeBaseY + relativeY - 1, absoluteZ - targetCuboidBaseZ);
 							// Make sure that these are over dirt.
-							// AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
+							AbsoluteLocation dirtLocation = base.getRelative(relativeBase.x() + 1, relativeBase.y() + 1,relativeBase.z() - 1);
 							// TODO:  To determine if this dirtLocation is _actually_ dirt, we would need to do a more
 							// complete generation of these other cuboids.  As it stands, this could generate trees
 							// floating over caves.
+							if (dirtLocation.getCuboidAddress().equals(address))
+							{
+								// We want to convert this to dirt, if it is over grass.
+								BlockAddress dirtBlock = dirtLocation.getBlockAddress();
+								if (_blockGrass.item().number() == data.getData15(AspectRegistry.BLOCK, dirtBlock))
+								{
+									data.setData15(AspectRegistry.BLOCK, dirtBlock, _blockDirt.item().number());
+								}
+							}
 							_basicTree.applyToCuboid(data, relativeBase, airNumber);
 						}
 					}
@@ -731,7 +742,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			{
 				int relativeX = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
 				int relativeY = random.nextInt(Encoding.CUBOID_EDGE_SIZE);
-				// Choose the block above the dirt.
+				// Choose the block above the grass (making the grass dirt).
 				int relativeZ = heightMap.getHeight(relativeX, relativeY) - cuboidBottomZ + 1;
 				if ((relativeZ >= 0) && (relativeZ < Encoding.CUBOID_EDGE_SIZE))
 				{
@@ -739,9 +750,11 @@ public class BasicWorldGenerator implements IWorldGenerator
 					short original = data.getData15(AspectRegistry.BLOCK, address);
 					if (blockToReplace == original)
 					{
-						// Make sure that these are over dirt.
-						if (_blockDirt.item().number() == data.getData15(AspectRegistry.BLOCK, address.getRelativeInt(0, 0, -1)))
+						// Make sure that these are over grass.
+						BlockAddress underBlock = address.getRelativeInt(0, 0, -1);
+						if (_blockGrass.item().number() == data.getData15(AspectRegistry.BLOCK, underBlock))
 						{
+							data.setData15(AspectRegistry.BLOCK, underBlock, _blockDirt.item().number());
 							data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
 							randomPlantCount += 1;
 						}
@@ -944,10 +957,15 @@ public class BasicWorldGenerator implements IWorldGenerator
 							// Stone peak.
 							blockToWrite = _blockStone;
 						}
+						else if (thisZ < WATER_Z_LEVEL)
+						{
+							// Dirt is under water.
+							blockToWrite = _blockDirt;
+						}
 						else
 						{
-							// Dirt surface.
-							blockToWrite = _blockDirt;
+							// Grass surface.
+							blockToWrite = _blockGrass;
 						}
 					}
 					else if (thisZ == mantleHeight)
