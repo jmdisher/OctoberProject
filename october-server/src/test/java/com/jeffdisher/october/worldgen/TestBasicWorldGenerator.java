@@ -294,9 +294,10 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, CuboidAddress.fromInt(-10, 9, 0));
 		
 		// Verify the wheat field.
-		// This is a large field (56 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 4873, 11, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 4, 4, 0, 2, 56 + 4, 0);
+		// This is a large field (56 in gully + 4).
+		int blocksPlanted = 56 + 4;
+		_checkBlockTypes(cuboid, 4873, 11, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - blocksPlanted, blocksPlanted, 0, 2, blocksPlanted, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -317,7 +318,7 @@ public class TestBasicWorldGenerator
 		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(null, CuboidAddress.fromInt(-9, -5, 0));
 		CuboidData cuboid = suspended.cuboid();
 		// This is a small field (3 in gully + 3).
-		int dirtBlocks = 3;
+		int dirtBlocks = 6;
 		_checkBlockTypes(cuboid, 9129, 0, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - dirtBlocks, dirtBlocks, 0, 0, 0, 3 + 3);
 	}
 

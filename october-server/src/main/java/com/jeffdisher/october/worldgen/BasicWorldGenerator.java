@@ -699,6 +699,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 		int herdSize = 0;
 		if ((FIELD_CODE == biome.code) || (MEADOW_CODE == biome.code))
 		{
+			// We always plant these on dirt but need to replace any grass.
+			short supportBlockToReplace = _blockGrass.item().number();
+			short supportBlockToAdd = _blockDirt.item().number();
 			// We only want to replace air (since this could be under water).
 			short blockToReplace = _env.special.AIR.item().number();
 			short blockToAdd = (FIELD_CODE == biome.code)
@@ -724,7 +727,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 				{
 					if ((z >= cuboidBottomZ) && (z < cuboidTopExclusive))
 					{
-						_replaceLayer(data, (byte)(z - cuboidBottomZ), blockToReplace, blockToAdd);
+						_replaceLayer(data, (byte)(z - cuboidBottomZ), supportBlockToReplace, supportBlockToAdd, blockToReplace, blockToAdd);
 						// We were able to generate something here.
 						didFillGully = true;
 					}
@@ -818,7 +821,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		return min;
 	}
 
-	private void _replaceLayer(CuboidData data, byte z, short blockToReplace, short blockToAdd)
+	private void _replaceLayer(CuboidData data, byte z, short supportBlockToReplace, short supportBlockToAdd, short blockToReplace, short blockToAdd)
 	{
 		for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
@@ -826,7 +829,19 @@ public class BasicWorldGenerator implements IWorldGenerator
 			{
 				BlockAddress address = new BlockAddress(x, y, z);
 				short original = data.getData15(AspectRegistry.BLOCK, address);
-				if (blockToReplace == original)
+				short underBlock = 0;
+				if (z > 0)
+				{
+					// TODO:  We currently can't check the block below the bottom of the cuboid so we will default to not placing there.
+					BlockAddress supportAddress = address.getRelative((byte)0, (byte)0, (byte)-1);
+					underBlock = data.getData15(AspectRegistry.BLOCK, supportAddress);
+					if (supportBlockToReplace == underBlock)
+					{
+						data.setData15(AspectRegistry.BLOCK, supportAddress, supportBlockToAdd);
+						underBlock = supportBlockToAdd;
+					}
+				}
+				if ((blockToReplace == original) && (supportBlockToAdd == underBlock))
 				{
 					data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
 				}
