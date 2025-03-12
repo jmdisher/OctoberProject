@@ -1,6 +1,8 @@
 package com.jeffdisher.october.worldgen;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -1123,17 +1125,17 @@ public class BasicWorldGenerator implements IWorldGenerator
 
 	private static long _getSeedForCuboid(CuboidAddress address)
 	{
-		// The random seed is a 64-bit long but only the low 48 bits are used.
-		// However, in the cases we use, we find that only the low 18 bits seem to influence the first number generated so we try to inject noise into the low bits.
-		long x = (long) address.x();
-		long y = (long) address.y();
-		long z = (long) address.z();
-		long sum = x + y + y;
-		return sum
-				| (x << 8)
-				| (y << 6)
-				| (z << 4)
-		;
+		// This logic is loosely derived from PerColumnRandomSeedField._deterministicRandom.
+		ByteBuffer buffer = ByteBuffer.allocate(3 * Short.BYTES + 2 * Integer.BYTES);
+		short x = address.x();
+		short y = address.y();
+		short z = address.z();
+		buffer.putShort(z);
+		buffer.putShort(y);
+		buffer.putShort(x);
+		buffer.putInt(x ^ y ^ z);
+		buffer.putInt(x + y + z);
+		return Arrays.hashCode(buffer.array());
 	}
 
 
