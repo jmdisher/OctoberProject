@@ -9,6 +9,7 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
+import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -514,6 +515,28 @@ public class CommonBlockMutationHelpers
 		{
 			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
 			context.mutationSink.future(startFire, MutationBlockStartFire.IGNITION_DELAY_MILLIS);
+		}
+		
+		// Check if there is anything changing related to ground cover.
+		// First, see if this can spread ground cover.
+		if (env.groundCover.isGroundCover(newType))
+		{
+			List<AbsoluteLocation> targets = GroundCoverHelpers.findSpreadNeighbours(env, context.previousBlockLookUp, location, newType);
+			for (AbsoluteLocation neighbour : targets)
+			{
+				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(neighbour, newType);
+				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
+			}
+		}
+		else
+		{
+			// Otherwise, check if this block can become ground cover.
+			Block shouldBecome = GroundCoverHelpers.findPotentialGroundCoverType(env, context.previousBlockLookUp, location, newType);
+			if (null != shouldBecome)
+			{
+				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(location, shouldBecome);
+				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
+			}
 		}
 	}
 

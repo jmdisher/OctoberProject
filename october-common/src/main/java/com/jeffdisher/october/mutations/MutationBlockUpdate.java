@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
+import com.jeffdisher.october.logic.GroundCoverHelpers;
 import com.jeffdisher.october.logic.HopperHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -130,6 +131,17 @@ public class MutationBlockUpdate implements IMutationBlock
 		{
 			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, thisBlock));
 			didApply = true;
+		}
+		
+		// Check if this change was changing the block on top of a ground cover block.
+		if (env.groundCover.isGroundCover(newBlock.getBlock()))
+		{
+			Block reverted = GroundCoverHelpers.checkRevertGroundCover(env, context.previousBlockLookUp, _blockLocation, newBlock.getBlock());
+			if (null != reverted)
+			{
+				CommonBlockMutationHelpers.setBlockCheckingFire(env, context, _blockLocation, newBlock, reverted);
+				didApply = true;
+			}
 		}
 		return didApply;
 	}

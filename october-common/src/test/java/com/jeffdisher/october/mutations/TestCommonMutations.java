@@ -1355,6 +1355,82 @@ public class TestCommonMutations
 		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress()));
 	}
 
+	@Test
+	public void groundCoverChanges()
+	{
+		// We will show a few of the ground cover interactions (these are similar so we will combine them here to avoid duplicated boiler-plate).
+		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block grass = ENV.blocks.fromItem(ENV.items.getItemById("op.grass"));
+		AbsoluteLocation startDirt = new AbsoluteLocation(2, 2, 2);
+		AbsoluteLocation startGrass = new AbsoluteLocation(22, 22, 22);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, startDirt.getBlockAddress(), dirt.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, startGrass.getBlockAddress(), grass.item().number());
+		
+		MutationBlockGrowGroundCover[] out_mutations = new MutationBlockGrowGroundCover[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						// These are only for this one purpose.
+						Assert.assertEquals(MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS, millisToDelay);
+						Assert.assertNull(out_mutations[0]);
+						out_mutations[0] = (MutationBlockGrowGroundCover) mutation;
+					}
+				}, null)
+				.eventSink((EventRecord event) -> {})
+				.finish()
+		;
+		
+		// Test placing dirt next to existing grass.
+		AbsoluteLocation besideGrass = startGrass.getRelative(1, 0, 0);
+		MutableBlockProxy proxy = new MutableBlockProxy(besideGrass, cuboid);
+		MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(besideGrass, dirt, 1);
+		Assert.assertTrue(write.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		MutationBlockGrowGroundCover update = out_mutations[0];
+		out_mutations[0] = null;
+		AbsoluteLocation updateLocation = update.getAbsoluteLocation();
+		Assert.assertEquals(besideGrass, updateLocation);
+		proxy = new MutableBlockProxy(updateLocation, cuboid);
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, besideGrass.getBlockAddress()));
+		
+		// Test placing grass next to existing dirt.
+		AbsoluteLocation besideDirt = startDirt.getRelative(1, 0, 0);
+		proxy = new MutableBlockProxy(besideDirt, cuboid);
+		write = new MutationBlockOverwriteByEntity(besideDirt, grass, 1);
+		Assert.assertTrue(write.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		
+		update = out_mutations[0];
+		out_mutations[0] = null;
+		updateLocation = update.getAbsoluteLocation();
+		Assert.assertEquals(startDirt, updateLocation);
+		proxy = new MutableBlockProxy(updateLocation, cuboid);
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startDirt.getBlockAddress()));
+		
+		// Test placing dirt on top of existing grass.
+		AbsoluteLocation aboveGrass = startGrass.getRelative(0, 0, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, aboveGrass.getBlockAddress(), dirt.item().number());
+		proxy = new MutableBlockProxy(startGrass, cuboid);
+		MutationBlockUpdate blockUpdate = new MutationBlockUpdate(startGrass);
+		Assert.assertTrue(blockUpdate.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(dirt.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{
