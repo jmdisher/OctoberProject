@@ -25,6 +25,7 @@ public enum MutationBlockType
 	SET_LOGIC_STATE,
 	MULTI_PHASE1,
 	MULTI_PHASE2,
+	SPREAD_GROUND_COVER,
 	
 	END_OF_LIST,
 }

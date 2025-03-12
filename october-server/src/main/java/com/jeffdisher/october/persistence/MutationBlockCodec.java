@@ -9,6 +9,7 @@ import com.jeffdisher.october.mutations.MutationBlockCraft;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockForceGrow;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
+import com.jeffdisher.october.mutations.MutationBlockGrowGroundCover;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockPhase2Multi;
 import com.jeffdisher.october.mutations.MutationBlockPlaceMultiBlock;
@@ -59,6 +60,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockSetLogicState.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPlaceMultiBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPhase2Multi.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockGrowGroundCover.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
