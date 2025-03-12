@@ -9,6 +9,7 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -118,6 +119,23 @@ public class CodecHelpers
 
 	public static void writeItem(ByteBuffer buffer, Item item)
 	{
+		_writeItem(buffer, item);
+	}
+
+	public static Block readBlock(ByteBuffer buffer)
+	{
+		Block block = null;
+		Item item = _readItem(buffer);
+		if (null != item)
+		{
+			block = Environment.getShared().blocks.fromItem(item);
+		}
+		return block;
+	}
+
+	public static void writeBlock(ByteBuffer buffer, Block block)
+	{
+		Item item = (null != block) ? block.item() : null;
 		_writeItem(buffer, item);
 	}
 

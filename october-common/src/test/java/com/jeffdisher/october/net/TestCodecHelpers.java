@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CraftOperation;
@@ -123,6 +124,17 @@ public class TestCodecHelpers
 		CodecHelpers.writeItem(buffer, test);
 		buffer.flip();
 		Item output = CodecHelpers.readItem(buffer);
+		Assert.assertEquals(test, output);
+	}
+
+	@Test
+	public void block() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		Block test = ENV.blocks.fromItem(STONE_ITEM);
+		CodecHelpers.writeBlock(buffer, test);
+		buffer.flip();
+		Block output = CodecHelpers.readBlock(buffer);
 		Assert.assertEquals(test, output);
 	}
 
