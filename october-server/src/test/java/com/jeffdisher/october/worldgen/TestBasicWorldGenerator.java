@@ -296,7 +296,7 @@ public class TestBasicWorldGenerator
 		// Verify the wheat field.
 		// This is a large field (56 in gully + 4).
 		CuboidData cuboid = suspended.cuboid();
-		_checkBlockTypes(cuboid, 5066, 12, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 4, 4, 0, 2, 56 + 4, 0);
+		_checkBlockTypes(cuboid, 4873, 11, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - 4, 4, 0, 2, 56 + 4, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -408,9 +408,21 @@ public class TestBasicWorldGenerator
 		int seed = 10256;
 		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
 		Block stone = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -2, 3), stone);
+		CuboidAddress address = CuboidAddress.fromInt(-100, -96, 3);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, stone);
 		generator.test_carveOutCaves(cuboid);
-		_checkBlockTypes(cuboid, 31045, 0, 0, 0, 0, 0, 0, 0, 0);
+		_checkBlockTypes(cuboid, 31148, 0, 0, 0, 0, 0, 0, 0, 0);
+		
+		// Verify that this cave isn't the same shape in any axis (bug due to poor random entropy).
+		cuboid = CuboidGenerator.createFilledCuboid(address.getRelative(0, 0, 1), stone);
+		generator.test_carveOutCaves(cuboid);
+		_checkBlockTypes(cuboid, 28397, 0, 0, 0, 0, 0, 0, 0, 0);
+		cuboid = CuboidGenerator.createFilledCuboid(address.getRelative(0, 1, 0), stone);
+		generator.test_carveOutCaves(cuboid);
+		_checkBlockTypes(cuboid, 30855, 0, 0, 0, 0, 0, 0, 0, 0);
+		cuboid = CuboidGenerator.createFilledCuboid(address.getRelative(1, 0, 0), stone);
+		generator.test_carveOutCaves(cuboid);
+		_checkBlockTypes(cuboid, 32558, 0, 0, 0, 0, 0, 0, 0, 0);
 	}
 
 

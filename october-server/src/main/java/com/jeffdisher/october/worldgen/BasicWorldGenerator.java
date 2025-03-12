@@ -1038,7 +1038,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 			{
 				for (int x = -1; x <= 1; ++x)
 				{
-					int seed = _getSeedForCuboid(address.getRelative(x, y, z));
+					long seed = _getSeedForCuboid(address.getRelative(x, y, z));
 					Random random = new Random(seed);
 					if (0 == random.nextInt(RANDOM_CAVERN_DENOMINATOR))
 					{
@@ -1103,12 +1103,18 @@ public class BasicWorldGenerator implements IWorldGenerator
 		}
 	}
 
-	private static int _getSeedForCuboid(CuboidAddress address)
+	private static long _getSeedForCuboid(CuboidAddress address)
 	{
-		// We will just combine these by shifting them over a bit to fill out the int.
-		return ((int)address.x() << 16)
-				| ((int)address.y() << 8)
-				| (int)address.z()
+		// The random seed is a 64-bit long but only the low 48 bits are used.
+		// However, in the cases we use, we find that only the low 18 bits seem to influence the first number generated so we try to inject noise into the low bits.
+		long x = (long) address.x();
+		long y = (long) address.y();
+		long z = (long) address.z();
+		long sum = x + y + y;
+		return sum
+				| (x << 8)
+				| (y << 6)
+				| (z << 4)
 		;
 	}
 
