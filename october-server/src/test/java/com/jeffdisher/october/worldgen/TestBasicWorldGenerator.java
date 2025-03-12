@@ -295,9 +295,11 @@ public class TestBasicWorldGenerator
 		
 		// Verify the wheat field.
 		CuboidData cuboid = suspended.cuboid();
+		// Since there is a cavern here, we won't be completely covered with grass.
+		int grassCount = 778;
 		// This is a large field (56 in gully + 4).
 		int blocksPlanted = 56 + 4;
-		_checkBlockTypes(cuboid, 4873, 11, 0, Encoding.CUBOID_EDGE_SIZE * Encoding.CUBOID_EDGE_SIZE - blocksPlanted, blocksPlanted, 0, 2, blocksPlanted, 0);
+		_checkBlockTypes(cuboid, 4873, 11, 0, grassCount, blocksPlanted, 0, 2, blocksPlanted, 0);
 		
 		// Verify that cows are spawned.
 		List<CreatureEntity> creatures = suspended.creatures();
@@ -426,6 +428,20 @@ public class TestBasicWorldGenerator
 		_checkBlockTypes(cuboid, 32558, 0, 0, 0, 0, 0, 0, 0, 0);
 	}
 
+	@Test
+	public void surfaceCaves() throws Throwable
+	{
+		int seed = 42;
+		BasicWorldGenerator generator = new BasicWorldGenerator(ENV, seed);
+		CreatureIdAssigner creatureIdAssigner = new CreatureIdAssigner();
+		// We know that this cuboid generates a surface cave.
+		CuboidAddress address = CuboidAddress.fromInt(-12, 15, 0);
+		SuspendedCuboid<CuboidData> suspended = generator.generateCuboid(creatureIdAssigner, address);
+		CuboidData cuboid = suspended.cuboid();
+		int grassCount = 662;
+		_checkBlockTypes(cuboid, 7808, 4, 0, grassCount, 0, 0, 2, 0, 0);
+	}
+
 
 	private static void _checkBlockTypes(CuboidData data, int stone, int coal, int iron, int grass, int dirt, int log, int leaf, int wheat, int carrot)
 	{
@@ -518,42 +534,53 @@ public class TestBasicWorldGenerator
 	private static String _coreSample(CuboidData cuboid, int x, int y)
 	{
 		String sample = "";
+		for (int i = 0; i < Encoding.CUBOID_EDGE_SIZE; ++i)
+		{
+			short value = cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, i));
+			char c = _getChar(value);
+			sample += c;
+		}
+		return sample;
+	}
+
+	private static char _getChar(short value)
+	{
+		char c = '?';
 		short airBlock = ENV.items.getItemById("op.air").number();
 		short grassBlock = ENV.items.getItemById("op.grass").number();
 		short dirtBlock = ENV.items.getItemById("op.dirt").number();
 		short stoneBlock = ENV.items.getItemById("op.stone").number();
 		short basaltBlock = ENV.items.getItemById("op.basalt").number();
 		short lavaBlock = ENV.items.getItemById("op.lava_source").number();
-		for (int i = 0; i < Encoding.CUBOID_EDGE_SIZE; ++i)
+		short leafBlock = ENV.items.getItemById("op.leaf").number();
+		if (airBlock == value)
 		{
-			short value = cuboid.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, i));
-			char c = '?';
-			if (airBlock == value)
-			{
-				c = 'A';
-			}
-			else if (dirtBlock == value)
-			{
-				c = 'D';
-			}
-			else if (grassBlock == value)
-			{
-				c = 'G';
-			}
-			else if (stoneBlock == value)
-			{
-				c = 'S';
-			}
-			else if (basaltBlock == value)
-			{
-				c = 'B';
-			}
-			else if (lavaBlock == value)
-			{
-				c = 'L';
-			}
-			sample += c;
+			c = 'A';
 		}
-		return sample;
+		else if (dirtBlock == value)
+		{
+			c = 'D';
+		}
+		else if (grassBlock == value)
+		{
+			c = 'G';
+		}
+		else if (stoneBlock == value)
+		{
+			c = 'S';
+		}
+		else if (basaltBlock == value)
+		{
+			c = 'B';
+		}
+		else if (lavaBlock == value)
+		{
+			c = 'L';
+		}
+		else if (leafBlock == value)
+		{
+			c = 'E';
+		}
+		return c;
 	}
 }

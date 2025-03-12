@@ -951,6 +951,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	{
 		// This function replaces the top block and bottom block of the crust with the appropriate block.
 		// It assumes that the crust is completely made of stone and will only replace stone (meaning gaps or special blocks will NOT be replaced).
+		short stoneValue = _blockStone.item().number();
 		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
 		{
 			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
@@ -999,7 +1000,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 					{
 						BlockAddress blockAddress = BlockAddress.fromInt(x, y, z);
 						short blockValue = blockToWrite.item().number();
-						if (blockValue != data.getData15(AspectRegistry.BLOCK, blockAddress))
+						short existingValue = data.getData15(AspectRegistry.BLOCK, blockAddress);
+						// We only want to write this if it changes something and there is stone to overwrite, already (otherwise, it is probably a cave).
+						if ((blockValue != existingValue) && (stoneValue == existingValue))
 						{
 							data.setData15(AspectRegistry.BLOCK, blockAddress, blockValue);
 						}
