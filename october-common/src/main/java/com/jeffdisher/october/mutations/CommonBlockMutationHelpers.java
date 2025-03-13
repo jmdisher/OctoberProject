@@ -5,6 +5,7 @@ import java.util.List;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
@@ -307,6 +308,20 @@ public class CommonBlockMutationHelpers
 		}
 	}
 
+	/**
+	 * Sets the block in proxy to newType, preserving any multi-block meta-data if the oldType and newType are both
+	 * multi-blocks.
+	 * 
+	 * @param env The environment.
+	 * @param proxy The block to modify.
+	 * @param oldType The original block type (since we always have it in the callers).
+	 * @param newType The new type to assign to proxy.
+	 */
+	public static void setBlockKeepMultiBlock(Environment env, IMutableBlockProxy proxy, Block oldType, Block newType)
+	{
+		_setBlockKeepMultiBlock(env, proxy, oldType, newType);
+	}
+
 
 	private static void _combineInventory(MutableInventory mutable, Inventory oldInventory)
 	{
@@ -510,7 +525,7 @@ public class CommonBlockMutationHelpers
 		
 		// If this block changed into a flammable type, see if it should receive an ignition mutation.
 		// (set type first since this helper reads it).
-		proxy.setBlockAndClear(newType);
+		_setBlockKeepMultiBlock(env, proxy, oldType, newType);
 		if (!env.blocks.isFlammable(oldType) && FireHelpers.canIgnite(env, context, location, proxy))
 		{
 			MutationBlockStartFire startFire = new MutationBlockStartFire(location);
@@ -567,6 +582,28 @@ public class CommonBlockMutationHelpers
 		for (Item dropped : _getItemsDroppedWhenBreakingBlock(env, context, block))
 		{
 			out_inventory.addItemsAllowingOverflow(dropped, 1);
+		}
+	}
+
+	private static void _setBlockKeepMultiBlock(Environment env, IMutableBlockProxy proxy, Block oldType, Block newType)
+	{
+		// If this is a multi-block component, we need to capture orientation and root data to restore after clear.
+		boolean isStillMultiBlock = env.blocks.isMultiBlock(oldType) && env.blocks.isMultiBlock(newType);
+		OrientationAspect.Direction multiBlockDirection = null;
+		AbsoluteLocation multiBlockRoot = null;
+		if (isStillMultiBlock)
+		{
+			multiBlockDirection = proxy.getOrientation();
+			multiBlockRoot = proxy.getMultiBlockRoot();
+		}
+		
+		proxy.setBlockAndClear(newType);
+		
+		// Restore multi-block.
+		if (isStillMultiBlock)
+		{
+			proxy.setOrientation(multiBlockDirection);
+			proxy.setMultiBlockRoot(multiBlockRoot);
 		}
 	}
 }

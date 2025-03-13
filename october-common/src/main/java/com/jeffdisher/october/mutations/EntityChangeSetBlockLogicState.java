@@ -80,7 +80,12 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 			
 			if (env.logic.isManual(previousBlock))
 			{
-				context.mutationSink.next(new MutationBlockSetLogicState(_targetBlock, _setHigh));
+				// This is manual so we can trigger this but check if it is a multi-block and make sure we are looking at the root.
+				MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(env, context, _targetBlock);
+				MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
+					MutationBlockSetLogicState mutation = new MutationBlockSetLogicState(location, _setHigh);
+					return mutation;
+				}, lookup);
 				didApply = true;
 			}
 		}

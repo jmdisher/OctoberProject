@@ -2289,34 +2289,55 @@ public class TestCommonChanges
 		}
 		futureMutations.clear();
 		
-		// Open the door.
+		// Open the door - we should see 4 mutations to the blocks.
 		EntityChangeSetBlockLogicState open = new EntityChangeSetBlockLogicState(target, true);
 		Assert.assertTrue(open.applyChange(context, newEntity));
-		Assert.assertEquals(1, mutations.size());
-		IMutationBlock mutation = mutations.remove(0);
-		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(context, proxy));
-		Assert.assertEquals(openedDoor, proxy.getBlock());
-		proxy.writeBack(cuboid);
+		Assert.assertEquals(4, mutations.size());
+		for (IMutationBlock mutation : mutations)
+		{
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertEquals(openedDoor, proxy.getBlock());
+		}
+		mutations.clear();
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		
-		// Close the door.
+		// Close the door - we should see 4 mutations to the blocks.
 		EntityChangeSetBlockLogicState close = new EntityChangeSetBlockLogicState(target, false);
 		Assert.assertTrue(close.applyChange(context, newEntity));
-		Assert.assertEquals(1, mutations.size());
-		mutation = mutations.remove(0);
-		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(context, proxy));
-		Assert.assertEquals(closedDoor, proxy.getBlock());
-		proxy.writeBack(cuboid);
+		Assert.assertEquals(4, mutations.size());
+		for (IMutationBlock mutation : mutations)
+		{
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertEquals(closedDoor, proxy.getBlock());
+		}
+		mutations.clear();
+		Assert.assertEquals(closedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(closedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(closedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertEquals(closedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		
-		// Open it again.
+		// Open it again - we should see 4 mutations to the blocks.
 		Assert.assertTrue(open.applyChange(context, newEntity));
-		Assert.assertEquals(1, mutations.size());
-		mutation = mutations.remove(0);
-		proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
-		Assert.assertTrue(mutation.applyMutation(context, proxy));
-		Assert.assertEquals(openedDoor, proxy.getBlock());
-		proxy.writeBack(cuboid);
+		Assert.assertEquals(4, mutations.size());
+		for (IMutationBlock mutation : mutations)
+		{
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			Assert.assertTrue(mutation.applyMutation(context, proxy));
+			proxy.writeBack(cuboid);
+			Assert.assertEquals(openedDoor, proxy.getBlock());
+		}
+		mutations.clear();
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertEquals(openedDoor.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getRelative(0, 0, 1).getBlockAddress()));
 		
 		// Break it in 2 steps across the surface and verify it is a closed door in the inventory.
 		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target, (short)100);
@@ -2328,16 +2349,16 @@ public class TestCommonChanges
 		Assert.assertEquals(8, mutations.size());
 		for (int i = 0; i < 4; ++i)
 		{
-			mutation = mutations.remove(0);
-			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			IMutationBlock mutation = mutations.remove(0);
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
 			Assert.assertTrue(mutation.applyMutation(context, proxy));
 			proxy.writeBack(cuboid);
 		}
 		Assert.assertEquals(4, mutations.size());
 		for (int i = 0; i < 4; ++i)
 		{
-			mutation = mutations.remove(0);
-			proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
+			IMutationBlock mutation = mutations.remove(0);
+			MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
 			Assert.assertTrue(mutation.applyMutation(context, proxy));
 			proxy.writeBack(cuboid);
 			Assert.assertEquals(ENV.special.AIR, proxy.getBlock());

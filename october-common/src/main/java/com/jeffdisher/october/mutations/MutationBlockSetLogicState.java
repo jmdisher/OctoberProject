@@ -55,7 +55,7 @@ public class MutationBlockSetLogicState implements IMutationBlock
 			if (areOpposite)
 			{
 				Block alternate = env.logic.getAlternate(previousBlock);
-				newBlock.setBlockAndClear(alternate);
+				CommonBlockMutationHelpers.setBlockKeepMultiBlock(env, newBlock, previousBlock, alternate);
 				didApply = true;
 			}
 		}
