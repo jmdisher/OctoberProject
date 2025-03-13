@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -23,6 +24,7 @@ public class CommonMutationSink implements TickProcessingContext.IMutationSink
 	@Override
 	public void future(IMutationBlock mutation, long millisToDelay)
 	{
+		Assert.assertTrue(millisToDelay > 0L);
 		_exportedMutations.add(new ScheduledMutation(mutation, millisToDelay));
 	}
 

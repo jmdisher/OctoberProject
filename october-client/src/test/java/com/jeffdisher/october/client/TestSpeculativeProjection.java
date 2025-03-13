@@ -19,6 +19,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -37,6 +38,7 @@ import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
+import com.jeffdisher.october.mutations.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
@@ -2455,6 +2457,58 @@ public class TestSpeculativeProjection
 					, currentTimeMillis
 			);
 		}
+	}
+
+	@Test
+	public void placeMultiBlock()
+	{
+		// Show what happens when we place a multi-block door.
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		CountingListener listener = new CountingListener();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newInventory.addAllItems(door.item(), 1);
+		mutable.setSelectedKey(1);
+		mutable.newLocation = new EntityLocation(5.0f, 6.0f, 1.0f);
+		SpeculativeProjection projector = new SpeculativeProjection(entityId, listener, MILLIS_PER_TICK);
+		
+		AbsoluteLocation entityLocation = mutable.newLocation.getBlockLocation();
+		AbsoluteLocation targetLocation = entityLocation.getRelative(1, 1, 0);
+		CuboidData base = CuboidGenerator.createFilledCuboid(entityLocation.getCuboidAddress().getRelative(0, 0, -1), STONE);
+		CuboidData top = CuboidGenerator.createFilledCuboid(entityLocation.getCuboidAddress(), ENV.special.AIR);
+		
+		long currentTimeMillis = 1L;
+		projector.setThisEntity(mutable.freeze());
+		projector.applyChangesForServerTick(1L
+				, List.of()
+				, List.of(base, top)
+				, List.of()
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, 0L
+				, currentTimeMillis
+		);
+		Assert.assertEquals(2, listener.loadCount);
+		Assert.assertEquals(0, listener.changeCount);
+		
+		// Place the block and verify the full placement completes.
+		currentTimeMillis += 100L;
+		EntityChangePlaceMultiBlock placeBlock = new EntityChangePlaceMultiBlock(targetLocation, OrientationAspect.Direction.EAST);
+		long commit1 = projector.applyLocalChange(placeBlock, currentTimeMillis);
+		Assert.assertEquals(1, commit1);
+		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(4, listener.lastChangedBlocks.size());
+		Assert.assertEquals(door.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+		Assert.assertEquals(door.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, -1, 0).getBlockAddress()));
+		Assert.assertEquals(door.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, -1, 1).getBlockAddress()));
+		Assert.assertEquals(door.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getRelative(0, 0, 1).getBlockAddress()));
+		
+		// Verify the events.
+		Assert.assertEquals(1, listener.events.size());
+		Assert.assertEquals(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, targetLocation, 0, entityId), listener.events.get(0));
 	}
 
 

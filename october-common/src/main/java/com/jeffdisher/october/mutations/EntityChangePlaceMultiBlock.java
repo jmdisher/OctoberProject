@@ -114,12 +114,16 @@ public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlay
 				}
 				
 				// We also need to schedule the verification mutation (since these must be placed atomically, the follow-up mutations act as a phase2).
-				MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(_targetBlock, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(_targetBlock).getBlock());
-				context.mutationSink.future(phase2, context.millisPerTick);
-				for (AbsoluteLocation location : extensions)
+				// We check the millis per tick since we require a delay (that is, NOT in the client's projection).
+				if (context.millisPerTick > 0L)
 				{
-					phase2 = new MutationBlockPhase2Multi(location, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
+					MutationBlockPhase2Multi phase2 = new MutationBlockPhase2Multi(_targetBlock, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(_targetBlock).getBlock());
 					context.mutationSink.future(phase2, context.millisPerTick);
+					for (AbsoluteLocation location : extensions)
+					{
+						phase2 = new MutationBlockPhase2Multi(location, _targetBlock, _orientation, blockType, context.previousBlockLookUp.apply(location).getBlock());
+						context.mutationSink.future(phase2, context.millisPerTick);
+					}
 				}
 				
 				// Do other state reset.
