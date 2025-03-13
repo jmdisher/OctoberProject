@@ -148,7 +148,7 @@ public class TestMutableBlockProxy
 		
 		MutableBlockProxy rootProxy = new MutableBlockProxy(rootLocation, input);
 		rootProxy.setBlockAndClear(door);
-		rootProxy.setOrientation(OrientationAspect.Direction.POS_Y);
+		rootProxy.setOrientation(OrientationAspect.Direction.NORTH);
 		Assert.assertTrue(rootProxy.didChange());
 		rootProxy.writeBack(input);
 		MutableBlockProxy extensionProxy = new MutableBlockProxy(extensionLocation, input);
@@ -158,7 +158,7 @@ public class TestMutableBlockProxy
 		extensionProxy.writeBack(input);
 		
 		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
-		Assert.assertEquals((byte)OrientationAspect.Direction.POS_Y.ordinal(), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
 		Assert.assertEquals(door.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
 		Assert.assertEquals(rootLocation, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
 		
@@ -173,7 +173,7 @@ public class TestMutableBlockProxy
 		extensionProxy.writeBack(input);
 		
 		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, rootLocation.getBlockAddress()));
-		Assert.assertEquals((byte)OrientationAspect.Direction.IDENTITY.ordinal(), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), input.getData7(AspectRegistry.ORIENTATION, rootLocation.getBlockAddress()));
 		Assert.assertEquals(ENV.special.AIR.item().number(), input.getData15(AspectRegistry.BLOCK, extensionLocation.getBlockAddress()));
 		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, extensionLocation.getBlockAddress()));
 	}

@@ -1296,7 +1296,7 @@ public class TestCommonMutations
 		Item doorOpen = ENV.items.getItemById("op.double_door_open_base");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorClosed.number());
-		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), (byte) OrientationAspect.Direction.POS_Y.ordinal());
+		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress(), doorClosed.number());
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorLocation.getRelative(0, 0, 1).getBlockAddress(), doorLocation);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress(), doorClosed.number());

@@ -2261,7 +2261,7 @@ public class TestCommonChanges
 		Assert.assertEquals(0, mutations.size());
 		
 		// Show that we correctly place when using the right helper.
-		EntityChangePlaceMultiBlock place = new EntityChangePlaceMultiBlock(target, OrientationAspect.Direction.POS_Y);
+		EntityChangePlaceMultiBlock place = new EntityChangePlaceMultiBlock(target, OrientationAspect.Direction.NORTH);
 		Assert.assertTrue(place.applyChange(context, newEntity));
 		
 		// We also need to apply the actual mutations.

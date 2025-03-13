@@ -73,9 +73,11 @@ public class TestMiscAspects
 	@Test
 	public void orientationRotate() throws Throwable
 	{
-		AbsoluteLocation start = new AbsoluteLocation(1, -2, 3);
-		Assert.assertEquals(start, OrientationAspect.Direction.POS_Y.rotateAboutZ(start));
-		Assert.assertEquals(new AbsoluteLocation(-2, -1, 3), OrientationAspect.Direction.NEG_X.rotateAboutZ(start));
+		AbsoluteLocation start = new AbsoluteLocation(1, 2, 3);
+		Assert.assertEquals(start, OrientationAspect.Direction.NORTH.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), OrientationAspect.Direction.WEST.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(-1, -2, 3), OrientationAspect.Direction.SOUTH.rotateAboutZ(start));
+		Assert.assertEquals(new AbsoluteLocation(2, -1, 3), OrientationAspect.Direction.EAST.rotateAboutZ(start));
 	}
 
 	@Test
@@ -83,7 +85,7 @@ public class TestMiscAspects
 	{
 		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
 		AbsoluteLocation start = new AbsoluteLocation(0, 0, 0);
-		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.POS_Y);
+		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.NORTH);
 		Assert.assertEquals(3, extensions.size());
 		Assert.assertEquals(new AbsoluteLocation(0, 0, 1), extensions.get(0));
 		Assert.assertEquals(new AbsoluteLocation(1, 0, 1), extensions.get(1));

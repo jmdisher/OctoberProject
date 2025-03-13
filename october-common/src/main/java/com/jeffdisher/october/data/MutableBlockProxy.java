@@ -79,7 +79,7 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// Note that we EXPLICTLY avoid clearing the light value since that is updated via a delayed mechanism.
 		
 		_setData7(AspectRegistry.FLAGS, (byte)0);
-		_setData7(AspectRegistry.ORIENTATION, (byte)OrientationAspect.Direction.IDENTITY.ordinal());
+		_setData7(AspectRegistry.ORIENTATION, OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
 		_setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, null);
 	}
 
@@ -213,13 +213,13 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	public OrientationAspect.Direction getOrientation()
 	{
 		byte ordinal = _getData7(AspectRegistry.ORIENTATION);
-		return OrientationAspect.Direction.values()[ordinal];
+		return OrientationAspect.byteToDirection(ordinal);
 	}
 
 	@Override
 	public void setOrientation(OrientationAspect.Direction direction)
 	{
-		byte ordinal = (byte)direction.ordinal();
+		byte ordinal = OrientationAspect.directionToByte(direction);
 		_setData7(AspectRegistry.ORIENTATION, ordinal);
 	}
 

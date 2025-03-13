@@ -3,6 +3,8 @@ package com.jeffdisher.october.logic;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.OrientationAspect;
+
 
 public class TestOrientationHelpers
 {
@@ -83,5 +85,14 @@ public class TestOrientationHelpers
 			Assert.assertEquals(1.0f, distance, 0.01f);
 			radians += 0.1f;
 		}
+	}
+
+	@Test
+	public void directionsFromYaw()
+	{
+		Assert.assertEquals(OrientationAspect.Direction.NORTH, OrientationHelpers.getYawDirection((byte)10));
+		Assert.assertEquals(OrientationAspect.Direction.WEST, OrientationHelpers.getYawDirection((byte)50));
+		Assert.assertEquals(OrientationAspect.Direction.SOUTH, OrientationHelpers.getYawDirection((byte)140));
+		Assert.assertEquals(OrientationAspect.Direction.EAST, OrientationHelpers.getYawDirection((byte)200));
 	}
 }

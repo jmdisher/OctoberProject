@@ -125,7 +125,7 @@ public class BlockProxy implements IBlockProxy
 	public OrientationAspect.Direction getOrientation()
 	{
 		byte ordinal = _getData7(AspectRegistry.ORIENTATION);
-		return OrientationAspect.Direction.values()[ordinal];
+		return OrientationAspect.byteToDirection(ordinal);
 	}
 
 	@Override

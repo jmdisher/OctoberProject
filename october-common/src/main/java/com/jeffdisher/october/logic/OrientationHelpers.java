@@ -1,5 +1,7 @@
 package com.jeffdisher.october.logic;
 
+import com.jeffdisher.october.aspects.OrientationAspect;
+
 
 /**
  * Helpers to convert to/from yaw/pitch values.
@@ -52,6 +54,30 @@ public class OrientationHelpers
 	public static float getNorthYawComponent(float yawRadians)
 	{
 		return (float) Math.cos(yawRadians);
+	}
+
+	public static OrientationAspect.Direction getYawDirection(byte yaw)
+	{
+		// The positive yaw is to the left (counter-clockwise, looking down from positive Z), so map these to orientations.
+		int positive = Byte.toUnsignedInt(yaw) + 31;
+		OrientationAspect.Direction direction;
+		if (positive > 192)
+		{
+			direction = OrientationAspect.Direction.EAST;
+		}
+		else if (positive > 128)
+		{
+			direction = OrientationAspect.Direction.SOUTH;
+		}
+		else if (positive > 64)
+		{
+			direction = OrientationAspect.Direction.WEST;
+		}
+		else
+		{
+			direction = OrientationAspect.Direction.NORTH;
+		}
+		return direction;
 	}
 
 

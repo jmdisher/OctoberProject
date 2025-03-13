@@ -10,20 +10,41 @@ import com.jeffdisher.october.types.AbsoluteLocation;
  */
 public class OrientationAspect
 {
+	public static byte directionToByte(Direction direction)
+	{
+		return (byte)direction.ordinal();
+	}
+	public static Direction byteToDirection(byte value)
+	{
+		return Direction.values()[value];
+	}
+	/**
+	 * The direction will rotate a given location from NORTH to the given direction.
+	 * These are in the order of positive yaw (to the left).
+	 */
 	public static enum Direction
 	{
-		// We want IDENTITY to be the "0" value since it will be the default in the aspect and the only orientation most blocks have.
-		IDENTITY(new int[] {1, 0, 0, 1}),
-		POS_X(new int[] {0, -1, 1, 0}),
-		NEG_X(new int[] {0, 1, -1, 0}),
-		POS_Y(new int[] {1, 0, 0, 1}),
-		NEG_Y(new int[] {-1, 0, 0, -1}),
+		// North is the positive Y direction, which we consider the "default" orientation (hence 0).
+		NORTH(new int[] {1, 0, 0, 1}),
+		// West is the negative X direction.
+		WEST(new int[] {0, -1, 1, 0}),
+		// South is the negative Y direction.
+		SOUTH(new int[] {-1, 0, 0, -1}),
+		// East is the positive X direction.
+		EAST(new int[] {0, 1, -1, 0}),
 		;
 		private final int[] _twoDRotationMatrix;
 		private Direction(int[] twoDRotationMatrix)
 		{
 			_twoDRotationMatrix = twoDRotationMatrix;
 		}
+		/**
+		 * Given an "in" location in the NORTH orientation, this will rotate that position, about the Z-axis and origin,
+		 * into the orientation of the receiver.
+		 * 
+		 * @param in The input orientation in NORTH orientation (default).
+		 * @return The rotated orientation.
+		 */
 		public AbsoluteLocation rotateAboutZ(AbsoluteLocation in)
 		{
 			int x = _twoDRotationMatrix[0] * in.x() + _twoDRotationMatrix[1] * in.y();
