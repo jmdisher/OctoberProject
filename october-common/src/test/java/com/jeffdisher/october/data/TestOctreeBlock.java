@@ -378,6 +378,11 @@ public class TestOctreeBlock
 		state = test.deserializeResumable(null, buffer, null);
 		Assert.assertNull(state);
 		
+		// Verify that we can safely walk the empty inflated byte.
+		test.walkData((BlockAddress base, byte size, Byte value) -> {
+			Assert.fail("There is no data to walk");
+		}, (byte)0);
+		
 		buffer.clear();
 		test.setData(blockAddress, (byte)5);
 		state = test.serializeResumable(null, buffer, null);
@@ -389,6 +394,13 @@ public class TestOctreeBlock
 		Assert.assertNull(state);
 		Assert.assertEquals((byte)5, test2.getData(aspect, blockAddress).byteValue());
 		Assert.assertEquals((byte)0, test2.getData(aspect, BlockAddress.fromInt(13, 14, 15)).byteValue());
+		
+		// Verify that we correctly walk this data.
+		test.walkData((BlockAddress base, byte size, Byte value) -> {
+			Assert.assertEquals(blockAddress, base);
+			Assert.assertEquals(1, size);
+			Assert.assertEquals(5, value.byteValue());
+		}, (byte)0);
 	}
 
 

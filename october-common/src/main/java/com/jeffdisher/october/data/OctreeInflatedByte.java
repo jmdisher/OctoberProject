@@ -160,8 +160,38 @@ public class OctreeInflatedByte implements IOctree
 	@Override
 	public <T> void walkData(IWalkerCallback<T> callback, T valueToSkip)
 	{
-		// We don't support this call for this type.
-		throw new UnsupportedOperationException();
+		byte skip = ((Byte)valueToSkip).byteValue();
+		@SuppressWarnings("unchecked")
+		IWalkerCallback<Byte> castCallback = (IWalkerCallback<Byte>) callback;
+		
+		// This variant only allows skipping 0 since that is how it is structured.
+		Assert.assertTrue(0 == skip);
+		if (null != _zyxData)
+		{
+			for (byte z = 0; z < Encoding.CUBOID_EDGE_SIZE; ++z)
+			{
+				byte[][] yxData = _zyxData[z];
+				if (null != yxData)
+				{
+					for (byte y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+					{
+						byte[] xData = yxData[y];
+						if (null != xData)
+						{
+							for (byte x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+							{
+								byte value = xData[x];
+								if (skip != value)
+								{
+									BlockAddress address = new BlockAddress(x, y, z);
+									castCallback.visit(address, (byte)1, value);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	@Override
