@@ -448,7 +448,16 @@ public class PropagationHelpers
 			{
 				// We need to set this to zero and cast the shadow.
 				lightsToRemove.add(new LightBringer.Light(location, currentLight));
-				writer.set(location, (byte)0);
+				// In the case where we overwrite light with an opaque light source, we need to add both the add and remove.
+				if (emission > 0)
+				{
+					lightsToAdd.add(new LightBringer.Light(location, emission));
+					writer.set(location, emission);
+				}
+				else
+				{
+					writer.set(location, (byte)0);
+				}
 			}
 			else
 			{

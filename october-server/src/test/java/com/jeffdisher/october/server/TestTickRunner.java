@@ -2244,6 +2244,67 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void flowingLavaLight()
+	{
+		// Show that lava retains its light level, despite being opaque, as it flows.
+		Block lavaSource = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_source"));
+		Block lavaStrong = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_strong"));
+		Block lavaWeak = ENV.blocks.fromItem(ENV.items.getItemById("op.lava_weak"));
+		WorldConfig config = new WorldConfig();
+		TickRunner runner = _createTestRunnerWithConfig(config);
+		runner.start();
+		
+		CuboidData platform = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-3, -4, -5), STONE);
+		CuboidData openSpace = CuboidGenerator.createFilledCuboid(platform.getCuboidAddress().getRelative(0, 0, 1), ENV.special.AIR);
+		AbsoluteLocation centre = openSpace.getCuboidAddress().getBase().getRelative(15, 15, 0);
+		openSpace.setData15(AspectRegistry.BLOCK, centre.getRelative(0, 1, 0).getBlockAddress(), STONE.item().number());
+		openSpace.setData15(AspectRegistry.BLOCK, centre.getRelative(0, -1, 0).getBlockAddress(), STONE.item().number());
+		openSpace.setData15(AspectRegistry.BLOCK, centre.getRelative(-1, 0, 0).getBlockAddress(), STONE.item().number());
+		openSpace.setData15(AspectRegistry.BLOCK, centre.getRelative(1, 1, 0).getBlockAddress(), STONE.item().number());
+		openSpace.setData15(AspectRegistry.BLOCK, centre.getRelative(1, -1, 0).getBlockAddress(), STONE.item().number());
+		
+		MutationBlockReplace placeLava = new MutationBlockReplace(centre, ENV.special.AIR, lavaSource);
+		runner.setupChangesForTick(List.of(
+					new SuspendedCuboid<IReadOnlyCuboidData>(platform, HeightMapHelpers.buildHeightMap(platform), List.of(), List.of(), Map.of())
+					, new SuspendedCuboid<IReadOnlyCuboidData>(openSpace, HeightMapHelpers.buildHeightMap(openSpace), List.of(), List.of(
+							new ScheduledMutation(placeLava, 0L)
+					), Map.of())
+				)
+				, null
+				, null
+				, null
+		);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		
+		// Wait for lava to flow twice.
+		long millisToFlow = ENV.liquids.flowDelayMillis(ENV, lavaSource);
+		int ticksToPass = (int)(2 * millisToFlow / MILLIS_PER_TICK) + 5;
+		for (int j = 0; j < ticksToPass; ++j)
+		{
+			runner.startNextTick();
+			snapshot = runner.waitForPreviousTick();
+		}
+		
+		// Check that the blocks have the correct block types and light levels.
+		IReadOnlyCuboidData topCuboid = snapshot.cuboids().get(openSpace.getCuboidAddress()).completed();
+		AbsoluteLocation strong = centre.getRelative(1, 0, 0);
+		AbsoluteLocation weak = strong.getRelative(1, 0, 0);
+		
+		Assert.assertEquals(lavaSource.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, centre.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource), topCuboid.getData7(AspectRegistry.LIGHT, centre.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource) - 1, topCuboid.getData7(AspectRegistry.LIGHT, centre.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(lavaStrong.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, strong.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaStrong), topCuboid.getData7(AspectRegistry.LIGHT, strong.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource) - 2, topCuboid.getData7(AspectRegistry.LIGHT, strong.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(lavaWeak.item().number(), topCuboid.getData15(AspectRegistry.BLOCK, weak.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaWeak), topCuboid.getData7(AspectRegistry.LIGHT, weak.getBlockAddress()));
+		Assert.assertEquals(ENV.lighting.getLightEmission(lavaSource) - 3, topCuboid.getData7(AspectRegistry.LIGHT, weak.getRelative(0, 0, 1).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
