@@ -51,5 +51,18 @@ public class OrientationAspect
 			int y = _twoDRotationMatrix[2] * in.x() + _twoDRotationMatrix[3] * in.y();
 			return new AbsoluteLocation(x, y, in.z());
 		}
+		/**
+		 * Given an "in" X/Y tuple in the NORTH orientation, this will rotate that position, about the Z-axis and origin,
+		 * into the orientation of the receiver.
+		 * 
+		 * @param in The input orientation in NORTH orientation (default).
+		 * @return The rotated orientation.
+		 */
+		public float[] rotateXYTupleAboutZ(float[] in)
+		{
+			float x = (float)_twoDRotationMatrix[0] * in[0] + (float)_twoDRotationMatrix[1] * in[1];
+			float y = (float)_twoDRotationMatrix[2] * in[0] + (float)_twoDRotationMatrix[3] * in[1];
+			return new float[] { x, y };
+		}
 	}
 }

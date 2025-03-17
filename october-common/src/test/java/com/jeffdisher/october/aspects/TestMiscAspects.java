@@ -78,6 +78,7 @@ public class TestMiscAspects
 		Assert.assertEquals(new AbsoluteLocation(-2, 1, 3), OrientationAspect.Direction.WEST.rotateAboutZ(start));
 		Assert.assertEquals(new AbsoluteLocation(-1, -2, 3), OrientationAspect.Direction.SOUTH.rotateAboutZ(start));
 		Assert.assertEquals(new AbsoluteLocation(2, -1, 3), OrientationAspect.Direction.EAST.rotateAboutZ(start));
+		Assert.assertArrayEquals(new float[] { -2.4f, -1.1f }, OrientationAspect.Direction.EAST.rotateXYTupleAboutZ(new float[] { 1.1f, -2.4f }), 0.01f);
 	}
 
 	@Test
