@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
+import com.jeffdisher.october.types.BlockVolume;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.Item;
 
@@ -91,5 +92,6 @@ public class TestMiscAspects
 		Assert.assertEquals(new AbsoluteLocation(0, 0, 1), extensions.get(0));
 		Assert.assertEquals(new AbsoluteLocation(1, 0, 1), extensions.get(1));
 		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(2));
+		Assert.assertEquals(new BlockVolume(2, 1, 2), ENV.multiBlocks.getDefaultVolume(doorClosed));
 	}
 }
