@@ -446,6 +446,73 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 	}
 
+	@Test
+	public void cuboidLoadRadius()
+	{
+		// This test demonstrates how cuboid loading is done around a player.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
+		int clientId = 1;
+		manager.clientConnected(clientId, "client");
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		
+		// We need to run a tick so that the client load request is made.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.requestedEntityIds.size());
+		
+		// Allow the client load to be acknowledged.
+		EntityLocation entityLocation = new EntityLocation(-101.2f, 678.1f, 55.0f);
+		CuboidAddress entityCuboid = entityLocation.getBlockLocation().getCuboidAddress();
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newLocation = entityLocation;
+		Entity entity = mutable.freeze();
+		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// We shouldn't see the cuboid load request until the next tick.
+		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		
+		// Load these cuboids and show that the loaded cuboids are sent over the network.
+		CuboidAddress two = entityCuboid.getRelative(1, 0, 0);
+		CuboidAddress outside = entityCuboid.getRelative(2, 0, 0);
+		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(entityCuboid));
+		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(two));
+		Assert.assertFalse(callouts.requestedCuboidAddresses.contains(outside));
+		CuboidData oneCuboid = CuboidGenerator.createFilledCuboid(entityCuboid, ENV.special.AIR);
+		CuboidData twoCuboid = CuboidGenerator.createFilledCuboid(two, ENV.special.AIR);
+		snapshot = _modifySnapshot(snapshot
+				, Map.of(
+						oneCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(oneCuboid, null, List.of(), Map.of()),
+						twoCuboid.getCuboidAddress(), new TickRunner.SnapshotCuboid(twoCuboid, null, List.of(), Map.of())
+				)
+				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
+				, snapshot.creatures()
+				, Map.of(
+						oneCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(oneCuboid), oneCuboid.getCuboidAddress()).freeze(),
+						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
+				)
+		);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
+		
+		// Move over slightly and show that this requests an unload over the network.
+		mutable.newLocation = new EntityLocation(-131.2f, 678.1f, 55.0f);
+		entity = mutable.freeze();
+		snapshot = _advanceSnapshot(_modifySnapshot(snapshot
+				, snapshot.cuboids()
+				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
+				, snapshot.creatures()
+				, snapshot.completedHeightMaps()
+		), 1L);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		
+		manager.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
@@ -565,6 +632,7 @@ public class TestServerStateManager
 		public boolean didEnqueue = false;
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
 		public Map<Integer, Set<Integer>> partialEntitiesPerClient = new HashMap<>();
+		public Map<Integer, Set<CuboidAddress>> cuboidsSentToClient = new HashMap<>();
 		
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
@@ -639,12 +707,18 @@ public class TestServerStateManager
 		@Override
 		public void network_sendCuboid(int clientId, IReadOnlyCuboidData cuboid)
 		{
-			// Note that this is called by periodicWriteBack, but we aren't verifying the results in that test.
+			if (!this.cuboidsSentToClient.containsKey(clientId))
+			{
+				this.cuboidsSentToClient.put(clientId, new HashSet<>());
+			}
+			boolean didAdd = this.cuboidsSentToClient.get(clientId).add(cuboid.getCuboidAddress());
+			Assert.assertTrue(didAdd);
 		}
 		@Override
 		public void network_removeCuboid(int clientId, CuboidAddress address)
 		{
-			throw new AssertionError("networkRemoveCuboid");
+			boolean didRemove = this.cuboidsSentToClient.get(clientId).remove(address);
+			Assert.assertTrue(didRemove);
 		}
 		@Override
 		public void network_sendEntityUpdate(int clientId, int entityId, IEntityUpdate update)
