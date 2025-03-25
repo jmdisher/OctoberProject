@@ -223,12 +223,18 @@ public class ServerStateManager
 			// Update the location snapshot in the ClientState in case the entity moved.
 			Entity entity = _completedEntities.get(clientId);
 			// This may not be here if they just joined.
+			CuboidAddress newCuboidLocation = null;
 			if (null != entity)
 			{
 				state.location = entity.location();
+				CuboidAddress newAddress = state.location.getBlockLocation().getCuboidAddress();
+				if ((null == state.lastComputedAddress) || !state.lastComputedAddress.equals(newAddress))
+				{
+					newCuboidLocation = newAddress;
+				}
 			}
 			
-			_sendUpdatesToClient(clientId, state, snapshot.postedEvents());
+			_sendUpdatesToClient(clientId, state, newCuboidLocation, snapshot.postedEvents());
 		}
 		
 		// Note that we will clear the removed clients BEFORE adding new ones since it is theoretically possible for
@@ -398,11 +404,18 @@ public class ServerStateManager
 
 	private void _sendUpdatesToClient(int clientId
 			, ClientState state
+			, CuboidAddress newCuboidLocation
 			, List<EventRecord> postedEvents
 	)
 	{
 		// We want to send information to this client if they can see it, potentially sending whole data or just
 		// incremental updates, based on whether or not they already have this data.
+		
+		if (null != newCuboidLocation)
+		{
+			// Before we send anything, we want to update our set of known and missing cuboids so we know what they should see.
+			_updateRangeAndSendRemoves(clientId, state, newCuboidLocation);
+		}
 		
 		// We send events, filtered by what they can currently see.
 		_sendEvents(clientId, state, postedEvents);
@@ -648,11 +661,44 @@ public class ServerStateManager
 			, ClientState state
 	)
 	{
-		// See if this entity has seen the cuboid where they are standing or the surrounding cuboids.
-		// TODO:  This should be optimized around entity movement and cuboid generation, as opposed to this "spinning" approach.
+		// Send block updates in anything known to us.
+		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> elt : _blockChanges.entrySet())
+		{
+			CuboidAddress address = elt.getKey();
+			if (state.knownCuboids.contains(address))
+			{
+				List<MutationBlockSetBlock> mutations = elt.getValue();
+				for (MutationBlockSetBlock mutation : mutations)
+				{
+					_callouts.network_sendBlockUpdate(clientId, mutation);
+				}
+			}
+		}
 		
-		CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
-		
+		// Send any cuboids in our missing list.
+		// TODO:  These updates should be sent incrementally based on how busy the network is.
+		Iterator<CuboidAddress> iter = state.missingCuboids.iterator();
+		while (iter.hasNext())
+		{
+			CuboidAddress address = iter.next();
+			// We haven't seen this yet so just send it.
+			IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
+			// This may not yet be loaded.
+			if (null != cuboidData)
+			{
+				_callouts.network_sendCuboid(clientId, cuboidData);
+				state.knownCuboids.add(address);
+				iter.remove();
+			}
+			else
+			{
+				// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
+			}
+		}
+	}
+
+	private void _updateRangeAndSendRemoves(int clientId, ClientState state, CuboidAddress currentCuboid)
+	{
 		// Walk the existing cuboids and remove any which are out of range.
 		Iterator<CuboidAddress> iter = state.knownCuboids.iterator();
 		while (iter.hasNext())
@@ -668,7 +714,8 @@ public class ServerStateManager
 			}
 		}
 		
-		// Check the cuboids immediately around the entity and send any which are missing.
+		// Check the cuboids immediately around the entity and add any which are missing to our list.
+		state.missingCuboids.clear();
 		for (int i = -1; i <= 1; ++i)
 		{
 			for (int j = -1; j <= 1; ++j)
@@ -676,36 +723,16 @@ public class ServerStateManager
 				for (int k = -1; k <= 1; ++k)
 				{
 					CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
-					if (state.knownCuboids.contains(oneCuboid))
+					if (!state.knownCuboids.contains(oneCuboid))
 					{
-						// We know about this cuboid so send any updates.
-						List<MutationBlockSetBlock> mutations = _blockChanges.get(oneCuboid);
-						if (null != mutations)
-						{
-							for (MutationBlockSetBlock mutation : mutations)
-							{
-								_callouts.network_sendBlockUpdate(clientId, mutation);
-							}
-						}
-					}
-					else
-					{
-						// We haven't seen this yet so just send it.
-						IReadOnlyCuboidData cuboidData = _completedCuboids.get(oneCuboid);
-						// This may not yet be loaded.
-						if (null != cuboidData)
-						{
-							_callouts.network_sendCuboid(clientId, cuboidData);
-							state.knownCuboids.add(oneCuboid);
-						}
-						else
-						{
-							// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
-						}
+						state.missingCuboids.add(oneCuboid);
 					}
 				}
 			}
 		}
+		
+		// Update this location.
+		state.lastComputedAddress = currentCuboid;
 	}
 
 	private Map<CuboidAddress, List<CreatureEntity>> _findCreaturesToUnload(Collection<IReadOnlyCuboidData> cuboidsToPackage)
@@ -848,12 +875,14 @@ public class ServerStateManager
 
 	private static final class ClientState
 	{
-		private final String name;
+		public final String name;
 		public EntityLocation location;
 		
 		// The data we think that this client already has.  These are used for determining what they should be told to load/drop as well as filtering updates to what they can apply.
+		public CuboidAddress lastComputedAddress;
 		public final Set<Integer> knownEntities;
 		public final Set<CuboidAddress> knownCuboids;
+		public final List<CuboidAddress> missingCuboids;
 		
 		public ClientState(String name, EntityLocation initialLocation)
 		{
@@ -861,8 +890,10 @@ public class ServerStateManager
 			this.location = initialLocation;
 			
 			// Create empty containers for what this client has observed.
+			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();
+			this.missingCuboids = new ArrayList<>();
 		}
 	}
 }
