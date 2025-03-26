@@ -59,6 +59,15 @@ public class ServerStateManager
 	 * How often, in terms of ticks, that the remaining (not being unloaded) resources are written to disk.
 	 */
 	public static final int FORCE_FLUSH_TICK_FREQUENCY = 1000;
+	/**
+	 * The default cuboid view distance for a new client (0 would mean only the cuboid they are in).
+	 */
+	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
+	/**
+	 * The maximum cuboid view distance for a new client (0 would mean only the cuboid they are in and is the implicit
+	 * minimum).
+	 */
+	public static final int MAXIMUM_CUBOID_VIEW_DISTANCE = 5;
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
@@ -298,6 +307,24 @@ public class ServerStateManager
 		_relayChatMessage(targetId, consoleId, message);
 	}
 
+	public void setClientViewDistance(int clientId, int distance)
+	{
+		// Check the static assumptions.
+		Assert.assertTrue(Thread.currentThread() == _ownerThread);
+		// (these limits should be checked elsewhere).
+		Assert.assertTrue(distance >= 0);
+		Assert.assertTrue(distance <= MAXIMUM_CUBOID_VIEW_DISTANCE);
+		
+		// If the client sends this before they are connected (meaning we loaded their data, we just ignore this).
+		ClientState state = _connectedClients.get(clientId);
+		if ((null != state) && (state.cuboidViewDistance != distance))
+		{
+			// Set the distance and clear the latest address so we rebuild it.
+			state.cuboidViewDistance = distance;
+			state.lastComputedAddress = null;
+		}
+	}
+
 	public void shutdown()
 	{
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
@@ -319,11 +346,13 @@ public class ServerStateManager
 		for (ClientState state : clientStates)
 		{
 			CuboidAddress currentCuboid = state.location.getBlockLocation().getCuboidAddress();
-			for (int i = -1; i <= 1; ++i)
+			int minDistance = -state.cuboidViewDistance;
+			int maxDistance = state.cuboidViewDistance;
+			for (int i = minDistance; i <= maxDistance; ++i)
 			{
-				for (int j = -1; j <= 1; ++j)
+				for (int j = minDistance; j <= maxDistance; ++j)
 				{
-					for (int k = -1; k <= 1; ++k)
+					for (int k = minDistance; k <= maxDistance; ++k)
 					{
 						CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
 						referencedCuboids.add(oneCuboid);
@@ -699,6 +728,9 @@ public class ServerStateManager
 
 	private void _updateRangeAndSendRemoves(int clientId, ClientState state, CuboidAddress currentCuboid)
 	{
+		int minDistance = -state.cuboidViewDistance;
+		int maxDistance = state.cuboidViewDistance;
+		
 		// Walk the existing cuboids and remove any which are out of range.
 		Iterator<CuboidAddress> iter = state.knownCuboids.iterator();
 		while (iter.hasNext())
@@ -707,7 +739,7 @@ public class ServerStateManager
 			int xDelta = Math.abs(currentCuboid.x() - address.x());
 			int yDelta = Math.abs(currentCuboid.y() - address.y());
 			int zDelta = Math.abs(currentCuboid.z() - address.z());
-			if ((xDelta > 1) || (yDelta > 1) || (zDelta > 1))
+			if ((xDelta > maxDistance) || (yDelta > maxDistance) || (zDelta > maxDistance))
 			{
 				_callouts.network_removeCuboid(clientId, address);
 				iter.remove();
@@ -716,11 +748,11 @@ public class ServerStateManager
 		
 		// Check the cuboids immediately around the entity and add any which are missing to our list.
 		state.missingCuboids.clear();
-		for (int i = -1; i <= 1; ++i)
+		for (int i = minDistance; i <= maxDistance; ++i)
 		{
-			for (int j = -1; j <= 1; ++j)
+			for (int j = minDistance; j <= maxDistance; ++j)
 			{
-				for (int k = -1; k <= 1; ++k)
+				for (int k = minDistance; k <= maxDistance; ++k)
 				{
 					CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
 					if (!state.knownCuboids.contains(oneCuboid))
@@ -879,6 +911,7 @@ public class ServerStateManager
 		public EntityLocation location;
 		
 		// The data we think that this client already has.  These are used for determining what they should be told to load/drop as well as filtering updates to what they can apply.
+		public int cuboidViewDistance;
 		public CuboidAddress lastComputedAddress;
 		public final Set<Integer> knownEntities;
 		public final Set<CuboidAddress> knownCuboids;
@@ -890,6 +923,7 @@ public class ServerStateManager
 			this.location = initialLocation;
 			
 			// Create empty containers for what this client has observed.
+			this.cuboidViewDistance = DEFAULT_CUBOID_VIEW_DISTANCE;
 			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();

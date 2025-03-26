@@ -513,6 +513,91 @@ public class TestServerStateManager
 		manager.shutdown();
 	}
 
+	@Test
+	public void cuboidRadiusChange()
+	{
+		// This shows how changing the view distance around a player will cause its known cuboids to be reconsidered.
+		_Callouts callouts = new _Callouts();
+		ServerStateManager manager = new ServerStateManager(callouts);
+		manager.setOwningThread();
+		int clientId = 1;
+		manager.clientConnected(clientId, "client");
+		TickRunner.Snapshot snapshot = _createEmptySnapshot();
+		
+		// We need to run a tick so that the client load request is made.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.requestedEntityIds.size());
+		
+		// If we change the view distance here, it will be ignored since they aren't yet loaded.
+		manager.setClientViewDistance(clientId, 5);
+		
+		// Allow the client load to be acknowledged.
+		EntityLocation entityLocation = new EntityLocation(-101.2f, 678.1f, 55.0f);
+		CuboidAddress entityCuboid = entityLocation.getBlockLocation().getCuboidAddress();
+		MutableEntity mutable = MutableEntity.createForTest(clientId);
+		mutable.newLocation = entityLocation;
+		Entity entity = mutable.freeze();
+		callouts.loadedEntities.add(new SuspendedEntity(entity, List.of()));
+		manager.setupNextTickAfterCompletion(snapshot);
+		
+		// We shouldn't see the cuboid load request until the next tick.
+		Assert.assertEquals(0, callouts.requestedCuboidAddresses.size());
+		manager.setupNextTickAfterCompletion(snapshot);
+		// (see that this is still the default 3x3x3)
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
+		
+		// Load a bunch of cuboids at different distances so we can see how the loaded set changes with view distance.
+		CuboidAddress plus1 = entityCuboid.getRelative(1, 0, 0);
+		CuboidAddress plus2 = entityCuboid.getRelative(2, 0, 0);
+		CuboidAddress plus3 = entityCuboid.getRelative(3, 0, 0);
+		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(entityCuboid));
+		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(plus1));
+		Assert.assertFalse(callouts.requestedCuboidAddresses.contains(plus2));
+		Assert.assertFalse(callouts.requestedCuboidAddresses.contains(plus3));
+		CuboidData cuboid0 = CuboidGenerator.createFilledCuboid(entityCuboid, ENV.special.AIR);
+		CuboidData cuboid1 = CuboidGenerator.createFilledCuboid(plus1, ENV.special.AIR);
+		CuboidData cuboid2 = CuboidGenerator.createFilledCuboid(plus2, ENV.special.AIR);
+		CuboidData cuboid3 = CuboidGenerator.createFilledCuboid(plus3, ENV.special.AIR);
+		snapshot = _modifySnapshot(snapshot
+				, Map.of(
+						cuboid0.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid0, null, List.of(), Map.of()),
+						cuboid1.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid1, null, List.of(), Map.of()),
+						cuboid2.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid2, null, List.of(), Map.of()),
+						cuboid3.getCuboidAddress(), new TickRunner.SnapshotCuboid(cuboid3, null, List.of(), Map.of())
+				)
+				, Map.of(clientId, new TickRunner.SnapshotEntity(entity, 1L, null, List.of()))
+				, snapshot.creatures()
+				, Map.of(
+						cuboid0.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid0), cuboid0.getCuboidAddress()).freeze(),
+						cuboid1.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid1), cuboid1.getCuboidAddress()).freeze(),
+						cuboid2.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid2), cuboid2.getCuboidAddress()).freeze(),
+						cuboid3.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid3), cuboid3.getCuboidAddress()).freeze()
+				)
+		);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
+		
+		// Change the distance and see the cuboid collection grow.
+		// (note that we ignore the cuboids to write-back since we just want to see how the network works here)
+		callouts.cuboidsToWrite.clear();
+		callouts.requestedCuboidAddresses.clear();
+		snapshot = _advanceSnapshot(snapshot, 1L);
+		manager.setClientViewDistance(clientId, 2);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(3, callouts.cuboidsSentToClient.get(clientId).size());
+		// (see that this is now 5x5x5 minus what was previously requested or pre-loaded)
+		Assert.assertEquals(125 - 27 - 1, callouts.requestedCuboidAddresses.size());
+		
+		callouts.cuboidsToWrite.clear();
+		snapshot = _advanceSnapshot(snapshot, 1L);
+		manager.setClientViewDistance(clientId, 0);
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		
+		callouts.cuboidsToWrite.clear();
+		manager.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _createEmptySnapshot()
 	{
