@@ -753,7 +753,13 @@ public class ServerStateManager
 		}
 		
 		// Check the cuboids immediately around the entity and add any which are missing to our list.
-		state.missingCuboids.clear();
+		// We will prioritize the closer cuboids.
+		@SuppressWarnings("unchecked")
+		List<CuboidAddress>[] sublists = new List[maxDistance + 1];
+		for (int i = 0; i < sublists.length; ++i)
+		{
+			sublists[i] = new ArrayList<>();
+		}
 		for (int i = minDistance; i <= maxDistance; ++i)
 		{
 			for (int j = minDistance; j <= maxDistance; ++j)
@@ -763,10 +769,16 @@ public class ServerStateManager
 					CuboidAddress oneCuboid = currentCuboid.getRelative(i, j, k);
 					if (!state.knownCuboids.contains(oneCuboid))
 					{
-						state.missingCuboids.add(oneCuboid);
+						int max = Math.max(Math.max(Math.abs(i), Math.abs(j)), Math.abs(k));
+						sublists[max].add(oneCuboid);
 					}
 				}
 			}
+		}
+		state.missingCuboids.clear();
+		for (int i = 0; i < sublists.length; ++i)
+		{
+			state.missingCuboids.addAll(sublists[i]);
 		}
 		
 		// Update this location.
