@@ -495,6 +495,11 @@ public class TestServerStateManager
 						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
 				)
 		);
+		// Only 1 new cuboid is sent per tick.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
@@ -574,6 +579,13 @@ public class TestServerStateManager
 						cuboid3.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid3), cuboid3.getCuboidAddress()).freeze()
 				)
 		);
+		// Only 1 new cuboid is sent per tick.
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		callouts.cuboidsToWrite.clear();
+		callouts.entitiesToWrite.clear();
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		

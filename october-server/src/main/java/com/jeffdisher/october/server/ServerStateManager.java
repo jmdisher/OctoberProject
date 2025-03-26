@@ -704,24 +704,29 @@ public class ServerStateManager
 			}
 		}
 		
-		// Send any cuboids in our missing list.
+		// Send the first cuboid in our missing list.
 		// TODO:  These updates should be sent incrementally based on how busy the network is.
-		Iterator<CuboidAddress> iter = state.missingCuboids.iterator();
-		while (iter.hasNext())
+		if (!state.missingCuboids.isEmpty())
 		{
-			CuboidAddress address = iter.next();
-			// We haven't seen this yet so just send it.
-			IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
-			// This may not yet be loaded.
-			if (null != cuboidData)
+			boolean canSend = true;
+			Iterator<CuboidAddress> iter = state.missingCuboids.iterator();
+			while (canSend && iter.hasNext())
 			{
-				_callouts.network_sendCuboid(clientId, cuboidData);
-				state.knownCuboids.add(address);
-				iter.remove();
-			}
-			else
-			{
-				// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
+				CuboidAddress address = iter.next();
+				// We haven't seen this yet so just send it.
+				IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
+				// This may not yet be loaded.
+				if (null != cuboidData)
+				{
+					_callouts.network_sendCuboid(clientId, cuboidData);
+					state.knownCuboids.add(address);
+					iter.remove();
+					canSend = false;
+				}
+				else
+				{
+					// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
+				}
 			}
 		}
 	}
