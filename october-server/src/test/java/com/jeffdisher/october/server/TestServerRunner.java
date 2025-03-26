@@ -822,6 +822,12 @@ public class TestServerRunner
 			return queue.peek();
 		}
 		@Override
+		public boolean isNetworkWriteReady(int clientId)
+		{
+			// For now, this test always says it is ready.
+			return true;
+		}
+		@Override
 		public synchronized void sendFullEntity(int clientId, Entity entity)
 		{
 			Assert.assertFalse(this.clientFullEntities.containsKey(clientId));

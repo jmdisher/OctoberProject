@@ -449,6 +449,11 @@ public class ServerRunner
 			_loader.getResultsAndRequestBackgroundLoad(out_loadedCuboids, out_loadedEntities, requestedCuboids, requestedEntityIds);
 		}
 		@Override
+		public boolean network_isNetworkWriteReady(int clientId)
+		{
+			return _network.isNetworkWriteReady(clientId);
+		}
+		@Override
 		public PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
 		{
 			return _network.peekOrRemoveNextPacketFromClient(clientId, toRemove);

@@ -586,6 +586,16 @@ public class TestServerStateManager
 		callouts.entitiesToWrite.clear();
 		callouts.cuboidsToTryWrite.clear();
 		callouts.entitiesToTryWrite.clear();
+		// Saturate the network to block the next cuboid.
+		callouts.isNetworkWriteReady = false;
+		manager.setupNextTickAfterCompletion(snapshot);
+		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		callouts.cuboidsToWrite.clear();
+		callouts.entitiesToWrite.clear();
+		callouts.cuboidsToTryWrite.clear();
+		callouts.entitiesToTryWrite.clear();
+		// Resume the network to continue.
+		callouts.isNetworkWriteReady = true;
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
@@ -730,6 +740,7 @@ public class TestServerStateManager
 		public Map<Integer, Map<Integer, String>> joinedClients = new HashMap<>();
 		public Map<Integer, Set<Integer>> partialEntitiesPerClient = new HashMap<>();
 		public Map<Integer, Set<CuboidAddress>> cuboidsSentToClient = new HashMap<>();
+		public boolean isNetworkWriteReady = true;
 		
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids, Collection<SuspendedEntity> entities)
@@ -769,6 +780,11 @@ public class TestServerStateManager
 		public PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove)
 		{
 			return peekHandler.apply(toRemove);
+		}
+		@Override
+		public boolean network_isNetworkWriteReady(int clientId)
+		{
+			return this.isNetworkWriteReady;
 		}
 		@Override
 		public void network_sendFullEntity(int clientId, Entity entity)

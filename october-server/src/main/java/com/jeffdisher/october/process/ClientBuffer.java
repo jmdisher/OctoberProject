@@ -120,6 +120,11 @@ public class ClientBuffer
 		return _lastPeeked;
 	}
 
+	public boolean isNetworkWriteReady()
+	{
+		return _isNetworkWriteable;
+	}
+
 
 	private void _advanceToNextPeek(Supplier<List<PacketFromClient>> packetSource)
 	{

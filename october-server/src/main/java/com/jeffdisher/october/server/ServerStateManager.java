@@ -439,6 +439,7 @@ public class ServerStateManager
 	{
 		// We want to send information to this client if they can see it, potentially sending whole data or just
 		// incremental updates, based on whether or not they already have this data.
+		boolean shouldSendNewCuboids = _callouts.network_isNetworkWriteReady(clientId);
 		
 		if (null != newCuboidLocation)
 		{
@@ -453,7 +454,7 @@ public class ServerStateManager
 		_sendEntityUpdates(clientId, state);
 		
 		// We send cuboids based on how far away they are (also capture an update on what cuboids are visible).
-		_sendCuboidUpdates(clientId, state);
+		_sendCuboidUpdates(clientId, state, shouldSendNewCuboids);
 		
 		// Finally, send them the end of tick.
 		// (note that the commit level won't be in the snapshot if they just joined).
@@ -688,6 +689,7 @@ public class ServerStateManager
 
 	private void _sendCuboidUpdates(int clientId
 			, ClientState state
+			, boolean shouldSendNewCuboids
 	)
 	{
 		// Send block updates in anything known to us.
@@ -705,8 +707,7 @@ public class ServerStateManager
 		}
 		
 		// Send the first cuboid in our missing list.
-		// TODO:  These updates should be sent incrementally based on how busy the network is.
-		if (!state.missingCuboids.isEmpty())
+		if (shouldSendNewCuboids && !state.missingCuboids.isEmpty())
 		{
 			boolean canSend = true;
 			Iterator<CuboidAddress> iter = state.missingCuboids.iterator();
@@ -884,6 +885,7 @@ public class ServerStateManager
 		
 		// IServerAdapter.
 		PacketFromClient network_peekOrRemoveNextPacketFromClient(int clientId, PacketFromClient toRemove);
+		boolean network_isNetworkWriteReady(int clientId);
 		void network_sendFullEntity(int clientId, Entity entity);
 		void network_sendPartialEntity(int clientId, PartialEntity entity);
 		void network_removeEntity(int clientId, int entityId);
