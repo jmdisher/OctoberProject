@@ -476,7 +476,7 @@ public class TestServerStateManager
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
 		
 		// Load these cuboids and show that the loaded cuboids are sent over the network.
-		CuboidAddress two = entityCuboid.getRelative(1, 0, 0);
+		CuboidAddress two = entityCuboid.getRelative(-1, -1, -1);
 		CuboidAddress outside = entityCuboid.getRelative(2, 0, 0);
 		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(entityCuboid));
 		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(two));
@@ -495,16 +495,11 @@ public class TestServerStateManager
 						twoCuboid.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(twoCuboid), twoCuboid.getCuboidAddress()).freeze()
 				)
 		);
-		// Only 1 new cuboid is sent per tick.
-		manager.setupNextTickAfterCompletion(snapshot);
-		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
-		callouts.cuboidsToTryWrite.clear();
-		callouts.entitiesToTryWrite.clear();
 		manager.setupNextTickAfterCompletion(snapshot);
 		Assert.assertEquals(2, callouts.cuboidsSentToClient.get(clientId).size());
 		
 		// Move over slightly and show that this requests an unload over the network.
-		mutable.newLocation = new EntityLocation(-131.2f, 678.1f, 55.0f);
+		mutable.newLocation = new EntityLocation(-71.2f, 678.1f, 55.0f);
 		entity = mutable.freeze();
 		snapshot = _advanceSnapshot(_modifySnapshot(snapshot
 				, snapshot.cuboids()
@@ -552,9 +547,9 @@ public class TestServerStateManager
 		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
 		
 		// Load a bunch of cuboids at different distances so we can see how the loaded set changes with view distance.
-		CuboidAddress plus1 = entityCuboid.getRelative(1, 0, 0);
-		CuboidAddress plus2 = entityCuboid.getRelative(2, 0, 0);
-		CuboidAddress plus3 = entityCuboid.getRelative(3, 0, 0);
+		CuboidAddress plus1 = entityCuboid.getRelative(-1, -1, -1);
+		CuboidAddress plus2 = entityCuboid.getRelative(-2, -2, -2);
+		CuboidAddress plus3 = entityCuboid.getRelative(-3, -3, -3);
 		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(entityCuboid));
 		Assert.assertTrue(callouts.requestedCuboidAddresses.contains(plus1));
 		Assert.assertFalse(callouts.requestedCuboidAddresses.contains(plus2));
@@ -579,17 +574,11 @@ public class TestServerStateManager
 						cuboid3.getCuboidAddress().getColumn(), ColumnHeightMap.build().consume(HeightMapHelpers.buildHeightMap(cuboid3), cuboid3.getCuboidAddress()).freeze()
 				)
 		);
-		// Only 1 new cuboid is sent per tick.
-		manager.setupNextTickAfterCompletion(snapshot);
-		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
-		callouts.cuboidsToWrite.clear();
-		callouts.entitiesToWrite.clear();
-		callouts.cuboidsToTryWrite.clear();
-		callouts.entitiesToTryWrite.clear();
 		// Saturate the network to block the next cuboid.
 		callouts.isNetworkWriteReady = false;
 		manager.setupNextTickAfterCompletion(snapshot);
-		Assert.assertEquals(1, callouts.cuboidsSentToClient.get(clientId).size());
+		Assert.assertNull(callouts.cuboidsSentToClient.get(clientId));
+		Assert.assertEquals(27, callouts.requestedCuboidAddresses.size());
 		callouts.cuboidsToWrite.clear();
 		callouts.entitiesToWrite.clear();
 		callouts.cuboidsToTryWrite.clear();

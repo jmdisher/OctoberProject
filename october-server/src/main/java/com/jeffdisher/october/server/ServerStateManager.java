@@ -68,6 +68,14 @@ public class ServerStateManager
 	 * minimum).
 	 */
 	public static final int MAXIMUM_CUBOID_VIEW_DISTANCE = 5;
+	/**
+	 * The number of cuboids which will be attempted to be sent when the network is idle.
+	 */
+	public static final int CUBOIDS_SENT_PER_TICK = 10;
+	/**
+	 * Cuboids within this distance of an entity will be considered "high priority" and aggressively sent.
+	 */
+	public static final int PRIORITY_CUBOID_VIEW_DISTANCE = 1;
 
 	private final ICallouts _callouts;
 	private final Map<Integer, ClientState> _connectedClients;
@@ -706,12 +714,14 @@ public class ServerStateManager
 			}
 		}
 		
-		// Send the first cuboid in our missing list.
-		if (shouldSendNewCuboids && !state.missingCuboids.isEmpty())
+		// Send cuboids if the network is idle.
+		if (shouldSendNewCuboids && (!state.priorityMissingCuboids.isEmpty() || !state.outerMissingCuboids.isEmpty()))
 		{
-			boolean canSend = true;
-			Iterator<CuboidAddress> iter = state.missingCuboids.iterator();
-			while (canSend && iter.hasNext())
+			int cuboidsSent = 0;
+			
+			// Send any high-priority cuboids we have.
+			Iterator<CuboidAddress> iter = state.priorityMissingCuboids.iterator();
+			while (iter.hasNext())
 			{
 				CuboidAddress address = iter.next();
 				// We haven't seen this yet so just send it.
@@ -722,11 +732,32 @@ public class ServerStateManager
 					_callouts.network_sendCuboid(clientId, cuboidData);
 					state.knownCuboids.add(address);
 					iter.remove();
-					canSend = false;
+					cuboidsSent += 1;
 				}
 				else
 				{
-					// Not yet loaded - we will either request this based on out_referencedCuboids or already did.
+					// Not yet loaded.
+				}
+			}
+			
+			// Attempt any more we can fit.
+			if ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && !state.outerMissingCuboids.isEmpty())
+			{
+				iter = state.outerMissingCuboids.iterator();
+				while ((cuboidsSent < CUBOIDS_SENT_PER_TICK) && iter.hasNext())
+				{
+					CuboidAddress address = iter.next();
+					// We haven't seen this yet so just send it.
+					IReadOnlyCuboidData cuboidData = _completedCuboids.get(address);
+					// This may not yet be loaded.
+					if (null != cuboidData)
+					{
+						_callouts.network_sendCuboid(clientId, cuboidData);
+						state.knownCuboids.add(address);
+						iter.remove();
+					}
+					// We don't want to search this list too aggressively (it can be large) so we count not just how many we send but how many we attempt.
+					cuboidsSent += 1;
 				}
 			}
 		}
@@ -775,10 +806,16 @@ public class ServerStateManager
 				}
 			}
 		}
-		state.missingCuboids.clear();
-		for (int i = 0; i < sublists.length; ++i)
+		state.priorityMissingCuboids.clear();
+		int priorityLimit = Math.min(PRIORITY_CUBOID_VIEW_DISTANCE + 1, sublists.length);
+		for (int i = 0; i < priorityLimit; ++i)
 		{
-			state.missingCuboids.addAll(sublists[i]);
+			state.priorityMissingCuboids.addAll(sublists[i]);
+		}
+		state.outerMissingCuboids.clear();
+		for (int i = priorityLimit; i < sublists.length; ++i)
+		{
+			state.outerMissingCuboids.addAll(sublists[i]);
 		}
 		
 		// Update this location.
@@ -934,7 +971,8 @@ public class ServerStateManager
 		public CuboidAddress lastComputedAddress;
 		public final Set<Integer> knownEntities;
 		public final Set<CuboidAddress> knownCuboids;
-		public final List<CuboidAddress> missingCuboids;
+		public final List<CuboidAddress> priorityMissingCuboids;
+		public final List<CuboidAddress> outerMissingCuboids;
 		
 		public ClientState(String name, EntityLocation initialLocation)
 		{
@@ -946,7 +984,8 @@ public class ServerStateManager
 			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();
-			this.missingCuboids = new ArrayList<>();
+			this.priorityMissingCuboids = new ArrayList<>();
+			this.outerMissingCuboids = new ArrayList<>();
 		}
 	}
 }
