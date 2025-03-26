@@ -64,11 +64,6 @@ public class ServerStateManager
 	 */
 	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
 	/**
-	 * The maximum cuboid view distance for a new client (0 would mean only the cuboid they are in and is the implicit
-	 * minimum).
-	 */
-	public static final int MAXIMUM_CUBOID_VIEW_DISTANCE = 5;
-	/**
 	 * The number of cuboids which will be attempted to be sent when the network is idle.
 	 */
 	public static final int CUBOIDS_SENT_PER_TICK = 10;
@@ -319,9 +314,7 @@ public class ServerStateManager
 	{
 		// Check the static assumptions.
 		Assert.assertTrue(Thread.currentThread() == _ownerThread);
-		// (these limits should be checked elsewhere).
 		Assert.assertTrue(distance >= 0);
-		Assert.assertTrue(distance <= MAXIMUM_CUBOID_VIEW_DISTANCE);
 		
 		// If the client sends this before they are connected (meaning we loaded their data, we just ignore this).
 		ClientState state = _connectedClients.get(clientId);

@@ -79,6 +79,14 @@ public class WorldConfig
 	public volatile boolean shouldSynthesizeUpdatesOnLoad;
 
 	/**
+	 * The maximum cuboid view distance for a new client (0 would mean only the cuboid they are in and is the implicit
+	 * minimum).  We impose a hard limit of 5 on this value (which would be 11^3 cuboids per client).
+	 */
+	public static final String KEY_CLIENT_VIEW_DISTANCE_MAXIMUM = "client_view_distance_maximum";
+	public static final int MAX_CLIENT_VIEW_DISTANCE_MAXIMUM = 5;
+	public volatile int clientViewDistanceMaximum;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -95,6 +103,7 @@ public class WorldConfig
 		this.worldGeneratorName = WorldGeneratorName.BASIC;
 		// We default to no synthetic updates as they wash out all performance analysis attempts.
 		this.shouldSynthesizeUpdatesOnLoad = false;
+		this.clientViewDistanceMaximum = 2;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -144,6 +153,12 @@ public class WorldConfig
 		{
 			this.shouldSynthesizeUpdatesOnLoad = Boolean.parseBoolean(overrides.get(KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD));
 		}
+		if (overrides.containsKey(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM))
+		{
+			this.clientViewDistanceMaximum = Integer.parseInt(overrides.get(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM));
+			Assert.assertTrue(this.clientViewDistanceMaximum >= 0);
+			Assert.assertTrue(this.clientViewDistanceMaximum <= MAX_CLIENT_VIEW_DISTANCE_MAXIMUM);
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -159,6 +174,7 @@ public class WorldConfig
 				, KEY_DAY_START_TICK, Integer.toString(this.dayStartTick)
 				, KEY_WORLD_GENERATOR_NAME, this.worldGeneratorName.name()
 				, KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD, Boolean.toString(this.shouldSynthesizeUpdatesOnLoad)
+				, KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, Integer.toString(this.clientViewDistanceMaximum)
 		);
 	}
 
