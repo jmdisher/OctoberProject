@@ -267,6 +267,14 @@ public class ServerProcess
 		return packet;
 	}
 
+	private synchronized NetworkServer.ServerStatus _pollServerStatus()
+	{
+		// TODO:  Put this in the config.
+		String serverName = "Server Name";
+		int clientCount = _clientsById.size();
+		return new NetworkServer.ServerStatus(serverName, clientCount);
+	}
+
 
 	// Note that all callbacks are issued on the NetworkServer's thread.
 	private class _NetworkListener implements NetworkServer.IListener<ClientBuffer>
@@ -290,6 +298,11 @@ public class ServerProcess
 		public void networkReadReady(ClientBuffer buffer)
 		{
 			_setClientReadable(buffer);
+		}
+		@Override
+		public NetworkServer.ServerStatus pollServerStatus()
+		{
+			return _pollServerStatus();
 		}
 	}
 

@@ -73,6 +73,13 @@ public class TestIntegratedNetwork
 				// Should not happen in this test.
 				Assert.fail();
 			}
+			@Override
+			public NetworkServer.ServerStatus pollServerStatus()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+				return null;
+			}
 		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		
 		int client1 = _runClient(port, "Client 1");
@@ -130,6 +137,13 @@ public class TestIntegratedNetwork
 					_messagesFor1.add(chat.message);
 					_handle();
 				}
+			}
+			@Override
+			public NetworkServer.ServerStatus pollServerStatus()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+				return null;
 			}
 			private void _handle()
 			{
@@ -293,6 +307,13 @@ public class TestIntegratedNetwork
 			{
 				// We don't expect this in these tests.
 				Assert.fail();
+			}
+			@Override
+			public NetworkServer.ServerStatus pollServerStatus()
+			{
+				// Should not happen in this test.
+				Assert.fail();
+				return null;
 			}
 		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 		holder[0] = server;

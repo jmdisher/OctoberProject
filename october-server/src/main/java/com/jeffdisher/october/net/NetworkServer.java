@@ -262,10 +262,20 @@ public class NetworkServer<L>
 		 * @param token The token to use when interacting with the network.
 		 */
 		void networkReadReady(T data);
+		/**
+		 * Polls the current server status.  This is called when a client is polling what servers are online.
+		 * 
+		 * @return The current server status.
+		 */
+		ServerStatus pollServerStatus();
 	}
 
 	public static record ConnectingClientDescription<T>(int clientId
 			, T data
+	) {}
+
+	public static record ServerStatus(String serverName
+			, int clientCount
 	) {}
 
 	private static class _ClientState<T>
