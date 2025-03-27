@@ -970,12 +970,13 @@ public class BasicWorldGenerator implements IWorldGenerator
 					{
 						// This is the top of the crust so see what kind of regolith to use.
 						// We want to make sure that peaks generate without dirt on them so we apply this extra check.
+						// We put dirt under water but grass blocks on the rest of the surface.
 						if (thisZ >= STONE_PEAK_Z_LEVEL)
 						{
 							// Stone peak.
 							blockToWrite = _blockStone;
 						}
-						else if (thisZ < WATER_Z_LEVEL)
+						else if (thisZ < (WATER_Z_LEVEL - 1))
 						{
 							// Dirt is under water.
 							blockToWrite = _blockDirt;
