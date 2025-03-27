@@ -47,6 +47,12 @@ public interface IClientAdapter
 	 * @param message The message.
 	 */
 	void sendChatMessage(int targetClientId, String message);
+	/**
+	 * Sends a message to the server to update this client's options.
+	 * 
+	 * @param clientViewDistance The view distance around this client, in cuboids.
+	 */
+	void updateOptions(int clientViewDistance);
 
 
 	/**

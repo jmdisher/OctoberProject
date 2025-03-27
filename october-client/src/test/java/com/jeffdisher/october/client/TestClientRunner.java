@@ -623,6 +623,11 @@ public class TestClientRunner
 		{
 			throw new AssertionError("sendChatMessage");
 		}
+		@Override
+		public void updateOptions(int clientViewDistance)
+		{
+			throw new AssertionError("updateOptions");
+		}
 	}
 
 	private static class TestProjection implements SpeculativeProjection.IProjectionListener

@@ -65,6 +65,7 @@ public class ServerRunner
 	// Variables "owned" by the background thread.
 	private final LongSupplier _currentTimeMillisProvider;
 	private final MonitoringAgent _monitoringAgent;
+	private final WorldConfig _sharedConfig;
 	private long _nextTickMillis;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
@@ -112,6 +113,8 @@ public class ServerRunner
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
+		// (note that the WorldConfig instance changes underneath us)
+		_sharedConfig = config;
 		
 		_tickAdvancer = new _TickAdvancer(config);
 		_stateManager = new ServerStateManager(new _Callouts());
@@ -537,6 +540,24 @@ public class ServerRunner
 		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return _tickRunner.enqueueEntityChange(entityId, change, commitLevel);
+		}
+		@Override
+		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
+		{
+			_messages.enqueue(() -> {
+				// We will just clamp the option by our defined bounds (since that is probably what the user expects).
+				int limit = _sharedConfig.clientViewDistanceMaximum;
+				int viewDistance = clientViewDistance;
+				if (viewDistance < 0)
+				{
+					viewDistance = 0;
+				}
+				else if (viewDistance > limit)
+				{
+					viewDistance = limit;
+				}
+				_stateManager.setClientViewDistance(clientId, viewDistance);
+			});
 		}
 	}
 }

@@ -26,6 +26,7 @@ import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.mutations.MutationEntitySetPartialEntity;
 import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
+import com.jeffdisher.october.net.Packet_ClientUpdateOptions;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
 import com.jeffdisher.october.persistence.PackagedCuboid;
@@ -515,6 +516,12 @@ public class ServerStateManager
 			// This doesn't need to enter the TickRunner at any particular time so we can add it here and it will be rolled into the next tick.
 			didHandle = _callouts.runner_enqueueEntityChange(clientId, mutation.mutation, mutation.commitLevel);
 		}
+		else if (packet instanceof Packet_ClientUpdateOptions)
+		{
+			Packet_ClientUpdateOptions message = (Packet_ClientUpdateOptions) packet;
+			_callouts.handleClientUpdateOptions(clientId, message.clientViewDistance);
+			didHandle = true;
+		}
 		else if (packet instanceof Packet_SendChatMessage)
 		{
 			Packet_SendChatMessage chat = (Packet_SendChatMessage) packet;
@@ -946,6 +953,9 @@ public class ServerStateManager
 		
 		// TickRunner.
 		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
+		
+		// Misc.
+		void handleClientUpdateOptions(int clientId, int clientViewDistance);
 	}
 
 	public static record TickChanges(Collection<SuspendedCuboid<IReadOnlyCuboidData>> newCuboids

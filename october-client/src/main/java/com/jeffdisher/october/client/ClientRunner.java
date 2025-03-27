@@ -282,6 +282,17 @@ public class ClientRunner
 	}
 
 	/**
+	 * Sends updated client options to the server.
+	 * 
+	 * @param clientViewDistance This client's viewable distance, in cuboids.
+	 */
+	public void updateOptions(int clientViewDistance)
+	{
+		Assert.assertTrue(clientViewDistance >= 0);
+		_network.updateOptions(clientViewDistance);
+	}
+
+	/**
 	 * Updates the internal last action times and runs callbacks without applying changes to the projection or network.
 	 * This is primarily used in the case where the associated server is paused and the client must skip over that time
 	 * without sending its usual periodic updates.

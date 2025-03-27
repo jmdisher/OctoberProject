@@ -887,5 +887,10 @@ public class TestServerStateManager
 		{
 			return this.didEnqueue;
 		}
+		@Override
+		public void handleClientUpdateOptions(int clientId, int clientViewDistance)
+		{
+			throw new AssertionError("handleClientUpdateOptions");
+		}
 	}
 }

@@ -28,6 +28,7 @@ import com.jeffdisher.october.net.Packet_Entity;
 import com.jeffdisher.october.net.Packet_BlockStateUpdate;
 import com.jeffdisher.october.net.Packet_ClientJoined;
 import com.jeffdisher.october.net.Packet_ClientLeft;
+import com.jeffdisher.october.net.Packet_ClientUpdateOptions;
 import com.jeffdisher.october.net.Packet_MutationEntityFromClient;
 import com.jeffdisher.october.net.Packet_PartialEntity;
 import com.jeffdisher.october.net.Packet_PartialEntityUpdateFromServer;
@@ -299,6 +300,16 @@ public class ClientProcess
 	}
 
 	/**
+	 * Sends updated client options to the server.
+	 * 
+	 * @param clientViewDistance This client's viewable distance, in cuboids.
+	 */
+	public void updateOptions(int clientViewDistance)
+	{
+		_clientRunner.updateOptions(clientViewDistance);
+	}
+
+	/**
 	 * Updates the internal last action times and runs callbacks without applying changes to the projection or network.
 	 * This is primarily used in the case where the associated server is paused and the client must skip over that time
 	 * without sending its usual periodic updates.
@@ -542,6 +553,13 @@ public class ClientProcess
 			Assert.assertTrue(targetClientId >= 0);
 			Assert.assertTrue(null != message);
 			Packet_SendChatMessage packet = new Packet_SendChatMessage(targetClientId, message);
+			_background_bufferPacket(packet);
+		}
+		@Override
+		public void updateOptions(int clientViewDistance)
+		{
+			Assert.assertTrue(clientViewDistance >= 0);
+			Packet_ClientUpdateOptions packet = new Packet_ClientUpdateOptions(clientViewDistance);
 			_background_bufferPacket(packet);
 		}
 	}

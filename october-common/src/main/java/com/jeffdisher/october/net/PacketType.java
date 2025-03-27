@@ -100,6 +100,10 @@ public enum PacketType
 	 * Sent by the server to describe an entity event (location is optional).
 	 */
 	EVENT_ENTITY,
+	/**
+	 * Send by the client to the server in order to give it updated per-client options.
+	 */
+	CLIENT_UPDATE_OPTIONS,
 	
 	END_OF_LIST,
 }
