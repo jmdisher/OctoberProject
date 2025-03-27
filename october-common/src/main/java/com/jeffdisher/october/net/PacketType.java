@@ -105,5 +105,15 @@ public enum PacketType
 	 */
 	CLIENT_UPDATE_OPTIONS,
 	
+	/**
+	 * Sent by the client to the server when not in a normal connection mode to poll the server's status.
+	 */
+	CLIENT_POLL_SERVER_STATUS,
+	/**
+	 * Sent by the server in response to a status poll to describe the server to the client (and then closes the
+	 * connection).
+	 */
+	SERVER_RETURN_SERVER_STATUS,
+	
 	END_OF_LIST,
 }

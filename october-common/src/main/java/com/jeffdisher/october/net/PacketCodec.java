@@ -42,6 +42,8 @@ public class PacketCodec
 		Packet_EventBlock.register(_CODEC_TABLE);
 		Packet_EventEntity.register(_CODEC_TABLE);
 		Packet_ClientUpdateOptions.register(_CODEC_TABLE);
+		Packet_ClientPollServerStatus.register(_CODEC_TABLE);
+		Packet_ServerReturnServerStatus.register(_CODEC_TABLE);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

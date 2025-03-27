@@ -415,6 +415,44 @@ public class TestNetworkServer
 		Assert.assertEquals(threadCount, joinLeaveCounts[1]);
 	}
 
+	@Test
+	public void pollStatus() throws Throwable
+	{
+		// Just poll for status.
+		int port = 3000;
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		
+		// Connect a client.
+		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		
+		// Send the poll.
+		long millis = 5L;
+		PacketCodec.serializeToBuffer(buffer, new Packet_ClientPollServerStatus(Packet_ClientPollServerStatus.NETWORK_POLL_VERSION, millis));
+		buffer.flip();
+		client.write(buffer);
+		Assert.assertFalse(buffer.hasRemaining());
+		
+		// Verify that we get a response packet and that the connection is closed.
+		buffer = ByteBuffer.allocate(64);
+		int read = client.read(buffer);
+		buffer.flip();
+		Packet response = PacketCodec.parseAndSeekFlippedBuffer(buffer);
+		Packet_ServerReturnServerStatus safe = (Packet_ServerReturnServerStatus)response;
+		Assert.assertEquals(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION, safe.version);
+		Assert.assertEquals("Name", safe.serverName);
+		Assert.assertEquals(42, safe.clientCount);
+		Assert.assertEquals(millis, safe.millis);
+		
+		// We should now see disconnect.
+		buffer.clear();
+		read = client.read(buffer);
+		Assert.assertEquals(-1, read);
+		
+		// Shut down.
+		server.stop();
+	}
+
 
 	private int _runClient(int port, String name) throws IOException, UnknownHostException
 	{

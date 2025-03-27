@@ -72,9 +72,17 @@ public class NetworkServer<L>
 			public void peerReadyForWrite(NetworkLayer.PeerToken token)
 			{
 				_ClientState<L> state = _downcastData(token);
-				// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
-				Assert.assertTrue(null != state.data);
-				_listener.networkWriteReady(state.data);
+				if (state.shouldDisconnectOnWriteReady)
+				{
+					// In this case, we were just waiting for disconnect to be safe.
+					_network.disconnectPeer(token);
+				}
+				else
+				{
+					// Given that we start in a writable state, and we send the last message in the handshake, we should only get here if the handshake is complete.
+					Assert.assertTrue(null != state.data);
+					_listener.networkWriteReady(state.data);
+				}
 			}
 			@Override
 			public void peerReadyForRead(NetworkLayer.PeerToken token)
@@ -83,6 +91,12 @@ public class NetworkServer<L>
 				if (null != state.data)
 				{
 					_listener.networkReadReady(state.data);
+				}
+				else if (state.shouldDisconnectOnWriteReady)
+				{
+					// If we are already waiting for disconnect, this is invalid.
+					System.err.println("Received message while waiting to disconnect");
+					_network.disconnectPeer(token);
 				}
 				else
 				{
@@ -101,6 +115,9 @@ public class NetworkServer<L>
 					{
 					case CLIENT_SEND_DESCRIPTION:
 						_handleClientSendDescription(token, state, packet);
+						break;
+					case CLIENT_POLL_SERVER_STATUS:
+						_handleClientPollServerStatus(token, state, packet);
 						break;
 						default:
 							System.err.println("Client failed handshake with type: " + packet.type.name());
@@ -140,6 +157,27 @@ public class NetworkServer<L>
 				{
 					// Unknown version so just disconnect them.
 					System.err.println("Client requested unsupported protocol version: " + safe.version);
+					_network.disconnectPeer(token);
+				}
+			}
+			private void _handleClientPollServerStatus(NetworkLayer.PeerToken token, _ClientState<L> state, PacketFromClient packet)
+			{
+				Packet_ClientPollServerStatus safe = (Packet_ClientPollServerStatus)packet;
+				if (Packet_ClientPollServerStatus.NETWORK_POLL_VERSION == safe.version)
+				{
+					// We need to immediately request the status and then enter a state where we should wait for disconnect.
+					NetworkServer.ServerStatus status = _listener.pollServerStatus();
+					_network.sendMessage(token, new Packet_ServerReturnServerStatus(Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION
+							, status.serverName
+							, status.clientCount
+							, safe.millis
+					));
+					state.shouldDisconnectOnWriteReady = true;
+				}
+				else
+				{
+					// Unknown version so just disconnect them.
+					System.err.println("Client requested unsupported polling protocol version: " + safe.version);
 					_network.disconnectPeer(token);
 				}
 			}
@@ -282,6 +320,9 @@ public class NetworkServer<L>
 	{
 		// This value is set non-null after a successful handshake and joining.
 		public T data;
+		// We set this to true if this client is in a state where we just sent a message and want to immediately
+		// disconnect once it has gone to the network.
+		public boolean shouldDisconnectOnWriteReady;
 	}
 
 	private static record _AwaitingHandshake(long limitTimeMillis

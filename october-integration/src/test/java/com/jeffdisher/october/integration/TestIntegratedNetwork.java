@@ -1,6 +1,8 @@
 package com.jeffdisher.october.integration;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,7 @@ import com.jeffdisher.october.net.Packet;
 import com.jeffdisher.october.net.PacketFromClient;
 import com.jeffdisher.october.net.PacketFromServer;
 import com.jeffdisher.october.net.Packet_SendChatMessage;
+import com.jeffdisher.october.net.PollingClient;
 import com.jeffdisher.october.net.Packet_CuboidFragment;
 import com.jeffdisher.october.net.Packet_CuboidStart;
 import com.jeffdisher.october.net.Packet_ReceiveChatMessage;
@@ -369,6 +372,47 @@ public class TestIntegratedNetwork
 		Assert.assertEquals((32 * 32 * 30) + (32 * 30) + 30, finished.getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(30, 30, 30)));
 	}
 
+	@Test
+	public void pollNetwork() throws Throwable
+	{
+		int threadCount = Thread.activeCount();
+		int port0 = 3000;
+		int port1 = 3001;
+		NetworkServer<NetworkLayer.PeerToken> server0 = _pollOnlyServer(port0);
+		NetworkServer<NetworkLayer.PeerToken> server1 = _pollOnlyServer(port1);
+		
+		CountDownLatch statusLatch = new CountDownLatch(4);
+		CountDownLatch timeoutLatch = new CountDownLatch(2);
+		PollingClient client = new PollingClient(new PollingClient.IListener()
+		{
+			@Override
+			public void serverReturnedStatus(InetSocketAddress serverToPoll, int version, String serverName, int clientCount, long millisDelay)
+			{
+				statusLatch.countDown();
+			}
+			@Override
+			public void networkTimeout(InetSocketAddress serverToPoll)
+			{
+				timeoutLatch.countDown();
+			}
+		});
+		// Poll both and something invalid.
+		client.pollServer(new InetSocketAddress("127.0.0.1", port0));
+		client.pollServer(new InetSocketAddress("127.0.0.1", port1));
+		client.pollServer(new InetSocketAddress("127.0.0.1", 4000));
+		client.pollServer(new InetSocketAddress("127.0.0.1", port0));
+		client.pollServer(new InetSocketAddress("127.0.0.1", port1));
+		client.pollServer(new InetSocketAddress("127.0.0.1", 4000));
+		statusLatch.await();
+		timeoutLatch.await();
+		
+		client.shutdown();
+		server0.stop();
+		server1.stop();
+		int endThreadCount = Thread.activeCount();
+		Assert.assertEquals(threadCount, endThreadCount);
+	}
+
 
 	private int _runClient(int port, String name) throws Throwable
 	{
@@ -396,6 +440,38 @@ public class TestIntegratedNetwork
 		int clientId = client.getClientId();
 		client.stop();
 		return clientId;
+	}
+
+	private NetworkServer<NetworkLayer.PeerToken> _pollOnlyServer(int port) throws IOException
+	{
+		return new NetworkServer<>(new NetworkServer.IListener<>()
+		{
+			@Override
+			public NetworkServer.ConnectingClientDescription<NetworkLayer.PeerToken> userJoined(NetworkLayer.PeerToken token, String name)
+			{
+				throw new AssertionError("Not called");
+			}
+			@Override
+			public void userLeft(NetworkLayer.PeerToken token)
+			{
+				throw new AssertionError("Not called");
+			}
+			@Override
+			public void networkWriteReady(NetworkLayer.PeerToken token)
+			{
+				throw new AssertionError("Not called");
+			}
+			@Override
+			public void networkReadReady(NetworkLayer.PeerToken token)
+			{
+				throw new AssertionError("Not called");
+			}
+			@Override
+			public NetworkServer.ServerStatus pollServerStatus()
+			{
+				return new NetworkServer.ServerStatus("Server", 42);
+			}
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
 	}
 
 
