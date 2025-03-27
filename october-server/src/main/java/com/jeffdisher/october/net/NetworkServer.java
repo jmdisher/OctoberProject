@@ -86,43 +86,61 @@ public class NetworkServer<L>
 				}
 				else
 				{
-					// This MUST be the client's introduction (and nothing else).
-					List<PacketFromClient> messages = _network.receiveMessages(token);
+					_handleReadOnEmptyState(token, state);
+				}
+			}
+			private void _handleReadOnEmptyState(NetworkLayer.PeerToken token, _ClientState<L> state)
+			{
+				// This is called when a message is ready but it is the first message we have received so we don't know the state.
+				// This MUST be the client's introduction (and nothing else).
+				List<PacketFromClient> messages = _network.receiveMessages(token);
+				if (1 == messages.size())
+				{
 					PacketFromClient packet = messages.get(0);
-					if ((1 == messages.size()) && (PacketType.CLIENT_SEND_DESCRIPTION == packet.type))
+					switch (packet.type)
 					{
-						Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
-						if (Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION == safe.version)
-						{
-							// Make sure that we can resolve this user (and that they aren't already here).
-							ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name);
-							if (null != description)
-							{
-								state.data = description.data;
-								
-								// Send out description and consider the handshake completed.
-								_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick));
-							}
-							else
-							{
-								// This user is not allowed to join.
-								System.err.println("Client \"" + safe.name + "\" rejected during handshake");
-								_network.disconnectPeer(token);
-							}
-						}
-						else
-						{
-							// Unknown version so just disconnect them.
-							System.err.println("Client requested unsupported protocol version: " + safe.version);
+					case CLIENT_SEND_DESCRIPTION:
+						_handleClientSendDescription(token, state, packet);
+						break;
+						default:
+							System.err.println("Client failed handshake with type: " + packet.type.name());
 							_network.disconnectPeer(token);
-						}
+					}
+					
+				}
+				else
+				{
+					// The initial messages are singular and await resposne.
+					System.err.println("Handshake was expecting a single message but received: " + messages.size());
+					_network.disconnectPeer(token);
+				}
+			}
+			private void _handleClientSendDescription(NetworkLayer.PeerToken token, _ClientState<L> state, PacketFromClient packet)
+			{
+				Packet_ClientSendDescription safe = (Packet_ClientSendDescription)packet;
+				if (Packet_ClientSendDescription.NETWORK_PROTOCOL_VERSION == safe.version)
+				{
+					// Make sure that we can resolve this user (and that they aren't already here).
+					ConnectingClientDescription<L> description = _listener.userJoined(token, safe.name);
+					if (null != description)
+					{
+						state.data = description.data;
+						
+						// Send out description and consider the handshake completed.
+						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick));
 					}
 					else
 					{
-						// This is bogus so disconnect them.
-						System.err.println("Client failed handshake with type: " + packet.type.name());
+						// This user is not allowed to join.
+						System.err.println("Client \"" + safe.name + "\" rejected during handshake");
 						_network.disconnectPeer(token);
 					}
+				}
+				else
+				{
+					// Unknown version so just disconnect them.
+					System.err.println("Client requested unsupported protocol version: " + safe.version);
+					_network.disconnectPeer(token);
 				}
 			}
 			@SuppressWarnings("unchecked")
