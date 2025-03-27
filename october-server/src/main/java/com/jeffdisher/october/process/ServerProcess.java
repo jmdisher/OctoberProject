@@ -269,8 +269,7 @@ public class ServerProcess
 
 	private synchronized NetworkServer.ServerStatus _pollServerStatus()
 	{
-		// TODO:  Put this in the config.
-		String serverName = "Server Name";
+		String serverName = _sharedConfigInstance.serverName;
 		int clientCount = _clientsById.size();
 		return new NetworkServer.ServerStatus(serverName, clientCount);
 	}

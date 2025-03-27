@@ -534,6 +534,7 @@ public class TestResourceLoader
 		Assert.assertTrue(rawData.contains("ticks_per_day\t12000\n"));
 		Assert.assertTrue(rawData.contains("should_synthesize_updates_on_load\tfalse\n"));
 		Assert.assertTrue(rawData.contains("client_view_distance_maximum\t2\n"));
+		Assert.assertTrue(rawData.contains("server_name\tOctoberProject Server\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"
@@ -553,6 +554,7 @@ public class TestResourceLoader
 		Assert.assertEquals(WorldConfig.WorldGeneratorName.BASIC, config.worldGeneratorName);
 		Assert.assertTrue(config.shouldSynthesizeUpdatesOnLoad);
 		Assert.assertEquals(WorldConfig.MAX_CLIENT_VIEW_DISTANCE_MAXIMUM, config.clientViewDistanceMaximum);
+		Assert.assertEquals("OctoberProject Server", config.serverName);
 		loader.shutdown();
 	}
 

@@ -1,5 +1,7 @@
 package com.jeffdisher.october.types;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -87,6 +89,12 @@ public class WorldConfig
 	public volatile int clientViewDistanceMaximum;
 
 	/**
+	 * A human-readable name for the server.
+	 */
+	public static final String KEY_SERVER_NAME = "server_name";
+	public volatile String serverName;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -104,6 +112,7 @@ public class WorldConfig
 		// We default to no synthetic updates as they wash out all performance analysis attempts.
 		this.shouldSynthesizeUpdatesOnLoad = false;
 		this.clientViewDistanceMaximum = 2;
+		this.serverName = "OctoberProject Server";
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -159,23 +168,28 @@ public class WorldConfig
 			Assert.assertTrue(this.clientViewDistanceMaximum >= 0);
 			Assert.assertTrue(this.clientViewDistanceMaximum <= MAX_CLIENT_VIEW_DISTANCE_MAXIMUM);
 		}
+		if (overrides.containsKey(KEY_SERVER_NAME))
+		{
+			this.serverName = overrides.get(KEY_SERVER_NAME);
+		}
 	}
 
 	public Map<String, String> getRawOptions()
 	{
 		String worldSpawn = this.worldSpawn.x() + "," + this.worldSpawn.y() + "," + this.worldSpawn.z();
-		return Map.of(
-				KEY_DIFFICULTY, this.difficulty.name()
-				, KEY_HOSTILES_PER_CUBOID_TARGET, Integer.toString(this.hostilesPerCuboidTarget)
-				, KEY_HOSTILES_PER_CUBOID_LIMIT, Integer.toString(this.hostilesPerCuboidLimit)
-				, KEY_BASIC_SEED, Integer.toString(this.basicSeed)
-				, KEY_WORLD_SPAWN, worldSpawn
-				, KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay)
-				, KEY_DAY_START_TICK, Integer.toString(this.dayStartTick)
-				, KEY_WORLD_GENERATOR_NAME, this.worldGeneratorName.name()
-				, KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD, Boolean.toString(this.shouldSynthesizeUpdatesOnLoad)
-				, KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, Integer.toString(this.clientViewDistanceMaximum)
-		);
+		Map<String, String> map = new HashMap<>();
+		map.put(KEY_DIFFICULTY, this.difficulty.name());
+		map.put(KEY_HOSTILES_PER_CUBOID_TARGET, Integer.toString(this.hostilesPerCuboidTarget));
+		map.put(KEY_HOSTILES_PER_CUBOID_LIMIT, Integer.toString(this.hostilesPerCuboidLimit));
+		map.put(KEY_BASIC_SEED, Integer.toString(this.basicSeed));
+		map.put(KEY_WORLD_SPAWN, worldSpawn);
+		map.put(KEY_TICKS_PER_DAY, Integer.toString(this.ticksPerDay));
+		map.put(KEY_DAY_START_TICK, Integer.toString(this.dayStartTick));
+		map.put(KEY_WORLD_GENERATOR_NAME, this.worldGeneratorName.name());
+		map.put(KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD, Boolean.toString(this.shouldSynthesizeUpdatesOnLoad));
+		map.put(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, Integer.toString(this.clientViewDistanceMaximum));
+		map.put(KEY_SERVER_NAME, this.serverName);
+		return Collections.unmodifiableMap(map);
 	}
 
 
