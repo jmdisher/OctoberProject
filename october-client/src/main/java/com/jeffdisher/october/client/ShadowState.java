@@ -73,7 +73,7 @@ public class ShadowState
 	public ApplicationSummary absorbAuthoritativeChanges(List<PartialEntity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, List<IEntityUpdate> entityUpdates
+			, IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
@@ -90,7 +90,7 @@ public class ShadowState
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
 		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
-		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(entityUpdates, partialEntityUpdates, updatesToApply);
+		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(thisEntityUpdate, partialEntityUpdates, updatesToApply);
 		
 		// Apply these to the shadow collections.
 		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
@@ -144,12 +144,12 @@ public class ShadowState
 		return updatesByCuboid;
 	}
 
-	private _UpdateTuple _applyUpdatesToShadowState(List<IEntityUpdate> entityUpdates
+	private _UpdateTuple _applyUpdatesToShadowState(IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
 	)
 	{
-		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(entityUpdates);
+		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(thisEntityUpdate);
 		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(partialEntityUpdates);
 		
 		Map<CuboidAddress, IReadOnlyCuboidData> updatedCuboids = new HashMap<>();
@@ -166,20 +166,17 @@ public class ShadowState
 		return shadowUpdates;
 	}
 
-	private Entity _applyLocalEntityUpdatesToShadowState(List<IEntityUpdate> entityUpdates)
+	private Entity _applyLocalEntityUpdatesToShadowState(IEntityUpdate thisEntityUpdate)
 	{
 		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
 		Entity updatedShadowEntity = null;
-		if (!entityUpdates.isEmpty())
+		if (null != thisEntityUpdate)
 		{
 			Entity entityToChange = _thisShadowEntity;
 			// These must already exist if they are being updated.
 			Assert.assertTrue(null != entityToChange);
 			MutableEntity mutable = MutableEntity.existing(entityToChange);
-			for (IEntityUpdate update : entityUpdates)
-			{
-				update.applyToEntity(mutable);
-			}
+			thisEntityUpdate.applyToEntity(mutable);
 			Entity frozen = mutable.freeze();
 			if (entityToChange != frozen)
 			{

@@ -151,7 +151,7 @@ public class SpeculativeProjection
 	 * @param gameTick The server's game tick number where these changes were made (only useful for debugging).
 	 * @param addedEntities The list of entities which were added in this tick.
 	 * @param addedCuboids The list of cuboids which were loaded in this tick.
-	 * @param entityUpdates The list of updates made to this entity which committed in this tick.
+	 * @param thisEntityUpdate The update made to this entity which committed in this tick.
 	 * @param partialEntityUpdates The map of per-entity state update lists which committed in this tick.
 	 * @param cuboidUpdates The list of cuboid updates which committed in this tick.
 	 * @param removedEntities The list of entities which were removed in this tick.
@@ -166,7 +166,7 @@ public class SpeculativeProjection
 			, List<PartialEntity> addedEntities
 			, List<IReadOnlyCuboidData> addedCuboids
 			
-			, List<IEntityUpdate> entityUpdates
+			, IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
 			, List<MutationBlockSetBlock> cuboidUpdates
 			
@@ -185,7 +185,7 @@ public class SpeculativeProjection
 		
 		// Before applying the updates, add the new data.
 		ShadowState.ApplicationSummary summary = _shadowState.absorbAuthoritativeChanges(addedEntities, addedCuboids
-				, entityUpdates, partialEntityUpdates, cuboidUpdates
+				, thisEntityUpdate, partialEntityUpdates, cuboidUpdates
 				, removedEntities, removedCuboids
 		);
 		

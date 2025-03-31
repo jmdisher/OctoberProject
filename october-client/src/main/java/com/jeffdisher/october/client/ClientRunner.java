@@ -353,7 +353,7 @@ public class ClientRunner
 		private List<PartialEntity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
 		
-		private List<IEntityUpdate> _entityUpdates = new ArrayList<>();
+		private IEntityUpdate _entityUpdate = null;
 		private Map<Integer, List<IPartialEntityUpdate>> _partialEntityUpdates = new HashMap<>();
 		private List<MutationBlockSetBlock> _cuboidUpdates = new ArrayList<>();
 		
@@ -413,7 +413,8 @@ public class ClientRunner
 		public void receivedEntityUpdate(int entityId, IEntityUpdate update)
 		{
 			// Currently (and probably forever), the only full entity on the client is the user, themselves.
-			_entityUpdates.add(update);
+			Assert.assertTrue(null == _entityUpdate);
+			_entityUpdate = update;
 		}
 		@Override
 		public void receivedPartialEntityUpdate(int entityId, IPartialEntityUpdate update)
@@ -453,8 +454,8 @@ public class ClientRunner
 			_addedEntities.clear();
 			List<IReadOnlyCuboidData> addedCuboids = new ArrayList<>(_addedCuboids);
 			_addedCuboids.clear();
-			List<IEntityUpdate> entityChanges = new ArrayList<>(_entityUpdates);
-			_entityUpdates.clear();
+			IEntityUpdate entityChange = _entityUpdate;
+			_entityUpdate = null;
 			Map<Integer, List<IPartialEntityUpdate>> partialEntityChanges = new HashMap<>(_partialEntityUpdates);
 			_partialEntityUpdates.clear();
 			List<MutationBlockSetBlock> cuboidUpdates = new ArrayList<>(_cuboidUpdates);
@@ -481,7 +482,7 @@ public class ClientRunner
 				_projection.applyChangesForServerTick(tickNumber
 						, addedEntities
 						, addedCuboids
-						, entityChanges
+						, entityChange
 						, partialEntityChanges
 						, cuboidUpdates
 						, removedEntities
