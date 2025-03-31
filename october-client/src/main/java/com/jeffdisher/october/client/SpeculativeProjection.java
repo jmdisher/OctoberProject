@@ -15,10 +15,8 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
-import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
@@ -44,8 +42,6 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
-import com.jeffdisher.october.types.MutableEntity;
-import com.jeffdisher.october.types.MutablePartialEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -88,18 +84,9 @@ public class SpeculativeProjection
 	private final IProjectionListener _listener;
 	private final long _serverMillisPerTick;
 	private final Set<EventRecord.Type> _eventTypesToAlwaysReport;
-	
-	private Entity _thisShadowEntity;
-	private final Map<CuboidAddress, IReadOnlyCuboidData> _shadowWorld;
-	private final Map<CuboidAddress, CuboidHeightMap> _shadowHeightMap;
-	private final Map<Integer, PartialEntity> _shadowCrowd;
-	
-	// Note that we don't keep a projection of the crowd since we never apply speculative operations to them.
-	// So, we keep a projected version of the local entity and just fall-back to the shadow data for any read-only operations.
-	private Entity _projectedLocalEntity;
-	private Map<CuboidAddress, IReadOnlyCuboidData> _projectedWorld;
-	private Map<CuboidAddress, CuboidHeightMap> _projectedHeightMap;
-	private Map<AbsoluteLocation, BlockProxy> _projectedBlockChanges;
+
+	private final ShadowState _shadowState;
+	private ProjectedState _projectedState;
 	/**
 	 * The block loader is exposed publicly since it is often used by clients to view the world.  Note that this always
 	 * points to current _projectedWorld, symbolically.
@@ -128,17 +115,10 @@ public class SpeculativeProjection
 		// We want to always pass through the events which are related to entities (since we don't speculate on other entities).
 		_eventTypesToAlwaysReport = Set.of(EventRecord.Type.ENTITY_HURT, EventRecord.Type.ENTITY_KILLED);
 		
-		// The initial states start as empty and are populated by the server.
-		_shadowWorld = new HashMap<>();
-		_shadowHeightMap = new HashMap<>();
-		_shadowCrowd = new HashMap<>();
-		
-		_projectedWorld = new HashMap<>();
-		_projectedHeightMap = new HashMap<>();
-		_projectedBlockChanges = new HashMap<>();
+		_shadowState = new ShadowState();
 		this.projectionBlockLoader = (AbsoluteLocation location) -> {
 			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData cuboid = _projectedWorld.get(address);
+			IReadOnlyCuboidData cuboid = _projectedState.projectedWorld.get(address);
 			return (null != cuboid)
 					? new BlockProxy(location.getBlockAddress(), cuboid)
 					: null
@@ -159,9 +139,7 @@ public class SpeculativeProjection
 	 */
 	public void setThisEntity(Entity thisEntity)
 	{
-		// This can only be set once.
-		Assert.assertTrue(null == _thisShadowEntity);
-		_thisShadowEntity = thisEntity;
+		_shadowState.setThisEntity(thisEntity);
 	}
 
 	/**
@@ -201,35 +179,16 @@ public class SpeculativeProjection
 			, long currentTimeMillis
 	)
 	{
-		// We assume that we must have been told about ourselves before this first tick.
-		Assert.assertTrue(null != _thisShadowEntity);
 		
 		// We will take a snapshot of the previous shadowWorld so we can use it to describe what is changing in the authoritative set.
-		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = new HashMap<>(_shadowWorld);
+		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = _shadowState.getCopyOfWorld();
 		
 		// Before applying the updates, add the new data.
-		_shadowCrowd.putAll(addedEntities.stream().collect(Collectors.toMap((PartialEntity entity) -> entity.id(), (PartialEntity entity) -> entity)));
-		_shadowWorld.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> cuboid)));
-		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
+		ShadowState.ApplicationSummary summary = _shadowState.absorbAuthoritativeChanges(addedEntities, addedCuboids
+				, entityUpdates, partialEntityUpdates, cuboidUpdates
+				, removedEntities, removedCuboids
+		);
 		
-		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
-		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(entityUpdates, partialEntityUpdates, updatesToApply);
-		
-		// Apply these to the shadow collections.
-		// (we ignore exported changes or mutations since we will wait for the server to send those to us, once it commits them)
-		if (null != shadowUpdates.updatedShadowEntity)
-		{
-			_thisShadowEntity = shadowUpdates.updatedShadowEntity;
-		}
-		_shadowCrowd.putAll(shadowUpdates.entitiesChangedInTick);
-		_shadowWorld.putAll(shadowUpdates.stateFragment());
-		_shadowHeightMap.putAll(shadowUpdates.heightFragment());
-		
-		// Remove before moving on to our projection.
-		_shadowCrowd.keySet().removeAll(removedEntities);
-		_shadowWorld.keySet().removeAll(removedCuboids);
-		_shadowHeightMap.keySet().removeAll(removedCuboids);
 		
 		// Verify that all state changes to the shadow data actually did something (since this would be a needless change we should prune, otherwise).
 		// In the future, we may want to remove this since it is a non-trivial check.
@@ -239,7 +198,7 @@ public class SpeculativeProjection
 			CuboidAddress address = location.getCuboidAddress();
 			BlockAddress block = location.getBlockAddress();
 			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
-			IReadOnlyCuboidData shadowCuboid = _shadowWorld.get(address);
+			IReadOnlyCuboidData shadowCuboid = _shadowState.getCuboid(address);
 			BlockProxy stale = new BlockProxy(block, staleCuboid);
 			BlockProxy shadow = new BlockProxy(block, shadowCuboid);
 			Assert.assertTrue(!stale.doAspectsMatch(shadow));
@@ -248,11 +207,12 @@ public class SpeculativeProjection
 		// ***** By this point, the shadow state has been updated so we can rebuild the projected state.
 		
 		// First, we can send the events since they are unrelated to our projected state.
+		int thisEntityId = _shadowState.getThisEntity().id();
 		for (EventRecord event : events)
 		{
 			// We may need to strip off some events to avoid redundant reporting:  If the event has this entity as its source AND it is a block-based event, it should be skipped.
 			// Events related to other entities are still let through since we don't apply speculative changes to other entities (only the local entity and the world).
-			boolean isSourceLocal = _thisShadowEntity.id() == event.entitySource();
+			boolean isSourceLocal = thisEntityId == event.entitySource();
 			boolean shouldReport = !isSourceLocal || _eventTypesToAlwaysReport.contains(event.type());
 			if (shouldReport)
 			{
@@ -261,11 +221,21 @@ public class SpeculativeProjection
 		}
 		
 		// Rebuild our projection from these collections.
-		boolean isFirstRun = (null == _projectedLocalEntity);
-		_projectedWorld = new HashMap<>(_shadowWorld);
-		_projectedHeightMap = new HashMap<>(_shadowHeightMap);
-		Entity previousLocalEntity = _projectedLocalEntity;
-		_projectedLocalEntity = _thisShadowEntity;
+		boolean isFirstRun = (null == _projectedState);
+		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges;
+		Entity previousLocalEntity;
+		if (null != _projectedState)
+		{
+			previousProjectedChanges = _projectedState.projectedBlockChanges;
+			previousLocalEntity = _projectedState.projectedLocalEntity;
+			
+		}
+		else
+		{
+			previousProjectedChanges = Map.of();
+			previousLocalEntity = null;
+		}
+		_projectedState = _shadowState.buildProjectedState();
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -340,8 +310,8 @@ public class SpeculativeProjection
 		if (isFirstRun)
 		{
 			// This is the first load so nothing should have changed.
-			Assert.assertTrue(_thisShadowEntity == _projectedLocalEntity);
-			_listener.thisEntityDidLoad(_thisShadowEntity);
+			Assert.assertTrue(_shadowState.getThisEntity() == _projectedState.projectedLocalEntity);
+			_listener.thisEntityDidLoad(_shadowState.getThisEntity());
 		}
 		for (PartialEntity entity : addedEntities)
 		{
@@ -353,13 +323,10 @@ public class SpeculativeProjection
 		}
 		
 		// Use the common path to describe what was changed.
-		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
-		Set<Integer> otherEntitiesChanges = new HashSet<>(shadowUpdates.entitiesChangedInTick.keySet());
-		otherEntitiesChanges.remove(_localEntityId);
-		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = _projectedBlockChanges;
-		_projectedBlockChanges = new HashMap<>();
-		_notifyCuboidChanges(previousProjectedChanges, staleShadowWorld, updatesToApply, modifiedBlocksByCuboid, columnHeightMaps);
-		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, otherEntitiesChanges);
+		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
+		Assert.assertTrue(!summary.partialEntitiesChanged().contains(_localEntityId));
+		_notifyCuboidChanges(previousProjectedChanges, staleShadowWorld, summary.changesByCuboid(), modifiedBlocksByCuboid, columnHeightMaps);
+		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, summary.partialEntitiesChanged());
 		
 		// Notify the listeners of what was removed.
 		for (Integer id : removedEntities)
@@ -395,7 +362,7 @@ public class SpeculativeProjection
 		_nextLocalCommitNumber += 1;
 		
 		// Create the tracking for modifications.
-		Entity previousLocalEntity = _projectedLocalEntity;
+		Entity previousLocalEntity = _projectedState.projectedLocalEntity;
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
 		
 		// Attempt to apply the change.
@@ -412,9 +379,9 @@ public class SpeculativeProjection
 		}
 		
 		// Notify the listener of what changed.
-		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedLocalEntity)) ? _projectedLocalEntity : null;
+		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
 		_notifyCuboidChanges(Map.of(), Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
-		_notifyEntityChanges(_thisShadowEntity, changedLocalEntity, Set.of());
+		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -440,127 +407,18 @@ public class SpeculativeProjection
 		);
 		
 		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
-				, Map.of(_localEntityId, _projectedLocalEntity)
+				, Map.of(_localEntityId, _projectedState.projectedLocalEntity)
 				, context
 				, Map.of()
 		);
 		Entity updated = innerGroup.updatedEntities().get(_localEntityId);
 		if (null != updated)
 		{
-			_projectedLocalEntity = updated;
-			_notifyEntityChanges(_thisShadowEntity, _projectedLocalEntity, Set.of());
+			_projectedState.projectedLocalEntity = updated;
+			_notifyEntityChanges(_shadowState.getThisEntity(), _projectedState.projectedLocalEntity, Set.of());
 		}
 	}
 
-
-
-	private _UpdateTuple _applyUpdatesToShadowState(List<IEntityUpdate> entityUpdates
-			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
-	)
-	{
-		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(entityUpdates);
-		Map<Integer, PartialEntity> entitiesChangedInTick = _applyPartialEntityUpdatesToShadowState(partialEntityUpdates);
-		
-		Map<CuboidAddress, IReadOnlyCuboidData> updatedCuboids = new HashMap<>();
-		Map<CuboidAddress, CuboidHeightMap> updatedMaps = new HashMap<>();
-		_applyCuboidUpdatesToShadowState(updatedCuboids
-				, updatedMaps
-				, updatesToApply
-		);
-		_UpdateTuple shadowUpdates = new _UpdateTuple(updatedShadowEntity
-				, entitiesChangedInTick
-				, updatedCuboids
-				, updatedMaps
-		);
-		return shadowUpdates;
-	}
-
-	private Entity _applyLocalEntityUpdatesToShadowState(List<IEntityUpdate> entityUpdates)
-	{
-		// We won't use the CrowdProcessor here since it applies IMutationEntity but the IEntityUpdate instances are simpler.
-		Entity updatedShadowEntity = null;
-		if (!entityUpdates.isEmpty())
-		{
-			Entity entityToChange = _thisShadowEntity;
-			// These must already exist if they are being updated.
-			Assert.assertTrue(null != entityToChange);
-			MutableEntity mutable = MutableEntity.existing(entityToChange);
-			for (IEntityUpdate update : entityUpdates)
-			{
-				update.applyToEntity(mutable);
-			}
-			Entity frozen = mutable.freeze();
-			if (entityToChange != frozen)
-			{
-				updatedShadowEntity = frozen;
-			}
-		}
-		return updatedShadowEntity;
-	}
-
-	private Map<Integer, PartialEntity> _applyPartialEntityUpdatesToShadowState(Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates)
-	{
-		Map<Integer, PartialEntity> entitiesChangedInTick = new HashMap<>();
-		for (Map.Entry<Integer, List<IPartialEntityUpdate>> elt : partialEntityUpdates.entrySet())
-		{
-			int entityId = elt.getKey();
-			PartialEntity partialEntityToChange = _shadowCrowd.get(entityId);
-			// These must already exist if they are being updated.
-			Assert.assertTrue(null != partialEntityToChange);
-			MutablePartialEntity mutable = MutablePartialEntity.existing(partialEntityToChange);
-			for (IPartialEntityUpdate update : elt.getValue())
-			{
-				update.applyToEntity(mutable);
-			}
-			PartialEntity frozen = mutable.freeze();
-			if (partialEntityToChange != frozen)
-			{
-				entitiesChangedInTick.put(entityId, frozen);
-			}
-		}
-		return entitiesChangedInTick;
-	}
-
-	private void _applyCuboidUpdatesToShadowState(Map<CuboidAddress, IReadOnlyCuboidData> out_updatedCuboids
-			, Map<CuboidAddress, CuboidHeightMap> out_updatedMaps
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
-	)
-	{
-		// NOTE:  This logic is similar to WorldProcessor but partially-duplicated here to avoid all the other requirements of the WorldProcessor or redundant operations it would perform.
-		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : updatesToApply.entrySet())
-		{
-			Set<AbsoluteLocation> existingUpdates = new HashSet<>();
-			CuboidAddress address = entry.getKey();
-			IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
-			
-			// We will lazily create the mutable version, only if something needs to be written-back (since some updates, at least in tests, are meaningless).
-			CuboidData mutableCuboid = null;
-			for (MutationBlockSetBlock update : entry.getValue())
-			{
-				AbsoluteLocation location = update.getAbsoluteLocation();
-				// We expect only one update per location - if this fails, we need to update this algorithm (although the current plan is just to make a single update parameterized).
-				boolean didAdd = existingUpdates.add(location);
-				Assert.assertTrue(didAdd);
-				
-				MutableBlockProxy proxy = new MutableBlockProxy(location, readOnly);
-				update.applyState(proxy);
-				if (proxy.didChange())
-				{
-					if (null == mutableCuboid)
-					{
-						mutableCuboid = CuboidData.mutableClone(readOnly);
-					}
-					proxy.writeBack(mutableCuboid);
-				}
-			}
-			if (null != mutableCuboid)
-			{
-				out_updatedCuboids.put(address, mutableCuboid);
-				out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));
-			}
-		}
-	}
 
 	private void _notifyCuboidChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
 			, Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld
@@ -578,7 +436,7 @@ public class SpeculativeProjection
 		{
 			CuboidAddress address = changed.getKey();
 			Set<BlockAddress> set = changedBlocks.get(address);
-			IReadOnlyCuboidData activeVersion = _projectedWorld.get(address);
+			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(address);
 			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
 			// This should never be null (the server shouldn't describe what it is unloading).
 			Assert.assertTrue(null != activeVersion);
@@ -592,7 +450,7 @@ public class SpeculativeProjection
 				{
 					BlockAddress block = location.getBlockAddress();
 					BlockProxy projected = new BlockProxy(block, activeVersion);
-					BlockProxy previousReport = _projectedBlockChanges.get(location);
+					BlockProxy previousReport = _projectedState.projectedBlockChanges.get(location);
 					if ((null == previousReport) || !previousReport.doAspectsMatch(projected))
 					{
 						if (null == set)
@@ -630,8 +488,8 @@ public class SpeculativeProjection
 			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
 			// Remember that these are copy-on-write so we can just instance-compare.
 			CuboidAddress address = changed.getKey();
-			IReadOnlyCuboidData activeVersion = _projectedWorld.get(address);
-			IReadOnlyCuboidData shadowVersion = _shadowWorld.get(address);
+			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(address);
+			IReadOnlyCuboidData shadowVersion = _shadowState.getCuboid(address);
 			if (activeVersion != shadowVersion)
 			{
 				// Also, record any of the changed locations here for future reverts.
@@ -642,7 +500,7 @@ public class SpeculativeProjection
 					{
 						BlockAddress block = location.getBlockAddress();
 						BlockProxy projected = new BlockProxy(block, activeVersion);
-						BlockProxy previousReport = _projectedBlockChanges.get(location);
+						BlockProxy previousReport = _projectedState.projectedBlockChanges.get(location);
 						if (null == previousReport)
 						{
 							// We will claim that we are comparing against the shadow version so we don't report non-changes.
@@ -651,7 +509,7 @@ public class SpeculativeProjection
 						
 						if (!previousReport.doAspectsMatch(projected))
 						{
-							_projectedBlockChanges.put(location, projected);
+							_projectedState.projectedBlockChanges.put(location, projected);
 							
 							// We also need to report this cuboid as changed.
 							cuboidsToReport.put(address, activeVersion);
@@ -679,10 +537,10 @@ public class SpeculativeProjection
 			AbsoluteLocation blockLocation = changeEntry.getKey();
 			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
 			BlockProxy proxy = changeEntry.getValue();
-			IReadOnlyCuboidData activeVersion = _projectedWorld.get(cuboidAddress);
+			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(cuboidAddress);
 			if (null != activeVersion)
 			{
-				IReadOnlyCuboidData shadowVersion = _shadowWorld.get(cuboidAddress);
+				IReadOnlyCuboidData shadowVersion = _shadowState.getCuboid(cuboidAddress);
 				BlockAddress block = blockLocation.getBlockAddress();
 				BlockProxy projected = new BlockProxy(block, activeVersion);
 				BlockProxy shadow = new BlockProxy(block, shadowVersion);
@@ -690,7 +548,7 @@ public class SpeculativeProjection
 				if (!projected.doAspectsMatch(shadow))
 				{
 					// This still differs so it still counts as a change.
-					_projectedBlockChanges.put(blockLocation, projected);
+					_projectedState.projectedBlockChanges.put(blockLocation, projected);
 				}
 				if (!projected.doAspectsMatch(proxy))
 				{
@@ -747,7 +605,7 @@ public class SpeculativeProjection
 		}
 		for (Integer entityId : otherEntityIds)
 		{
-			_listener.otherEntityDidChange(_shadowCrowd.get(entityId));
+			_listener.otherEntityDidChange(_shadowState.getEntity(entityId));
 		}
 	}
 
@@ -776,11 +634,11 @@ public class SpeculativeProjection
 				, currentTickTimeMillis
 		);
 		
-		Entity[] changedProjectedEntity = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, List.of(change));
+		Entity[] changedProjectedEntity = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedState.projectedLocalEntity, List.of(change));
 		boolean changeDidPass = (null != changedProjectedEntity);
 		if ((null != changedProjectedEntity) && (null != changedProjectedEntity[0]))
 		{
-			_projectedLocalEntity = changedProjectedEntity[0];
+			_projectedState.projectedLocalEntity = changedProjectedEntity[0];
 		}
 		
 		// We only bother capturing the changes for this entity since those are the only ones we speculatively apply.
@@ -841,7 +699,7 @@ public class SpeculativeProjection
 			lightChanges = new HashMap<>();
 			for(CuboidAddress address : lightingChangeLocations)
 			{
-				OctreeInflatedByte unsafeLighting = CuboidUnsafe.getAspectUnsafe(_projectedWorld.get(address), AspectRegistry.LIGHT);
+				OctreeInflatedByte unsafeLighting = CuboidUnsafe.getAspectUnsafe(_projectedState.projectedWorld.get(address), AspectRegistry.LIGHT);
 				lightChanges.put(address, unsafeLighting);
 			}
 		}
@@ -881,26 +739,6 @@ public class SpeculativeProjection
 		return mutationsToRun;
 	}
 
-	private Map<CuboidAddress, List<MutationBlockSetBlock>> _createUpdateMap(List<MutationBlockSetBlock> updates, Set<CuboidAddress> loadedCuboids)
-	{
-		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesByCuboid = new HashMap<>();
-		for (MutationBlockSetBlock update : updates)
-		{
-			CuboidAddress address = update.getAbsoluteLocation().getCuboidAddress();
-			// If the server sent us an update, we MUST have it loaded.
-			Assert.assertTrue(loadedCuboids.contains(address));
-			
-			List<MutationBlockSetBlock> queue = updatesByCuboid.get(address);
-			if (null == queue)
-			{
-				queue = new LinkedList<>();
-				updatesByCuboid.put(address, queue);
-			}
-			queue.add(update);
-		}
-		return updatesByCuboid;
-	}
-
 	private void _applyFollowUp(Map<CuboidAddress, List<AbsoluteLocation>> out_modifiedBlocksByCuboid, _SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
@@ -935,15 +773,15 @@ public class SpeculativeProjection
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 	)
 	{
-		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedWorld.keySet());
+		Map<CuboidAddress, List<ScheduledMutation>> innerMutations = _createMutationMap(blockMutations, _projectedState.projectedWorld.keySet());
 		// We ignore normal "block update" events and logic changes in the speculative projection.
 		// We ignore the block updates in the speculative projection (although this could be used in more precisely notifying the listener).
 		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboidAddress = Map.of();
 		Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = Map.of();
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
-				, _projectedWorld
-				, _projectedHeightMap
+				, _projectedState.projectedWorld
+				, _projectedState.projectedHeightMap
 				, context
 				, innerMutations
 				, Map.of()
@@ -952,8 +790,8 @@ public class SpeculativeProjection
 				, potentialLogicChangesByCuboid
 				, cuboidsLoadedThisTick
 		);
-		_projectedWorld.putAll(innerFragment.stateFragment());
-		_projectedHeightMap.putAll(innerFragment.heightFragment());
+		_projectedState.projectedWorld.putAll(innerFragment.stateFragment());
+		_projectedState.projectedHeightMap.putAll(innerFragment.heightFragment());
 		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> elt : innerFragment.blockChangesByCuboid().entrySet())
 		{
 			CuboidAddress key = elt.getKey();
@@ -994,10 +832,10 @@ public class SpeculativeProjection
 	{
 		if (null != thisEntityMutations)
 		{
-			Entity[] result = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedLocalEntity, thisEntityMutations);
+			Entity[] result = _runChangesOnEntity(_singleThreadElement, context, _localEntityId, _projectedState.projectedLocalEntity, thisEntityMutations);
 			if ((null != result) && (null != result[0]))
 			{
-				_projectedLocalEntity = result[0];
+				_projectedState.projectedLocalEntity = result[0];
 			}
 		}
 	}
@@ -1061,8 +899,8 @@ public class SpeculativeProjection
 		TickProcessingContext context = new TickProcessingContext(gameTick
 				, cachingLoader
 				, (Integer entityId) -> (_localEntityId == entityId)
-					? MinimalEntity.fromEntity(_thisShadowEntity)
-					: MinimalEntity.fromPartialEntity(_shadowCrowd.get(entityId))
+					? MinimalEntity.fromEntity(_shadowState.getThisEntity())
+					: MinimalEntity.fromPartialEntity(_shadowState.getEntity(entityId))
 				, null
 				, newMutationSink
 				, newChangeSink
@@ -1081,7 +919,7 @@ public class SpeculativeProjection
 
 	private Map<CuboidColumnAddress, ColumnHeightMap> _buildProjectedColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)
 	{
-		Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = _projectedHeightMap.entrySet().stream()
+		Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = _projectedState.projectedHeightMap.entrySet().stream()
 				.filter((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> columnsToGenerate.contains(entry.getKey().getColumn()))
 				.collect(Collectors.toMap((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getValue()))
 		;
@@ -1094,11 +932,11 @@ public class SpeculativeProjection
 		for (Map.Entry<CuboidAddress, OctreeInflatedByte> elt : followUpLightChanges.entrySet())
 		{
 			CuboidAddress key = elt.getKey();
-			IReadOnlyCuboidData old = _projectedWorld.get(key);
+			IReadOnlyCuboidData old = _projectedState.projectedWorld.get(key);
 			if (null != old)
 			{
 				IReadOnlyCuboidData update = CuboidUnsafe.cloneWithReplacement(old, AspectRegistry.LIGHT, elt.getValue());
-				_projectedWorld.put(key, update);
+				_projectedState.projectedWorld.put(key, update);
 			}
 		}
 	}
@@ -1201,10 +1039,4 @@ public class SpeculativeProjection
 			this.exportedMutations.addAll(followUp.exportedMutations);
 		}
 	}
-
-	private static record _UpdateTuple(Entity updatedShadowEntity
-			, Map<Integer, PartialEntity> entitiesChangedInTick
-			, Map<CuboidAddress, IReadOnlyCuboidData> stateFragment
-			, Map<CuboidAddress, CuboidHeightMap> heightFragment
-	) {}
 }
