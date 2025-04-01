@@ -50,7 +50,7 @@ public class ClientRunner
 	public static final long TIME_GATE_MILLIS = 10L;
 
 	private final IClientAdapter _network;
-	private final SpeculativeProjection.IProjectionListener _projectionListener;
+	private final IProjectionListener _projectionListener;
 	private final IListener _clientListener;
 	private SpeculativeProjection _projection;
 	private final List<Runnable> _pendingNetworkCallsToFlush;
@@ -65,7 +65,7 @@ public class ClientRunner
 	// (failing to correctly set the delta will cause the server to block changes, meaning that the client could be disconnected due to flooding)
 	private long _lastCallMillis;
 
-	public ClientRunner(IClientAdapter network, SpeculativeProjection.IProjectionListener projectionListener, IListener clientListener)
+	public ClientRunner(IClientAdapter network, IProjectionListener projectionListener, IListener clientListener)
 	{
 		_network = network;
 		_projectionListener = projectionListener;
@@ -540,7 +540,7 @@ public class ClientRunner
 		}
 	}
 
-	private class LocalProjection implements SpeculativeProjection.IProjectionListener
+	private class LocalProjection implements IProjectionListener
 	{
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)

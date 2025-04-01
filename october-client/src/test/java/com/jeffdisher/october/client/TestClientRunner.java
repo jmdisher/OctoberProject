@@ -630,7 +630,7 @@ public class TestClientRunner
 		}
 	}
 
-	private static class TestProjection implements SpeculativeProjection.IProjectionListener
+	private static class TestProjection implements IProjectionListener
 	{
 		public Entity thisEntity = null;
 		public Entity authoritativeEntity = null;

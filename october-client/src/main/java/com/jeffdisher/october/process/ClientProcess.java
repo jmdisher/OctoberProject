@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.client.ClientRunner;
 import com.jeffdisher.october.client.IClientAdapter;
-import com.jeffdisher.october.client.SpeculativeProjection;
+import com.jeffdisher.october.client.IProjectionListener;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
@@ -565,7 +565,7 @@ public class ClientProcess
 	}
 
 	// Note that these calls are issued on the thread which calls into the ClientRunner, meaning the thread we are treating as "main", from the user.
-	private class _ProjectionListener implements SpeculativeProjection.IProjectionListener
+	private class _ProjectionListener implements IProjectionListener
 	{
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)

@@ -2544,7 +2544,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3, inventory2.getCount(stoneItem));
 	}
 
-	private static class CountingListener implements SpeculativeProjection.IProjectionListener
+	private static class CountingListener implements IProjectionListener
 	{
 		public int loadCount = 0;
 		public int changeCount = 0;
