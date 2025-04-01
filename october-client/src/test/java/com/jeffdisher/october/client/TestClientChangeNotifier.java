@@ -101,9 +101,7 @@ public class TestClientChangeNotifier
 		proxy.setBlockAndClear(STONE);
 		MutationBlockSetBlock setBlock = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
 		// We need to apply the change before running the notifications.
-		proxy = new MutableBlockProxy(location, changed);
-		setBlock.applyState(proxy);
-		proxy.writeBack(changed);
+		setBlock.applyState(changed);
 		// We build the projected state from this shadow and re-apply local changes (none)
 		CuboidData projected = CuboidData.mutableClone(changed);
 		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));

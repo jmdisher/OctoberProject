@@ -11,6 +11,7 @@ import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -86,6 +87,7 @@ public class TestMutableBlockProxy
 		AbsoluteLocation location = new AbsoluteLocation(1, 1, 1);
 		CuboidAddress cuboidAddress = location.getCuboidAddress();
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		CuboidData output = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		BlockAddress address = location.getBlockAddress();
 		
 		// Store into the block's inventory and see how that serializes.
@@ -93,49 +95,46 @@ public class TestMutableBlockProxy
 		proxy.setInventory(Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(stoneItem, 1).finish());
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(input);
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
 		Assert.assertEquals(16, buffer.position());
-		buffer.flip();
-		proxy = new MutableBlockProxy(location, input);
-		proxy.deserializeFromBuffer(buffer);
-		Assert.assertEquals(0, buffer.remaining());
-		Assert.assertTrue(proxy.didChange());
-		proxy.writeBack(input);
+		byte[] raw = new byte[buffer.position()];
+		buffer.flip().get(raw);
+		MutationBlockSetBlock setBlock = new MutationBlockSetBlock(location, raw);
+		setBlock.applyState(output);
 		buffer.clear();
 		
 		// Illuminate this block and then serialize it to show that only that index is serialized.
 		proxy = new MutableBlockProxy(location, input);
 		proxy.setLight((byte)5);
 		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(input);
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
 		Assert.assertEquals(2, buffer.position());
-		buffer.flip();
-		proxy = new MutableBlockProxy(location, input);
-		proxy.deserializeFromBuffer(buffer);
-		Assert.assertEquals(0, buffer.remaining());
-		Assert.assertTrue(proxy.didChange());
-		proxy.writeBack(input);
+		raw = new byte[buffer.position()];
+		buffer.flip().get(raw);
+		setBlock = new MutationBlockSetBlock(location, raw);
+		setBlock.applyState(output);
 		buffer.clear();
 		
 		// Now, reset the block type and verify that the inventory is cleared (notably not the lighting, since it is updated later).
 		proxy = new MutableBlockProxy(location, input);
 		proxy.setBlockAndClear(STONE);
 		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(input);
 		proxy.serializeToBuffer(buffer);
 		// (verified experimentally).
 		Assert.assertEquals(8, buffer.position());
-		buffer.flip();
-		proxy = new MutableBlockProxy(location, input);
-		proxy.deserializeFromBuffer(buffer);
-		Assert.assertEquals(0, buffer.remaining());
-		Assert.assertTrue(proxy.didChange());
-		proxy.writeBack(input);
+		raw = new byte[buffer.position()];
+		buffer.flip().get(raw);
+		setBlock = new MutationBlockSetBlock(location, raw);
+		setBlock.applyState(output);
 		buffer.clear();
 		
-		Assert.assertEquals(STONE.item().number(), input.getData15(AspectRegistry.BLOCK, address));
-		Assert.assertEquals(null, input.getDataSpecial(AspectRegistry.INVENTORY, address));
+		Assert.assertEquals(STONE.item().number(), output.getData15(AspectRegistry.BLOCK, address));
+		Assert.assertEquals(null, output.getDataSpecial(AspectRegistry.INVENTORY, address));
 	}
 
 	@Test

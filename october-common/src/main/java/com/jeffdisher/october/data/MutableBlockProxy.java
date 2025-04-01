@@ -276,36 +276,6 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		}
 	}
 
-	// We check these types internally.
-	@SuppressWarnings("unchecked")
-	@Override
-	public void deserializeFromBuffer(ByteBuffer buffer)
-	{
-		// We only store the data which actually changed so loop until the buffer segment is empty, checking for indices (byte).
-		while (buffer.hasRemaining())
-		{
-			byte i = buffer.get();
-			Assert.assertTrue(i >= 0);
-			Assert.assertTrue(i < AspectRegistry.ALL_ASPECTS.length);
-			
-			Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
-			if (Short.class == type.type())
-			{
-				short value = buffer.getShort();
-				_setData15((Aspect<Short, ?>) type, value);
-			}
-			else if (Byte.class == type.type())
-			{
-				byte value = buffer.get();
-				_setData7((Aspect<Byte, ?>) type, value);
-			}
-			else
-			{
-				_readAndStore(type, buffer);
-			}
-		}
-	}
-
 	@Override
 	public Object getEphemeralState()
 	{
@@ -557,11 +527,5 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	private static <T> void _writeAsType(CuboidData newData, Aspect<T, ?> aspect, BlockAddress address, Object value)
 	{
 		newData.setDataSpecial(aspect, address, aspect.type().cast(value));
-	}
-
-	private <T> void _readAndStore(Aspect<T, ?> type, ByteBuffer buffer)
-	{
-		T value = type.codec().loadData(buffer);
-		_setDataSpecial(type, value);
 	}
 }

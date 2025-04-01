@@ -61,12 +61,6 @@ public interface IMutableBlockProxy extends IBlockProxy
 	 */
 	void serializeToBuffer(ByteBuffer buffer);
 	/**
-	 * Deserializes the given buffer, over-writing all block aspects with its contents.
-	 * 
-	 * @param buffer The buffer which will be deserialized to populate this block's aspects.
-	 */
-	void deserializeFromBuffer(ByteBuffer buffer);
-	/**
 	 * Note that ephemeral state only exists within a single tick (always null in speculative projection) so this will
 	 * be null if not set on THIS tick.
 	 * Note that this type is implementation dependent so multiple mutation types which want to use this will need to be

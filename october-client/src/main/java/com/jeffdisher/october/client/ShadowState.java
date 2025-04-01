@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -232,11 +231,8 @@ public class ShadowState
 				boolean didAdd = existingUpdates.add(location);
 				Assert.assertTrue(didAdd);
 				
-				MutableBlockProxy proxy = new MutableBlockProxy(location, readOnly);
-				update.applyState(proxy);
-				// The server should never tell us to update something in a way which isn't a change.
-				Assert.assertTrue(proxy.didChange());
-				proxy.writeBack(mutableCuboid);
+				// Apply this change directly to the cuboid.
+				update.applyState(mutableCuboid);
 			}
 			out_updatedCuboids.put(address, mutableCuboid);
 			out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));

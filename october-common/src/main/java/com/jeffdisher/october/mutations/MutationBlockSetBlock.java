@@ -2,10 +2,14 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
-import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -63,15 +67,38 @@ public class MutationBlockSetBlock
 	}
 
 	/**
-	 * Applies the change to the given newBlock.
+	 * Applies the change to the given target.
 	 * 
-	 * @param newBlock The block currently being modified by this mutation in the current tick.
+	 * @param target The cuboid to modify by writing the receiver's changes.
 	 */
-	public void applyState(IMutableBlockProxy newBlock)
+	@SuppressWarnings("unchecked")
+	public void applyState(CuboidData target)
 	{
-		// We want to decode the raw data as we feed it in to the proxy.
 		ByteBuffer buffer = ByteBuffer.wrap(_rawData);
-		newBlock.deserializeFromBuffer(buffer);
+		BlockAddress location = _location.getBlockAddress();
+		// We only store the data which actually changed so loop until the buffer segment is empty, checking for indices (byte).
+		while (buffer.hasRemaining())
+		{
+			byte i = buffer.get();
+			Assert.assertTrue(i >= 0);
+			Assert.assertTrue(i < AspectRegistry.ALL_ASPECTS.length);
+			
+			Aspect<?, ?> type = AspectRegistry.ALL_ASPECTS[i];
+			if (Short.class == type.type())
+			{
+				short value = buffer.getShort();
+				target.setData15((Aspect<Short, ?>) type, location, value);
+			}
+			else if (Byte.class == type.type())
+			{
+				byte value = buffer.get();
+				target.setData7((Aspect<Byte, ?>) type, location, value);
+			}
+			else
+			{
+				_readAndStore(target, location, type, buffer);
+			}
+		}
 	}
 
 	/**
@@ -83,5 +110,12 @@ public class MutationBlockSetBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 		buffer.put(_rawData);
+	}
+
+
+	private <T> void _readAndStore(CuboidData target, BlockAddress location, Aspect<T, ?> type, ByteBuffer buffer)
+	{
+		T value = type.codec().loadData(buffer);
+		target.setDataSpecial((Aspect<T, ?>) type, location, value);
 	}
 }
