@@ -221,8 +221,10 @@ public class ShadowState
 			CuboidAddress address = entry.getKey();
 			IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
 			
-			// We will lazily create the mutable version, only if something needs to be written-back (since some updates, at least in tests, are meaningless).
-			CuboidData mutableCuboid = null;
+			List<MutationBlockSetBlock> updates = entry.getValue();
+			// This list can never be empty.
+			Assert.assertTrue(!updates.isEmpty());
+			CuboidData mutableCuboid = CuboidData.mutableClone(readOnly);
 			for (MutationBlockSetBlock update : entry.getValue())
 			{
 				AbsoluteLocation location = update.getAbsoluteLocation();
@@ -232,20 +234,12 @@ public class ShadowState
 				
 				MutableBlockProxy proxy = new MutableBlockProxy(location, readOnly);
 				update.applyState(proxy);
-				if (proxy.didChange())
-				{
-					if (null == mutableCuboid)
-					{
-						mutableCuboid = CuboidData.mutableClone(readOnly);
-					}
-					proxy.writeBack(mutableCuboid);
-				}
+				// The server should never tell us to update something in a way which isn't a change.
+				Assert.assertTrue(proxy.didChange());
+				proxy.writeBack(mutableCuboid);
 			}
-			if (null != mutableCuboid)
-			{
-				out_updatedCuboids.put(address, mutableCuboid);
-				out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));
-			}
+			out_updatedCuboids.put(address, mutableCuboid);
+			out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));
 		}
 	}
 
