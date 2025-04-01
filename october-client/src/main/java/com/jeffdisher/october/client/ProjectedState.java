@@ -2,12 +2,17 @@ package com.jeffdisher.october.client;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 
 
@@ -31,5 +36,15 @@ public class ProjectedState
 		this.projectedWorld = projectedWorld;
 		this.projectedHeightMap = projectedHeightMap;
 		this.projectedBlockChanges = new HashMap<>();
+	}
+
+	public Map<CuboidColumnAddress, ColumnHeightMap> buildColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)
+	{
+		Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = this.projectedHeightMap.entrySet().stream()
+				.filter((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> columnsToGenerate.contains(entry.getKey().getColumn()))
+				.collect(Collectors.toMap((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getValue()))
+		;
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(mapsToCoalesce);
+		return columnHeightMaps;
 	}
 }

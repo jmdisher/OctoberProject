@@ -11,18 +11,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
-import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
-import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -307,7 +304,7 @@ public class SpeculativeProjection
 		
 		// We don't keep the height maps, only generating them for the cuboids we need to notify.
 		Set<CuboidColumnAddress> columnsToGenerate = addedCuboids.stream().map((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress().getColumn()).collect(Collectors.toUnmodifiableSet());
-		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = _buildProjectedColumnMaps(columnsToGenerate);
+		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = _projectedState.buildColumnMaps(columnsToGenerate);
 		
 		// Notify the listener of what was added.
 		if (isFirstRun)
@@ -328,7 +325,15 @@ public class SpeculativeProjection
 		// Use the common path to describe what was changed.
 		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
 		Assert.assertTrue(!summary.partialEntitiesChanged().contains(_localEntityId));
-		_notifyCuboidChanges(previousProjectedChanges, staleShadowWorld, summary.changesByCuboid(), modifiedBlocksByCuboid, columnHeightMaps);
+		ClientChangeNotifier.notifyCuboidChangesFromServer(_listener
+				, _projectedState
+				, (CuboidAddress address) -> _shadowState.getCuboid(address)
+				, previousProjectedChanges
+				, staleShadowWorld
+				, summary.changesByCuboid()
+				, modifiedBlocksByCuboid
+				, columnHeightMaps
+		);
 		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, summary.partialEntitiesChanged());
 		
 		// Notify the listeners of what was removed.
@@ -376,7 +381,11 @@ public class SpeculativeProjection
 			
 			// Notify the listener of what changed.
 			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
-			_notifyCuboidChanges(Map.of(), Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
+			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
+					, _projectedState
+					, (CuboidAddress address) -> _shadowState.getCuboid(address)
+					, modifiedBlocksByCuboid
+			);
 			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		}
 		else
@@ -420,181 +429,6 @@ public class SpeculativeProjection
 		{
 			_projectedState.projectedLocalEntity = updated;
 			_notifyEntityChanges(_shadowState.getThisEntity(), _projectedState.projectedLocalEntity, Set.of());
-		}
-	}
-
-
-	private void _notifyCuboidChanges(Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
-			, Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> authoritativeChangesByCuboid
-			, Map<CuboidAddress, List<AbsoluteLocation>> locallyChangedBlocksByCuboid
-			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
-	)
-	{
-		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
-		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
-		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
-		
-		// We want to add all changes which can in from the server.
-		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> changed : authoritativeChangesByCuboid.entrySet())
-		{
-			CuboidAddress address = changed.getKey();
-			Set<BlockAddress> set = changedBlocks.get(address);
-			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(address);
-			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
-			// This should never be null (the server shouldn't describe what it is unloading).
-			Assert.assertTrue(null != activeVersion);
-			Assert.assertTrue(null != staleCuboid);
-			for (MutationBlockSetBlock setBlock : changed.getValue())
-			{
-				// We want to report this if it isn't just an echo of something we already reported.
-				AbsoluteLocation location = setBlock.getAbsoluteLocation();
-				// See if there is an entry from what we are rebuilding (since we will already handle that, below).
-				if (!previousProjectedChanges.containsKey(location))
-				{
-					BlockAddress block = location.getBlockAddress();
-					BlockProxy projected = new BlockProxy(block, activeVersion);
-					BlockProxy previousReport = _projectedState.projectedBlockChanges.get(location);
-					if ((null == previousReport) || !previousReport.doAspectsMatch(projected))
-					{
-						if (null == set)
-						{
-							set = new HashSet<>();
-							changedBlocks.put(address, set);
-						}
-						set.add(block);
-						
-						// See what aspects changed (may require loading the proxy for real data).
-						Set<Aspect<?, ?>> mismatches;
-						if (null == previousReport)
-						{
-							BlockProxy stale = new BlockProxy(block, staleCuboid);
-							mismatches = stale.checkMismatchedAspects(projected);
-						}
-						else
-						{
-							mismatches = previousReport.checkMismatchedAspects(projected);
-						}
-						// Note that these mismatches can be empty if the result is part of something the local user already did.
-						changedAspects.addAll(mismatches);
-					}
-				}
-			}
-			if (null != set)
-			{
-				cuboidsToReport.put(address, activeVersion);
-			}
-		}
-		
-		// Check the local changes to see if any should be reported.
-		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> changed : locallyChangedBlocksByCuboid.entrySet())
-		{
-			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
-			// Remember that these are copy-on-write so we can just instance-compare.
-			CuboidAddress address = changed.getKey();
-			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(address);
-			IReadOnlyCuboidData shadowVersion = _shadowState.getCuboid(address);
-			if (activeVersion != shadowVersion)
-			{
-				// Also, record any of the changed locations here for future reverts.
-				for (AbsoluteLocation location : changed.getValue())
-				{
-					// See if there is an entry from what we are rebuilding (since we will already handle that, below).
-					if (!previousProjectedChanges.containsKey(location))
-					{
-						BlockAddress block = location.getBlockAddress();
-						BlockProxy projected = new BlockProxy(block, activeVersion);
-						BlockProxy previousReport = _projectedState.projectedBlockChanges.get(location);
-						if (null == previousReport)
-						{
-							// We will claim that we are comparing against the shadow version so we don't report non-changes.
-							previousReport = new BlockProxy(block, shadowVersion);
-						}
-						
-						if (!previousReport.doAspectsMatch(projected))
-						{
-							_projectedState.projectedBlockChanges.put(location, projected);
-							
-							// We also need to report this cuboid as changed.
-							cuboidsToReport.put(address, activeVersion);
-							Set<BlockAddress> set = changedBlocks.get(address);
-							if (null == set)
-							{
-								set = new HashSet<>();
-								changedBlocks.put(address, set);
-							}
-							set.add(block);
-							
-							// See what aspects changed.
-							Set<Aspect<?, ?>> mismatches = previousReport.checkMismatchedAspects(projected);
-							Assert.assertTrue(!mismatches.isEmpty());
-							changedAspects.addAll(mismatches);
-						}
-					}
-				}
-			}
-		}
-		
-		// See if any of the previously projected changes are still changed in the new projected world.
-		for (Map.Entry<AbsoluteLocation, BlockProxy> changeEntry : previousProjectedChanges.entrySet())
-		{
-			AbsoluteLocation blockLocation = changeEntry.getKey();
-			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
-			BlockProxy proxy = changeEntry.getValue();
-			IReadOnlyCuboidData activeVersion = _projectedState.projectedWorld.get(cuboidAddress);
-			if (null != activeVersion)
-			{
-				IReadOnlyCuboidData shadowVersion = _shadowState.getCuboid(cuboidAddress);
-				BlockAddress block = blockLocation.getBlockAddress();
-				BlockProxy projected = new BlockProxy(block, activeVersion);
-				BlockProxy shadow = new BlockProxy(block, shadowVersion);
-				
-				if (!projected.doAspectsMatch(shadow))
-				{
-					// This still differs so it still counts as a change.
-					_projectedState.projectedBlockChanges.put(blockLocation, projected);
-				}
-				if (!projected.doAspectsMatch(proxy))
-				{
-					// This has changed since we last reported.
-					cuboidsToReport.put(cuboidAddress, activeVersion);
-					Set<BlockAddress> set = changedBlocks.get(cuboidAddress);
-					if (null == set)
-					{
-						set = new HashSet<>();
-						changedBlocks.put(cuboidAddress, set);
-					}
-					set.add(block);
-					
-					// See what aspects changed.
-					Set<Aspect<?, ?>> mismatches = projected.checkMismatchedAspects(proxy);
-					Assert.assertTrue(!mismatches.isEmpty());
-					changedAspects.addAll(mismatches);
-				}
-			}
-		}
-		
-		// Generate any of the missing columns.
-		Set<CuboidColumnAddress> missingColumns = cuboidsToReport.keySet().stream()
-				.map((CuboidAddress address) -> address.getColumn())
-				.filter((CuboidColumnAddress column) -> !knownHeightMaps.containsKey(column))
-				.collect(Collectors.toUnmodifiableSet())
-		;
-		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = _buildProjectedColumnMaps(missingColumns);
-		Map<CuboidColumnAddress, ColumnHeightMap> allHeightMaps = new HashMap<>();
-		allHeightMaps.putAll(knownHeightMaps);
-		allHeightMaps.putAll(addedHeightMaps);
-		
-		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : cuboidsToReport.entrySet())
-		{
-			CuboidAddress address = elt.getKey();
-			IReadOnlyCuboidData data = elt.getValue();
-			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
-			_listener.cuboidDidChange(data
-					, allHeightMaps.get(address.getColumn())
-					, blocksChanged
-					, changedAspects
-			);
 		}
 	}
 
@@ -906,16 +740,6 @@ public class SpeculativeProjection
 				, currentTickTimeMillis
 		);
 		return context;
-	}
-
-	private Map<CuboidColumnAddress, ColumnHeightMap> _buildProjectedColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)
-	{
-		Map<CuboidAddress, CuboidHeightMap> mapsToCoalesce = _projectedState.projectedHeightMap.entrySet().stream()
-				.filter((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> columnsToGenerate.contains(entry.getKey().getColumn()))
-				.collect(Collectors.toMap((Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, CuboidHeightMap> entry) -> entry.getValue()))
-		;
-		Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(mapsToCoalesce);
-		return columnHeightMaps;
 	}
 
 	private void _applyLightingCapture(Map<CuboidAddress, OctreeInflatedByte> followUpLightChanges)
