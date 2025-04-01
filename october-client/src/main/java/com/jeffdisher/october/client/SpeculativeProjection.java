@@ -243,11 +243,12 @@ public class SpeculativeProjection
 			_followUpTicks.remove(0);
 		}
 		
-		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = Map.of();
 		for (int i = 0; i < _followUpTicks.size(); ++i)
 		{
 			_SpeculativeConsequences followUp = _followUpTicks.get(i);
-			_applyFollowUp(modifiedBlocksByCuboid, followUp);
+			Map<CuboidAddress, List<AbsoluteLocation>> blocks = _applyFollowUp(followUp);
+			modifiedBlocksByCuboid = _mergeChanges(modifiedBlocksByCuboid, blocks);
 		}
 		// Inject any of the lighting changes before retiring this with the follow-up ticks.
 		_applyLightingCapture(_followUpLightChanges);
@@ -260,11 +261,12 @@ public class SpeculativeProjection
 			// Only consider this if it is more recent than the level we are applying.
 			if (wrapper.commitLevel > latestLocalCommitIncluded)
 			{
-				_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, wrapper.change, false, wrapper.commitLevel, wrapper.lightChanges, wrapper.currentTickTimeMillis);
+				_SpeculativeOutput output = _forwardApplySpeculative(wrapper.change, false, wrapper.commitLevel, wrapper.lightChanges, wrapper.currentTickTimeMillis);
 				// If this was applied, re-add the new wrapper.
-				if (null != appliedWrapper)
+				if (null != output)
 				{
-					_speculativeChanges.add(appliedWrapper);
+					_speculativeChanges.add(output.wrapper);
+					modifiedBlocksByCuboid = _mergeChanges(modifiedBlocksByCuboid, output.modifiedBlocksByCuboid);
 				}
 			}
 			else
@@ -272,7 +274,8 @@ public class SpeculativeProjection
 				// Apply this as a follow-up.
 				for (_SpeculativeConsequences followUp : wrapper.followUpTicks)
 				{
-					_applyFollowUp(modifiedBlocksByCuboid, followUp);
+					Map<CuboidAddress, List<AbsoluteLocation>> blocks = _applyFollowUp(followUp);
+					modifiedBlocksByCuboid = _mergeChanges(modifiedBlocksByCuboid, blocks);
 				}
 				_applyLightingCapture(wrapper.lightChanges);
 				
@@ -363,13 +366,18 @@ public class SpeculativeProjection
 		
 		// Create the tracking for modifications.
 		Entity previousLocalEntity = _projectedState.projectedLocalEntity;
-		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = new HashMap<>();
 		
 		// Attempt to apply the change.
-		_SpeculativeWrapper appliedWrapper = _forwardApplySpeculative(modifiedBlocksByCuboid, change, true, commitNumber, null, currentTickTimeMillis);
-		if (null != appliedWrapper)
+		_SpeculativeOutput output = _forwardApplySpeculative(change, true, commitNumber, null, currentTickTimeMillis);
+		if (null != output)
 		{
-			_speculativeChanges.add(appliedWrapper);
+			_speculativeChanges.add(output.wrapper);
+			Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = output.modifiedBlocksByCuboid;
+			
+			// Notify the listener of what changed.
+			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
+			_notifyCuboidChanges(Map.of(), Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
+			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		}
 		else
 		{
@@ -378,10 +386,6 @@ public class SpeculativeProjection
 			commitNumber = 0L;
 		}
 		
-		// Notify the listener of what changed.
-		Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
-		_notifyCuboidChanges(Map.of(), Map.of(), Map.of(), modifiedBlocksByCuboid, Map.of());
-		_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		return commitNumber;
 	}
 
@@ -609,9 +613,7 @@ public class SpeculativeProjection
 		}
 	}
 
-	// Note that we populate out_modifiedBlocksByCuboid with cuboids changed by this change but only the local entity could change (others are all read-only).
-	private _SpeculativeWrapper _forwardApplySpeculative(Map<CuboidAddress, List<AbsoluteLocation>> out_modifiedBlocksByCuboid
-			, IMutationEntity<IMutablePlayerEntity> change
+	private _SpeculativeOutput _forwardApplySpeculative(IMutationEntity<IMutablePlayerEntity> change
 			, boolean shouldSendEvents
 			, long commitNumber
 			, Map<CuboidAddress, OctreeInflatedByte> lightChangesIfExisting
@@ -656,6 +658,7 @@ public class SpeculativeProjection
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
+		Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid = Map.of();
 		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty() || !potentialLightChangesByCuboid.isEmpty()); ++i)
 		{
 			_SpeculativeConsequences consequences = new _SpeculativeConsequences(exportedChanges, exportedMutations);
@@ -672,8 +675,8 @@ public class SpeculativeProjection
 			);
 			
 			// Run these changes and mutations, collecting the resultant output from them.
-			Map<CuboidAddress, List<AbsoluteLocation>> newLightingChanges = new HashMap<>();
-			_applyFollowUpBlockMutations(innerContext, out_modifiedBlocksByCuboid, newLightingChanges, exportedMutations, potentialLightChangesByCuboid);
+			_ApplicationResult result = _applyFollowUpBlockMutations(innerContext, exportedMutations, potentialLightChangesByCuboid);
+			modifiedBlocksByCuboid = _mergeChanges(modifiedBlocksByCuboid, result.modifiedBlocksByCuboid);
 			_applyFollowUpEntityMutations(innerContext, exportedChanges);
 			
 			// Coalesce the results of these (again, only for this entity).
@@ -686,8 +689,8 @@ public class SpeculativeProjection
 			exportedMutations = new ArrayList<>(_onlyImmediateMutations(innerNewMutationSink.takeExportedMutations()));
 			if (null != lightingChangeLocations)
 			{
-				potentialLightChangesByCuboid = newLightingChanges;
-				lightingChangeLocations.addAll(newLightingChanges.keySet());
+				potentialLightChangesByCuboid = result.potentialLightChangesByCuboid;
+				lightingChangeLocations.addAll(result.potentialLightChangesByCuboid.keySet());
 			}
 		}
 		
@@ -713,7 +716,7 @@ public class SpeculativeProjection
 		
 		// So long as the original entity change applied, we consider this a pass.
 		return changeDidPass
-				? new _SpeculativeWrapper(commitNumber, change, followUpTicks, lightChanges, currentTickTimeMillis)
+				? new _SpeculativeOutput(new _SpeculativeWrapper(commitNumber, change, followUpTicks, lightChanges, currentTickTimeMillis), modifiedBlocksByCuboid)
 				: null
 		;
 	}
@@ -739,7 +742,8 @@ public class SpeculativeProjection
 		return mutationsToRun;
 	}
 
-	private void _applyFollowUp(Map<CuboidAddress, List<AbsoluteLocation>> out_modifiedBlocksByCuboid, _SpeculativeConsequences followUp)
+	// We return the modified blocks by cuboid.
+	private Map<CuboidAddress, List<AbsoluteLocation>> _applyFollowUp(_SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
@@ -756,19 +760,15 @@ public class SpeculativeProjection
 		
 		// We just want to apply the follow-ups, not adjusting how the interact if there were any conflicts.  Precisely
 		// rationalizing those conflicts woulds be very complicated and would irrelevant after 1-2 ticks, anyway.
-		Map<CuboidAddress, List<AbsoluteLocation>> out_potentialLightChangesByCuboid = new HashMap<>();
-		_applyFollowUpBlockMutations(innerContext
-				, out_modifiedBlocksByCuboid
-				, out_potentialLightChangesByCuboid
+		_ApplicationResult result = _applyFollowUpBlockMutations(innerContext
 				, followUp.exportedMutations
 				, Map.of()
 		);
 		_applyFollowUpEntityMutations(innerContext, followUp.exportedChanges);
+		return result.modifiedBlocksByCuboid;
 	}
 
-	private void _applyFollowUpBlockMutations(TickProcessingContext context
-			, Map<CuboidAddress, List<AbsoluteLocation>> out_modifiedBlocksByCuboid
-			, Map<CuboidAddress, List<AbsoluteLocation>> out_potentialLightChangesByCuboid
+	private _ApplicationResult _applyFollowUpBlockMutations(TickProcessingContext context
 			, List<IMutationBlock> blockMutations
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 	)
@@ -792,6 +792,8 @@ public class SpeculativeProjection
 		);
 		_projectedState.projectedWorld.putAll(innerFragment.stateFragment());
 		_projectedState.projectedHeightMap.putAll(innerFragment.heightFragment());
+		Map<CuboidAddress, List<AbsoluteLocation>> outputModifiedBlocksByCuboidAddress = new HashMap<>();
+		Map<CuboidAddress, List<AbsoluteLocation>> outputPotentialLightChangesByCuboidAddress = new HashMap<>();
 		for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> elt : innerFragment.blockChangesByCuboid().entrySet())
 		{
 			CuboidAddress key = elt.getKey();
@@ -800,13 +802,7 @@ public class SpeculativeProjection
 			// This must have something in it if it was returned.
 			Assert.assertTrue(!value.isEmpty());
 			
-			List<AbsoluteLocation> modifiedBlockList = out_modifiedBlocksByCuboid.get(key);
-			if (null == modifiedBlockList)
-			{
-				modifiedBlockList = new ArrayList<>();
-				out_modifiedBlocksByCuboid.put(key, modifiedBlockList);
-			}
-			modifiedBlockList.addAll(value.stream().map(
+			outputModifiedBlocksByCuboidAddress.put(key, value.stream().map(
 					(BlockChangeDescription description) -> description.serializedForm().getAbsoluteLocation()
 			).toList());
 			
@@ -817,15 +813,10 @@ public class SpeculativeProjection
 					).toList();
 			if (!lightChanges.isEmpty())
 			{
-				List<AbsoluteLocation> lightChangeList = out_potentialLightChangesByCuboid.get(key);
-				if (null == lightChangeList)
-				{
-					lightChangeList = new ArrayList<>();
-					out_potentialLightChangesByCuboid.put(key, lightChangeList);
-				}
-				lightChangeList.addAll(lightChanges);
+				outputPotentialLightChangesByCuboidAddress.put(key, lightChanges);
 			}
 		}
+		return new _ApplicationResult(outputModifiedBlocksByCuboidAddress, outputPotentialLightChangesByCuboidAddress);
 	}
 
 	private void _applyFollowUpEntityMutations(TickProcessingContext context, List<IMutationEntity<IMutablePlayerEntity>> thisEntityMutations)
@@ -941,6 +932,21 @@ public class SpeculativeProjection
 		}
 	}
 
+	private Map<CuboidAddress, List<AbsoluteLocation>> _mergeChanges(Map<CuboidAddress, List<AbsoluteLocation>> one, Map<CuboidAddress, List<AbsoluteLocation>> two)
+	{
+		Map<CuboidAddress, List<AbsoluteLocation>> container = new HashMap<>(one);
+		for (Map.Entry<CuboidAddress, List<AbsoluteLocation>> elt : two.entrySet())
+		{
+			CuboidAddress key = elt.getKey();
+			if (!container.containsKey(key))
+			{
+				container.put(key, new ArrayList<>());
+			}
+			container.get(key).addAll(elt.getValue());
+		}
+		return container;
+	}
+
 
 	public static interface IProjectionListener
 	{
@@ -1039,4 +1045,12 @@ public class SpeculativeProjection
 			this.exportedMutations.addAll(followUp.exportedMutations);
 		}
 	}
+
+	private static record _ApplicationResult(Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid
+			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
+	) {}
+
+	private static record _SpeculativeOutput(_SpeculativeWrapper wrapper
+			, Map<CuboidAddress, List<AbsoluteLocation>> modifiedBlocksByCuboid
+	) {}
 }
