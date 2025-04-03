@@ -43,7 +43,11 @@ public class FakeUpdateFactories
 		boolean didApply = mutation.applyMutation(context, mutable);
 		// This implementation needs to assume clean application.
 		Assert.assertTrue(didApply);
-		mutable.writeBack(mutableData);
+		// We need to call didChange() to clear redundant changes.
+		if (mutable.didChange())
+		{
+			mutable.writeBack(mutableData);
+		}
 		return MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(1024), mutable);
 	}
 

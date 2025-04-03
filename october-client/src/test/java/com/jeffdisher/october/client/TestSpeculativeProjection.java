@@ -1674,8 +1674,11 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedBlocks.contains(target.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.BLOCK));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 		
 		// Commit an unrelated mutation (from the server) to change the inventory (this is air, so it can hold data and placing the block will overwrite it).
 		MutationBlockStoreItems storeItems = new MutationBlockStoreItems(target, new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY);
@@ -1695,6 +1698,9 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(1, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedBlocks.contains(target.getBlockAddress()));
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
 		
 		// Now commit a conflicting change.
@@ -1719,6 +1725,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 		
 		// Account for the commit level update.
 		speculativeCount = projector.applyChangesForServerTick(5L
@@ -1739,6 +1746,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 		Assert.assertTrue(listener.events.isEmpty());
 	}
 
@@ -1777,12 +1785,15 @@ public class TestSpeculativeProjection
 		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
 		MutableBlockProxy blockProxy = new MutableBlockProxy(blockLocation, scratchCuboid);
 		blockProxy.setBlockAndClear(STONE);
+		Assert.assertTrue(blockProxy.didChange());
 		AbsoluteLocation lightLocation = new AbsoluteLocation(4, 5, 6);
 		MutableBlockProxy lightProxy = new MutableBlockProxy(lightLocation, scratchCuboid);
 		lightProxy.setLight((byte)10);
+		Assert.assertTrue(lightProxy.didChange());
 		AbsoluteLocation inventoryLocation = new AbsoluteLocation(7, 8, 9);
 		MutableBlockProxy inventoryProxy = new MutableBlockProxy(inventoryLocation, scratchCuboid);
 		inventoryProxy.setInventory(Inventory.start(10).addStackable(STONE.item(), 5).finish());
+		Assert.assertTrue(inventoryProxy.didChange());
 		ByteBuffer scratchBuffer = ByteBuffer.allocate(1024);
 		projector.applyChangesForServerTick(2L
 				, List.of()

@@ -99,6 +99,8 @@ public class TestClientChangeNotifier
 		};
 		MutableBlockProxy proxy = new MutableBlockProxy(location, shadow);
 		proxy.setBlockAndClear(STONE);
+		// We need to check didChange() in order to clear redundant writes.
+		Assert.assertTrue(proxy.didChange());
 		MutationBlockSetBlock setBlock = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
 		// We need to apply the change before running the notifications.
 		setBlock.applyState(changed);
