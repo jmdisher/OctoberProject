@@ -65,7 +65,7 @@ public class TestClientChangeNotifier
 				count[0] += 1;
 			}
 		};
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
+		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
 				, state
 				, (CuboidAddress localAddress) -> shadow
@@ -106,11 +106,10 @@ public class TestClientChangeNotifier
 		setBlock.applyState(changed);
 		// We build the projected state from this shadow and re-apply local changes (none)
 		CuboidData projected = CuboidData.mutableClone(changed);
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)));
+		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
 				, state
 				, (CuboidAddress localAddress) -> changed
-				, state.projectedBlockChanges
 				, Map.of(address, shadow)
 				, Map.of(address, List.of(setBlock))
 				, Map.of()

@@ -176,7 +176,6 @@ public class SpeculativeProjection
 			, long currentTimeMillis
 	)
 	{
-		
 		// We will take a snapshot of the previous shadowWorld so we can use it to describe what is changing in the authoritative set.
 		Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld = _shadowState.getCopyOfWorld();
 		
@@ -185,7 +184,6 @@ public class SpeculativeProjection
 				, thisEntityUpdate, partialEntityUpdates, cuboidUpdates
 				, removedEntities, removedCuboids
 		);
-		
 		
 		// Verify that all state changes to the shadow data actually did something (since this would be a needless change we should prune, otherwise).
 		// In the future, we may want to remove this since it is a non-trivial check.
@@ -232,7 +230,7 @@ public class SpeculativeProjection
 			previousProjectedChanges = Map.of();
 			previousLocalEntity = null;
 		}
-		_projectedState = _shadowState.buildProjectedState();
+		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges);
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -328,7 +326,6 @@ public class SpeculativeProjection
 		ClientChangeNotifier.notifyCuboidChangesFromServer(_listener
 				, _projectedState
 				, (CuboidAddress address) -> _shadowState.getCuboid(address)
-				, previousProjectedChanges
 				, staleShadowWorld
 				, summary.changesByCuboid()
 				, modifiedBlocksByCuboid

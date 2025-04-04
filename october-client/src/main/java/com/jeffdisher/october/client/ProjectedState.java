@@ -30,12 +30,13 @@ public class ProjectedState
 	public ProjectedState(Entity projectedLocalEntity
 			, Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld
 			, Map<CuboidAddress, CuboidHeightMap> projectedHeightMap
+			, Map<AbsoluteLocation, BlockProxy> projectedBlockChanges
 	)
 	{
 		this.projectedLocalEntity = projectedLocalEntity;
-		this.projectedWorld = projectedWorld;
-		this.projectedHeightMap = projectedHeightMap;
-		this.projectedBlockChanges = new HashMap<>();
+		this.projectedWorld = new HashMap<>(projectedWorld);
+		this.projectedHeightMap = new HashMap<>(projectedHeightMap);
+		this.projectedBlockChanges = new HashMap<>(projectedBlockChanges);
 	}
 
 	public Map<CuboidColumnAddress, ColumnHeightMap> buildColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)

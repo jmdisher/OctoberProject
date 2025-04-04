@@ -33,8 +33,6 @@ public class ClientChangeNotifier
 	 * @param currentProjectedState The projected state created from the updated shadow state with any remaining local
 	 * changes applied on top.
 	 * @param shadowCuboidReader Function for loading cuboids from the updated shadow state.
-	 * @param previousProjectedChanges The changes which were previously reported to the listener based on the projected
-	 * local changes.
 	 * @param staleShadowWorld The old shadow state used during the last call.
 	 * @param authoritativeChangesByCuboid The list of changes which were applied in this update.
 	 * @param locallyChangedBlocksByCuboid The changes which were applied to the new projected state after applying the
@@ -44,7 +42,6 @@ public class ClientChangeNotifier
 	public static void notifyCuboidChangesFromServer(IProjectionListener listener
 			, ProjectedState currentProjectedState
 			, Function<CuboidAddress, IReadOnlyCuboidData> shadowCuboidReader
-			, Map<AbsoluteLocation, BlockProxy> previousProjectedChanges
 			, Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld
 			, Map<CuboidAddress, List<MutationBlockSetBlock>> authoritativeChangesByCuboid
 			, Map<CuboidAddress, List<AbsoluteLocation>> locallyChangedBlocksByCuboid
@@ -54,6 +51,10 @@ public class ClientChangeNotifier
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
 		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
+		
+		// This call rebuilds the projected changes but we want to store the old version to know what changed.
+		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = currentProjectedState.projectedBlockChanges;
+		currentProjectedState.projectedBlockChanges = new HashMap<>();
 		
 		// We want to add all changes which can in from the server.
 		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> changed : authoritativeChangesByCuboid.entrySet())
