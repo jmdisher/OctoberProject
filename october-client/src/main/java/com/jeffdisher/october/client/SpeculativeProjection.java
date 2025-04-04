@@ -3,6 +3,7 @@ package com.jeffdisher.october.client;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -223,7 +224,19 @@ public class SpeculativeProjection
 		{
 			previousProjectedChanges = _projectedState.projectedBlockChanges;
 			previousLocalEntity = _projectedState.projectedLocalEntity;
-			
+			// If any cuboids were removed, strip any updates from the previous block changes so we don't try to reverse-verify them.
+			if (!removedCuboids.isEmpty())
+			{
+				Set<CuboidAddress> removed = Set.copyOf(removedCuboids);
+				Iterator<AbsoluteLocation> iter = previousProjectedChanges.keySet().iterator();
+				while (iter.hasNext())
+				{
+					if (removed.contains(iter.next().getCuboidAddress()))
+					{
+						iter.remove();
+					}
+				}
+			}
 		}
 		else
 		{

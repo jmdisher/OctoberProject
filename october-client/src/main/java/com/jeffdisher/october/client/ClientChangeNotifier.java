@@ -163,35 +163,32 @@ public class ClientChangeNotifier
 			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
 			BlockProxy proxy = changeEntry.getValue();
 			IReadOnlyCuboidData activeVersion = currentProjectedState.projectedWorld.get(cuboidAddress);
-			if (null != activeVersion)
+			IReadOnlyCuboidData shadowVersion = shadowCuboidReader.apply(cuboidAddress);
+			BlockAddress block = blockLocation.getBlockAddress();
+			BlockProxy projected = new BlockProxy(block, activeVersion);
+			BlockProxy shadow = new BlockProxy(block, shadowVersion);
+			
+			if (!projected.doAspectsMatch(shadow))
 			{
-				IReadOnlyCuboidData shadowVersion = shadowCuboidReader.apply(cuboidAddress);
-				BlockAddress block = blockLocation.getBlockAddress();
-				BlockProxy projected = new BlockProxy(block, activeVersion);
-				BlockProxy shadow = new BlockProxy(block, shadowVersion);
+				// This still differs so it still counts as a change.
+				currentProjectedState.projectedBlockChanges.put(blockLocation, projected);
+			}
+			if (!projected.doAspectsMatch(proxy))
+			{
+				// This has changed since we last reported.
+				cuboidsToReport.put(cuboidAddress, activeVersion);
+				Set<BlockAddress> set = changedBlocks.get(cuboidAddress);
+				if (null == set)
+				{
+					set = new HashSet<>();
+					changedBlocks.put(cuboidAddress, set);
+				}
+				set.add(block);
 				
-				if (!projected.doAspectsMatch(shadow))
-				{
-					// This still differs so it still counts as a change.
-					currentProjectedState.projectedBlockChanges.put(blockLocation, projected);
-				}
-				if (!projected.doAspectsMatch(proxy))
-				{
-					// This has changed since we last reported.
-					cuboidsToReport.put(cuboidAddress, activeVersion);
-					Set<BlockAddress> set = changedBlocks.get(cuboidAddress);
-					if (null == set)
-					{
-						set = new HashSet<>();
-						changedBlocks.put(cuboidAddress, set);
-					}
-					set.add(block);
-					
-					// See what aspects changed.
-					Set<Aspect<?, ?>> mismatches = projected.checkMismatchedAspects(proxy);
-					Assert.assertTrue(!mismatches.isEmpty());
-					changedAspects.addAll(mismatches);
-				}
+				// See what aspects changed.
+				Set<Aspect<?, ?>> mismatches = projected.checkMismatchedAspects(proxy);
+				Assert.assertTrue(!mismatches.isEmpty());
+				changedAspects.addAll(mismatches);
 			}
 		}
 		
