@@ -218,7 +218,7 @@ public class SpeculativeProjection
 		
 		// Rebuild our projection from these collections.
 		boolean isFirstRun = (null == _projectedState);
-		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges;
+		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges;
 		Entity previousLocalEntity;
 		if (null != _projectedState)
 		{
@@ -251,11 +251,11 @@ public class SpeculativeProjection
 			_followUpTicks.remove(0);
 		}
 		
-		Set<AbsoluteLocation> modifiedBlocks = Set.of();
+		Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = Map.of();
 		for (int i = 0; i < _followUpTicks.size(); ++i)
 		{
 			_SpeculativeConsequences followUp = _followUpTicks.get(i);
-			Set<AbsoluteLocation> blocks = _applyFollowUp(followUp);
+			Map<AbsoluteLocation, MutationBlockSetBlock> blocks = _applyFollowUp(followUp);
 			modifiedBlocks = _mergeChanges(modifiedBlocks, blocks);
 		}
 		// Inject any of the lighting changes before retiring this with the follow-up ticks.
@@ -282,7 +282,7 @@ public class SpeculativeProjection
 				// Apply this as a follow-up.
 				for (_SpeculativeConsequences followUp : wrapper.followUpTicks)
 				{
-					Set<AbsoluteLocation> blocks = _applyFollowUp(followUp);
+					Map<AbsoluteLocation, MutationBlockSetBlock> blocks = _applyFollowUp(followUp);
 					modifiedBlocks = _mergeChanges(modifiedBlocks, blocks);
 				}
 				_applyLightingCapture(wrapper.lightChanges);
@@ -338,8 +338,6 @@ public class SpeculativeProjection
 		Assert.assertTrue(!summary.partialEntitiesChanged().contains(_localEntityId));
 		ClientChangeNotifier.notifyCuboidChangesFromServer(_listener
 				, _projectedState
-				, (CuboidAddress address) -> _shadowState.getCuboid(address)
-				, staleShadowWorld
 				, summary.changedBlocks()
 				, modifiedBlocks
 				, columnHeightMaps
@@ -387,13 +385,12 @@ public class SpeculativeProjection
 		if (null != output)
 		{
 			_speculativeChanges.add(output.wrapper);
-			Set<AbsoluteLocation> modifiedBlocks = output.modifiedBlocks;
+			Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = output.modifiedBlocks;
 			
 			// Notify the listener of what changed.
 			Entity changedLocalEntity = ((null != previousLocalEntity) && (previousLocalEntity != _projectedState.projectedLocalEntity)) ? _projectedState.projectedLocalEntity : null;
 			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
 					, _projectedState
-					, (CuboidAddress address) -> _shadowState.getCuboid(address)
 					, modifiedBlocks
 			);
 			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
@@ -502,7 +499,7 @@ public class SpeculativeProjection
 		
 		// Now, loop on applying changes (we will batch the consequences of each step together - we aren't scheduling like the server would, either way).
 		List<_SpeculativeConsequences> followUpTicks = new ArrayList<>();
-		Set<AbsoluteLocation> modifiedBlocks = Set.of();
+		Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = Map.of();
 		for (int i = 0; (i < MAX_FOLLOW_UP_TICKS) && (!exportedChanges.isEmpty() || !exportedMutations.isEmpty() || !potentialLightChangesByCuboid.isEmpty()); ++i)
 		{
 			_SpeculativeConsequences consequences = new _SpeculativeConsequences(exportedChanges, exportedMutations);
@@ -587,7 +584,7 @@ public class SpeculativeProjection
 	}
 
 	// We return the modified blocks by cuboid.
-	private Set<AbsoluteLocation> _applyFollowUp(_SpeculativeConsequences followUp)
+	private Map<AbsoluteLocation, MutationBlockSetBlock> _applyFollowUp(_SpeculativeConsequences followUp)
 	{
 		long gameTick = 0L;
 		CommonMutationSink innerNewMutationSink = new CommonMutationSink();
@@ -636,7 +633,7 @@ public class SpeculativeProjection
 		);
 		_projectedState.projectedWorld.putAll(innerFragment.stateFragment());
 		_projectedState.projectedHeightMap.putAll(innerFragment.heightFragment());
-		Set<AbsoluteLocation> outputModifiedBlocks = new HashSet<>();
+		Map<AbsoluteLocation, MutationBlockSetBlock> outputModifiedBlocks = new HashMap<>();
 		Map<CuboidAddress, List<AbsoluteLocation>> outputPotentialLightChangesByCuboid = new HashMap<>();
 		for (List<BlockChangeDescription> elt : innerFragment.blockChangesByCuboid().values())
 		{
@@ -644,8 +641,8 @@ public class SpeculativeProjection
 			{
 				MutationBlockSetBlock mutation = desc.serializedForm();
 				AbsoluteLocation location = mutation.getAbsoluteLocation();
-				boolean didAdd = outputModifiedBlocks.add(location);
-				Assert.assertTrue(didAdd);
+				MutationBlockSetBlock old = outputModifiedBlocks.put(location, mutation);
+				Assert.assertTrue(null == old);
 				if (desc.requiresLightingCheck())
 				{
 					CuboidAddress address = location.getCuboidAddress();
@@ -763,10 +760,24 @@ public class SpeculativeProjection
 		}
 	}
 
-	private Set<AbsoluteLocation> _mergeChanges(Set<AbsoluteLocation> one, Set<AbsoluteLocation> two)
+	private Map<AbsoluteLocation, MutationBlockSetBlock> _mergeChanges(Map<AbsoluteLocation, MutationBlockSetBlock> one, Map<AbsoluteLocation, MutationBlockSetBlock> two)
 	{
-		Set<AbsoluteLocation> container = new HashSet<>(one);
-		container.addAll(two);
+		Map<AbsoluteLocation, MutationBlockSetBlock> container = new HashMap<>(one);
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> elt : two.entrySet())
+		{
+			AbsoluteLocation location = elt.getKey();
+			MutationBlockSetBlock bottom = container.get(location);
+			MutationBlockSetBlock top = elt.getValue();
+			if (null == bottom)
+			{
+				container.put(location, top);
+			}
+			else
+			{
+				MutationBlockSetBlock merged = MutationBlockSetBlock.merge(bottom, top);
+				container.put(location, merged);
+			}
+		}
 		return container;
 	}
 
@@ -789,11 +800,11 @@ public class SpeculativeProjection
 		}
 	}
 
-	private static record _ApplicationResult(Set<AbsoluteLocation> modifiedBlocks
+	private static record _ApplicationResult(Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks
 			, Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid
 	) {}
 
 	private static record _SpeculativeOutput(_SpeculativeWrapper wrapper
-			, Set<AbsoluteLocation> modifiedBlocks
+			, Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks
 	) {}
 }

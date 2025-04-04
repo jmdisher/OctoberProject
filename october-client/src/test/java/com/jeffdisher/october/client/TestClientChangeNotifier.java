@@ -48,10 +48,14 @@ public class TestClientChangeNotifier
 	public void localUpdate()
 	{
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData shadow = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		CuboidData projected = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase();
-		projected.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), STONE.item().number());
+		MutableBlockProxy proxy = new MutableBlockProxy(location, projected);
+		proxy.setBlockAndClear(STONE);
+		// We need to check didChange() in order to clear redundant writes.
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(projected);
+		MutationBlockSetBlock setBlock = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
 		int[] count = new int[1];
 		_Listener listener = new _Listener() {
 			@Override
@@ -67,13 +71,12 @@ public class TestClientChangeNotifier
 		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
 				, state
-				, (CuboidAddress localAddress) -> shadow
-				, Set.of(location)
+				, Map.of(location, setBlock)
 		);
 		Assert.assertEquals(1, count[0]);
 		
 		// A redundant change should not send any callbacks.
-		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, (CuboidAddress localAddress) -> shadow, Set.of(location));
+		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, Map.of(location, setBlock));
 		Assert.assertEquals(1, count[0]);
 	}
 
@@ -100,6 +103,7 @@ public class TestClientChangeNotifier
 		proxy.setBlockAndClear(STONE);
 		// We need to check didChange() in order to clear redundant writes.
 		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(shadow);
 		MutationBlockSetBlock setBlock = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
 		// We need to apply the change before running the notifications.
 		setBlock.applyState(changed);
@@ -108,10 +112,8 @@ public class TestClientChangeNotifier
 		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
 				, state
-				, (CuboidAddress localAddress) -> changed
-				, Map.of(address, shadow)
 				, Map.of(location, setBlock)
-				, Set.of()
+				, Map.of()
 				, HeightMapHelpers.buildColumnMaps(Map.of(address, HeightMapHelpers.buildHeightMap(changed)))
 		);
 		

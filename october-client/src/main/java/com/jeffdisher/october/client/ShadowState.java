@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
@@ -108,7 +107,7 @@ public class ShadowState
 		return new ApplicationSummary(shadowUpdates.entitiesChangedInTick.keySet(), updatesToApply);
 	}
 
-	public ProjectedState buildProjectedState(Map<AbsoluteLocation, BlockProxy> projectedBlockChanges)
+	public ProjectedState buildProjectedState(Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges)
 	{
 		return new ProjectedState(_thisShadowEntity, _shadowWorld, _shadowHeightMap, projectedBlockChanges);
 		

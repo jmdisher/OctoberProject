@@ -5,11 +5,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
@@ -25,12 +25,12 @@ public class ProjectedState
 	public Entity projectedLocalEntity;
 	public Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld;
 	public Map<CuboidAddress, CuboidHeightMap> projectedHeightMap;
-	public Map<AbsoluteLocation, BlockProxy> projectedBlockChanges;
+	public Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges;
 
 	public ProjectedState(Entity projectedLocalEntity
 			, Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld
 			, Map<CuboidAddress, CuboidHeightMap> projectedHeightMap
-			, Map<AbsoluteLocation, BlockProxy> projectedBlockChanges
+			, Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges
 	)
 	{
 		this.projectedLocalEntity = projectedLocalEntity;

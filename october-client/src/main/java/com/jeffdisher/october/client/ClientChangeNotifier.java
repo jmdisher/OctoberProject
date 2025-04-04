@@ -4,11 +4,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Aspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -16,7 +14,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -30,19 +27,15 @@ public class ClientChangeNotifier
 	 * 
 	 * @param listener The listener which will receive the callbacks.
 	 * @param currentProjectedState The projected state created from the updated shadow state with any remaining local
-	 * changes applied on top.
-	 * @param shadowCuboidReader Function for loading cuboids from the updated shadow state.
-	 * @param staleShadowWorld The old shadow state used during the last call.
+	 * changes applied on top.  This call will read and write projectedBlockChanges.
 	 * @param incomingChangesFromServer Authoritative changes which have come in from the server.
 	 * @param localChangesApplied The union of all local-only changes which have been applied to the projected state.
 	 * @param knownHeightMaps The current height maps from the updated projected state.
 	 */
 	public static void notifyCuboidChangesFromServer(IProjectionListener listener
 			, ProjectedState currentProjectedState
-			, Function<CuboidAddress, IReadOnlyCuboidData> shadowCuboidReader
-			, Map<CuboidAddress, IReadOnlyCuboidData> staleShadowWorld
 			, Map<AbsoluteLocation, MutationBlockSetBlock> incomingChangesFromServer
-			, Set<AbsoluteLocation> localChangesApplied
+			, Map<AbsoluteLocation, MutationBlockSetBlock> localChangesApplied
 			, Map<CuboidColumnAddress, ColumnHeightMap> knownHeightMaps
 	)
 	{
@@ -51,135 +44,88 @@ public class ClientChangeNotifier
 		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
 		
 		// This call rebuilds the projected changes but we want to store the old version to know what changed.
-		Map<AbsoluteLocation, BlockProxy> previousProjectedChanges = currentProjectedState.projectedBlockChanges;
+		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges = currentProjectedState.projectedBlockChanges;
 		currentProjectedState.projectedBlockChanges = new HashMap<>();
 		
-		// We want to add all changes which can in from the server.
+		// First thing, we will merge the incoming changes from the server and remaining local changes into the projected state (as this is what will be considered "previous" in the next call).
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> fromServer : incomingChangesFromServer.entrySet())
 		{
-			AbsoluteLocation location = fromServer.getKey();
-			CuboidAddress address = location.getCuboidAddress();
-			Set<BlockAddress> set = changedBlocks.get(address);
-			IReadOnlyCuboidData activeVersion = currentProjectedState.projectedWorld.get(address);
-			IReadOnlyCuboidData staleCuboid = staleShadowWorld.get(address);
-			// This should never be null (the server shouldn't describe what it is unloading).
-			Assert.assertTrue(null != activeVersion);
-			Assert.assertTrue(null != staleCuboid);
-			// See if there is an entry from what we are rebuilding (since we will already handle that, below).
-			if (!previousProjectedChanges.containsKey(location))
+			AbsoluteLocation key = fromServer.getKey();
+			MutationBlockSetBlock value = fromServer.getValue();
+			MutationBlockSetBlock change;
+			if (localChangesApplied.containsKey(key))
 			{
-				BlockAddress block = location.getBlockAddress();
-				BlockProxy projected = new BlockProxy(block, activeVersion);
-				BlockProxy previousReport = currentProjectedState.projectedBlockChanges.get(location);
-				if ((null == previousReport) || !previousReport.doAspectsMatch(projected))
-				{
-					if (null == set)
-					{
-						set = new HashSet<>();
-						changedBlocks.put(address, set);
-					}
-					set.add(block);
-					
-					// See what aspects changed (may require loading the proxy for real data).
-					Set<Aspect<?, ?>> mismatches;
-					if (null == previousReport)
-					{
-						BlockProxy stale = new BlockProxy(block, staleCuboid);
-						mismatches = stale.checkMismatchedAspects(projected);
-					}
-					else
-					{
-						mismatches = previousReport.checkMismatchedAspects(projected);
-					}
-					// Note that these mismatches can be empty if the result is part of something the local user already did.
-					changedAspects.addAll(mismatches);
-				}
+				// We need to merge the local change on top of this.
+				MutationBlockSetBlock other = localChangesApplied.get(key);
+				change = MutationBlockSetBlock.merge(value, other);
 			}
-			if (null != set)
+			else
 			{
-				cuboidsToReport.put(address, activeVersion);
+				// Just use this change.
+				change = value;
+			}
+			currentProjectedState.projectedBlockChanges.put(key, change);
+		}
+		
+		// Add in any local changes we didn't merge in above.
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
+		{
+			AbsoluteLocation key = local.getKey();
+			if (!currentProjectedState.projectedBlockChanges.containsKey(key))
+			{
+				MutationBlockSetBlock value = local.getValue();
+				currentProjectedState.projectedBlockChanges.put(key, value);
 			}
 		}
 		
-		// Check the local changes to see if any should be reported.
-		for (AbsoluteLocation location : localChangesApplied)
+		// We will report anything which has new changes since last report.
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> change : currentProjectedState.projectedBlockChanges.entrySet())
 		{
-			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
-			// Remember that these are copy-on-write so we can just instance-compare.
-			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData activeVersion = currentProjectedState.projectedWorld.get(address);
-			IReadOnlyCuboidData shadowVersion = shadowCuboidReader.apply(address);
-			if (activeVersion != shadowVersion)
+			AbsoluteLocation key = change.getKey();
+			MutationBlockSetBlock current = change.getValue();
+			if (previousProjectedChanges.containsKey(key))
 			{
-				// Also, record any of the changed locations here for future reverts.
-				// See if there is an entry from what we are rebuilding (since we will already handle that, below).
-				if (!previousProjectedChanges.containsKey(location))
+				// See if this has changed something new.
+				MutationBlockSetBlock previous = previousProjectedChanges.get(key);
+				if (!current.doesDataMatch(previous))
 				{
-					BlockAddress block = location.getBlockAddress();
-					BlockProxy projected = new BlockProxy(block, activeVersion);
-					BlockProxy previousReport = currentProjectedState.projectedBlockChanges.get(location);
-					if (null == previousReport)
-					{
-						// We will claim that we are comparing against the shadow version so we don't report non-changes.
-						previousReport = new BlockProxy(block, shadowVersion);
-					}
-					
-					if (!previousReport.doAspectsMatch(projected))
-					{
-						currentProjectedState.projectedBlockChanges.put(location, projected);
-						
-						// We also need to report this cuboid as changed.
-						cuboidsToReport.put(address, activeVersion);
-						Set<BlockAddress> set = changedBlocks.get(address);
-						if (null == set)
-						{
-							set = new HashSet<>();
-							changedBlocks.put(address, set);
-						}
-						set.add(block);
-						
-						// See what aspects changed.
-						Set<Aspect<?, ?>> mismatches = previousReport.checkMismatchedAspects(projected);
-						Assert.assertTrue(!mismatches.isEmpty());
-						changedAspects.addAll(mismatches);
-					}
+					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, current, previous);
 				}
+			}
+			else
+			{
+				// This is a new change so just report it.
+				MutationBlockSetBlock empty = new MutationBlockSetBlock(key, new byte[0]);
+				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, current, empty);
 			}
 		}
 		
-		// See if any of the previously projected changes are still changed in the new projected world.
-		for (Map.Entry<AbsoluteLocation, BlockProxy> changeEntry : previousProjectedChanges.entrySet())
+		// We now want to check everything we have retired from last time, reporting them if their data isn't reflected in the current projected state (means they were reverted).
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> previous : previousProjectedChanges.entrySet())
 		{
-			AbsoluteLocation blockLocation = changeEntry.getKey();
-			CuboidAddress cuboidAddress = blockLocation.getCuboidAddress();
-			BlockProxy proxy = changeEntry.getValue();
-			IReadOnlyCuboidData activeVersion = currentProjectedState.projectedWorld.get(cuboidAddress);
-			IReadOnlyCuboidData shadowVersion = shadowCuboidReader.apply(cuboidAddress);
-			BlockAddress block = blockLocation.getBlockAddress();
-			BlockProxy projected = new BlockProxy(block, activeVersion);
-			BlockProxy shadow = new BlockProxy(block, shadowVersion);
-			
-			if (!projected.doAspectsMatch(shadow))
+			AbsoluteLocation key = previous.getKey();
+			if (!currentProjectedState.projectedBlockChanges.containsKey(key))
 			{
-				// This still differs so it still counts as a change.
-				currentProjectedState.projectedBlockChanges.put(blockLocation, projected);
-			}
-			if (!projected.doAspectsMatch(proxy))
-			{
-				// This has changed since we last reported.
-				cuboidsToReport.put(cuboidAddress, activeVersion);
-				Set<BlockAddress> set = changedBlocks.get(cuboidAddress);
-				if (null == set)
+				// This is a retired case so check it.
+				// Note that we do NOT add this to projectedBlockChanges.
+				MutationBlockSetBlock current = previous.getValue();
+				CuboidAddress address = key.getCuboidAddress();
+				IReadOnlyCuboidData cuboid = currentProjectedState.projectedWorld.get(address);
+				Set<Aspect<?, ?>> changes = current.changedAspectsVersusCuboid(cuboid);
+				if (!changes.isEmpty())
 				{
-					set = new HashSet<>();
-					changedBlocks.put(cuboidAddress, set);
+					// If this would cause a change, it must have been reverted so notify.
+					changedAspects.addAll(changes);
+					if (!changedBlocks.containsKey(address))
+					{
+						changedBlocks.put(address, new HashSet<>());
+					}
+					changedBlocks.get(address).add(key.getBlockAddress());
+					if (!cuboidsToReport.containsKey(address))
+					{
+						cuboidsToReport.put(address, cuboid);
+					}
 				}
-				set.add(block);
-				
-				// See what aspects changed.
-				Set<Aspect<?, ?>> mismatches = projected.checkMismatchedAspects(proxy);
-				Assert.assertTrue(!mismatches.isEmpty());
-				changedAspects.addAll(mismatches);
 			}
 		}
 		
@@ -213,58 +159,38 @@ public class ClientChangeNotifier
 	 * 
 	 * @param listener The listener which will receive the callbacks.
 	 * @param currentProjectedState The projected state updated with most recent local changes.
-	 * @param shadowCuboidReader Function for loading cuboids from the current shadow state.
 	 * @param localChangesApplied The union of all local-only changes which have been applied to the projected state.
 	 */
 	public static void notifyCuboidChangesFromLocal(IProjectionListener listener
 			, ProjectedState currentProjectedState
-			, Function<CuboidAddress, IReadOnlyCuboidData> shadowCuboidReader
-			, Set<AbsoluteLocation> localChangesApplied
+			, Map<AbsoluteLocation, MutationBlockSetBlock> localChangesApplied
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
 		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
 		
-		// Check the local changes to see if any should be reported.
-		for (AbsoluteLocation location : localChangesApplied)
+		// Merge the new changes into the existing changes we have reported, collecting data to notify on anything new or expanded.
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
 		{
-			// The changed cuboid addresses is just a set of cuboids where something _may_ have changed so see if it modified the actual data.
-			// Remember that these are copy-on-write so we can just instance-compare.
-			CuboidAddress address = location.getCuboidAddress();
-			IReadOnlyCuboidData activeVersion = currentProjectedState.projectedWorld.get(address);
-			IReadOnlyCuboidData shadowVersion = shadowCuboidReader.apply(address);
-			if (activeVersion != shadowVersion)
+			AbsoluteLocation key = local.getKey();
+			MutationBlockSetBlock value = local.getValue();
+			if (currentProjectedState.projectedBlockChanges.containsKey(key))
 			{
-				// Also, record any of the changed locations here for future reverts.
-				BlockAddress block = location.getBlockAddress();
-				BlockProxy projected = new BlockProxy(block, activeVersion);
-				BlockProxy previousReport = currentProjectedState.projectedBlockChanges.get(location);
-				if (null == previousReport)
+				// See if this needs to be expanded to account for new changes.
+				MutationBlockSetBlock previous = currentProjectedState.projectedBlockChanges.get(key);
+				if (!value.doesDataMatch(previous))
 				{
-					// We will claim that we are comparing against the shadow version so we don't report non-changes.
-					previousReport = new BlockProxy(block, shadowVersion);
+					_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, value, previous);
+					currentProjectedState.projectedBlockChanges.put(key, value);
 				}
-				
-				if (!previousReport.doAspectsMatch(projected))
-				{
-					currentProjectedState.projectedBlockChanges.put(location, projected);
-					
-					// We also need to report this cuboid as changed.
-					cuboidsToReport.put(address, activeVersion);
-					Set<BlockAddress> set = changedBlocks.get(address);
-					if (null == set)
-					{
-						set = new HashSet<>();
-						changedBlocks.put(address, set);
-					}
-					set.add(block);
-					
-					// See what aspects changed.
-					Set<Aspect<?, ?>> mismatches = previousReport.checkMismatchedAspects(projected);
-					Assert.assertTrue(!mismatches.isEmpty());
-					changedAspects.addAll(mismatches);
-				}
+			}
+			else
+			{
+				// We can just inject this change, directly.
+				MutationBlockSetBlock empty = new MutationBlockSetBlock(key, new byte[0]);
+				_updateCollectionsWithChange(cuboidsToReport, changedBlocks, changedAspects, currentProjectedState, key, value, empty);
+				currentProjectedState.projectedBlockChanges.put(key, value);
 			}
 		}
 		
@@ -287,6 +213,34 @@ public class ClientChangeNotifier
 					, blocksChanged
 					, changedAspects
 			);
+		}
+	}
+
+
+	private static void _updateCollectionsWithChange(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport
+			, Map<CuboidAddress, Set<BlockAddress>> changedBlocks
+			, Set<Aspect<?, ?>> changedAspects
+			, ProjectedState currentProjectedState
+			, AbsoluteLocation location
+			, MutationBlockSetBlock current
+			, MutationBlockSetBlock previous
+	)
+	{
+		Set<Aspect<?, ?>> changes = current.getChangedAspectsAfter(previous);
+		// This could be empty if current is a proper subset of previous.
+		if (!changes.isEmpty())
+		{
+			changedAspects.addAll(changes);
+			CuboidAddress address = location.getCuboidAddress();
+			if (!changedBlocks.containsKey(address))
+			{
+				changedBlocks.put(address, new HashSet<>());
+			}
+			changedBlocks.get(address).add(location.getBlockAddress());
+			if (!cuboidsToReport.containsKey(address))
+			{
+				cuboidsToReport.put(address, currentProjectedState.projectedWorld.get(address));
+			}
 		}
 	}
 }

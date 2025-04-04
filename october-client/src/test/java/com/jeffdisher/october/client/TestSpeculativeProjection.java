@@ -644,7 +644,8 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(2 + 1, listener.changeCount);
+		// The same follow-up operations will be applied so there will be no change to the world.
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
@@ -662,7 +663,8 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2 + 1 + 1, listener.changeCount);
+		// The server change and the remaining follow-up operations will be applied so there will be no change to the world.
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Check the values.
 		_checkInventories(listener, encumbrance, stoneItem, block1, block2);
@@ -1694,14 +1696,18 @@ public class TestSpeculativeProjection
 				, 0L
 				, 1L
 		);
-		// There should still be a change in the speculative list but our change would over-write the inventory so there shouldn't be a callback.
+		// Note:  There is a temporary inconsistency here when these changes layer on top of one-another, making it look
+		// like there is still an inventory in the block but it will be resolved when the final local change commits.
 		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedBlocks.contains(target.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.INVENTORY));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		// NOTE:  Even though the callback says that the inventory was changed, it actually wasn't.
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 		
 		// Now commit a conflicting change.
 		ReplaceBlockMutation conflict = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), LOG_ITEM.number());
@@ -1719,7 +1725,7 @@ public class TestSpeculativeProjection
 		);
 		// The speculative change will be there until we see the commit level and we should see the change from the conflict writing (since the wrapper we use always returns success).
 		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
@@ -1742,7 +1748,7 @@ public class TestSpeculativeProjection
 		);
 		// This should retire the change with no updates.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(3, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
@@ -2324,7 +2330,8 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		// NOTE:  We will see a redundant update call from the server, here, even though the light isn't changing.
+		Assert.assertEquals(2, listener.changeCount);
 		Assert.assertEquals(2, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
