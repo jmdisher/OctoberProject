@@ -1,8 +1,6 @@
 package com.jeffdisher.october.client;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,7 +87,7 @@ public class ShadowState
 		_shadowHeightMap.putAll(addedCuboids.stream().collect(Collectors.toMap((IReadOnlyCuboidData cuboid) -> cuboid.getCuboidAddress(), (IReadOnlyCuboidData cuboid) -> HeightMapHelpers.buildHeightMap(cuboid))));
 		
 		// Apply all of these to the shadow state, much like TickRunner.  We ONLY change the shadow state in response to these authoritative changes.
-		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
+		Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply = _createUpdateMap(cuboidUpdates, _shadowWorld.keySet());
 		_UpdateTuple shadowUpdates = _applyUpdatesToShadowState(thisEntityUpdate, partialEntityUpdates, updatesToApply);
 		
 		// Apply these to the shadow collections.
@@ -122,29 +120,26 @@ public class ShadowState
 	}
 
 
-	private Map<CuboidAddress, List<MutationBlockSetBlock>> _createUpdateMap(List<MutationBlockSetBlock> updates, Set<CuboidAddress> loadedCuboids)
+	private Map<AbsoluteLocation, MutationBlockSetBlock> _createUpdateMap(List<MutationBlockSetBlock> updates, Set<CuboidAddress> loadedCuboids)
 	{
-		Map<CuboidAddress, List<MutationBlockSetBlock>> updatesByCuboid = new HashMap<>();
+		Map<AbsoluteLocation, MutationBlockSetBlock> map = new HashMap<>();
 		for (MutationBlockSetBlock update : updates)
 		{
-			CuboidAddress address = update.getAbsoluteLocation().getCuboidAddress();
+			AbsoluteLocation location = update.getAbsoluteLocation();
+			CuboidAddress address = location.getCuboidAddress();
 			// If the server sent us an update, we MUST have it loaded.
 			Assert.assertTrue(loadedCuboids.contains(address));
 			
-			List<MutationBlockSetBlock> queue = updatesByCuboid.get(address);
-			if (null == queue)
-			{
-				queue = new LinkedList<>();
-				updatesByCuboid.put(address, queue);
-			}
-			queue.add(update);
+			MutationBlockSetBlock old = map.put(location, update);
+			// We are not expecting duplicates.
+			Assert.assertTrue(null == old);
 		}
-		return updatesByCuboid;
+		return map;
 	}
 
 	private _UpdateTuple _applyUpdatesToShadowState(IEntityUpdate thisEntityUpdate
 			, Map<Integer, List<IPartialEntityUpdate>> partialEntityUpdates
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
+			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
 	{
 		Entity updatedShadowEntity = _applyLocalEntityUpdatesToShadowState(thisEntityUpdate);
@@ -209,30 +204,33 @@ public class ShadowState
 
 	private void _applyCuboidUpdatesToShadowState(Map<CuboidAddress, IReadOnlyCuboidData> out_updatedCuboids
 			, Map<CuboidAddress, CuboidHeightMap> out_updatedMaps
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> updatesToApply
+			, Map<AbsoluteLocation, MutationBlockSetBlock> updatesToApply
 	)
 	{
 		// NOTE:  This logic is similar to WorldProcessor but partially-duplicated here to avoid all the other requirements of the WorldProcessor or redundant operations it would perform.
-		for (Map.Entry<CuboidAddress, List<MutationBlockSetBlock>> entry : updatesToApply.entrySet())
+		Map<CuboidAddress, CuboidData> workingCuboids = new HashMap<>();
+		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> entry : updatesToApply.entrySet())
 		{
-			Set<AbsoluteLocation> existingUpdates = new HashSet<>();
-			CuboidAddress address = entry.getKey();
-			IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
-			
-			List<MutationBlockSetBlock> updates = entry.getValue();
-			// This list can never be empty.
-			Assert.assertTrue(!updates.isEmpty());
-			CuboidData mutableCuboid = CuboidData.mutableClone(readOnly);
-			for (MutationBlockSetBlock update : entry.getValue())
+			AbsoluteLocation location = entry.getKey();
+			CuboidAddress address = location.getCuboidAddress();
+			if (!workingCuboids.containsKey(address))
 			{
-				AbsoluteLocation location = update.getAbsoluteLocation();
-				// We expect only one update per location - if this fails, we need to update this algorithm (although the current plan is just to make a single update parameterized).
-				boolean didAdd = existingUpdates.add(location);
-				Assert.assertTrue(didAdd);
-				
-				// Apply this change directly to the cuboid.
-				update.applyState(mutableCuboid);
+				IReadOnlyCuboidData readOnly = _shadowWorld.get(address);
+				CuboidData mutableCuboid = CuboidData.mutableClone(readOnly);
+				workingCuboids.put(address, mutableCuboid);
 			}
+			
+			// Apply the change.
+			CuboidData mutableCuboid = workingCuboids.get(address);
+			MutationBlockSetBlock update = entry.getValue();
+			update.applyState(mutableCuboid);
+		}
+		
+		// Prepare the output and build the height maps for these changes.
+		for (Map.Entry<CuboidAddress, CuboidData> entry : workingCuboids.entrySet())
+		{
+			CuboidAddress address = entry.getKey();
+			CuboidData mutableCuboid = entry.getValue();
 			out_updatedCuboids.put(address, mutableCuboid);
 			out_updatedMaps.put(address, HeightMapHelpers.buildHeightMap(mutableCuboid));
 		}
@@ -240,7 +238,7 @@ public class ShadowState
 
 
 	public static record ApplicationSummary(Set<Integer> partialEntitiesChanged
-			, Map<CuboidAddress, List<MutationBlockSetBlock>> changesByCuboid
+			, Map<AbsoluteLocation, MutationBlockSetBlock> changedBlocks
 	) {}
 
 	private static record _UpdateTuple(Entity updatedShadowEntity

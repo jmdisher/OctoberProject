@@ -1,7 +1,6 @@
 package com.jeffdisher.october.client;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -69,12 +68,12 @@ public class TestClientChangeNotifier
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
 				, state
 				, (CuboidAddress localAddress) -> shadow
-				, Map.of(address, List.of(location))
+				, Set.of(location)
 		);
 		Assert.assertEquals(1, count[0]);
 		
 		// A redundant change should not send any callbacks.
-		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, (CuboidAddress localAddress) -> shadow, Map.of(address, List.of(location)));
+		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, (CuboidAddress localAddress) -> shadow, Set.of(location));
 		Assert.assertEquals(1, count[0]);
 	}
 
@@ -111,8 +110,8 @@ public class TestClientChangeNotifier
 				, state
 				, (CuboidAddress localAddress) -> changed
 				, Map.of(address, shadow)
-				, Map.of(address, List.of(setBlock))
-				, Map.of()
+				, Map.of(location, setBlock)
+				, Set.of()
 				, HeightMapHelpers.buildColumnMaps(Map.of(address, HeightMapHelpers.buildHeightMap(changed)))
 		);
 		
