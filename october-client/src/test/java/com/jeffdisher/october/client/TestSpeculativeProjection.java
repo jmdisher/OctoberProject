@@ -509,6 +509,10 @@ public class TestSpeculativeProjection
 		projector.applyLocalChange(lone0, currentTimeMillis);
 		long commit1 = projector.applyLocalChange(lone1, currentTimeMillis);
 		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(25, listener.lastChangedBlocks.size());
+		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation0.getAbsoluteLocation().getBlockAddress()));
+		Assert.assertEquals(1, listener.lastChangedAspects.size());
+		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.DAMAGE));
 		
 		// Commit a mutation which invalidates lone0 (we do that by passing in lone0 and just not changing the commit level - that makes it appear like a conflict).
 		int speculativeCount = projector.applyChangesForServerTick(3L
@@ -523,13 +527,9 @@ public class TestSpeculativeProjection
 				, 0L
 				, currentTimeMillis
 		);
-		// We should still just see the initial changes in the speculative list and the 1 update from the incoming change.
+		// We should still just see the initial changes in the speculative list and no updates since this didn't change anything.
 		Assert.assertEquals(2, speculativeCount);
-		Assert.assertEquals(3, listener.changeCount);
-		Assert.assertEquals(1, listener.lastChangedBlocks.size());
-		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation0.getAbsoluteLocation().getBlockAddress()));
-		Assert.assertEquals(1, listener.lastChangedAspects.size());
-		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.DAMAGE));
+		Assert.assertEquals(2, listener.changeCount);
 		
 		// Commit the other one normally.
 		speculativeCount = projector.applyChangesForServerTick(4L
@@ -544,13 +544,9 @@ public class TestSpeculativeProjection
 				, commit1
 				, currentTimeMillis
 		);
-		// This commit level change should cause them all to be retired.
+		// This commit level change should cause them all to be retired but there will be no updates as nothing changed.
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(4, listener.changeCount);
-		Assert.assertEquals(1, listener.lastChangedBlocks.size());
-		Assert.assertTrue(listener.lastChangedBlocks.contains(mutation1.getAbsoluteLocation().getBlockAddress()));
-		Assert.assertEquals(1, listener.lastChangedAspects.size());
-		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.DAMAGE));
+		Assert.assertEquals(2, listener.changeCount);
 		
 		speculativeCount = projector.applyChangesForServerTick(5L
 				, Collections.emptyList()
@@ -915,7 +911,6 @@ public class TestSpeculativeProjection
 		
 		// Apply the 2 steps of the move, locally.
 		// (note that 0.4 is the limit for one tick)
-		EntityLocation midStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
@@ -944,11 +939,32 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		
-		// We should now see 1 speculative commit and the entity should have moved over by that step, alone.
+		// We should now see 1 speculative commit with the entity moved all the way (since the final state is captured, not each step).
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
-		Assert.assertEquals(midStep, listener.thisEntityState.location());
+		Assert.assertEquals(lastStep, listener.thisEntityState.location());
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, listener.thisEntityState.yaw());
+		Assert.assertTrue(listener.events.isEmpty());
+		
+		// Absorb the final change as rejected.
+		speculativeCount = projector.applyChangesForServerTick(3L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, null
+				, Collections.emptyMap()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commit2
+				, currentTimeMillis
+		);
+		
+		// This should show no speculative changes and no movement from start (rubber-band).
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
+		Assert.assertEquals(initialLocation, listener.thisEntityState.location());
+		Assert.assertEquals(OrientationHelpers.YAW_NORTH, listener.thisEntityState.yaw());
 		Assert.assertTrue(listener.events.isEmpty());
 	}
 
@@ -1706,10 +1722,10 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.INVENTORY));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
-		// NOTE:  Even though the callback says that the inventory was changed, it actually wasn't.
-		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		// NOTE:  This inventory will be eventually consistent (logically, should be null as it was over-written locally).
+		Assert.assertNotNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
 		
-		// Now commit a conflicting change.
+		// Now commit a conflicting change and notice that there is still inconsistency.
 		ReplaceBlockMutation conflict = new ReplaceBlockMutation(target, ENV.special.AIR.item().number(), LOG_ITEM.number());
 		speculativeCount = projector.applyChangesForServerTick(4L
 				, Collections.emptyList()
@@ -1726,8 +1742,9 @@ public class TestSpeculativeProjection
 		// The speculative change will be there until we see the commit level and we should see the change from the conflict writing (since the wrapper we use always returns success).
 		Assert.assertEquals(1, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
-		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
-		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
+		// The local change will be written on top of the authoritative server change but will become eventually consistent.
+		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(0, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
@@ -1746,9 +1763,43 @@ public class TestSpeculativeProjection
 				, commit
 				, 1L
 		);
-		// This should retire the change with no updates.
+		// This should retire the change with no updates but won't become consistent for another tick.
 		Assert.assertEquals(0, speculativeCount);
 		Assert.assertEquals(3, listener.changeCount);
+		Assert.assertEquals(2, _countBlocks(listener.lastData, STONE_ITEM.number()));
+		Assert.assertEquals(0, _countBlocks(listener.lastData, LOG_ITEM.number()));
+		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
+		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress()));
+		Assert.assertTrue(listener.events.isEmpty());
+		
+		// Run another 2 ticks to let the follow-up changes become consistent.
+		speculativeCount = projector.applyChangesForServerTick(6L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, null
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commit
+				, 1L
+		);
+		speculativeCount = projector.applyChangesForServerTick(7L
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, null
+				, Map.of()
+				, List.of()
+				, Collections.emptyList()
+				, Collections.emptyList()
+				, List.of()
+				, commit
+				, 1L
+		);
+		// Now, we should see another update to make the block consistent.
+		Assert.assertEquals(0, speculativeCount);
+		Assert.assertEquals(4, listener.changeCount);
 		Assert.assertEquals(1, _countBlocks(listener.lastData, STONE_ITEM.number()));
 		Assert.assertEquals(1, _countBlocks(listener.lastData, LOG_ITEM.number()));
 		Assert.assertEquals(2, listener.lastHeightMap.getHeight(0, 1));
@@ -2330,8 +2381,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, commitNumber);
-		// NOTE:  We will see a redundant update call from the server, here, even though the light isn't changing.
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(2, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
