@@ -244,7 +244,7 @@ public class SpeculativeProjection
 			previousProjectedChanges = Map.of();
 			previousLocalEntity = null;
 		}
-		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges);
+		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges, Set.of());
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -414,6 +414,7 @@ public class SpeculativeProjection
 			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
 					, _projectedState
 					, modifiedBlocks
+					, Set.of()
 			);
 			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		}

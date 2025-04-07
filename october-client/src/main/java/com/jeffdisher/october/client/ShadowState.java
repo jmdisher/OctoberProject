@@ -107,9 +107,9 @@ public class ShadowState
 		return new ApplicationSummary(shadowUpdates.entitiesChangedInTick.keySet(), updatesToApply);
 	}
 
-	public ProjectedState buildProjectedState(Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges)
+	public ProjectedState buildProjectedState(Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges, Set<CuboidAddress> projectedUnsafeLight)
 	{
-		return new ProjectedState(_thisShadowEntity, _shadowWorld, _shadowHeightMap, projectedBlockChanges);
+		return new ProjectedState(_thisShadowEntity, _shadowWorld, _shadowHeightMap, projectedBlockChanges, projectedUnsafeLight);
 		
 	}
 

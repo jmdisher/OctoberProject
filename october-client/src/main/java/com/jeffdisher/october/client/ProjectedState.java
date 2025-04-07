@@ -1,6 +1,7 @@
 package com.jeffdisher.october.client;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,17 +27,20 @@ public class ProjectedState
 	public Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld;
 	public Map<CuboidAddress, CuboidHeightMap> projectedHeightMap;
 	public Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges;
+	public Set<CuboidAddress> projectedUnsafeLight;
 
 	public ProjectedState(Entity projectedLocalEntity
 			, Map<CuboidAddress, IReadOnlyCuboidData> projectedWorld
 			, Map<CuboidAddress, CuboidHeightMap> projectedHeightMap
 			, Map<AbsoluteLocation, MutationBlockSetBlock> projectedBlockChanges
+			, Set<CuboidAddress> projectedUnsafeLight
 	)
 	{
 		this.projectedLocalEntity = projectedLocalEntity;
 		this.projectedWorld = new HashMap<>(projectedWorld);
 		this.projectedHeightMap = new HashMap<>(projectedHeightMap);
 		this.projectedBlockChanges = new HashMap<>(projectedBlockChanges);
+		this.projectedUnsafeLight = new HashSet<>(projectedUnsafeLight);
 	}
 
 	public Map<CuboidColumnAddress, ColumnHeightMap> buildColumnMaps(Set<CuboidColumnAddress> columnsToGenerate)

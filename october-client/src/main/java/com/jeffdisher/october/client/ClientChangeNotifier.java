@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -14,7 +15,6 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -149,15 +149,22 @@ public class ClientChangeNotifier
 		{
 			CuboidAddress address = elt.getKey();
 			Set<Aspect<?, ?>> aspects = changedAspects.get(address);
-			Assert.assertTrue(!aspects.isEmpty());
-			IReadOnlyCuboidData data = elt.getValue();
-			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
-			Assert.assertTrue(!blocksChanged.isEmpty());
-			listener.cuboidDidChange(data
-					, allHeightMaps.get(address.getColumn())
-					, blocksChanged
-					, aspects
-			);
+			if (currentProjectedState.projectedUnsafeLight.contains(address))
+			{
+				// We already reported a light change for this so remove that.
+				aspects = new HashSet<>(aspects);
+				aspects.remove(AspectRegistry.LIGHT);
+			}
+			if (!aspects.isEmpty())
+			{
+				IReadOnlyCuboidData data = elt.getValue();
+				Set<BlockAddress> blocksChanged = changedBlocks.get(address);
+				listener.cuboidDidChange(data
+						, allHeightMaps.get(address.getColumn())
+						, blocksChanged
+						, aspects
+				);
+			}
 		}
 	}
 
@@ -168,15 +175,21 @@ public class ClientChangeNotifier
 	 * @param listener The listener which will receive the callbacks.
 	 * @param currentProjectedState The projected state updated with most recent local changes.
 	 * @param localChangesApplied The union of all local-only changes which have been applied to the projected state.
+	 * @param lightingOptChanges The set of cuboids using unsafe lighting optimization, instead of normal change reporting.
 	 */
 	public static void notifyCuboidChangesFromLocal(IProjectionListener listener
 			, ProjectedState currentProjectedState
 			, Map<AbsoluteLocation, MutationBlockSetBlock> localChangesApplied
+			, Set<CuboidAddress> lightingOptChanges
 	)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
 		Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects = new HashMap<>();
+		
+		// This call rebuilds the projected lighting changes but we want to store the old version to know what changed.
+		Set<CuboidAddress> previouslightingOptChanges = currentProjectedState.projectedUnsafeLight;
+		currentProjectedState.projectedUnsafeLight = new HashSet<>();
 		
 		// Merge the new changes into the existing changes we have reported, collecting data to notify on anything new or expanded.
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
@@ -207,24 +220,52 @@ public class ClientChangeNotifier
 				.map((CuboidAddress address) -> address.getColumn())
 				.collect(Collectors.toUnmodifiableSet())
 		;
+		// Note that we need to add any light-opt changes to this height map set, too, since it needs to be passed into the notification.
+		if (!lightingOptChanges.isEmpty())
+		{
+			missingColumns = new HashSet<>(missingColumns);
+			missingColumns.addAll(lightingOptChanges.stream()
+				.map((CuboidAddress address) -> address.getColumn())
+				.toList()
+			);
+		}
 		Map<CuboidColumnAddress, ColumnHeightMap> addedHeightMaps = currentProjectedState.buildColumnMaps(missingColumns);
 		Map<CuboidColumnAddress, ColumnHeightMap> allHeightMaps = new HashMap<>();
 		allHeightMaps.putAll(addedHeightMaps);
 		
+		Set<CuboidAddress> newLightChanges = new HashSet<>(lightingOptChanges);
+		newLightChanges.removeAll(previouslightingOptChanges);
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : cuboidsToReport.entrySet())
 		{
 			CuboidAddress address = elt.getKey();
 			IReadOnlyCuboidData data = elt.getValue();
 			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
-			Assert.assertTrue(!blocksChanged.isEmpty());
-			Set<Aspect<?, ?>> aspects = changedAspects.get(address);
-			Assert.assertTrue(!aspects.isEmpty());
+			Set<Aspect<? ,?>> changedInCuboid = changedAspects.get(address);
+			if (newLightChanges.contains(address))
+			{
+				// Be sure to add the lighting change to this.
+				changedInCuboid = new HashSet<>(changedInCuboid);
+				changedInCuboid.add(AspectRegistry.LIGHT);
+			}
 			listener.cuboidDidChange(data
 					, allHeightMaps.get(address.getColumn())
 					, blocksChanged
-					, aspects
+					, changedInCuboid
 			);
 		}
+		// Unsafe lighting changes not already reported must also be reported.
+		for (CuboidAddress lightChanges : newLightChanges)
+		{
+			if (!cuboidsToReport.containsKey(lightChanges))
+			{
+				listener.cuboidDidChange(currentProjectedState.projectedWorld.get(lightChanges)
+						, allHeightMaps.get(lightChanges.getColumn())
+						, Set.of()
+						, Set.of(AspectRegistry.LIGHT)
+				);
+			}
+		}
+		currentProjectedState.projectedUnsafeLight = lightingOptChanges;
 	}
 
 

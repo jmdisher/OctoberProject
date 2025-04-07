@@ -29,6 +29,8 @@ public interface IProjectionListener
 
 	/**
 	 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
+	 * NOTE that lighting-only block updates are not reported in changedBlocks so it is possible for this to be empty if
+	 * the only changes in the cuboid were lighting related (as shown in changedAspects).
 	 * 
 	 * @param cuboid The read-only cuboid data.
 	 * @param heightMap The height map for this cuboid's column.

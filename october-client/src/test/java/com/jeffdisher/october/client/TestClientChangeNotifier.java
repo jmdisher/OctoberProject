@@ -68,15 +68,16 @@ public class TestClientChangeNotifier
 				count[0] += 1;
 			}
 		};
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
+		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of(), Set.of());
 		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
 				, state
 				, Map.of(location, setBlock)
+				, Set.of()
 		);
 		Assert.assertEquals(1, count[0]);
 		
 		// A redundant change should not send any callbacks.
-		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, Map.of(location, setBlock));
+		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener, state, Map.of(location, setBlock), Set.of());
 		Assert.assertEquals(1, count[0]);
 	}
 
@@ -109,7 +110,7 @@ public class TestClientChangeNotifier
 		setBlock.applyState(changed);
 		// We build the projected state from this shadow and re-apply local changes (none)
 		CuboidData projected = CuboidData.mutableClone(changed);
-		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of());
+		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of(), Set.of());
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
 				, state
 				, Map.of(location, setBlock)
@@ -172,6 +173,7 @@ public class TestClientChangeNotifier
 				, Map.of(address0, projected0, address1, projected1)
 				, Map.of(address0, HeightMapHelpers.buildHeightMap(projected0), address1, HeightMapHelpers.buildHeightMap(projected1))
 				, Map.of()
+				, Set.of()
 		);
 		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
 				, state
@@ -181,6 +183,40 @@ public class TestClientChangeNotifier
 		);
 		
 		Assert.assertEquals(2, count[0]);
+	}
+
+	@Test
+	public void localLightingUpdate()
+	{
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData projected = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		int[] count = new int[1];
+		_Listener listener = new _Listener() {
+			@Override
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			{
+				// This is the only case where no changed blocks will be reported - lighting change somewhere in the cuboid.
+				Assert.assertEquals(0, changedBlocks.size());
+				Assert.assertEquals(1, changedAspects.size());
+				Assert.assertEquals(AspectRegistry.LIGHT, changedAspects.iterator().next());
+				count[0] += 1;
+			}
+		};
+		ProjectedState state = new ProjectedState(null, Map.of(address, projected), Map.of(address, HeightMapHelpers.buildHeightMap(projected)), Map.of(), Set.of());
+		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
+				, state
+				, Map.of()
+				, Set.of(address)
+		);
+		Assert.assertEquals(1, count[0]);
+		
+		// A redundant change should not send any callbacks.
+		ClientChangeNotifier.notifyCuboidChangesFromLocal(listener
+				, state
+				, Map.of()
+				, Set.of(address)
+		);
+		Assert.assertEquals(1, count[0]);
 	}
 
 
