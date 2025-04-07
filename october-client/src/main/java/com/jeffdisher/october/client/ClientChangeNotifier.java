@@ -14,6 +14,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -41,7 +42,7 @@ public class ClientChangeNotifier
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
-		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
+		Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects = new HashMap<>();
 		
 		// This call rebuilds the projected changes but we want to store the old version to know what changed.
 		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges = currentProjectedState.projectedBlockChanges;
@@ -115,7 +116,11 @@ public class ClientChangeNotifier
 				if (!changes.isEmpty())
 				{
 					// If this would cause a change, it must have been reverted so notify.
-					changedAspects.addAll(changes);
+					if (!changedAspects.containsKey(address))
+					{
+						changedAspects.put(address, new HashSet<>());
+					}
+					changedAspects.get(address).addAll(changes);
 					if (!changedBlocks.containsKey(address))
 					{
 						changedBlocks.put(address, new HashSet<>());
@@ -143,12 +148,15 @@ public class ClientChangeNotifier
 		for (Map.Entry<CuboidAddress, IReadOnlyCuboidData> elt : cuboidsToReport.entrySet())
 		{
 			CuboidAddress address = elt.getKey();
+			Set<Aspect<?, ?>> aspects = changedAspects.get(address);
+			Assert.assertTrue(!aspects.isEmpty());
 			IReadOnlyCuboidData data = elt.getValue();
 			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
+			Assert.assertTrue(!blocksChanged.isEmpty());
 			listener.cuboidDidChange(data
 					, allHeightMaps.get(address.getColumn())
 					, blocksChanged
-					, changedAspects
+					, aspects
 			);
 		}
 	}
@@ -168,7 +176,7 @@ public class ClientChangeNotifier
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport = new HashMap<>();
 		Map<CuboidAddress, Set<BlockAddress>> changedBlocks = new HashMap<>();
-		Set<Aspect<?, ?>> changedAspects = new HashSet<>();
+		Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects = new HashMap<>();
 		
 		// Merge the new changes into the existing changes we have reported, collecting data to notify on anything new or expanded.
 		for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> local : localChangesApplied.entrySet())
@@ -208,10 +216,13 @@ public class ClientChangeNotifier
 			CuboidAddress address = elt.getKey();
 			IReadOnlyCuboidData data = elt.getValue();
 			Set<BlockAddress> blocksChanged = changedBlocks.get(address);
+			Assert.assertTrue(!blocksChanged.isEmpty());
+			Set<Aspect<?, ?>> aspects = changedAspects.get(address);
+			Assert.assertTrue(!aspects.isEmpty());
 			listener.cuboidDidChange(data
 					, allHeightMaps.get(address.getColumn())
 					, blocksChanged
-					, changedAspects
+					, aspects
 			);
 		}
 	}
@@ -219,7 +230,7 @@ public class ClientChangeNotifier
 
 	private static void _updateCollectionsWithChange(Map<CuboidAddress, IReadOnlyCuboidData> cuboidsToReport
 			, Map<CuboidAddress, Set<BlockAddress>> changedBlocks
-			, Set<Aspect<?, ?>> changedAspects
+			, Map<CuboidAddress, Set<Aspect<?, ?>>> changedAspects
 			, ProjectedState currentProjectedState
 			, AbsoluteLocation location
 			, MutationBlockSetBlock current
@@ -230,8 +241,12 @@ public class ClientChangeNotifier
 		// This could be empty if current is a proper subset of previous.
 		if (!changes.isEmpty())
 		{
-			changedAspects.addAll(changes);
 			CuboidAddress address = location.getCuboidAddress();
+			if (!changedAspects.containsKey(address))
+			{
+				changedAspects.put(address, new HashSet<>());
+			}
+			changedAspects.get(address).addAll(changes);
 			if (!changedBlocks.containsKey(address))
 			{
 				changedBlocks.put(address, new HashSet<>());

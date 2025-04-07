@@ -120,6 +120,69 @@ public class TestClientChangeNotifier
 		Assert.assertEquals(1, count[0]);
 	}
 
+	@Test
+	public void serverUpdateMultipleCuboids()
+	{
+		CuboidAddress address0 = CuboidAddress.fromInt(0, 0, 0);
+		CuboidAddress address1 = CuboidAddress.fromInt(1, 0, 0);
+		CuboidData shadow0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		CuboidData changed0 = CuboidGenerator.createFilledCuboid(address0, ENV.special.AIR);
+		CuboidData shadow1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		CuboidData changed1 = CuboidGenerator.createFilledCuboid(address1, ENV.special.AIR);
+		AbsoluteLocation location0 = address0.getBase();
+		AbsoluteLocation location1 = address1.getBase();
+		int[] count = new int[1];
+		_Listener listener = new _Listener() {
+			@Override
+			public void cuboidDidChange(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap, Set<BlockAddress> changedBlocks, Set<Aspect<?, ?>> changedAspects)
+			{
+				Assert.assertEquals(1, changedBlocks.size());
+				Assert.assertEquals(1, changedAspects.size());
+				if (cuboid.getCuboidAddress().equals(address0))
+				{
+					Assert.assertEquals(location0.getBlockAddress(), changedBlocks.iterator().next());
+					Assert.assertEquals(AspectRegistry.BLOCK, changedAspects.iterator().next());
+				}
+				else
+				{
+					Assert.assertEquals(location1.getBlockAddress(), changedBlocks.iterator().next());
+					Assert.assertEquals(AspectRegistry.LOGIC, changedAspects.iterator().next());
+				}
+				count[0] += 1;
+			}
+		};
+		// Create the block change.
+		MutableBlockProxy proxy0 = new MutableBlockProxy(location0, shadow0);
+		proxy0.setBlockAndClear(STONE);
+		Assert.assertTrue(proxy0.didChange());
+		MutationBlockSetBlock setBlock0 = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy0);
+		// Create the logic change.
+		MutableBlockProxy proxy1 = new MutableBlockProxy(location1, shadow1);
+		proxy1.setLogic((byte)5);
+		MutationBlockSetBlock setBlock1 = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy1);
+		
+		
+		// We need to apply the changes before running the notifications.
+		setBlock0.applyState(changed0);
+		setBlock1.applyState(changed1);
+		// We build the projected state from this shadow and re-apply local changes (none)
+		CuboidData projected0 = CuboidData.mutableClone(changed0);
+		CuboidData projected1 = CuboidData.mutableClone(changed1);
+		ProjectedState state = new ProjectedState(null
+				, Map.of(address0, projected0, address1, projected1)
+				, Map.of(address0, HeightMapHelpers.buildHeightMap(projected0), address1, HeightMapHelpers.buildHeightMap(projected1))
+				, Map.of()
+		);
+		ClientChangeNotifier.notifyCuboidChangesFromServer(listener
+				, state
+				, Map.of(location0, setBlock0, location1, setBlock1)
+				, Map.of()
+				, HeightMapHelpers.buildColumnMaps(Map.of(address0, HeightMapHelpers.buildHeightMap(changed0), address1, HeightMapHelpers.buildHeightMap(changed1)))
+		);
+		
+		Assert.assertEquals(2, count[0]);
+	}
+
 
 	private static abstract class _Listener implements IProjectionListener
 	{
