@@ -162,11 +162,27 @@ public class ConsoleHandler
 			state.canContinue = false;
 		}),
 		LIST_CLIENTS((PrintStream out, _ConsoleState state, String[] parameters) -> {
-			Map<Integer, String> clientIds = state.monitoringAgent.getClientsCopy();
+			// We will list the clients and their current locations.
+			MonitoringAgent monitoringAgent = state.monitoringAgent;
+			Map<Integer, String> clientIds = monitoringAgent.getClientsCopy();
+			TickRunner.Snapshot snapshot = monitoringAgent.getLastSnapshot();
 			out.println("Connected clients (" + clientIds.size() + "):");
 			for (Map.Entry<Integer, String> elt : clientIds.entrySet())
 			{
-				out.println("\t" + elt.getKey() + " - " + elt.getValue());
+				int id = elt.getKey();
+				TickRunner.SnapshotEntity entity = snapshot.entities().get(id);
+				String location;
+				if (null != entity)
+				{
+					EntityLocation obj = entity.completed().location();
+					location = "(" + obj.x() + ", " + obj.y() + ", " + obj.z() + ")";
+				}
+				else
+				{
+					// This can happen if we ask about the entity while we are waiting for it to load in.
+					location = "not loaded";
+				}
+				out.println("\t" + id + " - " + elt.getValue() + " @ " + location);
 			}
 		}),
 		LAST_SNAPSHOT((PrintStream out, _ConsoleState state, String[] parameters) -> {
