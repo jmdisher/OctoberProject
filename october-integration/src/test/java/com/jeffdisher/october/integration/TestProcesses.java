@@ -311,24 +311,26 @@ public class TestProcesses
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += MILLIS_PER_TICK;
 		
+		// We will need to wait for these commits to come back to both clients as committed (we send 5 and 10 above).
+		long client1CommitLevel = 5;
+		long client2CommitLevel = 10;
+		long client1Tick = client1.waitForLocalCommitInTick(client1CommitLevel, currentTimeMillis[0]);
+		long client2Tick = client2.waitForLocalCommitInTick(client2CommitLevel, currentTimeMillis[0]);
+		// We need to make sure that both clients see both updates so take the max of whenever the last of either change was committed.
+		long serverTickToObserve = Math.max(client1Tick, client2Tick);
+		client1.waitForTick(serverTickToObserve, currentTimeMillis[0]);
+		client2.waitForTick(serverTickToObserve, currentTimeMillis[0]);
+		currentTimeMillis[0] += MILLIS_PER_TICK;
+		
 		// Because this will always leave one tick of slack on the line, consume it before counting the ticks to see our changes.
 		serverTickNumber = server.waitForTicksToPass(1L);
 		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
 		currentTimeMillis[0] += MILLIS_PER_TICK;
 		
-		// We expect the first client to take an extra 5 ticks to be processed while the second takes a further 5.
-		serverTickNumber = server.waitForTicksToPass(5L);
-		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += MILLIS_PER_TICK;
+		// By this point, they should both have seen each other move so verify final result.
 		_compareLocation(location1, listener1.getLocalEntity().location());
 		_compareLocation(location1, listener2.otherEntities.get(clientId1).location());
-		
-		serverTickNumber = server.waitForTicksToPass(5L);
-		client1.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		client2.waitForTick(serverTickNumber, currentTimeMillis[0]);
-		currentTimeMillis[0] += MILLIS_PER_TICK;
 		_compareLocation(location2, listener1.otherEntities.get(clientId2).location());
 		_compareLocation(location2, listener2.getLocalEntity().location());
 		

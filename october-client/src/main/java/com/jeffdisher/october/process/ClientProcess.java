@@ -66,6 +66,7 @@ public class ClientProcess
 
 	// State which can be used in synchronization, as it is updated by background threads.
 	private long _lastTickFromServer;
+	private long _lastIncludedLocalCommit;
 	private int _assignedClientId;
 	private boolean _isEntityLoaded;
 
@@ -175,6 +176,25 @@ public class ClientProcess
 	public synchronized long waitForTick(long tickNumber, long currentTimeMillis) throws InterruptedException
 	{
 		while (_lastTickFromServer < tickNumber)
+		{
+			this.wait();
+		}
+		_clientRunner.runPendingCalls(currentTimeMillis);
+		_runPendingCallbacks();
+		return _lastTickFromServer;
+	}
+
+	/**
+	 * Waits until the packet with the given client commit level has been observed.
+	 * NOTE:  Even though the packet has been received, this may return before it has been relayed to the listener as
+	 * there is some buffering of those callbacks.
+	 * 
+	 * @return The last tick observed in a packet.
+	 * @throws InterruptedException Interrupted while waiting.
+	 */
+	public synchronized long waitForLocalCommitInTick(long lastIncludedLocalCommit, long currentTimeMillis) throws InterruptedException
+	{
+		while (_lastIncludedLocalCommit < lastIncludedLocalCommit)
 		{
 			this.wait();
 		}
@@ -366,10 +386,11 @@ public class ClientProcess
 		}
 	}
 
-	private synchronized void _background_updateTickNumber(long latestTickNumer)
+	private synchronized void _background_updateTickNumber(long latestTickNumber, long lastIncludedLocalCommit)
 	{
-		Assert.assertTrue((0 == _lastTickFromServer) || ((_lastTickFromServer + 1) == latestTickNumer));
-		_lastTickFromServer = latestTickNumer;
+		Assert.assertTrue((0 == _lastTickFromServer) || ((_lastTickFromServer + 1) == latestTickNumber));
+		_lastTickFromServer = latestTickNumber;
+		_lastIncludedLocalCommit = lastIncludedLocalCommit;
 		this.notifyAll();
 	}
 
@@ -472,7 +493,7 @@ public class ClientProcess
 			{
 				Packet_EndOfTick safe = (Packet_EndOfTick) packet;
 				_messagesToClientRunner.receivedEndOfTick(safe.tickNumber, safe.latestLocalCommitIncluded);
-				_background_updateTickNumber(safe.tickNumber);
+				_background_updateTickNumber(safe.tickNumber, safe.latestLocalCommitIncluded);
 			}
 			else if (packet instanceof Packet_RemoveEntity)
 			{
