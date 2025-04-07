@@ -13,10 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.data.OctreeInflatedByte;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
@@ -220,10 +222,12 @@ public class SpeculativeProjection
 		// Rebuild our projection from these collections.
 		boolean isFirstRun = (null == _projectedState);
 		Map<AbsoluteLocation, MutationBlockSetBlock> previousProjectedChanges;
+		Set<CuboidAddress> previousProjectedUnsafeLight;
 		Entity previousLocalEntity;
 		if (null != _projectedState)
 		{
 			previousProjectedChanges = _projectedState.projectedBlockChanges;
+			previousProjectedUnsafeLight = _projectedState.projectedUnsafeLight;
 			previousLocalEntity = _projectedState.projectedLocalEntity;
 			// If any cuboids were removed, strip any updates from the previous block changes so we don't try to reverse-verify them.
 			if (!removedCuboids.isEmpty())
@@ -242,9 +246,10 @@ public class SpeculativeProjection
 		else
 		{
 			previousProjectedChanges = Map.of();
+			previousProjectedUnsafeLight = Set.of();
 			previousLocalEntity = null;
 		}
-		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges, Set.of());
+		_projectedState = _shadowState.buildProjectedState(previousProjectedChanges, previousProjectedUnsafeLight);
 		
 		// Step forward the follow-ups before we add to them when processing speculative changes.
 		if (_followUpTicks.size() > 0)
@@ -255,6 +260,7 @@ public class SpeculativeProjection
 		// Merge the follow-up ticks.
 		IEntityUpdate modifiedEntity = null;
 		Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = Map.of();
+		Map<CuboidAddress, OctreeInflatedByte> modifiedLights = new HashMap<>();
 		for (int i = 0; i < _followUpTicks.size(); ++i)
 		{
 			_LocalCallConsequences followUp = _followUpTicks.get(i);
@@ -263,6 +269,7 @@ public class SpeculativeProjection
 				modifiedEntity = followUp.entityUpdate;
 			}
 			modifiedBlocks = _mergeChanges(modifiedBlocks, followUp.blockUpdates);
+			modifiedLights.putAll(followUp.lightingChanges);
 		}
 		
 		// Merge the speculative changes which are still not committed.
@@ -285,6 +292,7 @@ public class SpeculativeProjection
 						modifiedEntity = consequence.entityUpdate;
 					}
 					modifiedBlocks = _mergeChanges(modifiedBlocks, consequence.blockUpdates);
+					modifiedLights.putAll(consequence.lightingChanges);
 				}
 			}
 			else
@@ -295,7 +303,7 @@ public class SpeculativeProjection
 				// Merge this into follow-ups after applying it to the current change set.
 				Iterator<_LocalCallConsequences> oldFollowUpdate = new ArrayList<>(_followUpTicks).iterator();
 				_followUpTicks.clear();
-				_LocalCallConsequences empty = new _LocalCallConsequences(null, Map.of());
+				_LocalCallConsequences empty = new _LocalCallConsequences(null, Map.of(), Map.of());
 				// NOTE:  We skip the inline change, here, since it is the action covered by the commit.
 				for (_LocalCallConsequences consequence : wrapper.consequences)
 				{
@@ -305,6 +313,7 @@ public class SpeculativeProjection
 						modifiedEntity = consequence.entityUpdate;
 					}
 					modifiedBlocks = _mergeChanges(modifiedBlocks, consequence.blockUpdates);
+					modifiedLights.putAll(consequence.lightingChanges);
 					
 					// Merge them in to the corresponding follow-up.
 					_LocalCallConsequences followUp = oldFollowUpdate.hasNext() ? oldFollowUpdate.next() : empty;
@@ -326,6 +335,7 @@ public class SpeculativeProjection
 		}
 		
 		// Now that we have collected all the changes which must be applied to the projection, apply them.
+		_applyLightingCapture(modifiedLights);
 		_applyChangesToProjection(modifiedEntity, modifiedBlocks);
 		
 		
@@ -404,9 +414,11 @@ public class SpeculativeProjection
 		{
 			_speculativeChanges.add(output);
 			Map<AbsoluteLocation, MutationBlockSetBlock> modifiedBlocks = Map.of();
+			Set<CuboidAddress> lightOpt = new HashSet<>();
 			for (_LocalCallConsequences consequence : output.consequences)
 			{
 				modifiedBlocks = _mergeChanges(modifiedBlocks, consequence.blockUpdates);
+				lightOpt.addAll(consequence.lightingChanges.keySet());
 			}
 			
 			// Notify the listener of what changed.
@@ -414,7 +426,7 @@ public class SpeculativeProjection
 			ClientChangeNotifier.notifyCuboidChangesFromLocal(_listener
 					, _projectedState
 					, modifiedBlocks
-					, Set.of()
+					, lightOpt
 			);
 			_notifyEntityChanges(_shadowState.getThisEntity(), changedLocalEntity, Set.of());
 		}
@@ -534,7 +546,31 @@ public class SpeculativeProjection
 				_ApplicationResult result = _applyBlockMutationsToProjected(context, blockMutationstoRun, potentialLightChangesByCuboid);
 				
 				// Collect the results and package them.
-				_LocalCallConsequences consequence = new _LocalCallConsequences(update, result.modifiedBlocks);
+				// Note that we will drop any updates which are lighting-only and use the lighting opt with unsafe octree access.
+				Map<AbsoluteLocation, MutationBlockSetBlock> nonLightModifiedBlocks = new HashMap<>();
+				Map<CuboidAddress, OctreeInflatedByte> lightingOpt = new HashMap<>();
+				for (Map.Entry<AbsoluteLocation, MutationBlockSetBlock> modified : result.modifiedBlocks.entrySet())
+				{
+					AbsoluteLocation key = modified.getKey();
+					MutationBlockSetBlock value = modified.getValue();
+					CuboidAddress address = key.getCuboidAddress();
+					if (value.isSingleAspect(AspectRegistry.LIGHT))
+					{
+						// See if we need to extract the lighting.
+						if (!lightingOpt.containsKey(address))
+						{
+							OctreeInflatedByte unsafeLighting = CuboidUnsafe.getAspectUnsafe(_projectedState.projectedWorld.get(address), AspectRegistry.LIGHT);
+							lightingOpt.put(address, unsafeLighting);
+						}
+					}
+					else
+					{
+						// Just pass this one.
+						nonLightModifiedBlocks.put(key, value);
+					}
+				}
+				
+				_LocalCallConsequences consequence = new _LocalCallConsequences(update, nonLightModifiedBlocks, lightingOpt);
 				consequences.add(consequence);
 				
 				// Take the results and prepare to run them in the next iteration.
@@ -708,6 +744,20 @@ public class SpeculativeProjection
 		return context;
 	}
 
+	private void _applyLightingCapture(Map<CuboidAddress, OctreeInflatedByte> followUpLightChanges)
+	{
+		for (Map.Entry<CuboidAddress, OctreeInflatedByte> elt : followUpLightChanges.entrySet())
+		{
+			CuboidAddress key = elt.getKey();
+			IReadOnlyCuboidData old = _projectedState.projectedWorld.get(key);
+			if (null != old)
+			{
+				IReadOnlyCuboidData update = CuboidUnsafe.cloneWithReplacement(old, AspectRegistry.LIGHT, elt.getValue());
+				_projectedState.projectedWorld.put(key, update);
+			}
+		}
+	}
+
 	private Map<AbsoluteLocation, MutationBlockSetBlock> _mergeChanges(Map<AbsoluteLocation, MutationBlockSetBlock> one, Map<AbsoluteLocation, MutationBlockSetBlock> two)
 	{
 		Map<AbsoluteLocation, MutationBlockSetBlock> container = new HashMap<>(one);
@@ -773,6 +823,7 @@ public class SpeculativeProjection
 	// entityUpdate can be null if there were no entity changes.
 	private static record _LocalCallConsequences(IEntityUpdate entityUpdate
 			, Map<AbsoluteLocation, MutationBlockSetBlock> blockUpdates
+			, Map<CuboidAddress, OctreeInflatedByte> lightingChanges
 	) {
 		public static _LocalCallConsequences merge(_LocalCallConsequences bottom, _LocalCallConsequences top)
 		{
@@ -783,7 +834,10 @@ public class SpeculativeProjection
 			Map<AbsoluteLocation, MutationBlockSetBlock> blockUpdates = new HashMap<>();
 			blockUpdates.putAll(bottom.blockUpdates);
 			blockUpdates.putAll(top.blockUpdates);
-			return new _LocalCallConsequences(entityUpdate, Collections.unmodifiableMap(blockUpdates));
+			Map<CuboidAddress, OctreeInflatedByte> lightingChanges = new HashMap<>();
+			lightingChanges.putAll(bottom.lightingChanges);
+			lightingChanges.putAll(top.lightingChanges);
+			return new _LocalCallConsequences(entityUpdate, Collections.unmodifiableMap(blockUpdates), Collections.unmodifiableMap(lightingChanges));
 		}
 	}
 

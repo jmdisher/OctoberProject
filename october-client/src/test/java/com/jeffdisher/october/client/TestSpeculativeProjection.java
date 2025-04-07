@@ -2326,7 +2326,8 @@ public class TestSpeculativeProjection
 		long commitNumber = projector.applyLocalChange(blockBreak, currentTimeMillis);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(2, listener.lastChangedBlocks.size());
+		// Note that there was also a lighting change, but those aren't reported.
+		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
@@ -2364,7 +2365,7 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, listener.changeCount);
 		
-		// The lighting update requires a hard-coded update.
+		// The lighting update requires a hard-coded update - note that a light-only change will NOT trigger another change callback since we already reported that.
 		MutationBlockSetBlock targetLighting = new MutationBlockSetBlock(targetLocation, new byte[] {(byte)AspectRegistry.LIGHT.index(), LightAspect.MAX_LIGHT - 1});
 		MutationBlockSetBlock entityLighting = new MutationBlockSetBlock(entityLocation, new byte[] {(byte)AspectRegistry.LIGHT.index(), LightAspect.MAX_LIGHT - 2});
 		gameTick += 1L;
@@ -2382,8 +2383,6 @@ public class TestSpeculativeProjection
 		);
 		Assert.assertEquals(1, commitNumber);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(2, listener.lastChangedBlocks.size());
-		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
@@ -2443,7 +2442,8 @@ public class TestSpeculativeProjection
 		long commit1 = projector.applyLocalChange(placeBlock, currentTimeMillis);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);
-		Assert.assertEquals(2, listener.lastChangedBlocks.size());
+		// Note that there was also a lighting change, but those aren't reported.
+		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
 		Assert.assertEquals(dirt.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
@@ -2642,7 +2642,11 @@ public class TestSpeculativeProjection
 				, Set<Aspect<?, ?>> changedAspects
 		)
 		{
-			Assert.assertFalse(changedBlocks.isEmpty());
+			// Note that the changed blocks can be empty but only if the changed aspects are NOT light.
+			if ((changedAspects.size() > 1) || !changedAspects.contains(AspectRegistry.LIGHT))
+			{
+				Assert.assertFalse(changedBlocks.isEmpty());
+			}
 			Assert.assertFalse(changedAspects.isEmpty());
 			this.changeCount += 1;
 			this.lastData = cuboid;
