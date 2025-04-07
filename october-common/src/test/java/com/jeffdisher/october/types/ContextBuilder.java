@@ -7,7 +7,6 @@ import java.util.function.IntUnaryOperator;
 import org.junit.Assert;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.CreatureIdAssigner;
 
 
 /**
@@ -28,7 +27,7 @@ public class ContextBuilder
 				.tick(previous.currentTick + ticksToAdvance)
 				.lookups(previous.previousBlockLookUp, previous.previousEntityLookUp)
 				.sinks(previous.mutationSink, previous.newChangeSink)
-				.assigner(previous.idAssigner)
+				.spawner(previous.creatureSpawner)
 				.eventSink(previous.eventSink)
 		;
 		builder.randomInt = previous.randomInt;
@@ -44,7 +43,7 @@ public class ContextBuilder
 	public IByteLookup<AbsoluteLocation> skyLight;
 	public TickProcessingContext.IMutationSink mutationSink;
 	public TickProcessingContext.IChangeSink newChangeSink;
-	public CreatureIdAssigner idAssigner;
+	public TickProcessingContext.ICreatureSpawner creatureSpawner;
 	public IntUnaryOperator randomInt;
 	public TickProcessingContext.IEventSink eventSink;
 	public WorldConfig config;
@@ -90,9 +89,9 @@ public class ContextBuilder
 		return this;
 	}
 
-	public ContextBuilder assigner(CreatureIdAssigner idAssigner)
+	public ContextBuilder spawner(TickProcessingContext.ICreatureSpawner creatureSpawner)
 	{
-		this.idAssigner = idAssigner;
+		this.creatureSpawner = creatureSpawner;
 		return this;
 	}
 
@@ -143,7 +142,7 @@ public class ContextBuilder
 				, this.skyLight
 				, this.mutationSink
 				, this.newChangeSink
-				, this.idAssigner
+				, this.creatureSpawner
 				, this.randomInt
 				, this.eventSink
 				, this.config

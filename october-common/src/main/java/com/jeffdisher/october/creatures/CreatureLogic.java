@@ -3,7 +3,6 @@ package com.jeffdisher.october.creatures;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -173,14 +172,12 @@ public class CreatureLogic
 	 * 
 	 * @param context The context of the current tick.
 	 * @param entityCollection The read-only collection of entities in the world.
-	 * @param creatureSpawner A consumer for any new entities spawned.
 	 * @param mutable The mutable creature object currently being evaluated.
 	 * @return True if some special action was taken, meaning that this tick's actions should be skipped for this
 	 * creature.
 	 */
 	public static boolean didTakeSpecialActions(TickProcessingContext context
 			, EntityCollection entityCollection
-			, Consumer<CreatureEntity> creatureSpawner
 			, MutableCreature mutable
 	)
 	{
@@ -222,7 +219,7 @@ public class CreatureLogic
 			
 			if (creatureType.isLivestock())
 			{
-				isDone = _didTakeLivestockAction(context, creatureSpawner, mutable);
+				isDone = _didTakeLivestockAction(context, mutable);
 			}
 			else
 			{
@@ -681,7 +678,7 @@ public class CreatureLogic
 		return target[0];
 	}
 
-	private static boolean _didTakeLivestockAction(TickProcessingContext context, Consumer<CreatureEntity> creatureSpawner, MutableCreature creature)
+	private static boolean _didTakeLivestockAction(TickProcessingContext context, MutableCreature creature)
 	{
 		boolean isDone = false;
 		EntityType creatureType = creature.getType();
@@ -689,7 +686,7 @@ public class CreatureLogic
 		if (null != creature.newOffspringLocation)
 		{
 			// Spawn the creature and clear our offspring location.
-			creatureSpawner.accept(CreatureEntity.create(context.idAssigner.next(), creatureType, creature.newOffspringLocation, creatureType.maxHealth()));
+			context.creatureSpawner.spawnCreature(creatureType, creature.newOffspringLocation, creatureType.maxHealth());
 			creature.newOffspringLocation = null;
 			_clearTargetAndPlan(creature);
 			isDone = true;

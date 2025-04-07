@@ -32,16 +32,16 @@ public class CreatureSpawner
 	public static final float SPAWN_DENIAL_RANGE = 16.0f;
 
 	/**
-	 * Attempts to spawn a single creature by randomly selecting a spawning location in the given world.
+	 * Attempts to spawn a single creature by randomly selecting a spawning location in the given world.  It will spawn
+	 * the new creature in the given context.
 	 * 
 	 * @param context The context for the current tick.
 	 * @param existingEntities The existing entities in the world as of this tick.
 	 * @param completedCuboids The map of all cuboids from the previous tick.
 	 * @param completedHeightMaps The per-column height maps from the previous tick.
 	 * @param completedCreatures The map of all creatures from the previous tick.
-	 * @return The new entity or null if spawning was aborted.
 	 */
-	public static CreatureEntity trySpawnCreature(TickProcessingContext context
+	public static void trySpawnCreature(TickProcessingContext context
 			, EntityCollection existingEntities
 			, Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids
 			, Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps
@@ -52,7 +52,6 @@ public class CreatureSpawner
 		int estimatedTargetCreatureCount = cuboidCount * context.config.hostilesPerCuboidTarget;
 		int creatureCount = completedCreatures.size();
 		
-		CreatureEntity spawned;
 		if (creatureCount < estimatedTargetCreatureCount)
 		{
 			// We might want to spawn something so pick a cuboid at random.
@@ -63,26 +62,22 @@ public class CreatureSpawner
 				ColumnHeightMap heightMap = completedHeightMaps.get(cuboid.getCuboidAddress().getColumn());
 				if (null != heightMap)
 				{
-					spawned = _spawnInCuboid(context, existingEntities, cuboid, heightMap);
+					_spawnInCuboid(context, existingEntities, cuboid, heightMap);
 				}
 				else
 				{
 					// Note that the height map isn't always up to date so it may not yet be generated for this cuboid.
-					spawned = null;
 				}
 			}
 			else
 			{
 				// Candidate too crowded.
-				spawned = null;
 			}
 		}
 		else
 		{
 			// Too many creatures.
-			spawned = null;
 		}
-		return spawned;
 	}
 
 
@@ -116,7 +111,7 @@ public class CreatureSpawner
 		;
 	}
 
-	private static CreatureEntity _spawnInCuboid(TickProcessingContext context
+	private static void _spawnInCuboid(TickProcessingContext context
 			, EntityCollection existingEntities
 			, IReadOnlyCuboidData cuboid
 			, ColumnHeightMap heightMap
@@ -130,7 +125,6 @@ public class CreatureSpawner
 		// We will first skip past any blocks which are clearly above the height map.
 		int highestBlockZ = heightMap.getHeight(x, y);
 		// Also, ignore this cuboid if the column height map is unknown (often happens on initial load).
-		CreatureEntity spawned = null;
 		if (Integer.MIN_VALUE != highestBlockZ)
 		{
 			AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
@@ -139,13 +133,12 @@ public class CreatureSpawner
 			thisAttemptZ = Math.min(thisAttemptZ, highestBlockZ + 1);
 			AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, (byte)(thisAttemptZ - baseZ));
 			
-			spawned = _spawnInValidCuboid(context, existingEntities, baseZ, highestBlockZ, checkSpawningLocation);
+			_spawnInValidCuboid(context, existingEntities, baseZ, highestBlockZ, checkSpawningLocation);
 		}
-		return spawned;
 	}
 
 
-	private static CreatureEntity _spawnInValidCuboid(TickProcessingContext context
+	private static void _spawnInValidCuboid(TickProcessingContext context
 			, EntityCollection existingEntities
 			, int baseZ
 			, int highestBlockZ
@@ -226,7 +219,6 @@ public class CreatureSpawner
 			}
 		}
 		
-		CreatureEntity spawned;
 		if (null != goodSpawningLocation)
 		{
 			EntityLocation location = goodSpawningLocation.toEntityLocation();
@@ -238,19 +230,16 @@ public class CreatureSpawner
 			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
 			{
 				// We can spawn here.
-				spawned = CreatureEntity.create(context.idAssigner.next(), spawnType, location, spawnType.maxHealth());
+				context.creatureSpawner.spawnCreature(spawnType, location, spawnType.maxHealth());
 			}
 			else
 			{
 				// No open space.
-				spawned = null;
 			}
 		}
 		else
 		{
 			// No solid ground.
-			spawned = null;
 		}
-		return spawned;
 	}
 }

@@ -622,7 +622,7 @@ public class TestCreatureProcessor
 				Assert.assertFalse(changes.containsKey(targetCreatureId));
 				changes.put(targetCreatureId, change);
 			}
-		}, null);
+		}, null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -636,15 +636,16 @@ public class TestCreatureProcessor
 		
 		// Run another tick to see the mother receive this request and spawn the offspring.
 		creaturesById.putAll(group.updatedCreatures());
-		context = _updateContextWithCreatures(context, creaturesById.values(), null, idAssigner);
+		CreatureEntity[] out = new CreatureEntity[1];
+		context = _updateContextWithCreatures(context, creaturesById.values(), null, out, idAssigner);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
 				, new EntityCollection(Map.of(), creaturesById)
 				, Map.of(cow2.id(), List.of(changes.get(cow2.id())))
 		);
-		Assert.assertEquals(1, group.newlySpawnedCreatures().size());
-		CreatureEntity offspring = group.newlySpawnedCreatures().get(0);
+		Assert.assertNotNull(out[0]);
+		CreatureEntity offspring = out[0];
 		Assert.assertEquals(-3, offspring.id());
 		Assert.assertEquals(COW, offspring.type());
 		
@@ -652,7 +653,7 @@ public class TestCreatureProcessor
 		creaturesById.putAll(group.updatedCreatures());
 		Assert.assertNull(creaturesById.get(cow2.id()).ephemeral().movementPlan());
 		creaturesById.put(offspring.id(), offspring);
-		context = _updateContextWithCreatures(context, creaturesById.values(), null, null);
+		context = _updateContextWithCreatures(context, creaturesById.values(), null, null, null);
 		group = CreatureProcessor.processCreatureGroupParallel(thread
 				, creaturesById
 				, context
@@ -963,13 +964,22 @@ public class TestCreatureProcessor
 		return context;
 	}
 
-	private static TickProcessingContext _updateContextWithCreatures(TickProcessingContext existing, Collection<CreatureEntity> creatures, IChangeSink newChangeSink, CreatureIdAssigner idAssigner)
+	private static TickProcessingContext _updateContextWithCreatures(TickProcessingContext existing
+			, Collection<CreatureEntity> creatures
+			, IChangeSink newChangeSink
+			, CreatureEntity[] outSpawnedCreature
+			, CreatureIdAssigner idAssigner
+	)
 	{
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
+			Assert.assertNull(outSpawnedCreature[0]);
+			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, health);
+		};
 		Map<Integer, MinimalEntity> minimal = creatures.stream().collect(Collectors.toMap((CreatureEntity creature) -> creature.id(), (CreatureEntity creature) -> MinimalEntity.fromCreature(creature)));
 		TickProcessingContext context = ContextBuilder.nextTick(existing, 1L)
 				.lookups(existing.previousBlockLookUp, (Integer id) -> minimal.get(id))
 				.sinks(null, newChangeSink)
-				.assigner(idAssigner)
+				.spawner(spawner)
 				.finish()
 		;
 		return context;
@@ -994,7 +1004,7 @@ public class TestCreatureProcessor
 					return ret;
 				})
 				.sinks(null, null)
-				.assigner(null)
+				.spawner(null)
 				.finish()
 		;
 		return context;

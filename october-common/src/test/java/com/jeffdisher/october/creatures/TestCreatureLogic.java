@@ -3,7 +3,6 @@ package com.jeffdisher.october.creatures;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -170,7 +169,6 @@ public class TestCreatureLogic
 		mutable.newBreath -= 1;
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(entity.id(), entity))
-				, null
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
@@ -270,7 +268,6 @@ public class TestCreatureLogic
 		// First, choose the target.
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -304,7 +301,6 @@ public class TestCreatureLogic
 		// Special action is where we account for this targeting update but it doesn't count as a special action.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player[0].id(), player[0]), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -342,14 +338,12 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -363,14 +357,12 @@ public class TestCreatureLogic
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
 		Assert.assertEquals((byte)100, mutableCow.newHealth);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(cow.id(), cow, orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -443,7 +435,6 @@ public class TestCreatureLogic
 		mutable = MutableCreature.existing(father);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), creatures)
-				, null
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
@@ -458,7 +449,6 @@ public class TestCreatureLogic
 		mutable = MutableCreature.existing(mother);
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), creatures)
-				, null
 				, mutable
 		);
 		Assert.assertFalse(didTakeAction);
@@ -497,18 +487,17 @@ public class TestCreatureLogic
 		MutableCreature mutable = MutableCreature.existing(mother);
 		mutable.newOffspringLocation = offspringLocation;
 		
+		CreatureEntity[] offspring = new CreatureEntity[1];
+		TickProcessingContext.ICreatureSpawner creatureSpawner = (EntityType type, EntityLocation location, byte health) -> {
+			Assert.assertNull(offspring[0]);
+			offspring[0] = CreatureEntity.create(assigner.next(), type, location, health);
+		};
 		TickProcessingContext context = ContextBuilder.build()
-				.assigner(assigner)
+				.spawner(creatureSpawner)
 				.finish()
 		;
-		CreatureEntity[] offspring = new CreatureEntity[1];
-		Consumer<CreatureEntity> creatureSpawner = (CreatureEntity spawn) -> {
-			Assert.assertNull(offspring[0]);
-			offspring[0] = spawn;
-		};
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(), Map.of(mother.id(), mother))
-				, creatureSpawner
 				, mutable
 		);
 		Assert.assertTrue(didTakeAction);
@@ -561,7 +550,6 @@ public class TestCreatureLogic
 		MutableCreature mutableOrc = MutableCreature.existing(orc);
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -646,7 +634,6 @@ public class TestCreatureLogic
 		mutableOrc.newTargetEntityId = player.id();
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -666,7 +653,6 @@ public class TestCreatureLogic
 		// Now, allow it to perform the attack.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -680,7 +666,6 @@ public class TestCreatureLogic
 		// A second attack on the following tick should fail since we are on cooldown.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
@@ -697,7 +682,6 @@ public class TestCreatureLogic
 		;
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
-				, null
 				, mutableOrc
 		);
 		Assert.assertTrue(didTakeAction);
@@ -743,7 +727,6 @@ public class TestCreatureLogic
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -759,7 +742,6 @@ public class TestCreatureLogic
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -775,7 +757,6 @@ public class TestCreatureLogic
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);
@@ -791,7 +772,6 @@ public class TestCreatureLogic
 		entities.put(cow.id(), MinimalEntity.fromCreature(cow));
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
 				, new EntityCollection(Map.of(player.id(), player), Map.of(cow.id(), cow))
-				, null
 				, mutableCow
 		);
 		Assert.assertFalse(didTakeAction);

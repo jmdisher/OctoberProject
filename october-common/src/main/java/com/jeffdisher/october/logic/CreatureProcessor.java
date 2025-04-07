@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
@@ -50,10 +49,6 @@ public class CreatureProcessor
 	{
 		Map<Integer, CreatureEntity> updatedCreatures = new HashMap<>();
 		List<Integer> deadCreatureIds = new ArrayList<>();
-		List<CreatureEntity> newlySpawnedCreatures = new ArrayList<>();
-		Consumer<CreatureEntity> creatureSpawner = (CreatureEntity newCreature) -> {
-			newlySpawnedCreatures.add(newCreature);
-		};
 		for (Map.Entry<Integer, CreatureEntity> elt : creaturesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())
@@ -77,7 +72,7 @@ public class CreatureProcessor
 				}
 				
 				// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
-				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, creatureSpawner, mutable);
+				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
 				
 				// If we have any time left, see what other actions we can take.
 				if (!didSpecial && (millisAtEndOfTick > 0L))
@@ -110,7 +105,6 @@ public class CreatureProcessor
 		return new CreatureGroup(false
 				, updatedCreatures
 				, deadCreatureIds
-				, newlySpawnedCreatures
 		);
 	}
 
@@ -196,6 +190,5 @@ public class CreatureProcessor
 			// Note that we will only pass back a new Entity object if it changed.
 			, Map<Integer, CreatureEntity> updatedCreatures
 			, List<Integer> deadCreatureIds
-			, List<CreatureEntity> newlySpawnedCreatures
 	) {}
 }

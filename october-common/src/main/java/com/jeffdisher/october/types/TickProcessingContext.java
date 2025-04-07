@@ -4,7 +4,6 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 
@@ -53,7 +52,10 @@ public class TickProcessingContext
 	 */
 	public final IChangeSink newChangeSink;
 
-	public final CreatureIdAssigner idAssigner;
+	/**
+	 * Used when spawning creatures in the world.
+	 */
+	public final ICreatureSpawner creatureSpawner;
 
 	/**
 	 * Returns a random number when given a bound in the range:  [0..bound).
@@ -88,7 +90,7 @@ public class TickProcessingContext
 			, IByteLookup<AbsoluteLocation> skyLight
 			, IMutationSink mutationSink
 			, IChangeSink newChangeSink
-			, CreatureIdAssigner idAssigner
+			, ICreatureSpawner creatureSpawner
 			, IntUnaryOperator randomInt
 			, IEventSink eventSink
 			, WorldConfig config
@@ -102,7 +104,7 @@ public class TickProcessingContext
 		this.skyLight = skyLight;
 		this.mutationSink = mutationSink;
 		this.newChangeSink = newChangeSink;
-		this.idAssigner = idAssigner;
+		this.creatureSpawner = creatureSpawner;
 		this.randomInt = randomInt;
 		this.eventSink = eventSink;
 		this.config = config;
@@ -173,5 +175,14 @@ public class TickProcessingContext
 	public static interface IEventSink
 	{
 		void post(EventRecord event);
+	}
+
+	/**
+	 * When new creatures are spawned, they use this interface.  The implementation is responsible for assigning the ID
+	 * to the new creature, instantiating it, and making sure that it is included in the next tick.
+	 */
+	public static interface ICreatureSpawner
+	{
+		void spawnCreature(EntityType type, EntityLocation location, byte health);
 	}
 }

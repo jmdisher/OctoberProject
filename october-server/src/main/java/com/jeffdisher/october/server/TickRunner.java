@@ -48,6 +48,7 @@ import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -379,8 +380,8 @@ public class TickRunner
 				, Collections.emptyMap()
 				, new _PartialHandoffData(new WorldProcessor.ProcessedFragment(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), 0)
 						, new CrowdProcessor.ProcessedGroup(0, Map.of(), Map.of())
-						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of(), List.of())
-						, null
+						, new CreatureProcessor.CreatureGroup(false, Map.of(), List.of())
+						, List.of()
 						, List.of()
 						, Map.of()
 						, Map.of()
@@ -408,6 +409,14 @@ public class TickRunner
 			CommonMutationSink newMutationSink = new CommonMutationSink();
 			CommonChangeSink newChangeSink = new CommonChangeSink();
 			List<EventRecord> events = new ArrayList<>();
+			
+			// We will capture the newly-spawned creatures into a basic list.
+			List<CreatureEntity> spawnedCreatures = new ArrayList<>();
+			TickProcessingContext.ICreatureSpawner spawnConsumer = (EntityType type, EntityLocation location, byte health) -> {
+				int id = _idAssigner.next();
+				CreatureEntity entity = CreatureEntity.create(id, type, location, health);
+				spawnedCreatures.add(entity);
+			};
 			
 			// On the server, we just generate the tick time as purely abstract monotonic value.
 			long currentTickTimeMillis = (materials.thisGameTick * _millisPerTick);
@@ -440,7 +449,7 @@ public class TickRunner
 					}
 					, newMutationSink
 					, newChangeSink
-					, _idAssigner
+					, spawnConsumer
 					, _random
 					, (EventRecord event) -> events.add(event)
 					, config
@@ -450,10 +459,10 @@ public class TickRunner
 			EntityCollection entityCollection = new EntityCollection(thisTickMaterials.completedEntities, thisTickMaterials.completedCreatures);
 			
 			// We will have the first thread attempt the monster spawning algorithm.
-			CreatureEntity spawned = null;
 			if (thisThread.handleNextWorkUnit())
 			{
-				spawned = CreatureSpawner.trySpawnCreature(context
+				// This will spawn in the context, if spawning is appropriate.
+				CreatureSpawner.trySpawnCreature(context
 						, entityCollection
 						, materials.completedCuboids
 						, materials.completedHeightMaps
@@ -510,7 +519,7 @@ public class TickRunner
 					, new _PartialHandoffData(fragment
 							, group
 							, creatureGroup
-							, spawned
+							, spawnedCreatures
 							, newMutationSink.takeExportedMutations()
 							, newChangeSink.takeExportedChanges()
 							, newChangeSink.takeExportedCreatureChanges()
@@ -581,7 +590,7 @@ public class TickRunner
 				// Similarly, collect the results of the changed entities for the snapshot.
 				Map<Integer, Entity> entitiesChangedInFragment = fragment.crowd.updatedEntities();
 				Map<Integer, CreatureEntity> creaturesChangedInFragment = fragment.creatures.updatedCreatures();
-				List<CreatureEntity> creaturesSpawnedInFragment = fragment.creatures.newlySpawnedCreatures();
+				List<CreatureEntity> creaturesSpawnedInFragment = fragment.spawnedCreatures();
 				List<Integer> creaturesKilledInFragment = fragment.creatures.deadCreatureIds();
 				mutableCrowdState.putAll(entitiesChangedInFragment);
 				// Creatures are like entities, but in their own collection.
@@ -593,10 +602,6 @@ public class TickRunner
 				for (CreatureEntity newCreature : creaturesSpawnedInFragment)
 				{
 					mutableCreatureState.put(newCreature.id(), newCreature);
-				}
-				if (null != fragment.spawned)
-				{
-					mutableCreatureState.put(fragment.spawned.id(), fragment.spawned);
 				}
 				
 				// We will also collect all the per-client commit levels.
@@ -1327,7 +1332,7 @@ public class TickRunner
 	private static record _PartialHandoffData(WorldProcessor.ProcessedFragment world
 			, CrowdProcessor.ProcessedGroup crowd
 			, CreatureProcessor.CreatureGroup creatures
-			, CreatureEntity spawned
+			, List<CreatureEntity> spawnedCreatures
 			, List<ScheduledMutation> newlyScheduledMutations
 			, Map<Integer, List<ScheduledChange>> newlyScheduledChanges
 			, Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> newlyScheduledCreatureChanges

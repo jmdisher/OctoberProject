@@ -23,6 +23,8 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
+import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.types.WorldConfig;
@@ -56,15 +58,16 @@ public class TestCreatureSpawner
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
-		TickProcessingContext context = _createContext(completedCuboids, 5);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
 		);
 		
-		Assert.assertEquals(2.0f, entity.location().z(), 0.01f);
+		Assert.assertEquals(2.0f, out[0].location().z(), 0.01f);
 	}
 
 	@Test
@@ -76,15 +79,16 @@ public class TestCreatureSpawner
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
-		TickProcessingContext context = _createSunnyContext(completedCuboids, 5);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createSunnyContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
 		);
 		
-		Assert.assertNull(entity);
+		Assert.assertNull(out[0]);
 	}
 
 	@Test
@@ -112,14 +116,13 @@ public class TestCreatureSpawner
 				.finish()
 		;
 		
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		// This will throw an exception since we have no spawner if it tries to spawn.
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
 		);
-		
-		Assert.assertNull(entity);
 	}
 
 	@Test
@@ -130,8 +133,9 @@ public class TestCreatureSpawner
 				Collectors.toMap((Map.Entry<CuboidAddress, IReadOnlyCuboidData> entry) -> entry.getKey(), (Map.Entry<CuboidAddress, IReadOnlyCuboidData> entry) -> HeightMapHelpers.buildHeightMap(entry.getValue()))
 		);
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(cuboidMaps);
-		TickProcessingContext context = _createContext(completedCuboids, 1);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 1);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
@@ -139,9 +143,9 @@ public class TestCreatureSpawner
 		);
 		
 		// Note that this will fail half the time if it selects the stone cuboid (hash order is non-deterministic).
-		if (null != entity)
+		if (null != out[0])
 		{
-			Assert.assertEquals(0.0f, entity.location().z(), 0.01f);
+			Assert.assertEquals(0.0f, out[0].location().z(), 0.01f);
 		}
 	}
 
@@ -155,14 +159,15 @@ public class TestCreatureSpawner
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
-		TickProcessingContext context = _createContext(completedCuboids, 5);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
 		);
-		Assert.assertNull(entity);
+		Assert.assertNull(out[0]);
 	}
 
 	@Test
@@ -174,14 +179,15 @@ public class TestCreatureSpawner
 		CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), heightMap));
-		TickProcessingContext context = _createContext(completedCuboids, 5);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(1, MutableEntity.createForTest(1).freeze()), Map.of())
 				, completedCuboids
 				, completedHeightMaps
 				, Map.of()
 		);
-		Assert.assertNull(entity);
+		Assert.assertNull(out[0]);
 	}
 
 	@Test
@@ -194,37 +200,53 @@ public class TestCreatureSpawner
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
 		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(cuboid.getCuboidAddress(), cuboid);
 		ColumnHeightMap columnMap = ColumnHeightMap.build().freeze();
-		TickProcessingContext context = _createContext(completedCuboids, 5);
-		CreatureEntity entity = CreatureSpawner.trySpawnCreature(context
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
 				, new EntityCollection(Map.of(), Map.of())
 				, completedCuboids
 				, Map.of(cuboid.getCuboidAddress().getColumn(), columnMap)
 				, Map.of()
 		);
-		Assert.assertNull(entity);
+		Assert.assertNull(out[0]);
 	}
 
 
-	private static TickProcessingContext _createSunnyContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
+	private static TickProcessingContext _createSunnyContext(Map<CuboidAddress, IReadOnlyCuboidData> world
+			, CreatureEntity[] outSpawnedCreature
+			, int randomValue
+	)
 	{
 		// 1 quarter through the day is noon.
 		WorldConfig defaults = new WorldConfig();
 		long startTick = defaults.ticksPerDay * 1L / 4L;
 		Assert.assertEquals((byte)15, PropagationHelpers.currentSkyLightValue(startTick, defaults.ticksPerDay, defaults.dayStartTick));
-		return _createContextWithTick(startTick, world, randomValue);
+		return _createContextWithTick(startTick, world, outSpawnedCreature, randomValue);
 	}
 
-	private static TickProcessingContext _createContext(Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
+	private static TickProcessingContext _createContext(Map<CuboidAddress, IReadOnlyCuboidData> world
+			, CreatureEntity[] outSpawnedCreature
+			, int randomValue
+	)
 	{
 		// By default, we will use darkest time of day.
 		WorldConfig defaults = new WorldConfig();
 		long startTick = defaults.ticksPerDay * 3L / 4L;
 		Assert.assertEquals((byte)0, PropagationHelpers.currentSkyLightValue(startTick, defaults.ticksPerDay, defaults.dayStartTick));
-		return _createContextWithTick(startTick, world, randomValue);
+		return _createContextWithTick(startTick, world, outSpawnedCreature, randomValue);
 	}
 
-	private static TickProcessingContext _createContextWithTick(long gameTick, Map<CuboidAddress, IReadOnlyCuboidData> world, int randomValue)
+	private static TickProcessingContext _createContextWithTick(long gameTick
+			, Map<CuboidAddress, IReadOnlyCuboidData> world
+			, CreatureEntity[] outSpawnedCreature
+			, int randomValue
+	)
 	{
+		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
+			Assert.assertNull(outSpawnedCreature[0]);
+			outSpawnedCreature[0] = CreatureEntity.create(idAssigner.next(), type, location, health);
+		};
 		TickProcessingContext context = ContextBuilder.build()
 				.tick(gameTick)
 				.lookups((AbsoluteLocation location) -> {
@@ -234,7 +256,7 @@ public class TestCreatureSpawner
 								: null
 						;
 					}, null)
-				.assigner(new CreatureIdAssigner())
+				.spawner(spawner)
 				.boundedRandom(randomValue)
 				.finish()
 		;
