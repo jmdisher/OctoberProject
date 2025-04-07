@@ -304,6 +304,27 @@ public class MutationBlockSetBlock
 		return aspectsChanged;
 	}
 
+	/**
+	 * Checks to see if this change is only to a single aspect.
+	 * 
+	 * @param aspect The aspect to check.
+	 * @return True if this change applies to the given aspect and only that aspect.
+	 */
+	public boolean isSingleAspect(Aspect<?, ?> aspect)
+	{
+		ByteBuffer readThis = ByteBuffer.wrap(_rawData);
+		
+		// We will just read the first index and decode corresponding data.  We check if the index matches and the buffer is empty.
+		boolean isSingle = false;
+		byte thisIndex = readThis.get();
+		if (aspect.index() == thisIndex)
+		{
+			_skipAspect(readThis, thisIndex);
+			isSingle = !readThis.hasRemaining();
+		}
+		return isSingle;
+	}
+
 
 	private static <T> void _readAndStore(CuboidData target, BlockAddress location, Aspect<T, ?> type, ByteBuffer buffer)
 	{

@@ -144,4 +144,30 @@ public class TestMutationBlockSetBlock
 		Assert.assertEquals(STONE.item().number(), cuboid.getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		Assert.assertEquals(1, cuboid.getDataSpecial(AspectRegistry.INVENTORY, location.getBlockAddress()).getCount(STONE_ITEM));
 	}
+
+	@Test
+	public void checkSingleAspect()
+	{
+		CuboidAddress address = CuboidAddress.fromInt(-1, 0, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		AbsoluteLocation location = address.getBase();
+		MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
+		proxy.setBlockAndClear(STONE);
+		proxy.didChange();
+		proxy.writeBack(cuboid);
+		MutationBlockSetBlock one = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
+		proxy.setInventory(Inventory.start(10).addStackable(STONE_ITEM, 1).finish());
+		proxy.didChange();
+		proxy.writeBack(cuboid);
+		MutationBlockSetBlock two = MutationBlockSetBlock.extractFromProxy(ByteBuffer.allocate(64), proxy);
+		MutationBlockSetBlock merged = MutationBlockSetBlock.merge(one, two);
+		
+		Assert.assertTrue(one.isSingleAspect(AspectRegistry.BLOCK));
+		Assert.assertFalse(one.isSingleAspect(AspectRegistry.LIGHT));
+		Assert.assertFalse(two.isSingleAspect(AspectRegistry.BLOCK));
+		Assert.assertTrue(two.isSingleAspect(AspectRegistry.INVENTORY));
+		Assert.assertFalse(merged.isSingleAspect(AspectRegistry.BLOCK));
+		Assert.assertFalse(merged.isSingleAspect(AspectRegistry.INVENTORY));
+		Assert.assertFalse(merged.isSingleAspect(AspectRegistry.LIGHT));
+	}
 }
