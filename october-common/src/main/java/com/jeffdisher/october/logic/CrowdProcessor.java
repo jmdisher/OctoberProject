@@ -13,6 +13,7 @@ import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -21,6 +22,13 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class CrowdProcessor
 {
+	/**
+	 * The ID used for the operator "no entity" cases (that is, when the operator runs an action but not against any
+	 * specific entity).
+	 */
+	public static final int OPERATOR_ENTITY_ID = Integer.MIN_VALUE;
+
+
 	private CrowdProcessor()
 	{
 		// This is just static logic.
@@ -49,6 +57,21 @@ public class CrowdProcessor
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
 		Map<Integer, List<ScheduledChange>> delayedChanges = new HashMap<>();
 		int committedMutationCount = 0;
+		
+		// We need to check the operator as a special-case since it isn't a real entity.
+		if (processor.handleNextWorkUnit())
+		{
+			List<ScheduledChange> operatorMessages = changesToRun.get(OPERATOR_ENTITY_ID);
+			if (null != operatorMessages)
+			{
+				for (ScheduledChange change : operatorMessages)
+				{
+					// These messages are expected to be run immediately.
+					Assert.assertTrue(0L == change.millisUntilReady());
+					change.change().applyChange(context, null);
+				}
+			}
+		}
 		for (Map.Entry<Integer, Entity> elt : entitiesById.entrySet())
 		{
 			if (processor.handleNextWorkUnit())

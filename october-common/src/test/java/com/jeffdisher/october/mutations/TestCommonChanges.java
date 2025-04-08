@@ -2378,6 +2378,30 @@ public class TestCommonChanges
 		Assert.assertEquals(1, inventory.getCount(itemDoorClosed));
 	}
 
+	@Test
+	public void spawnCommand() throws Throwable
+	{
+		// Explicitly spawn a creature and make sure that it appears in the context.
+		EntityType cow = ENV.creatures.getTypeById("op.cow");
+		EntityLocation destination = new EntityLocation(15.5f, -50.0f, 11.0f);
+		int[] count = new int[1];
+		TickProcessingContext.ICreatureSpawner spawner = (EntityType type, EntityLocation location, byte health) -> {
+			Assert.assertEquals(cow, type);
+			Assert.assertEquals(destination, location);
+			Assert.assertEquals(health, cow.maxHealth());
+			count[0] += 1;
+		};
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(5L)
+				.spawner(spawner)
+				.finish()
+		;
+		
+		EntityChangeOperatorSpawnCreature spawn = new EntityChangeOperatorSpawnCreature(cow, destination);
+		Assert.assertTrue(spawn.applyChange(context, null));
+		Assert.assertEquals(1, count[0]);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

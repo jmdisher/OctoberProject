@@ -19,6 +19,8 @@ import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.CreatureIdAssigner;
+import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
@@ -29,6 +31,7 @@ import com.jeffdisher.october.mutations.EntityChangeFutureBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
@@ -2305,6 +2308,39 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void operatorSpawnCow()
+	{
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		
+		// Create a tick runner with a single cuboid and get it running.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of()
+				, null
+		);
+		runner.start();
+		
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(0, snapshot.creatures().size());
+		
+		// Enqueue the operator command, run the tick, and observe this change.
+		EntityLocation location = new EntityLocation(1.2f, -3.4f, 5.0f);
+		runner.enqueueOperatorMutation(CrowdProcessor.OPERATOR_ENTITY_ID, new EntityChangeOperatorSpawnCreature(COW, location));
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(1, snapshot.creatures().size());
+		CreatureEntity creature = snapshot.creatures().get(-1).completed();
+		Assert.assertEquals(COW, creature.type());
+		Assert.assertEquals(location, creature.location());
+		Assert.assertEquals(COW.maxHealth(), creature.health());
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{
@@ -2374,7 +2410,7 @@ public class TestTickRunner
 		Random random = new Random();
 		TickRunner runner = new TickRunner(ServerRunner.TICK_RUNNER_THREAD_COUNT
 				, MILLIS_PER_TICK
-				, null
+				, new CreatureIdAssigner()
 				, (int bound) -> random.nextInt(bound)
 				, snapshotListener
 				, config

@@ -7,9 +7,14 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CountDownLatch;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.CrowdProcessor;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.server.MonitoringAgent;
 import com.jeffdisher.october.server.TickRunner;
@@ -20,6 +25,17 @@ import com.jeffdisher.october.types.WorldConfig;
 
 public class TestConsoleHandler
 {
+	@BeforeClass
+	public static void setup()
+	{
+		Environment.createSharedInstance();
+	}
+	@AfterClass
+	public static void tearDown()
+	{
+		Environment.clearSharedInstance();
+	}
+
 	@Test
 	public void basicStop() throws Throwable
 	{
@@ -260,6 +276,33 @@ public class TestConsoleHandler
 		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
 		Assert.assertTrue(didBroadcast[0]);
 		Assert.assertEquals(30, config.dayStartTick);
+	}
+
+	@Test
+	public void spawnCow() throws Throwable
+	{
+		// Issue the command to spawn a cow and see that it correctly ends up in the sink.
+		InputStream in = new ByteArrayInputStream("!spawn op.cow 5 -1 7\n!stop\n".getBytes());
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		PrintStream printer = new PrintStream(out);
+		MonitoringAgent monitoringAgent = new MonitoringAgent();
+		long tickNumber = 50L;
+		monitoringAgent.snapshotPublished(new TickRunner.Snapshot(tickNumber, null, null, null, null, null, null));
+		boolean[] didBroadcast = new boolean[1];
+		monitoringAgent.setOperatorCommandSink(new _TestCommandSink()
+		{
+			@Override
+			public void submitEntityMutation(int clientId, IMutationEntity<IMutablePlayerEntity> command)
+			{
+				Assert.assertEquals(CrowdProcessor.OPERATOR_ENTITY_ID, clientId);
+				Assert.assertTrue(command instanceof EntityChangeOperatorSpawnCreature);
+				didBroadcast[0] = true;
+			}
+		});
+		WorldConfig config = new WorldConfig();
+		ConsoleHandler.readUntilStop(in, printer, monitoringAgent, config);
+		Assert.assertArrayEquals("Shutting down...\n".getBytes(), out.toByteArray());
+		Assert.assertTrue(didBroadcast[0]);
 	}
 
 

@@ -9,9 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
+import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.net.NetworkServer;
 import com.jeffdisher.october.server.MonitoringAgent;
@@ -19,6 +22,7 @@ import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
 
@@ -410,6 +414,38 @@ public class ConsoleHandler
 				throw Assert.unexpected(e);
 			}
 			sampler.logToStream(out);
+		}),
+		SPAWN((PrintStream out, _ConsoleState state, String[] parameters) -> {
+			// We expect <creature_id> <x> <y> <z>.
+			if (4 == parameters.length)
+			{
+				String entityId = parameters[0];
+				EntityType entityType = Environment.getShared().creatures.getTypeById(entityId);
+				int x = _readInt(parameters[1], Integer.MIN_VALUE);
+				int y = _readInt(parameters[2], Integer.MIN_VALUE);
+				int z = _readInt(parameters[3], Integer.MIN_VALUE);
+				
+				if ((null != entityType)
+						&& (Integer.MIN_VALUE != x)
+						&& (Integer.MIN_VALUE != y)
+						&& (Integer.MIN_VALUE != z)
+				)
+				{
+					// Pass in the operator command.
+					MonitoringAgent monitoringAgent = state.monitoringAgent;
+					EntityLocation location = new AbsoluteLocation(x, y, z).toEntityLocation();
+					EntityChangeOperatorSpawnCreature command = new EntityChangeOperatorSpawnCreature(entityType, location);
+					monitoringAgent.getCommandSink().submitEntityMutation(CrowdProcessor.OPERATOR_ENTITY_ID, command);
+				}
+				else
+				{
+					out.println("Usage:  <creature_id> <x> <y> <z>");
+				}
+			}
+			else
+			{
+				out.println("Usage:  <creature_id> <x> <y> <z>");
+			}
 		}),
 		;
 		

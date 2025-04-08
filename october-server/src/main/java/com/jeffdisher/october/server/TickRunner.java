@@ -308,13 +308,13 @@ public class TickRunner
 	 * Enqueues a locally-originating (server console) mutation to change the given entityId for scheduling in the next
 	 * tick.
 	 * 
-	 * @param entityId The entity where the change should be scheduled.
+	 * @param entityId The entity where the change should be scheduled (CrowdProcessor.OPERATOR_ENTITY_ID for no entity).
 	 * @param change The change to schedule.
 	 */
 	public void enqueueOperatorMutation(int entityId, IMutationEntity<IMutablePlayerEntity> change)
 	{
-		// The entity might be missing, but the ID should be positive.
-		Assert.assertTrue(entityId > 0);
+		// The entity might be missing, but the ID should be positive or OPERATOR_ENTITY_ID.
+		Assert.assertTrue((entityId > 0) || (CrowdProcessor.OPERATOR_ENTITY_ID == entityId));
 		// Operator events all take 0 ms.
 		Assert.assertTrue(0L == change.getTimeCostMillis());
 		
@@ -897,7 +897,8 @@ public class TickRunner
 				{
 					for (_OperatorMutationWrapper wrapper : operatorMutations)
 					{
-						if (mutableCrowdState.containsKey(wrapper.entityId))
+						// The operator mutations must be run against a connected entity or OPERATOR_ENTITY_ID.
+						if ((CrowdProcessor.OPERATOR_ENTITY_ID == wrapper.entityId) || mutableCrowdState.containsKey(wrapper.entityId))
 						{
 							List<ScheduledChange> mutableChanges = nextTickChanges.get(wrapper.entityId);
 							if (null == mutableChanges)
@@ -988,7 +989,7 @@ public class TickRunner
 				}
 				for (Integer id : nextTickChanges.keySet())
 				{
-					if (!mutableCrowdState.containsKey(id))
+					if ((CrowdProcessor.OPERATOR_ENTITY_ID != id) && !mutableCrowdState.containsKey(id))
 					{
 						System.out.println("WARNING: missing entity " + id);
 					}
