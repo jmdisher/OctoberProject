@@ -1431,6 +1431,56 @@ public class TestCommonMutations
 		Assert.assertEquals(dirt.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
 	}
 
+	@Test
+	public void dropItemsInLava()
+	{
+		// We want to verify that items are destroyed when put in a lava block or when they fall into a lava block.
+		Block lava = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_source"));
+		AbsoluteLocation centre = new AbsoluteLocation(15, 15, 15);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(centre.getCuboidAddress(), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, centre.getBlockAddress(), lava.item().number());
+		
+		IMutationBlock[] out = new IMutationBlock[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), cuboid), null)
+				.sinks(new TickProcessingContext.IMutationSink() {
+					@Override
+					public void next(IMutationBlock mutation)
+					{
+						Assert.assertNull(out[0]);
+						out[0] = mutation;
+					}
+					@Override
+					public void future(IMutationBlock mutation, long millisToDelay)
+					{
+						Assert.fail("Not in test");
+					}
+				}, null)
+				.finish()
+		;
+		
+		// Create the mutations to fill the inventory of the lava block and the block above it.
+		MutableBlockProxy proxy = new MutableBlockProxy(centre, cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre, new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNull(out[0]);
+		proxy = new MutableBlockProxy(centre.getRelative(0, 0, 1), cuboid);
+		Assert.assertTrue(new MutationBlockStoreItems(centre.getRelative(0, 0, 1), new Items(STONE_ITEM, 1), null, Inventory.INVENTORY_ASPECT_INVENTORY).applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNotNull(out[0]);
+		
+		IMutationBlock followUp = out[0];
+		out[0] = null;
+		proxy = new MutableBlockProxy(followUp.getAbsoluteLocation(), cuboid);
+		Assert.assertTrue(followUp.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertNull(out[0]);
+		
+		// Verify that only the chest inventories survived.
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getBlockAddress()));
+		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(0, 0, 1).getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{
