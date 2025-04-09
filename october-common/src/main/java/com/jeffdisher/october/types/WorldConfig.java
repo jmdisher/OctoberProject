@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -83,10 +84,11 @@ public class WorldConfig
 	/**
 	 * The maximum cuboid view distance for a new client (0 would mean only the cuboid they are in and is the implicit
 	 * minimum).  We impose a hard limit of 5 on this value (which would be 11^3 cuboids per client).
+	 * NOTE:  Users of this value assume that it does NOT change during an active run.
 	 */
 	public static final String KEY_CLIENT_VIEW_DISTANCE_MAXIMUM = "client_view_distance_maximum";
 	public static final int MAX_CLIENT_VIEW_DISTANCE_MAXIMUM = 5;
-	public volatile int clientViewDistanceMaximum;
+	public int clientViewDistanceMaximum;
 
 	/**
 	 * A human-readable name for the server.
@@ -165,7 +167,7 @@ public class WorldConfig
 		if (overrides.containsKey(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM))
 		{
 			this.clientViewDistanceMaximum = Integer.parseInt(overrides.get(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM));
-			Assert.assertTrue(this.clientViewDistanceMaximum >= 0);
+			Assert.assertTrue(this.clientViewDistanceMaximum >= MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 			Assert.assertTrue(this.clientViewDistanceMaximum <= MAX_CLIENT_VIEW_DISTANCE_MAXIMUM);
 		}
 		if (overrides.containsKey(KEY_SERVER_NAME))

@@ -53,4 +53,10 @@ public class MiscConstants
 	 * A given creature or entity is only checked for environmental data once every second (suffocation, etc).
 	 */
 	public static final long DAMAGE_ENVIRONMENT_CHECK_MILLIS = 1_000L;
+
+	/**
+	 * The default cuboid view distance for a new client (0 would mean only the cuboid they are in).  This is the
+	 * initial value assumed by clients and servers when they first connect.
+	 */
+	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
 }

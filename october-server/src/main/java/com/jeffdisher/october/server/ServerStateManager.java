@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -63,10 +64,6 @@ public class ServerStateManager
 	 * How often, in terms of ticks, that the remaining (not being unloaded) resources are written to disk.
 	 */
 	public static final int FORCE_FLUSH_TICK_FREQUENCY = 1000;
-	/**
-	 * The default cuboid view distance for a new client (0 would mean only the cuboid they are in).
-	 */
-	public static final int DEFAULT_CUBOID_VIEW_DISTANCE = 1;
 	/**
 	 * The number of cuboids which will be attempted to be sent when the network is idle.
 	 */
@@ -986,7 +983,7 @@ public class ServerStateManager
 			this.location = initialLocation;
 			
 			// Create empty containers for what this client has observed.
-			this.cuboidViewDistance = DEFAULT_CUBOID_VIEW_DISTANCE;
+			this.cuboidViewDistance = MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE;
 			this.lastComputedAddress = null;
 			this.knownEntities = new HashSet<>();
 			this.knownCuboids = new HashSet<>();

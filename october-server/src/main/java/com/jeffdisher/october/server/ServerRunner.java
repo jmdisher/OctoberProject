@@ -65,7 +65,6 @@ public class ServerRunner
 	// Variables "owned" by the background thread.
 	private final LongSupplier _currentTimeMillisProvider;
 	private final MonitoringAgent _monitoringAgent;
-	private final WorldConfig _sharedConfig;
 	private long _nextTickMillis;
 	private final _TickAdvancer _tickAdvancer;
 	// When we are due to start the next tick (after we receive the callback that the previous is done), we schedule the advancer.
@@ -113,11 +112,10 @@ public class ServerRunner
 		}, "ServerRunner");
 		_currentTimeMillisProvider = currentTimeMillisProvider;
 		_monitoringAgent = monitoringAgent;
-		// (note that the WorldConfig instance changes underneath us)
-		_sharedConfig = config;
 		
 		_tickAdvancer = new _TickAdvancer(config);
-		_stateManager = new ServerStateManager(new _Callouts());
+		// Note:  We don't allow the view distance to change after start-up so capture it here to make that clear.
+		_stateManager = new ServerStateManager(new _Callouts(config.clientViewDistanceMaximum));
 		
 		// We want to prime the state manager's thread check.
 		_messages.enqueue(() -> {
@@ -432,6 +430,11 @@ public class ServerRunner
 
 	private final class _Callouts implements ServerStateManager.ICallouts
 	{
+		private final int _clientViewDistanceMaximum;
+		public _Callouts(int clientViewDistanceMaximum)
+		{
+			_clientViewDistanceMaximum = clientViewDistanceMaximum;
+		}
 		@Override
 		public void resources_writeToDisk(Collection<PackagedCuboid> cuboids,Collection<SuspendedEntity> entities)
 		{
@@ -546,7 +549,7 @@ public class ServerRunner
 		{
 			_messages.enqueue(() -> {
 				// We will just clamp the option by our defined bounds (since that is probably what the user expects).
-				int limit = _sharedConfig.clientViewDistanceMaximum;
+				int limit = _clientViewDistanceMaximum;
 				int viewDistance = clientViewDistance;
 				if (viewDistance < 0)
 				{
