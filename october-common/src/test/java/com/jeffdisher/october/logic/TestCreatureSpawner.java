@@ -211,6 +211,30 @@ public class TestCreatureSpawner
 		Assert.assertNull(out[0]);
 	}
 
+	@Test
+	public void cuboidAbovePit()
+	{
+		// Demonstrate the bug where we would throw exception when spawning in a cuboid if it was far enough above the highest block in the column to cause byte cast overflow.
+		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 3), AIR);
+		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -3), AIR);
+		bottomCuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(5, 5, 1), STONE.item().number());
+		CuboidHeightMap topHeightMap = HeightMapHelpers.buildHeightMap(topCuboid);
+		CuboidHeightMap bottomHeightMap = HeightMapHelpers.buildHeightMap(bottomCuboid);
+		Map<CuboidAddress, IReadOnlyCuboidData> completedCuboids = Map.of(topCuboid.getCuboidAddress(), topCuboid);
+		Map<CuboidColumnAddress, ColumnHeightMap> completedHeightMaps = HeightMapHelpers.buildColumnMaps(Map.of(topCuboid.getCuboidAddress(), topHeightMap, bottomCuboid.getCuboidAddress(), bottomHeightMap));
+		CreatureEntity[] out = new CreatureEntity[1];
+		TickProcessingContext context = _createContext(completedCuboids, out, 5);
+		CreatureSpawner.trySpawnCreature(context
+				, new EntityCollection(Map.of(), Map.of())
+				, completedCuboids
+				, completedHeightMaps
+				, Map.of()
+		);
+		
+		// We should fail to spawn since we only provided that one cuboid and it is too far above solid ground.
+		Assert.assertNull(out[0]);
+	}
+
 
 	private static TickProcessingContext _createSunnyContext(Map<CuboidAddress, IReadOnlyCuboidData> world
 			, CreatureEntity[] outSpawnedCreature

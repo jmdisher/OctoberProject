@@ -17,6 +17,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.TickProcessingContext;
+import com.jeffdisher.october.utils.Assert;
 import com.jeffdisher.october.utils.Encoding;
 
 
@@ -126,13 +127,21 @@ public class CreatureSpawner
 		// Also, ignore this cuboid if the column height map is unknown (often happens on initial load).
 		if (Integer.MIN_VALUE != highestBlockZ)
 		{
+			// We will compute the target z in absolute coordinates, to account for the height map.
 			AbsoluteLocation cuboidBase = cuboid.getCuboidAddress().getBase();
 			int baseZ = cuboidBase.z();
 			int thisAttemptZ = baseZ + z;
 			thisAttemptZ = Math.min(thisAttemptZ, highestBlockZ + 1);
-			AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, (byte)(thisAttemptZ - baseZ));
 			
-			_spawnInValidCuboid(context, existingEntities, baseZ, highestBlockZ, checkSpawningLocation);
+			// Then we need to convert it back into cuboid-local coordinates but also check it is in the cuboid (it might not be if the highest block is below this cuboid).
+			int localZ = thisAttemptZ - baseZ;
+			Assert.assertTrue(localZ < Encoding.CUBOID_EDGE_SIZE);
+			if (localZ >= 0)
+			{
+				AbsoluteLocation checkSpawningLocation = cuboidBase.getRelative(x, y, localZ);
+				
+				_spawnInValidCuboid(context, existingEntities, baseZ, highestBlockZ, checkSpawningLocation);
+			}
 		}
 	}
 
