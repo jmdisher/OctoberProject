@@ -323,10 +323,11 @@ public class ClientProcess
 	 * Sends updated client options to the server.
 	 * 
 	 * @param clientViewDistance This client's viewable distance, in cuboids.
+	 * @return True if the update was sent (false means the request was invalid and not sent).
 	 */
-	public void updateOptions(int clientViewDistance)
+	public boolean updateOptions(int clientViewDistance)
 	{
-		_clientRunner.updateOptions(clientViewDistance);
+		return _clientRunner.updateOptions(clientViewDistance);
 	}
 
 	/**

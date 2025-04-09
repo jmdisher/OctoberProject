@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
@@ -65,6 +66,9 @@ public class ClientRunner
 	// (failing to correctly set the delta will cause the server to block changes, meaning that the client could be disconnected due to flooding)
 	private long _lastCallMillis;
 
+	// This is set once when the client connects and is only read after that.
+	private int _serverMaximumViewDistance;
+
 	public ClientRunner(IClientAdapter network, IProjectionListener projectionListener, IListener clientListener)
 	{
 		_network = network;
@@ -77,6 +81,8 @@ public class ClientRunner
 		// This constructor probably does more than a constructor should (opening network connections) but this does give us a simple interface.
 		NetworkListener networkListener = new NetworkListener();
 		_network.connectAndStartListening(networkListener);
+		
+		_serverMaximumViewDistance = MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE;
 	}
 
 	/**
@@ -285,11 +291,18 @@ public class ClientRunner
 	 * Sends updated client options to the server.
 	 * 
 	 * @param clientViewDistance This client's viewable distance, in cuboids.
+	 * @return True if the update was sent (false means the request was invalid and not sent).
 	 */
-	public void updateOptions(int clientViewDistance)
+	public boolean updateOptions(int clientViewDistance)
 	{
+		boolean didUpdate = false;
 		Assert.assertTrue(clientViewDistance >= 0);
-		_network.updateOptions(clientViewDistance);
+		if (clientViewDistance <= _serverMaximumViewDistance)
+		{
+			_network.updateOptions(clientViewDistance);
+			didUpdate = true;
+		}
+		return didUpdate;
 	}
 
 	/**
@@ -370,6 +383,7 @@ public class ClientRunner
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
 				_lastCallMillis = currentTimeMillis;
+				_serverMaximumViewDistance = viewDistanceMaximum;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);
 			});

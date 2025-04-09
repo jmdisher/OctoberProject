@@ -597,12 +597,57 @@ public class TestClientRunner
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 
+	@Test
+	public void testUpdateOptions() throws Throwable
+	{
+		long currentTimeMillis = 100L;
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them.
+		int clientId = 1;
+		int viewDistanceLimit = 3;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, viewDistanceLimit);
+		int ticksPerDay = 1000;
+		network.client.receivedConfigUpdate(ticksPerDay, 0);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		Assert.assertEquals(ticksPerDay, clientListener.ticksPerDay);
+		
+		// Send the updated options a few different ways and verify we get the right responses.
+		Assert.assertTrue(runner.updateOptions(3));
+		Assert.assertEquals(3, network.clientViewDistance);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		Assert.assertFalse(runner.updateOptions(4));
+		Assert.assertEquals(3, network.clientViewDistance);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		Assert.assertTrue(runner.updateOptions(0));
+		Assert.assertEquals(0, network.clientViewDistance);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// Disconnect them.
+		network.client.adapterDisconnected();
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
+		Assert.assertTrue(projection.events.isEmpty());
+	}
+
 
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
 		public IMutationEntity<IMutablePlayerEntity> toSend;
 		public long commitLevel;
+		public int clientViewDistance = -1;
 		@Override
 		public void connectAndStartListening(IListener listener)
 		{
@@ -627,7 +672,7 @@ public class TestClientRunner
 		@Override
 		public void updateOptions(int clientViewDistance)
 		{
-			throw new AssertionError("updateOptions");
+			this.clientViewDistance = clientViewDistance;
 		}
 	}
 
