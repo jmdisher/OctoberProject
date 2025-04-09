@@ -7,6 +7,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
@@ -304,22 +305,6 @@ public class SpatialHelpers
 	}
 
 	/**
-	 * Determines the distance between the 2 locations, computed by summing the distance between in each axis.
-	 * 
-	 * @param one One location.
-	 * @param two Another location.
-	 * @return The distance between them.
-	 */
-	public static float distanceBetween(EntityLocation one, EntityLocation two)
-	{
-		// For now, we just sum the 3 axes, since we don't use diagonal straight lines anywhere.
-		return Math.abs(one.x() - two.x())
-				+ Math.abs(one.y() - two.y())
-				+ Math.abs(one.z() - two.z())
-		;
-	}
-
-	/**
 	 * The location of the entity's feet (the centre of their model, at the very bottom).
 	 * 
 	 * @param entity The entity.
@@ -349,7 +334,7 @@ public class SpatialHelpers
 	 */
 	public static EntityLocation getEyeLocation(IMutablePlayerEntity entity)
 	{
-		return _getEyeLocation(entity);
+		return _getEyeLocation(entity.getLocation(), entity.getType());
 	}
 
 	/**
@@ -359,9 +344,27 @@ public class SpatialHelpers
 	 * @param targetEntity The entity we are targeting.
 	 * @return The diagonal distance from the eye to the target's bounding-box.
 	 */
-	public static float distanceFromEyeToEntitySurface(IMutablePlayerEntity eyeEntity, MinimalEntity targetEntity)
+	public static float distanceFromMutableEyeToEntitySurface(IMutableMinimalEntity eyeEntity, MinimalEntity targetEntity)
 	{
-		EntityLocation eye = _getEyeLocation(eyeEntity);
+		EntityLocation eye = _getEyeLocation(eyeEntity.getLocation(), eyeEntity.getType());
+		EntityLocation target = targetEntity.location();
+		EntityVolume targetVolume = targetEntity.type().volume();
+		
+		return _distanceToTarget(eye, target, targetVolume);
+	}
+
+	/**
+	 * Finds the distance from the eye of a player with base at eyeEntityBase to the bounding box of the given
+	 * targetEntity.
+	 * 
+	 * @param eyeEntityBase The base of the player whose eye we are looking through.
+	 * @param playerType The type to use when finding the eye of the player.
+	 * @param targetEntity The entity we are targeting.
+	 * @return The diagonal distance from the eye to the target's bounding-box.
+	 */
+	public static float distanceFromPlayerEyeToEntitySurface(EntityLocation eyeEntityBase, EntityType playerType, MinimalEntity targetEntity)
+	{
+		EntityLocation eye = _getEyeLocation(eyeEntityBase, playerType);
 		EntityLocation target = targetEntity.location();
 		EntityVolume targetVolume = targetEntity.type().volume();
 		
@@ -377,7 +380,7 @@ public class SpatialHelpers
 	 */
 	public static float distanceFromEyeToBlockSurface(IMutablePlayerEntity eyeEntity, AbsoluteLocation block)
 	{
-		EntityLocation eye = _getEyeLocation(eyeEntity);
+		EntityLocation eye = _getEyeLocation(eyeEntity.getLocation(), eyeEntity.getType());
 		EntityLocation target = block.toEntityLocation();
 		EntityVolume cubeVolume = new EntityVolume(1.0f, 1.0f);
 		
@@ -496,16 +499,15 @@ public class SpatialHelpers
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z());
 	}
 
-	private static EntityLocation _getEyeLocation(IMutablePlayerEntity entity)
+	private static EntityLocation _getEyeLocation(EntityLocation entityLocation, EntityType type)
 	{
 		// The location is the bottom-south-west corner so we want to offset by half their width and most of their height.
 		// We will say that their eyes are 90% of the way up their body from their feet.
 		float entityEyeHeightMultiplier = 0.9f;
-		EntityVolume volume = entity.getType().volume();
+		EntityVolume volume = type.volume();
 		
 		float widthOffset = volume.width() / 2.0f;
 		float heightOffset = volume.height() * entityEyeHeightMultiplier;
-		EntityLocation entityLocation = entity.getLocation();
 		return new EntityLocation(entityLocation.x() + widthOffset, entityLocation.y() + widthOffset, entityLocation.z() + heightOffset);
 	}
 

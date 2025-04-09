@@ -67,7 +67,7 @@ public class EntityChangeUseSelectedItemOnEntity implements IMutationEntity<IMut
 		// We also want to make sure that this is in range.
 		MinimalEntity target = context.previousEntityLookUp.apply(_entityId);
 		float distance = (null != target)
-				? SpatialHelpers.distanceFromEyeToEntitySurface(newEntity, target)
+				? SpatialHelpers.distanceFromMutableEyeToEntitySurface(newEntity, target)
 				: Float.MAX_VALUE
 		;
 		boolean isInRange = (distance <= MiscConstants.REACH_ENTITY);

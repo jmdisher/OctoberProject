@@ -13,6 +13,7 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
 
 
@@ -25,6 +26,8 @@ public class TestEntityCollection
 	{
 		ENV = Environment.createSharedInstance();
 		COW = ENV.creatures.getTypeById("op.cow");
+		// These tests assume that they know the cow's view distance.
+		Assert.assertEquals(7.0f, COW.viewDistance(), 0.01f);
 	}
 	@AfterClass
 	public static void tearDown()
@@ -39,22 +42,28 @@ public class TestEntityCollection
 		Map<Integer, CreatureEntity> creatures = Map.of();
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
-		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
+		MutableCreature searcher = _buildMutableCow(-1, centre);
+		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
 		Assert.assertEquals(0, count);
-		count = collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> Assert.fail());
+		Assert.assertEquals(0, count);
+		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> Assert.fail());
 		Assert.assertEquals(0, count);
 	}
 
 	@Test
 	public void noneInRange()
 	{
-		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, 1.0f, 1.0f)));
-		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f)));
+		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(10.0f, 1.0f, 1.0f)));
+		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-10.0f, -1.0f, 1.0f)));
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
-		int count = collection.walkPlayersInRange(centre, 1.0f, (Entity player) -> Assert.fail());
+		MutableCreature searcher = _buildMutableCow(-1, centre);
+		int count = collection.countPlayersInRangeOfBase(centre, 1.0f);
 		Assert.assertEquals(0, count);
-		count = collection.walkCreaturesInRange(centre, 1.0f, (CreatureEntity creature) -> Assert.fail());
+		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> Assert.fail());
+		Assert.assertEquals(0, count);
+		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> Assert.fail());
 		Assert.assertEquals(0, count);
 	}
 
@@ -63,16 +72,21 @@ public class TestEntityCollection
 	{
 		Map<Integer, Entity> players = Map.of(1, _buildPlayer(1, new EntityLocation(1.0f, -1.0f, 1.0f))
 				, 2, _buildPlayer(2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+				, 3, _buildPlayer(3, new EntityLocation(-10.0f, 1.0f, 1.0f))
 		);
 		Map<Integer, CreatureEntity> creatures = Map.of(-1, _buildCreature(-1, new EntityLocation(-1.0f, -1.0f, 1.0f))
 				, -2, _buildCreature(-2, new EntityLocation(-1.0f, 1.0f, 1.0f))
+				, -3, _buildCreature(-3, new EntityLocation(-10.0f, 1.0f, 1.0f))
 		);
 		EntityCollection collection = new EntityCollection(players, creatures);
 		EntityLocation centre = new EntityLocation(0.0f, 0.0f, 0.0f);
+		MutableCreature searcher = _buildMutableCow(-1, centre);
 		int[] counts = new int[2];
-		int count = collection.walkPlayersInRange(centre, 3.0f, (Entity player) -> counts[0] += 1);
+		int count = collection.countPlayersInRangeOfBase(centre, COW.viewDistance());
 		Assert.assertEquals(2, count);
-		count = collection.walkCreaturesInRange(centre, 3.0f, (CreatureEntity creature) -> counts[1] += 1);
+		count = collection.walkPlayersInViewDistance(searcher, (Entity player) -> counts[0] += 1);
+		Assert.assertEquals(2, count);
+		count = collection.walkCreaturesInViewDistance(searcher, (CreatureEntity creature) -> counts[1] += 1);
 		Assert.assertEquals(2, count);
 		
 		Assert.assertEquals(2, counts[0]);
@@ -123,5 +137,11 @@ public class TestEntityCollection
 	private static CreatureEntity _buildCreature(int id, EntityLocation location)
 	{
 		return CreatureEntity.create(id, COW, location, (byte)10);
+	}
+
+	private static MutableCreature _buildMutableCow(int id, EntityLocation location)
+	{
+		CreatureEntity cow = _buildCreature(id, location);
+		return MutableCreature.existing(cow);
 	}
 }

@@ -569,7 +569,7 @@ public class TestCreatureLogic
 		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
 		_setLayer(input, (byte)0, "op.stone");
 		CreatureIdAssigner assigner = new CreatureIdAssigner();
-		EntityLocation location = new EntityLocation(1.1f, 0.0f, 1.0f);
+		EntityLocation location = new EntityLocation(1.3f, 0.0f, 1.0f);
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = location;
 		Entity player = mutable.freeze();
@@ -778,6 +778,71 @@ public class TestCreatureLogic
 		Assert.assertEquals(CreatureEntity.NO_TARGET_ENTITY_ID, mutableCow.newTargetEntityId);
 		Assert.assertNull(mutableCow.newTargetPreviousLocation);
 		Assert.assertNull(mutableCow.newMovementPlan);
+	}
+
+	@Test
+	public void closeBug()
+	{
+		// A test related to a bug where a hostile mob would get "stuck" just out of range of the player.
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(-1, 0, 0);
+		CuboidData input = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		_setLayer(input, (byte)0, "op.stone");
+		CreatureIdAssigner assigner = new CreatureIdAssigner();
+		EntityLocation location = new EntityLocation(-16.2f, 7.63f, 0.0f);
+		int entityId = 1;
+		MutableEntity mutablePlayer = MutableEntity.createForTest(entityId);
+		mutablePlayer.newLocation = location;
+		Entity player = mutablePlayer.freeze();
+		EntityLocation orcLocation = new EntityLocation(-16.99f, 7.93f, 0.0f);
+		CreatureEntity orc = CreatureEntity.create(assigner.next(), ORC, orcLocation, (byte)100);
+		MutableCreature mutableOrc = MutableCreature.existing(orc);
+		
+		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation blockLocation) -> {
+			return blockLocation.getCuboidAddress().equals(cuboidAddress)
+					? new BlockProxy(blockLocation.getBlockAddress(), input)
+					: null
+			;
+		};
+		Map<Integer, MinimalEntity> entities = new HashMap<>();
+		Function<Integer, MinimalEntity> previousEntityLookUp = (Integer id) -> entities.get(id);
+		boolean[] out = new boolean[1];
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(1000L)
+				.lookups(previousBlockLookUp, previousEntityLookUp)
+				.sinks(null, new TickProcessingContext.IChangeSink() {
+					@Override
+					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
+					{
+						Assert.assertEquals(entityId, targetEntityId);
+						out[0] = true;
+					}
+					@Override
+					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
+					{
+						Assert.fail();
+					}
+					@Override
+					public void creature(int targetCreatureId, IMutationEntity<IMutableCreatureEntity> change)
+					{
+						Assert.fail();
+					}
+				})
+				.finish()
+		;
+		
+		// In the bug, the orc had the entity as a target but no movement plan.
+		mutableOrc.newTargetEntityId = entityId;
+		mutableOrc.newTargetPreviousLocation = location.getBlockLocation();
+		entities.put(player.id(), MinimalEntity.fromEntity(player));
+		entities.put(orc.id(), MinimalEntity.fromCreature(orc));
+		boolean didTakeAction = CreatureLogic.didTakeSpecialActions(context
+				, new EntityCollection(Map.of(player.id(), player), Map.of(orc.id(), orc))
+				, mutableOrc
+		);
+		// We should have taken no action but created a plan.
+		Assert.assertTrue(didTakeAction);
+		Assert.assertNull(mutableOrc.newMovementPlan);
+		Assert.assertTrue(out[0]);
 	}
 
 

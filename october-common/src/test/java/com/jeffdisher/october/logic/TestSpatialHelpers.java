@@ -255,7 +255,7 @@ public class TestSpatialHelpers
 		MinimalEntity entity2 = new MinimalEntity(2, COW, location2);
 		AbsoluteLocation block1 = new AbsoluteLocation(-3, 2, -1);
 		
-		float entityDistance = SpatialHelpers.distanceFromEyeToEntitySurface(entity1, entity2);
+		float entityDistance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(entity1, entity2);
 		Assert.assertEquals(0.63f, entityDistance, 0.01f);
 		float blockDistance = SpatialHelpers.distanceFromEyeToBlockSurface(entity1, block1);
 		Assert.assertEquals(13.50f, blockDistance, 0.01f);

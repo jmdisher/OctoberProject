@@ -25,6 +25,7 @@ import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableCreatureEntity;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -338,7 +339,6 @@ public class CreatureLogic
 			, MutableCreature mutable
 	)
 	{
-		EntityLocation creatureLocation = mutable.getLocation();
 		EntityType type = mutable.getType();
 		
 		_TargetEntity newTarget;
@@ -348,18 +348,18 @@ public class CreatureLogic
 			if (mutable.isInLoveMode())
 			{
 				// Find another of this type in breeding mode.
-				newTarget = _findBreedable(entityCollection, creatureLocation, type, mutable.getId());
+				newTarget = _findBreedable(entityCollection, mutable);
 			}
 			else
 			{
 				// We will keep this simple:  Find the closest player holding our breeding item, up to our limit.
-				newTarget = _findFeedingTarget(entityCollection, creatureLocation, type);
+				newTarget = _findFeedingTarget(entityCollection, mutable);
 			}
 		}
 		else
 		{
 			// This is hostile so just search for a player.
-			newTarget = _findPlayerInRange(entityCollection, creatureLocation, type);
+			newTarget = _findPlayerInRange(entityCollection, mutable);
 		}
 		
 		// Determine the path if we found a target.
@@ -371,6 +371,7 @@ public class CreatureLogic
 			EntityLocation targetLocation = newTarget.location();
 			// If this fails, it will return null which is already our failure case.
 			EntityVolume volume = type.volume();
+			EntityLocation creatureLocation = mutable.getLocation();
 			path = PathFinder.findPathWithLimit(blockPermitsPassage, volume, creatureLocation, targetLocation, type.getPathDistance());
 			if (null != path)
 			{
@@ -587,9 +588,7 @@ public class CreatureLogic
 	{
 		// We know that the target is valid and in range when we get here so the exist and are in range.
 		MinimalEntity targetEntity = context.previousEntityLookUp.apply(mutable.newTargetEntityId);
-		EntityLocation creatureLocation = mutable.getLocation();
-		EntityLocation targetLocation = targetEntity.location();
-		float distance = SpatialHelpers.distanceBetween(creatureLocation, targetLocation);
+		float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(mutable, targetEntity);
 		EntityType creatureType = mutable.getType();
 		float pathDistance = creatureType.getPathDistance();
 		Assert.assertTrue(distance <= pathDistance);
@@ -602,6 +601,7 @@ public class CreatureLogic
 		else
 		{
 			// We can keep this but see if we need to update their location.
+			EntityLocation targetLocation = targetEntity.location();
 			AbsoluteLocation newLocation = targetLocation.getBlockLocation();
 			if (!newLocation.equals(mutable.newTargetPreviousLocation))
 			{
@@ -619,17 +619,19 @@ public class CreatureLogic
 		return (MINIMUM_MILLIS_TO_ACTION / millisPerTick);
 	}
 
-	private static _TargetEntity _findBreedable(EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType, int thisCreatureId)
+	private static _TargetEntity _findBreedable(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkCreaturesInRange(creatureLocation, thisType.viewDistance(), (CreatureEntity check) -> {
+		EntityType thisType = creature.getType();
+		int thisCreatureId = creature.getId();
+		entityCollection.walkCreaturesInViewDistance(creature, (CreatureEntity check) -> {
 			// Ignore ourselves and make sure that they are the same type and in love mode.
 			if ((thisCreatureId != check.id()) && (thisType == check.type()) && check.ephemeral().inLoveMode())
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = check.location();
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+				float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromCreature(check));
 				if (distance < distanceToTarget[0])
 				{
 					target[0] = new _TargetEntity(check.id(), end);
@@ -640,17 +642,18 @@ public class CreatureLogic
 		return target[0];
 	}
 
-	private static _TargetEntity _findFeedingTarget(EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType)
+	private static _TargetEntity _findFeedingTarget(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(creatureLocation, thisType.viewDistance(), (Entity player) -> {
+		EntityType thisType = creature.getType();
+		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
 			// See if this player has the breeding item in their hand.
 			if (thisType.breedingItem() == _itemInPlayerHand(player))
 			{
 				// See how far away they are so we choose the closest.
 				EntityLocation end = player.location();
-				float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+				float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromEntity(player));
 				if (distance < distanceToTarget[0])
 				{
 					target[0] = new _TargetEntity(player.id(), end);
@@ -661,14 +664,14 @@ public class CreatureLogic
 		return target[0];
 	}
 
-	private static _TargetEntity _findPlayerInRange(EntityCollection entityCollection, EntityLocation creatureLocation, EntityType thisType)
+	private static _TargetEntity _findPlayerInRange(EntityCollection entityCollection, IMutableMinimalEntity creature)
 	{
 		_TargetEntity[] target = new _TargetEntity[1];
 		float[] distanceToTarget = new float[] { Float.MAX_VALUE };
-		entityCollection.walkPlayersInRange(creatureLocation, thisType.viewDistance(), (Entity player) -> {
+		entityCollection.walkPlayersInViewDistance(creature, (Entity player) -> {
 			// We are looking for any player so just choose the closest.
 			EntityLocation end = player.location();
-			float distance = SpatialHelpers.distanceBetween(creatureLocation, end);
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromEntity(player));
 			if (distance < distanceToTarget[0])
 			{
 				target[0] = new _TargetEntity(player.id(), end);
@@ -700,8 +703,7 @@ public class CreatureLogic
 			Assert.assertTrue(null != targetEntity);
 			
 			// See if they are within mating distance and we are the father.
-			EntityLocation targetLocation = targetEntity.location();
-			float distance = SpatialHelpers.distanceBetween(creature.newLocation, targetLocation);
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, targetEntity);
 			float matingDistance = creatureType.actionDistance();
 			if ((distance <= matingDistance) && (targetEntity.id() < creature.getId()))
 			{
@@ -733,8 +735,7 @@ public class CreatureLogic
 			
 			// See if they are in attack range.
 			EntityType creatureType = creature.getType();
-			EntityLocation targetLocation = targetEntity.location();
-			float distance = SpatialHelpers.distanceBetween(creature.newLocation, targetLocation);
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, targetEntity);
 			float attackDistance = creatureType.actionDistance();
 			if (distance <= attackDistance)
 			{
@@ -803,7 +804,7 @@ public class CreatureLogic
 			else
 			{
 				// We must be looking at a player so make sure they still have food.
-				isValid = _isPlayerVisibleAndHoldingFeed(entityCollection, creatureType, mutable.newLocation, targetId);
+				isValid = _isPlayerVisibleAndHoldingFeed(entityCollection, mutable, targetId);
 			}
 		}
 		else
@@ -815,20 +816,21 @@ public class CreatureLogic
 			Entity player = entityCollection.getPlayerById(targetId);
 			if (null != player)
 			{
-				float distance = SpatialHelpers.distanceBetween(mutable.newLocation, player.location());
+				float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(mutable, MinimalEntity.fromEntity(player));
 				isValid = (distance <= creatureType.viewDistance());
 			}
 		}
 		return isValid;
 	}
 
-	private static boolean _isPlayerVisibleAndHoldingFeed(EntityCollection entityCollection, EntityType creatureType, EntityLocation creatureLocation, int targetId)
+	private static boolean _isPlayerVisibleAndHoldingFeed(EntityCollection entityCollection, IMutableMinimalEntity creature, int targetId)
 	{
 		boolean isValid = false;
 		Entity player = entityCollection.getPlayerById(targetId);
 		if (null != player)
 		{
-			float distance = SpatialHelpers.distanceBetween(creatureLocation, player.location());
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(creature, MinimalEntity.fromEntity(player));
+			EntityType creatureType = creature.getType();
 			if (distance <= creatureType.viewDistance())
 			{
 				isValid = (creatureType.breedingItem() == _itemInPlayerHand(player));

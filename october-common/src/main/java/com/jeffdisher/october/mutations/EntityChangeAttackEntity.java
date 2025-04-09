@@ -65,7 +65,7 @@ public class EntityChangeAttackEntity implements IMutationEntity<IMutablePlayerE
 		if (isReady && (null != targetEntity))
 		{
 			// Find the distance from the eye to the target.
-			float distance = SpatialHelpers.distanceFromEyeToEntitySurface(newEntity, targetEntity);
+			float distance = SpatialHelpers.distanceFromMutableEyeToEntitySurface(newEntity, targetEntity);
 			isInRange = (distance <= MiscConstants.REACH_ENTITY);
 		}
 		else

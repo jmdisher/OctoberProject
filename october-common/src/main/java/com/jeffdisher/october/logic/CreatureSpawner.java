@@ -13,7 +13,6 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Difficulty;
-import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EntityVolume;
@@ -213,7 +212,7 @@ public class CreatureSpawner
 		// Check to make sure that this location isn't too close to a player.
 		if (null != goodSpawningLocation)
 		{
-			if (existingEntities.walkPlayersInRange(goodSpawningLocation.toEntityLocation(), SPAWN_DENIAL_RANGE, (Entity ignored) -> {}) > 0)
+			if (existingEntities.countPlayersInRangeOfBase(goodSpawningLocation.toEntityLocation(), SPAWN_DENIAL_RANGE) > 0)
 			{
 				goodSpawningLocation = null;
 			}

@@ -13,6 +13,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -38,8 +39,10 @@ import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
@@ -598,12 +601,12 @@ public class ServerStateManager
 	private void _sendNewAndUpdatedEntities(int clientId, ClientState state)
 	{
 		// Note that this is similar to _sendNewAndUpdatedCreatures but duplicated to avoid spreading logic with extra levels of indirection.
+		EntityType playerType  = Environment.getShared().creatures.PLAYER;
 		for (Map.Entry<Integer, Entity> entry : _completedEntities.entrySet())
 		{
 			int entityId = entry.getKey();
 			Entity entity = entry.getValue();
-			EntityLocation location = entity.location();
-			float distance = SpatialHelpers.distanceBetween(state.location, location);
+			float distance = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(state.location, playerType, MinimalEntity.fromEntity(entity));
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.
@@ -657,12 +660,12 @@ public class ServerStateManager
 	private void _sendNewAndUpdatedCreatures(int clientId, ClientState state)
 	{
 		// Note that this is similar to _sendNewAndUpdatedEntities but duplicated to avoid spreading logic with extra levels of indirection.
+		EntityType playerType  = Environment.getShared().creatures.PLAYER;
 		for (Map.Entry<Integer, CreatureEntity> entry : _completedCreatures.entrySet())
 		{
 			int entityId = entry.getKey();
 			CreatureEntity entity = entry.getValue();
-			EntityLocation location = entity.location();
-			float distance = SpatialHelpers.distanceBetween(state.location, location);
+			float distance = SpatialHelpers.distanceFromPlayerEyeToEntitySurface(state.location, playerType, MinimalEntity.fromCreature(entity));
 			if (state.knownEntities.contains(entityId))
 			{
 				// See if they are too far away.

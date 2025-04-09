@@ -538,7 +538,7 @@ public class TestCreatureProcessor
 		ProcessorElement thread = new ProcessorElement(0, new SyncPoint(1), new AtomicInteger(0));
 		CreatureIdAssigner idAssigner = new CreatureIdAssigner();
 		EntityLocation location1 = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation location2 = new EntityLocation(1.3f, 0.0f, 0.0f);
+		EntityLocation location2 = new EntityLocation(1.7f, 0.0f, 0.0f);
 		EntityLocation playerLocation = new EntityLocation(0.5f, 0.5f, 0.0f);
 		Item wheat_item = ENV.items.getItemById("op.wheat_item");
 		MutableEntity mutablePlayer = MutableEntity.createWithLocation(1, playerLocation, playerLocation);
