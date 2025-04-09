@@ -65,8 +65,9 @@ public interface IClientAdapter
 		 * 
 		 * @param assignedId The client ID assigned by the server.
 		 * @param millisPerTick The server's tick rate.
+		 * @param viewDistanceMaximum The maximum view distance a client can request (as a new client defaults to "1").
 		 */
-		void adapterConnected(int assignedId, long millisPerTick);
+		void adapterConnected(int assignedId, long millisPerTick, int viewDistanceMaximum);
 		/**
 		 * Called when the connection to the server has closed or failed to establish, in the first place.
 		 */

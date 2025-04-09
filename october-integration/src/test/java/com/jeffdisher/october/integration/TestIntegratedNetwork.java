@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IOctree;
@@ -83,7 +84,7 @@ public class TestIntegratedNetwork
 				Assert.fail();
 				return null;
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -157,7 +158,7 @@ public class TestIntegratedNetwork
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage("Client 2".hashCode(), message));
 				}
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		holder[0] = server;
 		
 		// Connect both clients.
@@ -165,7 +166,7 @@ public class TestIntegratedNetwork
 		NetworkClient client1 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -188,7 +189,7 @@ public class TestIntegratedNetwork
 		NetworkClient client2 = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -318,7 +319,7 @@ public class TestIntegratedNetwork
 				Assert.fail();
 				return null;
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		holder[0] = server;
 		
 		// Connect the client.
@@ -328,7 +329,7 @@ public class TestIntegratedNetwork
 		{
 			int _nextIndex = 0;
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -419,7 +420,7 @@ public class TestIntegratedNetwork
 		NetworkClient client = new NetworkClient(new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 			}
 			@Override
@@ -471,7 +472,7 @@ public class TestIntegratedNetwork
 			{
 				return new NetworkServer.ServerStatus("Server", 42);
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 	}
 
 

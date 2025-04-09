@@ -68,7 +68,7 @@ public class TestNetworkLayer
 		buffer.flip();
 		client.write(buffer);
 		
-		server.sendMessage(tokenHolder[0], new Packet_ServerSendClientId(2, 100L));
+		server.sendMessage(tokenHolder[0], new Packet_ServerSendClientId(2, 100L, 1));
 		
 		// Verify that we received both.
 		receiveLatch.await();
@@ -80,6 +80,7 @@ public class TestNetworkLayer
 		Packet clientRead = PacketCodec.parseAndSeekFlippedBuffer(buffer);
 		Assert.assertEquals(2, ((Packet_ServerSendClientId) clientRead).clientId);
 		Assert.assertEquals(100L, ((Packet_ServerSendClientId) clientRead).millisPerTick);
+		Assert.assertEquals(1, ((Packet_ServerSendClientId) clientRead).viewDistanceMaximum);
 		
 		// Close the client and verify that the server sees the disconnect.
 		client.close();
@@ -135,7 +136,7 @@ public class TestNetworkLayer
 		
 		// Now, both sides should be able to send a message, right away (we will just use the ID assignment, since it is simple).
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(1, 10L));
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(1, 10L, 1));
 		buffer.flip();
 		server.write(buffer);
 		
@@ -145,6 +146,7 @@ public class TestNetworkLayer
 		receiveLatch.await();
 		Assert.assertEquals(1, ((Packet_ServerSendClientId) holder[0]).clientId);
 		Assert.assertEquals(10L, ((Packet_ServerSendClientId) holder[0]).millisPerTick);
+		Assert.assertEquals(1, ((Packet_ServerSendClientId) holder[0]).viewDistanceMaximum);
 		
 		buffer.clear();
 		server.read(buffer);

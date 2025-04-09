@@ -363,7 +363,7 @@ public class ClientRunner
 		private List<EventRecord> _events = new ArrayList<>();
 		
 		@Override
-		public void adapterConnected(int assignedId, long millisPerTick)
+		public void adapterConnected(int assignedId, long millisPerTick, int viewDistanceMaximum)
 		{
 			_callsFromNetworkToApply.enqueue((long currentTimeMillis) -> {
 				// We create the projection here.

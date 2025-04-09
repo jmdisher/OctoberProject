@@ -17,6 +17,7 @@ import java.util.function.LongSupplier;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.net.NetworkServer.ConnectingClientDescription;
 
@@ -66,7 +67,7 @@ public class TestNetworkServer
 				Assert.fail();
 				return null;
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		int client1 = _runClient(port, "Client 1");
 		int client2 = _runClient(port, "Client 2");
@@ -142,7 +143,7 @@ public class TestNetworkServer
 					holder[0].sendMessage(_firstPeer, new Packet_ReceiveChatMessage(2, message));
 				}
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		holder[0] = server;
 		
 		// Connect both client.
@@ -188,7 +189,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a corrupt packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -217,7 +218,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a "from server" packet from the client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -242,7 +243,7 @@ public class TestNetworkServer
 	{
 		// Show what happens when we receive a restricted mutation from a client.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client1 = _connectAndHandshakeClient(port, "Client 1");
@@ -285,7 +286,7 @@ public class TestNetworkServer
 			return timeToReturn;
 		};
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), timeSupplier, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Open a socket.
 		SocketChannel socket = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -314,7 +315,7 @@ public class TestNetworkServer
 	{
 		// We will check what happens when we pass an unknown version on connect.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));
@@ -376,7 +377,7 @@ public class TestNetworkServer
 				Assert.fail();
 				return null;
 			}
-		}, TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		}, TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		CyclicBarrier connectBarrier = new CyclicBarrier(threadCount);
 		CyclicBarrier endBarrier = new CyclicBarrier(threadCount);
@@ -420,7 +421,7 @@ public class TestNetworkServer
 	{
 		// Just poll for status.
 		int port = 3000;
-		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK);
+		NetworkServer<NetworkLayer.PeerToken> server = new NetworkServer<>(new _ServerListener(), TIME_SUPPLIER, port, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
 		
 		// Connect a client.
 		SocketChannel client = SocketChannel.open(new InetSocketAddress(InetAddress.getLocalHost(), port));

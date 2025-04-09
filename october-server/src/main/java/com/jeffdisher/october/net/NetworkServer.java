@@ -35,9 +35,16 @@ public class NetworkServer<L>
 	 * @param currentTimeMillisProvider Returns the current system time, in milliseconds.
 	 * @param port The port which should be bound for accepting incoming connections.
 	 * @param serverMillisPerTick The number of milliseconds per tick for this server instance.
+	 * @param viewDistanceMaximum The maximum number of cuboids away from the cuboid where the client is which will be
+	 * sent to the client (the client defaults to "1" and can request a change of at least 0 and at most this number).
 	 * @throws IOException An error occurred while configuring the network.
 	 */
-	public NetworkServer(IListener<L> listener, LongSupplier currentTimeMillisProvider, int port, long serverMillisPerTick) throws IOException
+	public NetworkServer(IListener<L> listener
+			, LongSupplier currentTimeMillisProvider
+			, int port
+			, long serverMillisPerTick
+			, int viewDistanceMaximum
+	) throws IOException
 	{
 		_listener = listener;
 		
@@ -144,7 +151,7 @@ public class NetworkServer<L>
 						state.data = description.data;
 						
 						// Send out description and consider the handshake completed.
-						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick));
+						_network.sendMessage(token, new Packet_ServerSendClientId(description.clientId, serverMillisPerTick, viewDistanceMaximum));
 					}
 					else
 					{

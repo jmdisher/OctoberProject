@@ -29,7 +29,7 @@ public class TestNetworkClient
 		NetworkClient.IListener emptyListener = new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -79,7 +79,7 @@ public class TestNetworkClient
 		NetworkClient.IListener emptyListener = new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 				// We aren't acting on this in our test.
 			}
@@ -140,7 +140,7 @@ public class TestNetworkClient
 		NetworkClient.IListener emptyListener = new NetworkClient.IListener()
 		{
 			@Override
-			public void handshakeCompleted(int assignedId, long millisPerTick)
+			public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 			{
 				latch.countDown();
 			}
@@ -259,7 +259,8 @@ public class TestNetworkClient
 		// Send out response.
 		buffer.clear();
 		long millisPerTick = 100L;
-		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(clientId, millisPerTick));
+		int viewDistanceMaximum = 3;
+		PacketCodec.serializeToBuffer(buffer, new Packet_ServerSendClientId(clientId, millisPerTick, viewDistanceMaximum));
 		// We immediately send a config update after the ID so sythesize that, too.
 		int ticksPerDay = 1000;
 		int dayStartTick = 0;
@@ -292,7 +293,7 @@ public class TestNetworkClient
 	private static class _ClientListener implements NetworkClient.IListener
 	{
 		@Override
-		public void handshakeCompleted(int assignedId, long millisPerTick)
+		public void handshakeCompleted(int assignedId, long millisPerTick, int viewDistanceMaximum)
 		{
 		}
 		@Override
