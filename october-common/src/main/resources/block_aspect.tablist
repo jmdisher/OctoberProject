@@ -2,8 +2,8 @@
 # ID<TAB>flag_list
 # [<TAB>block_material<TAB>material]
 # [<TAB>placed_from<TAB>ID]
-# [<TAB>requires_support<TAB>[probability item]*]
-# [<TAB>special_drop<TAB>ID]
+# [<TAB>requires_support<TAB>ID*]
+# [<TAB>special_drop<TAB>[probability item]*]
 # [<TAB>viscosity<TAB>number]
 # [<TAB>damage<TAB>number]
 #
@@ -109,9 +109,11 @@ op.lamp_on
 op.logic_wire
 op.quern
 	block_material	PICKAXE
+op.basalt
+	block_material	PICKAXE
 op.torch
 	block_material	AXE
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt
 	viscosity	0
 # op.carrot
 op.carrot_seedling
@@ -128,10 +130,8 @@ op.carrot_mature
 	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
 op.bed	is_flammable
-	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass
+	requires_support	op.stone	op.log	op.plank	op.coal_ore	op.iron_ore	op.dirt	op.stone_brick	op.grass	op.basalt
 	block_material	AXE
-op.basalt
-	block_material	PICKAXE
 op.lava_source	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
