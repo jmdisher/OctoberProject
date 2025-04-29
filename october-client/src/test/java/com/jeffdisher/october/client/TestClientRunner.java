@@ -31,6 +31,7 @@ import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
+import com.jeffdisher.october.mutations.MutationEntitySetEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -639,6 +640,66 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		Assert.assertEquals(0, clientListener.assignedLocalEntityId);
 		Assert.assertTrue(projection.events.isEmpty());
+	}
+
+	@Test
+	public void jumpAndFall() throws Throwable
+	{
+		// We want to see how we move, over time, after jumping in place.
+		TestAdapter network = new TestAdapter();
+		TestProjection projection = new TestProjection();
+		ClientListener clientListener = new ClientListener();
+		ClientRunner runner = new ClientRunner(network, projection, clientListener);
+		
+		// Connect them and send a default entity and basic cuboid.
+		int clientId = 1;
+		long currentTimeMillis = 100L;
+		long tick = 1L;
+		long serverCommit = 0L;
+		network.client.adapterConnected(clientId, MILLIS_PER_TICK, MiscConstants.DEFAULT_CUBOID_VIEW_DISTANCE);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		Assert.assertEquals(clientId, clientListener.assignedLocalEntityId);
+		network.client.receivedFullEntity(MutableEntity.createForTest(clientId).freeze());
+		// We will stand on the ground, in air, but there will be a wall directly to the West.
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE));
+		network.client.receivedCuboid(CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR));
+		network.client.receivedEndOfTick(tick, serverCommit);
+		runner.runPendingCalls(currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// Jump and watch how we move over time.
+		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
+		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
+		currentTimeMillis += 100L;
+		
+		// We will apply the entity changes one behind our local client.
+		// Because we are capturing serverEntity from the local projection, this will fail in a sort of oscillating
+		// state unless "doNothing" actually allows real forward progress.
+		Entity serverEntity = projection.thisEntity;
+		serverCommit = 1L;
+		
+		for (int i = 0; i < 11; ++i)
+		{
+			runner.doNothing(currentTimeMillis);
+			
+			// Grab this entity and apply server change.
+			Entity temp = projection.thisEntity;
+			tick += 1L;
+			network.client.receivedEntityUpdate(clientId, new MutationEntitySetEntity(serverEntity));
+			network.client.receivedEndOfTick(tick, serverCommit);
+			runner.runPendingCalls(currentTimeMillis);
+			serverEntity = temp;
+			serverCommit += 1L;
+			currentTimeMillis += 100L;
+			
+			// These views of the entity should be the same.
+			Assert.assertEquals(serverEntity.location().z(), projection.thisEntity.location().z(), 0.01f);
+		}
+		
+		// Make sure that we have touched down.
+		Assert.assertEquals(0.0f, projection.thisEntity.location().z(), 0.01f);
+		Assert.assertEquals(0.0f, projection.thisEntity.velocity().z(), 0.01f);
 	}
 
 

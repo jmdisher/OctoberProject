@@ -440,39 +440,6 @@ public class SpeculativeProjection
 		return commitNumber;
 	}
 
-	/**
-	 * Allows millisToPass to pass within the system, simply so things like physics can be applied to the existing
-	 * entity.
-	 * 
-	 * @param millisToPass The number of milliseconds to allow to pass.
-	 * @param currentTickTimeMillis The current time, in milliseconds.
-	 */
-	public void fakePassTime(long millisToPass, long currentTickTimeMillis)
-	{
-		// We will just fake the end of tick with no other changes.
-		// We will ignore any follow-up mutations or changes.
-		CommonMutationSink newMutationSink = new CommonMutationSink();
-		CommonChangeSink newChangeSink = new CommonChangeSink();
-		TickProcessingContext context = _createContext(0L
-				, newMutationSink
-				, newChangeSink
-				, true
-				, millisToPass
-				, currentTickTimeMillis
-		);
-		
-		CrowdProcessor.ProcessedGroup innerGroup = CrowdProcessor.processCrowdGroupParallel(_singleThreadElement
-				, Map.of(_localEntityId, _projectedState.projectedLocalEntity)
-				, context
-				, Map.of()
-		);
-		Entity updated = innerGroup.updatedEntities().get(_localEntityId);
-		if (null != updated)
-		{
-			_projectedState.projectedLocalEntity = updated;
-			_notifyEntityChanges(_shadowState.getThisEntity(), _projectedState.projectedLocalEntity, Set.of());
-		}
-	}
 
 	private void _notifyEntityChanges(Entity authoritativeLocalEntity
 			, Entity updatedLocalEntity

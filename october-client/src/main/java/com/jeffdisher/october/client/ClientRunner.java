@@ -9,15 +9,18 @@ import java.util.Set;
 import java.util.function.LongConsumer;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeTimeSync;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -264,10 +267,16 @@ public class ClientRunner
 				// We are crafting something, so continue with that.
 				_commonCraft(_localEntityProjection.localCraftOperation().selectedCraft(), currentTimeMillis);
 			}
+			else if ((0.0f != _localEntityProjection.velocity().z()) || !SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, _localEntityProjection.location(), Environment.getShared().creatures.PLAYER.volume()))
+			{
+				// We are passively moving (in a jump or falling) so create a time-passing mutation to keep us in sync with the server.
+				EntityChangeTimeSync sync = new EntityChangeTimeSync(millisToApply);
+				_applyLocalChange(sync, currentTimeMillis);
+			}
 			else
 			{
-				// Nothing is happening so just account for time passing.
-				_projection.fakePassTime(millisToApply, currentTimeMillis);
+				// If we are just standing still and not mid-craft, we don't even need to consult the projection since
+				// nothing is moving (it only simulates time for the local entity).
 			}
 			_lastCallMillis = currentTimeMillis;
 		}
