@@ -63,24 +63,28 @@ public class ResourceLoader
 	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
 	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
 	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
+	 * Version 5 was used in v1.5 and earlier, and is supported (6 only adds and deprecates data).
 	 */
 	public static final int VERSION_CUBOID_V1 = 1;
 	public static final int VERSION_CUBOID_V2 = 2;
 	public static final int VERSION_CUBOID_V3 = 3;
 	public static final int VERSION_CUBOID_V4 = 4;
-	public static final int VERSION_CUBOID = 5;
+	public static final int VERSION_CUBOID_V5 = 5;
+	public static final int VERSION_CUBOID = 6;
 	/**
 	 * Version 0 was used in v1.0-pre6 and earlier, no longer supported (pre-releases have no migration support).
 	 * Version 1 was used in v1.0.1 and earlier, and is supported.
 	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
 	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
 	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
+	 * Version 5 was used in v1.5 and earlier, and is supported (6 only adds and deprecates data).
 	 */
 	public static final int VERSION_ENTITY_V1 = 1;
 	public static final int VERSION_ENTITY_V2 = 2;
 	public static final int VERSION_ENTITY_V3 = 3;
 	public static final int VERSION_ENTITY_V4 = 4;
-	public static final int VERSION_ENTITY = 5;
+	public static final int VERSION_ENTITY_V5 = 5;
+	public static final int VERSION_ENTITY = 6;
 	public static final int SERIALIZATION_BUFFER_SIZE_BYTES = 1024 * 1024;
 
 	// Defaults for entity creation.
@@ -453,6 +457,33 @@ public class ResourceLoader
 					);
 				};
 			}
+			else if (VERSION_CUBOID_V5 == version)
+			{
+				// V5 is a subset of V6 so do nothing special - just stops old versions from being broken.
+				dataReader = () -> {
+					CuboidData cuboid = _background_readCuboid(address, buffer);
+					
+					// Load any creatures associated with the cuboid.
+					List<CreatureEntity> creatures = _background_readCreatures(buffer);
+					
+					// Now, load any suspended mutations.
+					List<ScheduledMutation> pendingMutations = _background_readMutations(buffer);
+					// ... and any periodic mutations.
+					Map<BlockAddress, Long> periodicMutations = _background_readPeriodic(buffer);
+					
+					// This should be fully read.
+					Assert.assertTrue(!buffer.hasRemaining());
+					
+					// The height map is ephemeral so it is built here.  Note that building this might be somewhat expensive.
+					CuboidHeightMap heightMap = HeightMapHelpers.buildHeightMap(cuboid);
+					return new SuspendedCuboid<>(cuboid
+							, heightMap
+							, creatures
+							, pendingMutations
+							, periodicMutations
+					);
+				};
+			}
 			else if (VERSION_CUBOID_V4 == version)
 			{
 				// V4 needs to re-write for orientation aspects.
@@ -750,6 +781,7 @@ public class ResourceLoader
 					|| (VERSION_ENTITY_V2 == version)
 					|| (VERSION_ENTITY_V3 == version)
 					|| (VERSION_ENTITY_V4 == version)
+					|| (VERSION_ENTITY_V5 == version)
 			)
 			{
 				// Do nothing special - just stops old versions from being broken.
