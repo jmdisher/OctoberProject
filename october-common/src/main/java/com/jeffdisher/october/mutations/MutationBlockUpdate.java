@@ -143,6 +143,19 @@ public class MutationBlockUpdate implements IMutationBlock
 				didApply = true;
 			}
 		}
+		
+		// Check if this block could become ground cover.
+		if (null != env.groundCover.canGrowGroundCover(newBlock.getBlock()))
+		{
+			Block shouldBecome = GroundCoverHelpers.findPotentialGroundCoverType(env, context.previousBlockLookUp, _blockLocation, newBlock.getBlock());
+			if (null != shouldBecome)
+			{
+				MutationBlockGrowGroundCover grow = new MutationBlockGrowGroundCover(_blockLocation, shouldBecome);
+				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
+				// We did do something, even if it didn't change this block, so return true.
+				didApply = true;
+			}
+		}
 		return didApply;
 	}
 

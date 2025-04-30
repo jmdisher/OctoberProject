@@ -1429,6 +1429,17 @@ public class TestCommonMutations
 		Assert.assertTrue(blockUpdate.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(dirt.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
+		
+		// Test removing this dirt block to show that we re-spread it from besideGrass.
+		cuboid.setData15(AspectRegistry.BLOCK, aboveGrass.getBlockAddress(), ENV.special.AIR.item().number());
+		proxy = new MutableBlockProxy(startGrass, cuboid);
+		blockUpdate = new MutationBlockUpdate(startGrass);
+		Assert.assertTrue(blockUpdate.applyMutation(context, proxy));
+		update = out_mutations[0];
+		out_mutations[0] = null;
+		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
 	}
 
 	@Test
