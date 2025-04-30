@@ -80,3 +80,4 @@ op.double_door_closed_base	16
 op.double_door_open_base	0
 op.grass	0
 op.tilled_soil	0
+op.stone_hoe	6

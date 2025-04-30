@@ -2402,6 +2402,47 @@ public class TestCommonChanges
 		Assert.assertEquals(1, count[0]);
 	}
 
+	@Test
+	public void useHoe() throws Throwable
+	{
+		// We will show that a hoe with 2 durability can be used precisely twice (its durability is different from other tools).
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
+		Item hoeItem = ENV.items.getItemById("op.stone_hoe");
+		Item dirtItem = ENV.items.getItemById("op.dirt");
+		newEntity.newInventory.addNonStackableBestEfforts(new NonStackableItem(hoeItem, 2));
+		// We assume that this is 1.
+		newEntity.setSelectedKey(1);
+		Assert.assertEquals(2, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability());
+		
+		AbsoluteLocation target0 = newEntity.newLocation.getBlockLocation().getRelative(1, 0, 0);
+		AbsoluteLocation target1 = newEntity.newLocation.getBlockLocation().getRelative(1, 1, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, target0.getBlockAddress(), dirtItem.number());
+		cuboid.setData15(AspectRegistry.BLOCK, target1.getBlockAddress(), dirtItem.number());
+		// (we also need to make sure that we are standing on something)
+		cuboid.setData15(AspectRegistry.BLOCK, newEntity.newLocation.getBlockLocation().getRelative(0, 0, -1).getBlockAddress(), PLANK_ITEM.number());
+		
+		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
+		
+		// Show that we can hoe both blocks.
+		EntityChangeUseSelectedItemOnBlock use0 = new EntityChangeUseSelectedItemOnBlock(target0);
+		Assert.assertTrue(use0.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockReplace);
+		holder.mutation = null;
+		Assert.assertEquals(1, newEntity.newInventory.getNonStackableForKey(newEntity.getSelectedKey()).durability());
+		Assert.assertEquals(1, newEntity.newInventory.freeze().sortedKeys().size());
+		
+		// This counts as a special action so reset that.
+		Assert.assertEquals(holder.context.currentTickTimeMillis, newEntity.ephemeral_lastSpecialActionMillis);
+		newEntity.ephemeral_lastSpecialActionMillis = 0L;
+		EntityChangeUseSelectedItemOnBlock use1 = new EntityChangeUseSelectedItemOnBlock(target1);
+		Assert.assertTrue(use1.applyChange(holder.context, newEntity));
+		Assert.assertTrue(holder.mutation instanceof MutationBlockReplace);
+		Assert.assertEquals(0, newEntity.getSelectedKey());
+		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

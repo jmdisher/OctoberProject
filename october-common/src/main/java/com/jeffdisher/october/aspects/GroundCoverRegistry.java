@@ -11,18 +11,24 @@ import com.jeffdisher.october.types.Block;
  * them.
  * The most obvious example of this is grass:  It can spread to nearby dirt blocks but reverts to dirt is not under air,
  * specifically.
+ * An example of a different use-case is tilled soil:  It doesn't spread but is made invalid by placing things on top of
+ * it and converts to dirt.
  * TODO:  For now, we just hard-code all of this but it should move to data files in the future.
  */
 public class GroundCoverRegistry
 {
 	private final Map<Block, Block> _groundCoverToTargets;
+	private final Map<Block, Block> _nonSpreadingToBaseType;
 	private final Map<Block, Set<Block>> _canGrowGroundCover;
 
 	public GroundCoverRegistry(ItemRegistry items, BlockAspect blocks)
 	{
 		Block grass = blocks.getAsPlaceableBlock(items.getItemById("op.grass"));
 		Block dirt = blocks.getAsPlaceableBlock(items.getItemById("op.dirt"));
+		Block soil = blocks.getAsPlaceableBlock(items.getItemById("op.tilled_soil"));
 		_groundCoverToTargets = Map.of(grass, dirt
+		);
+		_nonSpreadingToBaseType = Map.of(soil, dirt
 		);
 		_canGrowGroundCover = Map.of(dirt, Set.of(grass)
 		);
@@ -36,7 +42,7 @@ public class GroundCoverRegistry
 	 */
 	public boolean isGroundCover(Block block)
 	{
-		return _groundCoverToTargets.containsKey(block);
+		return _groundCoverToTargets.containsKey(block) || _nonSpreadingToBaseType.containsKey(block);
 	}
 
 	/**
@@ -49,7 +55,7 @@ public class GroundCoverRegistry
 	public boolean canGroundCoverExistUnder(Block possibleGroundCoverBlock, Block above)
 	{
 		// For now, at least, we will consider all groundcover to be able to exist under any breathable block.
-		return _groundCoverToTargets.containsKey(possibleGroundCoverBlock)
+		return (_groundCoverToTargets.containsKey(possibleGroundCoverBlock) || _nonSpreadingToBaseType.containsKey(possibleGroundCoverBlock))
 				&& Environment.getShared().blocks.canBreatheInBlock(above);
 	}
 
@@ -72,7 +78,10 @@ public class GroundCoverRegistry
 	 */
 	public Block getRevertTypeForGroundCover(Block possibleGroundCoverBlock)
 	{
-		return _groundCoverToTargets.get(possibleGroundCoverBlock);
+		return _groundCoverToTargets.containsKey(possibleGroundCoverBlock)
+				? _groundCoverToTargets.get(possibleGroundCoverBlock)
+				: _nonSpreadingToBaseType.get(possibleGroundCoverBlock)
+		;
 	}
 
 	/**

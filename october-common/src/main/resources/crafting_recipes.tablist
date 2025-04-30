@@ -168,3 +168,7 @@ op.double_door_closed_base	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.double_door_closed_base
 	millis	16000
+op.stone_hoe	COMMON
+	input	op.stick	op.stick	op.stone
+	output	op.stone_hoe
+	millis	8000

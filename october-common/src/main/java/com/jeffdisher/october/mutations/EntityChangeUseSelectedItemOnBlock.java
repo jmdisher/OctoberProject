@@ -28,6 +28,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 {
 	public static final MutationEntityType TYPE = MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK;
 	public static final String FERTILIZER = "op.fertilizer";
+	public static final String STONE_HOE = "op.stone_hoe";
+	public static final String DIRT = "op.dirt";
+	public static final String GRASS = "op.grass";
+	public static final String TILLED_SOIL = "op.tilled_soil";
 	public static final long COOLDOWN_MILLIS = 250L;
 
 	public static EntityChangeUseSelectedItemOnBlock deserializeFromBuffer(ByteBuffer buffer)
@@ -47,6 +51,9 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 	{
 		Environment env = Environment.getShared();
 		Item fertilizer = env.items.getItemById(FERTILIZER);
+		Item stoneHoe = env.items.getItemById(STONE_HOE);
+		Item dirtItem = env.items.getItemById(DIRT);
+		Item grassItem = env.items.getItemById(GRASS);
 		
 		boolean canUse;
 		if ((item == fertilizer) && (env.plants.growthDivisor(block) > 0))
@@ -54,6 +61,10 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 			canUse = true;
 		}
 		else if (env.liquids.isBucketForUseOneBlock(env, item, block))
+		{
+			canUse = true;
+		}
+		else if ((stoneHoe == item) && ((dirtItem == block.item()) || (grassItem == block.item())))
 		{
 			canUse = true;
 		}
@@ -142,6 +153,9 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 					: null
 		;
 		Item fertilizer = env.items.getItemById(FERTILIZER);
+		Item stoneHoe = env.items.getItemById(STONE_HOE);
+		Item dirtItem = env.items.getItemById(DIRT);
+		Item grassItem = env.items.getItemById(GRASS);
 		boolean isFertilizer = (type == fertilizer);
 		BlockProxy proxy = context.previousBlockLookUp.apply(_target);
 		Block block = (null != proxy) ? proxy.getBlock() : null;
@@ -169,6 +183,23 @@ public class EntityChangeUseSelectedItemOnBlock implements IMutationEntity<IMuta
 				newEntity.setSelectedKey(Entity.NO_SELECTION);
 			}
 			context.mutationSink.next(new MutationBlockForceGrow(_target));
+			didApply = true;
+		}
+		else if ((stoneHoe == type) && ((dirtItem == block.item()) || (grassItem == block.item())))
+		{
+			// We will decrement the durability of the hoe and replace the target block with tilled soil.
+			int durability = nonStack.durability();
+			if (durability > 1)
+			{
+				mutableInventory.replaceNonStackable(selectedKey, new NonStackableItem(type, durability - 1));
+			}
+			else
+			{
+				mutableInventory.removeNonStackableItems(selectedKey);
+				newEntity.setSelectedKey(Entity.NO_SELECTION);
+			}
+			Item tilledSoil = env.items.getItemById(TILLED_SOIL);
+			context.mutationSink.next(new MutationBlockReplace(_target, block, env.blocks.fromItem(tilledSoil)));
 			didApply = true;
 		}
 		return didApply;
