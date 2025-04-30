@@ -80,6 +80,7 @@ public class TestTickRunner
 	private static Item SAPLING_ITEM;
 	private static Item LANTERN_ITEM;
 	private static Item LEAF_ITEM;
+	private static Item TILLED_SOIL_ITEM;
 	private static Item WHEAT_SEED_ITEM;
 	private static Item WHEAT_ITEM_ITEM;
 	private static Item WHEAT_SEEDLING_ITEM;
@@ -102,6 +103,7 @@ public class TestTickRunner
 		SAPLING_ITEM = ENV.items.getItemById("op.sapling");
 		LANTERN_ITEM = ENV.items.getItemById("op.lantern");
 		LEAF_ITEM = ENV.items.getItemById("op.leaf");
+		TILLED_SOIL_ITEM = ENV.items.getItemById("op.tilled_soil");
 		WHEAT_SEED_ITEM = ENV.items.getItemById("op.wheat_seed");
 		WHEAT_ITEM_ITEM = ENV.items.getItemById("op.wheat_item");
 		WHEAT_SEEDLING_ITEM = ENV.items.getItemById("op.wheat_seedling");
@@ -1514,7 +1516,7 @@ public class TestTickRunner
 		CuboidAddress address = CuboidAddress.fromInt(7, 8, 9);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
-		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), DIRT_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, location.getRelative(0, 0, -1).getBlockAddress(), TILLED_SOIL_ITEM.number());
 		
 		int[] randomHolder = new int[] {0};
 		WorldConfig config = new WorldConfig();
@@ -1613,7 +1615,7 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation location = address.getBase().getRelative(0, 6, 7);
 		AbsoluteLocation dirtLocation = location.getRelative(0, 0, -1);
-		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), DIRT_ITEM.number());
+		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress(), TILLED_SOIL_ITEM.number());
 		cuboid.setData15(AspectRegistry.BLOCK, dirtLocation.getRelative(0, 0, -1).getBlockAddress(), STONE_ITEM.number());
 		
 		WorldConfig config = new WorldConfig();

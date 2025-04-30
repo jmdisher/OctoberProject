@@ -345,12 +345,12 @@ public class TestCommonMutations
 	public void overwriteExistingInventory()
 	{
 		// This is to verify that we don't destroy an existing inventory in this block if we replace it with something which allows entity movement (air-equivalent).
-		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
+		Block tilled = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
 		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
 		int entityId = 1;
 		AbsoluteLocation target = new AbsoluteLocation(5, 5, 5);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), tilled.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
 		
 		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
@@ -977,13 +977,13 @@ public class TestCommonMutations
 	{
 		// We want to verify what happens when a block adjacent to a liquid source, which should be broken by it, will cause it to flow and break the block.
 		Block lavaSource = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.lava_source"));
-		Block dirtBlock = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.dirt"));
+		Block tilledBlock = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.tilled_soil"));
 		Block wheatMatureBlock = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.wheat_mature"));
 		AbsoluteLocation water = new AbsoluteLocation(15, 15, 15);
 		AbsoluteLocation lava = water.getRelative(2, 0, 0);
 		AbsoluteLocation wheat1 = water.getRelative( 1, 0, 0);
 		AbsoluteLocation wheat2 = water.getRelative(-1, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(water.getCuboidAddress(), dirtBlock);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(water.getCuboidAddress(), tilledBlock);
 		cuboid.setData15(AspectRegistry.BLOCK, water.getBlockAddress(), WATER_SOURCE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, lava.getBlockAddress(), lavaSource.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, wheat1.getBlockAddress(), wheatMatureBlock.item().number());
