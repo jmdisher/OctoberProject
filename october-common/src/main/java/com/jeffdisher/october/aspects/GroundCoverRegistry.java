@@ -17,15 +17,17 @@ public class GroundCoverRegistry
 {
 	private final Block _air;
 	private final Map<Block, Block> _groundCoverToTargets;
-	private final Set<Block> _canGrowGroundCover;
+	private final Map<Block, Set<Block>> _canGrowGroundCover;
 
 	public GroundCoverRegistry(ItemRegistry items, BlockAspect blocks)
 	{
 		_air = blocks.getAsPlaceableBlock(items.getItemById("op.air"));
 		Block grass = blocks.getAsPlaceableBlock(items.getItemById("op.grass"));
 		Block dirt = blocks.getAsPlaceableBlock(items.getItemById("op.dirt"));
-		_groundCoverToTargets = Map.of(grass, dirt);
-		_canGrowGroundCover = Set.of(dirt);
+		_groundCoverToTargets = Map.of(grass, dirt
+		);
+		_canGrowGroundCover = Map.of(dirt, Set.of(grass)
+		);
 	}
 
 	/**
@@ -57,7 +59,7 @@ public class GroundCoverRegistry
 	 * @param possibleGroundCoverBlock The block which might be a ground cover block.
 	 * @return The type of block this can grow on or null if not a ground cover block.
 	 */
-	public Block getTargetForGroundCover(Block possibleGroundCoverBlock)
+	public Block getSpreadToTypeForGroundCover(Block possibleGroundCoverBlock)
 	{
 		return _groundCoverToTargets.get(possibleGroundCoverBlock);
 	}
@@ -77,10 +79,10 @@ public class GroundCoverRegistry
 	 * Used to check if a given block type is a target type for some kind of ground cover.
 	 * 
 	 * @param blockType The block type to check.
-	 * @return True if there is some kind of ground cover which will spread to this block.
+	 * @return The set of block types which can spread to this block or null if there aren't any (never empty).
 	 */
-	public boolean canGrowGroundCover(Block blockType)
+	public Set<Block> canGrowGroundCover(Block blockType)
 	{
-		return _canGrowGroundCover.contains(blockType);
+		return _canGrowGroundCover.get(blockType);
 	}
 }
