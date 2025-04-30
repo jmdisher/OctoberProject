@@ -1361,6 +1361,7 @@ public class TestCommonMutations
 		// We will show a few of the ground cover interactions (these are similar so we will combine them here to avoid duplicated boiler-plate).
 		Block dirt = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 		Block grass = ENV.blocks.fromItem(ENV.items.getItemById("op.grass"));
+		Block torch = ENV.blocks.fromItem(ENV.items.getItemById("op.torch"));
 		AbsoluteLocation startDirt = new AbsoluteLocation(2, 2, 2);
 		AbsoluteLocation startGrass = new AbsoluteLocation(22, 22, 22);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -1438,6 +1439,16 @@ public class TestCommonMutations
 		update = out_mutations[0];
 		out_mutations[0] = null;
 		Assert.assertTrue(update.applyMutation(context, proxy));
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
+		
+		// Test placing a torch on top of existing grass since it should have no effect.
+		cuboid.setData15(AspectRegistry.BLOCK, aboveGrass.getBlockAddress(), torch.item().number());
+		proxy = new MutableBlockProxy(startGrass, cuboid);
+		blockUpdate = new MutationBlockUpdate(startGrass);
+		// This should do nothing.
+		Assert.assertFalse(blockUpdate.applyMutation(context, proxy));
+		Assert.assertNull(out_mutations[0]);
 		proxy.writeBack(cuboid);
 		Assert.assertEquals(grass.item().number(), cuboid.getData15(AspectRegistry.BLOCK, startGrass.getBlockAddress()));
 	}

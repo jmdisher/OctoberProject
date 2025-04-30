@@ -15,13 +15,11 @@ import com.jeffdisher.october.types.Block;
  */
 public class GroundCoverRegistry
 {
-	private final Block _air;
 	private final Map<Block, Block> _groundCoverToTargets;
 	private final Map<Block, Set<Block>> _canGrowGroundCover;
 
 	public GroundCoverRegistry(ItemRegistry items, BlockAspect blocks)
 	{
-		_air = blocks.getAsPlaceableBlock(items.getItemById("op.air"));
 		Block grass = blocks.getAsPlaceableBlock(items.getItemById("op.grass"));
 		Block dirt = blocks.getAsPlaceableBlock(items.getItemById("op.dirt"));
 		_groundCoverToTargets = Map.of(grass, dirt
@@ -50,7 +48,9 @@ public class GroundCoverRegistry
 	 */
 	public boolean canGroundCoverExistUnder(Block possibleGroundCoverBlock, Block above)
 	{
-		return (_air == above) && _groundCoverToTargets.containsKey(possibleGroundCoverBlock);
+		// For now, at least, we will consider all groundcover to be able to exist under any breathable block.
+		return _groundCoverToTargets.containsKey(possibleGroundCoverBlock)
+				&& Environment.getShared().blocks.canBreatheInBlock(above);
 	}
 
 	/**
