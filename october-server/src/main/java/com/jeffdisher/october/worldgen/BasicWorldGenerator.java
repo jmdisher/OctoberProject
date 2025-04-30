@@ -183,6 +183,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 	private final Block _blockStone;
 	private final Block _blockGrass;
 	private final Block _blockDirt;
+	private final Block _blockSoil;
 	private final Block _blockWheatMature;
 	private final Block _blockCarrotMature;
 	private final Block _blockIronOre;
@@ -208,6 +209,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		_blockStone = env.blocks.fromItem(env.items.getItemById("op.stone"));
 		_blockGrass = env.blocks.fromItem(env.items.getItemById("op.grass"));
 		_blockDirt = env.blocks.fromItem(env.items.getItemById("op.dirt"));
+		_blockSoil = env.blocks.fromItem(env.items.getItemById("op.tilled_soil"));
 		_blockWheatMature = env.blocks.fromItem(env.items.getItemById("op.wheat_mature"));
 		_blockCarrotMature = env.blocks.fromItem(env.items.getItemById("op.carrot_mature"));
 		_blockIronOre = env.blocks.fromItem(env.items.getItemById("op.iron_ore"));
@@ -703,7 +705,7 @@ public class BasicWorldGenerator implements IWorldGenerator
 		{
 			// We always plant these on dirt but need to replace any grass.
 			short supportBlockToReplace = _blockGrass.item().number();
-			short supportBlockToAdd = _blockDirt.item().number();
+			short supportBlockToAdd = _blockSoil.item().number();
 			// We only want to replace air (since this could be under water).
 			short blockToReplace = _env.special.AIR.item().number();
 			short blockToAdd = (FIELD_CODE == biome.code)
@@ -757,9 +759,9 @@ public class BasicWorldGenerator implements IWorldGenerator
 					{
 						// Make sure that these are over grass.
 						BlockAddress underBlock = address.getRelativeInt(0, 0, -1);
-						if (_blockGrass.item().number() == data.getData15(AspectRegistry.BLOCK, underBlock))
+						if (supportBlockToReplace == data.getData15(AspectRegistry.BLOCK, underBlock))
 						{
-							data.setData15(AspectRegistry.BLOCK, underBlock, _blockDirt.item().number());
+							data.setData15(AspectRegistry.BLOCK, underBlock, supportBlockToAdd);
 							data.setData15(AspectRegistry.BLOCK, address, blockToAdd);
 							randomPlantCount += 1;
 						}

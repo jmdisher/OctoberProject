@@ -29,6 +29,7 @@ public class StructureLoader
 {
 	// We will list supported block types here (built into a map for quick lookup).
 	public static final char C_DIRT     = 'D';
+	public static final char C_SOIL     = 'O';
 	public static final char C_WATER    = 'W';
 	public static final char C_BRICK    = 'B';
 	public static final char C_LANTERN  = 'L';
@@ -52,6 +53,7 @@ public class StructureLoader
 	{
 		Map<Character, Block> temp = new HashMap<>();
 		Assert.assertTrue(null == temp.put(C_DIRT, blocks.fromItem(items.getItemById("op.dirt"))));
+		Assert.assertTrue(null == temp.put(C_SOIL, blocks.fromItem(items.getItemById("op.tilled_soil"))));
 		Assert.assertTrue(null == temp.put(C_WATER, blocks.fromItem(items.getItemById("op.water_source"))));
 		Assert.assertTrue(null == temp.put(C_BRICK, blocks.fromItem(items.getItemById("op.stone_brick"))));
 		Assert.assertTrue(null == temp.put(C_LANTERN, blocks.fromItem(items.getItemById("op.lantern"))));

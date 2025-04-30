@@ -49,6 +49,9 @@ op.dirt
 op.grass
 	block_material	SHOVEL
 	special_drop	100	op.dirt
+op.tilled_soil
+	block_material	SHOVEL
+	special_drop	100	op.dirt
 op.water_source	can_be_replaced	stops_fire
 	viscosity	50
 op.water_strong	can_be_replaced	stops_fire
@@ -67,15 +70,15 @@ op.leaf	is_flammable
 # op.wheat_item
 op.wheat_seedling
 	placed_from	op.wheat_seed
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.wheat_seed
 	viscosity	10
 op.wheat_young
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.wheat_seed
 	viscosity	10
 op.wheat_mature
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.wheat_seed	50	op.wheat_seed	100	op.wheat_item	100	op.wheat_item
 	viscosity	10
 op.chest	is_flammable
@@ -118,15 +121,15 @@ op.torch
 # op.carrot
 op.carrot_seedling
 	placed_from	op.carrot_seed
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.carrot_seed
 	viscosity	10
 op.carrot_young
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.carrot_seed
 	viscosity	10
 op.carrot_mature
-	requires_support	op.dirt
+	requires_support	op.dirt	op.tilled_soil
 	special_drop	100	op.carrot_seed	50	op.carrot_seed	100	op.carrot_item	100	op.carrot_item
 	viscosity	10
 op.bed	is_flammable
