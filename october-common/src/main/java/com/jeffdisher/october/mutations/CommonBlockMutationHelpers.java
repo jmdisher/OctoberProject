@@ -93,7 +93,7 @@ public class CommonBlockMutationHelpers
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
 			// See if the block we are changing needs a special logic mode.
-			Block newType = LogicLayerHelpers.blockTypeToPlace(context, location, blockType);
+			Block newType = LogicLayerHelpers.blockTypeToPlace(env, context.previousBlockLookUp, location, blockType);
 			
 			// Make sure that this block can be supported by the one under it.
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));

@@ -97,7 +97,7 @@ public class PropagationHelpers
 				return didChange;
 			}
 			@Override
-			public byte getEmissionForBlock(Block block)
+			public byte getEmissionForBlock(AbsoluteLocation location, Block block)
 			{
 				return env.lighting.getLightEmission(block);
 			}
@@ -157,7 +157,7 @@ public class PropagationHelpers
 				return didChange;
 			}
 			@Override
-			public byte getEmissionForBlock(Block block)
+			public byte getEmissionForBlock(AbsoluteLocation location, Block block)
 			{
 				// We only ever emit max or nothing.
 				return (env.logic.isSource(block) && env.logic.isHigh(block))
@@ -176,15 +176,18 @@ public class PropagationHelpers
 			}
 		};
 		Set<AbsoluteLocation> changeLocations = _runCommonFlood(env, accessor, targetAddress, potentialLogicChangesByCuboid, lazyLocalCache, lazyGlobalCache);
+		
+		// When we report these updates, we want to deduplicate them.
+		Set<AbsoluteLocation> updateLocations = new HashSet<>();
 		for (AbsoluteLocation location : changeLocations)
 		{
 			// Send updates to the surrounding blocks so they can adapt to this change.
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, -1)));
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 0, 1)));
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, -1, 0)));
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(0, 1, 0)));
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(-1, 0, 0)));
-			updateMutations.accept(new MutationBlockLogicChange(location.getRelative(1, 0, 0)));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative(0, 0, -1));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative(0, 0,  1));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative(0, -1, 0));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative(0,  1, 0));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative(-1, 0, 0));
+			_sendUpdate(updateMutations, updateLocations, location.getRelative( 1, 0, 0));
 		}
 	}
 
@@ -335,14 +338,6 @@ public class PropagationHelpers
 					int z = location.z() - base.z();
 					// NOTE: This usually is only set once but can replace a positive light value if it was lit by unblocking a source which was removed in the same batch. 
 					lightChanges.set(x, y, z, (byte)0);
-					
-					// If we are setting something day, make sure it isn't also a source.
-					BlockProxy proxy = lazyGlobalCache.apply(location);
-					byte emission = (null != proxy)
-							? accessor.getEmissionForBlock(proxy.getBlock())
-							: IByteLookup.NOT_FOUND
-					;
-					Assert.assertTrue(0 == emission);
 				}
 				@Override
 				public byte getOpacity(AbsoluteLocation location)
@@ -360,7 +355,7 @@ public class PropagationHelpers
 					Assert.assertTrue(_inRange(location));
 					BlockProxy proxy = lazyGlobalCache.apply(location);
 					return (null != proxy)
-							? accessor.getEmissionForBlock(proxy.getBlock())
+							? accessor.getEmissionForBlock(location, proxy.getBlock())
 							: IByteLookup.NOT_FOUND
 					;
 				}
@@ -433,7 +428,7 @@ public class PropagationHelpers
 		Block block = proxy.getBlock();
 		byte currentLight = accessor.getLightForLocation(location);
 		// Check if this is a light source.
-		byte emission = accessor.getEmissionForBlock(block);
+		byte emission = accessor.getEmissionForBlock(location, block);
 		if (emission > currentLight)
 		{
 			// We need to add this light source.
@@ -539,6 +534,14 @@ public class PropagationHelpers
 		return (float)Math.abs(step - ticksPerHalfDay) / (float)ticksPerHalfDay;
 	}
 
+	private static void _sendUpdate(Consumer<IMutationBlock> updateMutations, Set<AbsoluteLocation> updateLocations, AbsoluteLocation target)
+	{
+		if (updateLocations.add(target))
+		{
+			updateMutations.accept(new MutationBlockLogicChange(target));
+		}
+	}
+
 
 	private static interface _ILightAccess
 	{
@@ -546,7 +549,7 @@ public class PropagationHelpers
 		byte getLightForLocation(AbsoluteLocation location);
 		byte getLightOrZero(AbsoluteLocation location);
 		boolean setLightForLocation(AbsoluteLocation location, byte lightValue);
-		byte getEmissionForBlock(Block block);
+		byte getEmissionForBlock(AbsoluteLocation location, Block block);
 		byte getOpacityForBlock(Block block);
 	}
 

@@ -1001,8 +1001,10 @@ public class TickRunner
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = new HashMap<>();
 				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
 				{
+					List<BlockChangeDescription> list = entry.getValue();
+					
 					// Only store the updated block locations if the block change requires it.
-					List<AbsoluteLocation> locations = entry.getValue().stream()
+					List<AbsoluteLocation> locations = list.stream()
 						.filter((BlockChangeDescription description) -> description.requiresUpdateEvent())
 						.map(
 							(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
@@ -1013,7 +1015,7 @@ public class TickRunner
 					}
 					
 					// Store the possible lighting update locations, much in the same style.
-					List<AbsoluteLocation> lightChangeLocations = entry.getValue().stream()
+					List<AbsoluteLocation> lightChangeLocations = list.stream()
 							.filter((BlockChangeDescription description) -> description.requiresLightingCheck())
 							.map(
 								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
@@ -1024,7 +1026,7 @@ public class TickRunner
 					}
 					
 					// Do the same with logic aspect changes.
-					List<AbsoluteLocation> logicChangeLocations = entry.getValue().stream()
+					List<AbsoluteLocation> logicChangeLocations = list.stream()
 							.filter((BlockChangeDescription description) -> description.requiresLogicCheck())
 							.map(
 								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()

@@ -39,6 +39,7 @@ import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
 import com.jeffdisher.october.mutations.MutationBlockPeriodic;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
+import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -1941,19 +1942,21 @@ public class TestTickRunner
 		runner.startNextTick();
 		
 		// (run an extra tick to apply the change to the block)
-		snapshot = runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
+		runner.startNextTick();
 		
 		// At the end of this next tick, we should see the wire broken but no logic changes.
-		snapshot = runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, wire1Location.getBlockAddress()));
 		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
 		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
 		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
 		Assert.assertEquals(LogicAspect.MAX_LEVEL - 3, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		runner.startNextTick();
 		
 		// After another tick, the logic wire should be dead.
-		snapshot = runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
@@ -2341,6 +2344,129 @@ public class TestTickRunner
 		Assert.assertEquals(COW.maxHealth(), creature.health());
 		
 		runner.shutdown();
+	}
+
+	@Test
+	public void logicProximity()
+	{
+		// Show what happens with different logic-sensitive blocks around a switch in different states.
+		Block switchOff = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_off"));
+		Block switchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block lampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
+		Block lampOn = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_on"));
+		Block wireBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
+		AbsoluteLocation switchLocation = new AbsoluteLocation(5, 5, 5);
+		AbsoluteLocation closeLampLocation = switchLocation.getRelative(1, 0, 0);
+		AbsoluteLocation wireLocation = switchLocation.getRelative(0, 1, 0);
+		AbsoluteLocation farLampLocation = switchLocation.getRelative(0, 2, 0);
+		AbsoluteLocation playerLocation = switchLocation.getRelative(0, 1, -2);
+		CuboidAddress address = switchLocation.getCuboidAddress();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		TickRunner runner = _createTestRunner();
+		int entityId = 1;
+		MutableEntity mutable = MutableEntity.createForTest(entityId);
+		mutable.newLocation = playerLocation.toEntityLocation();
+		mutable.newInventory.addAllItems(switchOff.item(), 1);
+		mutable.newInventory.addAllItems(lampOff.item(), 2);
+		mutable.newInventory.addAllItems(wireBlock.item(), 1);
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Place down a switch, turn it on, then place the other blocks around it to see how they act.
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(switchLocation, switchOff, entityId)), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, true)), 2L);
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(switchOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(closeLampLocation, lampOff, entityId)), 3L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(wireLocation, wireBlock, entityId)), 4L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(farLampLocation, lampOff, entityId)), 5L);
+		
+		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
+		
+		// Flip the switch off and back on, seeing how the other blocks react.
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, false)), 6L);
+		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(switchOff.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(lampOff.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(lampOff.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
+		
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, true)), 7L);
+		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(switchOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
+		
+		// Break the switch and see how the blocks around it act.
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockIncrementalBreak(switchLocation, ENV.damage.getToughness(switchOff), entityId)), 8L);
+		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(lampOff.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(lampOff.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 	}
 
 

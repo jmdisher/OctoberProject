@@ -156,7 +156,7 @@ public class TestCreativeInventory
 				Block block = ENV.blocks.getAsPlaceableBlock(type);
 				if (null != block)
 				{
-					Block toPlace = LogicLayerHelpers.blockTypeToPlace(context, targetLocation, block);
+					Block toPlace = LogicLayerHelpers.blockTypeToPlace(ENV, context.previousBlockLookUp, targetLocation, block);
 					Assert.assertNotNull(toPlace);
 				}
 			}

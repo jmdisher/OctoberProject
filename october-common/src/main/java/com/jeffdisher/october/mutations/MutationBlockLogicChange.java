@@ -4,9 +4,9 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -51,14 +51,7 @@ public class MutationBlockLogicChange implements IMutationBlock
 		boolean didApply = false;
 		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
-			// This block is sensitive so check the surrounding blocks to see what they are emitting.
-			if (_getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 0, -1))
-					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 0, 1))
-					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, -1, 0))
-					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(0, 1, 0))
-					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(-1, 0, 0))
-					|| _getEmittedLogicValue(env, context, _blockLocation.getRelative(1, 0, 0))
-					)
+			if (LogicLayerHelpers.isBlockReceivingHighSignal(env, context.previousBlockLookUp, _blockLocation))
 			{
 				// This is set high so switch to the corresponding "high".
 				if (!env.logic.isHigh(thisBlock))
@@ -99,16 +92,6 @@ public class MutationBlockLogicChange implements IMutationBlock
 		return true;
 	}
 
-
-	private static boolean _getEmittedLogicValue(Environment env, TickProcessingContext context, AbsoluteLocation location)
-	{
-		BlockProxy proxy = context.previousBlockLookUp.apply(location);
-		byte value = (null != proxy)
-				? proxy.getLogic()
-				: 0
-		;
-		return (value > 0);
-	}
 
 	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation location, IBlockProxy proxy)
 	{
