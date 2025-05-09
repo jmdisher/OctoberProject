@@ -19,6 +19,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.OctreeInflatedByte;
@@ -814,6 +815,76 @@ public class TestResourceLoader
 		Map<BlockAddress, Long> periodicMutationMillis = result.periodicMutationMillis();
 		Assert.assertEquals(1, periodicMutationMillis.size());
 		Assert.assertEquals(periodicDelay, periodicMutationMillis.get(periodicBlock).longValue());
+		
+		loader.shutdown();
+	}
+
+	@Test
+	public void readCuboidV5() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		CuboidAddress address = CuboidAddress.fromInt(3, -5, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		
+		// We want to show switches and logic being disabled after load so enable them, now.
+		// (we can build this using current helpers and just save it out)
+		short switchOnNumber = ENV.items.getItemById("op.switch_on").number();
+		short switchOffNumber = ENV.items.getItemById("op.switch_off").number();
+		short wireNumber = ENV.items.getItemById("op.logic_wire").number();
+		short lampOnNumber = ENV.items.getItemById("op.lamp_on").number();
+		short lampOffNumber = ENV.items.getItemById("op.lamp_off").number();
+		AbsoluteLocation switchOnLocation = address.getBase().getRelative(2, 3, 4);
+		AbsoluteLocation wireLocation = switchOnLocation.getRelative(1, 0, 0);
+		AbsoluteLocation lampOnLocation = wireLocation.getRelative(1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, switchOnLocation.getBlockAddress(), switchOnNumber);
+		cuboid.setData7(AspectRegistry.LOGIC, switchOnLocation.getBlockAddress(), LogicAspect.MAX_LEVEL);
+		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), wireNumber);
+		cuboid.setData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress(), (byte)(LogicAspect.MAX_LEVEL - 1));
+		cuboid.setData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress(), lampOnNumber);
+		
+		// We can save this using the normal helper and then change the version number to see it updated on load.
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		buffer.putInt(ResourceLoader.VERSION_CUBOID_V5);
+		Object state = cuboid.serializeResumable(null, buffer);
+		Assert.assertNull(state);
+		// (creature count)
+		buffer.putInt(0);
+		// (suspended mutations)
+		buffer.putInt(0);
+		// (periodic mutations)
+		buffer.putInt(0);
+		buffer.flip();
+		
+		// Write the file.
+		String fileName = "cuboid_" + address.x() + "_" + address.y() + "_" + address.z() + ".cuboid";
+		try (
+				RandomAccessFile aFile = new RandomAccessFile(new File(worldDirectory, fileName), "rw");
+				FileChannel outChannel = aFile.getChannel();
+		)
+		{
+			int written = outChannel.write(buffer);
+			outChannel.truncate((long)written);
+		}
+		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
+		
+		// Now, read the data and verify that it is correct.
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
+		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
+		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(), List.of());
+		}
+		Assert.assertEquals(1, results.size());
+		SuspendedCuboid<CuboidData> result = results.get(0);
+		
+		CuboidData found = result.cuboid();
+		Assert.assertEquals(switchOffNumber, found.getData15(AspectRegistry.BLOCK, switchOnLocation.getBlockAddress()));
+		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, switchOnLocation.getBlockAddress()));
+		Assert.assertEquals(wireNumber, found.getData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress()));
+		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(lampOffNumber, found.getData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress()));
 		
 		loader.shutdown();
 	}

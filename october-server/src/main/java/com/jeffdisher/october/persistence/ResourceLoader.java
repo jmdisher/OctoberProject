@@ -13,17 +13,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
+import com.jeffdisher.october.data.IOctree;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
@@ -63,7 +67,7 @@ public class ResourceLoader
 	 * Version 2 was used in v1.1 and earlier, and is supported (3 only adds data, not changing data).
 	 * Version 3 was used in v1.2.1 and earlier, and is supported (4 only adds data, not changing data).
 	 * Version 4 was used in v1.3 and earlier, and is supported (5 only adds and deprecates data).
-	 * Version 5 was used in v1.5 and earlier, and is supported (6 only adds and deprecates data).
+	 * Version 5 was used in v1.5 and earlier, and is supported.
 	 */
 	public static final int VERSION_CUBOID_V1 = 1;
 	public static final int VERSION_CUBOID_V2 = 2;
@@ -459,9 +463,9 @@ public class ResourceLoader
 			}
 			else if (VERSION_CUBOID_V5 == version)
 			{
-				// V5 is a subset of V6 so do nothing special - just stops old versions from being broken.
+				// V5 requires that the logic aspect be cleared and all switches be turned off.
 				dataReader = () -> {
-					CuboidData cuboid = _background_readCuboid(address, buffer);
+					CuboidData cuboid = _background_readCuboidV5(address, buffer);
 					
 					// Load any creatures associated with the cuboid.
 					List<CreatureEntity> creatures = _background_readCreatures(buffer);
@@ -606,8 +610,70 @@ public class ResourceLoader
 		int aspectCount = 7;
 		cuboid.deserializeSomeAspectsFully(buffer, aspectCount);
 		
-		// We will leave the other aspects in their default state.
+		// This is now a V5 cuboid so convert it to V6.
+		_background_convertCuboid_V5toV6(cuboid);
 		return cuboid;
+	}
+
+	private CuboidData _background_readCuboidV5(CuboidAddress address, MappedByteBuffer buffer)
+	{
+		// Start by just loaded the data, normally.
+		CuboidData cuboid = CuboidData.createEmpty(address);
+		cuboid.deserializeSomeAspectsFully(buffer, AspectRegistry.ALL_ASPECTS.length);
+		
+		_background_convertCuboid_V5toV6(cuboid);
+		
+		return cuboid;
+	}
+
+	public void _background_convertCuboid_V5toV6(CuboidData cuboid)
+	{
+		// Version 6 changed the definition of the LOGIC layer which requires that it be cleared and all switches and lamps set to "off".
+		IOctree[] rawOctrees = cuboid.unsafeDataAccess();
+		rawOctrees[AspectRegistry.LOGIC.index()] = AspectRegistry.LOGIC.emptyTreeSupplier().get();
+		
+		Environment env = Environment.getShared();
+		short switchOffNumber = env.items.getItemById("op.switch_off").number();
+		short switchOnNumber = env.items.getItemById("op.switch_on").number();
+		short lampOffNumber = env.items.getItemById("op.lamp_off").number();
+		short lampOnNumber = env.items.getItemById("op.lamp_on").number();
+		Set<BlockAddress> switches = new HashSet<>();
+		Set<BlockAddress> lamps = new HashSet<>();
+		cuboid.walkData(AspectRegistry.BLOCK, new IOctree.IWalkerCallback<>(){
+			@Override
+			public void visit(BlockAddress base, byte size, Short value)
+			{
+				if ((switchOnNumber == value) || (lampOnNumber == value))
+				{
+					for (byte z = 0; z < size; ++z)
+					{
+						for (byte y = 0; y < size; ++y)
+						{
+							for (byte x = 0; x < size; ++x)
+							{
+								BlockAddress target = base.getRelative(x, y, z);
+								if (switchOnNumber == value)
+								{
+									switches.add(target);
+								}
+								else
+								{
+									lamps.add(target);
+								}
+							}
+						}
+					}
+				}
+			}
+		}, env.special.AIR.item().number());
+		for (BlockAddress block : switches)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, block, switchOffNumber);
+		}
+		for (BlockAddress block : lamps)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, block, lampOffNumber);
+		}
 	}
 
 	private List<CreatureEntity> _background_readCreatures(MappedByteBuffer buffer)
