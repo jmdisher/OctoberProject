@@ -1859,8 +1859,9 @@ public class TestTickRunner
 		snapshot = runner.startNextTick();
 		Assert.assertEquals(lampOff.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
 		Assert.assertEquals(switchOn.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		// Note that the source doesn't touch the logic aspect, only the conduits use that.
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		
 		// After the next tick, the lamp should have turned on but the lighting won't yet change.
 		snapshot = runner.startNextTick();
@@ -1930,10 +1931,10 @@ public class TestTickRunner
 		// After another tick, the logic update should go through the wires.
 		snapshot = runner.startNextTick();
 		Assert.assertEquals(switchOn.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 3, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
 		
 		// Break one of these wires.
 		runner.waitForPreviousTick();
@@ -1949,15 +1950,15 @@ public class TestTickRunner
 		// At the end of this next tick, we should see the wire broken but no logic changes.
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(ENV.special.AIR.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, wire1Location.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 3, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL - 2, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
 		runner.startNextTick();
 		
 		// After another tick, the logic wire should be dead.
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire1Location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire2Location.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wire3Location.getBlockAddress()));
@@ -2401,10 +2402,10 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
 		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, closeLampLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 		
@@ -2441,10 +2442,10 @@ public class TestTickRunner
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(switchOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
+		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress()));
 		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, closeLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, closeLampLocation.getBlockAddress()));
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		Assert.assertEquals(lampOn.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 		

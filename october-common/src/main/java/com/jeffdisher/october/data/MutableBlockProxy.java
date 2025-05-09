@@ -8,6 +8,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -415,28 +416,46 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	 * then).
 	 * NOTE:  This assumes that it was called AFTER didChange() in order to avoid vacuous changes.
 	 * 
-	 * @return True if this changed in a way which may require a logic aspect update.
+	 * @return A bit-vector from LogicLayerHelpers describing which logic values have potential changed around this
+	 * block.
 	 */
-	public boolean mayTriggerLogicChange()
+	public byte potentialLogicChangeBits()
 	{
-		// If the block changed to/from a source or conduit (the only blocks which carry logic signals), then we will return true.
-		// Note that we won't check against the logic value, at least yet, since those updates may already be scheduled to change in this tick from last tick's block change.
-		// For now, the only blocks which can change logic signals to surrounding blocks are sources so see if this
-		// block has a different output level as a result of a block type change (source and high/low).
-		boolean logicMayChange = false;
+		// We check what this changed from/to to determine what blocks could have had a logic change.
+		byte changeBits = 0x0;
+		
+		// First, only a block change can result in a logic change.
 		if (null != _writes[AspectRegistry.BLOCK.index()])
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
-			if (originalBlock != _cachedBlock)
+			
+			// We expect that there should be no redundant writes here (called AFTER didChange()).
+			Assert.assertTrue(originalBlock != _cachedBlock);
+			
+			// Here, we have cases to check:  If this changed to/from a conduit block, it could actually have changed, itself.
+			if (_env.logic.isConduit(originalBlock) != _env.logic.isConduit(_cachedBlock))
 			{
-				boolean didChangeConduit = _env.logic.isConduit(originalBlock) || _env.logic.isConduit(_cachedBlock);
-				boolean didChangeSource = _env.logic.isSource(originalBlock) || _env.logic.isSource(_cachedBlock);
-				logicMayChange = didChangeConduit || didChangeSource;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_THIS;
+			}
+			
+			// The next change is to see if this changed to/from a source.
+			// TODO:  For now, both high and low values are sources so check either, not change.
+			// TODO:  Are there cases where it can change from one source to another?
+			if (_env.logic.isSource(originalBlock) || _env.logic.isSource(_cachedBlock))
+			{
+				// For now, this means to set all the other bits.  In the future, these will likely have output directions.
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_EAST;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_WEST;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_NORTH;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_SOUTH;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_UP;
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_DOWN;
 			}
 		}
-		return logicMayChange;
+		
+		return changeBits;
 	}
 
 	/**

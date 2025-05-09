@@ -159,8 +159,12 @@ public class PropagationHelpers
 			@Override
 			public byte getEmissionForBlock(AbsoluteLocation location, Block block)
 			{
+				// Note that the actual "source" logic blocks can't be involved in the logic layer (since they may not
+				// output on all sides) so we check if there is a side which outputs here and if we can carry the signal
+				// (is a conduit).
+				boolean isSource = env.logic.isConduit(block) && LogicLayerHelpers.isBlockReceivingSourceSignal(env, lazyGlobalCache, location);
 				// We only ever emit max or nothing.
-				return (env.logic.isSource(block) && env.logic.isHigh(block))
+				return isSource
 						? LogicAspect.MAX_LEVEL
 						: 0
 				;
@@ -188,6 +192,17 @@ public class PropagationHelpers
 			_sendUpdate(updateMutations, updateLocations, location.getRelative(0,  1, 0));
 			_sendUpdate(updateMutations, updateLocations, location.getRelative(-1, 0, 0));
 			_sendUpdate(updateMutations, updateLocations, location.getRelative( 1, 0, 0));
+		}
+		
+		// The actual cause of the logic update isn't included in the logic path since it doesn't change LOGIC value
+		// (unlike the lighting path) so those need to be explicitly added here.
+		List<AbsoluteLocation> initialChangesInCuboid = potentialLogicChangesByCuboid.get(targetAddress);
+		if (null != initialChangesInCuboid)
+		{
+			for (AbsoluteLocation location : initialChangesInCuboid)
+			{
+				_sendUpdate(updateMutations, updateLocations, location);
+			}
 		}
 	}
 

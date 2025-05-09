@@ -2,8 +2,10 @@ package com.jeffdisher.october.logic;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -47,7 +49,7 @@ public class TestPropagationHelpers
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation lantern = address.getBase().getRelative(16, 16, 16);
-		_setBlock(lantern, cuboid, blockLantern, true, false);
+		_setBlock(lantern, cuboid, blockLantern, true, (byte)0x0);
 		
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
 		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
@@ -107,26 +109,28 @@ public class TestPropagationHelpers
 	@Test
 	public void onOffSwitch()
 	{
-		// Create a bunch of "potential" updates and verify that events only appear around the new high source.
+		// Write a few logic-related blocks into a cuboid and see what change bits are created.
 		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
 		Block blockSwitchOff = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_off"));
 		Block blockLampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
 		
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Set<AbsoluteLocation> potentialLogicChanges = new HashSet<>();
 		AbsoluteLocation switchOn = address.getBase().getRelative(16, 16, 16);
-		_setBlock(switchOn, cuboid, blockSwitchOn, false, true);
+		potentialLogicChanges.addAll(_setBlock(switchOn, cuboid, blockSwitchOn, false, (byte)0x7E));
 		AbsoluteLocation switchOff = address.getBase().getRelative(14, 14, 14);
-		_setBlock(switchOff, cuboid, blockSwitchOff, false, false);
+		potentialLogicChanges.addAll(_setBlock(switchOff, cuboid, blockSwitchOff, false, (byte)0x7E));
 		AbsoluteLocation lampOff = address.getBase().getRelative(18, 18, 18);
-		_setBlock(lampOff, cuboid, blockLampOff, true, false);
+		potentialLogicChanges.addAll(_setBlock(lampOff, cuboid, blockLampOff, true, (byte)0x0));
+		Assert.assertEquals(12, potentialLogicChanges.size());
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
 		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
 			, address
-			, Map.of(address, List.of(switchOn, switchOff, lampOff))
+			, Map.of(address, List.copyOf(potentialLogicChanges))
 			, (AbsoluteLocation location) -> {
 				MutableBlockProxy proxy = lazyLocalCache.get(location);
 				if (null == proxy)
@@ -147,18 +151,20 @@ public class TestPropagationHelpers
 			}
 		);
 		
-		// Write-back the proxy changes.
-		Assert.assertEquals(3, lazyLocalCache.size());
+		// Verify we only tried looking at these 12 blocks but didn't change anything (no wires).
+		Assert.assertEquals(12, lazyLocalCache.size());
 		for (MutableBlockProxy proxy : lazyLocalCache.values())
 		{
+			Assert.assertFalse(proxy.didChange());
 			proxy.writeBack(cuboid);
 		}
 		
-		// We expect to see the 6 update events, only.
-		Assert.assertEquals(6, updateMutations.size());
-		// And the logic level should also be updated.
-		BlockProxy immutable = new BlockProxy(switchOn.getBlockAddress(), cuboid);
-		Assert.assertEquals((byte) LogicAspect.MAX_LEVEL, immutable.getLogic());
+		// We expect to see the 12 update events, since the implementation can only determine that these adjacent values MAY have changed.
+		Assert.assertEquals(12, updateMutations.size());
+		// Since none of these are wires, they shouldn't have logic values.
+		Assert.assertEquals((byte) 0, new BlockProxy(switchOn.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals((byte) 0, new BlockProxy(switchOff.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals((byte) 0, new BlockProxy(lampOff.getBlockAddress(), cuboid).getLogic());
 	}
 
 	@Test
@@ -191,17 +197,18 @@ public class TestPropagationHelpers
 		
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		Set<AbsoluteLocation> potentialLogicChanges = new HashSet<>();
 		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
-		_setBlock(switchLocation, cuboid, blockSwitchOn, false, true);
+		potentialLogicChanges.addAll(_setBlock(switchLocation, cuboid, blockSwitchOn, false, (byte)0x7E));
 		AbsoluteLocation wireLocation = switchLocation.getRelative(1, 0, 0);
-		_setBlock(wireLocation, cuboid, blockLogicWire, false, false);
+		potentialLogicChanges.addAll(_setBlock(wireLocation, cuboid, blockLogicWire, false, (byte)0x1));
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
 		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock mutation) -> updateMutations.add(mutation)
 			, address
-			, Map.of(address, List.of(switchLocation))
+			, Map.of(address, List.copyOf(potentialLogicChanges))
 			, (AbsoluteLocation location) -> {
 				MutableBlockProxy proxy = lazyLocalCache.get(location);
 				if (null == proxy)
@@ -222,18 +229,19 @@ public class TestPropagationHelpers
 			}
 		);
 		
-		// Write-back the proxy changes - for the logic write-backs.
-		Assert.assertEquals(2, lazyLocalCache.size());
+		// We only expect the write-back for the wire to actually change anything.
+		Assert.assertEquals(6, lazyLocalCache.size());
 		for (MutableBlockProxy proxy : lazyLocalCache.values())
 		{
+			Assert.assertEquals(wireLocation.equals(proxy.absoluteLocation), proxy.didChange());
 			proxy.writeBack(cuboid);
 		}
 		
 		// We expect to see the 12 update events:  All blocks adjacent to both updates (including the blocks themselves since there is no filtering).
 		Assert.assertEquals(12, updateMutations.size());
-		// We expect to see the logic value set in the switch and wire.
-		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
-		Assert.assertEquals(LogicAspect.MAX_LEVEL - 1, new BlockProxy(wireLocation.getBlockAddress(), cuboid).getLogic());
+		// The logic value should not be set in the switch, but will be site in the wire.
+		Assert.assertEquals(0, new BlockProxy(switchLocation.getBlockAddress(), cuboid).getLogic());
+		Assert.assertEquals(LogicAspect.MAX_LEVEL, new BlockProxy(wireLocation.getBlockAddress(), cuboid).getLogic());
 	}
 
 	@Test
@@ -494,7 +502,7 @@ public class TestPropagationHelpers
 	}
 
 
-	private void _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, boolean checkLogic)
+	private Set<AbsoluteLocation> _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, byte expectedLogicBits)
 	{
 		MutableBlockProxy mutable = new MutableBlockProxy(location, cuboid);
 		mutable.setBlockAndClear(block);
@@ -502,10 +510,12 @@ public class TestPropagationHelpers
 		{
 			Assert.assertTrue(mutable.mayTriggerLightingChange());
 		}
-		if (checkLogic)
-		{
-			Assert.assertTrue(mutable.mayTriggerLogicChange());
-		}
+		byte logicBits = mutable.potentialLogicChangeBits();
+		Assert.assertTrue(expectedLogicBits == logicBits);
 		mutable.writeBack(cuboid);
+		
+		Set<AbsoluteLocation> potentialLogicChangeLocations = new HashSet<>();
+		LogicLayerHelpers.populateSetWithPotentialLogicChanges(potentialLogicChangeLocations, location, logicBits);
+		return potentialLogicChangeLocations;
 	}
 }

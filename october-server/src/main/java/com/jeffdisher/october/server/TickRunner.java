@@ -31,6 +31,7 @@ import com.jeffdisher.october.logic.CreatureSpawner;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.ProcessorElement;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
@@ -998,7 +999,7 @@ public class TickRunner
 				// We want to build the arrangement of blocks modified in the last tick so that block updates can be synthesized.
 				Map<CuboidAddress, List<AbsoluteLocation>> updatedBlockLocationsByCuboid = new HashMap<>();
 				Map<CuboidAddress, List<AbsoluteLocation>> potentialLightChangesByCuboid = new HashMap<>();
-				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = new HashMap<>();
+				Set<AbsoluteLocation> potentialLogicChangeSet = new HashSet<>();
 				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : blockChangesByCuboid.entrySet())
 				{
 					List<BlockChangeDescription> list = entry.getValue();
@@ -1025,16 +1026,27 @@ public class TickRunner
 						potentialLightChangesByCuboid.put(entry.getKey(), lightChangeLocations);
 					}
 					
-					// Do the same with logic aspect changes.
-					List<AbsoluteLocation> logicChangeLocations = list.stream()
-							.filter((BlockChangeDescription description) -> description.requiresLogicCheck())
-							.map(
-								(BlockChangeDescription update) -> update.serializedForm().getAbsoluteLocation()
-							).toList();
-					if (!logicChangeLocations.isEmpty())
+					// Logic changes are more complicated, as they don't usually change within the block, but adjacent
+					// ones (except for conduit changes) so build the set and then split it by cuboid in a later pass.
+					for (BlockChangeDescription change : list)
 					{
-						potentialLogicChangesByCuboid.put(entry.getKey(), logicChangeLocations);
+						byte logicBits = change.logicCheckBits();
+						if (0x0 != logicBits)
+						{
+							AbsoluteLocation location = change.serializedForm().getAbsoluteLocation();
+							LogicLayerHelpers.populateSetWithPotentialLogicChanges(potentialLogicChangeSet, location, logicBits);
+						}
 					}
+				}
+				Map<CuboidAddress, List<AbsoluteLocation>> potentialLogicChangesByCuboid = new HashMap<>();
+				for (AbsoluteLocation location : potentialLogicChangeSet)
+				{
+					CuboidAddress cuboid = location.getCuboidAddress();
+					if (!potentialLogicChangesByCuboid.containsKey(cuboid))
+					{
+						potentialLogicChangesByCuboid.put(cuboid, new ArrayList<>());
+					}
+					potentialLogicChangesByCuboid.get(cuboid).add(location);
 				}
 				
 				// We now have a plan for this tick so save it in the ivar so the other threads can grab it.

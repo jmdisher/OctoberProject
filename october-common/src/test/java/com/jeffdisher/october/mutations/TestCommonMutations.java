@@ -1294,6 +1294,7 @@ public class TestCommonMutations
 		AbsoluteLocation nonBaseLocation = doorLocation.getRelative(1, 0, 0);
 		Item doorClosed = ENV.items.getItemById("op.double_door_closed_base");
 		Item doorOpen = ENV.items.getItemById("op.double_door_open_base");
+		Item logicWire = ENV.items.getItemById("op.logic_wire");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorClosed.number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
@@ -1324,7 +1325,9 @@ public class TestCommonMutations
 		;
 		
 		// Test the logic update in a non-root block.
-		cuboid.setData7(AspectRegistry.LOGIC, nonBaseLocation.getRelative(1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
+		AbsoluteLocation conduitLocation = nonBaseLocation.getRelative(1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, conduitLocation.getBlockAddress(), logicWire.number());
+		cuboid.setData7(AspectRegistry.LOGIC, conduitLocation.getBlockAddress(), LogicAspect.MAX_LEVEL);
 		MutableBlockProxy proxy = new MutableBlockProxy(nonBaseLocation, cuboid);
 		MutationBlockLogicChange mutation = new MutationBlockLogicChange(nonBaseLocation);
 		Assert.assertFalse(mutation.applyMutation(context, proxy));
@@ -1334,7 +1337,9 @@ public class TestCommonMutations
 		Assert.assertEquals(0, out_mutations.size());
 		
 		// Test the logic update in a root block.
-		cuboid.setData7(AspectRegistry.LOGIC, doorLocation.getRelative(-1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
+		AbsoluteLocation rootConduitLocation = doorLocation.getRelative(-1, 0, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, rootConduitLocation.getBlockAddress(), logicWire.number());
+		cuboid.setData7(AspectRegistry.LOGIC, rootConduitLocation.getBlockAddress(), LogicAspect.MAX_LEVEL);
 		proxy = new MutableBlockProxy(doorLocation, cuboid);
 		mutation = new MutationBlockLogicChange(doorLocation);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));

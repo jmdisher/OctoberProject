@@ -1,8 +1,10 @@
 package com.jeffdisher.october.mutations;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -20,6 +22,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -40,6 +43,7 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
+import com.jeffdisher.october.types.LazyLocationCache;
 import com.jeffdisher.october.types.MinimalEntity;
 import com.jeffdisher.october.types.MutableCreature;
 import com.jeffdisher.october.types.MutableEntity;
@@ -1607,14 +1611,17 @@ public class TestCommonChanges
 		Block onSwitch = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.switch_on"));
 		Block closedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_closed"));
 		Block openedDoor = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.door_open"));
+		Block logicWire = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.logic_wire"));
 		
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		AbsoluteLocation doorLocation = new AbsoluteLocation(0, 1, 10);
-		AbsoluteLocation switchLocation = doorLocation.getRelative(1, 0, 0);
+		AbsoluteLocation wireLocation = doorLocation.getRelative(1, 0, 0);
+		AbsoluteLocation switchLocation = wireLocation.getRelative(1, 0, 0);
 		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), closedDoor.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress(), logicWire.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), offSwitch.item().number());
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
@@ -2493,14 +2500,16 @@ public class TestCommonChanges
 		;
 	}
 
-	private void _runMutationInContext(CuboidData cuboid, _ContextHolder holder, Block expectedBlock)
+	private byte _runMutationInContext(CuboidData cuboid, _ContextHolder holder, Block expectedBlock)
 	{
 		IMutationBlock mutation = holder.mutation;
 		holder.mutation = null;
 		MutableBlockProxy proxy = new MutableBlockProxy(mutation.getAbsoluteLocation(), cuboid);
 		Assert.assertTrue(mutation.applyMutation(holder.context, proxy));
 		Assert.assertEquals(expectedBlock, proxy.getBlock());
+		byte logicBits = proxy.potentialLogicChangeBits();
 		proxy.writeBack(cuboid);
+		return logicBits;
 	}
 
 	private void _runMutationWithLogicUpdate(_ContextHolder holder
@@ -2511,8 +2520,16 @@ public class TestCommonChanges
 	)
 	{
 		CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
-		_runMutationInContext(cuboid, holder, triggerBlock);
-		MutableBlockProxy triggerProxy = new MutableBlockProxy(triggerLocation, cuboid);
+		byte logicBits = _runMutationInContext(cuboid, holder, triggerBlock);
+		Set<AbsoluteLocation> logicChanges = new HashSet<>();
+		LogicLayerHelpers.populateSetWithPotentialLogicChanges(logicChanges, triggerLocation, logicBits);
+		LazyLocationCache<MutableBlockProxy> lazyMutableBlockCache = new LazyLocationCache<>(
+				(AbsoluteLocation location) -> {
+					// This test assumes we just have the one cuboid.
+					Assert.assertTrue(cuboid.getCuboidAddress().equals(location.getCuboidAddress()));
+					return new MutableBlockProxy(location, cuboid);
+				}
+		);
 		PropagationHelpers.processPreviousTickLogicUpdates((IMutationBlock update) -> {
 					if (listenerLocation.equals(update.getAbsoluteLocation()))
 					{
@@ -2521,16 +2538,19 @@ public class TestCommonChanges
 					}
 				}
 				, cuboidAddress
-				, Map.of(cuboid.getCuboidAddress(), List.of(triggerLocation))
+				, Map.of(cuboid.getCuboidAddress(), List.copyOf(logicChanges))
 				, (AbsoluteLocation location) -> {
-					Assert.assertTrue(location.equals(triggerLocation));
-					return triggerProxy;
+					return lazyMutableBlockCache.apply(location);
 				}
 				, (AbsoluteLocation location) -> {
 					return holder.context.previousBlockLookUp.apply(location);
 				}
 		);
-		triggerProxy.writeBack(cuboid);
+		
+		for (MutableBlockProxy proxy : lazyMutableBlockCache.getCachedValues())
+		{
+			proxy.writeBack(cuboid);
+		}
 	}
 
 
