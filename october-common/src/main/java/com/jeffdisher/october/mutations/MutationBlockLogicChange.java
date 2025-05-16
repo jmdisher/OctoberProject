@@ -3,7 +3,6 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
@@ -11,7 +10,6 @@ import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -93,22 +91,15 @@ public class MutationBlockLogicChange implements IMutationBlock
 	}
 
 
-	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation location, IBlockProxy proxy)
+	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation rootBlockLocation, IBlockProxy proxy)
 	{
 		Block initial = proxy.getBlock();
 		Block alternate = env.logic.getAlternate(initial);
-		context.mutationSink.next(new MutationBlockReplace(location, initial, alternate));
 		
-		// See if this is a multi-block type and update extensions.
-		if (env.blocks.isMultiBlock(initial))
-		{
-			// The alternate must also be multi.
-			Assert.assertTrue(env.blocks.isMultiBlock(alternate));
-			OrientationAspect.Direction direction = proxy.getOrientation();
-			for (AbsoluteLocation extension : env.multiBlocks.getExtensions(initial, location, direction))
-			{
-				context.mutationSink.next(new MutationBlockReplace(extension, initial, alternate));
-			}
-		}
+		MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(env, context, rootBlockLocation);
+		MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
+			MutationBlockInternalSetLogicState mutation = new MutationBlockInternalSetLogicState(location, initial, alternate);
+			return mutation;
+		}, lookup);
 	}
 }

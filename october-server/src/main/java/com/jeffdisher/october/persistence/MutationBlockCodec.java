@@ -15,6 +15,7 @@ import com.jeffdisher.october.mutations.MutationBlockPhase2Multi;
 import com.jeffdisher.october.mutations.MutationBlockPlaceMultiBlock;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
+import com.jeffdisher.october.mutations.MutationBlockInternalSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
 import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
@@ -61,6 +62,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockPlaceMultiBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPlaceMultiBlock.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPhase2Multi.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockGrowGroundCover.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockInternalSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockInternalSetLogicState.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)
