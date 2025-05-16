@@ -20,6 +20,7 @@ import org.junit.rules.TemporaryFolder;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.OctreeInflatedByte;
@@ -842,6 +843,27 @@ public class TestResourceLoader
 		cuboid.setData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress(), (byte)(LogicAspect.MAX_LEVEL - 1));
 		cuboid.setData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress(), lampOnNumber);
 		
+		// We also want to show how doors work in this change (since they were also changed due to the "active" flag).
+		short dirtNumber = ENV.items.getItemById("op.dirt").number();
+		short doorOpenNumber = ENV.items.getItemById("op.door_open").number();
+		short doorClosedNumber = ENV.items.getItemById("op.door_closed").number();
+		short multiDoorOpenNumber = ENV.items.getItemById("op.double_door_open_base").number();
+		short multiDoorClosedNumber = ENV.items.getItemById("op.double_door_closed_base").number();
+		AbsoluteLocation doorLocation = switchOnLocation.getRelative(0, 2, 0);
+		AbsoluteLocation multiDoorLocation = doorLocation.getRelative(0, 3, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, -1).getBlockAddress(), dirtNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, -1).getBlockAddress(), dirtNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, -1).getBlockAddress(), dirtNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorOpenNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress(), multiDoorOpenNumber);
+		cuboid.setData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress(), multiDoorOpenNumber);
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress(), multiDoorLocation);
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress(), multiDoorOpenNumber);
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress(), multiDoorLocation);
+		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorOpenNumber);
+		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorLocation);
+		
 		// We can save this using the normal helper and then change the version number to see it updated on load.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V5);
@@ -885,6 +907,16 @@ public class TestResourceLoader
 		Assert.assertEquals(wireNumber, found.getData15(AspectRegistry.BLOCK, wireLocation.getBlockAddress()));
 		Assert.assertEquals(0, found.getData7(AspectRegistry.LOGIC, wireLocation.getBlockAddress()));
 		Assert.assertEquals(lampOffNumber, found.getData15(AspectRegistry.BLOCK, lampOnLocation.getBlockAddress()));
+		
+		Assert.assertEquals(doorClosedNumber, found.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), found.getData7(AspectRegistry.ORIENTATION, multiDoorLocation.getBlockAddress()));
+		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
 		
 		loader.shutdown();
 	}

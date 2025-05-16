@@ -637,13 +637,19 @@ public class ResourceLoader
 		short switchOnNumber = env.items.getItemById("op.switch_on").number();
 		short lampOffNumber = env.items.getItemById("op.lamp_off").number();
 		short lampOnNumber = env.items.getItemById("op.lamp_on").number();
+		short doorNumber = env.items.getItemById("op.door_closed").number();
+		short doorOpenNumber = env.items.getItemById("op.door_open").number();
+		short doubleDoorNumber = env.items.getItemById("op.double_door_closed_base").number();
+		short doubleDoorOpenNumber = env.items.getItemById("op.double_door_open_base").number();
 		Set<BlockAddress> switches = new HashSet<>();
 		Set<BlockAddress> lamps = new HashSet<>();
+		Set<BlockAddress> doors = new HashSet<>();
+		Set<BlockAddress> doubleDoors = new HashSet<>();
 		cuboid.walkData(AspectRegistry.BLOCK, new IOctree.IWalkerCallback<>(){
 			@Override
 			public void visit(BlockAddress base, byte size, Short value)
 			{
-				if ((switchOnNumber == value) || (lampOnNumber == value))
+				if ((switchOnNumber == value) || (lampOnNumber == value) || (doorOpenNumber == value) || (doubleDoorOpenNumber == value))
 				{
 					for (byte z = 0; z < size; ++z)
 					{
@@ -656,9 +662,17 @@ public class ResourceLoader
 								{
 									switches.add(target);
 								}
-								else
+								else if (lampOnNumber == value)
 								{
 									lamps.add(target);
+								}
+								else if (doorOpenNumber == value)
+								{
+									doors.add(target);
+								}
+								else
+								{
+									doubleDoors.add(target);
 								}
 							}
 						}
@@ -673,6 +687,14 @@ public class ResourceLoader
 		for (BlockAddress block : lamps)
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, block, lampOffNumber);
+		}
+		for (BlockAddress block : doors)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, block, doorNumber);
+		}
+		for (BlockAddress block : doubleDoors)
+		{
+			cuboid.setData15(AspectRegistry.BLOCK, block, doubleDoorNumber);
 		}
 	}
 
