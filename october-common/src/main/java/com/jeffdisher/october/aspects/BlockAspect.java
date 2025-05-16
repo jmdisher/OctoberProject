@@ -69,235 +69,30 @@ public class BlockAspect
 		{
 			throw new IOException("Resource missing");
 		}
-		List<Block> blocks = new ArrayList<>();
-		Map<Item, Block> blocksByItemType = new HashMap<>();
 		
-		Set<Block> canBeReplaced = new HashSet<>();
-		Set<Block> isFlammable = new HashSet<>();
-		Set<Block> isFireSource = new HashSet<>();
-		Set<Block> stopsFire = new HashSet<>();
-		Set<Block> isMultiBlock = new HashSet<>();
-		Map<Block, Integer> nonSolidViscosity = new HashMap<>();
-		Map<Block, Integer> blockDamage = new HashMap<>();
-		Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
-		Map<Item, Block> specialBlockPlacement = new HashMap<>();
-		Map<Block, _DropChance[]> specialBlockBreak = new HashMap<>();
-		Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
-		
-		TabListReader.readEntireFile(new TabListReader.IParseCallbacks() {
-			private Item _currentItem;
-			private Block _currentBlock;
-			@Override
-			public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				Assert.assertTrue(null == _currentBlock);
-				_currentItem = _getItem(name);
-				_currentBlock = new Block(_currentItem);
-				
-				// Read the flag list.
-				for (String value : parameters)
-				{
-					if (FLAG_CAN_BE_REPLACED.equals(value))
-					{
-						canBeReplaced.add(_currentBlock);
-					}
-					else if (FLAG_IS_FLAMMABLE.equals(value))
-					{
-						if (isFireSource.contains(_currentBlock) || stopsFire.contains(_currentBlock))
-						{
-							throw new TabListReader.TabListException("A block cannot be both flammable and a fire source or retardant: \"" + name + "\"");
-						}
-						isFlammable.add(_currentBlock);
-					}
-					else if (FLAG_IS_FIRE_SOURCE.equals(value))
-					{
-						if (isFlammable.contains(_currentBlock) || stopsFire.contains(_currentBlock))
-						{
-							throw new TabListReader.TabListException("A block cannot be both a fire source and flammable or a retardant: \"" + name + "\"");
-						}
-						isFireSource.add(_currentBlock);
-					}
-					else if (FLAG_STOPS_FIRE.equals(value))
-					{
-						if (isFlammable.contains(_currentBlock) || isFireSource.contains(_currentBlock))
-						{
-							throw new TabListReader.TabListException("A block cannot be both a fire retardant and flammable or a source: \"" + name + "\"");
-						}
-						stopsFire.add(_currentBlock);
-					}
-					else if (FLAG_IS_MULTIBLOCK.equals(value))
-					{
-						isMultiBlock.add(_currentBlock);
-					}
-					else
-					{
-						throw new TabListReader.TabListException("Unknown flag: \"" + value + "\"");
-					}
-				}
-			}
-			@Override
-			public void endRecord() throws TabListReader.TabListException
-			{
-				Assert.assertTrue(null != _currentBlock);
-				blocks.add(_currentBlock);
-				blocksByItemType.put(_currentItem, _currentBlock);
-				_currentItem = null;
-				_currentBlock = null;
-			}
-			@Override
-			public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
-			{
-				Assert.assertTrue(null != _currentBlock);
-				// See which of the sublists this is an enter the correct state.
-				if (SUB_PLACED_FROM.equals(name))
-				{
-					if (0 == parameters.length)
-					{
-						throw new TabListReader.TabListException("Missing placed_from value");
-					}
-					for (String value : parameters)
-					{
-						Item from = _getItem(value);
-						Block previous = specialBlockPlacement.put(from, _currentBlock);
-						if (null != previous)
-						{
-							throw new TabListReader.TabListException("Duplicated placed_from mapping: \"" + from + "\"");
-						}
-					}
-				}
-				else if (SUB_REQUIRES_SUPPORT.equals(name))
-				{
-					// We need at least one value here.
-					if (0 == parameters.length)
-					{
-						throw new TabListReader.TabListException("At least one value required for requires_support");
-					}
-					Set<Block> supportingBlocks = new HashSet<>();
-					for (String value : parameters)
-					{
-						Item item = _getItem(value);
-						Block support = blocksByItemType.get(item);
-						if (null == support)
-						{
-							throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
-						}
-						supportingBlocks.add(support);
-					}
-					Set<Block> previous = specialBlockSupport.put(_currentBlock, supportingBlocks);
-					// We already checked this in size, above.
-					Assert.assertTrue(null == previous);
-				}
-				else if (SUB_SPECIAL_DROP.equals(name))
-				{
-					// Note that duplicates are expected in this parameter list (empty also makes sense).
-					// This list is always in pairs (probability<TAB>item).
-					if (0 != (parameters.length % 2))
-					{
-						throw new TabListReader.TabListException("Drop parameters must be in pairs: " + _currentBlock);
-					}
-					int pairCount = parameters.length / 2;
-					_DropChance[] drops = new _DropChance[pairCount];
-					for (int i = 0; i < pairCount; ++i)
-					{
-						int probability;
-						try
-						{
-							probability = Integer.parseInt(parameters[2 * i]);
-						}
-						catch (NumberFormatException e)
-						{
-							throw new TabListReader.TabListException("Drop probability must be a number: " + _currentBlock);
-						}
-						Item item = _getItem(parameters[2 * i + 1]);
-						drops[i] = new _DropChance(item, probability);
-					}
-					specialBlockBreak.put(_currentBlock, drops);
-				}
-				else if (SUB_BLOCK_MATERIAL.equals(name))
-				{
-					if (1 != parameters.length)
-					{
-						throw new TabListReader.TabListException("Exactly one value required for block_material");
-					}
-					BlockMaterial material = BlockMaterial.valueOf(parameters[0]);
-					if (null == material)
-					{
-						throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
-					}
-					blockMaterials.put(_currentBlock, material);
-				}
-				else if (SUB_VISCOSITY.equals(name))
-				{
-					int viscosity = _readIntInRange(parameters, 0, SOLID_VISCOSITY, SUB_VISCOSITY);
-					if (viscosity < SOLID_VISCOSITY)
-					{
-						nonSolidViscosity.put(_currentBlock, viscosity);
-					}
-				}
-				else if (SUB_DAMAGE.equals(name))
-				{
-					int damage = _readIntInRange(parameters, 0, 100, SUB_DAMAGE);
-					if (damage > 0)
-					{
-						blockDamage.put(_currentBlock, damage);
-					}
-				}
-				else
-				{
-					throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
-				}
-			}
-			private Item _getItem(String id) throws TabListReader.TabListException
-			{
-				Item item = items.getItemById(id);
-				if (null == item)
-				{
-					throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
-				}
-				return item;
-			}
-			private int _readIntInRange(String[] parameters, int low, int high, String name) throws TabListException
-			{
-				int value = -1;
-				if (1 == parameters.length)
-				{
-					try
-					{
-						value = Integer.parseInt(parameters[0]);
-					}
-					catch (NumberFormatException e)
-					{
-						value = -1;
-					}
-				}
-				if ((value < low) || (value > high))
-				{
-					String message = String.format("One value in [%d..%d] required for %s", low, high, name);
-					throw new TabListReader.TabListException(message);
-				}
-				return value;
-			}
-		}, stream);
-		
+		// Run a parser on the normal file.
+		_Parser parser = new _Parser(items);
+		TabListReader.readEntireFile(parser, stream);
 		Block[] blocksByType = new Block[items.ITEMS_BY_TYPE.length];
 		for (int i = 0; i < blocksByType.length; ++i)
 		{
-			Block block = blocksByItemType.get(items.ITEMS_BY_TYPE[i]);
+			Block block = parser.blocksByItemType.get(items.ITEMS_BY_TYPE[i]);
 			blocksByType[i] = block;
 		}
+		
 		return new BlockAspect(items
 				, blocksByType
-				, canBeReplaced
-				, isFlammable
-				, isFireSource
-				, stopsFire
-				, isMultiBlock
-				, nonSolidViscosity
-				, blockDamage
-				, specialBlockSupport
-				, specialBlockPlacement
-				, specialBlockBreak
-				, blockMaterials
+				, parser.canBeReplaced
+				, parser.isFlammable
+				, parser.isFireSource
+				, parser.stopsFire
+				, parser.isMultiBlock
+				, parser.nonSolidViscosity
+				, parser.blockDamage
+				, parser.specialBlockSupport
+				, parser.specialBlockPlacement
+				, parser.specialBlockBreak
+				, parser.blockMaterials
 		);
 	}
 
@@ -599,4 +394,222 @@ public class BlockAspect
 
 
 	private static record _DropChance(Item item, int chance1to100) {}
+
+	private static class _Parser implements TabListReader.IParseCallbacks
+	{
+		private final ItemRegistry _items;
+		
+		public List<Block> blocks = new ArrayList<>();
+		public Map<Item, Block> blocksByItemType = new HashMap<>();
+		
+		public Set<Block> canBeReplaced = new HashSet<>();
+		public Set<Block> isFlammable = new HashSet<>();
+		public Set<Block> isFireSource = new HashSet<>();
+		public Set<Block> stopsFire = new HashSet<>();
+		public Set<Block> isMultiBlock = new HashSet<>();
+		public Map<Block, Integer> nonSolidViscosity = new HashMap<>();
+		public Map<Block, Integer> blockDamage = new HashMap<>();
+		public Map<Block, Set<Block>> specialBlockSupport = new HashMap<>();
+		public Map<Item, Block> specialBlockPlacement = new HashMap<>();
+		public Map<Block, _DropChance[]> specialBlockBreak = new HashMap<>();
+		public Map<Block, BlockMaterial> blockMaterials = new HashMap<>();
+		
+		private Item _currentItem;
+		private Block _currentBlock;
+		
+		public _Parser(ItemRegistry items)
+		{
+			_items = items;
+		}
+		@Override
+		public void startNewRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			Assert.assertTrue(null == _currentBlock);
+			_currentItem = _getItem(name);
+			_currentBlock = new Block(_currentItem);
+			
+			// Read the flag list.
+			for (String value : parameters)
+			{
+				if (FLAG_CAN_BE_REPLACED.equals(value))
+				{
+					this.canBeReplaced.add(_currentBlock);
+				}
+				else if (FLAG_IS_FLAMMABLE.equals(value))
+				{
+					if (this.isFireSource.contains(_currentBlock) || this.stopsFire.contains(_currentBlock))
+					{
+						throw new TabListReader.TabListException("A block cannot be both flammable and a fire source or retardant: \"" + name + "\"");
+					}
+					this.isFlammable.add(_currentBlock);
+				}
+				else if (FLAG_IS_FIRE_SOURCE.equals(value))
+				{
+					if (this.isFlammable.contains(_currentBlock) || this.stopsFire.contains(_currentBlock))
+					{
+						throw new TabListReader.TabListException("A block cannot be both a fire source and flammable or a retardant: \"" + name + "\"");
+					}
+					this.isFireSource.add(_currentBlock);
+				}
+				else if (FLAG_STOPS_FIRE.equals(value))
+				{
+					if (this.isFlammable.contains(_currentBlock) || this.isFireSource.contains(_currentBlock))
+					{
+						throw new TabListReader.TabListException("A block cannot be both a fire retardant and flammable or a source: \"" + name + "\"");
+					}
+					this.stopsFire.add(_currentBlock);
+				}
+				else if (FLAG_IS_MULTIBLOCK.equals(value))
+				{
+					this.isMultiBlock.add(_currentBlock);
+				}
+				else
+				{
+					throw new TabListReader.TabListException("Unknown flag: \"" + value + "\"");
+				}
+			}
+		}
+		@Override
+		public void endRecord() throws TabListReader.TabListException
+		{
+			Assert.assertTrue(null != _currentBlock);
+			this.blocks.add(_currentBlock);
+			this.blocksByItemType.put(_currentItem, _currentBlock);
+			_currentItem = null;
+			_currentBlock = null;
+		}
+		@Override
+		public void processSubRecord(String name, String[] parameters) throws TabListReader.TabListException
+		{
+			Assert.assertTrue(null != _currentBlock);
+			// See which of the sublists this is an enter the correct state.
+			if (SUB_PLACED_FROM.equals(name))
+			{
+				if (0 == parameters.length)
+				{
+					throw new TabListReader.TabListException("Missing placed_from value");
+				}
+				for (String value : parameters)
+				{
+					Item from = _getItem(value);
+					Block previous = this.specialBlockPlacement.put(from, _currentBlock);
+					if (null != previous)
+					{
+						throw new TabListReader.TabListException("Duplicated placed_from mapping: \"" + from + "\"");
+					}
+				}
+			}
+			else if (SUB_REQUIRES_SUPPORT.equals(name))
+			{
+				// We need at least one value here.
+				if (0 == parameters.length)
+				{
+					throw new TabListReader.TabListException("At least one value required for requires_support");
+				}
+				Set<Block> supportingBlocks = new HashSet<>();
+				for (String value : parameters)
+				{
+					Item item = _getItem(value);
+					Block support = this.blocksByItemType.get(item);
+					if (null == support)
+					{
+						throw new TabListReader.TabListException("Unknown block for requires_support: \"" + value + "\"");
+					}
+					supportingBlocks.add(support);
+				}
+				Set<Block> previous = this.specialBlockSupport.put(_currentBlock, supportingBlocks);
+				// We already checked this in size, above.
+				Assert.assertTrue(null == previous);
+			}
+			else if (SUB_SPECIAL_DROP.equals(name))
+			{
+				// Note that duplicates are expected in this parameter list (empty also makes sense).
+				// This list is always in pairs (probability<TAB>item).
+				if (0 != (parameters.length % 2))
+				{
+					throw new TabListReader.TabListException("Drop parameters must be in pairs: " + _currentBlock);
+				}
+				int pairCount = parameters.length / 2;
+				_DropChance[] drops = new _DropChance[pairCount];
+				for (int i = 0; i < pairCount; ++i)
+				{
+					int probability;
+					try
+					{
+						probability = Integer.parseInt(parameters[2 * i]);
+					}
+					catch (NumberFormatException e)
+					{
+						throw new TabListReader.TabListException("Drop probability must be a number: " + _currentBlock);
+					}
+					Item item = _getItem(parameters[2 * i + 1]);
+					drops[i] = new _DropChance(item, probability);
+				}
+				this.specialBlockBreak.put(_currentBlock, drops);
+			}
+			else if (SUB_BLOCK_MATERIAL.equals(name))
+			{
+				if (1 != parameters.length)
+				{
+					throw new TabListReader.TabListException("Exactly one value required for block_material");
+				}
+				BlockMaterial material = BlockMaterial.valueOf(parameters[0]);
+				if (null == material)
+				{
+					throw new TabListReader.TabListException("Unknown constant for block_material: \"" + parameters[0] + "\"");
+				}
+				this.blockMaterials.put(_currentBlock, material);
+			}
+			else if (SUB_VISCOSITY.equals(name))
+			{
+				int viscosity = _readIntInRange(parameters, 0, SOLID_VISCOSITY, SUB_VISCOSITY);
+				if (viscosity < SOLID_VISCOSITY)
+				{
+					this.nonSolidViscosity.put(_currentBlock, viscosity);
+				}
+			}
+			else if (SUB_DAMAGE.equals(name))
+			{
+				int damage = _readIntInRange(parameters, 0, 100, SUB_DAMAGE);
+				if (damage > 0)
+				{
+					this.blockDamage.put(_currentBlock, damage);
+				}
+			}
+			else
+			{
+				throw new TabListReader.TabListException("Unknown sub-record identifier: \"" + name + "\"");
+			}
+		}
+		private Item _getItem(String id) throws TabListReader.TabListException
+		{
+			Item item = _items.getItemById(id);
+			if (null == item)
+			{
+				throw new TabListReader.TabListException("Unknown item: \"" + id + "\"");
+			}
+			return item;
+		}
+		private int _readIntInRange(String[] parameters, int low, int high, String name) throws TabListException
+		{
+			int value = -1;
+			if (1 == parameters.length)
+			{
+				try
+				{
+					value = Integer.parseInt(parameters[0]);
+				}
+				catch (NumberFormatException e)
+				{
+					value = -1;
+				}
+			}
+			if ((value < low) || (value > high))
+			{
+				String message = String.format("One value in [%d..%d] required for %s", low, high, name);
+				throw new TabListReader.TabListException(message);
+			}
+			return value;
+		}
+	}
 }
