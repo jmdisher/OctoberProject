@@ -59,15 +59,20 @@ public class BlockAspect
 	 * 
 	 * @param items The existing ItemRegistry.
 	 * @param stream The stream containing the tablist.
+	 * @param activeStream The stream containing the "active" variant tablist.
 	 * @return The registry (never null).
 	 * @throws IOException There was a problem with the stream.
 	 * @throws TabListReader.TabListException The tablist was malformed.
 	 */
-	public static BlockAspect loadRegistry(ItemRegistry items, InputStream stream) throws IOException, TabListReader.TabListException
+	public static BlockAspect loadRegistry(ItemRegistry items, InputStream stream, InputStream activeStream) throws IOException, TabListReader.TabListException
 	{
 		if (null == stream)
 		{
 			throw new IOException("Resource missing");
+		}
+		if (null == activeStream)
+		{
+			throw new IOException("Active resource missing");
 		}
 		
 		// Run a parser on the normal file.
@@ -80,14 +85,24 @@ public class BlockAspect
 			blocksByType[i] = block;
 		}
 		
+		// Run a parser on the active file and then verify its special constraints.
+		_Parser activeParser = new _Parser(items);
+		TabListReader.readEntireFile(activeParser, activeStream);
+		if (!parser.blocksByItemType.keySet().containsAll(activeParser.blocksByItemType.keySet()))
+		{
+			throw new TabListReader.TabListException("Active list is not a subset of normal list");
+		}
+		
 		return new BlockAspect(items
 				, blocksByType
+				, Set.copyOf(activeParser.blocksByItemType.values())
 				, parser.canBeReplaced
 				, parser.isFlammable
 				, parser.isFireSource
 				, parser.stopsFire
 				, parser.isMultiBlock
 				, parser.nonSolidViscosity
+				, activeParser.nonSolidViscosity
 				, parser.blockDamage
 				, parser.specialBlockSupport
 				, parser.specialBlockPlacement
@@ -97,12 +112,14 @@ public class BlockAspect
 	}
 
 	private final Block[] _blocksByItemNumber;
+	private final Set<Block> _blocksWithActiveState;
 	private final Set<Block> _canBeReplaced;
 	private final Set<Block> _isFlammable;
 	private final Set<Block> _isFireSource;
 	private final Set<Block> _stopsFire;
 	private final Set<Block> _isMultiBlock;
 	private final Map<Block, Integer> _nonSolidViscosity;
+	private final Map<Block, Integer> _activeNonSolidViscosity;
 	private final Map<Block, Integer> _blockDamage;
 	private final Map<Block, Set<Block>> _specialBlockSupport;
 	private final Map<Item, Block> _specialBlockPlacement;
@@ -111,12 +128,14 @@ public class BlockAspect
 
 	private BlockAspect(ItemRegistry items
 			, Block[] blocksByType
+			, Set<Block> blocksWithActiveState
 			, Set<Block> canBeReplaced
 			, Set<Block> isFlammable
 			, Set<Block> isFireSource
 			, Set<Block> stopsFire
 			, Set<Block> isMultiBlock
 			, Map<Block, Integer> nonSolidViscosity
+			, Map<Block, Integer> activeNonSolidViscosity
 			, Map<Block, Integer> blockDamage
 			, Map<Block, Set<Block>> specialBlockSupport
 			, Map<Item, Block> specialBlockPlacement
@@ -126,12 +145,14 @@ public class BlockAspect
 	{
 		_blocksByItemNumber = blocksByType;
 		
+		_blocksWithActiveState = Collections.unmodifiableSet(blocksWithActiveState);
 		_canBeReplaced = Collections.unmodifiableSet(canBeReplaced);
 		_isFlammable = Collections.unmodifiableSet(isFlammable);
 		_isFireSource = Collections.unmodifiableSet(isFireSource);
 		_stopsFire = Collections.unmodifiableSet(stopsFire);
 		_isMultiBlock = Collections.unmodifiableSet(isMultiBlock);
 		_nonSolidViscosity = Collections.unmodifiableMap(nonSolidViscosity);
+		_activeNonSolidViscosity = Collections.unmodifiableMap(activeNonSolidViscosity);
 		_blockDamage = Collections.unmodifiableMap(blockDamage);
 		_specialBlockSupport = Collections.unmodifiableMap(specialBlockSupport);
 		_specialBlockPlacement = Collections.unmodifiableMap(specialBlockPlacement);
@@ -213,36 +234,40 @@ public class BlockAspect
 	 * Checks the viscosity of a given block to determine if it is solid (100).
 	 * 
 	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
 	 * @return True if this block is solid, meaning nothing can pass through it or exist within it.
 	 */
-	public boolean isSolid(Block block)
+	public boolean isSolid(Block block, boolean isActive)
 	{
 		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY).
-		return !_nonSolidViscosity.containsKey(block);
+		return !_nonSolidViscosityMap(isActive).containsKey(block);
 	}
 
 	/**
 	 * Checks if this block isn't solid, thus allowing items to be dropped directly into it.
 	 * 
 	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
 	 * @return True if this block can contain an inventory as an empty block (not a station).
 	 */
-	public boolean hasEmptyBlockInventory(Block block)
+	public boolean hasEmptyBlockInventory(Block block, boolean isActive)
 	{
 		// Note that the _nonSolidViscosity ONLY contains non-solid blocks (< SOLID_VISCOSITY) and we allow ALL non-solid blocks to contain inventories.
-		return _nonSolidViscosity.containsKey(block);
+		return _nonSolidViscosityMap(isActive).containsKey(block);
 	}
 
 	/**
 	 * Checks the viscosity of a given block to determine if an entity should be allowed to breath in it (<50).
 	 * 
 	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
 	 * @return True if the entity can breathe in this block.
 	 */
-	public boolean canBreatheInBlock(Block block)
+	public boolean canBreatheInBlock(Block block, boolean isActive)
 	{
-		return (_nonSolidViscosity.containsKey(block))
-				? (_nonSolidViscosity.get(block) < SUFFOCATION_VISCOSITY)
+		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
+		return (nonSolidViscosity.containsKey(block))
+				? (nonSolidViscosity.get(block) < SUFFOCATION_VISCOSITY)
 				: false
 		;
 	}
@@ -251,12 +276,14 @@ public class BlockAspect
 	 * Checks the viscosity of a given block to determine if an entity should be able to swim in it (>=50, <100).
 	 * 
 	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
 	 * @return True if the entity can swim in this block.
 	 */
-	public boolean canSwimInBlock(Block block)
+	public boolean canSwimInBlock(Block block, boolean isActive)
 	{
-		return (_nonSolidViscosity.containsKey(block))
-				? (_nonSolidViscosity.get(block) >= SWIMMABLE_VISCOSITY)
+		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
+		return (nonSolidViscosity.containsKey(block))
+				? (nonSolidViscosity.get(block) >= SWIMMABLE_VISCOSITY)
 				: false
 		;
 	}
@@ -265,12 +292,14 @@ public class BlockAspect
 	 * Returns a fraction representing the viscosity of this block from 0.0f (air) to 1.0f (solid).
 	 * 
 	 * @param block The block to check.
+	 * @param isActive True if the active variant should be consulted, instead.
 	 * @return A fractional value in the range of [0.0f .. 1.0f].
 	 */
-	public float getViscosityFraction(Block block)
+	public float getViscosityFraction(Block block, boolean isActive)
 	{
-		return (_nonSolidViscosity.containsKey(block))
-				? ((float)_nonSolidViscosity.get(block) / 100.0f)
+		Map<Block, Integer> nonSolidViscosity = _nonSolidViscosityMap(isActive);
+		return (nonSolidViscosity.containsKey(block))
+				? ((float)nonSolidViscosity.get(block) / 100.0f)
 				: 1.0f
 		;
 	}
@@ -390,6 +419,26 @@ public class BlockAspect
 	{
 		// We will say that any block which requires special support is broken by flowing liquids.
 		return _specialBlockSupport.containsKey(block);
+	}
+
+	/**
+	 * Checks if the given block has an active variant.
+	 * 
+	 * @param block The block to check.
+	 * @return True if there is an active variant for this block.
+	 */
+	public boolean hasActiveVariant(Block block)
+	{
+		return _blocksWithActiveState.contains(block);
+	}
+
+
+	private Map<Block, Integer> _nonSolidViscosityMap(boolean isActive)
+	{
+		return isActive
+				? _activeNonSolidViscosity
+				: _nonSolidViscosity
+		;
 	}
 
 

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -108,6 +109,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	{
 		BlockProxy footBlock = previousBlockLookUp.apply(location.getBlockLocation());
 		Environment env = Environment.getShared();
-		return env.blocks.canSwimInBlock(footBlock.getBlock());
+		boolean isActive = FlagsAspect.isSet(footBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+		return env.blocks.canSwimInBlock(footBlock.getBlock(), isActive);
 	}
 }

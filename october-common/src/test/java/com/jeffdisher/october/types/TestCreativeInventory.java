@@ -9,10 +9,6 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.CraftAspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.data.CuboidData;
-import com.jeffdisher.october.logic.LogicLayerHelpers;
-import com.jeffdisher.october.utils.CuboidGenerator;
 
 
 public class TestCreativeInventory
@@ -130,41 +126,6 @@ public class TestCreativeInventory
 		Item emptyBucket = ENV.items.getItemById("op.bucket_empty");
 		Item fullBucket = ENV.items.getItemById("op.bucket_water");
 		inv.replaceNonStackable(emptyBucket.number(), new NonStackableItem(fullBucket, 0));
-	}
-
-	@Test
-	public void checkPlacedBlockTypes() throws Throwable
-	{
-		// Verify that all the items in the inventory have a valid placed block type or are non-stackable (anything else is just a non-item type).
-		Inventory inv = CreativeInventory.fakeInventory();
-		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> {
-					return new BlockProxy(location.getBlockAddress(), airCuboid);
-				}, null)
-				.finish()
-		;
-		AbsoluteLocation targetLocation = new AbsoluteLocation(10, 11, 12);
-		for (Integer key : inv.sortedKeys())
-		{
-			Items stack = inv.getStackForKey(key);
-			NonStackableItem nonStack = inv.getNonStackableForKey(key);
-			if (null != stack)
-			{
-				Assert.assertNull(nonStack);
-				Item type = stack.type();
-				Block block = ENV.blocks.getAsPlaceableBlock(type);
-				if (null != block)
-				{
-					Block toPlace = LogicLayerHelpers.blockTypeToPlace(ENV, context.previousBlockLookUp, targetLocation, block);
-					Assert.assertNotNull(toPlace);
-				}
-			}
-			else
-			{
-				Assert.assertNotNull(nonStack);
-			}
-		}
 	}
 
 	@Test

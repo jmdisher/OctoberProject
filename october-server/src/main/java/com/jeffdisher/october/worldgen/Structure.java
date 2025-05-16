@@ -157,7 +157,8 @@ public class Structure
 							// replace block mutation.
 							Item rawItem = items.ITEMS_BY_TYPE[value];
 							Block block = blocks.fromItem(rawItem);
-							boolean needsLightUpdate = (lights.getLightEmission(block) > 0);
+							boolean isActive = false;
+							boolean needsLightUpdate = (lights.getLightEmission(block, isActive) > 0);
 							boolean needsGrowth = (plants.growthDivisor(block) > 0);
 							if (needsLightUpdate || needsGrowth)
 							{

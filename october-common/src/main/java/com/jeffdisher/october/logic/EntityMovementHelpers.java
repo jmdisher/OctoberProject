@@ -3,6 +3,7 @@ package com.jeffdisher.october.logic;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -85,7 +86,7 @@ public class EntityMovementHelpers
 		BlockProxy currentLocationProxy = previousBlockLookUp.apply(oldLocation.getBlockLocation());
 		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
 		float viscosityFraction = (null != currentLocationProxy)
-				? env.blocks.getViscosityFraction(currentLocationProxy.getBlock())
+				? env.blocks.getViscosityFraction(currentLocationProxy.getBlock(), FlagsAspect.isSet(currentLocationProxy.getFlags(), FlagsAspect.FLAG_ACTIVE))
 				: 1.0f
 		;
 		float initialZVector = oldVector.z();
@@ -160,7 +161,8 @@ public class EntityMovementHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != proxy)
 				{
-					stop = env.blocks.isSolid(proxy.getBlock());
+					boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+					stop = env.blocks.isSolid(proxy.getBlock(), isActive);
 				}
 				else
 				{

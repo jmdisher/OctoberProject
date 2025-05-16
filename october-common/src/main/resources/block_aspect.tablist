@@ -83,12 +83,8 @@ op.wheat_mature
 	viscosity	10
 op.chest	is_flammable
 	block_material	AXE
-op.door_closed	is_flammable
+op.door	is_flammable
 	block_material	AXE
-op.door_open	is_flammable
-	block_material	AXE
-	special_drop	100	op.door_closed
-	viscosity	0
 op.hopper_down
 	block_material	AXE
 op.hopper_north
@@ -103,12 +99,8 @@ op.hopper_east
 op.hopper_west
 	block_material	AXE
 	special_drop	100	op.hopper_down
-op.switch_off
-op.switch_on
-	special_drop	100	op.switch_off
-op.lamp_off
-op.lamp_on
-	special_drop	100	op.lamp_off
+op.switch
+op.lamp
 op.logic_wire
 op.quern
 	block_material	PICKAXE
@@ -144,9 +136,5 @@ op.lava_strong	can_be_replaced	is_fire_source
 op.lava_weak	can_be_replaced	is_fire_source
 	viscosity	80
 	damage	10
-op.double_door_closed_base	is_multiblock
+op.double_door_base	is_multiblock
 	block_material	AXE
-op.double_door_open_base	is_multiblock
-	block_material	AXE
-	special_drop	100	op.double_door_closed_base
-	viscosity	0

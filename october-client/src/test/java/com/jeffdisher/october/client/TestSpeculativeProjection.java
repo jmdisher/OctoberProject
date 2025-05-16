@@ -2531,7 +2531,7 @@ public class TestSpeculativeProjection
 	public void placeMultiBlock()
 	{
 		// Show what happens when we place a multi-block door.
-		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
 		CountingListener listener = new CountingListener();
 		int entityId = 1;
 		MutableEntity mutable = MutableEntity.createForTest(entityId);

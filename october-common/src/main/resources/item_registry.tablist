@@ -40,17 +40,17 @@ op.iron_boots	Iron Boots
 op.chest	Chest
 op.beef	Raw Beef
 op.steak	Cooked Steak
-op.door_closed	Door
-op.door_open	Door (Open)
+op.door	Door
+DPERECATED.op.door_open	Door (Open)
 op.hopper_down	Hopper
 op.hopper_north	Hopper (North)
 op.hopper_south	Hopper (South)
 op.hopper_east	Hopper (East)
 op.hopper_west	Hopper (West)
-op.switch_off	Switch
-op.switch_on	Switch (On)
-op.lamp_off	Lamp
-op.lamp_on	Lamp (On)
+op.switch	Switch
+DPERECATED.op.switch_on	Switch (On)
+op.lamp	Lamp
+DPERECATED.op.lamp_on	Lamp (On)
 op.logic_wire	Logic Wire
 op.quern	Quern
 op.flour	Flour
@@ -74,8 +74,8 @@ op.lava_strong	Lava (Strong Flow)
 op.lava_weak	Lava (Weak Flow)
 op.bucket_lava	Lava Bucket
 op.apple	Apple
-op.double_door_closed_base	Double Door
-op.double_door_open_base	Double Door (Open)
+op.double_door_base	Double Door
+DPERECATED.op.double_door_open_base	Double Door (Open)
 op.grass	Grass
 op.tilled_soil	Tilled Soil
 op.stone_hoe	Stone Hoe

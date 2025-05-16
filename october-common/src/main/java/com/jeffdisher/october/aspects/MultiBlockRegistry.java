@@ -22,20 +22,16 @@ public class MultiBlockRegistry
 	public MultiBlockRegistry(ItemRegistry items, BlockAspect blocks)
 	{
 		// For now, we just hard-code this but it should move into data, eventually.
-		Block closedDoubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_closed_base"));
-		Block openDoubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_open_base"));
+		Block doubleDoor = blocks.getAsPlaceableBlock(items.getItemById("op.double_door_base"));
 		// We expect to find this in the block list.
-		Assert.assertTrue(null != closedDoubleDoor);
-		Assert.assertTrue(null != openDoubleDoor);
+		Assert.assertTrue(null != doubleDoor);
 		List<AbsoluteLocation> doubleDoorExtensions = List.of(new AbsoluteLocation(0, 0, 1)
 				, new AbsoluteLocation(1, 0, 1)
 				, new AbsoluteLocation(1, 0, 0)
 		);
-		_structures = Map.of(closedDoubleDoor, doubleDoorExtensions
-				, openDoubleDoor, doubleDoorExtensions
+		_structures = Map.of(doubleDoor, doubleDoorExtensions
 		);
-		_dimensions = Map.of(closedDoubleDoor, new BlockVolume(2, 1, 2)
-				, openDoubleDoor, new BlockVolume(2, 1, 2)
+		_dimensions = Map.of(doubleDoor, new BlockVolume(2, 1, 2)
 		);
 	}
 

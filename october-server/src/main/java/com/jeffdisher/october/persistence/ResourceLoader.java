@@ -633,14 +633,14 @@ public class ResourceLoader
 		rawOctrees[AspectRegistry.LOGIC.index()] = AspectRegistry.LOGIC.emptyTreeSupplier().get();
 		
 		Environment env = Environment.getShared();
-		short switchOffNumber = env.items.getItemById("op.switch_off").number();
-		short switchOnNumber = env.items.getItemById("op.switch_on").number();
-		short lampOffNumber = env.items.getItemById("op.lamp_off").number();
-		short lampOnNumber = env.items.getItemById("op.lamp_on").number();
-		short doorNumber = env.items.getItemById("op.door_closed").number();
-		short doorOpenNumber = env.items.getItemById("op.door_open").number();
-		short doubleDoorNumber = env.items.getItemById("op.double_door_closed_base").number();
-		short doubleDoorOpenNumber = env.items.getItemById("op.double_door_open_base").number();
+		short switchOffNumber = env.items.getItemById("op.switch").number();
+		short switchOnNumber = env.items.getItemById("DPERECATED.op.switch_on").number();
+		short lampOffNumber = env.items.getItemById("op.lamp").number();
+		short lampOnNumber = env.items.getItemById("DPERECATED.op.lamp_on").number();
+		short doorNumber = env.items.getItemById("op.door").number();
+		short doorOpenNumber = env.items.getItemById("DPERECATED.op.door_open").number();
+		short doubleDoorNumber = env.items.getItemById("op.double_door_base").number();
+		short doubleDoorOpenNumber = env.items.getItemById("DPERECATED.op.double_door_open_base").number();
 		Set<BlockAddress> switches = new HashSet<>();
 		Set<BlockAddress> lamps = new HashSet<>();
 		Set<BlockAddress> doors = new HashSet<>();

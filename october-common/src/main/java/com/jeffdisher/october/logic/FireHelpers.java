@@ -137,7 +137,8 @@ public class FireHelpers
 	{
 		boolean shouldBurn = false;
 		Block thisBlock = proxy.getBlock();
-		if (env.blocks.hasEmptyBlockInventory(thisBlock) && (proxy.getInventory().currentEncumbrance > 0))
+		boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+		if (env.blocks.hasEmptyBlockInventory(thisBlock, isActive) && (proxy.getInventory().currentEncumbrance > 0))
 		{
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(check.getRelative(0, 0, -1));
 			shouldBurn = ((null != belowBlock) && FlagsAspect.isSet(belowBlock.getFlags(), FlagsAspect.FLAG_BURNING));

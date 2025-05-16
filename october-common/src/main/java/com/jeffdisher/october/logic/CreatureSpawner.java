@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -170,7 +171,7 @@ public class CreatureSpawner
 				// See if we are spawning on a solid block.
 				BlockProxy base = context.previousBlockLookUp.apply(blockUnderLocation);
 				boolean isBaseSolid = (null != base)
-						? env.blocks.isSolid(base.getBlock())
+						? env.blocks.isSolid(base.getBlock(), FlagsAspect.isSet(base.getFlags(), FlagsAspect.FLAG_ACTIVE))
 						: false
 				;
 				if (isBaseSolid)

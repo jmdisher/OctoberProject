@@ -85,7 +85,7 @@ public class TestMiscAspects
 	@Test
 	public void multiBlock() throws Throwable
 	{
-		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
 		AbsoluteLocation start = new AbsoluteLocation(0, 0, 0);
 		List<AbsoluteLocation> extensions = ENV.multiBlocks.getExtensions(doorClosed, start, OrientationAspect.Direction.NORTH);
 		Assert.assertEquals(3, extensions.size());

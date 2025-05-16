@@ -13,35 +13,11 @@
 #  only.
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
-op.door_closed	sink
-	value	low
-	alternate	op.door_open
+op.door	sink
 	manual	true
-op.door_open	sink
-	value	high
-	alternate	op.door_closed
+op.switch	source
 	manual	true
-op.switch_off	source
-	value	low
-	alternate	op.switch_on
-	manual	true
-op.switch_on	source
-	value	high
-	alternate	op.switch_off
-	manual	true
-op.lamp_off	sink
-	value	low
-	alternate	op.lamp_on
+op.lamp	sink
 	manual	false
-op.lamp_on	sink
-	value	high
-	alternate	op.lamp_off
-	manual	false
-op.double_door_closed_base	sink
-	value	low
-	alternate	op.double_door_open_base
-	manual	true
-op.double_door_open_base	sink
-	value	high
-	alternate	op.double_door_closed_base
+op.double_door_base	sink
 	manual	true

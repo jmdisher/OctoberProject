@@ -93,13 +93,13 @@ public class CommonBlockMutationHelpers
 		if (env.blocks.canBeReplaced(oldBlock))
 		{
 			// See if the block we are changing needs a special logic mode.
-			Block newType = LogicLayerHelpers.blockTypeToPlace(env, context.previousBlockLookUp, location, blockType);
+			boolean shouldSetHigh = LogicLayerHelpers.shouldSetActive(env, context.previousBlockLookUp, location, blockType);
 			
 			// Make sure that this block can be supported by the one under it.
 			BlockProxy belowBlock = context.previousBlockLookUp.apply(location.getRelative(0, 0, -1));
 			// If the cuboid beneath this isn't loaded, we will just treat it as supported (best we can do in this situation).
 			boolean blockIsSupported = (null != belowBlock)
-					? env.blocks.canExistOnBlock(newType, belowBlock.getBlock())
+					? env.blocks.canExistOnBlock(blockType, belowBlock.getBlock())
 					: true
 			;
 			
@@ -107,16 +107,23 @@ public class CommonBlockMutationHelpers
 			if (blockIsSupported)
 			{
 				// Do the standard inventory handling.
-				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, newType);
+				Inventory inventoryToMove = _replaceBlockAndRestoreInventory(env, context, location, newBlock, blockType);
 				if (null != inventoryToMove)
 				{
 					_pushInventoryToNeighbour(env, context, location, inventoryToMove, false);
 				}
 				
-				if (env.plants.growthDivisor(newType) > 0)
+				if (env.plants.growthDivisor(blockType) > 0)
 				{
 					newBlock.requestFutureMutation(MutationBlockPeriodic.MILLIS_BETWEEN_GROWTH_CALLS);
 				}
+				
+				if (shouldSetHigh)
+				{
+					byte flags = FlagsAspect.set(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+					newBlock.setFlags(flags);
+				}
+				
 				didApply = true;
 			}
 		}
@@ -268,7 +275,9 @@ public class CommonBlockMutationHelpers
 		}
 		
 		// Create the inventory for this type.
-		MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock));
+		// None of the broken blocks are "active".
+		boolean isActive = false;
+		MutableInventory newInventory = new MutableInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, emptyBlock, isActive));
 		_fillInventoryFromBlockWithoutLimit(newInventory, proxy);
 		
 		// We are going to break this block so see if we should send it back to an entity.
@@ -348,7 +357,9 @@ public class CommonBlockMutationHelpers
 		Environment env = Environment.getShared();
 		
 		// Note that this should ONLY be called if the existing block is "empty".
-		Assert.assertTrue(env.blocks.hasEmptyBlockInventory(newBlock.getBlock()));
+		Block blockType = newBlock.getBlock();
+		boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+		Assert.assertTrue(env.blocks.hasEmptyBlockInventory(blockType, isActive));
 		// This should also have a non-empty inventory (otherwise, this shouldn't be called).
 		Assert.assertTrue(newBlock.getInventory().currentEncumbrance > 0);
 		
@@ -356,7 +367,7 @@ public class CommonBlockMutationHelpers
 		boolean didDropInventory = false;
 		AbsoluteLocation belowLocation = location.getRelative(0, 0, -1);
 		BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-		if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock()))
+		if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock(), FlagsAspect.isSet(below.getFlags(), FlagsAspect.FLAG_ACTIVE)))
 		{
 			// We want to drop this inventory into the below block.
 			Inventory inventory = newBlock.getInventory();
@@ -370,7 +381,7 @@ public class CommonBlockMutationHelpers
 			}
 			
 			// Now, clear the inventory by saving back whatever the default was.
-			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, newBlock.getBlock()));
+			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, blockType, isActive));
 			didDropInventory = true;
 		}
 		return didDropInventory;
@@ -425,7 +436,10 @@ public class CommonBlockMutationHelpers
 		_setBlockCheckingFire(env, context, location, newBlock, block);
 		
 		// If we have an inventory and the block type is either empty with an inventory or a station with an inventory, store there.
-		if ((null != original) && (env.blocks.hasEmptyBlockInventory(block) || (0 != env.stations.getNormalInventorySize(block))))
+		if ((null != original)
+				&& (env.blocks.hasEmptyBlockInventory(block, FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE))
+						|| (0 != env.stations.getNormalInventorySize(block)))
+		)
 		{
 			// Note that we only want to store the inventory if this block doesn't destroy it.
 			if (0 == env.blocks.getBlockDamage(block))
@@ -459,7 +473,7 @@ public class CommonBlockMutationHelpers
 		{
 			AbsoluteLocation target = locations[i];
 			BlockProxy test = context.previousBlockLookUp.apply(target);
-			if ((null != test) && env.blocks.hasEmptyBlockInventory(test.getBlock()))
+			if ((null != test) && env.blocks.hasEmptyBlockInventory(test.getBlock(), FlagsAspect.isSet(test.getFlags(), FlagsAspect.FLAG_ACTIVE)))
 			{
 				for (Integer key : inventoryToMove.sortedKeys())
 				{

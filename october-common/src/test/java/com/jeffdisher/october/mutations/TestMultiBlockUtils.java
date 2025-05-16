@@ -30,7 +30,7 @@ public class TestMultiBlockUtils
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		DOOR = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		DOOR = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
 	}
 	@AfterClass

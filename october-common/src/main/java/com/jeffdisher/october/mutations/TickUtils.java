@@ -98,7 +98,8 @@ public class TickUtils
 			Block headBlock = headProxy.getBlock();
 			
 			// Check if we need to apply breath mechanics.
-			boolean isBreathable = env.blocks.canBreatheInBlock(headBlock);
+			boolean isActive = FlagsAspect.isSet(headProxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+			boolean isBreathable = env.blocks.canBreatheInBlock(headBlock, isActive);
 			if (isBreathable)
 			{
 				// Reset breath.

@@ -439,25 +439,25 @@ public class TestCommonMutations
 	public void placeDuringLogicHigh()
 	{
 		// Place a lamp next to an activated switch to show that it turns into the "high" variant (since we only place "low" variants).
-		Block switchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
-		Block lampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
-		Block lampOn = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_on"));
+		Block switc = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		Block lamp = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp"));
 		int entityId = 1;
 		AbsoluteLocation switchLocation = new AbsoluteLocation(5, 5, 5);
 		AbsoluteLocation lampLocation = switchLocation.getRelative(1, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(switchLocation.getCuboidAddress(), ENV.special.AIR);
-		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switchOn.item().number());
-		cuboid.setData7(AspectRegistry.LOGIC, switchLocation.getBlockAddress(), LogicAspect.MAX_LEVEL);
+		cuboid.setData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress(), switc.item().number());
+		cuboid.setData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
 		
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		
 		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, lampLocation, 0, entityId));
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lampOff, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lamp, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(lampLocation, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
-		Assert.assertEquals(lampOn, proxy.getBlock());
+		Assert.assertEquals(lamp, proxy.getBlock());
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, proxy.getFlags());
 	}
 
 	@Test
@@ -1261,19 +1261,19 @@ public class TestCommonMutations
 		// We will show that we can change the logic state of something like a door but not a lamp (since it isn't manual).
 		AbsoluteLocation doorLocation = new AbsoluteLocation(5, 5, 5);
 		AbsoluteLocation lampLocation = new AbsoluteLocation(6, 6, 6);
-		Item doorClosed = ENV.items.getItemById("op.door_closed");
-		Item doorOpen = ENV.items.getItemById("op.door_open");
-		Item lampOff = ENV.items.getItemById("op.lamp_off");
+		Item door = ENV.items.getItemById("op.door");
+		Item lamp = ENV.items.getItemById("op.lamp");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorClosed.number());
-		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lampOff.number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.number());
+		cuboid.setData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress(), lamp.number());
 		
 		// Test with the door.
 		MutableBlockProxy proxy = new MutableBlockProxy(doorLocation, cuboid);
 		MutationBlockSetLogicState mutation = new MutationBlockSetLogicState(doorLocation, true);
 		Assert.assertTrue(mutation.applyMutation(null, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, doorLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
 		
 		// Show that it fails if the value is already high.
 		Assert.assertFalse(mutation.applyMutation(null, proxy));
@@ -1283,7 +1283,8 @@ public class TestCommonMutations
 		mutation = new MutationBlockSetLogicState(lampLocation, true);
 		Assert.assertFalse(mutation.applyMutation(null, proxy));
 		proxy.writeBack(cuboid);
-		Assert.assertEquals(lampOff.number(), cuboid.getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		Assert.assertEquals(lamp.number(), cuboid.getData15(AspectRegistry.BLOCK, lampLocation.getBlockAddress()));
+		Assert.assertFalse(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, lampLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
 	}
 
 	@Test
@@ -1292,17 +1293,16 @@ public class TestCommonMutations
 		// Place a multi-block door and show that it responds to a logic update signal in the root block only (using synthetic MutationBlockLogicChange).
 		AbsoluteLocation doorLocation = new AbsoluteLocation(5, 5, 5);
 		AbsoluteLocation nonBaseLocation = doorLocation.getRelative(1, 0, 0);
-		Item doorClosed = ENV.items.getItemById("op.double_door_closed_base");
-		Item doorOpen = ENV.items.getItemById("op.double_door_open_base");
+		Item door = ENV.items.getItemById("op.double_door_base");
 		Item logicWire = ENV.items.getItemById("op.logic_wire");
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), doorClosed.number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress(), door.number());
 		cuboid.setData7(AspectRegistry.ORIENTATION, doorLocation.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH));
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress(), doorClosed.number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress(), door.number());
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorLocation.getRelative(0, 0, 1).getBlockAddress(), doorLocation);
-		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress(), doorClosed.number());
+		cuboid.setData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress(), door.number());
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, doorLocation.getRelative(1, 0, 1).getBlockAddress(), doorLocation);
-		cuboid.setData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress(), doorClosed.number());
+		cuboid.setData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress(), door.number());
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, nonBaseLocation.getBlockAddress(), doorLocation);
 		
 		// Create the context.
@@ -1333,7 +1333,7 @@ public class TestCommonMutations
 		Assert.assertFalse(mutation.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		// This shouldn't change anything.
-		Assert.assertEquals(doorClosed.number(), cuboid.getData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress()));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress()));
 		Assert.assertEquals(0, out_mutations.size());
 		
 		// Test the logic update in a root block.
@@ -1354,10 +1354,14 @@ public class TestCommonMutations
 			proxy.writeBack(cuboid);
 		}
 		// All the blocks should now be open.
-		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
-		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress()));
-		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress()));
-		Assert.assertEquals(doorOpen.number(), cuboid.getData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress()));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getBlockAddress()));
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, doorLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getRelative(0, 0, 1).getBlockAddress()));
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, doorLocation.getRelative(0, 0, 1).getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, doorLocation.getRelative(1, 0, 1).getBlockAddress()));
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, doorLocation.getRelative(1, 0, 1).getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
+		Assert.assertEquals(door.number(), cuboid.getData15(AspectRegistry.BLOCK, nonBaseLocation.getBlockAddress()));
+		Assert.assertTrue(FlagsAspect.isSet(cuboid.getData7(AspectRegistry.FLAGS, nonBaseLocation.getBlockAddress()), FlagsAspect.FLAG_ACTIVE));
 	}
 
 	@Test

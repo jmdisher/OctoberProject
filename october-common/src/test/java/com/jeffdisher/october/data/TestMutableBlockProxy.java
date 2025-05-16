@@ -140,7 +140,7 @@ public class TestMutableBlockProxy
 	@Test
 	public void multiBlock()
 	{
-		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_closed_base"));
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.double_door_base"));
 		AbsoluteLocation rootLocation = new AbsoluteLocation(1, 1, 1);
 		AbsoluteLocation extensionLocation = rootLocation.getRelative(0, 0, 1);
 		CuboidData input = CuboidGenerator.createFilledCuboid(rootLocation.getCuboidAddress(), ENV.special.AIR);

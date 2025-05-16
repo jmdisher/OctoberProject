@@ -28,12 +28,9 @@ op.leaf	40
 op.wheat_seedling	20
 op.wheat_young	20
 op.wheat_mature	20
-op.door_closed	100
-op.door_open	100
-op.switch_off	40
-op.switch_on	40
-op.lamp_off	40
-op.lamp_on	40
+op.door	100
+op.switch	40
+op.lamp	40
 op.logic_wire	10
 op.torch	10
 op.carrot_seedling	30
@@ -41,7 +38,6 @@ op.carrot_young	30
 op.carrot_mature	30
 op.bed	100
 op.basalt	3000
-op.double_door_closed_base	200
-op.double_door_open_base	200
+op.double_door_base	200
 op.grass	300
 op.tilled_soil	200

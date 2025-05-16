@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -99,7 +100,9 @@ public class PropagationHelpers
 			@Override
 			public byte getEmissionForBlock(AbsoluteLocation location, Block block)
 			{
-				return env.lighting.getLightEmission(block);
+				MutableBlockProxy proxy = lazyLocalCache.apply(location);
+				boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+				return env.lighting.getLightEmission(block, isActive);
 			}
 			@Override
 			public byte getOpacityForBlock(Block block)

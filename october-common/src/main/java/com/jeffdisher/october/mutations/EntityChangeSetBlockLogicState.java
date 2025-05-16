@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -39,13 +40,13 @@ public class EntityChangeSetBlockLogicState implements IMutationEntity<IMutableP
 		return env.logic.isManual(block);
 	}
 
-	public static boolean getCurrentBlockLogicState(Block block)
+	public static boolean getCurrentBlockLogicState(Block block, byte flags)
 	{
 		Environment env = Environment.getShared();
 		
 		// We can only ask this for manual cases.
 		Assert.assertTrue(env.logic.isManual(block));
-		return env.logic.isHigh(block);
+		return FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
 	}
 
 

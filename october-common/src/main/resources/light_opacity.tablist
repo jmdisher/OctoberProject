@@ -29,8 +29,8 @@ op.leaf	4
 op.wheat_seedling	2
 op.wheat_young	3
 op.wheat_mature	4
-op.door_open	2
-op.lamp_off	2
+op.door	2
+op.lamp	2
 op.logic_wire	1
 op.carrot_seedling	2
 op.carrot_young	2

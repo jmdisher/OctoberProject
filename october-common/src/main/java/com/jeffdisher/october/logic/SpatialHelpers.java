@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -76,7 +77,8 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = !env.blocks.isSolid(block.getBlock());
+					boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
+					isAir = !env.blocks.isSolid(block.getBlock(), isActive);
 				}
 				else
 				{
@@ -417,7 +419,8 @@ public class SpatialHelpers
 			// This can be null if the world isn't totally loaded on the client.
 			if (null != block)
 			{
-				canExist = !env.blocks.isSolid(block.getBlock());
+				boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
+				canExist = !env.blocks.isSolid(block.getBlock(), isActive);
 			}
 			else
 			{
@@ -443,7 +446,8 @@ public class SpatialHelpers
 				// This can be null if the world isn't totally loaded on the client.
 				if (null != block)
 				{
-					isAir = !env.blocks.isSolid(block.getBlock());
+					boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
+					isAir = !env.blocks.isSolid(block.getBlock(), isActive);
 				}
 				else
 				{

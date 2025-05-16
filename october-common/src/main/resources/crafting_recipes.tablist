@@ -96,21 +96,21 @@ op.furnace_cook_steak	FUELLED_FURNACE
 	input	op.beef
 	output	op.steak
 	millis	1000
-op.door_closed	COMMON
+op.door	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank
-	output	op.door_closed
+	output	op.door
 	millis	8000
 op.hopper_down	COMMON
 	input	op.plank	op.plank	op.iron_ingot	op.iron_ingot
 	output	op.hopper_down
 	millis	10000
-op.switch_off	COMMON
+op.switch	COMMON
 	input	op.iron_ingot	op.stick
-	output	op.switch_off
+	output	op.switch
 	millis	2000
-op.lamp_off	COMMON
+op.lamp	COMMON
 	input	op.iron_ingot	op.iron_ingot	op.charcoal
-	output	op.lamp_off
+	output	op.lamp
 	millis	4000
 op.logic_wire	COMMON
 	input	op.iron_ingot	op.charcoal
@@ -164,9 +164,9 @@ op.digging_stick	BUILT_IN
 	input	op.stick
 	output	op.digging_stick
 	millis	500
-op.double_door_closed_base	COMMON
+op.double_door_base	COMMON
 	input	op.plank	op.plank	op.plank	op.plank	op.plank	op.plank	op.iron_ingot	op.iron_ingot
-	output	op.double_door_closed_base
+	output	op.double_door_base
 	millis	16000
 op.stone_hoe	COMMON
 	input	op.stick	op.stick	op.stone

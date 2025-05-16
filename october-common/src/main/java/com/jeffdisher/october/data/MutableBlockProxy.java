@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
@@ -91,7 +92,9 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We can't return null if this block can support one.
 		if (null == inv)
 		{
-			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock);
+			byte flags = _getData7(AspectRegistry.FLAGS);
+			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
+			inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(_env, _cachedBlock, isActive);
 		}
 		return inv;
 	}
@@ -392,16 +395,25 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	 */
 	public boolean mayTriggerLightingChange()
 	{
-		// The only thing which can trigger a lighting change is if the block type was changed in a way which changes
-		// its own light emission or opacity.
+		// Currently, either a block change (break/place light) or a flag change (enable lamp) can result in light change.
 		boolean lightMayChange = false;
-		if (null != _writes[AspectRegistry.BLOCK.index()])
+		boolean blockChange = (null != _writes[AspectRegistry.BLOCK.index()]);
+		boolean flagChange = (null != _writes[AspectRegistry.FLAGS.index()]);
+		if (blockChange || flagChange)
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
-			byte originalEmission = _env.lighting.getLightEmission(originalBlock);
-			byte updatedEmission = _env.lighting.getLightEmission(_cachedBlock);
+			byte oldFlags = _data.getData7(AspectRegistry.FLAGS, _address);
+			boolean wasActive = FlagsAspect.isSet(_data.getData7(AspectRegistry.FLAGS, _address), FlagsAspect.FLAG_ACTIVE);
+			byte originalEmission = _env.lighting.getLightEmission(originalBlock, wasActive);
+			
+			byte newFlags = (null != _writes[AspectRegistry.FLAGS.index()])
+					? _write7[AspectRegistry.FLAGS.index()]
+					: oldFlags
+			;
+			boolean isActive = FlagsAspect.isSet(newFlags, FlagsAspect.FLAG_ACTIVE);
+			byte updatedEmission = _env.lighting.getLightEmission(_cachedBlock, isActive);
 			byte originalOpacity = _env.lighting.getOpacity(originalBlock);
 			byte updatedOpacity = _env.lighting.getOpacity(_cachedBlock);
 			lightMayChange = (originalEmission != updatedEmission) || (originalOpacity != updatedOpacity);
@@ -424,18 +436,23 @@ public class MutableBlockProxy implements IMutableBlockProxy
 		// We check what this changed from/to to determine what blocks could have had a logic change.
 		byte changeBits = 0x0;
 		
-		// First, only a block change can result in a logic change.
-		if (null != _writes[AspectRegistry.BLOCK.index()])
+		// Currently, either a block change (conduit) or a flag change (switch) can result in logic change.
+		boolean blockChange = (null != _writes[AspectRegistry.BLOCK.index()]);
+		boolean flagChange = (null != _writes[AspectRegistry.FLAGS.index()]);
+		if (blockChange || flagChange)
 		{
 			short original = _data.getData15(AspectRegistry.BLOCK, _address);
 			Item rawItem = _env.items.ITEMS_BY_TYPE[original];
 			Block originalBlock = _env.blocks.fromItem(rawItem);
 			
 			// We expect that there should be no redundant writes here (called AFTER didChange()).
-			Assert.assertTrue(originalBlock != _cachedBlock);
+			if (blockChange)
+			{
+				Assert.assertTrue(originalBlock != _cachedBlock);
+			}
 			
 			// Here, we have cases to check:  If this changed to/from a conduit block, it could actually have changed, itself.
-			if (_env.logic.isConduit(originalBlock) != _env.logic.isConduit(_cachedBlock))
+			if (blockChange && (_env.logic.isConduit(originalBlock) != _env.logic.isConduit(_cachedBlock)))
 			{
 				changeBits |= LogicLayerHelpers.LOGIC_BIT_THIS;
 			}

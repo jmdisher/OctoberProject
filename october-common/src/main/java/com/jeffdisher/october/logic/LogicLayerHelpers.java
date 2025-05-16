@@ -4,10 +4,10 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -27,24 +27,17 @@ public class LogicLayerHelpers
 	public static final byte LOGIC_BIT_UP = 0x20;
 	public static final byte LOGIC_BIT_DOWN = 0x40;
 
-	public static Block blockTypeToPlace(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, Block type)
+	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, Block type)
 	{
-		// Check to see if we are placing a logic-sensitive block.
+		// Only sinks can be set to active during placement (sources can be changed to active by a user).
+		boolean isActive = false;
 		
-		// Default to a normal block.
-		Block placeType = type;
-		if (env.logic.isSink(type))
+		// See if this is a sink which is receiving a signal.
+		if (env.logic.isSink(type) && _isBlockReceivingHighSignal(env, proxyLookup, location))
 		{
-			// We always place a "low" type.
-			Assert.assertTrue(!env.logic.isHigh(type));
-			
-			// See if we should replace this with the "high" version.
-			if (_isBlockReceivingHighSignal(env, proxyLookup, location))
-			{
-				placeType = env.logic.getAlternate(type);
-			}
+			isActive = true;
 		}
-		return placeType;
+		return isActive;
 	}
 
 	public static boolean isBlockReceivingHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
@@ -129,7 +122,7 @@ public class LogicLayerHelpers
 			else if (env.logic.isSource(type))
 			{
 				// TODO:  Consider eventualTarget if this block has a specific output.
-				isValueHigh = env.logic.isHigh(type);
+				isValueHigh = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
 			}
 		}
 		return isValueHigh;

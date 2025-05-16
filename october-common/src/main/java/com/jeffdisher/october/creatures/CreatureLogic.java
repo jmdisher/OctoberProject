@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.CreatureMovementHelpers;
@@ -311,8 +312,10 @@ public class CreatureLogic
 	{
 		Assert.assertTrue(!existingPlan.isEmpty());
 		
-		Block currentBlock = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation()).getBlock();
-		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock);
+		BlockProxy proxy = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation());
+		Block currentBlock = proxy.getBlock();
+		boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock, isActive);
 		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.newTargetEntityId);
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.
@@ -525,11 +528,12 @@ public class CreatureLogic
 			else
 			{
 				Block block = proxy.getBlock();
-				if (environment.blocks.isSolid(block))
+				boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+				if (environment.blocks.isSolid(block, isActive))
 				{
 					kind = PathFinder.BlockKind.SOLID;
 				}
-				else if (environment.blocks.canSwimInBlock(block))
+				else if (environment.blocks.canSwimInBlock(block, isActive))
 				{
 					kind = PathFinder.BlockKind.SWIMMABLE;
 				}

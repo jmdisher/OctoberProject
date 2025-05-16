@@ -23,6 +23,7 @@ public class LightAspect
 	 * @param blocks The existing BlockAspect.
 	 * @param opacityStream The stream containing the tablist describing block opacity.
 	 * @param sourceStream The stream containing the tablist describing block light sources.
+	 * @param activeSourceStream The stream containing the "active" variant tablist of sourceStream.
 	 * @return The aspect (never null).
 	 * @throws IOException There was a problem with a stream.
 	 * @throws TabListReader.TabListException A tablist was malformed.
@@ -30,6 +31,7 @@ public class LightAspect
 	public static LightAspect load(ItemRegistry items, BlockAspect blocks
 			, InputStream opacityStream
 			, InputStream sourceStream
+			, InputStream activeSourceStream
 	) throws IOException, TabListReader.TabListException
 	{
 		// Process opacity.
@@ -58,7 +60,11 @@ public class LightAspect
 		FlatTabListCallbacks<Block, Byte> sourceCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.PositiveByteTransformer("source", MAX_LIGHT));
 		TabListReader.readEntireFile(sourceCallbacks, sourceStream);
 		
-		return new LightAspect(opacityByBlockType, sourceCallbacks.data);
+		// ... and the active sources.
+		FlatTabListCallbacks<Block, Byte> activeSourceCallbacks = new FlatTabListCallbacks<>(new IValueTransformer.BlockTransformer(items, blocks), new IValueTransformer.PositiveByteTransformer("source", MAX_LIGHT));
+		TabListReader.readEntireFile(activeSourceCallbacks, activeSourceStream);
+		
+		return new LightAspect(opacityByBlockType, sourceCallbacks.data, activeSourceCallbacks.data);
 	}
 
 	public static final byte MAX_LIGHT = 15;
@@ -66,11 +72,13 @@ public class LightAspect
 
 	private final byte[] _opacityByBlockType;
 	private final Map<Block, Byte> _sources;
+	private final Map<Block, Byte> _activeSources;
 
-	private LightAspect(byte[] opacityByBlockType, Map<Block, Byte> sources)
+	private LightAspect(byte[] opacityByBlockType, Map<Block, Byte> sources, Map<Block, Byte> activeSources)
 	{
 		_opacityByBlockType = opacityByBlockType;
 		_sources = sources;
+		_activeSources = activeSources;
 	}
 
 	/**
@@ -89,11 +97,15 @@ public class LightAspect
 	 * Returns the light level emitted by this item type.
 	 * 
 	 * @param block The block type.
+	 * @param isActive True if the block is in the active state.
 	 * @return The light level from this block ([0..15]).
 	 */
-	public byte getLightEmission(Block block)
+	public byte getLightEmission(Block block, boolean isActive)
 	{
-		Byte known = _sources.get(block);
+		Byte known = isActive
+				? _activeSources.get(block)
+				: _sources.get(block)
+		;
 		return (null != known)
 				? known.byteValue()
 				: 0

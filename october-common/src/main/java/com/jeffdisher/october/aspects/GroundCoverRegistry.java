@@ -55,8 +55,10 @@ public class GroundCoverRegistry
 	public boolean canGroundCoverExistUnder(Block possibleGroundCoverBlock, Block above)
 	{
 		// For now, at least, we will consider all groundcover to be able to exist under any breathable block.
+		// We always assume inactive since we don't want this to change based on that state.
+		boolean isActive = false;
 		return (_groundCoverToTargets.containsKey(possibleGroundCoverBlock) || _nonSpreadingToBaseType.containsKey(possibleGroundCoverBlock))
-				&& Environment.getShared().blocks.canBreatheInBlock(above);
+				&& Environment.getShared().blocks.canBreatheInBlock(above, isActive);
 	}
 
 	/**

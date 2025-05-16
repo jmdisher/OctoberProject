@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.CraftingBlockSupport;
@@ -74,12 +75,13 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// We want to check the special case of trying to store items into an air block above an air block, since we should just shift down, in the case.
 		if (!didApply && (Inventory.INVENTORY_ASPECT_INVENTORY == _inventoryAspect))
 		{
-			if (env.blocks.hasEmptyBlockInventory(block))
+			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+			if (env.blocks.hasEmptyBlockInventory(block, isActive))
 			{
 				// This block has an empty inventory but we want to drop it down a block, if it has an empty inventory.
 				AbsoluteLocation belowLocation = _blockLocation.getRelative(0, 0, -1);
 				BlockProxy below = context.previousBlockLookUp.apply(belowLocation);
-				if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock()))
+				if ((null != below) && env.blocks.hasEmptyBlockInventory(below.getBlock(), FlagsAspect.isSet(below.getFlags(), FlagsAspect.FLAG_ACTIVE)))
 				{
 					// We want to drop this into the below block.
 					context.mutationSink.next(new MutationBlockStoreItems(belowLocation, _stackable, _nonStackable, _inventoryAspect));
@@ -124,7 +126,8 @@ public class MutationBlockStoreItems implements IMutationBlock
 		// Check if we need to destroy any inventory due to fire.
 		if (FireHelpers.shouldBurnUpItems(env, context, _blockLocation, newBlock))
 		{
-			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, block));
+			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
+			newBlock.setInventory(BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, block, isActive));
 			didApply = true;
 		}
 		return didApply;

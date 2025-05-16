@@ -85,7 +85,10 @@ public class Environment
 		// Local instantiation only.
 		ClassLoader loader = getClass().getClassLoader();
 		this.items = ItemRegistry.loadRegistry(loader.getResourceAsStream("item_registry.tablist"));
-		this.blocks = BlockAspect.loadRegistry(this.items, loader.getResourceAsStream("block_aspect.tablist"));
+		this.blocks = BlockAspect.loadRegistry(this.items
+				, loader.getResourceAsStream("block_aspect.tablist")
+				, loader.getResourceAsStream("block_aspect_A.tablist")
+		);
 		this.liquids = LiquidRegistry.loadRegistry(this.items, this.blocks, loader.getResourceAsStream("liquid_registry.tablist"));
 		this.durability = DurabilityAspect.load(this.items, loader.getResourceAsStream("durability.tablist"));
 		this.encumbrance = InventoryEncumbrance.load(this.items
@@ -97,6 +100,7 @@ public class Environment
 		this.lighting = LightAspect.load(this.items, this.blocks
 				, loader.getResourceAsStream("light_opacity.tablist")
 				, loader.getResourceAsStream("light_sources.tablist")
+				, loader.getResourceAsStream("light_sources_A.tablist")
 		);
 		this.plants = PlantRegistry.load(this.items, this.blocks, loader.getResourceAsStream("plant_registry.tablist"));
 		this.foods = FoodRegistry.load(this.items, loader.getResourceAsStream("foods.tablist"));

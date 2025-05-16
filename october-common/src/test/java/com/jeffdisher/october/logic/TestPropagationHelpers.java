@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.BlockProxy;
@@ -49,7 +50,7 @@ public class TestPropagationHelpers
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		AbsoluteLocation lantern = address.getBase().getRelative(16, 16, 16);
-		_setBlock(lantern, cuboid, blockLantern, true, (byte)0x0);
+		_setBlock(lantern, cuboid, blockLantern, false, true, (byte)0x0);
 		
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
 		Map<AbsoluteLocation, BlockProxy> lazyGlobalCache = new HashMap<>();
@@ -110,19 +111,18 @@ public class TestPropagationHelpers
 	public void onOffSwitch()
 	{
 		// Write a few logic-related blocks into a cuboid and see what change bits are created.
-		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
-		Block blockSwitchOff = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_off"));
-		Block blockLampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
+		Block blockSwitch = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		Block blockLampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp"));
 		
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Set<AbsoluteLocation> potentialLogicChanges = new HashSet<>();
 		AbsoluteLocation switchOn = address.getBase().getRelative(16, 16, 16);
-		potentialLogicChanges.addAll(_setBlock(switchOn, cuboid, blockSwitchOn, false, (byte)0x7E));
+		potentialLogicChanges.addAll(_setBlock(switchOn, cuboid, blockSwitch, true, false, (byte)0x7E));
 		AbsoluteLocation switchOff = address.getBase().getRelative(14, 14, 14);
-		potentialLogicChanges.addAll(_setBlock(switchOff, cuboid, blockSwitchOff, false, (byte)0x7E));
+		potentialLogicChanges.addAll(_setBlock(switchOff, cuboid, blockSwitch, false, false, (byte)0x7E));
 		AbsoluteLocation lampOff = address.getBase().getRelative(18, 18, 18);
-		potentialLogicChanges.addAll(_setBlock(lampOff, cuboid, blockLampOff, true, (byte)0x0));
+		potentialLogicChanges.addAll(_setBlock(lampOff, cuboid, blockLampOff, false, true, (byte)0x0));
 		Assert.assertEquals(12, potentialLogicChanges.size());
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
@@ -171,18 +171,14 @@ public class TestPropagationHelpers
 	public void blockTypePredicates()
 	{
 		// Just test a few of these predicates to show what they do.
-		Block switchOff = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_off"));
-		Assert.assertTrue(ENV.logic.isSource(switchOff));
-		Block switchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
-		Assert.assertTrue(ENV.logic.isHigh(switchOn));
-		Block lampOff = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_off"));
-		Assert.assertTrue(ENV.logic.isAware(lampOff));
-		Block lampOn = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp_on"));
-		Assert.assertTrue(ENV.logic.isSink(lampOn));
-		Block doorClosed = ENV.blocks.fromItem(ENV.items.getItemById("op.door_closed"));
-		Assert.assertTrue(ENV.logic.isManual(doorClosed));
-		Block doorOpen = ENV.blocks.fromItem(ENV.items.getItemById("op.door_open"));
-		Assert.assertTrue(ENV.logic.isAware(doorOpen));
+		Block switc = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		Assert.assertTrue(ENV.logic.isSource(switc));
+		Block lamp = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp"));
+		Assert.assertTrue(ENV.logic.isAware(lamp));
+		Assert.assertTrue(ENV.logic.isSink(lamp));
+		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
+		Assert.assertTrue(ENV.logic.isManual(door));
+		Assert.assertTrue(ENV.logic.isAware(door));
 		Block logicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		Assert.assertTrue(ENV.logic.isAware(logicWire));
 		Assert.assertTrue(ENV.logic.isConduit(logicWire));
@@ -192,16 +188,16 @@ public class TestPropagationHelpers
 	public void onOffSwitchWithWire()
 	{
 		// Create a wire and observe it turn on and send updates when an on switch is updated.
-		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
 		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		Set<AbsoluteLocation> potentialLogicChanges = new HashSet<>();
 		AbsoluteLocation switchLocation = address.getBase().getRelative(16, 16, 16);
-		potentialLogicChanges.addAll(_setBlock(switchLocation, cuboid, blockSwitchOn, false, (byte)0x7E));
+		potentialLogicChanges.addAll(_setBlock(switchLocation, cuboid, blockSwitchOn, true, false, (byte)0x7E));
 		AbsoluteLocation wireLocation = switchLocation.getRelative(1, 0, 0);
-		potentialLogicChanges.addAll(_setBlock(wireLocation, cuboid, blockLogicWire, false, (byte)0x1));
+		potentialLogicChanges.addAll(_setBlock(wireLocation, cuboid, blockLogicWire, false, false, (byte)0x1));
 		
 		List<IMutationBlock> updateMutations = new ArrayList<>();
 		Map<AbsoluteLocation, MutableBlockProxy> lazyLocalCache = new HashMap<>();
@@ -248,7 +244,7 @@ public class TestPropagationHelpers
 	public void wireBreak()
 	{
 		// Create a wire a few blocks long, attached to an on switch, initialize the logic values and show the update when we break one near the switch.
-		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch_on"));
+		Block blockSwitchOn = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
 		Block blockLogicWire = ENV.blocks.fromItem(ENV.items.getItemById("op.logic_wire"));
 		
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
@@ -502,10 +498,14 @@ public class TestPropagationHelpers
 	}
 
 
-	private Set<AbsoluteLocation> _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean checkLight, byte expectedLogicBits)
+	private Set<AbsoluteLocation> _setBlock(AbsoluteLocation location, CuboidData cuboid, Block block, boolean setActive, boolean checkLight, byte expectedLogicBits)
 	{
 		MutableBlockProxy mutable = new MutableBlockProxy(location, cuboid);
 		mutable.setBlockAndClear(block);
+		if (setActive)
+		{
+			mutable.setFlags(FlagsAspect.FLAG_ACTIVE);
+		}
 		if (checkLight)
 		{
 			Assert.assertTrue(mutable.mayTriggerLightingChange());

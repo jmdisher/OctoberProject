@@ -3,16 +3,18 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
-import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * This is currently just a placeholder clone of MutationBlockReplace in order to reduce the scope of a later change.
+ * Sets the target block to the given logic state if it is sensitive to logic and isn't already in that state.
+ * These mutations are created by MutationBlockLogicChange and can be applied to manual or automatic blocks, so long as
+ * they are sinks.
  */
 public class MutationBlockInternalSetLogicState implements IMutationBlock
 {
@@ -20,23 +22,19 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 
 	public static MutationBlockInternalSetLogicState deserializeFromBuffer(ByteBuffer buffer)
 	{
-		Environment env = Environment.getShared();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
-		Block originalType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
-		Block newType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
-		return new MutationBlockInternalSetLogicState(location, originalType, newType);
+		boolean setHigh = CodecHelpers.readBoolean(buffer);
+		return new MutationBlockInternalSetLogicState(location, setHigh);
 	}
 
 
 	private final AbsoluteLocation _location;
-	private final Block _originalType;
-	private final Block _newType;
+	private final boolean _setHigh;
 
-	public MutationBlockInternalSetLogicState(AbsoluteLocation location, Block originalType, Block newType)
+	public MutationBlockInternalSetLogicState(AbsoluteLocation location, boolean setHigh)
 	{
 		_location = location;
-		_originalType = originalType;
-		_newType = newType;
+		_setHigh = setHigh;
 	}
 
 	@Override
@@ -48,23 +46,23 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 	@Override
 	public boolean applyMutation(TickProcessingContext context, IMutableBlockProxy newBlock)
 	{
+		Environment env = Environment.getShared();
 		boolean didApply = false;
-		
-		// Check to see if this is the expected type.
-		Block oldType = newBlock.getBlock();
-		if (oldType == _originalType)
+		Block previousBlock = newBlock.getBlock();
+		if (env.logic.isSink(previousBlock))
 		{
-			Environment env = Environment.getShared();
-			Inventory inventoryToMove = CommonBlockMutationHelpers.replaceBlockAndRestoreInventory(env, context, _location, newBlock, _newType);
-			if (null != inventoryToMove)
+			// As long as these are opposites, change to the alternative.
+			byte flags = newBlock.getFlags();
+			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
+			if (_setHigh != isActive)
 			{
-				CommonBlockMutationHelpers.pushInventoryToNeighbour(env, context, _location, inventoryToMove, false);
+				flags = _setHigh
+						? FlagsAspect.set(flags, FlagsAspect.FLAG_ACTIVE)
+						: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
+				;
+				newBlock.setFlags(flags);
+				didApply = true;
 			}
-			
-			// See if we might need to reflow water (consider if this was a bucket picking up a source).
-			CommonBlockMutationHelpers.scheduleLiquidFlowIfRequired(env, context, _location, oldType, _newType);
-			
-			didApply = true;
 		}
 		return didApply;
 	}
@@ -79,8 +77,7 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
-		CodecHelpers.writeItem(buffer, _originalType.item());
-		CodecHelpers.writeItem(buffer, _newType.item());
+		CodecHelpers.writeBoolean(buffer, _setHigh);
 	}
 
 	@Override

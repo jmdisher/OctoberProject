@@ -71,7 +71,9 @@ public class MutationBlockLiquidFlowInto implements IMutationBlock
 			if (emptyBlock != eventualBlock)
 			{
 				// We need to drop the block, first.
-				Inventory inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, eventualBlock);
+				// If this is being broken, it will default into an inactive state.
+				boolean isActive = false;
+				Inventory inv = BlockProxy.getDefaultNormalOrEmptyBlockInventory(env, eventualBlock, isActive);
 				if (null != inv)
 				{
 					MutableInventory newInventory = new MutableInventory(inv);

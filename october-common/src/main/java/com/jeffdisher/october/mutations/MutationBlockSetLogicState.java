@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -51,11 +52,15 @@ public class MutationBlockSetLogicState implements IMutationBlock
 		if (env.logic.isManual(previousBlock))
 		{
 			// As long as these are opposites, change to the alternative.
-			boolean areOpposite = _setHigh == !env.logic.isHigh(previousBlock);
-			if (areOpposite)
+			byte flags = newBlock.getFlags();
+			boolean isActive = FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE);
+			if (_setHigh != isActive)
 			{
-				Block alternate = env.logic.getAlternate(previousBlock);
-				CommonBlockMutationHelpers.setBlockKeepMultiBlock(env, newBlock, previousBlock, alternate);
+				flags = _setHigh
+						? FlagsAspect.set(flags, FlagsAspect.FLAG_ACTIVE)
+						: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
+				;
+				newBlock.setFlags(flags);
 				didApply = true;
 			}
 		}

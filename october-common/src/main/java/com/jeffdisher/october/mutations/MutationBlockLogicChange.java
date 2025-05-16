@@ -3,7 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.data.IBlockProxy;
+import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -49,21 +49,22 @@ public class MutationBlockLogicChange implements IMutationBlock
 		boolean didApply = false;
 		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
+			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 			if (LogicLayerHelpers.isBlockReceivingHighSignal(env, context.previousBlockLookUp, _blockLocation))
 			{
 				// This is set high so switch to the corresponding "high".
-				if (!env.logic.isHigh(thisBlock))
+				if (!isActive)
 				{
-					_sendReplaceWithAlternate(env, context, _blockLocation, newBlock);
+					_sendReplaceWithAlternate(env, context, _blockLocation, true);
 					didApply = true;
 				}
 			}
 			else
 			{
 				// This is set low so switch to the corresponding "low".
-				if (env.logic.isHigh(thisBlock))
+				if (isActive)
 				{
-					_sendReplaceWithAlternate(env, context, _blockLocation, newBlock);
+					_sendReplaceWithAlternate(env, context, _blockLocation, false);
 					didApply = true;
 				}
 			}
@@ -91,14 +92,11 @@ public class MutationBlockLogicChange implements IMutationBlock
 	}
 
 
-	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation rootBlockLocation, IBlockProxy proxy)
+	private static void _sendReplaceWithAlternate(Environment env, TickProcessingContext context, AbsoluteLocation rootBlockLocation, boolean setHigh)
 	{
-		Block initial = proxy.getBlock();
-		Block alternate = env.logic.getAlternate(initial);
-		
 		MultiBlockUtils.Lookup lookup = MultiBlockUtils.getLoadedRoot(env, context, rootBlockLocation);
 		MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
-			MutationBlockInternalSetLogicState mutation = new MutationBlockInternalSetLogicState(location, initial, alternate);
+			MutationBlockInternalSetLogicState mutation = new MutationBlockInternalSetLogicState(location, setHigh);
 			return mutation;
 		}, lookup);
 	}
