@@ -41,16 +41,16 @@ op.chest	Chest
 op.beef	Raw Beef
 op.steak	Cooked Steak
 op.door	Door
-DPERECATED.op.door_open	Door (Open)
+DEPRECATED.op.door_open	Door (Open)
 op.hopper	Hopper
 DEPRECATED.op.hopper_north	Hopper (North)
 DEPRECATED.op.hopper_south	Hopper (South)
 DEPRECATED.op.hopper_east	Hopper (East)
 DEPRECATED.op.hopper_west	Hopper (West)
 op.switch	Switch
-DPERECATED.op.switch_on	Switch (On)
+DEPRECATED.op.switch_on	Switch (On)
 op.lamp	Lamp
-DPERECATED.op.lamp_on	Lamp (On)
+DEPRECATED.op.lamp_on	Lamp (On)
 op.logic_wire	Logic Wire
 op.quern	Quern
 op.flour	Flour
@@ -75,7 +75,7 @@ op.lava_weak	Lava (Weak Flow)
 op.bucket_lava	Lava Bucket
 op.apple	Apple
 op.double_door_base	Double Door
-DPERECATED.op.double_door_open_base	Double Door (Open)
+DEPRECATED.op.double_door_open_base	Double Door (Open)
 op.grass	Grass
 op.tilled_soil	Tilled Soil
 op.stone_hoe	Stone Hoe

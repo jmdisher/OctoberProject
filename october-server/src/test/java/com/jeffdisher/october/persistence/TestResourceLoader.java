@@ -829,10 +829,10 @@ public class TestResourceLoader
 		
 		// We want to show switches and logic being disabled after load so enable them, now.
 		// (we can build this using current helpers and just save it out)
-		short switchOnNumber = ENV.items.getItemById("DPERECATED.op.switch_on").number();
+		short switchOnNumber = ENV.items.getItemById("DEPRECATED.op.switch_on").number();
 		short switchOffNumber = ENV.items.getItemById("op.switch").number();
 		short wireNumber = ENV.items.getItemById("op.logic_wire").number();
-		short lampOnNumber = ENV.items.getItemById("DPERECATED.op.lamp_on").number();
+		short lampOnNumber = ENV.items.getItemById("DEPRECATED.op.lamp_on").number();
 		short lampOffNumber = ENV.items.getItemById("op.lamp").number();
 		AbsoluteLocation switchOnLocation = address.getBase().getRelative(2, 3, 4);
 		AbsoluteLocation wireLocation = switchOnLocation.getRelative(1, 0, 0);
@@ -845,9 +845,9 @@ public class TestResourceLoader
 		
 		// We also want to show how doors work in this change (since they were also changed due to the "active" flag).
 		short dirtNumber = ENV.items.getItemById("op.dirt").number();
-		short doorOpenNumber = ENV.items.getItemById("DPERECATED.op.door_open").number();
+		short doorOpenNumber = ENV.items.getItemById("DEPRECATED.op.door_open").number();
 		short doorClosedNumber = ENV.items.getItemById("op.door").number();
-		short multiDoorOpenNumber = ENV.items.getItemById("DPERECATED.op.double_door_open_base").number();
+		short multiDoorOpenNumber = ENV.items.getItemById("DEPRECATED.op.double_door_open_base").number();
 		short multiDoorClosedNumber = ENV.items.getItemById("op.double_door_base").number();
 		AbsoluteLocation doorLocation = switchOnLocation.getRelative(0, 2, 0);
 		AbsoluteLocation multiDoorLocation = doorLocation.getRelative(0, 3, 0);
