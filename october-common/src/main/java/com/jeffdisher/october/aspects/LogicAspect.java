@@ -45,10 +45,10 @@ public class LogicAspect
 	) throws IOException, TabListReader.TabListException
 	{
 		IValueTransformer<Block> blockTransformer = new IValueTransformer.BlockTransformer(items, blocks);
-		IValueTransformer<Role> roleTransformer = Role.transformer;
+		IValueTransformer<_Role> roleTransformer = _Role.transformer;
 		IValueTransformer<Boolean> booleanTransformer = new IValueTransformer.BooleanTransformer();
 		
-		SimpleTabListCallbacks<Block, Role> callbacks = new SimpleTabListCallbacks<>(blockTransformer, roleTransformer);
+		SimpleTabListCallbacks<Block, _Role> callbacks = new SimpleTabListCallbacks<>(blockTransformer, roleTransformer);
 		SimpleTabListCallbacks.SubRecordCapture<Block, Boolean> manual = callbacks.captureSubRecord(FIELD_MANUAL, booleanTransformer, true);
 		
 		TabListReader.readEntireFile(callbacks, stream);
@@ -70,11 +70,11 @@ public class LogicAspect
 	}
 
 
-	private final Map<Block, Role> _roles;
+	private final Map<Block, _Role> _roles;
 	private final Map<Block, Boolean> _manual;
 	private final Block _logicWireBlock;
 
-	private LogicAspect(Map<Block, Role> roles
+	private LogicAspect(Map<Block, _Role> roles
 			, Map<Block, Boolean> manual
 			, Block logicWireBlock
 	)
@@ -84,30 +84,64 @@ public class LogicAspect
 		_logicWireBlock = logicWireBlock;
 	}
 
+	/**
+	 * Used to check if this block could possibly be emitting a logic value into surrounding blocks.  Whether it is at
+	 * the current moment depends on other information, not just the block type.
+	 * 
+	 * @param block The block type.
+	 * @return True if this block can emit a logic signal.
+	 */
 	public boolean isSource(Block block)
 	{
-		Role role = _roles.get(block);
-		return (Role.SOURCE == role);
+		_Role role = _roles.get(block);
+		return (_Role.SOURCE == role);
 	}
 
+	/**
+	 * Used to check if this block type can be changed to an active state by a logic signal from another block or
+	 * conduit.
+	 * 
+	 * @param block The block type.
+	 * @return True if this block type can have its state changed by logic.
+	 */
 	public boolean isSink(Block block)
 	{
-		Role role = _roles.get(block);
-		return (Role.SINK == role);
+		_Role role = _roles.get(block);
+		return (_Role.SINK == role);
 	}
 
+	/**
+	 * Used to check if a block is involved in the logic layer in any way:  Conduit, sink, or source.
+	 * 
+	 * @param block The block type.
+	 * @return True if this block may be involved in logic.
+	 */
 	public boolean isAware(Block block)
 	{
 		// A sink, source, or just a conduit are all considered aware.
 		return (_logicWireBlock == block) || _roles.containsKey(block);
 	}
 
+	/**
+	 * Used to check if a given block type can have its active state manually set, no matter whether it is a sink or a
+	 * source.
+	 * 
+	 * @param block The block type.
+	 * @return True if the block's active state can be manually set by an entity.
+	 */
 	public boolean isManual(Block block)
 	{
 		Boolean value = _manual.get(block);
 		return (Boolean.TRUE == value);
 	}
 
+	/**
+	 * Used to check if this block type can be a conduit for logic signals (that is, they can pass through it and
+	 * degrade).
+	 * 
+	 * @param block The block type.
+	 * @return True if this block is specifically a logic conduit.
+	 */
 	public boolean isConduit(Block block)
 	{
 		// This helper is a special-case for logic wire.
@@ -115,17 +149,17 @@ public class LogicAspect
 	}
 
 
-	public static enum Role
+	private static enum _Role
 	{
 		SINK,
 		SOURCE,
 		;
 		
-		public static IValueTransformer<Role> transformer = new IValueTransformer<>() {
+		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
 			@Override
-			public Role transform(String value) throws TabListException
+			public _Role transform(String value) throws TabListException
 			{
-				Role role = Role.valueOf(value.toUpperCase());
+				_Role role = _Role.valueOf(value.toUpperCase());
 				if (null == role)
 				{
 					throw new TabListReader.TabListException("Invalid role: \"" + value + "\"");

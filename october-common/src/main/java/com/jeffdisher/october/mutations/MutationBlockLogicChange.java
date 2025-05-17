@@ -47,7 +47,7 @@ public class MutationBlockLogicChange implements IMutationBlock
 		Block thisBlock = newBlock.getBlock();
 		
 		boolean didApply = false;
-		if (env.logic.isAware(thisBlock) && env.logic.isSink(thisBlock) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
+		if (env.logic.isSink(thisBlock) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
 			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
 			if (LogicLayerHelpers.isBlockReceivingHighSignal(env, context.previousBlockLookUp, _blockLocation))
