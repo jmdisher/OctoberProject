@@ -57,7 +57,7 @@ public class TestMutationBlockCodec
 	{
 		AbsoluteLocation location = new AbsoluteLocation(-1, 0, 1);
 		int entityId = 1;
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")), entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(location, ENV.blocks.fromItem(ENV.items.getItemById("op.stone")), null, entityId);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationBlockCodec.serializeToBuffer(buffer, mutation);

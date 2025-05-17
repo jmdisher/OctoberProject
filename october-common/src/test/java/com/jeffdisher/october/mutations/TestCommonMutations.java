@@ -313,7 +313,7 @@ public class TestCommonMutations
 		
 		Block wheatSeedling = ENV.blocks.fromItem(ENV.items.getItemById("op.wheat_seedling"));
 		int entityId = 1;
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, null, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
@@ -353,7 +353,7 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), tilled.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
 		
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, wheatSeedling, null, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		TickProcessingContext context = ContextBuilder.build()
@@ -452,7 +452,7 @@ public class TestCommonMutations
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
 		
 		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, lampLocation, 0, entityId));
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lamp, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(lampLocation, lamp, null, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(lampLocation, cuboid);
 		Assert.assertTrue(mutation.applyMutation(context, proxy));
 		Assert.assertTrue(proxy.didChange());
@@ -772,7 +772,7 @@ public class TestCommonMutations
 		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 0, -1).getBlockAddress(), dirt.item().number());
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, target.getBlockAddress(), Inventory.start(StationRegistry.CAPACITY_BLOCK_EMPTY).addStackable(CHARCOAL_ITEM, 1).finish());
 		
-		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, dirt, entityId);
+		MutationBlockOverwriteByEntity mutation = new MutationBlockOverwriteByEntity(target, dirt, null, entityId);
 		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		_Events events = new _Events();
 		IMutationBlock[] out_mutation = new IMutationBlock[1];
@@ -1402,7 +1402,7 @@ public class TestCommonMutations
 		// Test placing dirt next to existing grass.
 		AbsoluteLocation besideGrass = startGrass.getRelative(1, 0, 0);
 		MutableBlockProxy proxy = new MutableBlockProxy(besideGrass, cuboid);
-		MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(besideGrass, dirt, 1);
+		MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(besideGrass, dirt, null, 1);
 		Assert.assertTrue(write.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		
@@ -1418,7 +1418,7 @@ public class TestCommonMutations
 		// Test placing grass next to existing dirt.
 		AbsoluteLocation besideDirt = startDirt.getRelative(1, 0, 0);
 		proxy = new MutableBlockProxy(besideDirt, cuboid);
-		write = new MutationBlockOverwriteByEntity(besideDirt, grass, 1);
+		write = new MutationBlockOverwriteByEntity(besideDirt, grass, null, 1);
 		Assert.assertTrue(write.applyMutation(context, proxy));
 		proxy.writeBack(cuboid);
 		

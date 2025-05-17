@@ -2265,7 +2265,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, null
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockOverwriteByEntity(dirtLocation, ENV.blocks.getAsPlaceableBlock(dirt), entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockOverwriteByEntity(dirtLocation, ENV.blocks.getAsPlaceableBlock(dirt), null, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()

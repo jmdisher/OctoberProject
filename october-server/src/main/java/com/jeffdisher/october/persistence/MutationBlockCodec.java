@@ -19,6 +19,7 @@ import com.jeffdisher.october.mutations.MutationBlockInternalSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockLiquidFlowInto;
 import com.jeffdisher.october.mutations.MutationBlockLogicChange;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
+import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity_V5;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
 import com.jeffdisher.october.mutations.MutationBlockReplace;
@@ -54,7 +55,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockLogicChange.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLogicChange.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockPeriodic.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPeriodic.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockIncrementalRepair.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockIncrementalRepair.deserializeFromBuffer(buffer);
-		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockOverwriteByEntity_V5.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity_V5.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockLiquidFlowInto.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockLiquidFlowInto.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockStartFire.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockStartFire.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockBurnDown.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockBurnDown.deserializeFromBuffer(buffer);
@@ -63,6 +64,7 @@ public class MutationBlockCodec
 		_CODEC_TABLE[MutationBlockPhase2Multi.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockPhase2Multi.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockGrowGroundCover.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockGrowGroundCover.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationBlockInternalSetLogicState.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockInternalSetLogicState.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[MutationBlockOverwriteByEntity.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationBlockOverwriteByEntity.deserializeFromBuffer(buffer);
 		
 		// Verify that the table is fully-built (0 is always empty as an error state).
 		for (int i = 1; i < _CODEC_TABLE.length; ++i)

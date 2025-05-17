@@ -3,6 +3,7 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -26,24 +27,30 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 		Environment env = Environment.getShared();
 		AbsoluteLocation location = CodecHelpers.readAbsoluteLocation(buffer);
 		Block blockType = env.blocks.getAsPlaceableBlock(CodecHelpers.readItem(buffer));
+		OrientationAspect.Direction outputDirection = CodecHelpers.readOrientation(buffer);
 		int entityId = buffer.getInt();
-		return new MutationBlockOverwriteByEntity(location, blockType, entityId);
+		return new MutationBlockOverwriteByEntity(location, blockType, outputDirection, entityId);
 	}
 
 
 	private final AbsoluteLocation _location;
 	private final Block _blockType;
+	private final OrientationAspect.Direction _outputDirection;
 	private final int _entityId;
 
-	public MutationBlockOverwriteByEntity(AbsoluteLocation location, Block blockType, int entityId)
+	public MutationBlockOverwriteByEntity(AbsoluteLocation location, Block blockType, OrientationAspect.Direction outputDirection, int entityId)
 	{
 		Environment env = Environment.getShared();
 		// Using this with AIR doesn't make sense.
 		Assert.assertTrue(!env.blocks.canBeReplaced(blockType));
+		// outputDirection is not yet used - this only exists for plumbing.
+		Assert.assertTrue(null == outputDirection);
+		// This mutation always requires an entity ID.
 		Assert.assertTrue(0 != entityId);
 		
 		_location = location;
 		_blockType = blockType;
+		_outputDirection = outputDirection;
 		_entityId = entityId;
 	}
 
@@ -99,6 +106,7 @@ public class MutationBlockOverwriteByEntity implements IMutationBlock
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _location);
 		CodecHelpers.writeItem(buffer, _blockType.item());
+		CodecHelpers.writeOrientation(buffer, _outputDirection);
 		buffer.putInt(_entityId);
 	}
 

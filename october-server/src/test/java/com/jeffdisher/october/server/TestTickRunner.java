@@ -2384,7 +2384,7 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Place down a switch, turn it on, then place the other blocks around it to see how they act.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(switchLocation, switc, entityId)), 1L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(switchLocation, switc, null, entityId)), 1L);
 		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, true)), 2L);
 		
 		runner.startNextTick();
@@ -2393,9 +2393,9 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(switc.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(closeLampLocation, lamp, entityId)), 3L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(wireLocation, wireBlock, entityId)), 4L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(farLampLocation, lamp, entityId)), 5L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(closeLampLocation, lamp, null, entityId)), 3L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(wireLocation, wireBlock, null, entityId)), 4L);
+		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(farLampLocation, lamp, null, entityId)), 5L);
 		
 		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
 		runner.startNextTick();

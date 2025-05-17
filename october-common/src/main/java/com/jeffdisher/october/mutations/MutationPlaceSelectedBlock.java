@@ -154,7 +154,7 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 			
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.
-			MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockToPlace, newEntity.getId());
+			MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockToPlace, null, newEntity.getId());
 			context.mutationSink.next(write);
 			didApply = true;
 			
