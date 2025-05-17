@@ -128,8 +128,9 @@ public class AspectRegistry
 			, null
 	);
 	/**
-	 * Block orientation bits.  These are currently only used for multi-block arrangements but may be used for other
-	 * block orientation applications, in the future.
+	 * Block orientation is used by multi-block roots, in order to show how the extension blocks are arranged around the
+	 * root, or for blocks which have directionality to them (hoppers, for example, when they output in a specific
+	 * direction).
 	 */
 	public static final Aspect<Byte, OctreeInflatedByte> ORIENTATION = registerAspect(Byte.class
 			, OctreeInflatedByte.class

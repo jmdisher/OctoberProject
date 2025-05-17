@@ -568,9 +568,10 @@ public class TestCommonMutations
 		// Show that a block update delivered to a hopper will cause it to schedule an update event.
 		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), ENV.special.AIR);
-		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper_down"));
+		Block hopper = ENV.blocks.fromItem(ENV.items.getItemById("op.hopper"));
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 0), STONE.item().number());
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(1, 1, 1), hopper.item().number());
+		cuboid.setData7(AspectRegistry.ORIENTATION, BlockAddress.fromInt(1, 1, 1), OrientationAspect.directionToByte(OrientationAspect.Direction.DOWN));
 		
 		// First, we want to make sure that the wheat fails to grow due to darkness.
 		TickProcessingContext context = ContextBuilder.build()

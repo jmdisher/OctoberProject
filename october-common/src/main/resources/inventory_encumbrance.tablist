@@ -44,11 +44,11 @@ op.beef	2
 op.steak	2
 op.door	8
 DPERECATED.op.door_open	0
-op.hopper_down	8
-op.hopper_north	0
-op.hopper_south	0
-op.hopper_east	0
-op.hopper_west	0
+op.hopper	8
+DEPRECATED.op.hopper_north	0
+DEPRECATED.op.hopper_south	0
+DEPRECATED.op.hopper_east	0
+DEPRECATED.op.hopper_west	0
 op.switch	1
 DPERECATED.op.switch_on	0
 op.lamp	2

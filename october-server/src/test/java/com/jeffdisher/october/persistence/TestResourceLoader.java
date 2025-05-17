@@ -864,6 +864,14 @@ public class TestResourceLoader
 		cuboid.setData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorOpenNumber);
 		cuboid.setDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress(), multiDoorLocation);
 		
+		// Another interesting case is hoppers.
+		short hopperDownNumber = ENV.items.getItemById("op.hopper").number();
+		short hopperNorthNumber = ENV.items.getItemById("DEPRECATED.op.hopper_north").number();
+		AbsoluteLocation hopperDownLocation = address.getBase().getRelative(10, 12, 21);
+		AbsoluteLocation hopperNorthLocation = hopperDownLocation.getRelative(0, -1, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, hopperDownLocation.getBlockAddress(), hopperDownNumber);
+		cuboid.setData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress(), hopperNorthNumber);
+		
 		// We can save this using the normal helper and then change the version number to see it updated on load.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		buffer.putInt(ResourceLoader.VERSION_CUBOID_V5);
@@ -917,6 +925,11 @@ public class TestResourceLoader
 		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 0).getBlockAddress()));
 		Assert.assertEquals(multiDoorClosedNumber, found.getData15(AspectRegistry.BLOCK, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
 		Assert.assertEquals(multiDoorLocation, found.getDataSpecial(AspectRegistry.MULTI_BLOCK_ROOT, multiDoorLocation.getRelative(1, 0, 1).getBlockAddress()));
+		
+		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperDownLocation.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.DOWN), found.getData7(AspectRegistry.ORIENTATION, hopperDownLocation.getBlockAddress()));
+		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), found.getData7(AspectRegistry.ORIENTATION, hopperNorthLocation.getBlockAddress()));
 		
 		loader.shutdown();
 	}

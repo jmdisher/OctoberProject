@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
@@ -28,12 +29,6 @@ import com.jeffdisher.october.utils.CuboidGenerator;
 public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.BLOCK_PLACE;
-	// We need to handle hopper placement as a special case since it cares about output direction.
-	public static final String HOPPER_DOWN  = "op.hopper_down";
-	public static final String HOPPER_NORTH = "op.hopper_north";
-	public static final String HOPPER_SOUTH = "op.hopper_south";
-	public static final String HOPPER_EAST  = "op.hopper_east";
-	public static final String HOPPER_WEST  = "op.hopper_west";
 
 	public static MutationPlaceSelectedBlock deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -116,45 +111,11 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 			}
 			
 			// Decide if this block type needs special orientation considerations.
-			// TODO:  Find some way to generalize this (maybe as part of getAsPlaceableBlock()?).
-			Block blockToPlace;
-			if (blockType.item().id().equals(HOPPER_DOWN))
-			{
-				// Check the direction of the output, relative to target block.
-				int outX = _blockOutput.x();
-				int outY = _blockOutput.y();
-				int targetX = _targetBlock.x();
-				int targetY = _targetBlock.y();
-				if (outY > targetY)
-				{
-					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_NORTH));
-				}
-				else if (outY < targetY)
-				{
-					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_SOUTH));
-				}
-				else if (outX > targetX)
-				{
-					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_EAST));
-				}
-				else if (outX < targetX)
-				{
-					blockToPlace = env.blocks.fromItem(env.items.getItemById(HOPPER_WEST));
-				}
-				else
-				{
-					blockToPlace = blockType;
-				}
-			}
-			else
-			{
-				// Common case.
-				blockToPlace = blockType;
-			}
+			OrientationAspect.Direction outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _blockOutput, _targetBlock);
 			
 			// This means that this worked so create the mutation to place the block.
 			// WARNING:  If this mutation fails, the item will have been destroyed.
-			MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockToPlace, null, newEntity.getId());
+			MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockType, outputDirection, newEntity.getId());
 			context.mutationSink.next(write);
 			didApply = true;
 			

@@ -36,8 +36,4 @@ op.carrot_seedling	2
 op.carrot_young	2
 op.carrot_mature	2
 op.bed	8
-op.hopper_down	8
-op.hopper_north	8
-op.hopper_south	8
-op.hopper_east	8
-op.hopper_west	8
+op.hopper	8

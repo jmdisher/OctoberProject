@@ -1,6 +1,7 @@
 package com.jeffdisher.october.logic;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.IBlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.mutations.MutationBlockPushToBlock;
@@ -22,11 +23,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
  */
 public class HopperHelpers
 {
-	public static final String HOPPER_DOWN  = "op.hopper_down";
-	public static final String HOPPER_NORTH = "op.hopper_north";
-	public static final String HOPPER_SOUTH = "op.hopper_south";
-	public static final String HOPPER_EAST  = "op.hopper_east";
-	public static final String HOPPER_WEST  = "op.hopper_west";
+	public static final String HOPPER  = "op.hopper";
 
 	public static boolean isHopper(AbsoluteLocation hopperLocation, IMutableBlockProxy hopperBlock)
 	{
@@ -83,25 +80,11 @@ public class HopperHelpers
 		String itemId = block.item().id();
 		
 		AbsoluteLocation sinkLocation;
-		if (itemId.equals(HOPPER_DOWN))
+		if (itemId.equals(HOPPER))
 		{
-			sinkLocation = hopperLocation.getRelative(0, 0, -1);
-		}
-		else if (itemId.equals(HOPPER_NORTH))
-		{
-			sinkLocation = hopperLocation.getRelative(0, 1, 0);
-		}
-		else if (itemId.equals(HOPPER_SOUTH))
-		{
-			sinkLocation = hopperLocation.getRelative(0, -1, 0);
-		}
-		else if (itemId.equals(HOPPER_EAST))
-		{
-			sinkLocation = hopperLocation.getRelative(1, 0, 0);
-		}
-		else if (itemId.equals(HOPPER_WEST))
-		{
-			sinkLocation = hopperLocation.getRelative(-1, 0, 0);
+			// This is a hopper so read the orientation byte to figure out the output.
+			OrientationAspect.Direction outputDirection = hopperBlock.getOrientation();
+			sinkLocation = outputDirection.getOutputBlockLocation(hopperLocation);
 		}
 		else
 		{

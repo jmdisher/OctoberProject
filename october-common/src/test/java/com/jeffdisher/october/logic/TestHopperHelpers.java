@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
@@ -45,7 +46,7 @@ public class TestHopperHelpers
 	{
 		// Create an air cuboid with 2 chests connected by a hopper and put some items in the top chest.
 		Block chest = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.chest"));
-		Block hopperNorth = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.hopper_north"));
+		Block hopper = ENV.blocks.getAsPlaceableBlock(ENV.items.getItemById("op.hopper"));
 		Item charcoal = ENV.items.getItemById("op.charcoal");
 		Item sword = ENV.items.getItemById("op.iron_sword");
 		CuboidAddress address = CuboidAddress.fromInt(10, 10, 10);
@@ -61,7 +62,8 @@ public class TestHopperHelpers
 		
 		// We will start with an item in the hopper to see it take 2 actions.
 		proxy = new MutableBlockProxy(hopperLocation, cuboid);
-		proxy.setBlockAndClear(hopperNorth);
+		proxy.setBlockAndClear(hopper);
+		proxy.setOrientation(OrientationAspect.Direction.NORTH);
 		proxy.setInventory(Inventory.start(10).addStackable(charcoal, 1).finish());
 		proxy.writeBack(cuboid);
 		

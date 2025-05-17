@@ -85,20 +85,8 @@ op.chest	is_flammable
 	block_material	AXE
 op.door	is_flammable
 	block_material	AXE
-op.hopper_down
+op.hopper
 	block_material	AXE
-op.hopper_north
-	block_material	AXE
-	special_drop	100	op.hopper_down
-op.hopper_south
-	block_material	AXE
-	special_drop	100	op.hopper_down
-op.hopper_east
-	block_material	AXE
-	special_drop	100	op.hopper_down
-op.hopper_west
-	block_material	AXE
-	special_drop	100	op.hopper_down
 op.switch
 op.lamp
 op.logic_wire

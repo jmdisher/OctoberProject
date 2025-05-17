@@ -24,15 +24,7 @@ op.furnace
 	manual_multiplier	0
 op.chest
 	inventory	1000
-op.hopper_down
-	inventory	20
-op.hopper_north
-	inventory	20
-op.hopper_south
-	inventory	20
-op.hopper_east
-	inventory	20
-op.hopper_west
+op.hopper
 	inventory	20
 op.quern
 	inventory	60

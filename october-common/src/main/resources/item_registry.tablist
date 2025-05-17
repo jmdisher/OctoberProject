@@ -42,11 +42,11 @@ op.beef	Raw Beef
 op.steak	Cooked Steak
 op.door	Door
 DPERECATED.op.door_open	Door (Open)
-op.hopper_down	Hopper
-op.hopper_north	Hopper (North)
-op.hopper_south	Hopper (South)
-op.hopper_east	Hopper (East)
-op.hopper_west	Hopper (West)
+op.hopper	Hopper
+DEPRECATED.op.hopper_north	Hopper (North)
+DEPRECATED.op.hopper_south	Hopper (South)
+DEPRECATED.op.hopper_east	Hopper (East)
+DEPRECATED.op.hopper_west	Hopper (West)
 op.switch	Switch
 DPERECATED.op.switch_on	Switch (On)
 op.lamp	Lamp

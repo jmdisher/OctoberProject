@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.config.FlatTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
@@ -641,15 +642,30 @@ public class ResourceLoader
 		short doorOpenNumber = env.items.getItemById("DPERECATED.op.door_open").number();
 		short doubleDoorNumber = env.items.getItemById("op.double_door_base").number();
 		short doubleDoorOpenNumber = env.items.getItemById("DPERECATED.op.double_door_open_base").number();
+		short hopperDownNumber = env.items.getItemById("op.hopper").number();
+		short hopperNorthNumber = env.items.getItemById("DEPRECATED.op.hopper_north").number();
+		short hopperSouthNumber = env.items.getItemById("DEPRECATED.op.hopper_south").number();
+		short hopperEastNumber = env.items.getItemById("DEPRECATED.op.hopper_east").number();
+		short hopperWestNumber = env.items.getItemById("DEPRECATED.op.hopper_west").number();
 		Set<BlockAddress> switches = new HashSet<>();
 		Set<BlockAddress> lamps = new HashSet<>();
 		Set<BlockAddress> doors = new HashSet<>();
 		Set<BlockAddress> doubleDoors = new HashSet<>();
+		Map<BlockAddress, OrientationAspect.Direction> hoppers = new HashMap<>();
 		cuboid.walkData(AspectRegistry.BLOCK, new IOctree.IWalkerCallback<>(){
 			@Override
 			public void visit(BlockAddress base, byte size, Short value)
 			{
-				if ((switchOnNumber == value) || (lampOnNumber == value) || (doorOpenNumber == value) || (doubleDoorOpenNumber == value))
+				if ((switchOnNumber == value)
+						|| (lampOnNumber == value)
+						|| (doorOpenNumber == value)
+						|| (doubleDoorOpenNumber == value)
+						|| (hopperDownNumber == value)
+						|| (hopperNorthNumber == value)
+						|| (hopperSouthNumber == value)
+						|| (hopperEastNumber == value)
+						|| (hopperWestNumber == value)
+				)
 				{
 					for (byte z = 0; z < size; ++z)
 					{
@@ -670,9 +686,34 @@ public class ResourceLoader
 								{
 									doors.add(target);
 								}
-								else
+								else if (doubleDoorOpenNumber == value)
 								{
 									doubleDoors.add(target);
+								}
+								else if (hopperDownNumber == value)
+								{
+									hoppers.put(target, OrientationAspect.Direction.DOWN);
+								}
+								else if (hopperNorthNumber == value)
+								{
+									hoppers.put(target, OrientationAspect.Direction.NORTH);
+								}
+								else if (hopperSouthNumber == value)
+								{
+									hoppers.put(target, OrientationAspect.Direction.SOUTH);
+								}
+								else if (hopperEastNumber == value)
+								{
+									hoppers.put(target, OrientationAspect.Direction.EAST);
+								}
+								else if (hopperWestNumber == value)
+								{
+									hoppers.put(target, OrientationAspect.Direction.WEST);
+								}
+								else
+								{
+									// Missing case.
+									throw Assert.unreachable();
 								}
 							}
 						}
@@ -695,6 +736,12 @@ public class ResourceLoader
 		for (BlockAddress block : doubleDoors)
 		{
 			cuboid.setData15(AspectRegistry.BLOCK, block, doubleDoorNumber);
+		}
+		for (Map.Entry<BlockAddress, OrientationAspect.Direction> elt : hoppers.entrySet())
+		{
+			BlockAddress address = elt.getKey();
+			cuboid.setData15(AspectRegistry.BLOCK, address, hopperDownNumber);
+			cuboid.setData7(AspectRegistry.ORIENTATION, address, OrientationAspect.directionToByte(elt.getValue()));
 		}
 	}
 

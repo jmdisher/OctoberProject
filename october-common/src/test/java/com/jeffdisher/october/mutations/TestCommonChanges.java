@@ -1534,12 +1534,12 @@ public class TestCommonChanges
 	public void hopperPlacement() throws Throwable
 	{
 		// Give the entity a hopper, place it with a direction, and observe that it ends up oriented that way.
-		Item itemHopperDown = ENV.items.getItemById("op.hopper_down");
+		Item itemHopper = ENV.items.getItemById("op.hopper");
 		
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		newEntity.newLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		newEntity.newInventory.addAllItems(itemHopperDown, 6);
+		newEntity.newInventory.addAllItems(itemHopper, 6);
 		newEntity.setSelectedKey(1);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
@@ -1554,7 +1554,8 @@ public class TestCommonChanges
 		MutableBlockProxy proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, -1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(ENV.items.getItemById("op.hopper_north"), proxy.getBlock().item());
+		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.NORTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1564,7 +1565,8 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 1, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(ENV.items.getItemById("op.hopper_south"), proxy.getBlock().item());
+		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.SOUTH, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1574,7 +1576,8 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(-1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(ENV.items.getItemById("op.hopper_east"), proxy.getBlock().item());
+		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.EAST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1584,7 +1587,8 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(1, 0, 0), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(ENV.items.getItemById("op.hopper_west"), proxy.getBlock().item());
+		Assert.assertEquals(ENV.items.getItemById("op.hopper"), proxy.getBlock().item());
+		Assert.assertEquals(OrientationAspect.Direction.WEST, proxy.getOrientation());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
@@ -1594,14 +1598,14 @@ public class TestCommonChanges
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_PLACED, EventRecord.Cause.NONE, centreTarget.getRelative(0, 0, -1), 0, entityId));
 		Assert.assertTrue(holder.mutation.applyMutation(holder.context, proxy));
-		Assert.assertEquals(itemHopperDown, proxy.getBlock().item());
+		Assert.assertEquals(itemHopper, proxy.getBlock().item());
 		proxy.writeBack(cuboid);
 		holder.mutation = null;
 		
 		// Check our inventory.
 		Inventory inventory = newEntity.freeze().inventory();
 		Assert.assertEquals(1, inventory.sortedKeys().size());
-		Assert.assertEquals(1, inventory.getCount(itemHopperDown));
+		Assert.assertEquals(1, inventory.getCount(itemHopper));
 	}
 
 	@Test
