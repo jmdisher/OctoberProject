@@ -425,12 +425,18 @@ public class CodecHelpers
 	public static OrientationAspect.Direction readOrientation(ByteBuffer buffer)
 	{
 		byte val = buffer.get();
-		return OrientationAspect.byteToDirection(val);
+		return ((byte)0xFF == val)
+				? null
+				: OrientationAspect.byteToDirection(val)
+		;
 	}
 
 	public static void writeOrientation(ByteBuffer buffer, OrientationAspect.Direction orientation)
 	{
-		byte val = OrientationAspect.directionToByte(orientation);
+		byte val = (null == orientation)
+				? (byte)0xFF
+				: OrientationAspect.directionToByte(orientation)
+		;
 		buffer.put(val);
 	}
 

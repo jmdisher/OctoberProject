@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -260,5 +261,23 @@ public class TestCodecHelpers
 		buffer.flip();
 		output = CodecHelpers.readBodyPart(buffer);
 		Assert.assertNull(output);
+	}
+
+	@Test
+	public void orientation() throws Throwable
+	{
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		OrientationAspect.Direction north = OrientationAspect.Direction.NORTH;
+		OrientationAspect.Direction missing = null;
+		CodecHelpers.writeOrientation(buffer, north);
+		CodecHelpers.writeOrientation(buffer, missing);
+		buffer.flip();
+		Assert.assertEquals(2, buffer.remaining());
+		
+		OrientationAspect.Direction output = CodecHelpers.readOrientation(buffer);
+		Assert.assertTrue(north == output);
+		output = CodecHelpers.readOrientation(buffer);
+		Assert.assertTrue(missing == output);
+		Assert.assertEquals(0, buffer.remaining());
 	}
 }
