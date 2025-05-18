@@ -172,3 +172,7 @@ op.stone_hoe	COMMON
 	input	op.stick	op.stick	op.stone
 	output	op.stone_hoe
 	millis	8000
+op.emitter	COMMON
+	input	op.iron_ingot	op.charcoal	op.stone
+	output	op.emitter	op.emitter
+	millis	4000

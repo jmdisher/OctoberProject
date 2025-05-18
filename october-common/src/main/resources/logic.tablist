@@ -21,3 +21,5 @@ op.lamp	sink
 	manual	false
 op.double_door_base	sink
 	manual	true
+op.emitter	source
+	manual	false

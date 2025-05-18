@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -32,10 +33,19 @@ public class LogicLayerHelpers
 		// Only sinks can be set to active during placement (sources can be changed to active by a user).
 		boolean isActive = false;
 		
-		// See if this is a sink which is receiving a signal.
-		if (env.logic.isSink(type) && _isBlockReceivingHighSignal(env, proxyLookup, location))
+		// See if this is a logic block.
+		if (env.logic.isAware(type))
 		{
-			isActive = true;
+			// See if this is a sink which is receiving a signal.
+			if (env.logic.isSink(type))
+			{
+				isActive = _isBlockReceivingHighSignal(env, proxyLookup, location);
+			}
+			else
+			{
+				// See if there is a special bit of logic for this block.
+				isActive = env.logic.shouldPlaceAsActive(env, proxyLookup, location, type);
+			}
 		}
 		return isActive;
 	}
@@ -121,8 +131,21 @@ public class LogicLayerHelpers
 			}
 			else if (env.logic.isSource(type))
 			{
-				// TODO:  Consider eventualTarget if this block has a specific output.
-				isValueHigh = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
+				if (FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE))
+				{
+					// We only want to actually consider this source if it is facing into eventualTarget or is omni-directional.
+					if (OrientationAspect.doesSingleBlockRequireOrientation(type))
+					{
+						OrientationAspect.Direction blockDirection = proxy.getOrientation();
+						OrientationAspect.Direction requiredDirection = OrientationAspect.getRelativeDirection(checkLocation, eventualTarget);
+						isValueHigh = (blockDirection == requiredDirection);
+					}
+					else
+					{
+						// Omni-directional.
+						isValueHigh = true;
+					}
+				}
 			}
 		}
 		return isValueHigh;

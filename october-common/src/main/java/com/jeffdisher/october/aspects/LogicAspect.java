@@ -3,11 +3,14 @@ package com.jeffdisher.october.aspects;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.jeffdisher.october.config.IValueTransformer;
 import com.jeffdisher.october.config.SimpleTabListCallbacks;
 import com.jeffdisher.october.config.TabListReader;
 import com.jeffdisher.october.config.TabListReader.TabListException;
+import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 
 
@@ -27,6 +30,10 @@ public class LogicAspect
 	 * just to mention it by ID (since none of the other parameters would apply).
 	 */
 	public static final String LOGIC_WIRE_ID = "op.logic_wire";
+	/**
+	 * Some logic block types have a special bit of starting logic.
+	 */
+	public static final String LOGIC_EMITTER_ID = "op.emitter";
 
 	/**
 	 * Loads the logic-sensitive blocks types from the tablist in the given stream, sourcing Blocks from the given item
@@ -66,6 +73,7 @@ public class LogicAspect
 		return new LogicAspect(callbacks.topLevel
 				, manual.recordData
 				, blocks.fromItem(items.getItemById(LOGIC_WIRE_ID))
+				, blocks.fromItem(items.getItemById(LOGIC_EMITTER_ID))
 		);
 	}
 
@@ -73,15 +81,18 @@ public class LogicAspect
 	private final Map<Block, _Role> _roles;
 	private final Map<Block, Boolean> _manual;
 	private final Block _logicWireBlock;
+	private final Block _specialEmitter;
 
 	private LogicAspect(Map<Block, _Role> roles
 			, Map<Block, Boolean> manual
 			, Block logicWireBlock
+			, Block specialEmitter
 	)
 	{
 		_roles = roles;
 		_manual = manual;
 		_logicWireBlock = logicWireBlock;
+		_specialEmitter = specialEmitter;
 	}
 
 	/**
@@ -146,6 +157,22 @@ public class LogicAspect
 	{
 		// This helper is a special-case for logic wire.
 		return (_logicWireBlock == block);
+	}
+
+	public boolean shouldPlaceAsActive(Environment env
+			, Function<AbsoluteLocation, BlockProxy> proxyLookup
+			, AbsoluteLocation location
+			, Block type
+	)
+	{
+		boolean isActive = false;
+		// NOTE:  This will likely be expanded later to handle other kinds of special logic blocks, since these can't
+		// easily be made declarative.
+		if (_specialEmitter == type)
+		{
+			isActive = true;
+		}
+		return isActive;
 	}
 
 

@@ -13,8 +13,8 @@ import com.jeffdisher.october.types.Block;
  */
 public class OrientationAspect
 {
-	// We need to handle hopper placement as a special case since it cares about output direction.
 	public static final String HOPPER = "op.hopper";
+	public static final String EMITTER = "op.emitter";
 
 	/**
 	 * Converts a Direction object into a byte for storage.
@@ -48,7 +48,14 @@ public class OrientationAspect
 	 */
 	public static boolean doesSingleBlockRequireOrientation(Block blockType)
 	{
-		return blockType.item().id().equals(HOPPER);
+		String blockId = blockType.item().id();
+		return blockId.equals(HOPPER) || blockId.equals(EMITTER);
+	}
+
+	public static boolean doesAllowDownwardOutput(Block blockType)
+	{
+		String blockId = blockType.item().id();
+		return blockId.equals(HOPPER);
 	}
 
 	/**
@@ -64,11 +71,18 @@ public class OrientationAspect
 	public static Direction getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
 	{
 		String blockId = blockType.item().id();
+		boolean has4 = blockId.equals(EMITTER);
+		boolean has5 = blockId.equals(HOPPER);
 		OrientationAspect.Direction outputDirection;
-		if (blockId.equals(HOPPER))
+		if (has4 || has5)
 		{
 			// Check the direction of the output, relative to target block.
 			outputDirection = _getRelativeDirection(blockLocation, outputLocation);
+			if ((OrientationAspect.Direction.DOWN == outputDirection) && !has5)
+			{
+				// This is an invalid case so just return null so the caller can check and realize the request is invalid.
+				outputDirection = null;
+			}
 		}
 		else
 		{

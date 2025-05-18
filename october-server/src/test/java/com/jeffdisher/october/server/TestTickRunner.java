@@ -15,6 +15,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.LightAspect;
 import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.aspects.StationRegistry;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
@@ -2484,6 +2485,136 @@ public class TestTickRunner
 		Assert.assertEquals(lamp.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, farLampLocation.getBlockAddress()));
 		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, farLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void emittersWithDoors()
+	{
+		// We want to place down some doors, emitters, and wires to verify a few things:
+		// -placement order doesn't matter
+		// -direct connection and wire connection both work
+		// -both door and wire honour the output direction of the emitters
+		Item itemEmitter = ENV.items.getItemById("op.emitter");
+		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemWire = ENV.items.getItemById("op.logic_wire");
+		
+		// We need to set the initial state of blocks so we can place the others to test, next:
+		// -2 areas with a space for an emitter, pointing into door or wire and door (each in 2 directions - only one should change)
+		// -2 areas with space for a door, next to an emitter or next to a wire from the emitter (each in 2 directions)
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
+			}
+		}
+		
+		AbsoluteLocation emitterSpace1 = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace1.getRelative(1, 0, 0).getBlockAddress(), itemDoor.number());
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace1.getRelative(0, 1, 0).getBlockAddress(), itemDoor.number());
+		AbsoluteLocation emitterSpace2 = cuboid.getCuboidAddress().getBase().getRelative(12, 2, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(1, 0, 0).getBlockAddress(), itemWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(2, 0, 0).getBlockAddress(), itemDoor.number());
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(0, 1, 0).getBlockAddress(), itemWire.number());
+		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(0, 2, 0).getBlockAddress(), itemDoor.number());
+		
+		AbsoluteLocation existingEmitter1 = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, existingEmitter1.getBlockAddress(), itemEmitter.number());
+		cuboid.setData7(AspectRegistry.FLAGS, existingEmitter1.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		cuboid.setData7(AspectRegistry.ORIENTATION, existingEmitter1.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		AbsoluteLocation doorSpace1_1 = existingEmitter1.getRelative(1, 0, 0);
+		AbsoluteLocation doorSpace1_2 = existingEmitter1.getRelative(0, 1, 0);
+		AbsoluteLocation existingEmitter2 = cuboid.getCuboidAddress().getBase().getRelative(12, 12, 1);
+		cuboid.setData15(AspectRegistry.BLOCK, existingEmitter2.getBlockAddress(), itemEmitter.number());
+		cuboid.setData7(AspectRegistry.FLAGS, existingEmitter2.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		cuboid.setData7(AspectRegistry.ORIENTATION, existingEmitter2.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		AbsoluteLocation wireSpace2_1 = existingEmitter2.getRelative(1, 0, 0);
+		AbsoluteLocation wireSpace2_2 = existingEmitter2.getRelative(0, 1, 0);
+		cuboid.setData15(AspectRegistry.BLOCK, wireSpace2_1.getRelative(1, 0, 0).getBlockAddress(), itemDoor.number());
+		cuboid.setData15(AspectRegistry.BLOCK, wireSpace2_2.getRelative(0, 1, 0).getBlockAddress(), itemDoor.number());
+		
+		// Since these are spaced out and we want this to happen in fewer ticks, we will use 4 entities.
+		MutableEntity entity1 = MutableEntity.createForTest(1);
+		entity1.newLocation = emitterSpace1.getRelative(1, 1, 0).toEntityLocation();
+		entity1.newInventory.addAllItems(itemEmitter, 1);
+		entity1.setSelectedKey(1);
+		MutableEntity entity2 = MutableEntity.createForTest(2);
+		entity2.newLocation = emitterSpace2.getRelative(1, 1, 0).toEntityLocation();
+		entity2.newInventory.addAllItems(itemEmitter, 1);
+		entity2.setSelectedKey(1);
+		MutableEntity entity3 = MutableEntity.createForTest(3);
+		entity3.newLocation = existingEmitter1.getRelative(1, 1, 0).toEntityLocation();
+		entity3.newInventory.addAllItems(itemDoor, 2);
+		entity3.setSelectedKey(1);
+		MutableEntity entity4 = MutableEntity.createForTest(4);
+		entity4.newLocation = existingEmitter2.getRelative(1, 1, 0).toEntityLocation();
+		entity4.newInventory.addAllItems(itemWire, 2);
+		entity4.setSelectedKey(1);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+						, new SuspendedEntity(entity2.freeze(), List.of())
+						, new SuspendedEntity(entity3.freeze(), List.of())
+						, new SuspendedEntity(entity4.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// We are only interested in seeing the final state so run all the operations concurrently and wait until all logic processing is completed.
+		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterSpace1, emitterSpace1.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterSpace2, emitterSpace2.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(doorSpace1_1, doorSpace1_1.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(wireSpace2_1, wireSpace2_1.getRelative(1, 0, 0)), 1L);
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(doorSpace1_2, doorSpace1_2.getRelative(1, 0, 0)), 2L);
+		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(wireSpace2_2, wireSpace2_2.getRelative(1, 0, 0)), 2L);
+		
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData output = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Verify that all the blocks were placed correctly.
+		Assert.assertEquals(itemEmitter.number(), output.getData15(AspectRegistry.BLOCK, emitterSpace1.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace1.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.EAST), output.getData7(AspectRegistry.ORIENTATION, emitterSpace1.getBlockAddress()));
+		Assert.assertEquals(itemEmitter.number(), output.getData15(AspectRegistry.BLOCK, emitterSpace2.getBlockAddress()));
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace2.getBlockAddress()));
+		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.EAST), output.getData7(AspectRegistry.ORIENTATION, emitterSpace2.getBlockAddress()));
+		Assert.assertEquals(itemDoor.number(), output.getData15(AspectRegistry.BLOCK, doorSpace1_1.getBlockAddress()));
+		Assert.assertEquals(itemDoor.number(), output.getData15(AspectRegistry.BLOCK, doorSpace1_2.getBlockAddress()));
+		Assert.assertEquals(itemWire.number(), output.getData15(AspectRegistry.BLOCK, wireSpace2_1.getBlockAddress()));
+		Assert.assertEquals(itemWire.number(), output.getData15(AspectRegistry.BLOCK, wireSpace2_2.getBlockAddress()));
+		
+		// Now, verify the expected results in the various doors.
+		// -emitter1 should only activate the east door
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace1.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(0x0, output.getData7(AspectRegistry.FLAGS, emitterSpace1.getRelative(0, 1, 0).getBlockAddress()));
+		// -emitter2 should only activate the east door after the wire
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace2.getRelative(2, 0, 0).getBlockAddress()));
+		Assert.assertEquals(0x0, output.getData7(AspectRegistry.FLAGS, emitterSpace2.getRelative(0, 2, 0).getBlockAddress()));
+		// -emitter3 should only activate the east door
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, existingEmitter1.getRelative(1, 0, 0).getBlockAddress()));
+		Assert.assertEquals(0x0, output.getData7(AspectRegistry.FLAGS, existingEmitter1.getRelative(0, 1, 0).getBlockAddress()));
+		// -emitter4 should only activate the east door after the wire
+		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, existingEmitter2.getRelative(2, 0, 0).getBlockAddress()));
+		Assert.assertEquals(0x0, output.getData7(AspectRegistry.FLAGS, existingEmitter2.getRelative(0, 2, 0).getBlockAddress()));
+		
+		runner.shutdown();
 	}
 
 
