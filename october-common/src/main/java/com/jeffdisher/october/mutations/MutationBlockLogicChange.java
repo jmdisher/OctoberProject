@@ -13,7 +13,10 @@ import com.jeffdisher.october.types.TickProcessingContext;
 
 
 /**
- * These mutations are sent to blocks which receive logic signals, when the signal changes.
+ * These mutations are directly synthesized by the system, itself, and scheduled on blocks adjacent to those with logic
+ * changes.
+ * Internally, all it does is check if the receiving block can act on the signal change and then schedules
+ * MutationBlockInternalSetLogicState mutations against all logically connected blocks (to account for multi-blocks).
  */
 public class MutationBlockLogicChange implements IMutationBlock
 {

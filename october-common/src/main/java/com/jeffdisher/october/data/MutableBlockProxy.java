@@ -457,18 +457,17 @@ public class MutableBlockProxy implements IMutableBlockProxy
 				changeBits |= LogicLayerHelpers.LOGIC_BIT_THIS;
 			}
 			
-			// The next change is to see if this changed to/from a source.
-			// TODO:  For now, both high and low values are sources so check either, not change.
-			// TODO:  Are there cases where it can change from one source to another?
-			if (_env.logic.isSource(originalBlock) || _env.logic.isSource(_cachedBlock))
+			// We to check if this either is, or was, a logic signal source.  We will build the change bit vector if the
+			// block type changed or the flag changed.
+			if (_env.logic.isSource(originalBlock))
 			{
-				// For now, this means to set all the other bits.  In the future, these will likely have output directions.
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_EAST;
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_WEST;
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_NORTH;
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_SOUTH;
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_UP;
-				changeBits |= LogicLayerHelpers.LOGIC_BIT_DOWN;
+				OrientationAspect.Direction direction = OrientationAspect.byteToDirection(_data.getData7(AspectRegistry.ORIENTATION, _address));
+				changeBits = _populateBitsForSource(originalBlock, direction, changeBits);
+			}
+			if (_env.logic.isSource(_cachedBlock))
+			{
+				OrientationAspect.Direction direction = OrientationAspect.byteToDirection(_write7[AspectRegistry.ORIENTATION.index()]);
+				changeBits = _populateBitsForSource(_cachedBlock, direction, changeBits);
 			}
 		}
 		
@@ -563,5 +562,43 @@ public class MutableBlockProxy implements IMutableBlockProxy
 	private static <T> void _writeAsType(CuboidData newData, Aspect<T, ?> aspect, BlockAddress address, Object value)
 	{
 		newData.setDataSpecial(aspect, address, aspect.type().cast(value));
+	}
+
+	private byte _populateBitsForSource(Block type, OrientationAspect.Direction direction, byte changeBits)
+	{
+		if (OrientationAspect.doesSingleBlockRequireOrientation(type))
+		{
+			switch (direction)
+			{
+			case NORTH:
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_NORTH;
+				break;
+			case WEST:
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_WEST;
+				break;
+			case SOUTH:
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_SOUTH;
+				break;
+			case EAST:
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_EAST;
+				break;
+			case DOWN:
+				changeBits |= LogicLayerHelpers.LOGIC_BIT_DOWN;
+				break;
+			default:
+				// Missing case statement.
+				throw Assert.unreachable();
+			}
+		}
+		else
+		{
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_EAST;
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_WEST;
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_NORTH;
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_SOUTH;
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_UP;
+			changeBits |= LogicLayerHelpers.LOGIC_BIT_DOWN;
+		}
+		return changeBits;
 	}
 }

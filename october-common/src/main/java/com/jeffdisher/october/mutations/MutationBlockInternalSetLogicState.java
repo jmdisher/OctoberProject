@@ -15,6 +15,8 @@ import com.jeffdisher.october.types.TickProcessingContext;
  * Sets the target block to the given logic state if it is sensitive to logic and isn't already in that state.
  * These mutations are created by MutationBlockLogicChange and can be applied to manual or automatic blocks, so long as
  * they are sinks.
+ * Note that this mutation does not check what incoming signals are, assuming the signal level it is given should be
+ * blindly applied.
  */
 public class MutationBlockInternalSetLogicState implements IMutationBlock
 {
@@ -48,6 +50,9 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 	{
 		Environment env = Environment.getShared();
 		boolean didApply = false;
+		
+		// We assume that whoever scheduled us knows what they are doing and we only check the block type to make sure
+		// it didn't change in the meantime.
 		Block previousBlock = newBlock.getBlock();
 		if (env.logic.isSink(previousBlock))
 		{
