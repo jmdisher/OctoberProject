@@ -94,4 +94,14 @@ public class TestMiscAspects
 		Assert.assertEquals(new AbsoluteLocation(1, 0, 0), extensions.get(2));
 		Assert.assertEquals(new BlockVolume(2, 1, 2), ENV.multiBlocks.getDefaultVolume(doorClosed));
 	}
+
+	@Test
+	public void orientationRelative() throws Throwable
+	{
+		AbsoluteLocation blockLocation = new AbsoluteLocation(1, 2, 3);
+		AbsoluteLocation outputNorth = blockLocation.getRelative(0, 1, 0);
+		AbsoluteLocation outputDown = blockLocation.getRelative(0, 0, -1);
+		Assert.assertEquals(OrientationAspect.Direction.NORTH, OrientationAspect.getRelativeDirection(blockLocation, outputNorth));
+		Assert.assertEquals(OrientationAspect.Direction.DOWN, OrientationAspect.getRelativeDirection(blockLocation, outputDown));
+	}
 }

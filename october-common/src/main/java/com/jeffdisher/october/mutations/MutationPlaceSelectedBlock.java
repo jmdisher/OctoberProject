@@ -111,16 +111,20 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 			}
 			
 			// Decide if this block type needs special orientation considerations.
-			OrientationAspect.Direction outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _blockOutput, _targetBlock);
+			OrientationAspect.Direction outputDirection = OrientationAspect.getDirectionIfApplicableToSingle(blockType, _targetBlock, _blockOutput);
 			
-			// This means that this worked so create the mutation to place the block.
-			// WARNING:  If this mutation fails, the item will have been destroyed.
-			MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockType, outputDirection, newEntity.getId());
-			context.mutationSink.next(write);
-			didApply = true;
-			
-			// Do other state reset.
-			newEntity.setCurrentCraftingOperation(null);
+			// Make sure that the output direction matches the needs of this block type.
+			if (OrientationAspect.doesSingleBlockRequireOrientation(blockType) == (null != outputDirection))
+			{
+				// This means that this worked so create the mutation to place the block.
+				// WARNING:  If this mutation fails, the item will have been destroyed.
+				MutationBlockOverwriteByEntity write = new MutationBlockOverwriteByEntity(_targetBlock, blockType, outputDirection, newEntity.getId());
+				context.mutationSink.next(write);
+				didApply = true;
+				
+				// Do other state reset.
+				newEntity.setCurrentCraftingOperation(null);
+			}
 		}
 		return didApply;
 	}

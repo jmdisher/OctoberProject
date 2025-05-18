@@ -58,44 +58,67 @@ public class OrientationAspect
 	 * 
 	 * @param blockType The block type.
 	 * @param blockLocation The location where the block is being stored.
-	 * @param targetLocation The location where the block is "facing" (output).
-	 * @return The Direction enum for this block or null, if it shouldn't use one.
+	 * @param outputLocation The location where the block is "facing" (output).
+	 * @return The Direction enum for this block or null, if it shouldn't use one or doesn't have a valid output.
 	 */
-	public static Direction getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation targetLocation)
+	public static Direction getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
 	{
+		String blockId = blockType.item().id();
 		OrientationAspect.Direction outputDirection;
-		if (blockType.item().id().equals(HOPPER))
+		if (blockId.equals(HOPPER))
 		{
 			// Check the direction of the output, relative to target block.
-			int outX = blockLocation.x();
-			int outY = blockLocation.y();
-			int targetX = targetLocation.x();
-			int targetY = targetLocation.y();
-			if (outY > targetY)
-			{
-				outputDirection = OrientationAspect.Direction.NORTH;
-			}
-			else if (outY < targetY)
-			{
-				outputDirection = OrientationAspect.Direction.SOUTH;
-			}
-			else if (outX > targetX)
-			{
-				outputDirection = OrientationAspect.Direction.EAST;
-			}
-			else if (outX < targetX)
-			{
-				outputDirection = OrientationAspect.Direction.WEST;
-			}
-			else
-			{
-				outputDirection = OrientationAspect.Direction.DOWN;
-			}
+			outputDirection = _getRelativeDirection(blockLocation, outputLocation);
 		}
 		else
 		{
 			// Common case.
 			outputDirection = null;
+		}
+		return outputDirection;
+	}
+
+	/**
+	 * Determines the orientation direction a block in blockLocation would be if its output is facing outputLocation.
+	 * 
+	 * @param blockLocation The location of a block.
+	 * @param outputLocation The location the output is facing.
+	 * @return The relative direction.
+	 */
+	public static Direction getRelativeDirection(AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
+	{
+		return _getRelativeDirection(blockLocation, outputLocation);
+	}
+
+
+	private static Direction _getRelativeDirection(AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
+	{
+		// Check the direction of the output, relative to target block.
+		int blockX = blockLocation.x();
+		int blockY = blockLocation.y();
+		int outputX = outputLocation.x();
+		int outputY = outputLocation.y();
+		
+		OrientationAspect.Direction outputDirection;
+		if (outputY > blockY)
+		{
+			outputDirection = OrientationAspect.Direction.NORTH;
+		}
+		else if (outputY < blockY)
+		{
+			outputDirection = OrientationAspect.Direction.SOUTH;
+		}
+		else if (outputX > blockX)
+		{
+			outputDirection = OrientationAspect.Direction.EAST;
+		}
+		else if (outputX < blockX)
+		{
+			outputDirection = OrientationAspect.Direction.WEST;
+		}
+		else
+		{
+			outputDirection = OrientationAspect.Direction.DOWN;
 		}
 		return outputDirection;
 	}
