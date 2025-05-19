@@ -26,10 +26,6 @@ public class LogicAspect
 	 * just to mention it by ID (since none of the other parameters would apply).
 	 */
 	public static final String LOGIC_WIRE_ID = "op.logic_wire";
-	/**
-	 * Some logic block types have a special bit of starting logic.
-	 */
-	public static final String LOGIC_EMITTER_ID = "op.emitter";
 
 	/**
 	 * Loads the logic-sensitive blocks types from the tablist in the given stream, sourcing Blocks from the given item
@@ -66,23 +62,19 @@ public class LogicAspect
 		// We can just pass these in, directly.
 		return new LogicAspect(callbacks.topLevel
 				, blocks.fromItem(items.getItemById(LOGIC_WIRE_ID))
-				, blocks.fromItem(items.getItemById(LOGIC_EMITTER_ID))
 		);
 	}
 
 
 	private final Map<Block, _Role> _roles;
 	private final Block _logicWireBlock;
-	private final Block _specialEmitter;
 
 	private LogicAspect(Map<Block, _Role> roles
 			, Block logicWireBlock
-			, Block specialEmitter
 	)
 	{
 		_roles = roles;
 		_logicWireBlock = logicWireBlock;
-		_specialEmitter = specialEmitter;
 	}
 
 	/**
@@ -102,17 +94,33 @@ public class LogicAspect
 	}
 
 	/**
-	 * Used to check if this block type can be changed to an active state by a logic signal from another block or
-	 * conduit.
+	 * Used to determine the initial value of the active flag for this block when it is first placed.
 	 * 
 	 * @param block The block type.
-	 * @return The sink helper or null if not a sink.
+	 * @return The helper to calculate the initial value or null if it always defaults to inactive.
 	 */
-	public LogicSpecialRegistry.ISinkReceivingSignal sinkLogic(Block block)
+	public ISignalChangeCallback initialPlacementHandler(Block block)
 	{
 		_Role role = _roles.get(block);
 		return (null != role)
-				? role.sinkLogic
+				? role.placement
+				: null
+		;
+	}
+
+	/**
+	 * Used to request the helper to update this block's active state in response to adjacent block logic changes.  This
+	 * essentially means that the block is a sink which can change its state based on logic update events.
+	 * 
+	 * @param block The block type.
+	 * @return The helper to calculate the block's new active state in response to an update event or null if it ignores
+	 * logic update events.
+	 */
+	public ISignalChangeCallback logicUpdateHandler(Block block)
+	{
+		_Role role = _roles.get(block);
+		return (null != role)
+				? role.logicUpdate
 				: null
 		;
 	}
@@ -158,33 +166,17 @@ public class LogicAspect
 		return (_logicWireBlock == block);
 	}
 
-	public boolean shouldPlaceAsActive(Environment env
-			, Function<AbsoluteLocation, BlockProxy> proxyLookup
-			, AbsoluteLocation location
-			, Block type
-	)
-	{
-		boolean isActive = false;
-		// NOTE:  This will likely be expanded later to handle other kinds of special logic blocks, since these can't
-		// easily be made declarative.
-		if (_specialEmitter == type)
-		{
-			isActive = true;
-		}
-		return isActive;
-	}
-
 
 	private static enum _Role
 	{
-		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, true),
-		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, false),
-		SWITCH(true, null, true),
-		EMITTER(true, null, false),
-		DIODE(true, LogicSpecialRegistry.DIODE_SINK, false),
-		AND_GATE(true, LogicSpecialRegistry.AND_SINK, false),
-		OR_GATE(true, LogicSpecialRegistry.OR_SINK, false),
-		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, false),
+		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, LogicSpecialRegistry.GENERIC_SINK, true),
+		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, LogicSpecialRegistry.GENERIC_SINK, false),
+		SWITCH(true, null, null, true),
+		EMITTER(true, LogicSpecialRegistry.EMITTER, null, false),
+		DIODE(true, LogicSpecialRegistry.DIODE_SINK, LogicSpecialRegistry.DIODE_SINK, false),
+		AND_GATE(true, LogicSpecialRegistry.AND_SINK, LogicSpecialRegistry.AND_SINK, false),
+		OR_GATE(true, LogicSpecialRegistry.OR_SINK, LogicSpecialRegistry.OR_SINK, false),
+		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, LogicSpecialRegistry.NOT_SINK, false),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
@@ -201,14 +193,37 @@ public class LogicAspect
 		};
 		
 		public final boolean isSource;
-		public final LogicSpecialRegistry.ISinkReceivingSignal sinkLogic;
+		public final ISignalChangeCallback placement;
+		public final ISignalChangeCallback logicUpdate;
 		public final boolean canManuallyChange;
 		
-		private _Role(boolean isSource, LogicSpecialRegistry.ISinkReceivingSignal sinkLogic, boolean canManuallyChange)
+		private _Role(boolean isSource, ISignalChangeCallback placement, ISignalChangeCallback logicUpdate, boolean canManuallyChange)
 		{
 			this.isSource = isSource;
-			this.sinkLogic = sinkLogic;
+			this.placement = placement;
+			this.logicUpdate = logicUpdate;
 			this.canManuallyChange = canManuallyChange;
 		}
+	}
+
+
+	/**
+	 * The interface implemented by special logic sinks to determine if they are receiving a signal from their
+	 * surroundings.
+	 * The reason this exists is that different logic blocks have different rules around which blocks can push logic
+	 * into them and how they apply those states.
+	 */
+	public static interface ISignalChangeCallback
+	{
+		/**
+		 * Determines if the block would receive a high signal if placed in location, facing outputDirection.
+		 * 
+		 * @param env The environment.
+		 * @param proxyLookup A look-up for that last tick's output proxies.
+		 * @param location The location where the block is being placed.
+		 * @param outputDirection The output direction of the block.
+		 * @return True if it would receive a high signal here.
+		 */
+		public boolean shouldStoreHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection);
 	}
 }

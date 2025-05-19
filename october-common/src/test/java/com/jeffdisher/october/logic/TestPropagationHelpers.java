@@ -175,7 +175,7 @@ public class TestPropagationHelpers
 		Assert.assertTrue(ENV.logic.isSource(switc));
 		Block lamp = ENV.blocks.fromItem(ENV.items.getItemById("op.lamp"));
 		Assert.assertTrue(ENV.logic.isAware(lamp));
-		Assert.assertNotNull(ENV.logic.sinkLogic(lamp));
+		Assert.assertNotNull(ENV.logic.logicUpdateHandler(lamp));
 		Block door = ENV.blocks.fromItem(ENV.items.getItemById("op.door"));
 		Assert.assertTrue(ENV.logic.isManual(door));
 		Assert.assertTrue(ENV.logic.isAware(door));

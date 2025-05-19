@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.LogicSpecialRegistry;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -47,17 +47,12 @@ public class LogicLayerHelpers
 		// See if this is a logic block.
 		if (env.logic.isAware(type))
 		{
-			// See if this is a sink which is receiving a signal.
-			LogicSpecialRegistry.ISinkReceivingSignal sinkLogic = env.logic.sinkLogic(type);
+			// Check the signal placement helper.
+			LogicAspect.ISignalChangeCallback logic = env.logic.initialPlacementHandler(type);
 			
-			if (null != sinkLogic)
+			if (null != logic)
 			{
-				isActive = sinkLogic.isReceivingHighSignal(env, proxyLookup, location, outputDirection);
-			}
-			else
-			{
-				// See if there is a special bit of logic for this block.
-				isActive = env.logic.shouldPlaceAsActive(env, proxyLookup, location, type);
+				isActive = logic.shouldStoreHighSignal(env, proxyLookup, location, outputDirection);
 			}
 		}
 		return isActive;

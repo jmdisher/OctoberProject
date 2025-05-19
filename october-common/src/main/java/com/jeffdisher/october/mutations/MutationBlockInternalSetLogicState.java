@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.LogicSpecialRegistry;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -54,9 +54,10 @@ public class MutationBlockInternalSetLogicState implements IMutationBlock
 		
 		// We assume that whoever scheduled us knows what they are doing and we only check the block type to make sure
 		// it didn't change in the meantime.
+		// If the block has a logic handler, its internal active state can be changed.
 		Block previousBlock = newBlock.getBlock();
-		LogicSpecialRegistry.ISinkReceivingSignal sinkLogic = env.logic.sinkLogic(previousBlock);
-		if (null != sinkLogic)
+		LogicAspect.ISignalChangeCallback logicHandler = env.logic.logicUpdateHandler(previousBlock);
+		if (null != logicHandler)
 		{
 			// As long as these are opposites, change to the alternative.
 			byte flags = newBlock.getFlags();

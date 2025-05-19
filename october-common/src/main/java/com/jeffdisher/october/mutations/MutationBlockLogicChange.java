@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.aspects.LogicSpecialRegistry;
+import com.jeffdisher.october.aspects.LogicAspect;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -50,11 +50,11 @@ public class MutationBlockLogicChange implements IMutationBlock
 		Block thisBlock = newBlock.getBlock();
 		
 		boolean didApply = false;
-		LogicSpecialRegistry.ISinkReceivingSignal sinkLogic = env.logic.sinkLogic(thisBlock);
-		if ((null != sinkLogic) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
+		LogicAspect.ISignalChangeCallback logicHandler = env.logic.logicUpdateHandler(thisBlock);
+		if ((null != logicHandler) && !MultiBlockUtils.isMultiBlockExtension(env, newBlock))
 		{
 			boolean isActive = FlagsAspect.isSet(newBlock.getFlags(), FlagsAspect.FLAG_ACTIVE);
-			if (sinkLogic.isReceivingHighSignal(env, context.previousBlockLookUp, _blockLocation, newBlock.getOrientation()))
+			if (logicHandler.shouldStoreHighSignal(env, context.previousBlockLookUp, _blockLocation, newBlock.getOrientation()))
 			{
 				// This is set high so switch to the corresponding "high".
 				if (!isActive)
