@@ -2814,6 +2814,174 @@ public class TestTickRunner
 		runner.shutdown();
 	}
 
+	@Test
+	public void logicGates()
+	{
+		// We will assume that the logic gates handle the direct/indirect signals correctly (as diode test already checks this) so we just check that the AND, OR, and NOT work as expected.
+		Item itemAnd = ENV.items.getItemById("op.and_gate");
+		Item itemOr = ENV.items.getItemById("op.or_gate");
+		Item itemNot = ENV.items.getItemById("op.not_gate");
+		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemSwitch = ENV.items.getItemById("op.switch");
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		
+		// We will create an area for each gate, then place the gates and flip the switches to observe the logic changes.
+		// AND
+		AbsoluteLocation andGate = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
+		_placeItemAsBlock(cuboid, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, andGate.getRelative(0, 1, 0), itemSwitch, null, false);
+		_placeItemAsBlock(cuboid, andGate.getRelative(0, -1, 0), itemSwitch, null, false);
+		// OR
+		AbsoluteLocation orGate = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
+		_placeItemAsBlock(cuboid, orGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, orGate.getRelative(0, 1, 0), itemSwitch, null, false);
+		_placeItemAsBlock(cuboid, orGate.getRelative(0, -1, 0), itemSwitch, null, false);
+		// NOT
+		AbsoluteLocation notGate = cuboid.getCuboidAddress().getBase().getRelative(2, 22, 1);
+		_placeItemAsBlock(cuboid, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, notGate.getRelative(-1, 0, 0), itemSwitch, null, false);
+		
+		// Since these are spaced out and we want this to happen in fewer ticks, we will use 3 entities.
+		MutableEntity entity1 = MutableEntity.createForTest(1);
+		entity1.newLocation = andGate.getRelative(1, 1, 0).toEntityLocation();
+		entity1.newInventory.addAllItems(itemAnd, 2);
+		entity1.setSelectedKey(1);
+		MutableEntity entity2 = MutableEntity.createForTest(2);
+		entity2.newLocation = orGate.getRelative(1, 1, 0).toEntityLocation();
+		entity2.newInventory.addAllItems(itemOr, 2);
+		entity2.setSelectedKey(1);
+		MutableEntity entity3 = MutableEntity.createForTest(3);
+		entity3.newLocation = notGate.getRelative(1, 1, 0).toEntityLocation();
+		entity3.newInventory.addAllItems(itemNot, 2);
+		entity3.setSelectedKey(1);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+						, new SuspendedEntity(entity2.freeze(), List.of())
+						, new SuspendedEntity(entity3.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// We will run these changes in 3 batches:  (1) place gates, (2) flip one switch, (3) flip second switch.
+		// Run phase1.
+		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0)), 1L);
+		
+		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the NOT to propagate).
+		// 1) Run MutationPlaceSelectedBlock.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) Run MutationBlockOverwriteByEntity.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Run logic update.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check the gate and door states.
+		_checkBlock(phase1, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase1, orGate, itemOr, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, orGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase1, notGate, itemNot, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemDoor, null, true);
+		
+		// Run phase2 - we flip the switches and should see OR and NOT change.
+		runner.enqueueEntityChange(1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, -1, 0), true), 2L);
+		runner.enqueueEntityChange(2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, -1, 0), true), 2L);
+		runner.enqueueEntityChange(3, new EntityChangeSetBlockLogicState(notGate.getRelative(-1, 0, 0), true), 2L);
+		
+		// Run enough ticks to observe the output from the or gate.
+		// 1) EntityChangeSetBlockLogicState
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) MutationBlockSetLogicState
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check that the OR gate and door changed, same with NOT, but not the AND.
+		_checkBlock(phase2, andGate, itemAnd, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, andGate.getRelative(1, 0, 0), itemDoor, null, false);
+		_checkBlock(phase2, orGate, itemOr, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, orGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase2, notGate, itemNot, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		
+		// Run phase3 - we flip the switches and should see AND change.
+		runner.enqueueEntityChange(1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, 1, 0), true), 3L);
+		runner.enqueueEntityChange(2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, 1, 0), true), 3L);
+		
+		// Run enough ticks to observe the output from the or gate.
+		// 1) EntityChangeSetBlockLogicState
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) MutationBlockSetLogicState
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase3 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// We should now see the final AND change.
+		_checkBlock(phase3, andGate, itemAnd, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, andGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase3, orGate, itemOr, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, orGate.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase3, notGate, itemNot, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase3, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		
+		runner.shutdown();
+	}
+
 
 	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
 	{

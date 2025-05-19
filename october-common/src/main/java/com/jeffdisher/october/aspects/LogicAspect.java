@@ -185,6 +185,9 @@ public class LogicAspect
 		SINK(false, LogicSpecialRegistry.GENERIC_SINK),
 		SOURCE(true, null),
 		DIODE(true, LogicSpecialRegistry.DIODE_SINK),
+		AND_GATE(true, LogicSpecialRegistry.AND_SINK),
+		OR_GATE(true, LogicSpecialRegistry.OR_SINK),
+		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {

@@ -83,3 +83,6 @@ op.tilled_soil	0
 op.stone_hoe	6
 op.emitter	2
 op.diode	2
+op.and_gate	2
+op.or_gate	2
+op.not_gate	2

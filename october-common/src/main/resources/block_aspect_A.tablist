@@ -13,3 +13,6 @@ op.double_door_base	is_multiblock
 	viscosity	0
 op.emitter
 op.diode
+op.and_gate
+op.or_gate
+op.not_gate

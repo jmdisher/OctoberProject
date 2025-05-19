@@ -128,3 +128,6 @@ op.double_door_base	is_multiblock
 	block_material	AXE
 op.emitter
 op.diode
+op.and_gate
+op.or_gate
+op.not_gate

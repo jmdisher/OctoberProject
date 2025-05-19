@@ -29,9 +29,47 @@ public class LogicSpecialRegistry
 	 */
 	public static final ISinkReceivingSignal DIODE_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
 	{
+		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
+		return LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
+	};
+
+	/**
+	 * A AND gate is a special case where it only checks the source "left" and "right" of the "output".  Conduit or
+	 * source.
+	 */
+	public static final ISinkReceivingSignal AND_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	{
+		AbsoluteLocation[] leftRight = _getInputLeftRight(location, outputDirection);
+		boolean left = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[0]);
+		boolean right = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[1]);
+		return left && right;
+	};
+
+	/**
+	 * A OR gate is a special case where it only checks the source "left" and "right" of the "output".  Conduit or
+	 * source.
+	 */
+	public static final ISinkReceivingSignal OR_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	{
+		AbsoluteLocation[] leftRight = _getInputLeftRight(location, outputDirection);
+		boolean left = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[0]);
+		boolean right = LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, leftRight[1]);
+		return left || right;
+	};
+
+	/**
+	 * A NOT gate is a special case where it only checks the source "behind" (opposite its output) it.  Conduit or source.
+	 */
+	public static final ISinkReceivingSignal NOT_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	{
+		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
+		return !LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
+	};
+
+
+	private static AbsoluteLocation _getInputOpposite(AbsoluteLocation location, OrientationAspect.Direction outputDirection)
+	{
 		AbsoluteLocation checkLocation;
-		
-		// We will invert the output direction to get this "input" direction.
 		switch(outputDirection)
 		{
 		case NORTH:
@@ -54,8 +92,42 @@ public class LogicSpecialRegistry
 			// This case is not yet supported.
 			throw Assert.unreachable();
 		}
-		return LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
-	};
+		return checkLocation;
+	}
+
+	private static AbsoluteLocation[] _getInputLeftRight(AbsoluteLocation location, OrientationAspect.Direction outputDirection)
+	{
+		AbsoluteLocation checkLeft;
+		AbsoluteLocation checkRight;
+		
+		switch(outputDirection)
+		{
+		case NORTH:
+			// Check WEST, EAST.
+			checkLeft = location.getRelative(-1, 0, 0);
+			checkRight = location.getRelative(1, 0, 0);
+			break;
+		case WEST:
+			// Check SOUTH, NORTH.
+			checkLeft = location.getRelative(0, -1, 0);
+			checkRight = location.getRelative(0, 1, 0);
+			break;
+		case SOUTH:
+			// Check EAST, WEST.
+			checkLeft = location.getRelative(1, 0, 0);
+			checkRight = location.getRelative(-1, 0, 0);
+			break;
+		case EAST:
+			// Check NORTH, SOUTH.
+			checkLeft = location.getRelative(0, 1, 0);
+			checkRight = location.getRelative(0, -1, 0);
+			break;
+		default:
+			// This case is not yet supported.
+			throw Assert.unreachable();
+		}
+		return new AbsoluteLocation[] { checkLeft, checkRight };
+	}
 
 
 	/**

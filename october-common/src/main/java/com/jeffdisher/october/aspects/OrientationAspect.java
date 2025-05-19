@@ -1,5 +1,6 @@
 package com.jeffdisher.october.aspects;
 
+import java.util.Set;
 import java.util.function.Function;
 
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -16,6 +17,15 @@ public class OrientationAspect
 	public static final String HOPPER = "op.hopper";
 	public static final String EMITTER = "op.emitter";
 	public static final String DIODE = "op.diode";
+	public static final String AND_GATE = "op.and_gate";
+	public static final String OR_GATE = "op.or_gate";
+	public static final String NOT_GATE = "op.not_gate";
+	public static final Set<String> FLAT_ONLY = Set.of(EMITTER
+			, DIODE
+			, AND_GATE
+			, OR_GATE
+			, NOT_GATE
+	);
 
 	/**
 	 * Converts a Direction object into a byte for storage.
@@ -50,7 +60,7 @@ public class OrientationAspect
 	public static boolean doesSingleBlockRequireOrientation(Block blockType)
 	{
 		String blockId = blockType.item().id();
-		return blockId.equals(HOPPER) || blockId.equals(EMITTER) || blockId.equals(DIODE);
+		return blockId.equals(HOPPER) || FLAT_ONLY.contains(blockId);
 	}
 
 	public static boolean doesAllowDownwardOutput(Block blockType)
@@ -72,7 +82,7 @@ public class OrientationAspect
 	public static Direction getDirectionIfApplicableToSingle(Block blockType, AbsoluteLocation blockLocation, AbsoluteLocation outputLocation)
 	{
 		String blockId = blockType.item().id();
-		boolean has4 = blockId.equals(EMITTER) || blockId.equals(DIODE);
+		boolean has4 = FLAT_ONLY.contains(blockId);
 		boolean has5 = blockId.equals(HOPPER);
 		OrientationAspect.Direction outputDirection;
 		if (has4 || has5)

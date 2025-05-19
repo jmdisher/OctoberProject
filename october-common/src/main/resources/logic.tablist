@@ -25,3 +25,9 @@ op.emitter	source
 	manual	false
 op.diode	diode
 	manual	false
+op.and_gate	and_gate
+	manual	false
+op.or_gate	or_gate
+	manual	false
+op.not_gate	not_gate
+	manual	false

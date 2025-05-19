@@ -180,3 +180,15 @@ op.diode	COMMON
 	input	op.iron_ingot	op.charcoal	op.stone
 	output	op.diode	op.diode
 	millis	8000
+op.and_gate	COMMON
+	input	op.iron_ingot	op.charcoal	op.stone
+	output	op.and_gate	op.and_gate
+	millis	8000
+op.or_gate	COMMON
+	input	op.iron_ingot	op.charcoal	op.stone
+	output	op.or_gate	op.or_gate
+	millis	8000
+op.not_gate	COMMON
+	input	op.iron_ingot	op.charcoal	op.stone
+	output	op.not_gate	op.not_gate
+	millis	8000

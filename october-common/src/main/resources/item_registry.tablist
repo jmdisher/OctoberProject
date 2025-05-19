@@ -81,3 +81,6 @@ op.tilled_soil	Tilled Soil
 op.stone_hoe	Stone Hoe
 op.emitter	Signal Emitter
 op.diode	Diode
+op.and_gate	AND Gate
+op.or_gate	OR Gate
+op.not_gate	NOT Gate
