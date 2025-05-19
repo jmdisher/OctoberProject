@@ -12,3 +12,4 @@ op.double_door_base	is_multiblock
 	block_material	AXE
 	viscosity	0
 op.emitter
+op.diode

@@ -5,6 +5,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -21,6 +22,39 @@ public class LogicSpecialRegistry
 	public static final ISinkReceivingSignal GENERIC_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
 	{
 		return LogicLayerHelpers.isBlockReceivingHighSignal(env, proxyLookup, location);
+	};
+
+	/**
+	 * A diode is a special case where it only checks the source "behind" (opposite its output) it.  Conduit or source.
+	 */
+	public static final ISinkReceivingSignal DIODE_SINK = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	{
+		AbsoluteLocation checkLocation;
+		
+		// We will invert the output direction to get this "input" direction.
+		switch(outputDirection)
+		{
+		case NORTH:
+			// Check south.
+			checkLocation = location.getRelative(0, -1, 0);
+			break;
+		case WEST:
+			// Check east.
+			checkLocation = location.getRelative(1, 0, 0);
+			break;
+		case SOUTH:
+			// Check north.
+			checkLocation = location.getRelative(0, 1, 0);
+			break;
+		case EAST:
+			// Check west.
+			checkLocation = location.getRelative(-1, 0, 0);
+			break;
+		default:
+			// This case is not yet supported.
+			throw Assert.unreachable();
+		}
+		return LogicLayerHelpers.isEmittedLogicValueHigh(env, proxyLookup, location, checkLocation);
 	};
 
 

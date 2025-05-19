@@ -176,3 +176,7 @@ op.emitter	COMMON
 	input	op.iron_ingot	op.charcoal	op.stone
 	output	op.emitter	op.emitter
 	millis	4000
+op.diode	COMMON
+	input	op.iron_ingot	op.charcoal	op.stone
+	output	op.diode	op.diode
+	millis	8000

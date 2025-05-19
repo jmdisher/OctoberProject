@@ -2499,42 +2499,30 @@ public class TestTickRunner
 		Item itemEmitter = ENV.items.getItemById("op.emitter");
 		Item itemDoor = ENV.items.getItemById("op.door");
 		Item itemWire = ENV.items.getItemById("op.logic_wire");
+		CuboidData cuboid = _zeroAirCuboidWithBase();
 		
 		// We need to set the initial state of blocks so we can place the others to test, next:
 		// -2 areas with a space for an emitter, pointing into door or wire and door (each in 2 directions - only one should change)
 		// -2 areas with space for a door, next to an emitter or next to a wire from the emitter (each in 2 directions)
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
-		{
-			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
-			{
-				cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
-			}
-		}
-		
 		AbsoluteLocation emitterSpace1 = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace1.getRelative(1, 0, 0).getBlockAddress(), itemDoor.number());
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace1.getRelative(0, 1, 0).getBlockAddress(), itemDoor.number());
+		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace1.getRelative(0, 1, 0), itemDoor, null, false);
 		AbsoluteLocation emitterSpace2 = cuboid.getCuboidAddress().getBase().getRelative(12, 2, 1);
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(1, 0, 0).getBlockAddress(), itemWire.number());
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(2, 0, 0).getBlockAddress(), itemDoor.number());
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(0, 1, 0).getBlockAddress(), itemWire.number());
-		cuboid.setData15(AspectRegistry.BLOCK, emitterSpace2.getRelative(0, 2, 0).getBlockAddress(), itemDoor.number());
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(1, 0, 0), itemWire, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(2, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 1, 0), itemWire, null, false);
+		_placeItemAsBlock(cuboid, emitterSpace2.getRelative(0, 2, 0), itemDoor, null, false);
 		
 		AbsoluteLocation existingEmitter1 = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
-		cuboid.setData15(AspectRegistry.BLOCK, existingEmitter1.getBlockAddress(), itemEmitter.number());
-		cuboid.setData7(AspectRegistry.FLAGS, existingEmitter1.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
-		cuboid.setData7(AspectRegistry.ORIENTATION, existingEmitter1.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		_placeItemAsBlock(cuboid, existingEmitter1, itemEmitter, OrientationAspect.Direction.EAST, true);
 		AbsoluteLocation doorSpace1_1 = existingEmitter1.getRelative(1, 0, 0);
 		AbsoluteLocation doorSpace1_2 = existingEmitter1.getRelative(0, 1, 0);
 		AbsoluteLocation existingEmitter2 = cuboid.getCuboidAddress().getBase().getRelative(12, 12, 1);
-		cuboid.setData15(AspectRegistry.BLOCK, existingEmitter2.getBlockAddress(), itemEmitter.number());
-		cuboid.setData7(AspectRegistry.FLAGS, existingEmitter2.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
-		cuboid.setData7(AspectRegistry.ORIENTATION, existingEmitter2.getBlockAddress(), OrientationAspect.directionToByte(OrientationAspect.Direction.EAST));
+		_placeItemAsBlock(cuboid, existingEmitter2, itemEmitter, OrientationAspect.Direction.EAST, true);
 		AbsoluteLocation wireSpace2_1 = existingEmitter2.getRelative(1, 0, 0);
 		AbsoluteLocation wireSpace2_2 = existingEmitter2.getRelative(0, 1, 0);
-		cuboid.setData15(AspectRegistry.BLOCK, wireSpace2_1.getRelative(1, 0, 0).getBlockAddress(), itemDoor.number());
-		cuboid.setData15(AspectRegistry.BLOCK, wireSpace2_2.getRelative(0, 1, 0).getBlockAddress(), itemDoor.number());
+		_placeItemAsBlock(cuboid, wireSpace2_1.getRelative(1, 0, 0), itemDoor, null, false);
+		_placeItemAsBlock(cuboid, wireSpace2_2.getRelative(0, 1, 0), itemDoor, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 4 entities.
 		MutableEntity entity1 = MutableEntity.createForTest(1);
@@ -2589,16 +2577,12 @@ public class TestTickRunner
 		IReadOnlyCuboidData output = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
 		
 		// Verify that all the blocks were placed correctly.
-		Assert.assertEquals(itemEmitter.number(), output.getData15(AspectRegistry.BLOCK, emitterSpace1.getBlockAddress()));
-		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace1.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.EAST), output.getData7(AspectRegistry.ORIENTATION, emitterSpace1.getBlockAddress()));
-		Assert.assertEquals(itemEmitter.number(), output.getData15(AspectRegistry.BLOCK, emitterSpace2.getBlockAddress()));
-		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, emitterSpace2.getBlockAddress()));
-		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.EAST), output.getData7(AspectRegistry.ORIENTATION, emitterSpace2.getBlockAddress()));
-		Assert.assertEquals(itemDoor.number(), output.getData15(AspectRegistry.BLOCK, doorSpace1_1.getBlockAddress()));
-		Assert.assertEquals(itemDoor.number(), output.getData15(AspectRegistry.BLOCK, doorSpace1_2.getBlockAddress()));
-		Assert.assertEquals(itemWire.number(), output.getData15(AspectRegistry.BLOCK, wireSpace2_1.getBlockAddress()));
-		Assert.assertEquals(itemWire.number(), output.getData15(AspectRegistry.BLOCK, wireSpace2_2.getBlockAddress()));
+		_checkBlock(output, emitterSpace1, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(output, emitterSpace2, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(output, doorSpace1_1, itemDoor, null, false);
+		_checkBlock(output, doorSpace1_2, itemDoor, null, false);
+		_checkBlock(output, wireSpace2_1, itemWire, null, false);
+		_checkBlock(output, wireSpace2_2, itemWire, null, false);
 		
 		// Now, verify the expected results in the various doors.
 		// -emitter1 should only activate the east door
@@ -2613,6 +2597,219 @@ public class TestTickRunner
 		// -emitter4 should only activate the east door after the wire
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, output.getData7(AspectRegistry.FLAGS, existingEmitter2.getRelative(2, 0, 0).getBlockAddress()));
 		Assert.assertEquals(0x0, output.getData7(AspectRegistry.FLAGS, existingEmitter2.getRelative(0, 2, 0).getBlockAddress()));
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void diodes()
+	{
+		// We need to test that diodes work in a few ways: directionality, proximity, signal strength:
+		// (1) place a diode after an active emitter directly/indirectly, in front or to the side and verify that the diode becomes active whenever in front
+		// (2) place an emitter behind/beside a diode directly/indirectly and verify that the diodes in front become active
+		// (3) place a door after an active diode directly/indirectly in front and to the side, verifying that the door is active for both in front cases
+		// (4) place down switch->wire->diode->wire->door and verify that the door opens after the switch is activated and closes when deactivated
+		Item itemEmitter = ENV.items.getItemById("op.emitter");
+		Item itemDiode = ENV.items.getItemById("op.diode");
+		Item itemDoor = ENV.items.getItemById("op.door");
+		Item itemSwitch = ENV.items.getItemById("op.switch");
+		Item itemWire = ENV.items.getItemById("op.logic_wire");
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		
+		// This will need several areas, each with their own entity to run concurrently.
+		// (1) We will place diodes relative to the emitters.
+		AbsoluteLocation emitterActiveDirect = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
+		_placeItemAsBlock(cuboid, emitterActiveDirect, itemEmitter, OrientationAspect.Direction.EAST, true);
+		AbsoluteLocation emitterActiveIndirect = cuboid.getCuboidAddress().getBase().getRelative(2, 12, 1);
+		_placeItemAsBlock(cuboid, emitterActiveIndirect, itemEmitter, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, emitterActiveIndirect.getRelative(1, 0, 0), itemWire, null, false);
+		cuboid.setData7(AspectRegistry.LOGIC, emitterActiveIndirect.getRelative(1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
+		_placeItemAsBlock(cuboid, emitterActiveIndirect.getRelative(0, 1, 0), itemWire, null, false);
+		
+		// (2) We will place emitters before the diodes.
+		AbsoluteLocation diodeDirect = cuboid.getCuboidAddress().getBase().getRelative(12, 2, 1);
+		_placeItemAsBlock(cuboid, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		AbsoluteLocation diodeIndirect = cuboid.getCuboidAddress().getBase().getRelative(12, 12, 1);
+		_placeItemAsBlock(cuboid, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		_placeItemAsBlock(cuboid, diodeIndirect.getRelative(-1, 0, 0), itemWire, null, false);
+		
+		// (3) We will place a door after active diodes.
+		AbsoluteLocation diodeActiveDirect = cuboid.getCuboidAddress().getBase().getRelative(22, 2, 1);
+		_placeItemAsBlock(cuboid, diodeActiveDirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveDirect.getRelative(-1, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		AbsoluteLocation diodeActiveIndirect = cuboid.getCuboidAddress().getBase().getRelative(22, 12, 1);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(1, 0, 0), itemWire, null, false);
+		cuboid.setData7(AspectRegistry.LOGIC, diodeActiveIndirect.getRelative(1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(-1, 0, 0), itemWire, null, false);
+		cuboid.setData7(AspectRegistry.LOGIC, diodeActiveIndirect.getRelative(-1, 0, 0).getBlockAddress(), LogicAspect.MAX_LEVEL);
+		_placeItemAsBlock(cuboid, diodeActiveIndirect.getRelative(-2, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		
+		// (4) We will build a common logic pipeline and just flick switches.
+		AbsoluteLocation switchIndirect = cuboid.getCuboidAddress().getBase().getRelative(22, 22, 1);
+		_placeItemAsBlock(cuboid, switchIndirect, itemSwitch, null, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(1, 0, 0), itemWire, null, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(3, 0, 0), itemWire, null, false);
+		_placeItemAsBlock(cuboid, switchIndirect.getRelative(4, 0, 0), itemDoor, null, false);
+		
+		// Since these are spaced out and we want this to happen in fewer ticks, we will use 7 entities.
+		MutableEntity entity1 = MutableEntity.createForTest(1);
+		entity1.newLocation = emitterActiveDirect.getRelative(1, 1, 0).toEntityLocation();
+		entity1.newInventory.addAllItems(itemDiode, 2);
+		entity1.setSelectedKey(1);
+		MutableEntity entity2 = MutableEntity.createForTest(2);
+		entity2.newLocation = emitterActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
+		entity2.newInventory.addAllItems(itemDiode, 2);
+		entity2.setSelectedKey(1);
+		MutableEntity entity3 = MutableEntity.createForTest(3);
+		entity3.newLocation = diodeDirect.getRelative(1, 1, 0).toEntityLocation();
+		entity3.newInventory.addAllItems(itemEmitter, 2);
+		entity3.setSelectedKey(1);
+		MutableEntity entity4 = MutableEntity.createForTest(4);
+		entity4.newLocation = diodeIndirect.getRelative(1, 1, 0).toEntityLocation();
+		entity4.newInventory.addAllItems(itemEmitter, 2);
+		entity4.setSelectedKey(1);
+		MutableEntity entity5 = MutableEntity.createForTest(5);
+		entity5.newLocation = diodeActiveDirect.getRelative(1, 1, 0).toEntityLocation();
+		entity5.newInventory.addAllItems(itemDoor, 2);
+		entity5.setSelectedKey(1);
+		MutableEntity entity6 = MutableEntity.createForTest(6);
+		entity6.newLocation = diodeActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
+		entity6.newInventory.addAllItems(itemDoor, 2);
+		entity6.setSelectedKey(1);
+		MutableEntity entity7 = MutableEntity.createForTest(7);
+		entity7.newLocation = switchIndirect.getRelative(1, 1, 0).toEntityLocation();
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+						, new SuspendedEntity(entity2.freeze(), List.of())
+						, new SuspendedEntity(entity3.freeze(), List.of())
+						, new SuspendedEntity(entity4.freeze(), List.of())
+						, new SuspendedEntity(entity5.freeze(), List.of())
+						, new SuspendedEntity(entity6.freeze(), List.of())
+						, new SuspendedEntity(entity7.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// We will run these changes in 2 batches since we want to check some failures and successes, but failures first.
+		// Run phase1.
+		// These 2 should fail.
+		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(0, 1, 0), emitterActiveDirect.getRelative(1, 1, 0)), 1L);
+		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(0, 2, 0), emitterActiveIndirect.getRelative(1, 2, 0)), 1L);
+		// These 2 should fail.
+		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(0, -1, 0), diodeDirect.getRelative(1, -1, 0)), 1L);
+		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(0, -2, 0), diodeIndirect.getRelative(1, -2, 0)), 1L);
+		// These 2 should fail.
+		runner.enqueueEntityChange(5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(0, 1, 0), diodeActiveDirect.getRelative(1, 1, 0)), 1L);
+		runner.enqueueEntityChange(6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(0, 2, 0), diodeActiveIndirect.getRelative(1, 2, 0)), 1L);
+		// This will switch "on".
+		runner.enqueueEntityChange(7, new EntityChangeSetBlockLogicState(switchIndirect, true), 1L);
+		
+		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the long arrangement to complete).
+		// 1) Run entity change (enqueue block mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) Run block mutation (set block flags).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Run logic update (set wire logic value).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Apply logic update mutation (enqueues diode flag change mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Set diode flags.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Run logic update (set wire logic value).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Apply logic update mutation (enqueues door flag change mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Set door flags.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check (1) fail cases.
+		_checkBlock(phase1, emitterActiveDirect.getRelative(0, 1, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, emitterActiveIndirect.getRelative(0, 2, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		// Check (2) fail cases.
+		_checkBlock(phase1, diodeDirect.getRelative(0, -1, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, diodeIndirect.getRelative(0, -2, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase1, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, false);
+		// Check (3) fail cases.
+		_checkBlock(phase1, diodeActiveDirect.getRelative(0, 1, 0), itemDoor, null, false);
+		_checkBlock(phase1, diodeActiveIndirect.getRelative(0, 2, 0), itemDoor, null, false);
+		// Check (4) "on".
+		_checkBlock(phase1, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, switchIndirect.getRelative(4, 0, 0), itemDoor, null, true);
+		
+		// We can now run phase2.
+		// These 2 should pass.
+		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(1, 0, 0), emitterActiveDirect.getRelative(2, 0, 0)), 2L);
+		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(2, 0, 0), emitterActiveIndirect.getRelative(3, 0, 0)), 2L);
+		// These 2 should pass.
+		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(-1, 0, 0), diodeDirect.getRelative(0, 0, 0)), 2L);
+		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(-2, 0, 0), diodeIndirect.getRelative(-1, 0, 0)), 2L);
+		// These 2 should pass.
+		runner.enqueueEntityChange(5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(1, 0, 0), diodeActiveDirect.getRelative(2, 0, 0)), 2L);
+		runner.enqueueEntityChange(6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(2, 0, 0), diodeActiveIndirect.getRelative(3, 0, 0)), 2L);
+		// This will switch "off".
+		runner.enqueueEntityChange(7, new EntityChangeSetBlockLogicState(switchIndirect, false), 2L);
+		
+		// Now, run enough ticks that this second batch to complete.
+		// 1) Run entity change (enqueue block mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) Run block mutation (set block flags).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Run logic update (set wire logic value).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Apply logic update mutation (enqueues diode flag change mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Set diode flags.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Run logic update (set wire logic value).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Apply logic update mutation (enqueues door flag change mutation).
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Set door flags.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check (1) pass cases.
+		_checkBlock(phase2, emitterActiveDirect.getRelative(1, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, emitterActiveIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, true);
+		// Check (2) pass cases.
+		_checkBlock(phase2, diodeDirect.getRelative(-1, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, diodeIndirect.getRelative(-2, 0, 0), itemEmitter, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, diodeDirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase2, diodeIndirect, itemDiode, OrientationAspect.Direction.EAST, true);
+		// Check (3) pass cases.
+		_checkBlock(phase2, diodeActiveDirect.getRelative(1, 0, 0), itemDoor, null, true);
+		_checkBlock(phase2, diodeActiveIndirect.getRelative(2, 0, 0), itemDoor, null, true);
+		// Check (4) "off".
+		_checkBlock(phase2, switchIndirect.getRelative(2, 0, 0), itemDiode, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, switchIndirect.getRelative(4, 0, 0), itemDoor, null, false);
 		
 		runner.shutdown();
 	}
@@ -2754,5 +2951,44 @@ public class TestTickRunner
 			millisRemaining -= MILLIS_PER_TICK;
 		}
 		return snapshot;
+	}
+
+	private static CuboidData _zeroAirCuboidWithBase()
+	{
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), STONE.item().number());
+			}
+		}
+		return cuboid;
+	}
+
+	private static void _placeItemAsBlock(CuboidData cuboid, AbsoluteLocation location, Item item, OrientationAspect.Direction orientation, boolean active)
+	{
+		cuboid.setData15(AspectRegistry.BLOCK, location.getBlockAddress(), item.number());
+		if (null != orientation)
+		{
+			cuboid.setData7(AspectRegistry.ORIENTATION, location.getBlockAddress(), OrientationAspect.directionToByte(orientation));
+		}
+		if (active)
+		{
+			cuboid.setData7(AspectRegistry.FLAGS, location.getBlockAddress(), FlagsAspect.FLAG_ACTIVE);
+		}
+	}
+
+	private static void _checkBlock(IReadOnlyCuboidData cuboid, AbsoluteLocation location, Item item, OrientationAspect.Direction orientation, boolean active)
+	{
+		Assert.assertEquals(item.number(), cuboid.getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
+		if (null != orientation)
+		{
+			Assert.assertEquals(OrientationAspect.directionToByte(orientation), cuboid.getData7(AspectRegistry.ORIENTATION, location.getBlockAddress()));
+		}
+		if (active)
+		{
+			Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, location.getBlockAddress()));
+		}
 	}
 }
