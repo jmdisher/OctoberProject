@@ -1,33 +1,18 @@
 # Entries here have the form:
-# ID<TAB>(source/sink)
-# <TAB>value<TAB>(high/low)
-# <TAB>alternate<TAB>ID
-# <TAB>manual<TAB>boolean
+# ID<TAB>logic_type
 #
-# Each entry must be a source or a sink.  A sink will be changed to the corresponding high/low variant when exposed to
-# a source of that value.
-# "value" must be "high" or "low" describing what this outputs (for a source) or what corresponding ID matches the logic
-#  level asserted into the block (for a sink).
-# "alternate" gives the ID of the opposite value block.  These MUST be specified as exact pairs.
-# "manual" set to true means that the block can be manually triggered by players whereas false means it is logic signals
-#  only.
+# Each entry in this file describes a block which can be a source or sink for logic signals.  While a high signal value
+# is ultimately determined by an active flag, this file defines how/when this flag is set.
+# The logic_type corresponds to an instance of LogicAspect._Role, which defines how this block type internally updates
+# this active flag in response to manual logic set actions, block update events, or logic update events.
 # Note that the ID references are against item_registry.tablist but must appear in block_aspect.tablist to have meaning.
 
-op.door	sink
-	manual	true
-op.switch	source
-	manual	true
-op.lamp	sink
-	manual	false
-op.double_door_base	sink
-	manual	true
-op.emitter	source
-	manual	false
+op.door	door
+op.switch	switch
+op.lamp	lamp
+op.double_door_base	door
+op.emitter	emitter
 op.diode	diode
-	manual	false
 op.and_gate	and_gate
-	manual	false
 op.or_gate	or_gate
-	manual	false
 op.not_gate	not_gate
-	manual	false

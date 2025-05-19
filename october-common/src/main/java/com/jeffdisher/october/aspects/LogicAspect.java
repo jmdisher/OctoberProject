@@ -21,8 +21,6 @@ public class LogicAspect
 {
 	public static final byte MAX_LEVEL = 15;
 
-	public static final String FIELD_MANUAL = "manual";
-
 	/**
 	 * We handle logic wire as a special-case since it would have otherwise required specializing the entire parser
 	 * just to mention it by ID (since none of the other parameters would apply).
@@ -51,10 +49,8 @@ public class LogicAspect
 	{
 		IValueTransformer<Block> blockTransformer = new IValueTransformer.BlockTransformer(items, blocks);
 		IValueTransformer<_Role> roleTransformer = _Role.transformer;
-		IValueTransformer<Boolean> booleanTransformer = new IValueTransformer.BooleanTransformer();
 		
 		SimpleTabListCallbacks<Block, _Role> callbacks = new SimpleTabListCallbacks<>(blockTransformer, roleTransformer);
-		SimpleTabListCallbacks.SubRecordCapture<Block, Boolean> manual = callbacks.captureSubRecord(FIELD_MANUAL, booleanTransformer, true);
 		
 		TabListReader.readEntireFile(callbacks, stream);
 		
@@ -69,7 +65,6 @@ public class LogicAspect
 		
 		// We can just pass these in, directly.
 		return new LogicAspect(callbacks.topLevel
-				, manual.recordData
 				, blocks.fromItem(items.getItemById(LOGIC_WIRE_ID))
 				, blocks.fromItem(items.getItemById(LOGIC_EMITTER_ID))
 		);
@@ -77,18 +72,15 @@ public class LogicAspect
 
 
 	private final Map<Block, _Role> _roles;
-	private final Map<Block, Boolean> _manual;
 	private final Block _logicWireBlock;
 	private final Block _specialEmitter;
 
 	private LogicAspect(Map<Block, _Role> roles
-			, Map<Block, Boolean> manual
 			, Block logicWireBlock
 			, Block specialEmitter
 	)
 	{
 		_roles = roles;
-		_manual = manual;
 		_logicWireBlock = logicWireBlock;
 		_specialEmitter = specialEmitter;
 	}
@@ -146,8 +138,11 @@ public class LogicAspect
 	 */
 	public boolean isManual(Block block)
 	{
-		Boolean value = _manual.get(block);
-		return (Boolean.TRUE == value);
+		_Role role = _roles.get(block);
+		return (null != role)
+				? role.canManuallyChange
+				: null
+		;
 	}
 
 	/**
@@ -182,12 +177,14 @@ public class LogicAspect
 
 	private static enum _Role
 	{
-		SINK(false, LogicSpecialRegistry.GENERIC_SINK),
-		SOURCE(true, null),
-		DIODE(true, LogicSpecialRegistry.DIODE_SINK),
-		AND_GATE(true, LogicSpecialRegistry.AND_SINK),
-		OR_GATE(true, LogicSpecialRegistry.OR_SINK),
-		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK),
+		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, true),
+		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, false),
+		SWITCH(true, null, true),
+		EMITTER(true, null, false),
+		DIODE(true, LogicSpecialRegistry.DIODE_SINK, false),
+		AND_GATE(true, LogicSpecialRegistry.AND_SINK, false),
+		OR_GATE(true, LogicSpecialRegistry.OR_SINK, false),
+		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, false),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
@@ -205,11 +202,13 @@ public class LogicAspect
 		
 		public final boolean isSource;
 		public final LogicSpecialRegistry.ISinkReceivingSignal sinkLogic;
+		public final boolean canManuallyChange;
 		
-		private _Role(boolean isSource, LogicSpecialRegistry.ISinkReceivingSignal sinkLogic)
+		private _Role(boolean isSource, LogicSpecialRegistry.ISinkReceivingSignal sinkLogic, boolean canManuallyChange)
 		{
 			this.isSource = isSource;
 			this.sinkLogic = sinkLogic;
+			this.canManuallyChange = canManuallyChange;
 		}
 	}
 }
