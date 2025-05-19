@@ -77,7 +77,7 @@ public class MutationBlockPhase2Multi implements IMutationBlock
 		if (!doesMatch)
 		{
 			// All the blocks use the same previous look-up so they will all agree on this.
-			boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _revertType);
+			boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _orientation, _revertType);
 			// This can't fail.
 			Assert.assertTrue(didApply);
 		}

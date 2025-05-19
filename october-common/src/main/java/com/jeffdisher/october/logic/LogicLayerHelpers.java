@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LogicSpecialRegistry;
 import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -28,7 +29,17 @@ public class LogicLayerHelpers
 	public static final byte LOGIC_BIT_UP = 0x20;
 	public static final byte LOGIC_BIT_DOWN = 0x40;
 
-	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, Block type)
+	/**
+	 * Called to check if this block should have its active flag set when placed.
+	 * 
+	 * @param env The environment.
+	 * @param proxyLookup A look-up for that last tick's output proxies.
+	 * @param location The location where the block is being placed.
+	 * @param outputDirection The output where the block is facing.
+	 * @param type The type of block being placed.
+	 * @return True if the active flag should be set when placing the block.
+	 */
+	public static boolean shouldSetActive(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection, Block type)
 	{
 		// Only sinks can be set to active during placement (sources can be changed to active by a user).
 		boolean isActive = false;
@@ -37,9 +48,11 @@ public class LogicLayerHelpers
 		if (env.logic.isAware(type))
 		{
 			// See if this is a sink which is receiving a signal.
-			if (env.logic.isSink(type))
+			LogicSpecialRegistry.ISinkReceivingSignal sinkLogic = env.logic.sinkLogic(type);
+			
+			if (null != sinkLogic)
 			{
-				isActive = _isBlockReceivingHighSignal(env, proxyLookup, location);
+				isActive = sinkLogic.isReceivingHighSignal(env, proxyLookup, location, outputDirection);
 			}
 			else
 			{
@@ -50,11 +63,27 @@ public class LogicLayerHelpers
 		return isActive;
 	}
 
+	/**
+	 * Checks if a high signal is entering a block at location from adjacent block.
+	 * 
+	 * @param env The environment.
+	 * @param proxyLookup A look-up for that last tick's output proxies.
+	 * @param location The location where the block is being placed.
+	 * @return True if at least one adjacent block conducts a high logic signal into location.
+	 */
 	public static boolean isBlockReceivingHighSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
 	{
 		return _isBlockReceivingHighSignal(env, proxyLookup, location);
 	}
 
+	/**
+	 * Checks if a given block is receiving a high logic signal directly from a source (not just a conduit).
+	 * 
+	 * @param env The environment.
+	 * @param proxyLookup A look-up for that last tick's output proxies.
+	 * @param location The location where the block is being placed.
+	 * @return True if at least one of the adjacent blocks is a source outputting directly into location.
+	 */
 	public static boolean isBlockReceivingSourceSignal(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location)
 	{
 		// A block receives a high signal if there is a >0 signal in an adjacent conduit or an adjacent block is actively outputting a signal into this block.
@@ -68,6 +97,14 @@ public class LogicLayerHelpers
 		;
 	}
 
+	/**
+	 * Populates out_potentialLogicChangeSet with the locations which could be impacted by a logic change in
+	 * blockLocation based on its given logicBits.
+	 * 
+	 * @param out_potentialLogicChangeSet The set to populate with potential logic change locations.
+	 * @param blockLocation The location where a logic change occurred.
+	 * @param logicBits The bit vector describing potential output directions from this block.
+	 */
 	public static void populateSetWithPotentialLogicChanges(Set<AbsoluteLocation> out_potentialLogicChangeSet, AbsoluteLocation blockLocation, byte logicBits)
 	{
 		if (0x0 != (logicBits & LogicLayerHelpers.LOGIC_BIT_THIS))
@@ -98,6 +135,20 @@ public class LogicLayerHelpers
 		{
 			out_potentialLogicChangeSet.add(blockLocation.getRelative(0, 0, -1));
 		}
+	}
+
+	/**
+	 * Checks if the logic value entering eventualTarget from checkLocation is high.
+	 * 
+	 * @param env The environment.
+	 * @param proxyLookup A look-up for that last tick's output proxies.
+	 * @param eventualTarget The block to check.
+	 * @param checkLocation The source block where the logic is entering.
+	 * @return True if a high value enters eventualTarget from checkLocation.
+	 */
+	public static boolean isEmittedLogicValueHigh(Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation eventualTarget, AbsoluteLocation checkLocation)
+	{
+		return _getEmittedLogicValue(env, proxyLookup, false, eventualTarget, checkLocation);
 	}
 
 

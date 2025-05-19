@@ -67,7 +67,7 @@ public class MutationBlockPlaceMultiBlock implements IMutationBlock
 		Environment env = Environment.getShared();
 		boolean isRoot = _rootLocation.equals(_location);
 		Block oldBlock = newBlock.getBlock();
-		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _blockType);
+		boolean didApply = CommonBlockMutationHelpers.overwriteBlock(context, newBlock, _location, _direction, _blockType);
 		if (didApply)
 		{
 			if (isRoot)

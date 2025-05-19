@@ -21,8 +21,6 @@ public class LogicAspect
 {
 	public static final byte MAX_LEVEL = 15;
 
-	public static final String ROOT_SINK = "sink";
-	public static final String ROOT_SOURCE = "source";
 	public static final String FIELD_MANUAL = "manual";
 
 	/**
@@ -105,7 +103,10 @@ public class LogicAspect
 	public boolean isSource(Block block)
 	{
 		_Role role = _roles.get(block);
-		return (_Role.SOURCE == role);
+		return (null != role)
+				? role.isSource
+				: false
+		;
 	}
 
 	/**
@@ -113,12 +114,15 @@ public class LogicAspect
 	 * conduit.
 	 * 
 	 * @param block The block type.
-	 * @return True if this block type can have its state changed by logic.
+	 * @return The sink helper or null if not a sink.
 	 */
-	public boolean isSink(Block block)
+	public LogicSpecialRegistry.ISinkReceivingSignal sinkLogic(Block block)
 	{
 		_Role role = _roles.get(block);
-		return (_Role.SINK == role);
+		return (null != role)
+				? role.sinkLogic
+				: null
+		;
 	}
 
 	/**
@@ -178,8 +182,8 @@ public class LogicAspect
 
 	private static enum _Role
 	{
-		SINK,
-		SOURCE,
+		SINK(false, LogicSpecialRegistry.GENERIC_SINK),
+		SOURCE(true, null),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
@@ -194,5 +198,14 @@ public class LogicAspect
 				return role;
 			}
 		};
+		
+		public final boolean isSource;
+		public final LogicSpecialRegistry.ISinkReceivingSignal sinkLogic;
+		
+		private _Role(boolean isSource, LogicSpecialRegistry.ISinkReceivingSignal sinkLogic)
+		{
+			this.isSource = isSource;
+			this.sinkLogic = sinkLogic;
+		}
 	}
 }
