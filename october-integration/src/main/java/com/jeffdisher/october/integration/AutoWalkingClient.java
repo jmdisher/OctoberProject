@@ -52,7 +52,7 @@ public class AutoWalkingClient
 	 */
 	public static final long REPORT_INTERVAL_MILLIS = 10_000L;
 
-	public static void main(String[] args) throws IOException, InterruptedException
+	public static void main(String[] args) throws IOException, InterruptedException, ClientProcess.DisconnectException
 	{
 		if (3 == args.length)
 		{
@@ -75,7 +75,7 @@ public class AutoWalkingClient
 	}
 
 
-	private static _Packaged _connectAndWaitForCommand(InetSocketAddress serverAddress, String clientName) throws IOException, InterruptedException
+	private static _Packaged _connectAndWaitForCommand(InetSocketAddress serverAddress, String clientName) throws IOException, InterruptedException, ClientProcess.DisconnectException
 	{
 		Environment.createSharedInstance();
 		_Listener listener = new _Listener();

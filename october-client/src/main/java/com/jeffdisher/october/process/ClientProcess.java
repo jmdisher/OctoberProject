@@ -69,6 +69,7 @@ public class ClientProcess
 	private long _lastIncludedLocalCommit;
 	private int _assignedClientId;
 	private boolean _isEntityLoaded;
+	private DisconnectException _disconnectException;
 
 	private final NetworkClient _client;
 
@@ -129,11 +130,16 @@ public class ClientProcess
 	 * 
 	 * @return The client's ID.
 	 * @throws InterruptedException Interrupted while waiting.
+	 * @throws DisconnectException The server disconnected.
 	 */
-	public synchronized int waitForClientId() throws InterruptedException
+	public synchronized int waitForClientId() throws InterruptedException, DisconnectException
 	{
 		while (0 == _assignedClientId)
 		{
+			if (null != _disconnectException)
+			{
+				throw _disconnectException;
+			}
 			this.wait();
 		}
 		return _assignedClientId;
@@ -146,22 +152,27 @@ public class ClientProcess
 	 * 
 	 * @return The last tick observed in a packet.
 	 * @throws InterruptedException Interrupted while waiting.
+	 * @throws DisconnectException The server disconnected.
 	 */
-	public synchronized long waitForLocalEntity(long currentTimeMillis) throws InterruptedException
+	public synchronized long waitForLocalEntity(long currentTimeMillis) throws InterruptedException, DisconnectException
 	{
 		// We want to wait until we see the end of at least a single tick since we don't want to return after the first
 		// entity packet, but before the first tick packet (would give us 0).
-		while (0 == _lastTickFromServer)
+		while ((0 == _lastTickFromServer) && (null == _disconnectException))
 		{
 			this.wait();
 		}
 		// Now, we can wait for the entity (although it likely came in before the tick).
-		while (!_isEntityLoaded)
+		while (!_isEntityLoaded  && (null == _disconnectException))
 		{
 			this.wait();
 		}
 		_clientRunner.runPendingCalls(currentTimeMillis);
 		_runPendingCallbacks();
+		if (null != _disconnectException)
+		{
+			throw _disconnectException;
+		}
 		return _lastTickFromServer;
 	}
 
@@ -172,15 +183,20 @@ public class ClientProcess
 	 * 
 	 * @return The last tick observed in a packet.
 	 * @throws InterruptedException Interrupted while waiting.
+	 * @throws DisconnectException The server disconnected.
 	 */
-	public synchronized long waitForTick(long tickNumber, long currentTimeMillis) throws InterruptedException
+	public synchronized long waitForTick(long tickNumber, long currentTimeMillis) throws InterruptedException, DisconnectException
 	{
-		while (_lastTickFromServer < tickNumber)
+		while ((_lastTickFromServer < tickNumber) && (null == _disconnectException))
 		{
 			this.wait();
 		}
 		_clientRunner.runPendingCalls(currentTimeMillis);
 		_runPendingCallbacks();
+		if (null != _disconnectException)
+		{
+			throw _disconnectException;
+		}
 		return _lastTickFromServer;
 	}
 
@@ -191,15 +207,20 @@ public class ClientProcess
 	 * 
 	 * @return The last tick observed in a packet.
 	 * @throws InterruptedException Interrupted while waiting.
+	 * @throws DisconnectException The server disconnected.
 	 */
-	public synchronized long waitForLocalCommitInTick(long lastIncludedLocalCommit, long currentTimeMillis) throws InterruptedException
+	public synchronized long waitForLocalCommitInTick(long lastIncludedLocalCommit, long currentTimeMillis) throws InterruptedException, DisconnectException
 	{
-		while (_lastIncludedLocalCommit < lastIncludedLocalCommit)
+		while ((_lastIncludedLocalCommit < lastIncludedLocalCommit) && (null == _disconnectException))
 		{
 			this.wait();
 		}
 		_clientRunner.runPendingCalls(currentTimeMillis);
 		_runPendingCallbacks();
+		if (null != _disconnectException)
+		{
+			throw _disconnectException;
+		}
 		return _lastTickFromServer;
 	}
 
@@ -412,6 +433,12 @@ public class ClientProcess
 		}
 	}
 
+	private synchronized void _background_serverDisconnected(DisconnectException exception)
+	{
+		_disconnectException = exception;
+		this.notifyAll();
+	}
+
 	private void _runPendingCallbacks()
 	{
 		Runnable next = _pendingCallbacks.getNext();
@@ -546,6 +573,7 @@ public class ClientProcess
 		public void serverDisconnected()
 		{
 			_messagesToClientRunner.adapterDisconnected();
+			_background_serverDisconnected(new DisconnectException());
 		}
 	}
 
@@ -848,5 +876,14 @@ public class ClientProcess
 		 * @param message The message.
 		 */
 		void receivedChatMessage(int senderId, String message);
+	}
+
+	public static class DisconnectException extends Exception
+	{
+		private static final long serialVersionUID = 1L;
+		public DisconnectException()
+		{
+			super("Server Disconnected");
+		}
 	}
 }
