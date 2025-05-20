@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.aspects.LogicAspect;
+import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.IMutableBlockProxy;
 import com.jeffdisher.october.logic.FireHelpers;
@@ -156,6 +158,26 @@ public class MutationBlockUpdate implements IMutationBlock
 				context.mutationSink.future(grow, MutationBlockGrowGroundCover.SPREAD_DELAY_MILLIS);
 				// We did do something, even if it didn't change this block, so return true.
 				didApply = true;
+			}
+		}
+		
+		// See if this block's logical active state should change in response to this update event.
+		if (!didApply)
+		{
+			LogicAspect.ISignalChangeCallback handler = env.logic.blockUpdateHandler(thisBlock);
+			if (null != handler)
+			{
+				OrientationAspect.Direction outputDirection = newBlock.getOrientation();
+				boolean isActive = handler.shouldStoreHighSignal(env, context.previousBlockLookUp, _blockLocation, outputDirection);
+				byte flags = newBlock.getFlags();
+				if (isActive != FlagsAspect.isSet(flags, FlagsAspect.FLAG_ACTIVE))
+				{
+					flags = isActive
+							? FlagsAspect.set(flags, FlagsAspect.FLAG_ACTIVE)
+							: FlagsAspect.clear(flags, FlagsAspect.FLAG_ACTIVE)
+					;
+					newBlock.setFlags(flags);
+				}
 			}
 		}
 		return didApply;

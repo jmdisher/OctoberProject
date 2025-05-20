@@ -20,11 +20,13 @@ public class OrientationAspect
 	public static final String AND_GATE = "op.and_gate";
 	public static final String OR_GATE = "op.or_gate";
 	public static final String NOT_GATE = "op.not_gate";
+	public static final String SENSOR_INVENTORY = "op.sensor_inventory";
 	public static final Set<String> FLAT_ONLY = Set.of(EMITTER
 			, DIODE
 			, AND_GATE
 			, OR_GATE
 			, NOT_GATE
+			, SENSOR_INVENTORY
 	);
 
 	/**

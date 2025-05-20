@@ -16,3 +16,4 @@ op.diode
 op.and_gate
 op.or_gate
 op.not_gate
+op.sensor_inventory

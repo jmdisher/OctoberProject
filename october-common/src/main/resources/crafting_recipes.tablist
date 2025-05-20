@@ -192,3 +192,7 @@ op.not_gate	COMMON
 	input	op.iron_ingot	op.charcoal	op.stone
 	output	op.not_gate	op.not_gate
 	millis	8000
+op.sensor_inventory	COMMON
+	input	op.stone	op.emitter	op.diode
+	output	op.sensor_inventory
+	millis	16000

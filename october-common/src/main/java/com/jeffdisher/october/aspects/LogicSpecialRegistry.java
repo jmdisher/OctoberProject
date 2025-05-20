@@ -5,6 +5,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -72,6 +73,24 @@ public class LogicSpecialRegistry
 	public static final LogicAspect.ISignalChangeCallback EMITTER = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
 	{
 		return true;
+	};
+
+	/**
+	 * In inventory sensor is only run on initial placement and block update, not logic updates.  It will output a high
+	 * signal to its output if there is a non-empty inventory behind it.
+	 */
+	public static final LogicAspect.ISignalChangeCallback SENSOR_INVENTORY = (Environment env, Function<AbsoluteLocation, BlockProxy> proxyLookup, AbsoluteLocation location, OrientationAspect.Direction outputDirection) ->
+	{
+		AbsoluteLocation checkLocation = _getInputOpposite(location, outputDirection);
+		
+		BlockProxy proxy = proxyLookup.apply(checkLocation);
+		boolean setHigh = false;
+		if (null != proxy)
+		{
+			Inventory inv = proxy.getInventory();
+			setHigh = (null != inv) && (inv.currentEncumbrance > 0);
+		}
+		return setHigh;
 	};
 
 

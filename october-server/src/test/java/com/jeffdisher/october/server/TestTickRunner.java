@@ -44,6 +44,7 @@ import com.jeffdisher.october.mutations.MutationBlockReplace;
 import com.jeffdisher.october.mutations.MutationBlockSetLogicState;
 import com.jeffdisher.october.mutations.MutationBlockStoreItems;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
+import com.jeffdisher.october.mutations.MutationEntityRequestItemPickUp;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.mutations.PickUpItemMutation;
 import com.jeffdisher.october.mutations.ReplaceBlockMutation;
@@ -2978,6 +2979,140 @@ public class TestTickRunner
 		_checkBlock(phase3, orGate.getRelative(1, 0, 0), itemDoor, null, true);
 		_checkBlock(phase3, notGate, itemNot, OrientationAspect.Direction.EAST, false);
 		_checkBlock(phase3, notGate.getRelative(1, 0, 0), itemDoor, null, false);
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void inventorySensor()
+	{
+		// We will create a scenario with a chest and a door so we can place the sensor between and observe what happens when removing and adding items in the chest.
+		Item itemSensor = ENV.items.getItemById("op.sensor_inventory");
+		Item itemChest = ENV.items.getItemById("op.chest");
+		Item itemDoor = ENV.items.getItemById("op.door");
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		
+		Inventory chestInventory = Inventory.start(ENV.stations.getNormalInventorySize(ENV.blocks.fromItem(itemChest)))
+				.addStackable(itemSensor, 1)
+				.finish()
+		;
+		AbsoluteLocation sensorSpace = cuboid.getCuboidAddress().getBase().getRelative(2, 2, 1);
+		AbsoluteLocation doorSpace = sensorSpace.getRelative(1, 0, 0);
+		AbsoluteLocation chestSpace = sensorSpace.getRelative(-1, 0, 0);
+		_placeItemAsBlock(cuboid, doorSpace, itemDoor, null, false);
+		_placeItemAsBlock(cuboid, chestSpace, itemChest, null, false);
+		cuboid.setDataSpecial(AspectRegistry.INVENTORY, chestSpace.getBlockAddress(), chestInventory);
+		
+		// We only need the sensor in our inventory.
+		MutableEntity entity1 = MutableEntity.createForTest(1);
+		entity1.newLocation = sensorSpace.getRelative(1, 1, 0).toEntityLocation();
+		entity1.newInventory.addAllItems(itemSensor, 1);
+		entity1.setSelectedKey(1);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// We will run these changes in 3 batches:  (1) place sensor, (2) remove item, (3) add item.
+		// Run phase1 - place sensor.
+		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(sensorSpace, sensorSpace.getRelative(1, 0, 0)), 1L);
+		
+		// Run enough ticks to see the door open.
+		// 1) Run MutationPlaceSelectedBlock.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) Run MutationBlockOverwriteByEntity.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Run logic update.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase1 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check the sensor and door states.
+		_checkBlock(phase1, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase1, doorSpace, itemDoor, null, true);
+		
+		// Run phase2 - empty chest inventory.
+		runner.enqueueEntityChange(1, new MutationEntityRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 2L);
+		
+		// Run enough ticks to observe the sensor and door deactivate.
+		// 1) MutationEntityRequestItemPickUp
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) MutationBlockExtractItems
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) MutationEntityStoreToInventory + Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase2 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check the sensor and door states.
+		_checkBlock(phase2, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, false);
+		_checkBlock(phase2, doorSpace, itemDoor, null, false);
+		
+		// Run phase3 - fill chest inventory.
+		runner.enqueueEntityChange(1, new MutationEntityPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 3L);
+		
+		// Run enough ticks to observe the sensor and door reactivate.
+		// 1) MutationEntityPushItems
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 2) MutationBlockStoreItems
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 3) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 4) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 5) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 6) Logic propagate
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 7) Run MutationBlockLogicChange.
+		runner.startNextTick();
+		runner.waitForPreviousTick();
+		// 8) Run MutationBlockInternalSetLogicState.
+		runner.startNextTick();
+		snapshot = runner.waitForPreviousTick();
+		IReadOnlyCuboidData phase3 = snapshot.cuboids().get(cuboid.getCuboidAddress()).completed();
+		
+		// Check the sensor and door states.
+		_checkBlock(phase3, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
+		_checkBlock(phase3, doorSpace, itemDoor, null, true);
 		
 		runner.shutdown();
 	}

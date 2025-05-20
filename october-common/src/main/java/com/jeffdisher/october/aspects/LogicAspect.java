@@ -109,6 +109,23 @@ public class LogicAspect
 	}
 
 	/**
+	 * Used to request the helper to update this block's active state in response to a block update event.  This
+	 * essentially means that the block is a sink which can change its state based on block state update events.
+	 * 
+	 * @param block The block type.
+	 * @return The helper to calculate the block's new active state in response to a block update event or null if it
+	 * ignores block update events.
+	 */
+	public ISignalChangeCallback blockUpdateHandler(Block block)
+	{
+		_Role role = _roles.get(block);
+		return (null != role)
+				? role.blockUpdate
+				: null
+		;
+	}
+
+	/**
 	 * Used to request the helper to update this block's active state in response to adjacent block logic changes.  This
 	 * essentially means that the block is a sink which can change its state based on logic update events.
 	 * 
@@ -169,14 +186,15 @@ public class LogicAspect
 
 	private static enum _Role
 	{
-		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, LogicSpecialRegistry.GENERIC_SINK, true),
-		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, LogicSpecialRegistry.GENERIC_SINK, false),
-		SWITCH(true, null, null, true),
-		EMITTER(true, LogicSpecialRegistry.EMITTER, null, false),
-		DIODE(true, LogicSpecialRegistry.DIODE_SINK, LogicSpecialRegistry.DIODE_SINK, false),
-		AND_GATE(true, LogicSpecialRegistry.AND_SINK, LogicSpecialRegistry.AND_SINK, false),
-		OR_GATE(true, LogicSpecialRegistry.OR_SINK, LogicSpecialRegistry.OR_SINK, false),
-		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, LogicSpecialRegistry.NOT_SINK, false),
+		DOOR(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, true),
+		LAMP(false, LogicSpecialRegistry.GENERIC_SINK, null, LogicSpecialRegistry.GENERIC_SINK, false),
+		SWITCH(true, null, null, null, true),
+		EMITTER(true, LogicSpecialRegistry.EMITTER, null, null, false),
+		DIODE(true, LogicSpecialRegistry.DIODE_SINK, null, LogicSpecialRegistry.DIODE_SINK, false),
+		AND_GATE(true, LogicSpecialRegistry.AND_SINK, null, LogicSpecialRegistry.AND_SINK, false),
+		OR_GATE(true, LogicSpecialRegistry.OR_SINK, null, LogicSpecialRegistry.OR_SINK, false),
+		NOT_GATE(true, LogicSpecialRegistry.NOT_SINK, null, LogicSpecialRegistry.NOT_SINK, false),
+		SENSOR_INVENTORY(true, LogicSpecialRegistry.SENSOR_INVENTORY, LogicSpecialRegistry.SENSOR_INVENTORY, null, false),
 		;
 		
 		public static IValueTransformer<_Role> transformer = new IValueTransformer<>() {
@@ -194,13 +212,15 @@ public class LogicAspect
 		
 		public final boolean isSource;
 		public final ISignalChangeCallback placement;
+		public final ISignalChangeCallback blockUpdate;
 		public final ISignalChangeCallback logicUpdate;
 		public final boolean canManuallyChange;
 		
-		private _Role(boolean isSource, ISignalChangeCallback placement, ISignalChangeCallback logicUpdate, boolean canManuallyChange)
+		private _Role(boolean isSource, ISignalChangeCallback placement, ISignalChangeCallback blockUpdate, ISignalChangeCallback logicUpdate, boolean canManuallyChange)
 		{
 			this.isSource = isSource;
 			this.placement = placement;
+			this.blockUpdate = blockUpdate;
 			this.logicUpdate = logicUpdate;
 			this.canManuallyChange = canManuallyChange;
 		}

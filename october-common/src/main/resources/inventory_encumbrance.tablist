@@ -86,3 +86,4 @@ op.diode	2
 op.and_gate	2
 op.or_gate	2
 op.not_gate	2
+op.sensor_inventory	4
