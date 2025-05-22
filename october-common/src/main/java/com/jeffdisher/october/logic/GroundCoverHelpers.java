@@ -29,21 +29,29 @@ public class GroundCoverHelpers
 	public static List<AbsoluteLocation> findSpreadNeighbours(Environment env, Function<AbsoluteLocation, BlockProxy> previousBlockLookUp, AbsoluteLocation source, Block sourceBlock)
 	{
 		Block target = env.groundCover.getSpreadToTypeForGroundCover(sourceBlock);
-		// Can only be called with ground cover.
-		Assert.assertTrue(null != target);
 		
-		List<AbsoluteLocation> toCheck = _getSymmetricSearchList(source);
-		
-		return toCheck.stream().filter((AbsoluteLocation check) -> {
-			BlockProxy proxy = previousBlockLookUp.apply(check);
-			boolean canSpread = false;
-			if (null != proxy)
-			{
-				Block block = proxy.getBlock();
-				canSpread = (target == block);
-			}
-			return canSpread;
-		}).toList();
+		// Note that, while this can only be called with ground cover, some ground cover is non-spreading.
+		List<AbsoluteLocation> neighbours;
+		if (null != target)
+		{
+			List<AbsoluteLocation> toCheck = _getSymmetricSearchList(source);
+			
+			neighbours = toCheck.stream().filter((AbsoluteLocation check) -> {
+				BlockProxy proxy = previousBlockLookUp.apply(check);
+				boolean canSpread = false;
+				if (null != proxy)
+				{
+					Block block = proxy.getBlock();
+					canSpread = (target == block);
+				}
+				return canSpread;
+			}).toList();
+		}
+		else
+		{
+			neighbours = List.of();
+		}
+		return neighbours;
 	}
 
 	/**

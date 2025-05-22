@@ -1513,6 +1513,34 @@ public class TestCommonMutations
 		Assert.assertNull(cuboid.getDataSpecial(AspectRegistry.INVENTORY, centre.getRelative(0, 0, 1).getBlockAddress()));
 	}
 
+	@Test
+	public void replaceGrassWithFarm()
+	{
+		// This is a basic test to find a specific bug related to hoe usage.
+		AbsoluteLocation target = new AbsoluteLocation(1, 1, 1);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
+		Block grassBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.grass"));
+		Block farmBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.tilled_soil"));
+		cuboid.setData15(AspectRegistry.BLOCK, target.getBlockAddress(), grassBlock.item().number());
+		cuboid.setData15(AspectRegistry.BLOCK, target.getRelative(0, 1, 0).getBlockAddress(), grassBlock.item().number());
+		
+		// Just run the operation, basically.
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation blockLocation) -> {
+						return new BlockProxy(blockLocation.getBlockAddress(), cuboid);
+					}, null)
+				.finish()
+		;
+		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+		MutationBlockReplace replace = new MutationBlockReplace(target, grassBlock, farmBlock);
+		boolean didApply = replace.applyMutation(context, proxy);
+		
+		Assert.assertTrue(didApply);
+		Assert.assertTrue(proxy.didChange());
+		proxy.writeBack(cuboid);
+		Assert.assertEquals(farmBlock.item().number(), cuboid.getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+	}
+
 
 	private static class ProcessingSinks
 	{
