@@ -166,7 +166,7 @@ public class LogicAspect
 		_Role role = _roles.get(block);
 		return (null != role)
 				? role.canManuallyChange
-				: null
+				: false
 		;
 	}
 

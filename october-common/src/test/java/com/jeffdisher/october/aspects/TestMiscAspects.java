@@ -104,4 +104,14 @@ public class TestMiscAspects
 		Assert.assertEquals(OrientationAspect.Direction.NORTH, OrientationAspect.getRelativeDirection(blockLocation, outputNorth));
 		Assert.assertEquals(OrientationAspect.Direction.DOWN, OrientationAspect.getRelativeDirection(blockLocation, outputDown));
 	}
+
+	@Test
+	public void logic() throws Throwable
+	{
+		Block switchBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.switch"));
+		Block stoneBlock = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		
+		Assert.assertTrue(ENV.logic.isManual(switchBlock));
+		Assert.assertFalse(ENV.logic.isManual(stoneBlock));
+	}
 }
