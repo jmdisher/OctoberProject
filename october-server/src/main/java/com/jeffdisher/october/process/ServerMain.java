@@ -47,7 +47,7 @@ public class ServerMain
 				}
 				ResourceLoader cuboidLoader = new ResourceLoader(worldDirectory
 						, worldGen
-						, config.worldSpawn.toEntityLocation()
+						, config
 				);
 				ServerProcess process = new ServerProcess(port
 						, ServerRunner.DEFAULT_MILLIS_PER_TICK

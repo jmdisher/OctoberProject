@@ -99,7 +99,7 @@ public class ResourceLoader
 
 	private final File _saveDirectory;
 	private final IWorldGenerator _cuboidGenerator;
-	private final EntityLocation _playerSpawnLocation;
+	private final WorldConfig _config;
 	private final Map<CuboidAddress, CuboidData> _preLoaded;
 	private final MessageQueue _queue;
 	private final Thread _background;
@@ -119,7 +119,7 @@ public class ResourceLoader
 
 	public ResourceLoader(File saveDirectory
 			, IWorldGenerator cuboidGenerator
-			, EntityLocation playerSpawnLocation
+			, WorldConfig config
 	)
 	{
 		// The save directory must exist as a directory before we get here.
@@ -127,7 +127,7 @@ public class ResourceLoader
 		
 		_saveDirectory = saveDirectory;
 		_cuboidGenerator = cuboidGenerator;
-		_playerSpawnLocation = playerSpawnLocation;
+		_config = config;
 		_preLoaded = new HashMap<>();
 		_queue = new MessageQueue();
 		_background = new Thread(() -> {
@@ -244,7 +244,7 @@ public class ResourceLoader
 					if (null == data)
 					{
 						// Note that the entity generator is always present.
-						data = _buildDefaultEntity(id, _playerSpawnLocation, _playerSpawnLocation);
+						data = _buildDefaultEntity(id, _config.worldSpawn.toEntityLocation());
 					}
 					
 					// Return the result.
@@ -1028,12 +1028,13 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation location, EntityLocation spawn)
+	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn)
 	{
 		List<ScheduledChange> initialChanges = List.of(
 				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
-		return new SuspendedEntity(MutableEntity.createWithLocation(id, location, spawn).freeze(), initialChanges);
+		MutableEntity entity = MutableEntity.createWithLocation(id, spawn, spawn);
+		return new SuspendedEntity(entity.freeze(), initialChanges);
 	}
 
 	private static File _getConfigFile(File saveDirectory)

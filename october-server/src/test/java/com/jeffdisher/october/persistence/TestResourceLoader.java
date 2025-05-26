@@ -187,7 +187,9 @@ public class TestResourceLoader
 	public void entities() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		
 		// We should see this satisfied, but not on the first call (we will use 10 tries, with yields).
 		Assert.assertNull(_loadEntities(loader, List.of(1, 2)));
@@ -266,7 +268,9 @@ public class TestResourceLoader
 	public void writeAndReadSuspendedEntity() throws Throwable
 	{
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		int entityId = 1;
 		
 		List<SuspendedEntity> results = new ArrayList<>();
@@ -408,7 +412,9 @@ public class TestResourceLoader
 	{
 		// We want to store a cuboid and entity with 2 suspended actions each and verify that the non-persistable one is dropped on reload.
 		File worldDirectory = DIRECTORY.newFolder();
-		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, new FlatWorldGenerator(false), config);
 		CuboidAddress airAddress = CuboidAddress.fromInt(1, 0, 0);
 		int entityId = 1;
 		int targetId = 2;
@@ -619,7 +625,9 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 		
 		// Now, read the data and verify that it is correct.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedEntity> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of(id));
 		Assert.assertTrue(results.isEmpty());
@@ -707,7 +715,9 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 		
 		// Now, read the data and verify that it is correct.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
@@ -795,7 +805,9 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 		
 		// Now, read the data and verify that it is correct.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
@@ -898,7 +910,9 @@ public class TestResourceLoader
 		Assert.assertTrue(new File(worldDirectory, fileName).isFile());
 		
 		// Now, read the data and verify that it is correct.
-		ResourceLoader loader = new ResourceLoader(worldDirectory, null, MutableEntity.TESTING_LOCATION);
+		WorldConfig config = new WorldConfig();
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
 		List<SuspendedCuboid<CuboidData>> results = new ArrayList<>();
 		loader.getResultsAndRequestBackgroundLoad(results, List.of(), List.of(address), List.of());
 		for (int i = 0; (i < 10) && results.isEmpty(); ++i)
