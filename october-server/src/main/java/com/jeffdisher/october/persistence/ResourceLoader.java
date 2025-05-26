@@ -244,7 +244,7 @@ public class ResourceLoader
 					if (null == data)
 					{
 						// Note that the entity generator is always present.
-						data = _buildDefaultEntity(id, _config.worldSpawn.toEntityLocation());
+						data = _buildDefaultEntity(id, _config.worldSpawn.toEntityLocation(), (WorldConfig.DefaultPlayerMode.CREATIVE == _config.defaultPlayerMode));
 					}
 					
 					// Return the result.
@@ -1028,12 +1028,13 @@ public class ResourceLoader
 		return new File(_saveDirectory, fileName);
 	}
 
-	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn)
+	private static SuspendedEntity _buildDefaultEntity(int id, EntityLocation spawn, boolean isCreative)
 	{
 		List<ScheduledChange> initialChanges = List.of(
 				new ScheduledChange(new EntityChangePeriodic(), EntityChangePeriodic.MILLIS_BETWEEN_PERIODIC_UPDATES)
 		);
 		MutableEntity entity = MutableEntity.createWithLocation(id, spawn, spawn);
+		entity.isCreativeMode = isCreative;
 		return new SuspendedEntity(entity.freeze(), initialChanges);
 	}
 

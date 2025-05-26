@@ -543,6 +543,7 @@ public class TestResourceLoader
 		Assert.assertTrue(rawData.contains("should_synthesize_updates_on_load\tfalse\n"));
 		Assert.assertTrue(rawData.contains("client_view_distance_maximum\t2\n"));
 		Assert.assertTrue(rawData.contains("server_name\tOctoberProject Server\n"));
+		Assert.assertTrue(rawData.contains("default_player_mode\tSURVIVAL\n"));
 		String fileToWrite = "difficulty\tPEACEFUL\n"
 				+ "basic_seed\t-465342154\n"
 				+ "world_spawn\t5,6,7\n"
@@ -563,6 +564,7 @@ public class TestResourceLoader
 		Assert.assertTrue(config.shouldSynthesizeUpdatesOnLoad);
 		Assert.assertEquals(WorldConfig.MAX_CLIENT_VIEW_DISTANCE_MAXIMUM, config.clientViewDistanceMaximum);
 		Assert.assertEquals("OctoberProject Server", config.serverName);
+		Assert.assertEquals(WorldConfig.DefaultPlayerMode.SURVIVAL, config.defaultPlayerMode);
 		loader.shutdown();
 	}
 
@@ -945,6 +947,32 @@ public class TestResourceLoader
 		Assert.assertEquals(hopperDownNumber, found.getData15(AspectRegistry.BLOCK, hopperNorthLocation.getBlockAddress()));
 		Assert.assertEquals(OrientationAspect.directionToByte(OrientationAspect.Direction.NORTH), found.getData7(AspectRegistry.ORIENTATION, hopperNorthLocation.getBlockAddress()));
 		
+		loader.shutdown();
+	}
+
+	@Test
+	public void creativeMode() throws Throwable
+	{
+		File worldDirectory = DIRECTORY.newFolder();
+		WorldConfig config = new WorldConfig();
+		config.worldGeneratorName = WorldConfig.WorldGeneratorName.FLAT;
+		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
+		config.defaultPlayerMode = WorldConfig.DefaultPlayerMode.CREATIVE;
+		ResourceLoader loader = new ResourceLoader(worldDirectory, null, config);
+		
+		// Just load a single entity to verify that it has the correct mode flag.
+		Assert.assertNull(_loadEntities(loader, List.of(1)));
+		List<SuspendedEntity> results = new ArrayList<>();
+		for (int i = 0; (results.size() < 1) && (i < 10); ++i)
+		{
+			Thread.sleep(10L);
+			loader.getResultsAndRequestBackgroundLoad(List.of(), results, List.of(), List.of());
+		}
+		Entity entity = results.get(0).entity();
+		
+		// Verify defaults.
+		Assert.assertEquals(MutableEntity.TESTING_LOCATION, entity.location());
+		Assert.assertTrue(entity.isCreativeMode());
 		loader.shutdown();
 	}
 

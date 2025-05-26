@@ -97,6 +97,13 @@ public class WorldConfig
 	public volatile String serverName;
 
 	/**
+	 * This option controls whether new players spawn in survival or creative modes.
+	 * This can still be over-ridden, on a per-entity basis, using commands.
+	 */
+	public static final String KEY_DEFAULT_PLAYER_MODE = "default_player_mode";
+	public volatile DefaultPlayerMode defaultPlayerMode;
+
+	/**
 	 * Creates a world config with all default options.
 	 */
 	public WorldConfig()
@@ -115,6 +122,7 @@ public class WorldConfig
 		this.shouldSynthesizeUpdatesOnLoad = false;
 		this.clientViewDistanceMaximum = 2;
 		this.serverName = "OctoberProject Server";
+		this.defaultPlayerMode = DefaultPlayerMode.SURVIVAL;
 	}
 
 	public void loadOverrides(Map<String, String> overrides)
@@ -174,6 +182,10 @@ public class WorldConfig
 		{
 			this.serverName = overrides.get(KEY_SERVER_NAME);
 		}
+		if (overrides.containsKey(KEY_DEFAULT_PLAYER_MODE))
+		{
+			this.defaultPlayerMode = DefaultPlayerMode.valueOf(overrides.get(KEY_DEFAULT_PLAYER_MODE));
+		}
 	}
 
 	public Map<String, String> getRawOptions()
@@ -191,6 +203,7 @@ public class WorldConfig
 		map.put(KEY_SHOULD_SYNTHESIZE_UPDATES_ON_LOAD, Boolean.toString(this.shouldSynthesizeUpdatesOnLoad));
 		map.put(KEY_CLIENT_VIEW_DISTANCE_MAXIMUM, Integer.toString(this.clientViewDistanceMaximum));
 		map.put(KEY_SERVER_NAME, this.serverName);
+		map.put(KEY_DEFAULT_PLAYER_MODE, this.defaultPlayerMode.name());
 		return Collections.unmodifiableMap(map);
 	}
 
@@ -199,5 +212,11 @@ public class WorldConfig
 	{
 		BASIC,
 		FLAT,
+	}
+
+	public static enum DefaultPlayerMode
+	{
+		SURVIVAL,
+		CREATIVE,
 	}
 }
