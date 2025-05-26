@@ -12,9 +12,8 @@ import com.jeffdisher.october.server.TickRunner;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.WorldConfig;
 import com.jeffdisher.october.utils.Assert;
-import com.jeffdisher.october.worldgen.BasicWorldGenerator;
-import com.jeffdisher.october.worldgen.FlatWorldGenerator;
 import com.jeffdisher.october.worldgen.IWorldGenerator;
+import com.jeffdisher.october.worldgen.WorldGenHelpers;
 
 
 public class ServerMain
@@ -39,18 +38,7 @@ public class ServerMain
 				MonitoringAgent monitoringAgent = new MonitoringAgent();
 				WorldConfig config = new WorldConfig();
 				boolean didLoadConfig = ResourceLoader.populateWorldConfig(worldDirectory, config);
-				IWorldGenerator worldGen;
-				switch (config.worldGeneratorName)
-				{
-				case BASIC:
-					worldGen = new BasicWorldGenerator(env, config.basicSeed);
-					break;
-				case FLAT:
-					worldGen = new FlatWorldGenerator(true);
-					break;
-					default:
-						throw Assert.unreachable();
-				}
+				IWorldGenerator worldGen = WorldGenHelpers.createConfiguredWorldGenerator(env, config);
 				if (!didLoadConfig)
 				{
 					// There is no config so ask the world-gen for the default spawn.
