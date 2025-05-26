@@ -8,10 +8,6 @@ package com.jeffdisher.october.types;
 public enum Difficulty
 {
 	/**
-	 * Reserved for error/undefined cases.
-	 */
-	ERROR,
-	/**
 	 * The default mode of the system where damage is normal and hostile entities spawn.
 	 */
 	HOSTILE,

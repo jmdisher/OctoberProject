@@ -281,9 +281,9 @@ public class ConsoleHandler
 				}
 				catch (IllegalArgumentException e)
 				{
-					target = Difficulty.ERROR;
+					target = null;
 				}
-				if (Difficulty.ERROR != target)
+				if (null != target)
 				{
 					state.mutableSharedConfig.difficulty = target;
 				}
