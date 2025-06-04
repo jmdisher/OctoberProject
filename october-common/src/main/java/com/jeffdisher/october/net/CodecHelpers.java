@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.OrientationAspect;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -19,6 +20,8 @@ import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
 import com.jeffdisher.october.types.FuelState;
+import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -29,6 +32,15 @@ import com.jeffdisher.october.utils.Assert;
 
 public class CodecHelpers
 {
+	/**
+	 * Used to encode a null in some optional cases.
+	 */
+	public static final byte NULL_BYTE = 0;
+	/**
+	 * Used to encode that a non-null value follows in some optional cases.
+	 */
+	public static final byte NON_NULL_BYTE = 1;
+
 	public static String readString(ByteBuffer buffer)
 	{
 		int length = Short.toUnsignedInt(buffer.getShort());
@@ -76,9 +88,31 @@ public class CodecHelpers
 		return _readEntityLocation(buffer);
 	}
 
+	public static EntityLocation readNullableEntityLocation(ByteBuffer buffer)
+	{
+		byte nullBit = buffer.get();
+		return (NULL_BYTE == nullBit)
+				? null
+				: _readEntityLocation(buffer)
+		;
+	}
+
 	public static void writeEntityLocation(ByteBuffer buffer, EntityLocation location)
 	{
 		_writeEntityLocation(buffer, location);
+	}
+
+	public static void writeNullableEntityLocation(ByteBuffer buffer, EntityLocation location)
+	{
+		if (null != location)
+		{
+			buffer.put(NON_NULL_BYTE);
+			_writeEntityLocation(buffer, location);
+		}
+		else
+		{
+			buffer.put(NULL_BYTE);
+		}
 	}
 
 	public static AbsoluteLocation readAbsoluteLocation(ByteBuffer buffer)
@@ -438,6 +472,30 @@ public class CodecHelpers
 				: OrientationAspect.directionToByte(orientation)
 		;
 		buffer.put(val);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends IMutableMinimalEntity> IMutationEntity<T> readNullableNestedChange(ByteBuffer buffer)
+	{
+		byte nullBit = buffer.get();
+		return (NULL_BYTE == nullBit)
+				? null
+				: (IMutationEntity<T>) MutationEntityCodec.parseAndSeekFlippedBuffer(buffer)
+		;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends IMutableMinimalEntity> void writeNullableNestedChange(ByteBuffer buffer, IMutationEntity<T> nested)
+	{
+		if (null != nested)
+		{
+			buffer.put(NON_NULL_BYTE);
+			MutationEntityCodec.serializeToBuffer(buffer, (IMutationEntity<IMutablePlayerEntity>) nested);
+		}
+		else
+		{
+			buffer.put(NULL_BYTE);
+		}
 	}
 
 

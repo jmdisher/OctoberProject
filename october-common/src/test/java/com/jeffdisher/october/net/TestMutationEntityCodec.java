@@ -6,12 +6,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
+import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.EntityChangeTimeSync;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
+import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 
 
@@ -73,6 +76,45 @@ public class TestMutationEntityCodec
 		buffer.flip();
 		IMutationEntity<IMutablePlayerEntity> read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
 		Assert.assertTrue(read instanceof EntityChangeTimeSync);
+		Assert.assertEquals(0, buffer.remaining());
+	}
+
+	@Test
+	public void topLevel() throws Throwable
+	{
+		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
+		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		long millis = 100L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, null
+			, null
+			, millis
+		);
+		
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		MutationEntityCodec.serializeToBuffer(buffer, action);
+		buffer.flip();
+		IMutationEntity<IMutablePlayerEntity> read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertEquals(0, buffer.remaining());
+		
+		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
+		EntityLocation targetLocation = new EntityLocation(0.75f, 0.0f, 0.0f);
+		action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, jump
+			, targetLocation
+			, millis
+		);
+		
+		buffer = ByteBuffer.allocate(1024);
+		MutationEntityCodec.serializeToBuffer(buffer, action);
+		buffer.flip();
+		read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
+		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }
