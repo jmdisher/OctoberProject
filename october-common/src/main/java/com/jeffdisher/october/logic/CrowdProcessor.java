@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
@@ -103,7 +104,11 @@ public class CrowdProcessor
 								long millisInChange = change.getTimeCostMillis();
 								if (millisInChange > 0L)
 								{
-									TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
+									// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
+									if (!(change instanceof EntityChangeTopLevelMovement))
+									{
+										TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
+									}
 									// WARNING:  Due to the way "in-progress" changes are handled, this may underflow
 									// into the negative so the accounting for movement may double-count when these
 									// changes span ticks.

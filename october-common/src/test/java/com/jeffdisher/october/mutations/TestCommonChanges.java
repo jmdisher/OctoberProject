@@ -2469,6 +2469,31 @@ public class TestCommonChanges
 		Assert.assertEquals(0, newEntity.newInventory.freeze().sortedKeys().size());
 	}
 
+	@Test
+	public void simpleTopLevel()
+	{
+		// We just want to show that the entity can move using this top-level movement helper.
+		// Note that it doesn't currently check the validity of movements.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
+		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		TickProcessingContext context = _createSimpleContext();
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, null
+			, null
+			, context.millisPerTick
+		);
+		boolean didApply = action.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(newLocation, newEntity.newLocation);
+		Assert.assertEquals(newVelocity, newEntity.newVelocity);
+		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.newEnergyDeficit);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

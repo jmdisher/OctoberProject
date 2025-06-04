@@ -46,6 +46,7 @@ public class Packet_MutationEntityFromClient extends PacketFromClient
 		MutationEntityType.INCREMENTAL_REPAIR_BLOCK,
 		MutationEntityType.MULTI_BLOCK_PLACE,
 		MutationEntityType.TIME_SYNC_NOOP,
+		MutationEntityType.TOP_LEVEL_MOVEMENT,
 	}).collect(Collectors.toSet());
 
 	public static void register(Function<ByteBuffer, Packet>[] opcodeTable)

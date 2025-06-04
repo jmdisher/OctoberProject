@@ -34,7 +34,9 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
+import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -61,6 +63,7 @@ import com.jeffdisher.october.types.Difficulty;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Inventory;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.Items;
@@ -3113,6 +3116,47 @@ public class TestTickRunner
 		// Check the sensor and door states.
 		_checkBlock(phase3, sensorSpace, itemSensor, OrientationAspect.Direction.EAST, true);
 		_checkBlock(phase3, doorSpace, itemDoor, null, true);
+		
+		runner.shutdown();
+	}
+
+	@Test
+	public void simpleTopLevel()
+	{
+		CuboidData cuboid = _zeroAirCuboidWithBase();
+		int entityId = 1;
+		MutableEntity entity1 = MutableEntity.createForTest(entityId);
+		entity1.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		
+		// Create the runner and load all test data.
+		TickRunner runner = _createTestRunner();
+		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
+				, null
+				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+				)
+				, null
+		);
+		runner.start();
+		runner.waitForPreviousTick();
+		
+		// Just submit the single movement.
+		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
+		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, null
+			, null
+			, MILLIS_PER_TICK
+		);
+		runner.enqueueEntityChange(1, action, 1L);
+		runner.startNextTick();
+		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
+		
+		Entity newEntity = snapshot.entities().get(entityId).completed();
+		Assert.assertEquals(newLocation, newEntity.location());
+		Assert.assertEquals(newVelocity, newEntity.velocity());
+		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.energyDeficit());
 		
 		runner.shutdown();
 	}
