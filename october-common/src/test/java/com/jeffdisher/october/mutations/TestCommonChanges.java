@@ -2483,6 +2483,8 @@ public class TestCommonChanges
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, (byte)5
+			, (byte)6
 			, null
 			, null
 			, context.millisPerTick
@@ -2492,6 +2494,8 @@ public class TestCommonChanges
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 		Assert.assertEquals(newVelocity, newEntity.newVelocity);
 		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.newEnergyDeficit);
+		Assert.assertEquals(5, newEntity.newYaw);
+		Assert.assertEquals(6, newEntity.newPitch);
 	}
 
 

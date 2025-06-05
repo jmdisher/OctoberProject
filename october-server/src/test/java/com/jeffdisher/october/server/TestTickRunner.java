@@ -3145,6 +3145,8 @@ public class TestTickRunner
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, (byte)5
+			, (byte)6
 			, null
 			, null
 			, MILLIS_PER_TICK

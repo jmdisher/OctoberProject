@@ -22,16 +22,20 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		EntityLocation newLocation = CodecHelpers.readEntityLocation(buffer);
 		EntityLocation newVelocity = CodecHelpers.readEntityLocation(buffer);
 		Intensity intensity = Intensity.read(buffer);
+		byte yaw = buffer.get();
+		byte pitch = buffer.get();
 		IMutationEntity<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
 		EntityLocation subActionLocation = CodecHelpers.readNullableEntityLocation(buffer);
 		long millis = buffer.getLong();
-		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, subAction, subActionLocation, millis);
+		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction, subActionLocation, millis);
 	}
 
 
 	private final EntityLocation _newLocation;
 	private final EntityLocation _newVelocity;
 	private final Intensity _intensity;
+	private final byte _yaw;
+	private final byte _pitch;
 	private final IMutationEntity<T> _subAction;
 	private final EntityLocation _subActionLocation;
 	private final long _millis;
@@ -39,6 +43,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	public EntityChangeTopLevelMovement(EntityLocation newLocation
 		, EntityLocation newVelocity
 		, Intensity intensity
+		, byte yaw
+		, byte pitch
 		, IMutationEntity<T> subAction
 		, EntityLocation subActionLocation
 		, long millis
@@ -50,6 +56,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		_newLocation = newLocation;
 		_newVelocity = newVelocity;
 		_intensity = intensity;
+		_yaw = yaw;
+		_pitch = pitch;
 		_subAction = subAction;
 		_subActionLocation = subActionLocation;
 		_millis = millis;
@@ -73,6 +81,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		}
 		newEntity.setLocation(_newLocation);
 		newEntity.setVelocityVector(_newVelocity);
+		newEntity.setOrientation(_yaw, _pitch);
 		
 		// TODO:  Fix this energy attribution cost.
 		int energy;
@@ -103,6 +112,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		CodecHelpers.writeEntityLocation(buffer, _newLocation);
 		CodecHelpers.writeEntityLocation(buffer, _newVelocity);
 		Intensity.write(buffer, _intensity);
+		buffer.put(_yaw);
+		buffer.put(_pitch);
 		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
 		CodecHelpers.writeNullableEntityLocation(buffer, _subActionLocation);
 		buffer.putLong(_millis);

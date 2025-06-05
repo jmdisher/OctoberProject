@@ -88,6 +88,8 @@ public class TestMutationEntityCodec
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, (byte)0
+			, (byte)0
 			, null
 			, null
 			, millis
@@ -105,6 +107,8 @@ public class TestMutationEntityCodec
 		action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
+			, (byte)5
+			, (byte)6
 			, jump
 			, targetLocation
 			, millis
