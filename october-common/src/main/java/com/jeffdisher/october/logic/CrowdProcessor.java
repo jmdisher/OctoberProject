@@ -88,6 +88,8 @@ public class CrowdProcessor
 				};
 				List<ScheduledChange> changes = changesToRun.get(id);
 				long millisAtEndOfTick = context.millisPerTick;
+				// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
+				boolean shouldSkipMovement = false;
 				if (null != changes)
 				{
 					for (ScheduledChange scheduled : changes)
@@ -104,8 +106,11 @@ public class CrowdProcessor
 								long millisInChange = change.getTimeCostMillis();
 								if (millisInChange > 0L)
 								{
-									// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
-									if (!(change instanceof EntityChangeTopLevelMovement))
+									if (change instanceof EntityChangeTopLevelMovement)
+									{
+										shouldSkipMovement = true;
+									}
+									if (!shouldSkipMovement)
 									{
 										TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
 									}
@@ -135,7 +140,7 @@ public class CrowdProcessor
 				}
 				
 				// Account for time passing.
-				if (millisAtEndOfTick > 0L)
+				if (!shouldSkipMovement && (millisAtEndOfTick > 0L))
 				{
 					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisAtEndOfTick);
 				}

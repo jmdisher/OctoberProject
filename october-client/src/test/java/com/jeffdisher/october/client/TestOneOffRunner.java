@@ -61,7 +61,7 @@ public class TestOneOffRunner
 				, stoneAddress, stoneCuboid
 		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), Map.of());
+		), null, Map.of());
 		_Events catcher = new _Events();
 		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
 		
@@ -92,7 +92,7 @@ public class TestOneOffRunner
 				, stoneAddress, stoneCuboid
 		), Map.of(airAddress, HeightMapHelpers.buildHeightMap(airCuboid)
 				, stoneAddress, HeightMapHelpers.buildHeightMap(stoneCuboid)
-		), Map.of());
+		), null, Map.of());
 		_Events catcher = new _Events();
 		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
 		Assert.assertNull(end);

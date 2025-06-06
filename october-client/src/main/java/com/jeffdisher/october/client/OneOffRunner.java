@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.CommonMutationSink;
 import com.jeffdisher.october.logic.CrowdProcessor;
@@ -80,6 +81,7 @@ public class OneOffRunner
 		// Run follow-ups against blocks.
 		Map<CuboidAddress, IReadOnlyCuboidData> changedCuboids = Map.of();
 		Map<CuboidAddress, CuboidHeightMap> heightFragment = Map.of();
+		Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges = Map.of();
 		if ((null != updatedEntity) && !immediateMutations.isEmpty())
 		{
 			Map<CuboidAddress, List<ScheduledMutation>> splitMutations = new HashMap<>();
@@ -105,6 +107,7 @@ public class OneOffRunner
 			);
 			changedCuboids = innerFragment.stateFragment();
 			heightFragment = innerFragment.heightFragment();
+			optionalBlockChanges = innerFragment.blockChangesByCuboid();
 		}
 		
 		// Repackage results.
@@ -116,7 +119,7 @@ public class OneOffRunner
 			Map<Integer, PartialEntity> initialCrowd = new HashMap<>(state.otherEntities);
 			initialCuboids.putAll(changedCuboids);
 			initialHeights.putAll(heightFragment);
-			updatedState = new StatePackage(updatedEntity, initialCuboids, initialHeights, initialCrowd);
+			updatedState = new StatePackage(updatedEntity, initialCuboids, initialHeights, optionalBlockChanges, initialCrowd);
 		}
 		return updatedState;
 	}
@@ -167,6 +170,7 @@ public class OneOffRunner
 	public static record StatePackage(Entity thisEntity
 		, Map<CuboidAddress, IReadOnlyCuboidData> world
 		, Map<CuboidAddress, CuboidHeightMap> heights
+		, Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges
 		, Map<Integer, PartialEntity> otherEntities
 	) {}
 }
