@@ -28,14 +28,13 @@ public class RayCastHelpers
 	 */
 	public static RayBlock findFirstCollision(EntityLocation start, EntityLocation end, Predicate<AbsoluteLocation> stopPredicate)
 	{
-		_ResultBuilder<RayBlock> builder = (boolean wasStopped
+		_ResultBuilder<RayBlock> builder = (Axis collisionAxis
 				, List<AbsoluteLocation> path
 				, AbsoluteLocation stopBlock
 				, AbsoluteLocation preStopBlock
-				, Axis collisionAxis
 				, float rayDistance
 		) -> {
-			return wasStopped
+			return (null != collisionAxis)
 					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
 					: null
 			;
@@ -69,14 +68,13 @@ public class RayCastHelpers
 				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z()),
 				new EntityLocation(base.x() + volume.width(), base.y() + volume.width(), base.z() + volume.height()),
 		};
-		_ResultBuilder<RayBlock> builder = (boolean wasStopped
+		_ResultBuilder<RayBlock> builder = (Axis collisionAxis
 				, List<AbsoluteLocation> path
 				, AbsoluteLocation stopBlock
 				, AbsoluteLocation preStopBlock
-				, Axis collisionAxis
 				, float rayDistance
 		) -> {
-			return wasStopped
+			return (null != collisionAxis)
 					? new RayBlock(stopBlock, preStopBlock, collisionAxis, rayDistance)
 					: null
 			;
@@ -109,14 +107,7 @@ public class RayCastHelpers
 			float finalY = vY * multiplier;
 			float finalZ = vZ * multiplier;
 			
-			if (distance > 0.0f)
-			{
-				finalState = new EntityLocation(base.x() + finalX, base.y() + finalY, base.z() + finalZ);
-			}
-			else
-			{
-				finalState = base;
-			}
+			finalState = new EntityLocation(base.x() + finalX, base.y() + finalY, base.z() + finalZ);
 		}
 		else
 		{
@@ -125,13 +116,19 @@ public class RayCastHelpers
 		return new RayMovement(finalState, axis, distance);
 	}
 
+	/**
+	 * Finds the sequence of blocks from start to end, inclusive, traced from their bottom-left-south corners.
+	 * 
+	 * @param start The start block.
+	 * @param end The end block.
+	 * @return The list of blocks in the sequence they were entered (first element is start and last is end).
+	 */
 	public static List<AbsoluteLocation> findFullLine(AbsoluteLocation start, AbsoluteLocation end)
 	{
-		_ResultBuilder<List<AbsoluteLocation>> builder = (boolean wasStopped
+		_ResultBuilder<List<AbsoluteLocation>> builder = (Axis collisionAxis
 				, List<AbsoluteLocation> path
 				, AbsoluteLocation stopBlock
 				, AbsoluteLocation preStopBlock
-				, Axis collisionAxis
 				, float rayDistance
 		) -> {
 			return path;
@@ -298,7 +295,8 @@ public class RayCastHelpers
 		{
 			rayDistance = 0.0f;
 		}
-		return builder.build(stop, path, thisStep, lastFalse, axis, rayDistance);
+		Axis collisionAxis = stop ? axis : null;
+		return builder.build(collisionAxis, path, thisStep, lastFalse, rayDistance);
 	}
 
 
@@ -317,11 +315,22 @@ public class RayCastHelpers
 
 	private static interface _ResultBuilder<T>
 	{
-		T build(boolean wasStopped
+		/**
+		 * Returns an implementation-defined result of the ray-cast operation.
+		 * 
+		 * @param collisionAxis The axis where the ray entered the stopBlock (null if it ended due to distance, not an
+		 * explicit stop).
+		 * @param path The path of blocks the ray intersected, including the starting block and the final block (whether
+		 * explicitly stopped or not).
+		 * @param stopBlock The final block evaluated by the ray cast, whether explicitly stopped or not (never null).
+		 * @param preStopBlock The location evaluated prior to stopBlock (can be null if only stopBlock was evaluated).
+		 * @param rayDistance The total distance the ray extended before collision.
+		 * @return The result of the ray cast.
+		 */
+		T build(Axis collisionAxis
 				, List<AbsoluteLocation> path
 				, AbsoluteLocation stopBlock
 				, AbsoluteLocation preStopBlock
-				, Axis collisionAxis
 				, float rayDistance
 		);
 	}

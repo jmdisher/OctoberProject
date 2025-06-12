@@ -153,8 +153,6 @@ public class EntityMovementHelpers
 		EntityLocation lastAdjustment = oldLocation;
 		while (!zero.equals(averageVelocity))
 		{
-			boolean[] ref_shouldCancel = new boolean[] {false};
-			
 			RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(newLocation, volume, averageVelocity, (AbsoluteLocation l) -> {
 				boolean stop;
 				BlockProxy proxy = previousBlockLookUp.apply(l);
@@ -167,11 +165,6 @@ public class EntityMovementHelpers
 				else
 				{
 					stop = true;
-				}
-				if (stop)
-				{
-					// If we hit anything, we want to cancel the movement.
-					ref_shouldCancel[0] = true;
 				}
 				return stop;
 			});
@@ -197,7 +190,8 @@ public class EntityMovementHelpers
 			float deltaZ = newLocation.z() - lastAdjustment.z();
 			lastAdjustment = newLocation;
 			
-			if (ref_shouldCancel[0] && (null != result.collisionAxis()))
+			// We want to cancel this if we stopped due to collision.
+			if (null != result.collisionAxis())
 			{
 				// We hit something so figure out which direction to cancel.
 				// Also, recalculate position to make sure we don't get stuck in a wall.
