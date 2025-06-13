@@ -20,6 +20,7 @@ import com.jeffdisher.october.types.ContextBuilder;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -253,6 +254,87 @@ public class TestEntityMovementHelpers
 			return new BlockProxy(location.getBlockAddress(), cuboid);
 		}, entity, millisInMotion);
 		Assert.assertEquals(new EntityLocation(16.59f, 17.40f, 1.0f), entity.location);
+	}
+
+	@Test
+	public void boxTopRight()
+	{
+		EntityLocation location = new EntityLocation(1.3f, 1.4f, 1.5f);
+		EntityVolume volume = new EntityVolume(1.2f, 1.2f);
+		EntityLocation velocity = new EntityLocation(1.0f, 1.0f, 1.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(new EntityLocation(1.79f, 1.79f, 1.79f), finalLocation);
+				Assert.assertTrue(cancelX);
+				Assert.assertTrue(cancelY);
+				Assert.assertTrue(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				int x = location.x();
+				int y = location.y();
+				int z = location.z();
+				return (((1 == x) || (2 == x))
+						&& ((1 == y) || (2 == y))
+						&& ((1 == z) || (2 == z))
+				) ? 0.0f : 1.0f;
+			}
+		});
+	}
+
+	@Test
+	public void boxBottomLeft()
+	{
+		EntityLocation location = new EntityLocation(1.3f, 1.4f, 1.5f);
+		EntityVolume volume = new EntityVolume(1.2f, 1.2f);
+		EntityLocation velocity = new EntityLocation(-1.0f, -1.0f, -1.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 1.0f), finalLocation);
+				Assert.assertTrue(cancelX);
+				Assert.assertTrue(cancelY);
+				Assert.assertTrue(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				int x = location.x();
+				int y = location.y();
+				int z = location.z();
+				return (((1 == x) || (2 == x))
+						&& ((1 == y) || (2 == y))
+						&& ((1 == z) || (2 == z))
+				) ? 0.0f : 1.0f;
+			}
+		});
+	}
+
+	@Test
+	public void emptyFalling()
+	{
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
+		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(velocity, finalLocation);
+				Assert.assertFalse(cancelX);
+				Assert.assertFalse(cancelY);
+				Assert.assertFalse(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				return 0.0f;
+			}
+		});
 	}
 
 

@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Iterator;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
@@ -10,6 +11,7 @@ import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
+import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -24,6 +26,11 @@ public class EntityMovementHelpers
 	 * TODO:  Remove this once the movement system and viscosity values are redone.
 	 */
 	public static final float DRAG_FUDGE_FACTOR = 10.0f;
+	/**
+	 * We back off from a "positive edge" using this fudge factor so that we don't get stuck "in" a block we are
+	 * actually right up against.
+	 */
+	public static final float POSITIVE_EDGE_COLLISION_FUDGE_FACTOR = 0.01f;
 
 	/**
 	 * Sets the velocity of the given newEntity based on the given x/y components and a target total speed of
@@ -129,7 +136,7 @@ public class EntityMovementHelpers
 		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
 		EntityLocation averageVelocity = new EntityLocation(secondsInMotion * velocityToApplyX, secondsInMotion * velocityToApplyY, velocityToApplyZ);
 		// We also want to apply the fudge factor here to deal with the positive edge being exclusive to collision (this is subtracted later).
-		float fudgeFactor = 0.01f;
+		float fudgeFactor = POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
 		if (velocityToApplyX > 0.0f)
 		{
 			averageVelocity = new EntityLocation(averageVelocity.x() + fudgeFactor, averageVelocity.y(), averageVelocity.z());
@@ -219,5 +226,261 @@ public class EntityMovementHelpers
 		// Set the location and velocity.
 		newEntity.setLocation(newLocation);
 		newEntity.setVelocityVector(new EntityLocation(newXVector, newYVector, newZVector));
+	}
+
+	/**
+	 * Finds a path from start, along vectorToMove, using the interactive helper.  This will internally account for
+	 * block viscosity.  The final result is returned via the interactive helper.
+	 * 
+	 * @param start The base location of the entity.
+	 * @param volume The volume of the entity.
+	 * @param vectorToMove The direction the entity is trying to move, in relative coordinates.
+	 * @param helper Used for looking up viscosities and setting final state.
+	 */
+	public static void interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	{
+		// We will move in the direction of vectorToMove, biased by viscosity, one block at a time until the move is complete or blocked in all movement directions.
+		// Note that, for now at least, we will only compute the viscosity at the beginning of the move, as the move is rarely multiple blocks (falling at terminal velocity being an outlier example).
+		
+		// Generate the prism of the entity's current location.
+		EntityLocation movingStart = start;
+		AbsoluteLocation baseBlock = movingStart.getBlockLocation();
+		EntityLocation edgeLocation = new EntityLocation(start.x() + volume.width()
+			, start.y() + volume.width()
+			, start.z() + volume.height()
+		);
+		AbsoluteLocation edgeBlock = edgeLocation.getBlockLocation();
+		
+		// Find the viscosity we will use to reduce the effective movement vector.
+		// In the future, we could also track the trailing vertex and keep a count of active viscosities in the prism if we wanted to adjust viscosity mid-move (probably over-design since this rarely matters).
+		float maxViscosity = 0.0f;
+		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
+		{
+			float viscosity = helper.getViscosityForBlockAtLocation(loc);
+			maxViscosity = Math.max(maxViscosity, viscosity);
+		}
+		// TODO:  Handle this quick failure case when we start out stuck in a block.
+		Assert.assertTrue(maxViscosity < 1.0f);
+		
+		// Adjust the vector based on viscosity (linearly).
+		float invosity = 1.0f - maxViscosity;
+		float effectiveX = vectorToMove.x() * invosity;
+		float effectiveY = vectorToMove.y() * invosity;
+		float effectiveZ = vectorToMove.z() * invosity;
+		
+		// We will use a ray-cast from the corner of the prism in the direction of motion.
+		float leadingX  = (effectiveX >  0.0f) ? edgeLocation.x() : start.x();
+		float leadingY  = (effectiveY >  0.0f) ? edgeLocation.y() : start.y();
+		float leadingZ  = (effectiveZ >  0.0f) ? edgeLocation.z() : start.z();
+		EntityLocation leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
+		EntityLocation endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
+		AbsoluteLocation leadingBlock1 = leadingPoint.getBlockLocation();
+		
+		// Find the first block intersection of this point moving in the effective vector.
+		RayCastHelpers.RayBlock collision = RayCastHelpers.findFirstCollision(leadingPoint, endOfVector, (AbsoluteLocation currentBlock) -> {
+			return !leadingBlock1.equals(currentBlock);
+		});
+		// If we didn't collide, we are done.
+		boolean cancelX = false;
+		boolean cancelY = false;
+		boolean cancelZ = false;
+		while (null != collision)
+		{
+			// Move us over by the collision distance, check the block viscosities, and loop.
+			float fullVectorLength = (float)Math.sqrt(effectiveX * effectiveX + effectiveY * effectiveY + effectiveZ * effectiveZ);
+			float portion = collision.rayDistance() / fullVectorLength;
+			float moveX = portion * effectiveX;
+			float moveY = portion * effectiveY;
+			float moveZ = portion * effectiveZ;
+			
+			// Adjust any positive movement to keep us within the existing block before we check if we can enter the others.
+			if (moveX > 0.0f)
+			{
+				moveX -= POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+			}
+			if (moveY > 0.0f)
+			{
+				moveY -= POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+			}
+			if (moveZ > 0.0f)
+			{
+				moveZ -= POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+			}
+			
+			switch (collision.collisionAxis())
+			{
+			case X: {
+				float dirX = (effectiveX > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX + dirX, movingStart.y() + moveY, movingStart.z() + moveZ);
+				if (_canOccupyLocation(adjacent, volume, helper))
+				{
+					moveX += dirX;
+				}
+				else
+				{
+					effectiveX = 0.0f;
+					cancelX = true;
+				}
+				break;
+			}
+			case Y: {
+				float dirY = (effectiveY > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY + dirY, movingStart.z() + moveZ);
+				if (_canOccupyLocation(adjacent, volume, helper))
+				{
+					moveY += dirY;
+				}
+				else
+				{
+					effectiveY = 0.0f;
+					cancelY = true;
+				}
+				break;
+			}
+			case Z: {
+				float dirZ = (effectiveZ > 0.0f) ? POSITIVE_EDGE_COLLISION_FUDGE_FACTOR : -POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
+				EntityLocation adjacent = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ + dirZ);
+				if (_canOccupyLocation(adjacent, volume, helper))
+				{
+					moveZ += dirZ;
+				}
+				else
+				{
+					effectiveZ = 0.0f;
+					cancelZ = true;
+				}
+				break;
+			}
+			default:
+				throw Assert.unreachable();
+			}
+			leadingX += moveX;
+			leadingY += moveY;
+			leadingZ += moveZ;
+			if (!cancelX)
+			{
+				effectiveX -= moveX;
+			}
+			if (!cancelY)
+			{
+				effectiveY -= moveY;
+			}
+			if (!cancelZ)
+			{
+				effectiveZ -= moveZ;
+			}
+			
+			movingStart = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ);
+			edgeLocation = new EntityLocation(edgeLocation.x() + moveX, edgeLocation.y() + moveY, edgeLocation.z() + moveZ);
+			
+			leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
+			endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
+			AbsoluteLocation leadingBlock = leadingPoint.getBlockLocation();
+			collision = RayCastHelpers.findFirstCollision(leadingPoint, endOfVector, (AbsoluteLocation currentBlock) -> {
+				return !leadingBlock.equals(currentBlock);
+			});
+		}
+		// If we didn't collide, we must have reached the end of the vector (make sure we get the position).
+		movingStart = new EntityLocation(movingStart.x() + effectiveX
+			, movingStart.y() + effectiveY
+			, movingStart.z() + effectiveZ
+		);
+		helper.setLocationAndViscosity(movingStart, maxViscosity, cancelX, cancelY, cancelZ);
+	}
+
+
+	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper)
+	{
+		AbsoluteLocation baseBlock = movingStart.getBlockLocation();
+		EntityLocation edgeLocation = new EntityLocation(movingStart.x() + volume.width()
+			, movingStart.y() + volume.width()
+			, movingStart.z() + volume.height()
+		);
+		AbsoluteLocation edgeBlock = edgeLocation.getBlockLocation();
+		boolean canOccupy = true;
+		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
+		{
+			float viscosity = helper.getViscosityForBlockAtLocation(loc);
+			if (1.0f == viscosity)
+			{
+				canOccupy = false;
+				break;
+			}
+		}
+		return canOccupy;
+	}
+
+
+	/**
+	 * The interface used by interactiveEntityMove() in order to look up required information and return the final
+	 * result.
+	 */
+	public static interface InteractiveHelper
+	{
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location);
+		public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ);
+	}
+
+
+	private static class _VolumeIterator implements Iterable<AbsoluteLocation>
+	{
+		private final AbsoluteLocation _start;
+		private final AbsoluteLocation _end;
+		
+		public _VolumeIterator(AbsoluteLocation start, AbsoluteLocation end)
+		{
+			_start = start;
+			_end = end;
+		}
+		
+		@Override
+		public Iterator<AbsoluteLocation> iterator()
+		{
+			return new Iterator<>() {
+				private final int _startX = _start.x();
+				private final int _startY = _start.y();
+				private final int _startZ = _start.z();
+				private final int _endX = _end.x();
+				private final int _endY = _end.y();
+				private final int _endZ = _end.z();
+				private int _x = _startX;
+				private int _y = _startY;
+				private int _z = _startZ;
+				
+				@Override
+				public boolean hasNext()
+				{
+					return (_x <= _endX) && (_y <= _endY) && (_z <= _endZ);
+				}
+				
+				@Override
+				public AbsoluteLocation next()
+				{
+					AbsoluteLocation next;
+					if ((_x <= _endX) && (_y <= _endY) && (_z <= _endZ))
+					{
+						next = new AbsoluteLocation(_x, _y, _z);
+					}
+					else
+					{
+						// This would be a failure of hasNext().
+						throw Assert.unreachable();
+					}
+					
+					_x += 1;
+					if (_x > _endX)
+					{
+						_x = _startX;
+						_y += 1;
+						if (_y > _endY)
+						{
+							_y = _startY;
+							_z += 1;
+						}
+					}
+					return next;
+				}
+			};
+		}
 	}
 }
