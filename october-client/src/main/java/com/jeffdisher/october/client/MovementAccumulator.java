@@ -314,7 +314,17 @@ public class MovementAccumulator
 
 	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _buildFromAccumulation()
 	{
+		// For now, we will determine if we are standing or walking based on whether or not we moved horizontally.
 		EntityChangeTopLevelMovement.Intensity intensity = _findActionIntensity(_newLocation);
+		
+		// We will apply viscosity to the velocity (this will cause quick, but not immediate, deceleration when falling into water, etc).
+		float velocityMultiplier = 1.0f - _maxTickViscosity;
+		_newVelocity = new EntityLocation(_newVelocity.x() * velocityMultiplier
+			, _newVelocity.y() * velocityMultiplier
+			, _newVelocity.z() * velocityMultiplier
+		);
+		
+		// Now, create the finished top-level action.
 		return new EntityChangeTopLevelMovement<>(_newLocation
 			, _newVelocity
 			, intensity

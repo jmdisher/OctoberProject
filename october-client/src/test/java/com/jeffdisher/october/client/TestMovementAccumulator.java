@@ -18,6 +18,7 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -40,11 +41,13 @@ public class TestMovementAccumulator
 	public static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -259,6 +262,52 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.14f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.96f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void fallingThroughWater() throws Throwable
+	{
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), WATER_SOURCE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 2.0f);
+		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
+		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		
+		// Run the first move.
+		long millisPerMove = 60L;
+		currentTimeMillis += millisPerMove;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, 2.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -0.4f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
+		
+		// Run the second move.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		
+		// We need to apply this to our state since it would be considered part of the underlying state.
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -1.2f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -1.41f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.98f), listener.thisEntity.velocity());
 	}
 
 
