@@ -142,4 +142,26 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			buffer.put(ordinal);
 		}
 	}
+
+	public static final float MULTIPLIER_FORWARD = 1.0f;
+	public static final float MULTIPLIER_STRAFE = 0.8f;
+	public static final float MULTIPLIER_BACKWARD = 0.6f;
+	/**
+	 * The direction of a horizontal move, relative to the orientation.
+	 */
+	public static enum Relative
+	{
+		FORWARD(MULTIPLIER_FORWARD, 0.0f),
+		RIGHT(MULTIPLIER_STRAFE, (float)(3.0 / 2.0 * Math.PI)),
+		LEFT(MULTIPLIER_STRAFE, (float)(1.0 / 2.0 * Math.PI)),
+		BACKWARD(MULTIPLIER_BACKWARD, (float)Math.PI),
+		;
+		public final float speedMultiplier;
+		public final float yawRadians;
+		private Relative(float speedMultiplier, float yawRadians)
+		{
+			this.speedMultiplier = speedMultiplier;
+			this.yawRadians = yawRadians;
+		}
+	}
 }
