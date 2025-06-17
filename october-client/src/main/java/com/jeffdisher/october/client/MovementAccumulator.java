@@ -19,6 +19,7 @@ import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -323,6 +324,21 @@ public class MovementAccumulator
 			, _newVelocity.y() * velocityMultiplier
 			, _newVelocity.z() * velocityMultiplier
 		);
+		
+		// If we are standing on solid blocks, we want to cancel all velocity (we currently assume all solid blocks have 100% friction).
+		if (SpatialHelpers.isStandingOnGround((AbsoluteLocation location) -> {
+			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+			return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+			;
+		}, _newLocation, _playerVolume))
+		{
+			_newVelocity = new EntityLocation(0.0f
+				, 0.0f
+				, _newVelocity.z()
+			);
+		}
 		
 		// Now, create the finished top-level action.
 		return new EntityChangeTopLevelMovement<>(_newLocation
