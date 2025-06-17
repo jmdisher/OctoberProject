@@ -47,12 +47,15 @@ public class CrowdProcessor
 	 * @param context The context used for running changes.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
+	 * @param useLegacyMovement True if gravity and position updates should be handled here (as opposed to the new
+	 * design where this is done in EntityChangeTopLevelMovement).
 	 * @return The subset of the changesToRun work which was completed by this thread.
 	 */
 	public static ProcessedGroup processCrowdGroupParallel(ProcessorElement processor
 			, Map<Integer, Entity> entitiesById
 			, TickProcessingContext context
 			, Map<Integer, List<ScheduledChange>> changesToRun
+			, boolean useLegacyMovement
 	)
 	{
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
@@ -88,8 +91,7 @@ public class CrowdProcessor
 				};
 				List<ScheduledChange> changes = changesToRun.get(id);
 				long millisAtEndOfTick = context.millisPerTick;
-				// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
-				boolean shouldSkipMovement = false;
+				boolean shouldApplyMovement = useLegacyMovement;
 				if (null != changes)
 				{
 					for (ScheduledChange scheduled : changes)
@@ -106,11 +108,12 @@ public class CrowdProcessor
 								long millisInChange = change.getTimeCostMillis();
 								if (millisInChange > 0L)
 								{
+									// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
 									if (change instanceof EntityChangeTopLevelMovement)
 									{
-										shouldSkipMovement = true;
+										shouldApplyMovement = false;
 									}
-									if (!shouldSkipMovement)
+									if (shouldApplyMovement)
 									{
 										TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
 									}
@@ -140,7 +143,7 @@ public class CrowdProcessor
 				}
 				
 				// Account for time passing.
-				if (!shouldSkipMovement && (millisAtEndOfTick > 0L))
+				if (shouldApplyMovement && (millisAtEndOfTick > 0L))
 				{
 					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisAtEndOfTick);
 				}

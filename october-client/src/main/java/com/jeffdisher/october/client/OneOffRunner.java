@@ -68,6 +68,7 @@ public class OneOffRunner
 				, Map.of(thisEntityId, state.thisEntity())
 				, context
 				, Map.of(thisEntityId, List.of(scheduled))
+				, false
 		);
 		Entity updatedEntity = (innerGroup.committedMutationCount() > 0)
 				? innerGroup.updatedEntities().get(thisEntityId)

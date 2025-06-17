@@ -486,6 +486,7 @@ public class TickRunner
 					, materials.completedEntities
 					, context
 					, materials.changesToRun
+					, true
 			);
 			// There is always a returned group (even if it has no content).
 			Assert.assertTrue(null != group);
