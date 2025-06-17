@@ -20,10 +20,10 @@ import com.jeffdisher.october.types.TickProcessingContext;
 public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	/**
-	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
+	 * We will make the jump force 0.6x the force of gravity (this was experimentally shown to jump just over 1 block
 	 * and has a relatively "quick" feel in play testing).
 	 */
-	public static final float JUMP_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+	public static final float JUMP_FORCE = -0.6f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
 
 	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
@@ -111,7 +111,8 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	)
 	{
 		boolean isOnGround = SpatialHelpers.isStandingOnGround(previousBlockLookUp, location, volume);
-		boolean isStatic = (0.0f == vector.z());
+		// We will consider it valid to jump so long as you aren't already rising (since you can jump before the fall damage has been calculated).
+		boolean isStatic = (vector.z() <= 0.0f);
 		return isOnGround && isStatic;
 	}
 }

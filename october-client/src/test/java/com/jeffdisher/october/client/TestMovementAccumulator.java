@@ -128,12 +128,12 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(1.0f, 0.0f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(5.0f, 0.0f, 4.9f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(5.0f, 0.0f, 5.88f), listener.thisEntity.velocity());
 		out = accumulator.jump(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(1.0f, 0.0f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(5.0f, 0.0f, 4.9f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(5.0f, 0.0f, 5.88f), listener.thisEntity.velocity());
 		
 		// Run the second move.
 		currentTimeMillis += 60L;

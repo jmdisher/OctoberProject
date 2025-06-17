@@ -229,7 +229,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(3.92f, updated.velocity().z(), 0.001f);
+		Assert.assertEquals(4.9f, updated.velocity().z(), 0.001f);
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
 	}
 
@@ -865,7 +865,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.19f, creature.location().z(), 0.01f);
+		Assert.assertEquals(3.23f, creature.location().z(), 0.01f);
 	}
 
 	@Test
