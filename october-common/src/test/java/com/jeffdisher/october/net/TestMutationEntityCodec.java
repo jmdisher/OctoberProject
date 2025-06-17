@@ -91,7 +91,6 @@ public class TestMutationEntityCodec
 			, (byte)0
 			, (byte)0
 			, null
-			, null
 			, millis
 		);
 		
@@ -103,14 +102,12 @@ public class TestMutationEntityCodec
 		Assert.assertEquals(0, buffer.remaining());
 		
 		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
-		EntityLocation targetLocation = new EntityLocation(0.75f, 0.0f, 0.0f);
 		action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING
 			, (byte)5
 			, (byte)6
 			, jump
-			, targetLocation
 			, millis
 		);
 		

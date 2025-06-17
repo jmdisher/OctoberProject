@@ -3148,7 +3148,6 @@ public class TestTickRunner
 			, (byte)5
 			, (byte)6
 			, null
-			, null
 			, MILLIS_PER_TICK
 		);
 		runner.enqueueEntityChange(1, action, 1L);

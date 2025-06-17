@@ -50,7 +50,6 @@ public class MovementAccumulator
 	private byte _newYaw;
 	private byte _newPitch;
 	private IMutationEntity<IMutablePlayerEntity> _subAction;
-	private EntityLocation _subActionLocation;
 
 	public MovementAccumulator(IProjectionListener listener
 		, long millisPerTick
@@ -101,11 +100,9 @@ public class MovementAccumulator
 				, yaw
 				, pitch
 				, _subAction
-				, _subActionLocation
 				, _millisPerTick
 			);
 			_subAction = null;
-			_subActionLocation = null;
 			_accumulationMillis = overflowMillis;
 		}
 		else
@@ -135,7 +132,6 @@ public class MovementAccumulator
 		{
 			// We can add the jump change here and adapt the velocity vector.
 			_subAction = new EntityChangeJump<>();
-			_subActionLocation = _newLocation;
 			_newVelocity = new EntityLocation(_newVelocity.x(), _newVelocity.y(), EntityChangeJump.JUMP_FORCE);
 		}
 		return toReturn;
@@ -148,7 +144,6 @@ public class MovementAccumulator
 		{
 			// Just inject this action.
 			_subAction = subAction;
-			_subActionLocation = _newLocation;
 		}
 		return toReturn;
 	}
@@ -165,7 +160,6 @@ public class MovementAccumulator
 				, _newYaw
 				, _newPitch
 				, _subAction
-				, _subActionLocation
 				, _accumulationMillis
 			);
 			OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
@@ -285,11 +279,9 @@ public class MovementAccumulator
 				, _newYaw
 				, _newPitch
 				, _subAction
-				, _subActionLocation
 				, _millisPerTick
 			);
 			_subAction = null;
-			_subActionLocation = null;
 			_accumulationMillis = overflowMillis;
 		}
 		else

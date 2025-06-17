@@ -25,9 +25,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
 		IMutationEntity<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
-		EntityLocation subActionLocation = CodecHelpers.readNullableEntityLocation(buffer);
 		long millis = buffer.getLong();
-		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction, subActionLocation, millis);
+		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction, millis);
 	}
 
 
@@ -37,7 +36,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	private final byte _yaw;
 	private final byte _pitch;
 	private final IMutationEntity<T> _subAction;
-	private final EntityLocation _subActionLocation;
 	private final long _millis;
 
 	public EntityChangeTopLevelMovement(EntityLocation newLocation
@@ -46,11 +44,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		, byte yaw
 		, byte pitch
 		, IMutationEntity<T> subAction
-		, EntityLocation subActionLocation
 		, long millis
 	)
 	{
-		Assert.assertTrue((null != subAction) == (null != subActionLocation));
 		Assert.assertTrue(millis > 0L);
 		
 		_newLocation = newLocation;
@@ -59,7 +55,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		_yaw = yaw;
 		_pitch = pitch;
 		_subAction = subAction;
-		_subActionLocation = subActionLocation;
 		_millis = millis;
 	}
 
@@ -76,7 +71,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		// TODO:  Add checks that these moves are valid since we currently just trust whatever the client is telling us.
 		if (null != _subAction)
 		{
-			newEntity.setLocation(_subActionLocation);
 			_subAction.applyChange(context, newEntity);
 		}
 		newEntity.setLocation(_newLocation);
@@ -115,7 +109,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		buffer.put(_yaw);
 		buffer.put(_pitch);
 		CodecHelpers.writeNullableNestedChange(buffer, _subAction);
-		CodecHelpers.writeNullableEntityLocation(buffer, _subActionLocation);
 		buffer.putLong(_millis);
 	}
 

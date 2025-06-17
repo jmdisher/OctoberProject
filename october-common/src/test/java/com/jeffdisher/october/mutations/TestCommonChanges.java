@@ -2486,7 +2486,6 @@ public class TestCommonChanges
 			, (byte)5
 			, (byte)6
 			, null
-			, null
 			, context.millisPerTick
 		);
 		boolean didApply = action.applyChange(context, newEntity);
