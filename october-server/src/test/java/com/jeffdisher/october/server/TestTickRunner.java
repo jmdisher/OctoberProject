@@ -3126,7 +3126,7 @@ public class TestTickRunner
 		CuboidData cuboid = _zeroAirCuboidWithBase();
 		int entityId = 1;
 		MutableEntity entity1 = MutableEntity.createForTest(entityId);
-		entity1.newLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
+		entity1.newLocation = new EntityLocation(0.0f, 0.0f, 1.0f);
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
@@ -3140,8 +3140,8 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// Just submit the single movement.
-		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
-		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		EntityLocation newLocation = new EntityLocation(0.04f, 0.0f, 1.0f);
+		EntityLocation newVelocity = new EntityLocation(4.0f, 0.0f, 0.0f);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
 			, newVelocity
 			, EntityChangeTopLevelMovement.Intensity.WALKING

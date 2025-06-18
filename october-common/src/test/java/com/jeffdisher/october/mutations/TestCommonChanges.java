@@ -2475,8 +2475,8 @@ public class TestCommonChanges
 		// We just want to show that the entity can move using this top-level movement helper.
 		// Note that it doesn't currently check the validity of movements.
 		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.5f, 0.0f, 0.0f);
-		EntityLocation newVelocity = new EntityLocation(5.0f, 0.0f, 0.0f);
+		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
+		EntityLocation newVelocity = new EntityLocation(4.0f, 0.0f, 0.0f);
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = oldLocation;
 		TickProcessingContext context = _createSimpleContext();
