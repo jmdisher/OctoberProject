@@ -60,6 +60,7 @@ public class MovementAccumulator
 	private final Map<CuboidAddress, CuboidHeightMap> _heights;
 	private final Map<Integer, PartialEntity> _otherEntities;
 
+	private float _baselineZVector;
 	private long _accumulationMillis;
 	private long _lastSampleMillis;
 	private float _maxTickViscosity;
@@ -201,9 +202,7 @@ public class MovementAccumulator
 				});
 				_subAction = _queuedSubAction;
 			}
-			
-			// Apply the beginning of tick z-velocity change for gravity (done after the sub-action since it sets the velocity).
-			_applyFallingGravity();
+			_baselineZVector = _newVelocity.z();
 			
 			if (_queuedMillis > 0L)
 			{
@@ -242,8 +241,6 @@ public class MovementAccumulator
 	public void clearAccumulation(long currentTimeMillis)
 	{
 		_clearAccumulation(currentTimeMillis);
-		// Since this is called when are starting a tick (either at the beginning or after an error, apply gravity).
-		_applyFallingGravity();
 	}
 
 	/**
@@ -354,6 +351,7 @@ public class MovementAccumulator
 	private void _clearAccumulation(long currentTimeMillis)
 	{
 		// This is called in the case where something went wrong and we should clear our accumulation back to its initial state.
+		_baselineZVector = _thisEntity.velocity().z();
 		_accumulationMillis = 0L;
 		_lastSampleMillis = currentTimeMillis;
 		_newLocation = _thisEntity.location();
@@ -371,6 +369,7 @@ public class MovementAccumulator
 	{
 		Environment env = Environment.getShared();
 		float secondsToPass = (float)millisToMove / 1000.0f;
+		_updateVelocityWithAccumulatedGravity(millisToMove);
 		// For now, we will just use the proposed velocity for X/Y but we will later need some maximum acceleration for things like resisting knockback, etc.
 		// TODO: Apply maximum velocity change constraint.
 		// Z-velocity changes are only applied at the beginning of the tick so we will assume we can use whatever we were given.
@@ -484,11 +483,11 @@ public class MovementAccumulator
 		}
 	}
 
-	private void _applyFallingGravity()
+	private void _updateVelocityWithAccumulatedGravity(long additionalMillis)
 	{
-		float secondsToPass = (float)_millisPerTick / 1000.0f;
+		float secondsToPass = (float)(_accumulationMillis + additionalMillis) / 1000.0f;
 		float zVelocityChange = secondsToPass * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
-		float newZVelocity = _newVelocity.z() + zVelocityChange;
+		float newZVelocity = _baselineZVector + zVelocityChange;
 		if (newZVelocity < MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND)
 		{
 			newZVelocity = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
