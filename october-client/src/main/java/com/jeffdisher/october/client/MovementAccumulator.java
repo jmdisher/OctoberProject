@@ -51,6 +51,12 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MovementAccumulator
 {
+	/**
+	 * When applying the "coasting" deceleration at the beginning of a tick, we assume that any speed below this is "0".
+	 */
+	public static final float MIN_COASTING_SPEED = 0.5f;
+
+
 	private final Environment _env;
 	private final IProjectionListener _listener;
 	private final long _millisPerTick;
@@ -134,7 +140,8 @@ public class MovementAccumulator
 		// We only need to account for the existing velocity vector but otherwise just passing time.
 		float xVelocity = _newVelocity.x();
 		float yVelocity = _newVelocity.y();
-		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity);
+		// In this case, don't apply any viscosity and just coast.
+		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity, 1.0f);
 	}
 
 	/**
@@ -160,9 +167,9 @@ public class MovementAccumulator
 		// Determine the X/Y velocity based on these components and the walking type.
 		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond();
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
-		float xVelocity = speed * _startInverseViscosity * xComponent;
-		float yVelocity = speed * _startInverseViscosity * yComponent;
-		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity);
+		float xVelocity = speed * xComponent;
+		float yVelocity = speed * yComponent;
+		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity, _startInverseViscosity);
 	}
 
 	/**
@@ -213,6 +220,19 @@ public class MovementAccumulator
 			}
 			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
 			_baselineZVector = _newVelocity.z();
+			
+			// We want to apply a sort of "drag" on the velocity when the tick starts so do that here to both X/Y (Z is handled differently since it isn't actively applied by the user).
+			float newXVelocity = _startInverseViscosity * _newVelocity.x();
+			if (Math.abs(newXVelocity) < MIN_COASTING_SPEED)
+			{
+				newXVelocity = 0.0f;
+			}
+			float newYVelocity = _startInverseViscosity * _newVelocity.y();
+			if (Math.abs(newYVelocity) < MIN_COASTING_SPEED)
+			{
+				newXVelocity = 0.0f;
+			}
+			_newVelocity = new EntityLocation(newXVelocity, newYVelocity, _newVelocity.z());
 			
 			if (_queuedMillis > 0L)
 			{
@@ -403,19 +423,21 @@ public class MovementAccumulator
 		});
 	}
 
-	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis, float xVelocity, float yVelocity)
+	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis, float xVelocity, float yVelocity, float inverseViscosityMultiplier)
 	{
 		// First, see if we will need to split this time interval.
 		long millisToAdd = (currentTimeMillis - _lastSampleMillis) % _millisPerTick;
 		long accumulated = _accumulationMillis + millisToAdd;
 		long overflowMillis = accumulated - _millisPerTick;
+		float effectiveXVelocity = inverseViscosityMultiplier * xVelocity;
+		float effectiveYVelocity = inverseViscosityMultiplier * yVelocity;
 		
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> toReturn;
 		if (overflowMillis >= 0L)
 		{
 			// We need to carve off the existing accumulation.
 			long fillMillis = millisToAdd - overflowMillis;
-			_updateVelocityAndLocation(fillMillis, xVelocity, yVelocity);
+			_updateVelocityAndLocation(fillMillis, effectiveXVelocity, effectiveYVelocity);
 			toReturn = _buildFromAccumulation();
 			_queuedMillis = overflowMillis;
 			_queuedXVector = xVelocity;
@@ -425,7 +447,7 @@ public class MovementAccumulator
 		else
 		{
 			// The accumulation is not yet finished so just accumulate.
-			_updateVelocityAndLocation(millisToAdd, xVelocity, yVelocity);
+			_updateVelocityAndLocation(millisToAdd, effectiveXVelocity, effectiveYVelocity);
 			_accumulationMillis = accumulated;
 			toReturn = null;
 		}
