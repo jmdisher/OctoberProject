@@ -304,11 +304,11 @@ public class TestMovementAccumulator
 		
 		// We need to apply this to our state since it would be considered part of the underlying state.
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -1.2f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.0f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -1.4f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.2f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.4f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.0f), listener.thisEntity.velocity());
 	}
 
 	@Test

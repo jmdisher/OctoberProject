@@ -266,7 +266,7 @@ public class TestEntityMovementHelpers
 		EntityLocation velocity = new EntityLocation(1.0f, 1.0f, 1.0f);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				Assert.assertEquals(new EntityLocation(1.79f, 1.79f, 1.79f), finalLocation);
 				Assert.assertTrue(cancelX);
@@ -295,7 +295,7 @@ public class TestEntityMovementHelpers
 		EntityLocation velocity = new EntityLocation(-1.0f, -1.0f, -1.0f);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				Assert.assertEquals(new EntityLocation(1.0f, 1.0f, 1.0f), finalLocation);
 				Assert.assertTrue(cancelX);
@@ -324,7 +324,7 @@ public class TestEntityMovementHelpers
 		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				Assert.assertEquals(velocity, finalLocation);
 				Assert.assertFalse(cancelX);

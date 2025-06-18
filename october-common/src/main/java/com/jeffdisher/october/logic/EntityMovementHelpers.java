@@ -229,8 +229,8 @@ public class EntityMovementHelpers
 	}
 
 	/**
-	 * Finds a path from start, along vectorToMove, using the interactive helper.  This will internally account for
-	 * block viscosity.  The final result is returned via the interactive helper.
+	 * Finds a path from start, along vectorToMove, using the interactive helper.  This will handle collisions with
+	 * solid blocks to further constrain this path.  The final result is returned via the interactive helper.
 	 * 
 	 * @param start The base location of the entity.
 	 * @param volume The volume of the entity.
@@ -249,17 +249,10 @@ public class EntityMovementHelpers
 			, start.z() + volume.height()
 		);
 		
-		// Find the viscosity we will use to reduce the effective movement vector.
-		// In the future, we could also track the trailing vertex and keep a count of active viscosities in the prism if we wanted to adjust viscosity mid-move (probably over-design since this rarely matters).
-		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
-		// TODO:  Handle this quick failure case when we start out stuck in a block.
-		Assert.assertTrue(maxViscosity < 1.0f);
-		
-		// Adjust the vector based on viscosity (linearly).
-		float invosity = 1.0f - maxViscosity;
-		float effectiveX = vectorToMove.x() * invosity;
-		float effectiveY = vectorToMove.y() * invosity;
-		float effectiveZ = vectorToMove.z() * invosity;
+		// We will create effective vector components which can be reduced as we manage collision/movement.
+		float effectiveX = vectorToMove.x();
+		float effectiveY = vectorToMove.y();
+		float effectiveZ = vectorToMove.z();
 		
 		// We will use a ray-cast from the corner of the prism in the direction of motion.
 		float leadingX  = (effectiveX >  0.0f) ? edgeLocation.x() : start.x();
@@ -378,7 +371,7 @@ public class EntityMovementHelpers
 			, movingStart.y() + effectiveY
 			, movingStart.z() + effectiveZ
 		);
-		helper.setLocationAndViscosity(movingStart, maxViscosity, cancelX, cancelY, cancelZ);
+		helper.setLocationAndViscosity(movingStart, cancelX, cancelY, cancelZ);
 	}
 
 	/**
@@ -411,7 +404,7 @@ public class EntityMovementHelpers
 				return viscosity;
 			}
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				// This isn't called in this path.
 				throw Assert.unreachable();
@@ -454,7 +447,7 @@ public class EntityMovementHelpers
 	public static interface InteractiveHelper
 	{
 		public float getViscosityForBlockAtLocation(AbsoluteLocation location);
-		public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ);
+		public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ);
 	}
 
 

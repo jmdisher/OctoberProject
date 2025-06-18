@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
@@ -59,11 +60,12 @@ public class MovementAccumulator
 	private final Map<CuboidAddress, IReadOnlyCuboidData> _world;
 	private final Map<CuboidAddress, CuboidHeightMap> _heights;
 	private final Map<Integer, PartialEntity> _otherEntities;
+	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
 
 	private float _baselineZVector;
 	private long _accumulationMillis;
 	private long _lastSampleMillis;
-	private float _maxTickViscosity;
+	private float _startInverseViscosity;
 	private EntityLocation _newLocation;
 	private EntityLocation _newVelocity;
 	private byte _newYaw;
@@ -92,6 +94,14 @@ public class MovementAccumulator
 		_otherEntities = new HashMap<>();
 		
 		_lastSampleMillis = currentTimeMillis;
+		
+		_proxyLookup = (AbsoluteLocation location) -> {
+			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+			return (null != cuboid)
+					? new BlockProxy(location.getBlockAddress(), cuboid)
+					: null
+			;
+		};
 	}
 
 	/**
@@ -150,8 +160,8 @@ public class MovementAccumulator
 		// Determine the X/Y velocity based on these components and the walking type.
 		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond();
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
-		float xVelocity = speed * xComponent;
-		float yVelocity = speed * yComponent;
+		float xVelocity = speed * _startInverseViscosity * xComponent;
+		float yVelocity = speed * _startInverseViscosity * yComponent;
 		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity);
 	}
 
@@ -192,7 +202,6 @@ public class MovementAccumulator
 		{
 			// If there was an action queued, apply it and store it.
 			_subAction = null;
-			_maxTickViscosity = 0.0f;
 			if (null != _queuedSubAction)
 			{
 				_runActionAndNotify(currentTimeMillis, _queuedSubAction, (Entity changedEntity) -> {
@@ -202,11 +211,12 @@ public class MovementAccumulator
 				});
 				_subAction = _queuedSubAction;
 			}
+			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
 			_baselineZVector = _newVelocity.z();
 			
 			if (_queuedMillis > 0L)
 			{
-				_updateVelocityAndLocation(_queuedMillis, _queuedXVector, _queuedYVector);
+				_updateVelocityAndLocation(_queuedMillis, _startInverseViscosity * _queuedXVector, _startInverseViscosity * _queuedYVector);
 			}
 			_accumulationMillis = _queuedMillis;
 			
@@ -315,21 +325,8 @@ public class MovementAccumulator
 		// For now, we will determine if we are standing or walking based on whether or not we moved horizontally.
 		EntityChangeTopLevelMovement.Intensity intensity = _findActionIntensity(_newLocation);
 		
-		// We will apply viscosity to the velocity (this will cause quick, but not immediate, deceleration when falling into water, etc).
-		float velocityMultiplier = 1.0f - _maxTickViscosity;
-		_newVelocity = new EntityLocation(_newVelocity.x() * velocityMultiplier
-			, _newVelocity.y() * velocityMultiplier
-			, _newVelocity.z() * velocityMultiplier
-		);
-		
 		// If we are standing on solid blocks, we want to cancel all velocity (we currently assume all solid blocks have 100% friction).
-		if (SpatialHelpers.isStandingOnGround((AbsoluteLocation location) -> {
-			IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
-			return (null != cuboid)
-					? new BlockProxy(location.getBlockAddress(), cuboid)
-					: null
-			;
-		}, _newLocation, _playerVolume))
+		if (SpatialHelpers.isStandingOnGround(_proxyLookup, _newLocation, _playerVolume))
 		{
 			_newVelocity = new EntityLocation(0.0f
 				, 0.0f
@@ -351,13 +348,13 @@ public class MovementAccumulator
 	private void _clearAccumulation(long currentTimeMillis)
 	{
 		// This is called in the case where something went wrong and we should clear our accumulation back to its initial state.
-		_baselineZVector = _thisEntity.velocity().z();
 		_accumulationMillis = 0L;
 		_lastSampleMillis = currentTimeMillis;
 		_newLocation = _thisEntity.location();
 		_newVelocity = _thisEntity.velocity();
 		_subAction = null;
-		_maxTickViscosity = 0.0f;
+		_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
+		_baselineZVector = _newVelocity.z();
 		
 		_queuedMillis = 0L;
 		_queuedXVector = 0.0f;
@@ -377,7 +374,7 @@ public class MovementAccumulator
 		EntityLocation effectiveMotion = new EntityLocation(secondsToPass * velocity.x(), secondsToPass * velocity.y(), secondsToPass * velocity.z());
 		EntityMovementHelpers.interactiveEntityMove(_newLocation, _playerVolume, effectiveMotion, new EntityMovementHelpers.InteractiveHelper() {
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				_newLocation = finalLocation;
 				// We keep the velocity we proposed, except for any axes which were cancelled due to collision.
@@ -385,18 +382,15 @@ public class MovementAccumulator
 					, cancelY ? 0.0f : velocity.y()
 					, cancelZ ? 0.0f : velocity.z()
 				);
-				// Since this can be called for very small slices of time, we only want to consider the viscosity for deceleration at the end of a tick.
-				_maxTickViscosity = Math.max(_maxTickViscosity, viscosity);
 			}
 			@Override
 			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 			{
-				IReadOnlyCuboidData cuboid = _world.get(location.getCuboidAddress());
+				BlockProxy proxy = _proxyLookup.apply(location);
 				float viscosity;
-				if (null != cuboid)
+				if (null != proxy)
 				{
 					// Find the viscosity based on block type.
-					BlockProxy proxy = new BlockProxy(location.getBlockAddress(), cuboid);
 					viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
 				}
 				else
@@ -486,11 +480,12 @@ public class MovementAccumulator
 	private void _updateVelocityWithAccumulatedGravity(long additionalMillis)
 	{
 		float secondsToPass = (float)(_accumulationMillis + additionalMillis) / 1000.0f;
-		float zVelocityChange = secondsToPass * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+		float zVelocityChange = secondsToPass * _startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 		float newZVelocity = _baselineZVector + zVelocityChange;
-		if (newZVelocity < MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND)
+		float effectiveTerminalVelocity = _startInverseViscosity * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+		if (newZVelocity < effectiveTerminalVelocity)
 		{
-			newZVelocity = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+			newZVelocity = effectiveTerminalVelocity;
 		}
 		_newVelocity = new EntityLocation(_newVelocity.x(), _newVelocity.y(), newZVelocity);
 	}
