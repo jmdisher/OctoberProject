@@ -494,7 +494,6 @@ public class TickRunner
 			long startWorld = System.currentTimeMillis();
 			WorldProcessor.ProcessedFragment fragment = WorldProcessor.processWorldFragmentParallel(thisThread
 					, materials.completedCuboids
-					, materials.cuboidHeightMaps
 					, context
 					, materials.mutationsToRun
 					, materials.periodicMutationMillis

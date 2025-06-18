@@ -45,7 +45,6 @@ public class WorldProcessor
 	 * 
 	 * @param processor The current thread.
 	 * @param worldMap The map of all read-only cuboids from the previous tick.
-	 * @param cuboidHeightMaps The map of read-only per-cuboid height maps.
 	 * @param context The context used for running changes.
 	 * @param mutationsToRun The map of mutations to run in this tick, keyed by cuboid addresses where they are
 	 * scheduled.
@@ -60,7 +59,6 @@ public class WorldProcessor
 	 */
 	public static ProcessedFragment processWorldFragmentParallel(ProcessorElement processor
 			, Map<CuboidAddress, IReadOnlyCuboidData> worldMap
-			, Map<CuboidAddress, CuboidHeightMap> cuboidHeightMaps
 			, TickProcessingContext context
 			, Map<CuboidAddress, List<ScheduledMutation>> mutationsToRun
 			, Map<CuboidAddress, Map<BlockAddress, Long>> periodicMutationMillis

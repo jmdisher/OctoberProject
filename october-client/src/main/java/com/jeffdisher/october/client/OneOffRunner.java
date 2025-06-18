@@ -97,7 +97,6 @@ public class OneOffRunner
 			}
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(singleThreadElement
 					, state.world
-					, state.heights
 					, context
 					, splitMutations
 					, Map.of()

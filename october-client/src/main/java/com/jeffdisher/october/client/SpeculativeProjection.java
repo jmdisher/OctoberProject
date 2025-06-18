@@ -599,7 +599,6 @@ public class SpeculativeProjection
 		Set<CuboidAddress> cuboidsLoadedThisTick = Set.of();
 		WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(_singleThreadElement
 				, _projectedState.projectedWorld
-				, _projectedState.projectedHeightMap
 				, context
 				, innerMutations
 				, Map.of()
