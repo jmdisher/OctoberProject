@@ -328,6 +328,24 @@ public class TestMovementAccumulator
 		Assert.assertEquals(-1.17f, largeTimes.velocity().z(), 0.01f);
 	}
 
+	@Test
+	public void waterFallRates() throws Throwable
+	{
+		// We want to show that entities will still end up in the same place when falling with different increments (tests rounding errors).
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 20.0f);
+		Entity entity = mutable.freeze();
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
+		
+		// TODO:  Fix this positioning disagreement (20.0 vs 19.96)!
+		Entity smallTimes = _runFallingTest(7L, 17, cuboid, entity);
+		Assert.assertEquals(20.0f, smallTimes.location().z(), 0.01f);
+		Assert.assertEquals(-0.57f, smallTimes.velocity().z(), 0.01f);
+		Entity largeTimes = _runFallingTest(17L, 7, cuboid, entity);
+		Assert.assertEquals(19.96f, largeTimes.location().z(), 0.01f);
+		Assert.assertEquals(-0.57f, largeTimes.velocity().z(), 0.01f);
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{

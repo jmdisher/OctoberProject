@@ -2,8 +2,12 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.EntityMovementHelpers;
+import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.EntityLocation;
+import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
@@ -12,10 +16,16 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * The basis of the "new" movement design in version 1.7 where changes are now fixed to the tick period and can contain
  * a single nested operation to do more than just movement (jump/craft/place/break/etc).
+ * NOTE:  As this class is how the server applies movement, this is the most likely attack vector for most forms of
+ * "cheating" in the game.
  */
 public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.TOP_LEVEL_MOVEMENT;
+	/**
+	 * We will require that the change in z-vector is within 90% of what gravity dictates (rounding errors, etc).
+	 */
+	public static final float Z_VECTOR_ACCURACY_THRESHOLD = 0.9f;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -68,30 +78,146 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	@Override
 	public boolean applyChange(TickProcessingContext context, T newEntity)
 	{
-		// TODO:  Add checks that these moves are valid since we currently just trust whatever the client is telling us.
+		// For now, we will just verify the inputs relatively simply:
+		// -run the sub-action first (since it may impact velocity)
+		// -verify that the change in z-velocity from post sub-action to the final result is within gravity acceleration
+		//  expectations, given some error margin
+		// -if they remain on the same z-level, make sure that they are on solid blocks where they started
+		// -make sure that their final location is one where they can physically stand
+		// -make sure that their final X/Y offsets are possible within their max(v_start, v_end, v_intensity)
+		// -make sure that their horizontal change in velocity is permitted by the intensity
+		boolean forceFailure = false;
+		
+		// TODO:  In the future, add more checks, as needed.  Some possible examples:
+		// -make sure that there is a valid path from start to end (normally, this is less than a block but may matter
+		//  for high speeds, like falling at terminal velocity)
+		// -tighten checks on the change in z-vector to make sure that they are falling at a reasonable rate
+		// -verify collisions with walls/ceilings/floors when velocity drops very quickly
+		
+		// If there is a sub-action, run it, ignoring the result (its failure may not doom us).
 		if (null != _subAction)
 		{
 			_subAction.applyChange(context, newEntity);
 		}
-		newEntity.setLocation(_newLocation);
-		newEntity.setVelocityVector(_newVelocity);
-		newEntity.setOrientation(_yaw, _pitch);
+		EntityLocation startLocation = newEntity.getLocation();
+		EntityLocation startVelocity = newEntity.getVelocityVector();
+		EntityVolume volume = newEntity.getType().volume();
+		float seconds = ((float)_millis / 1000.0f);
 		
-		// TODO:  Fix this energy attribution cost.
-		int energy;
-		switch (_intensity)
+		// Check the change is z-velocity from start-end.
+		float newZVelocity = _newVelocity.z();
+		float zVDelta = newZVelocity - startVelocity.z();
+		if (0.0f == zVDelta)
 		{
-		case STANDING:
-			energy = EntityChangePeriodic.ENERGY_COST_IDLE;
-			break;
-		case WALKING:
-			energy = EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK;
-			break;
-		default:
-			throw Assert.unreachable();
+			// We are either at terminal velocity or standing on solid ground.
+			boolean isTerminal = (newZVelocity == MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
+			// Flat ground - make sure that they are on solid ground.
+			boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
+			if (!isTerminal && !isOnGround)
+			{
+				// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
+				float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
+				float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+				// We want to round the expected delta.
+				float expectedZDelta = new EntityLocation(0.0f, 0.0f, seconds * startEffectiveGravity).z();
+				if (0.0f != expectedZDelta)
+				{
+					forceFailure = true;
+				}
+			}
 		}
-		newEntity.applyEnergyCost(energy);
-		return true;
+		else
+		{
+			float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
+			float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+			// We want to round the expected delta.
+			float expectedZDelta = new EntityLocation(0.0f, 0.0f, seconds * startEffectiveGravity).z();
+			boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
+			if (!isValidFall)
+			{
+				// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
+				boolean didHitGround = (0.0f == _newVelocity.z()) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
+				if (!didHitGround)
+				{
+					// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
+					float endViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, volume, context.previousBlockLookUp);
+					float startTerminal = (1.0f - startViscosity) * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+					float endTerminal = (1.0f - endViscosity) * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+					boolean isTransitionVelocity = ((endTerminal <= newZVelocity) && (newZVelocity <= startTerminal))
+						|| ((startTerminal <= newZVelocity) && (newZVelocity <= endTerminal))
+					;
+					if (!isTransitionVelocity)
+					{
+						// We still have no valid explanation for this.
+						forceFailure = true;
+					}
+				}
+			}
+		}
+		
+		// Check that the final location is not in solid blocks.
+		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, _newLocation, volume))
+		{
+			forceFailure = true;
+		}
+		
+		// Check that their movement was possible within their velocity (any of start/end/intensity).
+		float intensityVelocityPerSecond = (Intensity.WALKING == _intensity)
+			? newEntity.getType().blocksPerSecond()
+			: 0.0f
+		;
+		float maxXVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.x(), startVelocity.x()));
+		float minXVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.x(), startVelocity.x()));
+		float maxYVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.y(), startVelocity.y()));
+		float minYVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.y(), startVelocity.y()));
+		float deltaX = _newLocation.x() - startLocation.x();
+		float deltaY = _newLocation.y() - startLocation.y();
+		boolean isValidDistance = ((deltaX <= (seconds * maxXVelocity)) || (deltaX <= (seconds * minXVelocity)))
+				&& ((deltaY <= (seconds * maxYVelocity)) || (deltaY <= (seconds * minYVelocity)))
+		;
+		if (!isValidDistance)
+		{
+			forceFailure = true;
+		}
+		
+		// Check that their horizontal velocity change is acceptable within their intensity.
+		float xVDelta = Math.abs(_newVelocity.x() - startVelocity.x());
+		float yVDelta = Math.abs(_newVelocity.y() - startVelocity.y());
+		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
+			&& (yVDelta <= intensityVelocityPerSecond)
+		;
+		if (!isValidAcceleration)
+		{
+			forceFailure = true;
+		}
+		
+		// If all checks pass, apply changes and energy cost.
+		if (!forceFailure)
+		{
+			newEntity.setLocation(_newLocation);
+			newEntity.setVelocityVector(_newVelocity);
+			newEntity.setOrientation(_yaw, _pitch);
+			
+			// TODO:  Fix this energy attribution cost.
+			int energy;
+			switch (_intensity)
+			{
+			case STANDING:
+				energy = EntityChangePeriodic.ENERGY_COST_IDLE;
+				break;
+			case WALKING:
+				energy = EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK;
+				break;
+			default:
+				throw Assert.unreachable();
+			}
+			newEntity.applyEnergyCost(energy);
+		}
+		else
+		{
+			System.out.println("FAIL");
+		}
+		return !forceFailure;
 	}
 
 	@Override
