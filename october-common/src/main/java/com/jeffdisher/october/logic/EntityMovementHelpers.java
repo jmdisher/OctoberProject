@@ -244,21 +244,14 @@ public class EntityMovementHelpers
 		
 		// Generate the prism of the entity's current location.
 		EntityLocation movingStart = start;
-		AbsoluteLocation baseBlock = movingStart.getBlockLocation();
 		EntityLocation edgeLocation = new EntityLocation(start.x() + volume.width()
 			, start.y() + volume.width()
 			, start.z() + volume.height()
 		);
-		AbsoluteLocation edgeBlock = edgeLocation.getBlockLocation();
 		
 		// Find the viscosity we will use to reduce the effective movement vector.
 		// In the future, we could also track the trailing vertex and keep a count of active viscosities in the prism if we wanted to adjust viscosity mid-move (probably over-design since this rarely matters).
-		float maxViscosity = 0.0f;
-		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
-		{
-			float viscosity = helper.getViscosityForBlockAtLocation(loc);
-			maxViscosity = Math.max(maxViscosity, viscosity);
-		}
+		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
 		// TODO:  Handle this quick failure case when we start out stuck in a block.
 		Assert.assertTrue(maxViscosity < 1.0f);
 		
@@ -388,26 +381,69 @@ public class EntityMovementHelpers
 		helper.setLocationAndViscosity(movingStart, maxViscosity, cancelX, cancelY, cancelZ);
 	}
 
+	/**
+	 * Looks up the maximum viscosity of any block occupied by the given volume rooted at entityBase.
+	 * 
+	 * @param entityBase The base south-west-down corner of the space to check.
+	 * @param volume The volume of the space to check.
+	 * @param blockLookup The lookup helper for blocks.
+	 * @return The maximum viscosity of any of the blocks in the requested space.
+	 */
+	public static float maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, Function<AbsoluteLocation, BlockProxy> blockLookup)
+	{
+		Environment env = Environment.getShared();
+		InteractiveHelper helper = new InteractiveHelper() {
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				BlockProxy proxy = blockLookup.apply(location);
+				float viscosity;
+				if (null != proxy)
+				{
+					// Find the viscosity based on block type.
+					viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
+				}
+				else
+				{
+					// This is missing so we will just treat it as a solid block.
+					viscosity = 1.0f;
+				}
+				return viscosity;
+			}
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, float viscosity, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				// This isn't called in this path.
+				throw Assert.unreachable();
+			}
+		};
+		return _maxViscosityInEntityBlocks(entityBase, volume, helper);
+	}
+
 
 	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper)
 	{
-		AbsoluteLocation baseBlock = movingStart.getBlockLocation();
-		EntityLocation edgeLocation = new EntityLocation(movingStart.x() + volume.width()
-			, movingStart.y() + volume.width()
-			, movingStart.z() + volume.height()
+		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
+		boolean canOccupy = (maxViscosity < 1.0f);
+		return canOccupy;
+	}
+
+	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper)
+	{
+		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
+			, entityBase.y() + volume.width()
+			, entityBase.z() + volume.height()
 		);
-		AbsoluteLocation edgeBlock = edgeLocation.getBlockLocation();
-		boolean canOccupy = true;
+		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
+		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
+		
+		float maxViscosity = 0.0f;
 		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
 		{
 			float viscosity = helper.getViscosityForBlockAtLocation(loc);
-			if (1.0f == viscosity)
-			{
-				canOccupy = false;
-				break;
-			}
+			maxViscosity = Math.max(maxViscosity, viscosity);
 		}
-		return canOccupy;
+		return maxViscosity;
 	}
 
 

@@ -1,5 +1,6 @@
 package com.jeffdisher.october.logic;
 
+import java.util.Map;
 import java.util.function.Function;
 
 import org.junit.AfterClass;
@@ -32,6 +33,7 @@ public class TestEntityMovementHelpers
 	private static Environment ENV;
 	private static Block AIR;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
 	private static EntityType ORC;
 	@BeforeClass
 	public static void setup()
@@ -39,6 +41,7 @@ public class TestEntityMovementHelpers
 		ENV = Environment.createSharedInstance();
 		AIR = ENV.blocks.fromItem(ENV.items.getItemById("op.air"));
 		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		ORC = ENV.creatures.getTypeById("op.orc");
 	}
 	@AfterClass
@@ -168,8 +171,7 @@ public class TestEntityMovementHelpers
 	@Test
 	public void swimmingUp()
 	{
-		Block waterSource = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
-		TickProcessingContext context = _createContextWithCuboidType(waterSource);
+		TickProcessingContext context = _createContextWithCuboidType(WATER_SOURCE);
 		_Entity entity = new _Entity();
 		EntityLocation startLocation = new EntityLocation(5.0f, 5.0f, 5.0f);
 		entity.location = startLocation;
@@ -335,6 +337,41 @@ public class TestEntityMovementHelpers
 				return 0.0f;
 			}
 		});
+	}
+
+	@Test
+	public void viscosity()
+	{
+		// Check the viscosity of a few different cuboids.
+		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 1), ENV.special.AIR);
+		CuboidData middleCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
+		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		Map<CuboidAddress, CuboidData> map = Map.of(topCuboid.getCuboidAddress(), topCuboid
+			, middleCuboid.getCuboidAddress(), middleCuboid
+			, bottomCuboid.getCuboidAddress(), bottomCuboid
+		);
+		Function<AbsoluteLocation, BlockProxy> lookup = (AbsoluteLocation location) -> {
+			CuboidData cuboid = map.get(location.getCuboidAddress());
+			return (null != cuboid)
+				? new BlockProxy(location.getBlockAddress(), cuboid)
+				: null
+			;
+		};
+		
+		EntityVolume volume = new EntityVolume(2.2f, 1.7f);
+		EntityLocation airLocation = new EntityLocation(0.0f, 0.0f, 40.0f);
+		EntityLocation waterLocation = new EntityLocation(0.0f, 0.0f, 20.0f);
+		EntityLocation stoneLocation = new EntityLocation(0.0f, 0.0f, -20.0f);
+		EntityLocation airWaterLocation = new EntityLocation(0.0f, 0.0f, 31.0f);
+		EntityLocation waterStoneLocation = new EntityLocation(0.0f, 0.0f, -1.0f);
+		EntityLocation airEdgeLocation = new EntityLocation(0.0f, 31.0f, 40.0f);
+		
+		Assert.assertEquals(0.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(airLocation, volume, lookup), 0.01f);
+		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(waterLocation, volume, lookup), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(stoneLocation, volume, lookup), 0.01f);
+		Assert.assertEquals(0.5f, EntityMovementHelpers.maxViscosityInEntityBlocks(airWaterLocation, volume, lookup), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(waterStoneLocation, volume, lookup), 0.01f);
+		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(airEdgeLocation, volume, lookup), 0.01f);
 	}
 
 
