@@ -358,15 +358,31 @@ public class MovementAccumulator
 			);
 		}
 		
-		// Now, create the finished top-level action.
-		return new EntityChangeTopLevelMovement<>(_newLocation
-			, _newVelocity
-			, intensity
-			, _newYaw
-			, _newPitch
-			, _subAction
-			, _millisPerTick
-		);
+		// Note that we won't produce an action if there is no sub-action and nothing else has changed about the entity.
+		// TODO:  Determine who owns energy level since this means that the client can't use energy while "doing nothing".
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> result;
+		if ((null == _subAction)
+			&& (_thisEntity.yaw() == _newYaw)
+			&& (_thisEntity.pitch() == _newPitch)
+			&& _thisEntity.location().equals(_newLocation)
+			&& _thisEntity.velocity().equals(_newVelocity)
+		)
+		{
+			// We can safely "do nothing".  This mostly to allow the server to "catch up" in case we are out of sync.
+			result = null;
+		}
+		else
+		{
+			result = new EntityChangeTopLevelMovement<>(_newLocation
+				, _newVelocity
+				, intensity
+				, _newYaw
+				, _newPitch
+				, _subAction
+				, _millisPerTick
+			);
+		}
+		return result;
 	}
 
 	private void _clearAccumulation(long currentTimeMillis)

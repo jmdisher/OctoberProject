@@ -167,8 +167,10 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
 		out = accumulator.stand(currentTimeMillis);
-		Assert.assertNotNull(out);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		// Note that, even though this should tick-over and generate an event, we didn't do anything so it will be a
+		// null event.  Note that completing the event will also mean the jump is "on deck" so will force generation of
+		// the next tick's event.
+		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.11f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.68f), listener.thisEntity.velocity());
@@ -465,6 +467,54 @@ public class TestMovementAccumulator
 		Assert.assertEquals(STONE.item().number(), listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(15, 15, 15)));
 		Assert.assertEquals(63, listener.heightMaps.get(cuboid.getCuboidAddress().getColumn()).getHeight(15, 15));
 		Assert.assertEquals(1, listener.cuboidChangeCount);
+	}
+
+	@Test
+	public void doingNothing() throws Throwable
+	{
+		// This test is to show that we don't generate an action if the accumulator sees nothing happening for the tick.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData bottomCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		Entity entity = MutableEntity.createForTest(1).freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
+		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		
+		// Run the first move.
+		long millisPerMove = 60L;
+		currentTimeMillis += millisPerMove;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		
+		// Run the second move and show nothing emitted.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
+		// Note that we slip a little here due to rounding errors not seeing the collision.
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.2f), listener.thisEntity.velocity());
+		
+		// Run a third to see that the collision rounding error goes away.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
 
