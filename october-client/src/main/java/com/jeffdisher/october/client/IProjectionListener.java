@@ -4,6 +4,7 @@ import java.util.Set;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.data.ColumnHeightMap;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
@@ -23,9 +24,10 @@ public interface IProjectionListener
 	 * Called when a new cuboid is loaded (may have been previously unloaded but not currently loaded).
 	 * 
 	 * @param cuboid The read-only cuboid data.
-	 * @param heightMap The height map for this cuboid's column.
+	 * @param cuboidHeightMap The height map for this cuboid.
+	 * @param columnHeightMap The height map for this cuboid's column.
 	 */
-	void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap);
+	void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap);
 
 	/**
 	 * Called when a new cuboid is replaced due to changes (must have been previously loaded).
@@ -33,12 +35,14 @@ public interface IProjectionListener
 	 * the only changes in the cuboid were lighting related (as shown in changedAspects).
 	 * 
 	 * @param cuboid The read-only cuboid data.
-	 * @param heightMap The height map for this cuboid's column.
+	 * @param cuboidHeightMap The height map for this cuboid.
+	 * @param columnHeightMap The height map for this cuboid's column.
 	 * @param changedBlocks The set of blocks which have some kind of change.
 	 * @param changedAspects The set of aspects changed by any of the changedBlocks.
 	 */
 	void cuboidDidChange(IReadOnlyCuboidData cuboid
-			, ColumnHeightMap heightMap
+			, CuboidHeightMap cuboidHeightMap
+			, ColumnHeightMap columnHeightMap
 			, Set<BlockAddress> changedBlocks
 			, Set<Aspect<?, ?>> changedAspects
 	);

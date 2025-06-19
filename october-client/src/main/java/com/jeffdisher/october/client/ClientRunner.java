@@ -12,6 +12,7 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.ColumnHeightMap;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
@@ -566,20 +567,21 @@ public class ClientRunner
 	private class LocalProjection implements IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidLoad(cuboid, heightMap);
+			_projectionListener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, ColumnHeightMap heightMap
+				, CuboidHeightMap cuboidHeightMap
+				, ColumnHeightMap columnHeightMap
 				, Set<BlockAddress> changedBlocks
 				, Set<Aspect<?, ?>> changedAspects
 		)
 		{
 			// Ignored.
-			_projectionListener.cuboidDidChange(cuboid, heightMap, changedBlocks, changedAspects);
+			_projectionListener.cuboidDidChange(cuboid, cuboidHeightMap, columnHeightMap, changedBlocks, changedAspects);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

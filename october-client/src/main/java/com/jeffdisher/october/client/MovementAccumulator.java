@@ -512,7 +512,7 @@ public class MovementAccumulator
 					if (!changedAspects.isEmpty())
 					{
 						ColumnHeightMap height = columnHeightMaps.get(address.getColumn());
-						_listener.cuboidDidChange(cuboid, height, changedBlocks, changedAspects);
+						_listener.cuboidDidChange(cuboid, localHeights.get(address), height, changedBlocks, changedAspects);
 					}
 				}
 				_didNotifyWorldChanges = true;

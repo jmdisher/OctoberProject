@@ -18,6 +18,7 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
@@ -747,7 +748,7 @@ public class TestClientRunner
 		public long lastTickCompleted = 0L;
 		public List<EventRecord> events = new ArrayList<>();
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertFalse(this.loadedCuboids.containsKey(cuboidAddress));
@@ -755,7 +756,8 @@ public class TestClientRunner
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, ColumnHeightMap heightMap
+				, CuboidHeightMap cuboidHeightMap
+				, ColumnHeightMap columnHeightMap
 				, Set<BlockAddress> changedBlocks
 				, Set<Aspect<?, ?>> changedAspects
 		)

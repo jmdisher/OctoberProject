@@ -443,8 +443,8 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, cuboidMap);
 		accumulator.setCuboid(blockingCuboid, blockingMap);
 		listener.thisEntityDidLoad(entity);
-		listener.cuboidDidLoad(cuboid, columnMap);
-		listener.cuboidDidLoad(blockingCuboid, columnMap);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
 		accumulator.clearAccumulation(currentTimeMillis);
 		
 		// Place a block and verify that the output information is correct (we need to skip past the first tick, first).
@@ -551,16 +551,17 @@ public class TestMovementAccumulator
 		public int cuboidChangeCount = 0;
 		public List<EventRecord> events = new ArrayList<>();
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
 		{
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertFalse(this.loadedCuboids.containsKey(cuboidAddress));
 			this.loadedCuboids.put(cuboidAddress, cuboid);
-			this.heightMaps.put(cuboidAddress.getColumn(), heightMap);
+			this.heightMaps.put(cuboidAddress.getColumn(), columnHeightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, ColumnHeightMap heightMap
+				, CuboidHeightMap cuboidHeightMap
+				, ColumnHeightMap columnHeightMap
 				, Set<BlockAddress> changedBlocks
 				, Set<Aspect<?, ?>> changedAspects
 		)
@@ -570,7 +571,7 @@ public class TestMovementAccumulator
 			Assert.assertFalse(changedBlocks.isEmpty());
 			Assert.assertFalse(changedAspects.isEmpty());
 			this.loadedCuboids.put(cuboidAddress, cuboid);
-			this.heightMaps.put(cuboidAddress.getColumn(), heightMap);
+			this.heightMaps.put(cuboidAddress.getColumn(), columnHeightMap);
 			this.cuboidChangeCount += 1;
 		}
 		@Override

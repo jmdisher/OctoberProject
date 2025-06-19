@@ -14,6 +14,7 @@ import com.jeffdisher.october.client.IProjectionListener;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeMove;
@@ -618,21 +619,22 @@ public class ClientProcess
 	private class _ProjectionListener implements IProjectionListener
 	{
 		@Override
-		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
+		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, CuboidHeightMap cuboidHeightMap, ColumnHeightMap columnHeightMap)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidLoad(cuboid, heightMap);
+				_listener.cuboidDidLoad(cuboid, columnHeightMap);
 			});
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
-				, ColumnHeightMap heightMap
+				, CuboidHeightMap cuboidHeightMap
+				, ColumnHeightMap columnHeightMap
 				, Set<BlockAddress> changedBlocks
 				, Set<Aspect<?, ?>> changedAspects
 		)
 		{
 			_pendingCallbacks.add(() -> {
-				_listener.cuboidDidChange(cuboid, heightMap, changedBlocks, changedAspects);
+				_listener.cuboidDidChange(cuboid, columnHeightMap, changedBlocks, changedAspects);
 			});
 		}
 		@Override
