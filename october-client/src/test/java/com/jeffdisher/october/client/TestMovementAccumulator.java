@@ -12,10 +12,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.jeffdisher.october.aspects.Aspect;
+import com.jeffdisher.october.aspects.AspectRegistry;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
+import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
@@ -23,14 +25,17 @@ import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
+import com.jeffdisher.october.types.CuboidColumnAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
+import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.PartialEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -41,13 +46,15 @@ public class TestMovementAccumulator
 {
 	public static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
+	private static Item STONE_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
-		STONE = ENV.blocks.fromItem(ENV.items.getItemById("op.stone"));
+		STONE_ITEM = ENV.items.getItemById("op.stone");
+		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
 	@AfterClass
@@ -411,6 +418,55 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 3.87f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void placeBlock() throws Throwable
+	{
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData blockingCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 1), STONE);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		CuboidHeightMap blockingMap = HeightMapHelpers.buildHeightMap(blockingCuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+			, blockingCuboid.getCuboidAddress(), blockingMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 16.0f);
+		mutable.newInventory.addAllItems(STONE_ITEM, 1);
+		mutable.setSelectedKey(1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(blockingCuboid, blockingMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, columnMap);
+		accumulator.clearAccumulation(currentTimeMillis);
+		
+		// Place a block and verify that the output information is correct (we need to skip past the first tick, first).
+		long millisPerMove = 60L;
+		currentTimeMillis += millisPerMove;
+		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// We should now verify that the local accumulation't output shows the inventory empty, the block placed, and the height map correct.
+		Assert.assertEquals(0, listener.thisEntity.inventory().currentEncumbrance);
+		Assert.assertEquals(STONE.item().number(), listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(15, 15, 15)));
+		Assert.assertEquals(63, listener.heightMaps.get(cuboid.getCuboidAddress().getColumn()).getHeight(15, 15));
+		Assert.assertEquals(1, listener.cuboidChangeCount);
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
@@ -491,6 +547,8 @@ public class TestMovementAccumulator
 		public Entity thisEntity = null;
 		public Map<Integer, PartialEntity> otherEnties = new HashMap<>();
 		public Map<CuboidAddress, IReadOnlyCuboidData> loadedCuboids = new HashMap<>();
+		public Map<CuboidColumnAddress, ColumnHeightMap> heightMaps = new HashMap<>();
+		public int cuboidChangeCount = 0;
 		public List<EventRecord> events = new ArrayList<>();
 		@Override
 		public void cuboidDidLoad(IReadOnlyCuboidData cuboid, ColumnHeightMap heightMap)
@@ -498,6 +556,7 @@ public class TestMovementAccumulator
 			CuboidAddress cuboidAddress = cuboid.getCuboidAddress();
 			Assert.assertFalse(this.loadedCuboids.containsKey(cuboidAddress));
 			this.loadedCuboids.put(cuboidAddress, cuboid);
+			this.heightMaps.put(cuboidAddress.getColumn(), heightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
@@ -511,6 +570,8 @@ public class TestMovementAccumulator
 			Assert.assertFalse(changedBlocks.isEmpty());
 			Assert.assertFalse(changedAspects.isEmpty());
 			this.loadedCuboids.put(cuboidAddress, cuboid);
+			this.heightMaps.put(cuboidAddress.getColumn(), heightMap);
+			this.cuboidChangeCount += 1;
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)

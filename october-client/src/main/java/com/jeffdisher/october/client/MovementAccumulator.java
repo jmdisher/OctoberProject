@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
+import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BlockChangeDescription;
@@ -77,6 +79,7 @@ public class MovementAccumulator
 	private byte _newYaw;
 	private byte _newPitch;
 	private IMutationEntity<IMutablePlayerEntity> _subAction;
+	private boolean _didNotifyWorldChanges;
 
 	// Some information is queued for the "next" accumulation after this current action has been returned.
 	private long _queuedMillis;
@@ -209,6 +212,7 @@ public class MovementAccumulator
 		{
 			// If there was an action queued, apply it and store it.
 			_subAction = null;
+			_didNotifyWorldChanges = false;
 			if (null != _queuedSubAction)
 			{
 				_runActionAndNotify(currentTimeMillis, _queuedSubAction, (Entity changedEntity) -> {
@@ -471,25 +475,47 @@ public class MovementAccumulator
 			{
 				changedEntityConsumer.accept(output.thisEntity());
 			}
-			Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(output.heights());
-			for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : output.optionalBlockChanges().entrySet())
+			
+			// We only send any world updates at the beginning of the tick.
+			if (!_didNotifyWorldChanges)
 			{
-				CuboidAddress address = entry.getKey();
-				IReadOnlyCuboidData cuboid = _world.get(address);
-				Set<BlockAddress> changedBlocks = new HashSet<>();
-				Set<Aspect<?, ?>> changedAspects = new HashSet<>();
-				for (BlockChangeDescription desc : entry.getValue())
+				Map<CuboidAddress, CuboidHeightMap> localHeights = new HashMap<>(_heights);
+				localHeights.putAll(output.heights());
+				// Rebuild the height maps for only what columns changed.
+				Set<CuboidColumnAddress> blockChangeCuboids = output.optionalBlockChanges().keySet().stream()
+					.map((CuboidAddress address) -> address.getColumn())
+					.collect(Collectors.toSet())
+				;
+				Map<CuboidAddress, CuboidHeightMap> changedCuboidMaps = localHeights.keySet().stream()
+					.filter((CuboidAddress address) -> blockChangeCuboids.contains(address.getColumn()))
+					.collect(Collectors.toMap(
+						(CuboidAddress address) -> address, (CuboidAddress address) -> localHeights.get(address)
+					))
+				;
+				Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(changedCuboidMaps);
+				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : output.optionalBlockChanges().entrySet())
 				{
-					MutationBlockSetBlock setBlock = desc.serializedForm();
-					Set<Aspect<?, ?>> changes = setBlock.changedAspectsVersusCuboid(cuboid);
-					changedBlocks.add(setBlock.getAbsoluteLocation().getBlockAddress());
-					changedAspects.addAll(changes);
+					CuboidAddress address = entry.getKey();
+					IReadOnlyCuboidData readOnly = _world.get(address);
+					CuboidData cuboid = CuboidData.mutableClone(readOnly);
+					Set<BlockAddress> changedBlocks = new HashSet<>();
+					Set<Aspect<?, ?>> changedAspects = new HashSet<>();
+					for (BlockChangeDescription desc : entry.getValue())
+					{
+						MutationBlockSetBlock setBlock = desc.serializedForm();
+						setBlock.applyState(cuboid);
+						Set<Aspect<?, ?>> changes = setBlock.changedAspectsVersusCuboid(readOnly);
+						changedBlocks.add(setBlock.getAbsoluteLocation().getBlockAddress());
+						changedAspects.addAll(changes);
+					}
+					// Don't want to write-back to _world, since that could cause conflicts on the next accumulation but we will send it to the listener.
+					if (!changedAspects.isEmpty())
+					{
+						ColumnHeightMap height = columnHeightMaps.get(address.getColumn());
+						_listener.cuboidDidChange(cuboid, height, changedBlocks, changedAspects);
+					}
 				}
-				if (!changedAspects.isEmpty())
-				{
-					ColumnHeightMap height = columnHeightMaps.get(address.getColumn());
-					_listener.cuboidDidChange(cuboid, height, changedBlocks, changedAspects);
-				}
+				_didNotifyWorldChanges = true;
 			}
 		}
 		else
