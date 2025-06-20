@@ -21,12 +21,12 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.EntityChangeAccelerate;
+import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeJump;
-import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -56,6 +56,7 @@ public class TestClientRunner
 	private static Item LOG_ITEM;
 	private static Item PLANK_ITEM;
 	private static Block STONE;
+	private static Block DIRT;
 	@BeforeClass
 	public static void setup()
 	{
@@ -64,6 +65,7 @@ public class TestClientRunner
 		LOG_ITEM = ENV.items.getItemById("op.log");
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		DIRT = ENV.blocks.fromItem(ENV.items.getItemById("op.dirt"));
 	}
 	@AfterClass
 	public static void tearDown()
@@ -148,7 +150,7 @@ public class TestClientRunner
 	public void multiPhase() throws Throwable
 	{
 		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, DIRT);
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
 		TestAdapter network = new TestAdapter();
@@ -171,44 +173,53 @@ public class TestClientRunner
 		network.client.receivedEndOfTick(1L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		Assert.assertTrue(projection.loadedCuboids.containsKey(cuboidAddress));
-		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short)0, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
-		// Start the multi-phase - we will assume that we need 2 hits to break this block, if we assign 1000 ms each time.
-		currentTimeMillis += 1000L;
-		runner.hitBlock(changeLocation, currentTimeMillis);
+		// Start the multi-phase - we will assume that we need 2 hits to break this block.
 		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
+		currentTimeMillis += 100L;
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Observe that this came out in the network.
-		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
-		Assert.assertTrue(1L == network.commitLevel);
+		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
+		Assert.assertEquals(1L, network.commitLevel);
 		
 		// The would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(3L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(4L, 1L);
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Verify that the block isn't broken, but is damaged.
-		Assert.assertEquals(STONE_ITEM.number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)1000, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals(DIRT.item().number(), projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)100, projection.loadedCuboids.get(cuboidAddress).getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		
 		// Send the second hit and wait for the same operation.
-		currentTimeMillis += 1000L;
-		runner.hitBlock(changeLocation, currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
 		network.client.receivedEndOfTick(5L, 1L);
+		currentTimeMillis += 100L;
 		runner.runPendingCalls(currentTimeMillis);
-		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockBreak);
-		Assert.assertTrue(2L == network.commitLevel);
+		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
+		Assert.assertEquals(2L, network.commitLevel);
 		network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
 		network.client.receivedEndOfTick(6L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
-		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)1000, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
+		network.client.receivedBlockUpdate(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(changeLocation, (short)100, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY)));
 		network.client.receivedEndOfTick(7L, 2L);
 		runner.runPendingCalls(currentTimeMillis);
 		
@@ -256,13 +267,18 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Start crafting, but not with enough time to complete it.
-		currentTimeMillis += 500L;
-		runner.craft(ENV.crafting.getCraftById("op.log_to_planks"), currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.commonApplyEntityAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks"), (short)runner.millisPerTick), currentTimeMillis);
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
 		// Verify that we now see this in the entity.
 		Assert.assertNotNull(projection.thisEntity.localCraftOperation());
 		
+		// Now, walk off without re-issuing the craft command to see that we drop it.
 		currentTimeMillis += 100L;
-		runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
+		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		runner.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 		// Verify that the craft operation was aborted and that we moved.
 		Assert.assertNull(projection.thisEntity.localCraftOperation());
 		Assert.assertEquals(2, projection.thisEntity.inventory().getCount(LOG_ITEM));
@@ -301,14 +317,16 @@ public class TestClientRunner
 		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
-		runner.moveHorizontalFully(EntityChangeMove.Direction.WEST, currentTimeMillis);
+		runner.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
+		runner.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
 		
 		// See where they are - we expect them to have jumped slightly, despite hitting the wall.
 		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(0.0f, location.x(), 0.0001f);
 		Assert.assertEquals(0.0f, location.y(), 0.0001f);
-		Assert.assertEquals(0.54f, location.z(), 0.0001f);
+		Assert.assertEquals(0.49f, location.z(), 0.0001f);
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 
@@ -338,11 +356,11 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Allow ourselves to fall onto the ground with the expected number of ticks.
-		int expectedChangeCount = 7;
+		int expectedChangeCount = 6;
 		for (int i = 0; i < expectedChangeCount; ++i)
 		{
 			currentTimeMillis += 100L;
-			runner.doNothing(currentTimeMillis);
+			runner.standStill(currentTimeMillis);
 		}
 		
 		// We should now be standing on the floor.
@@ -354,7 +372,7 @@ public class TestClientRunner
 		long changeCount = projection.allEntityChangeCount;
 		Assert.assertEquals(expectedChangeCount, changeCount);
 		currentTimeMillis += 100L;
-		runner.doNothing(currentTimeMillis);
+		runner.standStill(currentTimeMillis);
 		Assert.assertEquals(changeCount, projection.allEntityChangeCount);
 		Assert.assertTrue(projection.events.isEmpty());
 	}
@@ -391,17 +409,29 @@ public class TestClientRunner
 		MutationEntityPushItems push = new MutationEntityPushItems(table, logKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY);
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(push, currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		
 		// Start crafting, but not with enough time to complete it (the table has 10x efficiency bonus).
 		currentTimeMillis += 50L;
-		runner.craftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks"), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, ENV.crafting.getCraftById("op.log_to_planks"), (short)runner.millisPerTick), currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		// Verify that we now see this is in progress in the block.
 		BlockProxy proxy = projection.readBlock(table);
-		Assert.assertEquals(500L, proxy.getCrafting().completedMillis());
+		Assert.assertEquals(1000L, proxy.getCrafting().completedMillis());
 		
 		// Now, complete the craft.
 		currentTimeMillis += 50L;
-		runner.craftInBlock(table, null, currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeCraftInBlock(table, null, (short)runner.millisPerTick), currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		proxy = projection.readBlock(table);
 		Assert.assertNull(proxy.getCrafting());
 		Assert.assertEquals(2, proxy.getInventory().getCount(PLANK_ITEM));
@@ -432,23 +462,28 @@ public class TestClientRunner
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Walk east for 300 frames.
-		runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
+		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		runner.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 		EntityLocation afterMove = projection.thisEntity.location();
+		long latestCommitIncluded = 0L;
 		for (int i = 0; i < 300; ++i)
 		{
-			network.client.receivedEndOfTick(i + 2L, i);
+			network.client.receivedEndOfTick(i + 2L, latestCommitIncluded);
 			EntityLocation afterTick = projection.thisEntity.location();
 			// These values should be the same since the projection should be maintained on top.
 			Assert.assertEquals(afterMove, afterTick);
 			currentTimeMillis += 17L;
-			runner.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis);
+			runner.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 			afterMove = projection.thisEntity.location();
-			Assert.assertNotNull(network.toSend);
-			network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
+			if (null != network.toSend)
+			{
+				network.client.receivedEntityUpdate(clientId, FakeUpdateFactories.entityUpdate(projection.loadedCuboids, projection.authoritativeEntity, network.toSend));
+				latestCommitIncluded += 1L;
+			}
 			network.toSend = null;
 		}
 		// Compare this walked distance to what we have experimentally verified.
-		Assert.assertEquals(new EntityLocation(21.0f, 0.0f, 0.0f), projection.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(20.88f, 0.0f, 0.0f), projection.thisEntity.location());
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 
@@ -485,15 +520,27 @@ public class TestClientRunner
 		EntityChangeUseSelectedItemOnSelf eatChange = new EntityChangeUseSelectedItemOnSelf();
 		currentTimeMillis += 100L;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(bread));
 		
 		// Show that another attempt fails.
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		Assert.assertEquals(1, projection.thisEntity.inventory().getCount(bread));
 		
 		// Unless we pass some time.
 		currentTimeMillis += EntityChangeUseSelectedItemOnSelf.COOLDOWN_MILLIS;
 		runner.commonApplyEntityAction(eatChange, currentTimeMillis);
+		currentTimeMillis += 70L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 80L;
+		runner.standStill(currentTimeMillis);
 		Assert.assertEquals(0, projection.thisEntity.inventory().getCount(bread));
 		Assert.assertTrue(projection.events.isEmpty());
 	}
@@ -522,10 +569,8 @@ public class TestClientRunner
 		currentTimeMillis += 100L;
 		
 		// Set orientation and walk.
-		EntityChangeSetOrientation<IMutablePlayerEntity> jumpChange = new EntityChangeSetOrientation<>(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
-		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
-		currentTimeMillis += 100L;
-		runner.accelerateHorizontally(EntityChangeAccelerate.Relative.LEFT, currentTimeMillis);
+		runner.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		runner.moveHorizontal(EntityChangeTopLevelMovement.Relative.LEFT, currentTimeMillis);
 		currentTimeMillis += 100L;
 		
 		EntityLocation location = projection.thisEntity.location();
@@ -540,9 +585,10 @@ public class TestClientRunner
 	@Test
 	public void repair() throws Throwable
 	{
-		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
+		AbsoluteLocation changeLocation = new AbsoluteLocation(1, 0, 0);
 		CuboidAddress cuboidAddress = changeLocation.getCuboidAddress();
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress(), STONE.item().number());
 		cuboid.setData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress(), (short)150);
 		CuboidData serverCuboid = CuboidData.mutableClone(cuboid);
 		
@@ -570,14 +616,17 @@ public class TestClientRunner
 		
 		// Run a repair call and observe the damage value change.
 		currentTimeMillis += 100L;
-		runner.repairBlock(changeLocation, currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockRepair(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
 		// (they only send this after the next tick).
 		network.client.receivedEndOfTick(2L, 0L);
 		runner.runPendingCalls(currentTimeMillis);
 		
 		// Observe that this came out in the network.
-		Assert.assertTrue(network.toSend instanceof EntityChangeIncrementalBlockRepair);
+		Assert.assertTrue(network.toSend instanceof EntityChangeTopLevelMovement<IMutablePlayerEntity>);
 		Assert.assertTrue(1L == network.commitLevel);
 		
 		// They would normally send a setBlock but we will just echo the normal mutation, to keep this simple.
@@ -673,6 +722,8 @@ public class TestClientRunner
 		EntityChangeJump<IMutablePlayerEntity> jumpChange = new EntityChangeJump<>();
 		runner.commonApplyEntityAction(jumpChange, currentTimeMillis);
 		currentTimeMillis += 100L;
+		runner.standStill(currentTimeMillis);
+		currentTimeMillis += 100L;
 		
 		// We will apply the entity changes one behind our local client.
 		// Because we are capturing serverEntity from the local projection, this will fail in a sort of oscillating
@@ -680,9 +731,9 @@ public class TestClientRunner
 		Entity serverEntity = projection.thisEntity;
 		serverCommit = 1L;
 		
-		for (int i = 0; i < 13; ++i)
+		for (int i = 0; i < 14; ++i)
 		{
-			runner.doNothing(currentTimeMillis);
+			runner.standStill(currentTimeMillis);
 			
 			// Grab this entity and apply server change.
 			Entity temp = projection.thisEntity;

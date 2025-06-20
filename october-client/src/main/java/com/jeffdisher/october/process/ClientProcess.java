@@ -16,8 +16,11 @@ import com.jeffdisher.october.data.CuboidCodec;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.mutations.EntityChangeAccelerate;
-import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.net.NetworkClient;
 import com.jeffdisher.october.net.Packet;
@@ -245,7 +248,8 @@ public class ClientProcess
 	 */
 	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		_clientRunner.hitBlock(blockLocation, currentTimeMillis);
+		EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(blockLocation, (short)_clientRunner.millisPerTick);
+		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -258,8 +262,14 @@ public class ClientProcess
 	 */
 	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		_clientRunner.repairBlock(blockLocation, currentTimeMillis);
+		EntityChangeIncrementalBlockRepair change = new EntityChangeIncrementalBlockRepair(blockLocation, (short)_clientRunner.millisPerTick);
+		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
+	}
+
+	public void setOrientation(byte yaw, byte pitch)
+	{
+		_clientRunner.setOrientation(yaw, pitch);
 	}
 
 	/**
@@ -268,27 +278,12 @@ public class ClientProcess
 	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
 	 * least attempt to move in this way (and will send the change to the server).
 	 * 
-	 * @param direction The direction to move.
+	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontalFully(EntityChangeMove.Direction direction, long currentTimeMillis)
+	public void moveHorizontal(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
 	{
-		_clientRunner.moveHorizontalFully(direction, currentTimeMillis);
-		_runPendingCallbacks();
-	}
-
-	/**
-	 * Creates the change to move the entity from the current location in the speculative projection in the given
-	 * direction, relative to the current orientation, for the amount of time which has passed since the last call.
-	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
-	 * least attempt to move in this way (and will send the change to the server).
-	 * 
-	 * @param relativeDirection The direction to move, relative to the current orientation.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void accelerateHorizontally(EntityChangeAccelerate.Relative relativeDirection, long currentTimeMillis)
-	{
-		_clientRunner.accelerateHorizontally(relativeDirection, currentTimeMillis);
+		_clientRunner.moveHorizontal(relativeDirection, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -300,7 +295,8 @@ public class ClientProcess
 	 */
 	public void craft(Craft operation, long currentTimeMillis)
 	{
-		_clientRunner.craft(operation, currentTimeMillis);
+		EntityChangeCraft change = new EntityChangeCraft(operation, (short)_clientRunner.millisPerTick);
+		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -315,7 +311,8 @@ public class ClientProcess
 	 */
 	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
 	{
-		_clientRunner.craftInBlock(block, operation, currentTimeMillis);
+		EntityChangeCraftInBlock change = new EntityChangeCraftInBlock(block, operation, (short)_clientRunner.millisPerTick);
+		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}
 
@@ -326,7 +323,7 @@ public class ClientProcess
 	 */
 	public void doNothing(long currentTimeMillis)
 	{
-		_clientRunner.doNothing(currentTimeMillis);
+		_clientRunner.standStill(currentTimeMillis);
 		_runPendingCallbacks();
 	}
 

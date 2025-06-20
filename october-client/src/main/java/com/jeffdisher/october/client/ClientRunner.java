@@ -14,21 +14,13 @@ import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
-import com.jeffdisher.october.logic.SpatialHelpers;
-import com.jeffdisher.october.mutations.EntityChangeAccelerate;
-import com.jeffdisher.october.mutations.EntityChangeCraft;
-import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
-import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
-import com.jeffdisher.october.mutations.EntityChangeMove;
-import com.jeffdisher.october.mutations.EntityChangeTimeSync;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
-import com.jeffdisher.october.types.Craft;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EventRecord;
@@ -58,10 +50,8 @@ public class ClientRunner
 	private final IProjectionListener _projectionListener;
 	private final IListener _clientListener;
 	private SpeculativeProjection _projection;
+	private MovementAccumulator _accumulator;
 	private final List<Runnable> _pendingNetworkCallsToFlush;
-
-	// Variables related to our local cache of this entity's state.
-	private Entity _localEntityProjection;
 
 	// Variables related to moving calls from the network into the caller thread.
 	private final LockedList _callsFromNetworkToApply;
@@ -72,6 +62,9 @@ public class ClientRunner
 
 	// This is set once when the client connects and is only read after that.
 	private int _serverMaximumViewDistance;
+
+	// We leave this time public as callers need it and it is only set on initial connection.
+	public long millisPerTick;
 
 	public ClientRunner(IClientAdapter network, IProjectionListener projectionListener, IListener clientListener)
 	{
@@ -99,8 +92,8 @@ public class ClientRunner
 	 */
 	public void commonApplyEntityAction(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
 	{
-		// Some of these events take no real time so we just pass them through, no matter how much time has passed.
-		_applyLocalChange(change, currentTimeMillis);
+		// Note that this might fail.
+		_accumulator.enqueueSubAction(change);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;
 	}
@@ -121,44 +114,9 @@ public class ClientRunner
 		}
 	}
 
-	/**
-	 * Sends a single break block change, targeting the given block location.  Note that it typically takes many such
-	 * changes to break a block.
-	 * 
-	 * @param blockLocation The location of the block to break.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
+	public void setOrientation(byte yaw, byte pitch)
 	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			EntityChangeIncrementalBlockBreak hit = new EntityChangeIncrementalBlockBreak(blockLocation, (short)millisToApply);
-			_applyLocalChange(hit, currentTimeMillis);
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
-	}
-
-	/**
-	 * Sends a single repair block change, targeting the given block location.  Note that it may take many such
-	 * changes to fully repair a block.
-	 * 
-	 * @param blockLocation The location of the block to repair.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void repairBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
-	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			EntityChangeIncrementalBlockRepair repair = new EntityChangeIncrementalBlockRepair(blockLocation, (short)millisToApply);
-			_applyLocalChange(repair, currentTimeMillis);
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
+		_accumulator.setOrientation(yaw, pitch);
 	}
 
 	/**
@@ -167,121 +125,29 @@ public class ClientRunner
 	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
 	 * least attempt to move in this way (and will send the change to the server).
 	 * 
-	 * @param direction The direction to move.
+	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontalFully(EntityChangeMove.Direction direction, long currentTimeMillis)
+	public void moveHorizontal(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
 	{
-		// Make sure that at least some time has passed.
-		if (currentTimeMillis > _lastCallMillis)
-		{
-			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeMove.LIMIT_COST_MILLIS);
-			
-			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
-			EntityChangeMove<IMutablePlayerEntity> moveChange = new EntityChangeMove<>(millisFree, 1.0f, direction);
-			_applyLocalChange(moveChange, currentTimeMillis);
-			
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
-	}
-
-	/**
-	 * Creates the change to move the entity from the current location in the speculative projection in the given
-	 * direction, relative to the current orientation, for the amount of time which has passed since the last call.
-	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
-	 * least attempt to move in this way (and will send the change to the server).
-	 * 
-	 * @param relativeDirection The direction to move, relative to the current orientation.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void accelerateHorizontally(EntityChangeAccelerate.Relative relativeDirection, long currentTimeMillis)
-	{
-		// Make sure that at least some time has passed.
-		if (currentTimeMillis > _lastCallMillis)
-		{
-			long millisFree = Math.min(currentTimeMillis - _lastCallMillis, EntityChangeAccelerate.LIMIT_COST_MILLIS);
-			
-			// Move to this location and update our last movement time accordingly (since it may not be the full time we calculated).
-			EntityChangeAccelerate<IMutablePlayerEntity> accelerate = new EntityChangeAccelerate<>(millisFree, relativeDirection);
-			_applyLocalChange(accelerate, currentTimeMillis);
-			
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
-	}
-
-	/**
-	 * Requests a crafting operation start.
-	 * NOTE:  We will continue this in our "doNothing" calls.
-	 * 
-	 * @param operation The crafting operation to run.
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void craft(Craft operation, long currentTimeMillis)
-	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			_commonCraft(operation, currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
-	}
-
-	/**
-	 * Requests that we start or continue a crafting operation in a block.  Note that these calls must be made
-	 * explicitly and cannot be implicitly continued in "doNothing" the way some other crafting operations can be, since
-	 * we don't know what the user is looking at.
-	 * 
-	 * @param block The crafting station location.
-	 * @param operation The crafting operation to run (can be null if just continuing what is already happening).
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void craftInBlock(AbsoluteLocation block, Craft operation, long currentTimeMillis)
-	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			// We will account for how much time we have waited since the last action.
-			EntityChangeCraftInBlock craftOperation = new EntityChangeCraftInBlock(block, operation, millisToApply);
-			_applyLocalChange(craftOperation, currentTimeMillis);
-			_runAllPendingCalls(currentTimeMillis);
-			_lastCallMillis = currentTimeMillis;
-		}
-	}
-
-	/**
-	 * Allows time to pass to account for things like falling, crafting, etc.
-	 * 
-	 * @param currentTimeMillis The current time, in milliseconds.
-	 */
-	public void doNothing(long currentTimeMillis)
-	{
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		// Only apply this if it has been running for a while.
-		if (millisToApply > TIME_GATE_MILLIS)
-		{
-			if (null != _localEntityProjection.localCraftOperation())
-			{
-				// We are crafting something, so continue with that.
-				_commonCraft(_localEntityProjection.localCraftOperation().selectedCraft(), currentTimeMillis);
-			}
-			else if ((0.0f != _localEntityProjection.velocity().z()) || !SpatialHelpers.isStandingOnGround(_projection.projectionBlockLoader, _localEntityProjection.location(), Environment.getShared().creatures.PLAYER.volume()))
-			{
-				// We are passively moving (in a jump or falling) so create a time-passing mutation to keep us in sync with the server.
-				EntityChangeTimeSync sync = new EntityChangeTimeSync(millisToApply);
-				_applyLocalChange(sync, currentTimeMillis);
-			}
-			else
-			{
-				// If we are just standing still and not mid-craft, we don't even need to consult the projection since
-				// nothing is moving (it only simulates time for the local entity).
-			}
-			_lastCallMillis = currentTimeMillis;
-		}
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.move(currentTimeMillis, relativeDirection);
+		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
+	}
+
+	/**
+	 * Just passes time, standing still, allowing for things like falling or just time passing.
+	 * 
+	 * @param currentTimeMillis The current time, in milliseconds.
+	 */
+	public void standStill(long currentTimeMillis)
+	{
+		// We will interpret this as just standing, since that also accounts for falling.
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.stand(currentTimeMillis);
+		_endAction(complete, currentTimeMillis);
+		_runAllPendingCalls(currentTimeMillis);
+		_lastCallMillis = currentTimeMillis;
 	}
 
 	/**
@@ -346,25 +212,20 @@ public class ClientRunner
 		}
 	}
 
-	private void _applyLocalChange(IMutationEntity<IMutablePlayerEntity> change, long currentTimeMillis)
+	private void _endAction(EntityChangeTopLevelMovement<IMutablePlayerEntity> optionalOutput, long currentTimeMillis)
 	{
-		long localCommit = _projection.applyLocalChange(change, currentTimeMillis);
-		if (localCommit > 0L)
+		if (null != optionalOutput)
 		{
-			// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
-			_pendingNetworkCallsToFlush.add(() -> {
-				_network.sendChange(change, localCommit);
-			});
+			long localCommit = _projection.applyLocalChange(optionalOutput, currentTimeMillis);
+			if (localCommit > 0L)
+			{
+				// This was applied locally so package it up to send to the server.  Currently, we will only flush network calls when we receive a new tick (but this will likely change).
+				_pendingNetworkCallsToFlush.add(() -> {
+					_network.sendChange(optionalOutput, localCommit);
+				});
+			}
 		}
-	}
-
-	private void _commonCraft(Craft operation, long currentTimeMillis)
-	{
-		// We will account for how much time we have waited since the last action.
-		long millisToApply = (currentTimeMillis - _lastCallMillis);
-		EntityChangeCraft craftOperation = new EntityChangeCraft(operation, millisToApply);
-		_applyLocalChange(craftOperation, currentTimeMillis);
-		_runAllPendingCalls(currentTimeMillis);
+		_accumulator.applyLocalAccumulation(currentTimeMillis);
 	}
 
 
@@ -372,6 +233,7 @@ public class ClientRunner
 	{
 		// Since we get lots of small callbacks, we buffer them here, in the network thread, before passing back the
 		// finished tick data (just avoids a lot of tiny calls between threads to perform the same trivial action).
+		private boolean _didInitialize = false;
 		private Entity _thisEntity = null;
 		private List<PartialEntity> _addedEntities = new ArrayList<>();
 		private List<IReadOnlyCuboidData> _addedCuboids = new ArrayList<>();
@@ -392,8 +254,10 @@ public class ClientRunner
 				// We create the projection here.
 				// We will locally wrap the projection listener we were given so that we will always know the properties of the entity.
 				_projection = new SpeculativeProjection(assignedId, new LocalProjection(), millisPerTick);
+				_accumulator = new MovementAccumulator(_projectionListener, millisPerTick, Environment.getShared().creatures.PLAYER.volume(), currentTimeMillis);
 				_lastCallMillis = currentTimeMillis;
 				_serverMaximumViewDistance = viewDistanceMaximum;
+				ClientRunner.this.millisPerTick = millisPerTick;
 				// Notify the listener that we were assigned an ID.
 				_clientListener.clientDidConnectAndLogin(assignedId);
 			});
@@ -502,6 +366,7 @@ public class ClientRunner
 				if (null != thisEntity)
 				{
 					_projection.setThisEntity(thisEntity);
+					_accumulator.setThisEntity(thisEntity);
 				}
 				_projection.applyChangesForServerTick(tickNumber
 						, addedEntities
@@ -515,6 +380,11 @@ public class ClientRunner
 						, latestLocalCommitIncluded
 						, currentTimeMillis
 				);
+				if (!_didInitialize)
+				{
+					_accumulator.clearAccumulation(currentTimeMillis);
+					_didInitialize = true;
+				}
 			});
 		}
 		@Override
@@ -571,6 +441,7 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
+			_accumulator.setCuboid(cuboid, cuboidHeightMap);
 		}
 		@Override
 		public void cuboidDidChange(IReadOnlyCuboidData cuboid
@@ -582,41 +453,46 @@ public class ClientRunner
 		{
 			// Ignored.
 			_projectionListener.cuboidDidChange(cuboid, cuboidHeightMap, columnHeightMap, changedBlocks, changedAspects);
+			_accumulator.setCuboid(cuboid, cuboidHeightMap);
 		}
 		@Override
 		public void cuboidDidUnload(CuboidAddress address)
 		{
 			// Ignored.
 			_projectionListener.cuboidDidUnload(address);
+			_accumulator.removeCuboid(address);
 		}
 		@Override
 		public void thisEntityDidLoad(Entity authoritativeEntity)
 		{
 			// We will start with the authoritative data since their is no client-divergence, yet.
-			_localEntityProjection = authoritativeEntity;
 			_projectionListener.thisEntityDidLoad(authoritativeEntity);
+			_accumulator.setThisEntity(authoritativeEntity);
 		}
 		@Override
 		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
 			// We only use the projected entity in this class since the authoritative is just for reporting stable numbers.
-			_localEntityProjection = projectedEntity;
 			_projectionListener.thisEntityDidChange(authoritativeEntity, projectedEntity);
+			_accumulator.setThisEntity(projectedEntity);
 		}
 		@Override
 		public void otherEntityDidLoad(PartialEntity entity)
 		{
 			_projectionListener.otherEntityDidLoad(entity);
+			_accumulator.setOtherEntity(entity);
 		}
 		@Override
 		public void otherEntityDidChange(PartialEntity entity)
 		{
 			_projectionListener.otherEntityDidChange(entity);
+			_accumulator.setOtherEntity(entity);
 		}
 		@Override
 		public void otherEntityDidUnload(int id)
 		{
 			_projectionListener.otherEntityDidUnload(id);
+			_accumulator.removeOtherEntity(id);
 		}
 		@Override
 		public void tickDidComplete(long gameTick)

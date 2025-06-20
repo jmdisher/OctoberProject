@@ -8,7 +8,9 @@ import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.process.ClientProcess;
@@ -156,7 +158,26 @@ public class AutoWalkingClient
 			}
 			else
 			{
-				client.moveHorizontalFully(command.direction, currentTimeMillis);
+				byte yaw;
+				switch (command.direction)
+				{
+				case EAST:
+					yaw = OrientationHelpers.YAW_EAST;
+					break;
+				case NORTH:
+					yaw = OrientationHelpers.YAW_NORTH;
+					break;
+				case SOUTH:
+					yaw = OrientationHelpers.YAW_SOUTH;
+					break;
+				case WEST:
+					yaw = OrientationHelpers.YAW_WEST;
+					break;
+				default:
+					throw Assert.unreachable();
+				}
+				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
+				client.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 			}
 		}
 		client.disconnect();

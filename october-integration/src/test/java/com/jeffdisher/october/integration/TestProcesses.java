@@ -19,7 +19,9 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.persistence.ResourceLoader;
 import com.jeffdisher.october.process.ClientProcess;
@@ -143,8 +145,14 @@ public class TestProcesses
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		Thread.sleep(millisInStep);
-		client.moveHorizontalFully(EntityChangeMove.Direction.EAST, System.currentTimeMillis());
+		client.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+		long millisRemaining = millisInStep;
+		while (millisRemaining > 0L)
+		{
+			Thread.sleep(MILLIS_PER_TICK);
+			client.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, System.currentTimeMillis());
+			millisRemaining -= MILLIS_PER_TICK;
+		}
 		long serverTick = server.waitForTicksToPass(2L);
 		client.waitForTick(serverTick, System.currentTimeMillis());
 		Assert.assertEquals(newLocation, listener.getLocalEntity().location());
@@ -187,10 +195,13 @@ public class TestProcesses
 		// Wait a few ticks and verify that they are below the starting location.
 		// Empty move changes allow us to account for falling in a way that the client controls (avoids synchronized writers over the network).
 		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 2, System.currentTimeMillis());
-		// (we need to do 2 since the first move starts falling and the second will actually do the fall)
+		client.waitForTick(startTick + 4L, System.currentTimeMillis());
 		client.doNothing(System.currentTimeMillis());
-		client.waitForTick(startTick + 3, System.currentTimeMillis());
+		client.waitForTick(startTick + 5L, System.currentTimeMillis());
+		client.doNothing(System.currentTimeMillis());
+		client.waitForTick(startTick + 6L, System.currentTimeMillis());
+		client.doNothing(System.currentTimeMillis());
+		client.waitForTick(startTick + 7L, System.currentTimeMillis());
 		
 		EntityLocation location = listener.getLocalEntity().location();
 		Assert.assertEquals(0.0f, location.x(), 0.01f);
@@ -303,15 +314,18 @@ public class TestProcesses
 		{
 			location1 = new EntityLocation(location1.x() + horizontalDistancePerTick, location1.y(), location1.z());
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
-			client1.moveHorizontalFully(EntityChangeMove.Direction.EAST, currentTimeMillis[0]);
-			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
+			client1.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
+			client1.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis[0]);
+			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
+			client2.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		// We want client2 to walk further.
 		for (int i = 0; i < 5; ++i)
 		{
 			location2 = new EntityLocation(location2.x(), location2.y() - horizontalDistancePerTick, location2.z());
-			client2.moveHorizontalFully(EntityChangeMove.Direction.SOUTH, currentTimeMillis[0]);
+			client2.setOrientation(OrientationHelpers.YAW_SOUTH, OrientationHelpers.PITCH_FLAT);
+			client2.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis[0]);
 			currentTimeMillis[0] += MILLIS_PER_TICK;
 		}
 		
