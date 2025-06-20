@@ -26,6 +26,10 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	 * We will require that the change in z-vector is within 90% of what gravity dictates (rounding errors, etc).
 	 */
 	public static final float Z_VECTOR_ACCURACY_THRESHOLD = 0.9f;
+	/**
+	 * Due to rounding errors, a single horizontal movement may need a nudge to pass checks.
+	 */
+	public static final float HORIZONTAL_SINGLE_FUDGE = 0.01f;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -99,10 +103,17 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		{
 			_subAction.applyChange(context, newEntity);
 		}
+		else
+		{
+			// If there is no sub-action, clear whatever partial action we may have been performing.
+			newEntity.resetLongRunningOperations();
+		}
 		EntityLocation startLocation = newEntity.getLocation();
 		EntityLocation startVelocity = newEntity.getVelocityVector();
 		EntityVolume volume = newEntity.getType().volume();
 		float seconds = ((float)_millis / 1000.0f);
+		float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
+		float startInverseViscosity = 1.0f - startViscosity;
 		
 		// Check the change is z-velocity from start-end.
 		float newZVelocity = _newVelocity.z();
@@ -116,8 +127,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			if (!isTerminal && !isOnGround)
 			{
 				// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
-				float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
-				float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+				float startEffectiveGravity = startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 				// We want to round the expected delta.
 				float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 				if (0.0f != expectedZDelta)
@@ -128,15 +138,14 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		}
 		else
 		{
-			float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
-			float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+			float startEffectiveGravity = startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 			// We want to round the expected delta.
 			float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 			boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
 			if (!isValidFall)
 			{
 				// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
-				boolean didHitGround = (0.0f == _newVelocity.z()) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
+				boolean didHitGround = (0.0f == _newVelocity.z()) && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, _newLocation, volume);
 				if (!didHitGround)
 				{
 					// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
@@ -155,12 +164,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			}
 		}
 		
-		// Check that the final location is not in solid blocks.
-		if (!SpatialHelpers.canExistInLocation(context.previousBlockLookUp, _newLocation, volume))
-		{
-			forceFailure = true;
-		}
-		
 		// Check that their movement was possible within their velocity (any of start/end/intensity).
 		float intensityVelocityPerSecond = (Intensity.WALKING == _intensity)
 			? newEntity.getType().blocksPerSecond()
@@ -170,12 +173,19 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		float minXVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.x(), startVelocity.x()));
 		float maxYVelocity = Math.max(intensityVelocityPerSecond, Math.max(_newVelocity.y(), startVelocity.y()));
 		float minYVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.y(), startVelocity.y()));
-		float deltaX = _newLocation.x() - startLocation.x();
-		float deltaY = _newLocation.y() - startLocation.y();
-		boolean isValidDistance = ((deltaX <= (seconds * maxXVelocity)) || (deltaX <= (seconds * minXVelocity)))
-				&& ((deltaY <= (seconds * maxYVelocity)) || (deltaY <= (seconds * minYVelocity)))
+		float deltaX = EntityLocation.roundToHundredths(_newLocation.x() - startLocation.x());
+		float deltaY = EntityLocation.roundToHundredths(_newLocation.y() - startLocation.y());
+		boolean isValidDistance = ((deltaX <= EntityLocation.roundToHundredths(seconds * maxXVelocity + HORIZONTAL_SINGLE_FUDGE)) || (deltaX <= EntityLocation.roundToHundredths(seconds * minXVelocity - HORIZONTAL_SINGLE_FUDGE)))
+				&& ((deltaY <= EntityLocation.roundToHundredths(seconds * maxYVelocity + HORIZONTAL_SINGLE_FUDGE)) || (deltaY <= EntityLocation.roundToHundredths(seconds * minYVelocity - HORIZONTAL_SINGLE_FUDGE)))
 		;
 		if (!isValidDistance)
+		{
+			forceFailure = true;
+		}
+		
+		// Check that the final location is not in solid blocks (unless we aren't moving - they are allowed to stand in a solid block).
+		boolean isMoving = (0.0f != deltaX) || (0.0f != deltaY);
+		if (isMoving && !SpatialHelpers.canExistInLocation(context.previousBlockLookUp, _newLocation, volume))
 		{
 			forceFailure = true;
 		}
@@ -186,7 +196,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
 			&& (yVDelta <= intensityVelocityPerSecond)
 		;
-		if (!isValidAcceleration)
+		boolean isNaturalDeceleration = (xVDelta == (startInverseViscosity * startVelocity.x()))
+				&& (yVDelta == (startInverseViscosity * startVelocity.y()));
+		if (!isValidAcceleration && !isNaturalDeceleration)
 		{
 			forceFailure = true;
 		}

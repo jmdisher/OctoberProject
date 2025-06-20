@@ -21,9 +21,12 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.mutations.EntityChangeCraft;
+import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeSwim;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
+import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -47,6 +50,7 @@ public class TestMovementAccumulator
 	public static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
+	private static Item LOG_ITEM;
 	private static Block STONE;
 	private static Block WATER_SOURCE;
 	@BeforeClass
@@ -54,6 +58,7 @@ public class TestMovementAccumulator
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
+		LOG_ITEM = ENV.items.getItemById("op.log");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
 		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 	}
@@ -113,10 +118,11 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
-		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
-		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		listener.thisEntityDidLoad(entity);
 		accumulator.clearAccumulation(currentTimeMillis);
+		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		
 		// Walk until the action is generated.
 		currentTimeMillis += 50L;
@@ -517,6 +523,139 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
+	@Test
+	public void tinyOverflow() throws Throwable
+	{
+		// Show that 1 ms of overflow into the following tick doesn't cause a failure due to thinking we are standing)
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		Entity entity = MutableEntity.createForTest(1).freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		
+		// Walk until the action is generated.
+		currentTimeMillis += 50L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.move(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 0.0f), listener.thisEntity.velocity());
+		// We spill by only 1 ms since that will cause any movement to round down while the velocity is still set.
+		currentTimeMillis += 51L;
+		out = accumulator.move(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
+		Assert.assertNotNull(out);
+		
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
+		// NOTE:  This z-vector should be 0.0 but the step is so small it can't realize a collision with the ground.
+		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.01f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void interruptCraft() throws Throwable
+	{
+		// Show that a partial crafting operation will be abandoned if the following tick doesn't continue it.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData blockingCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		CuboidHeightMap blockingMap = HeightMapHelpers.buildHeightMap(blockingCuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+			, blockingCuboid.getCuboidAddress(), blockingMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(LOG_ITEM, 1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		accumulator.setCuboid(blockingCuboid, blockingMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
+		accumulator.clearAccumulation(currentTimeMillis);
+		
+		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
+		long millisPerMove = millisPerTick;
+		currentTimeMillis += millisPerMove;
+		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks"), millisPerMove));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
+		
+		// Now, run another standing tick and see that it is dropped.
+		// NOTE:  We need to move to force the generation of the actual action or we will be considered doing nothing and it will still wait.
+		currentTimeMillis += millisPerMove;
+		out = accumulator.move(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertNull(listener.thisEntity.localCraftOperation());
+		Assert.assertEquals(4, listener.thisEntity.inventory().currentEncumbrance);
+	}
+
+	@Test
+	public void breakWhileInBlock() throws Throwable
+	{
+		// Show that we can break a block even when encased in stone.
+		long millisPerTick = 100L;
+		long currentTimeMillis = 1000L;
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		CuboidHeightMap cuboidMap = HeightMapHelpers.buildHeightMap(cuboid);
+		ColumnHeightMap columnMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboid.getCuboidAddress(), cuboidMap
+		)).values().iterator().next();
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newInventory.addAllItems(LOG_ITEM, 1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		accumulator.setCuboid(cuboid, cuboidMap);
+		listener.thisEntityDidLoad(entity);
+		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
+		accumulator.clearAccumulation(currentTimeMillis);
+		
+		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
+		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
+		long millisPerMove = millisPerTick;
+		currentTimeMillis += millisPerMove;
+		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock, (short)millisPerTick));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += millisPerMove;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals((short)100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()));
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
@@ -580,7 +719,18 @@ public class TestMovementAccumulator
 			}
 			, null
 			, null
-			, null
+			, new TickProcessingContext.IMutationSink() {
+				@Override
+				public void next(IMutationBlock mutation)
+				{
+					// Do nothing.
+				}
+				@Override
+				public void future(IMutationBlock mutation, long millisToDelay)
+				{
+					// Do nothing.
+				}
+			}
 			, null
 			, null
 			, null
