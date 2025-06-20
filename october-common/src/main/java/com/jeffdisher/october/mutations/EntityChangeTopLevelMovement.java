@@ -119,7 +119,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
 				float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 				// We want to round the expected delta.
-				float expectedZDelta = new EntityLocation(0.0f, 0.0f, seconds * startEffectiveGravity).z();
+				float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 				if (0.0f != expectedZDelta)
 				{
 					forceFailure = true;
@@ -131,7 +131,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
 			float startEffectiveGravity = (1.0f - startViscosity) * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
 			// We want to round the expected delta.
-			float expectedZDelta = new EntityLocation(0.0f, 0.0f, seconds * startEffectiveGravity).z();
+			float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 			boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
 			if (!isValidFall)
 			{

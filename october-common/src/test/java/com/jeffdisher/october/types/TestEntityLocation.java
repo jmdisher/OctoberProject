@@ -57,5 +57,9 @@ public class TestEntityLocation
 		Assert.assertEquals( 0.00f, negative.x(), 0.0001f);
 		Assert.assertEquals(-1.88f, negative.y(), 0.0001f);
 		Assert.assertEquals(-2.35f, negative.z(), 0.0001f);
+		
+		Assert.assertEquals( 0.00f, EntityLocation.roundToHundredths(-0.001f), 0.0001f);
+		Assert.assertEquals(-1.88f, EntityLocation.roundToHundredths(-1.885f), 0.0001f);
+		Assert.assertEquals(-2.35f, EntityLocation.roundToHundredths(-2.347f), 0.0001f);
 	}
 }

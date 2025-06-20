@@ -36,6 +36,17 @@ public final record EntityLocation(float x, float y, float z)
 		return new EntityLocation(x, y, z);
 	}
 
+	/**
+	 * This helper rounds the given float to the nearest 0.01.
+	 * 
+	 * @param f The float to round.
+	 * @return The float rounded to the nearest hundredth.
+	 */
+	public static float roundToHundredths(float f)
+	{
+		return _roundToHundredths(f);
+	}
+
 
 	private static int _blockBase(float inBlock)
 	{
