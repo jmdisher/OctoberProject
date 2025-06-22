@@ -6,11 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
-import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
-import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -47,7 +44,6 @@ public class CrowdProcessor
 	 * @param context The context used for running changes.
 	 * @param changesToRun The map of changes to run in this tick, keyed by the ID of the entity on which they are
 	 * scheduled.
-	 * @param useLegacyMovement True if gravity and position updates should be handled here (as opposed to the new
 	 * design where this is done in EntityChangeTopLevelMovement).
 	 * @return The subset of the changesToRun work which was completed by this thread.
 	 */
@@ -55,7 +51,6 @@ public class CrowdProcessor
 			, Map<Integer, Entity> entitiesById
 			, TickProcessingContext context
 			, Map<Integer, List<ScheduledChange>> changesToRun
-			, boolean useLegacyMovement
 	)
 	{
 		Map<Integer, Entity> updatedEntities = new HashMap<>();
@@ -86,12 +81,7 @@ public class CrowdProcessor
 				processor.entitiesProcessed += 1;
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
-				TickUtils.IFallDamage damageApplication = (int damage) ->{
-					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, mutable, (byte)damage, EventRecord.Cause.FALL);
-				};
 				List<ScheduledChange> changes = changesToRun.get(id);
-				long millisAtEndOfTick = context.millisPerTick;
-				boolean shouldApplyMovement = useLegacyMovement;
 				if (null != changes)
 				{
 					for (ScheduledChange scheduled : changes)
@@ -104,24 +94,6 @@ public class CrowdProcessor
 							boolean didApply = change.applyChange(context, mutable);
 							if (didApply)
 							{
-								// If this applied, account for time passing.
-								long millisInChange = change.getTimeCostMillis();
-								if (millisInChange > 0L)
-								{
-									// TODO:  Remove this special-case when EntityChangeTopLevelMovement is the only top-level from clients.
-									if (change instanceof EntityChangeTopLevelMovement)
-									{
-										shouldApplyMovement = false;
-									}
-									if (shouldApplyMovement)
-									{
-										TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisInChange);
-									}
-									// WARNING:  Due to the way "in-progress" changes are handled, this may underflow
-									// into the negative so the accounting for movement may double-count when these
-									// changes span ticks.
-									millisAtEndOfTick -= millisInChange;
-								}
 								committedMutationCount += 1;
 							}
 						}
@@ -143,10 +115,6 @@ public class CrowdProcessor
 				}
 				
 				// Account for time passing.
-				if (shouldApplyMovement && (millisAtEndOfTick > 0L))
-				{
-					TickUtils.allowMovement(context.previousBlockLookUp, damageApplication, mutable, millisAtEndOfTick);
-				}
 				TickUtils.endOfTick(context, mutable);
 				
 				// If there was a change, we want to send it back so that the snapshot can be updated and clients can be informed.

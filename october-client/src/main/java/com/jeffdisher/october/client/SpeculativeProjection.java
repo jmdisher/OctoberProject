@@ -660,7 +660,6 @@ public class SpeculativeProjection
 				, (null != entity) ? Map.of(entityId, entity) : Map.of()
 				, context
 				, Map.of(entityId, scheduled)
-				, false
 		);
 		return (innerGroup.committedMutationCount() > 0)
 				? new Entity[] { innerGroup.updatedEntities().get(entityId) }
