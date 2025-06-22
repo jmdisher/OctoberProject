@@ -354,22 +354,8 @@ public class MovementAccumulator
 	}
 
 
-	private EntityChangeTopLevelMovement.Intensity _findActionIntensity(EntityLocation location)
-	{
-		// For now, we will just look at x/y movement (this might not be ideal if coasting in the air).
-		EntityLocation knownLocation = _thisEntity.location();
-		EntityChangeTopLevelMovement.Intensity intensity = ((location.y() == knownLocation.y()) && (location.x() == knownLocation.x()))
-			? EntityChangeTopLevelMovement.Intensity.STANDING
-			: EntityChangeTopLevelMovement.Intensity.WALKING
-		;
-		return intensity;
-	}
-
 	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _buildFromAccumulation()
 	{
-		// For now, we will determine if we are standing or walking based on whether or not we moved horizontally.
-		EntityChangeTopLevelMovement.Intensity intensity = _findActionIntensity(_newLocation);
-		
 		// If we are standing on solid blocks, we want to cancel all velocity (we currently assume all solid blocks have 100% friction).
 		if (SpatialHelpers.isStandingOnGround(_proxyLookup, _newLocation, _playerVolume))
 		{
@@ -396,7 +382,7 @@ public class MovementAccumulator
 		{
 			result = new EntityChangeTopLevelMovement<>(_newLocation
 				, _newVelocity
-				, intensity
+				, _intensity
 				, _newYaw
 				, _newPitch
 				, _subAction
