@@ -22,11 +22,13 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.mutations.EntityChangeSetDayAndSpawn;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -252,7 +254,7 @@ public class TestServerRunner
 	@Test
 	public void entityFalling() throws Throwable
 	{
-		// Do nothing and observe that we see location updates from the server as the entity falls.
+		// Do nothing and observe that the entity doesn't fall, since that is now client-owned state.
 		TestAdapter network = new TestAdapter();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
@@ -283,12 +285,11 @@ public class TestServerRunner
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		MutableEntity mutable = MutableEntity.existing(entity);
 		((MutationEntitySetEntity)change0).applyToEntity(mutable);
-		Assert.assertTrue(mutable.newLocation.z() < start.z());
-		EntityLocation first = mutable.newLocation;
+		Assert.assertEquals(mutable.newLocation.z(), start.z(), 0.001f);
 		Object change1 = network.waitForUpdate(clientId, 2);
 		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
 		((MutationEntitySetEntity)change1).applyToEntity(mutable);
-		Assert.assertTrue(mutable.newLocation.z() < first.z());
+		Assert.assertEquals(mutable.newLocation.z(), start.z(), 0.001f);
 		
 		runner.shutdown();
 	}
@@ -376,7 +377,9 @@ public class TestServerRunner
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, -0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.WEST);
+		EntityLocation firstStep = new EntityLocation(-0.4f, 0.0f, 0.0f);
+		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);
@@ -654,7 +657,11 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// Move them slightly so that they aren't on the world spawn.
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(100L, 1.0f, EntityChangeMove.Direction.NORTH);
+		EntityLocation firstStep = new EntityLocation(0.0f, 0.4f, 0.0f);
+		float speed = ENV.creatures.PLAYER.blocksPerSecond();
+		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.0f, 0.4f);
+		EntityLocation velocity = new EntityLocation(0.0f, speed, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -745,9 +752,9 @@ public class TestServerRunner
 	}
 
 	@Test
-	public void pauseWhileFalling() throws Throwable
+	public void pauseAndResume() throws Throwable
 	{
-		// Show that pausing the server will stop updates from the server and resuming will allow them to continue as expected.
+		// Show that tick processing resumes after a pause and resume.
 		TestAdapter network = new TestAdapter();
 		WorldConfig config = new WorldConfig();
 		config.worldSpawn = MutableEntity.TESTING_LOCATION.getBlockLocation();
@@ -770,7 +777,6 @@ public class TestServerRunner
 		server.clientConnected(clientId, null, "name");
 		Entity entity = network.waitForThisEntity(clientId);
 		Assert.assertNotNull(entity);
-		EntityLocation start = entity.location();
 		network.waitForCuboidAddedCount(clientId, 2);
 		
 		// Pause for several ticks, observe the ticks stopped arriving, then resume and observe that the falling continues as expected.
@@ -779,21 +785,12 @@ public class TestServerRunner
 		long lastTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
 		// Pause for 5 ticks.
 		Thread.sleep(5 * millisPerTick);
-		int updateCount = network.countClientUpdates(clientId);
 		long laterTickNumber = monitoringAgent.getLastSnapshot().tickNumber();
 		Assert.assertTrue((laterTickNumber - lastTickNumber) <= 1);
 		monitoringAgent.getCommandSink().resumeTickProcessing();
 		
-		Object change0 = network.waitForUpdate(clientId, updateCount);
-		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
-		MutableEntity mutable = MutableEntity.existing(entity);
-		((MutationEntitySetEntity)change0).applyToEntity(mutable);
-		Assert.assertTrue(mutable.newLocation.z() < start.z());
-		EntityLocation first = mutable.newLocation;
-		Object change1 = network.waitForUpdate(clientId, updateCount + 1);
-		Assert.assertTrue(change1 instanceof MutationEntitySetEntity);
-		((MutationEntitySetEntity)change1).applyToEntity(mutable);
-		Assert.assertTrue(mutable.newLocation.z() < first.z());
+		// Just verify that another few ticks are produced.
+		network.waitForServer(2L);
 		
 		runner.shutdown();
 	}
@@ -1044,10 +1041,6 @@ public class TestServerRunner
 				this.wait();
 			}
 			return updates.get(index);
-		}
-		public synchronized int countClientUpdates(int clientId) throws InterruptedException
-		{
-			return this.clientUpdates.get(clientId).size();
 		}
 		public synchronized String waitForChatMessage(int clientId, int index) throws InterruptedException
 		{

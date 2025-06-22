@@ -58,11 +58,6 @@ public class FakeUpdateFactories
 		MutableEntity newEntity = MutableEntity.existing(entity);
 		mutation.applyChange(context, newEntity);
 		// We also need the corresponding end of tick.
-		long millisInChange = mutation.getTimeCostMillis();
-		if (millisInChange > 0L)
-		{
-			TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, millisInChange);
-		}
 		TickUtils.endOfTick(context, newEntity);
 		return new MutationEntitySetEntity(newEntity.freeze());
 	}

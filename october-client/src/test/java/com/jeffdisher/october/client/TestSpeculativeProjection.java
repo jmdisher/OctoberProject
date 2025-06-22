@@ -31,7 +31,6 @@ import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
-import com.jeffdisher.october.mutations.EntityChangeAccelerate;
 import com.jeffdisher.october.mutations.EntityChangeAcceptItems;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
@@ -41,6 +40,7 @@ import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.mutations.EntityChangeSetOrientation;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationBlock;
 import com.jeffdisher.october.mutations.MutationBlockExtractItems;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
@@ -912,11 +912,13 @@ public class TestSpeculativeProjection
 		
 		// Apply the 2 steps of the move, locally.
 		// (note that 0.4 is the limit for one tick)
+		EntityLocation firstStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
+		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		long commit1 = projector.applyLocalChange(move1, currentTimeMillis);
 		long commit2 = projector.applyLocalChange(move2, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
@@ -1571,13 +1573,15 @@ public class TestSpeculativeProjection
 		
 		// Apply 3 steps, locally.
 		// (note that 0.4 is the limit for one tick)
+		EntityLocation firstStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
 		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move1 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		EntityChangeMove<IMutablePlayerEntity> move2 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		EntityChangeMove<IMutablePlayerEntity> move3 = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
+		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(secondStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move3 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		long commit1 = projector.applyLocalChange(move1, currentTimeMillis);
 		long commit2 = projector.applyLocalChange(move2, currentTimeMillis);
 		long commit3 = projector.applyLocalChange(move3, currentTimeMillis);
@@ -1992,45 +1996,20 @@ public class TestSpeculativeProjection
 		EntityLocation initialLocation = listener.authoritativeEntityState.location();
 		
 		// Change orientation and move, locally.
-		byte yaw = 30;
+		byte yaw = -34;
 		byte pitch = 20;
-		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
 		EntityLocation targetLocation = new EntityLocation(0.24f, 0.22f, 0.0f);
-		EntityChangeAccelerate<IMutablePlayerEntity> move = new EntityChangeAccelerate<>(100L, EntityChangeAccelerate.Relative.RIGHT);
-		long commit1 = projector.applyLocalChange(set, currentTimeMillis);
-		long commit2 = projector.applyLocalChange(move, currentTimeMillis);
+		EntityLocation velocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(targetLocation, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, yaw, pitch, null, 100L);
+		long commit1 = projector.applyLocalChange(move, currentTimeMillis);
 		Assert.assertEquals(1L, commit1);
-		Assert.assertEquals(2L, commit2);
 		
 		// We should see the entity moved to its speculative location (but only in projection).
 		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
 		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
 		
-		// Absorb the first change and observe.
+		// Absorb the change and observe.
 		int speculativeCount = projector.applyChangesForServerTick(2L
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, FakeUpdateFactories.entityUpdate(Map.of(airAddress, airCuboid), listener.authoritativeEntityState, set)
-				, Collections.emptyMap()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, Collections.emptyList()
-				, List.of()
-				, commit1
-				, currentTimeMillis
-		);
-		
-		// We should now see 1 speculative commit and partial updates.
-		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(yaw, listener.thisEntityState.yaw());
-		Assert.assertEquals(pitch, listener.thisEntityState.pitch());
-		Assert.assertEquals(yaw, listener.authoritativeEntityState.yaw());
-		Assert.assertEquals(pitch, listener.authoritativeEntityState.pitch());
-		Assert.assertEquals(initialLocation, listener.authoritativeEntityState.location());
-		Assert.assertEquals(targetLocation, listener.thisEntityState.location());
-		
-		// Absorb the next change and see consistency.
-		speculativeCount = projector.applyChangesForServerTick(3L
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, FakeUpdateFactories.entityUpdate(Map.of(airAddress, airCuboid), listener.authoritativeEntityState, move)
@@ -2039,7 +2018,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, commit2
+				, commit1
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
