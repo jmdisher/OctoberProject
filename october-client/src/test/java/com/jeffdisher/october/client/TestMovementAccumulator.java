@@ -21,6 +21,7 @@ import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
@@ -705,6 +706,38 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(18.41f, 2.8f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.68f, -3.94f, -0.29f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void errorCase1() throws Throwable
+	{
+		// This tests an error case observed while testing OctoberPeaks (falling while walking in the same action as we touched down on the lip).
+		long millisPerTick = 50L;
+		long currentTimeMillis = 1000L;
+		EntityLocation startLocation = new EntityLocation(5.98f, 6.0f, 7.0f);
+		AbsoluteLocation blockLocation = new AbsoluteLocation(5, 6, 6);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE_ITEM.number());
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = startLocation;
+		mutable.newVelocity = new EntityLocation(4.0f, 0.0f, -0.49f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		
+		currentTimeMillis += 16L;
+		accumulator.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.move(currentTimeMillis, EntityChangeTopLevelMovement.Relative.BACKWARD);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(6.02f, 6.0f, 7.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(2.4f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
 
 
