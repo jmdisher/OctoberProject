@@ -656,6 +656,57 @@ public class TestMovementAccumulator
 		Assert.assertEquals((short)100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()));
 	}
 
+	@Test
+	public void errorCase0() throws Throwable
+	{
+		// This tests an error case observed while testing OctoberPeaks.
+		long millisPerTick = 50L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(18.36f, 20.0f - 16.89f, 0.18f);
+		mutable.newVelocity = new EntityLocation(0.68f, -3.94f, -3.92f);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		
+		currentTimeMillis += 16L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += 16L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += 16L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		currentTimeMillis += 16L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		_applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(18.4f, 2.86f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.68f, -3.94f, -0.14f), listener.thisEntity.velocity());
+		
+		currentTimeMillis += 16L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(new EntityLocation(18.41f, 2.8f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.68f, -3.94f, -0.29f), listener.thisEntity.velocity());
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{

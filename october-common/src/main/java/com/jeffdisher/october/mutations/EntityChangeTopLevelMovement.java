@@ -2,10 +2,14 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.Environment;
+import com.jeffdisher.october.aspects.FlagsAspect;
+import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
+import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -99,9 +103,10 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		// -verify collisions with walls/ceilings/floors when velocity drops very quickly
 		
 		// If there is a sub-action, run it, ignoring the result (its failure may not doom us).
+		boolean subActionSuccess = false;
 		if (null != _subAction)
 		{
-			_subAction.applyChange(context, newEntity);
+			subActionSuccess = _subAction.applyChange(context, newEntity);
 		}
 		else
 		{
@@ -175,8 +180,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		float minYVelocity = Math.min(-intensityVelocityPerSecond, Math.min(_newVelocity.y(), startVelocity.y()));
 		float deltaX = EntityLocation.roundToHundredths(_newLocation.x() - startLocation.x());
 		float deltaY = EntityLocation.roundToHundredths(_newLocation.y() - startLocation.y());
-		boolean isValidDistance = ((deltaX <= EntityLocation.roundToHundredths(seconds * maxXVelocity + HORIZONTAL_SINGLE_FUDGE)) || (deltaX <= EntityLocation.roundToHundredths(seconds * minXVelocity - HORIZONTAL_SINGLE_FUDGE)))
-				&& ((deltaY <= EntityLocation.roundToHundredths(seconds * maxYVelocity + HORIZONTAL_SINGLE_FUDGE)) || (deltaY <= EntityLocation.roundToHundredths(seconds * minYVelocity - HORIZONTAL_SINGLE_FUDGE)))
+		boolean isValidDistance = ((deltaX <= EntityLocation.roundToHundredths(seconds * maxXVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaX >= EntityLocation.roundToHundredths(seconds * minXVelocity - HORIZONTAL_SINGLE_FUDGE)))
+				&& ((deltaY <= EntityLocation.roundToHundredths(seconds * maxYVelocity + HORIZONTAL_SINGLE_FUDGE)) && (deltaY >= EntityLocation.roundToHundredths(seconds * minYVelocity - HORIZONTAL_SINGLE_FUDGE)))
 		;
 		if (!isValidDistance)
 		{
@@ -200,7 +205,57 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				&& (yVDelta == (startInverseViscosity * startVelocity.y()));
 		if (!isValidAcceleration && !isNaturalDeceleration)
 		{
-			forceFailure = true;
+			// We want to see if any of the cases related to immediate deceleration apply:  Touching the ground or hitting a wall.
+			EntityLocation ray = new EntityLocation(_newLocation.x() - startLocation.x()
+				, _newLocation.y() - startLocation.y()
+				, _newLocation.z() - startLocation.z()
+			);
+			boolean[] stopX = {false};
+			boolean[] stopY = {false};
+			Environment env = Environment.getShared();
+			EntityMovementHelpers.interactiveEntityMove(_newLocation, volume, ray, new EntityMovementHelpers.InteractiveHelper() {
+				@Override
+				public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+				{
+					if (cancelX)
+					{
+						stopX[0] = true;
+					}
+					if (cancelY)
+					{
+						stopY[0] = true;
+					}
+					if (cancelZ && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, _newLocation, volume))
+					{
+						stopX[0] = true;
+						stopY[0] = true;
+					}
+				}
+				@Override
+				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+				{
+					BlockProxy proxy = context.previousBlockLookUp.apply(location);
+					float viscosity;
+					if (null != proxy)
+					{
+						// Find the viscosity based on block type.
+						viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
+					}
+					else
+					{
+						// This is missing so we will just treat it as a solid block.
+						viscosity = 1.0f;
+					}
+					return viscosity;
+				}
+			});
+			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])
+					&& ((0.0f == _newVelocity.y()) == stopY[0])
+			);
+			if (!touchingSurface)
+			{
+				forceFailure = true;
+			}
 		}
 		
 		// If all checks pass, apply changes and energy cost.
@@ -229,7 +284,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		{
 			System.out.println("FAIL");
 		}
-		return !forceFailure;
+		
+		// We will say that this succeeded if either the sub-action or the top-level movement was a success.
+		return !forceFailure || subActionSuccess;
 	}
 
 	@Override
