@@ -82,6 +82,7 @@ public class MovementAccumulator
 	private IMutationEntity<IMutablePlayerEntity> _subAction;
 	private EntityChangeTopLevelMovement.Intensity _intensity;
 	private boolean _didNotifyWorldChanges;
+	private Entity _lastNotifiedEntity;
 
 	// Some information is queued for the "next" accumulation after this current action has been returned.
 	private long _queuedMillis;
@@ -353,6 +354,19 @@ public class MovementAccumulator
 		Assert.assertTrue(null != _otherEntities.remove(id));
 	}
 
+	/**
+	 * Used to access the last accumulated Entity state kept internally.  Returns null if there is no accumulation.
+	 * 
+	 * @return The last Entity state sent via notification or null, if there is no accumulation.
+	 */
+	public Entity getLocalAccumulatedEntity()
+	{
+		return (_accumulationMillis > 0L)
+				? _lastNotifiedEntity
+				: null
+		;
+	}
+
 
 	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _buildFromAccumulation()
 	{
@@ -507,9 +521,10 @@ public class MovementAccumulator
 		if (null != output)
 		{
 			// This was a success so send off listener updates.
-			if (_thisEntity != output.thisEntity())
+			_lastNotifiedEntity = output.thisEntity();
+			if (_thisEntity != _lastNotifiedEntity)
 			{
-				changedEntityConsumer.accept(output.thisEntity());
+				changedEntityConsumer.accept(_lastNotifiedEntity);
 			}
 			
 			// We only send any world updates at the beginning of the tick.

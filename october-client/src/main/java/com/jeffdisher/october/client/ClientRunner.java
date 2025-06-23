@@ -472,8 +472,14 @@ public class ClientRunner
 		@Override
 		public void thisEntityDidChange(Entity authoritativeEntity, Entity projectedEntity)
 		{
+			// We might want to overrule this projected entity with one in the accumulator, if it is there (since this would otherwise revert our state).
+			Entity accumulatorEntity = _accumulator.getLocalAccumulatedEntity();
+			Entity ownerEntity = (null != accumulatorEntity)
+				? accumulatorEntity
+				: projectedEntity
+			;
 			// We only use the projected entity in this class since the authoritative is just for reporting stable numbers.
-			_projectionListener.thisEntityDidChange(authoritativeEntity, projectedEntity);
+			_projectionListener.thisEntityDidChange(authoritativeEntity, ownerEntity);
 			_accumulator.setThisEntity(projectedEntity);
 		}
 		@Override
