@@ -696,17 +696,17 @@ public class TestMovementAccumulator
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
-		_applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(18.4f, 2.86f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.68f, -3.94f, -0.14f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.14f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(18.41f, 2.8f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.68f, -3.94f, -0.29f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.29f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -775,9 +775,50 @@ public class TestMovementAccumulator
 		currentTimeMillis += millisPerTick;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
-		_applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(1, listener.thisEntity.hotbarIndex());
+	}
+
+	@Test
+	public void coastingAfterWalking() throws Throwable
+	{
+		// Tests how we handle an action where we start walking but then coast into the following action by standing (related to how we handle velocity and friction).
+		long millisPerTick = 50L;
+		long currentTimeMillis = 1000L;
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
+		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
+		
+		// Walk for part of a tick.
+		currentTimeMillis += 40L;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.move(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// Now, just stand so we will coast into the next action.
+		currentTimeMillis += 40L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// Completed this action and verify that it applied correctly.
+		currentTimeMillis += 40L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
 	}
 
 

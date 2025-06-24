@@ -194,6 +194,8 @@ public class MovementAccumulator
 		{
 			// If there was any overflow from this accumulation, we need to re-assert that it is walking.
 			_intensity = EntityChangeTopLevelMovement.Intensity.WALKING;
+			_queuedXVector = xVelocity;
+			_queuedYVector = yVelocity;
 		}
 		return toReturn;
 	}
@@ -491,8 +493,8 @@ public class MovementAccumulator
 			// We now need to reset our counters.
 			_intensity = EntityChangeTopLevelMovement.Intensity.STANDING;
 			_queuedMillis = overflowMillis;
-			_queuedXVector = xVelocity;
-			_queuedYVector = yVelocity;
+			_queuedXVector = _newVelocity.x();
+			_queuedYVector = _newVelocity.y();
 			_accumulationMillis = 0L;
 		}
 		else
