@@ -413,7 +413,7 @@ public class MovementAccumulator
 		_lastSampleMillis = currentTimeMillis;
 		_newLocation = _thisEntity.location();
 		_newVelocity = _thisEntity.velocity();
-		_subAction = null;
+		_subAction = _queuedSubAction;
 		_startInverseViscosity = 0.0f;
 		_baselineZVector = _newVelocity.z();
 		_intensity = EntityChangeTopLevelMovement.Intensity.STANDING;

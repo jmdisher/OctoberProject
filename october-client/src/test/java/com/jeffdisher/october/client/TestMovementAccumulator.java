@@ -22,6 +22,7 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeJump;
@@ -738,6 +739,45 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 		Assert.assertEquals(new EntityLocation(6.02f, 6.0f, 7.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(2.4f, 0.0f, 0.0f), listener.thisEntity.velocity());
+	}
+
+	@Test
+	public void creativeClearsSubAction() throws Throwable
+	{
+		// This tests a case where the accumulator would clear queued sub-actions, when standing in creative mode, since it wouldn't change the entity, thus being detected as a failure.
+		long millisPerTick = 50L;
+		long currentTimeMillis = 1000L;
+		EntityLocation startLocation = new EntityLocation(5.98f, 6.0f, 7.0f);
+		AbsoluteLocation blockLocation = new AbsoluteLocation(5, 6, 6);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE_ITEM.number());
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = startLocation;
+		mutable.isCreativeMode = true;
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
+		
+		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
+		currentTimeMillis += 25L;
+		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(1));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// Stand for a full tick and verify that it now generates the action.
+		currentTimeMillis += millisPerTick;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		_applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(1, listener.thisEntity.hotbarIndex());
 	}
 
 
