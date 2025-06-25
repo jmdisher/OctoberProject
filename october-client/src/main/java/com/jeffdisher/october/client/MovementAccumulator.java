@@ -519,15 +519,22 @@ public class MovementAccumulator
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// TODO:  Come up with a way to relay these events without duplication in SpeculativeProjection since we likely need them immediately.
 		};
+		boolean shouldClearAccumulation;
 		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
 		if (null != output)
 		{
 			// This was a success so send off listener updates.
-			_lastNotifiedEntity = output.thisEntity();
-			if (_thisEntity != _lastNotifiedEntity)
+			Entity changedEntity = output.thisEntity();
+			if (null != changedEntity)
 			{
-				changedEntityConsumer.accept(_lastNotifiedEntity);
+				// This must have changed.
+				Assert.assertTrue(_thisEntity != changedEntity);
+				changedEntityConsumer.accept(changedEntity);
+				_lastNotifiedEntity = changedEntity;
 			}
+			
+			// We should reset if both the entity is unchanged and there are no sub-actions (usually only relevant for creative mode).
+			shouldClearAccumulation = (null == changedEntity) && (null == _subAction);
 			
 			// We only send any world updates at the beginning of the tick.
 			if (!_didNotifyWorldChanges)
@@ -574,6 +581,11 @@ public class MovementAccumulator
 		else
 		{
 			// We should reset accumulated changes since they are invalid.
+			shouldClearAccumulation = true;
+		}
+		
+		if (shouldClearAccumulation)
+		{
 			_clearAccumulation(currentTimeMillis);
 		}
 	}

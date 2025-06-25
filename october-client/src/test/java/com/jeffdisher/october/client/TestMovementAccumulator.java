@@ -2,9 +2,11 @@ package com.jeffdisher.october.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -19,6 +21,7 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
@@ -821,6 +824,61 @@ public class TestMovementAccumulator
 		accumulator.applyLocalAccumulation(currentTimeMillis);
 	}
 
+	@Test
+	public void creativePlaceBlock() throws Throwable
+	{
+		// Tests an issue where placing a block would fail in creative mode since the entity isn't changing (as it doesn't have a real inventory).
+		long millisPerTick = 50L;
+		long currentTimeMillis = 1000L;
+		EntityLocation startLocation = new EntityLocation(5.98f, 6.0f, 7.0f);
+		AbsoluteLocation blockLocation = new AbsoluteLocation(5, 6, 6);
+		CuboidAddress cuboidAddress = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(cuboidAddress, ENV.special.AIR);
+		cuboid.setData15(AspectRegistry.BLOCK, blockLocation.getBlockAddress(), STONE_ITEM.number());
+		CuboidHeightMap cuboidHeightMap = HeightMapHelpers.buildHeightMap(cuboid);
+		ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(cuboidAddress, cuboidHeightMap)).get(cuboidAddress.getColumn());
+		
+		_ProjectionListener listener = new _ProjectionListener();
+		MovementAccumulator accumulator = new MovementAccumulator(listener, millisPerTick, ENV.creatures.PLAYER.volume(), currentTimeMillis);
+		
+		// Create the baseline data we need.
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = startLocation;
+		mutable.isCreativeMode = true;
+		mutable.setSelectedKey(STONE_ITEM.number());
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidLoad(entity);
+		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.setCuboid(cuboid, cuboidHeightMap);
+		listener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
+		
+		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
+		currentTimeMillis += 25L;
+		AbsoluteLocation targetLocation = new AbsoluteLocation(4, 5, 7);
+		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(targetLocation, targetLocation.getRelative(0, 0, -1)));
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
+		// Note that this will produce nothing and will actually reset the accumulation since it changes nothing about the entity - it will cue up the sub-action, though.
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// Stand for some time to cause the accumulation to progress.
+		currentTimeMillis += 25L;
+		out = accumulator.stand(currentTimeMillis);
+		// This will still produce no output but the local accumulation will progress.
+		// This test is to make sure that the sub-action isn't discarded just because it doesn't change the entity (since the creative inventory is unchanged).
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		
+		// Stand for the rest of the tick time such that the action is generated - it should change the cuboid.
+		currentTimeMillis += 25L;
+		out = accumulator.stand(currentTimeMillis);
+		Assert.assertNotNull(out);
+		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
+		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertEquals(STONE_ITEM.number(), listener.loadedCuboids.get(targetLocation.getCuboidAddress()).getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
+	}
+
 
 	private Entity _runFallingTest(long millisPerMove, int iterationCount, CuboidData cuboid, Entity entity)
 	{
@@ -857,7 +915,9 @@ public class TestMovementAccumulator
 			, _ProjectionListener listener
 	)
 	{
-		TickProcessingContext context = _createContext(millisPerTick, currentTickTimeMillis, cuboids);
+		TickProcessingContext context = _createContext(millisPerTick, currentTickTimeMillis, cuboids, (IMutationBlock mutation) -> {
+			// Do nothing - cuboid mutations are ignored in this path.
+		});
 		MutableEntity mutable = MutableEntity.existing(inputEntity);
 		Assert.assertTrue(action.applyChange(context, mutable));
 		Entity entity = mutable.freeze();
@@ -866,7 +926,55 @@ public class TestMovementAccumulator
 		return entity;
 	}
 
-	private TickProcessingContext _createContext(long millisPerTick, long currentTickTimeMillis, List<IReadOnlyCuboidData> cuboidList)
+	private Entity _applyToEntityAndUpdateCuboid(long millisPerTick
+			, long currentTickTimeMillis
+			, IReadOnlyCuboidData cuboid
+			, Entity inputEntity
+			, IMutationEntity<IMutablePlayerEntity> action
+			, MovementAccumulator accumulator
+			, _ProjectionListener listener
+	)
+	{
+		List<IMutationBlock> mutations = new ArrayList<>();
+		TickProcessingContext context = _createContext(millisPerTick, currentTickTimeMillis, List.of(cuboid), (IMutationBlock mutation) -> {
+			// Capture this so we can apply it.
+			mutations.add(mutation);
+		});
+		MutableEntity mutable = MutableEntity.existing(inputEntity);
+		Assert.assertTrue(action.applyChange(context, mutable));
+		Entity entity = mutable.freeze();
+		accumulator.setThisEntity(entity);
+		listener.thisEntityDidChange(entity, entity);
+		CuboidData lazyMutable = null;
+		Set<BlockAddress> changedBlocks = new HashSet<>();
+		for (IMutationBlock mutation : mutations)
+		{
+			AbsoluteLocation location = mutation.getAbsoluteLocation();
+			MutableBlockProxy proxy = new MutableBlockProxy(location, cuboid);
+			mutation.applyMutation(context, proxy);
+			if (proxy.didChange())
+			{
+				if (null == lazyMutable)
+				{
+					lazyMutable = CuboidData.mutableClone(cuboid);
+				}
+				proxy.writeBack(lazyMutable);
+				changedBlocks.add(location.getBlockAddress());
+			}
+		}
+		if (null != lazyMutable)
+		{
+			CuboidAddress address = lazyMutable.getCuboidAddress();
+			CuboidHeightMap cuboidHeightMap = HeightMapHelpers.buildHeightMap(lazyMutable);
+			ColumnHeightMap columnHeightMap = HeightMapHelpers.buildColumnMaps(Map.of(address, cuboidHeightMap)).get(address.getColumn());
+			accumulator.setCuboid(lazyMutable, cuboidHeightMap);
+			// To keep things simple for these tests, we assume only block aspect changes.
+			listener.cuboidDidChange(lazyMutable, cuboidHeightMap, columnHeightMap, changedBlocks, Set.of(AspectRegistry.BLOCK));
+		}
+		return entity;
+	}
+
+	private TickProcessingContext _createContext(long millisPerTick, long currentTickTimeMillis, List<IReadOnlyCuboidData> cuboidList, Consumer<IMutationBlock> mutationSink)
 	{
 		Map<CuboidAddress, IReadOnlyCuboidData> cuboids = new HashMap<>();
 		for (IReadOnlyCuboidData cuboid : cuboidList)
@@ -888,7 +996,8 @@ public class TestMovementAccumulator
 				@Override
 				public void next(IMutationBlock mutation)
 				{
-					// Do nothing.
+					// Pass this out to be used elsewhere.
+					mutationSink.accept(mutation);
 				}
 				@Override
 				public void future(IMutationBlock mutation, long millisToDelay)
@@ -899,7 +1008,9 @@ public class TestMovementAccumulator
 			, null
 			, null
 			, null
-			, null
+			, (EventRecord event) -> {
+				// For now, we will just drop these but may want them in the future.
+			}
 			, null
 			, millisPerTick
 			, currentTickTimeMillis

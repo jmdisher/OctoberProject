@@ -69,7 +69,8 @@ public class OneOffRunner
 				, context
 				, Map.of(thisEntityId, List.of(scheduled))
 		);
-		Entity updatedEntity = (innerGroup.committedMutationCount() > 0)
+		boolean wasSuccess = (innerGroup.committedMutationCount() > 0);
+		Entity updatedEntity = wasSuccess
 				? innerGroup.updatedEntities().get(thisEntityId)
 				: null
 		;
@@ -82,7 +83,7 @@ public class OneOffRunner
 		Map<CuboidAddress, IReadOnlyCuboidData> changedCuboids = Map.of();
 		Map<CuboidAddress, CuboidHeightMap> heightFragment = Map.of();
 		Map<CuboidAddress, List<BlockChangeDescription>> optionalBlockChanges = Map.of();
-		if ((null != updatedEntity) && !immediateMutations.isEmpty())
+		if (wasSuccess && !immediateMutations.isEmpty())
 		{
 			Map<CuboidAddress, List<ScheduledMutation>> splitMutations = new HashMap<>();
 			for (ScheduledMutation imm : immediateMutations)
@@ -111,7 +112,7 @@ public class OneOffRunner
 		
 		// Repackage results.
 		StatePackage updatedState = null;
-		if (null != updatedEntity)
+		if (wasSuccess)
 		{
 			Map<CuboidAddress, IReadOnlyCuboidData> initialCuboids = new HashMap<>(state.world);
 			Map<CuboidAddress, CuboidHeightMap> initialHeights = new HashMap<>(state.heights);
@@ -165,6 +166,7 @@ public class OneOffRunner
 
 	/**
 	 * A packaged read-only state.
+	 * Note that, when output, this will only include what changed (which could mean it is completely empty).
 	 */
 	public static record StatePackage(Entity thisEntity
 		, Map<CuboidAddress, IReadOnlyCuboidData> world
