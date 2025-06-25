@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -81,7 +80,6 @@ public class MovementAccumulator
 	private byte _newPitch;
 	private IMutationEntity<IMutablePlayerEntity> _subAction;
 	private EntityChangeTopLevelMovement.Intensity _intensity;
-	private boolean _didNotifyWorldChanges;
 	private Entity _lastNotifiedEntity;
 
 	// Some information is queued for the "next" accumulation after this current action has been returned.
@@ -237,15 +235,11 @@ public class MovementAccumulator
 		{
 			// If there was an action queued, apply it and store it.
 			_subAction = null;
-			_didNotifyWorldChanges = false;
 			if (null != _queuedSubAction)
 			{
-				_runActionAndNotify(currentTimeMillis, _queuedSubAction, (Entity changedEntity) -> {
-					_newLocation = changedEntity.location();
-					_newVelocity = changedEntity.velocity();
-					_listener.thisEntityDidChange(changedEntity, changedEntity);
-				});
-				_subAction = _queuedSubAction;
+				boolean isSuccess = _runSubActionToStart(currentTimeMillis, _queuedSubAction);
+				// We only want to hold onto the sub-action if it was a success.
+				_subAction = isSuccess ? _queuedSubAction : null;
 			}
 			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
 			_baselineZVector = _newVelocity.z();
@@ -284,9 +278,7 @@ public class MovementAccumulator
 				, _subAction
 				, _accumulationMillis
 			);
-			_runActionAndNotify(currentTimeMillis, toRun, (Entity changedEntity) -> {
-				_listener.thisEntityDidChange(changedEntity, changedEntity);
-			});
+			_runAccumulatedAction(currentTimeMillis, toRun);
 		}
 	}
 
@@ -508,8 +500,13 @@ public class MovementAccumulator
 		return toReturn;
 	}
 
-	private void _runActionAndNotify(long currentTimeMillis, IMutationEntity<IMutablePlayerEntity> toRun, Consumer<Entity> changedEntityConsumer)
+	private boolean _runSubActionToStart(long currentTimeMillis, IMutationEntity<IMutablePlayerEntity> toRun)
 	{
+		// This function is only called at the beginning of an accumulated action to run the sub-action.  This is mostly
+		// just to adjust for things like entity velocity change, etc, but it is also the only case where things like
+		// changes to the world can happen (since the rest of the accumulation is just entity movement).
+		Assert.assertTrue(0L == _accumulationMillis);
+		
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
 			, _heights
@@ -518,6 +515,84 @@ public class MovementAccumulator
 		);
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// TODO:  Come up with a way to relay these events without duplication in SpeculativeProjection since we likely need them immediately.
+		};
+		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
+		if (null != output)
+		{
+			// This was a success so send off listener updates.
+			Entity changedEntity = output.thisEntity();
+			if (null != changedEntity)
+			{
+				// This must have changed.
+				Assert.assertTrue(_thisEntity != changedEntity);
+				
+				// The sub-action can change things like velocity so update our internal baselines and notify.
+				_newLocation = changedEntity.location();
+				_newVelocity = changedEntity.velocity();
+				_listener.thisEntityDidChange(changedEntity, changedEntity);
+				_lastNotifiedEntity = changedEntity;
+			}
+			
+			// Since this is the beginning of the action tick, we also need to send any world updates (we will skip this in later passes).
+			Map<CuboidAddress, CuboidHeightMap> localHeights = new HashMap<>(_heights);
+			localHeights.putAll(output.heights());
+			// Rebuild the height maps for only what columns changed.
+			Set<CuboidColumnAddress> blockChangeCuboids = output.optionalBlockChanges().keySet().stream()
+				.map((CuboidAddress address) -> address.getColumn())
+				.collect(Collectors.toSet())
+			;
+			Map<CuboidAddress, CuboidHeightMap> changedCuboidMaps = localHeights.keySet().stream()
+				.filter((CuboidAddress address) -> blockChangeCuboids.contains(address.getColumn()))
+				.collect(Collectors.toMap(
+					(CuboidAddress address) -> address, (CuboidAddress address) -> localHeights.get(address)
+				))
+			;
+			Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(changedCuboidMaps);
+			for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : output.optionalBlockChanges().entrySet())
+			{
+				CuboidAddress address = entry.getKey();
+				IReadOnlyCuboidData readOnly = _world.get(address);
+				CuboidData cuboid = CuboidData.mutableClone(readOnly);
+				Set<BlockAddress> changedBlocks = new HashSet<>();
+				Set<Aspect<?, ?>> changedAspects = new HashSet<>();
+				for (BlockChangeDescription desc : entry.getValue())
+				{
+					MutationBlockSetBlock setBlock = desc.serializedForm();
+					setBlock.applyState(cuboid);
+					Set<Aspect<?, ?>> changes = setBlock.changedAspectsVersusCuboid(readOnly);
+					changedBlocks.add(setBlock.getAbsoluteLocation().getBlockAddress());
+					changedAspects.addAll(changes);
+				}
+				// Don't want to write-back to _world, since that could cause conflicts on the next accumulation but we will send it to the listener.
+				if (!changedAspects.isEmpty())
+				{
+					ColumnHeightMap height = columnHeightMaps.get(address.getColumn());
+					_listener.cuboidDidChange(cuboid, localHeights.get(address), height, changedBlocks, changedAspects);
+				}
+			}
+		}
+		
+		// Return whether the sub-action was a success.
+		return (null != output);
+	}
+
+	private void _runAccumulatedAction(long currentTimeMillis, EntityChangeTopLevelMovement<IMutablePlayerEntity> toRun)
+	{
+		// This function is called whenever there is some accumulation time.  Note that the sub-action is run at the
+		// beginning of the tick, before the accumulation begins, so any world-changing notifications have already been
+		// sent before we run this.
+		Assert.assertTrue(_accumulationMillis > 0L);
+		
+		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
+			, _world
+			, _heights
+			, null
+			, _otherEntities
+		);
+		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
+			// We can probably ignore events in this path since they will either be entity-related (hence sent by the
+			// server when it determines things like damage, etc) or were world-related and sent at the beginning of the
+			// action tick in the other path.
 		};
 		boolean shouldClearAccumulation;
 		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
@@ -529,54 +604,16 @@ public class MovementAccumulator
 			{
 				// This must have changed.
 				Assert.assertTrue(_thisEntity != changedEntity);
-				changedEntityConsumer.accept(changedEntity);
+				
+				// In this case, we are mid-tick so don't update our baseline velocity or position (those are changed by the accumulation mechanism based on its assumptions).
+				_listener.thisEntityDidChange(changedEntity, changedEntity);
 				_lastNotifiedEntity = changedEntity;
 			}
 			
 			// We should reset if both the entity is unchanged and there are no sub-actions (usually only relevant for creative mode).
 			shouldClearAccumulation = (null == changedEntity) && (null == _subAction);
 			
-			// We only send any world updates at the beginning of the tick.
-			if (!_didNotifyWorldChanges)
-			{
-				Map<CuboidAddress, CuboidHeightMap> localHeights = new HashMap<>(_heights);
-				localHeights.putAll(output.heights());
-				// Rebuild the height maps for only what columns changed.
-				Set<CuboidColumnAddress> blockChangeCuboids = output.optionalBlockChanges().keySet().stream()
-					.map((CuboidAddress address) -> address.getColumn())
-					.collect(Collectors.toSet())
-				;
-				Map<CuboidAddress, CuboidHeightMap> changedCuboidMaps = localHeights.keySet().stream()
-					.filter((CuboidAddress address) -> blockChangeCuboids.contains(address.getColumn()))
-					.collect(Collectors.toMap(
-						(CuboidAddress address) -> address, (CuboidAddress address) -> localHeights.get(address)
-					))
-				;
-				Map<CuboidColumnAddress, ColumnHeightMap> columnHeightMaps = HeightMapHelpers.buildColumnMaps(changedCuboidMaps);
-				for (Map.Entry<CuboidAddress, List<BlockChangeDescription>> entry : output.optionalBlockChanges().entrySet())
-				{
-					CuboidAddress address = entry.getKey();
-					IReadOnlyCuboidData readOnly = _world.get(address);
-					CuboidData cuboid = CuboidData.mutableClone(readOnly);
-					Set<BlockAddress> changedBlocks = new HashSet<>();
-					Set<Aspect<?, ?>> changedAspects = new HashSet<>();
-					for (BlockChangeDescription desc : entry.getValue())
-					{
-						MutationBlockSetBlock setBlock = desc.serializedForm();
-						setBlock.applyState(cuboid);
-						Set<Aspect<?, ?>> changes = setBlock.changedAspectsVersusCuboid(readOnly);
-						changedBlocks.add(setBlock.getAbsoluteLocation().getBlockAddress());
-						changedAspects.addAll(changes);
-					}
-					// Don't want to write-back to _world, since that could cause conflicts on the next accumulation but we will send it to the listener.
-					if (!changedAspects.isEmpty())
-					{
-						ColumnHeightMap height = columnHeightMaps.get(address.getColumn());
-						_listener.cuboidDidChange(cuboid, localHeights.get(address), height, changedBlocks, changedAspects);
-					}
-				}
-				_didNotifyWorldChanges = true;
-			}
+			// In this case, we ignore world changes - they are notified in the other path.
 		}
 		else
 		{
