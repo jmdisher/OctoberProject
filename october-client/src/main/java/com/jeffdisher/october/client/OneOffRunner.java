@@ -95,9 +95,11 @@ public class OneOffRunner
 				}
 				splitMutations.get(address).add(imm);
 			}
+			// Note that we will need to capture output mutations from these sinks if there is an interest in running multiple ticks in advance here.
+			TickProcessingContext innerContext = _createContext(state, new CommonMutationSink(), new CommonChangeSink(), eventSink, millisPerTick, currentTickTimeMillis);
 			WorldProcessor.ProcessedFragment innerFragment = WorldProcessor.processWorldFragmentParallel(singleThreadElement
 					, state.world
-					, context
+					, innerContext
 					, splitMutations
 					, Map.of()
 					, Map.of()

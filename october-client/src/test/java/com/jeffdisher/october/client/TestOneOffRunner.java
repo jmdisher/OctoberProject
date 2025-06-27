@@ -13,6 +13,7 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
+import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.CuboidAddress;
 import com.jeffdisher.october.types.Entity;
 import com.jeffdisher.october.types.EntityLocation;
@@ -21,6 +22,7 @@ import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.CuboidGenerator;
+import com.jeffdisher.october.utils.Encoding;
 
 
 public class TestOneOffRunner
@@ -28,11 +30,13 @@ public class TestOneOffRunner
 	private static final long MILLIS_PER_TICK = 100L;
 	private static Environment ENV;
 	private static Item STONE_ITEM;
+	private static Item DIRT_ITEM;
 	@BeforeClass
 	public static void setup()
 	{
 		ENV = Environment.createSharedInstance();
 		STONE_ITEM = ENV.items.getItemById("op.stone");
+		DIRT_ITEM = ENV.items.getItemById("op.dirt");
 	}
 	@AfterClass
 	public static void tearDown()
@@ -96,6 +100,43 @@ public class TestOneOffRunner
 		_Events catcher = new _Events();
 		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
 		Assert.assertNull(end);
+	}
+
+	@Test
+	public void mutationSchedulesMutation() throws Throwable
+	{
+		// Tests that there are no problems when a block mutation schedules a secondary block mutation (even though OneOffRunner ignores these).
+		MutableEntity mutable = MutableEntity.createForTest(1);
+		mutable.newLocation = new EntityLocation(5.0f, 5.0f, 1.0f);
+		mutable.setSelectedKey(1);
+		mutable.newInventory.addAllItems(DIRT_ITEM, 1);
+		Entity entity = mutable.freeze();
+		AbsoluteLocation target = mutable.newLocation.getBlockLocation().getRelative(1, 1, 0);
+		
+		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
+		short grass = ENV.items.getItemById("op.grass").number();
+		for (int y = 0; y < Encoding.CUBOID_EDGE_SIZE; ++y)
+		{
+			for (int x = 0; x < Encoding.CUBOID_EDGE_SIZE; ++x)
+			{
+				cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(x, y, 0), grass);
+			}
+		}
+		MutationPlaceSelectedBlock place = new MutationPlaceSelectedBlock(target, null);
+		
+		OneOffRunner.StatePackage start = new OneOffRunner.StatePackage(entity
+			, Map.of(address, cuboid)
+			, Map.of(address, HeightMapHelpers.buildHeightMap(cuboid))
+			, null
+			, Map.of()
+		);
+		_Events catcher = new _Events();
+		OneOffRunner.StatePackage end = OneOffRunner.runOneChange(start, catcher, MILLIS_PER_TICK, 1L, place);
+		
+		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, catcher.event.type());
+		Assert.assertEquals(DIRT_ITEM.number(), end.world().get(address).getData15(AspectRegistry.BLOCK, target.getBlockAddress()));
+		Assert.assertEquals(0, end.thisEntity().inventory().currentEncumbrance);
 	}
 
 
