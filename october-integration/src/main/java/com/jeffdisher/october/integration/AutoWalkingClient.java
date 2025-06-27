@@ -177,7 +177,7 @@ public class AutoWalkingClient
 					throw Assert.unreachable();
 				}
 				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
-				client.moveHorizontal(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
+				client.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 			}
 		}
 		client.disconnect();

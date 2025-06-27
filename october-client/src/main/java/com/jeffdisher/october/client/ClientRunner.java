@@ -120,7 +120,7 @@ public class ClientRunner
 	}
 
 	/**
-	 * Creates the change to move the entity from the current location in the speculative projection along the given
+	 * Creates the change to walk the entity from the current location in the speculative projection along the given
 	 * horizontal direction for the amount of time which has passed since the last call.
 	 * This will also apply z-acceleration for that amount of time and will handle cases such as collision but will at
 	 * least attempt to move in this way (and will send the change to the server).
@@ -128,9 +128,9 @@ public class ClientRunner
 	 * @param relativeDirection The direction to move, relative to current yaw.
 	 * @param currentTimeMillis The current time, in milliseconds.
 	 */
-	public void moveHorizontal(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
+	public void walk(EntityChangeTopLevelMovement.Relative relativeDirection, long currentTimeMillis)
 	{
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.move(currentTimeMillis, relativeDirection);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> complete = _accumulator.walk(currentTimeMillis, relativeDirection);
 		_endAction(complete, currentTimeMillis);
 		_runAllPendingCalls(currentTimeMillis);
 		_lastCallMillis = currentTimeMillis;

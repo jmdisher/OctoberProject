@@ -155,7 +155,7 @@ public class MovementAccumulator
 	}
 
 	/**
-	 * Moves in the given relativeDirection up until the given time.
+	 * Walks in the direction described by the current yaw and given relativeDirection until currentTimeMillis.
 	 * NOTE:  applyLocalAccumulation() MUST be called after applying the returned action to SpeculativeProjection (or
 	 * called directly, if null was returned).
 	 * 
@@ -163,7 +163,7 @@ public class MovementAccumulator
 	 * @param relativeDirection Movement, relative to the current yaw direction.
 	 * @return A completed change, if one was generated.
 	 */
-	public EntityChangeTopLevelMovement<IMutablePlayerEntity> move(long currentTimeMillis, EntityChangeTopLevelMovement.Relative relativeDirection)
+	public EntityChangeTopLevelMovement<IMutablePlayerEntity> walk(long currentTimeMillis, EntityChangeTopLevelMovement.Relative relativeDirection)
 	{
 		// applyLocalAccumulation() must be called to drain the queued information.
 		Assert.assertTrue(0L == _queuedMillis);
