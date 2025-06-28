@@ -71,7 +71,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 			newEntity.resetLongRunningOperations();
 			
 			// Swimming expends energy.
-			newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_SWIM);
+			newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_SWIM_UP);
 		}
 		return didApply;
 	}

@@ -94,7 +94,7 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(startLocation, entity.location);
 		Assert.assertEquals(startVector, entity.vector);
 		// Even though we hit a wall, we should still pay for the acceleration.
-		Assert.assertEquals(20, entity.cost);
+		Assert.assertEquals(10, entity.cost);
 	}
 
 	@Test
@@ -111,7 +111,7 @@ public class TestEntityMovementHelpers
 		Assert.assertTrue(didMove);
 		Assert.assertEquals(0.2f, entity.location.x(), 0.001f);
 		Assert.assertEquals(startVector, entity.vector);
-		Assert.assertEquals(20, entity.cost);
+		Assert.assertEquals(10, entity.cost);
 	}
 
 	@Test

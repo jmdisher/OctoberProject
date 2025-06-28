@@ -80,7 +80,7 @@ public class EntityChangeCraftInBlock implements IMutationEntity<IMutablePlayerE
 		if (didApply)
 		{
 			// Crafting expends energy.
-			int cost = (int)(_millisToApply * EntityChangePeriodic.ENERGY_COST_CRAFT_PER_SECOND / 1000);
+			int cost = EntityChangePeriodic.ENERGY_COST_PER_TICK_BLOCK_CRAFT;
 			newEntity.applyEnergyCost(cost);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.

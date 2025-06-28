@@ -499,8 +499,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
-		// Motion too little to detect collision.
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.2f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		
 		// Run a third to see that the collision rounding error goes away.
 		currentTimeMillis += millisPerMove;

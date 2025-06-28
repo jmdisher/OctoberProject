@@ -53,16 +53,13 @@ public class EntityMovementHelpers
 	)
 	{
 		// First set the velocity.
-		float secondsInMotion = ((float)millisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
 		EntityLocation oldVector = newEntity.getVelocityVector();
-		float targetBlocksInStep = (blocksPerSecond * secondsInMotion);
 		float newX = xComponent * blocksPerSecond;
 		float newY = yComponent * blocksPerSecond;
 		newEntity.setVelocityVector(new EntityLocation(newX, newY, oldVector.z()));
 		
-		// Then pay for the acceleration.
-		int cost = (int)(targetBlocksInStep * (float)EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK);
-		newEntity.applyEnergyCost(cost);
+		// TODO:  This is temporary until this helper can be removed.
+		newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
 	}
 
 	/**

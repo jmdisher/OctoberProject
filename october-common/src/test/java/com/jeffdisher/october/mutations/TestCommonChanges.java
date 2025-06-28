@@ -924,8 +924,8 @@ public class TestCommonChanges
 		int entityId = 1;
 		MutableEntity newEntity = MutableEntity.createForTest(entityId);
 		EntityChangePeriodic periodic = new EntityChangePeriodic();
-		// We should only see this change after applying it 20 times.
-		for (int i = 0; i < 19; ++i)
+		// We should only see this change after applying it 100 times.
+		for (int i = 0; i < 99; ++i)
 		{
 			Assert.assertTrue(periodic.applyChange(context, newEntity));
 			Assert.assertEquals((byte)100, newEntity.newFood);
@@ -2494,7 +2494,7 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 		Assert.assertEquals(newVelocity, newEntity.newVelocity);
-		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.newEnergyDeficit);
+		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
 	}

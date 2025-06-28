@@ -3157,7 +3157,7 @@ public class TestTickRunner
 		Entity newEntity = snapshot.entities().get(entityId).completed();
 		Assert.assertEquals(newLocation, newEntity.location());
 		Assert.assertEquals(newVelocity, newEntity.velocity());
-		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.energyDeficit());
+		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING, newEntity.energyDeficit());
 		
 		runner.shutdown();
 	}

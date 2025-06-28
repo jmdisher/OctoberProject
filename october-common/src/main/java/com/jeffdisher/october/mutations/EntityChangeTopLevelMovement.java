@@ -286,20 +286,11 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			newEntity.setVelocityVector(_newVelocity);
 			newEntity.setOrientation(_yaw, _pitch);
 			
-			// TODO:  Fix this energy attribution cost.
-			int energy;
-			switch (_intensity)
+			// We only use energy when walking (standing changes are often just dropped so they shouldn't cost anything - idle cost is already added in periodic).
+			if (Intensity.WALKING == _intensity)
 			{
-			case STANDING:
-				energy = EntityChangePeriodic.ENERGY_COST_IDLE;
-				break;
-			case WALKING:
-				energy = EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK;
-				break;
-			default:
-				throw Assert.unreachable();
+				newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
 			}
-			newEntity.applyEnergyCost(energy);
 		}
 		else
 		{
