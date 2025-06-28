@@ -326,7 +326,7 @@ public class TestClientRunner
 		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(0.0f, location.x(), 0.0001f);
 		Assert.assertEquals(0.0f, location.y(), 0.0001f);
-		Assert.assertEquals(0.49f, location.z(), 0.0001f);
+		Assert.assertEquals(0.88f, location.z(), 0.0001f);
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 
@@ -483,7 +483,7 @@ public class TestClientRunner
 			network.toSend = null;
 		}
 		// Compare this walked distance to what we have experimentally verified.
-		Assert.assertEquals(new EntityLocation(20.88f, 0.0f, 0.0f), projection.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(19.66f, 0.0f, 0.0f), projection.thisEntity.location());
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 

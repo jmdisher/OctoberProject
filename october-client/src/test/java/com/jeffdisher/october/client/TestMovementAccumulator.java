@@ -89,7 +89,7 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Set our orientation and stand around until the action is generated.
 		byte yaw = 5;
@@ -99,7 +99,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += 50L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(entity.location(), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
@@ -107,7 +107,7 @@ public class TestMovementAccumulator
 		Assert.assertNotNull(out);
 		
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
@@ -133,7 +133,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += 50L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 0.0f), listener.thisEntity.velocity());
 		currentTimeMillis += 60L;
@@ -143,10 +143,10 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.44f, 0.0f), listener.thisEntity.location());
-		// NOTE:  This z-vector should be 0.0 but the step is so small it can't realize a collision with the ground.
-		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.1f), listener.thisEntity.velocity());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
+		// Motion too little to detect collision.
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -165,24 +165,14 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
-		// Jump, then stand until the action is generated, and again to see that the jump impacts the second action.
 		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>());
 		Assert.assertTrue(didJump);
-		currentTimeMillis += 60L;
+		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
-		currentTimeMillis += 60L;
-		out = accumulator.stand(currentTimeMillis);
-		// Note that, even though this should tick-over and generate an event, we didn't do anything so it will be a
-		// null event.  Note that completing the event will also mean the jump is "on deck" so will force generation of
-		// the next tick's event.
-		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.11f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 5.68f), listener.thisEntity.velocity());
 		
@@ -192,7 +182,7 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.5f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.9f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.55f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 4.8f), listener.thisEntity.velocity());
 	}
@@ -213,33 +203,25 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
-		// Jump, then stand until the action is generated, and again to see that the jump impacts the second action.
 		boolean didJump = accumulator.enqueueSubAction(new EntityChangeJump<>());
 		Assert.assertTrue(didJump);
-		currentTimeMillis += 60L;
+		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.24f, 0.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 0.0f), listener.thisEntity.velocity());
-		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
-		Assert.assertNotNull(out);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.48f, 0.11f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.08f, 0.11f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 5.68f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.8f, 0.5f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.5f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 4.9f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.84f, 0.55f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(0.0f, 0.44f, 0.55f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 4.8f), listener.thisEntity.velocity());
 	}
 
@@ -259,7 +241,7 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
 		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -268,7 +250,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.04f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.59f), listener.thisEntity.velocity());
 		
@@ -281,7 +263,7 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.08f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.98f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.1f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.18f), listener.thisEntity.velocity());
 	}
@@ -289,6 +271,7 @@ public class TestMovementAccumulator
 	@Test
 	public void fallingThroughWater() throws Throwable
 	{
+		// Show accounting for changing terminal velocity when falling from air into water.
 		long millisPerTick = 100L;
 		long currentTimeMillis = 1000L;
 		CuboidData topCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
@@ -305,7 +288,7 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
 		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -314,7 +297,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, 2.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -0.4f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		
@@ -327,7 +310,7 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.4f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.0f), listener.thisEntity.velocity());
 	}
@@ -383,51 +366,44 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Swim, then move forward until the action is generated, and again to see that the swim impacts the second action.
 		boolean didSwim = accumulator.enqueueSubAction(new EntityChangeSwim<>());
 		Assert.assertTrue(didSwim);
-		currentTimeMillis += 60L;
+		currentTimeMillis += 20L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.12f, 14.98f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, -0.29f), listener.thisEntity.velocity());
-		currentTimeMillis += 60L;
-		out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
-		Assert.assertNotNull(out);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.24f, 15.06f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(15.0f, 15.04f, 15.1f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 4.8f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 90L;
 		out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.4f, 15.41f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.2f, 15.45f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 4.41f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.42f, 15.45f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(15.0f, 15.22f, 15.49f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 4.36f), listener.thisEntity.velocity());
 		
 		// We now want to coast for a bit and see how they move.
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.52f, 15.66f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(15.0f, 15.32f, 15.7f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 4.12f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 50L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.6f, 15.82f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(15.0f, 15.4f, 15.86f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 3.92f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		Assert.assertEquals(new EntityLocation(15.0f, 15.61f, 15.86f), listener.thisEntity.location());
+		accumulator.applyLocalAccumulation();
+		Assert.assertEquals(new EntityLocation(15.0f, 15.41f, 15.9f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 3.87f), listener.thisEntity.velocity());
 	}
 
@@ -458,22 +434,29 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
-		// Place a block and verify that the output information is correct (we need to skip past the first tick, first).
+		// Place a block and verify that the output information is correct for local accumulation.
 		long millisPerMove = 60L;
 		currentTimeMillis += millisPerMove;
 		accumulator.enqueueSubAction(new MutationPlaceSelectedBlock(new AbsoluteLocation(15, 15, 15), new AbsoluteLocation(15, 16, 15)));
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
+		
+		// We should now verify that the local accumulation't output shows the inventory empty, the block placed, and the height map correct.
+		Assert.assertEquals(0, listener.thisEntity.inventory().currentEncumbrance);
+		Assert.assertEquals(STONE.item().number(), listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(15, 15, 15)));
+		Assert.assertEquals(63, listener.heightMaps.get(cuboid.getCuboidAddress().getColumn()).getHeight(15, 15));
+		Assert.assertEquals(1, listener.cuboidChangeCount);
+		
+		// Verify that this remains correct after the action is applied.
 		currentTimeMillis += millisPerMove;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		
-		// We should now verify that the local accumulation't output shows the inventory empty, the block placed, and the height map correct.
 		Assert.assertEquals(0, listener.thisEntity.inventory().currentEncumbrance);
 		Assert.assertEquals(STONE.item().number(), listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.BLOCK, BlockAddress.fromInt(15, 15, 15)));
 		Assert.assertEquals(63, listener.heightMaps.get(cuboid.getCuboidAddress().getColumn()).getHeight(15, 15));
@@ -497,7 +480,7 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
 		accumulator.setCuboid(bottomCuboid, HeightMapHelpers.buildHeightMap(bottomCuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Run the first move.
 		long millisPerMove = 60L;
@@ -506,7 +489,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 		
@@ -514,16 +497,16 @@ public class TestMovementAccumulator
 		currentTimeMillis += millisPerMove;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
-		// Note that we slip a little here due to rounding errors not seeing the collision.
+		// Motion too little to detect collision.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.2f), listener.thisEntity.velocity());
 		
 		// Run a third to see that the collision rounding error goes away.
 		currentTimeMillis += millisPerMove;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
@@ -543,7 +526,7 @@ public class TestMovementAccumulator
 		Entity entity = MutableEntity.createForTest(1).freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
@@ -552,7 +535,7 @@ public class TestMovementAccumulator
 		currentTimeMillis += 50L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.2f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, 0.0f), listener.thisEntity.velocity());
 		// We spill by only 1 ms since that will cause any movement to round down while the velocity is still set.
@@ -563,10 +546,10 @@ public class TestMovementAccumulator
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), listener.thisEntity.velocity());
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(0.0f, 0.4f, 0.0f), listener.thisEntity.location());
-		// NOTE:  This z-vector should be 0.0 but the step is so small it can't realize a collision with the ground.
-		Assert.assertEquals(new EntityLocation(0.0f, 4.0f, -0.01f), listener.thisEntity.velocity());
+		// Motion too little to detect collision.
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.01f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -595,20 +578,16 @@ public class TestMovementAccumulator
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
 		listener.cuboidDidLoad(blockingCuboid, blockingMap, columnMap);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
 		accumulator.enqueueSubAction(new EntityChangeCraft(ENV.crafting.getCraftById("op.log_to_planks"), millisPerMove));
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
-		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		currentTimeMillis += millisPerMove;
-		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertNotNull(listener.thisEntity.localCraftOperation());
 		
 		// Now, run another standing tick and see that it is dropped.
@@ -617,7 +596,7 @@ public class TestMovementAccumulator
 		out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid, blockingCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertNull(listener.thisEntity.localCraftOperation());
 		Assert.assertEquals(4, listener.thisEntity.inventory().currentEncumbrance);
 	}
@@ -643,7 +622,7 @@ public class TestMovementAccumulator
 		accumulator.setCuboid(cuboid, cuboidMap);
 		listener.thisEntityDidLoad(entity);
 		listener.cuboidDidLoad(cuboid, cuboidMap, columnMap);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Enqueue a craft operation and run a standing iteration to see that it does set the local crafting operation but that the following tick, without continuing, abandons it.
 		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
@@ -651,13 +630,9 @@ public class TestMovementAccumulator
 		currentTimeMillis += millisPerMove;
 		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock, (short)millisPerTick));
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
-		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		currentTimeMillis += millisPerMove;
-		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals((short)100, listener.loadedCuboids.get(cuboid.getCuboidAddress()).getData15(AspectRegistry.DAMAGE, targetBlock.getBlockAddress()));
 	}
 
@@ -679,7 +654,7 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		// (set the cuboids after initialization to verify that this out-of-order start-up still works)
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
@@ -687,28 +662,30 @@ public class TestMovementAccumulator
 		currentTimeMillis += 16L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		// Motion too little to detect collision.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.14f), listener.thisEntity.velocity());
 		
 		currentTimeMillis += 16L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		// This is below the collision threshold so we still see the falling.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.29f), listener.thisEntity.velocity());
 	}
 
@@ -732,14 +709,14 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
 		
 		currentTimeMillis += 16L;
 		accumulator.setOrientation(OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.BACKWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(6.02f, 6.0f, 7.0f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(2.4f, 0.0f, 0.0f), listener.thisEntity.velocity());
 	}
@@ -764,7 +741,7 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
 		
 		// Enqueue and then stand around for a bit (enough that we will properly collide with the ground).
@@ -772,14 +749,14 @@ public class TestMovementAccumulator
 		accumulator.enqueueSubAction(new EntityChangeChangeHotbarSlot(1));
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		
 		// Stand for a full tick and verify that it now generates the action.
 		currentTimeMillis += millisPerTick;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(1, listener.thisEntity.hotbarIndex());
 	}
 
@@ -799,7 +776,7 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		accumulator.setCuboid(airCuboid, HeightMapHelpers.buildHeightMap(airCuboid));
 		accumulator.setCuboid(stoneCuboid, HeightMapHelpers.buildHeightMap(stoneCuboid));
 		
@@ -807,21 +784,20 @@ public class TestMovementAccumulator
 		currentTimeMillis += 40L;
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.walk(currentTimeMillis, EntityChangeTopLevelMovement.Relative.FORWARD);
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		
 		// Now, just stand so we will coast into the next action.
 		currentTimeMillis += 40L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		
 		// Completed this action and verify that it applied correctly.
 		currentTimeMillis += 40L;
 		out = accumulator.stand(currentTimeMillis);
-		Assert.assertNotNull(out);
-		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		Assert.assertNull(out);
+		accumulator.applyLocalAccumulation();
 	}
 
 	@Test
@@ -849,7 +825,7 @@ public class TestMovementAccumulator
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		accumulator.setCuboid(cuboid, cuboidHeightMap);
 		listener.cuboidDidLoad(cuboid, cuboidHeightMap, columnHeightMap);
 		
@@ -860,22 +836,14 @@ public class TestMovementAccumulator
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		// Note that this will produce nothing and will actually reset the accumulation since it changes nothing about the entity - it will cue up the sub-action, though.
 		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
-		
-		// Stand for some time to cause the accumulation to progress.
-		currentTimeMillis += 25L;
-		out = accumulator.stand(currentTimeMillis);
-		// This will still produce no output but the local accumulation will progress.
-		// This test is to make sure that the sub-action isn't discarded just because it doesn't change the entity (since the creative inventory is unchanged).
-		Assert.assertNull(out);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		
 		// Stand for the rest of the tick time such that the action is generated - it should change the cuboid.
 		currentTimeMillis += 25L;
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		entity = _applyToEntityAndUpdateCuboid(millisPerTick, currentTimeMillis, cuboid, entity, out, accumulator, listener);
-		accumulator.applyLocalAccumulation(currentTimeMillis);
+		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(STONE_ITEM.number(), listener.loadedCuboids.get(targetLocation.getCuboidAddress()).getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 	}
 
@@ -890,7 +858,7 @@ public class TestMovementAccumulator
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(cuboid, HeightMapHelpers.buildHeightMap(cuboid));
 		listener.thisEntityDidLoad(entity);
-		accumulator.clearAccumulation(currentTimeMillis);
+		accumulator.clearAccumulation();
 		
 		// Run the standing sequences and return the final entity state.
 		for (int i = 0; i < iterationCount; ++i)
@@ -901,7 +869,7 @@ public class TestMovementAccumulator
 			{
 				entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(cuboid), entity, out, accumulator, listener);
 			}
-			accumulator.applyLocalAccumulation(currentTimeMillis);
+			accumulator.applyLocalAccumulation();
 		}
 		return listener.thisEntity;
 	}

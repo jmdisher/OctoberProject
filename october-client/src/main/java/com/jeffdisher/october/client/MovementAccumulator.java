@@ -77,10 +77,8 @@ public class MovementAccumulator
 	private Entity _lastNotifiedEntity;
 
 	// Some information is queued for the "next" accumulation after this current action has been returned.
-	private long _queuedMillis;
-	private float _queuedXVector;
-	private float _queuedYVector;
 	private IMutationEntity<IMutablePlayerEntity> _queuedSubAction;
+	private _OverflowData _overflow;
 
 	public MovementAccumulator(IProjectionListener listener
 		, long millisPerTick
@@ -117,9 +115,6 @@ public class MovementAccumulator
 	 */
 	public void setOrientation(byte yaw, byte pitch)
 	{
-		// applyLocalAccumulation() must be called to drain the queued information.
-		Assert.assertTrue(0L == _queuedMillis);
-		
 		// This is applied to the current accumulation, immediately, as it is considered instant and saturating.
 		_newYaw = yaw;
 		_newPitch = pitch;
@@ -127,31 +122,27 @@ public class MovementAccumulator
 
 	/**
 	 * Takes no action, effectively just passing time.  This allows existing movement to just continue.
+	 * NOTE:  applyLocalAccumulation() MUST be called after applying the returned action to SpeculativeProjection (or
+	 * called directly, if null was returned) in order for accumulated motion to be sent to the listener.
 	 * 
 	 * @param currentTimeMillis The current time.
 	 * @return A completed change, if one was generated.
 	 */
 	public EntityChangeTopLevelMovement<IMutablePlayerEntity> stand(long currentTimeMillis)
 	{
-		// applyLocalAccumulation() must be called to drain the queued information.
-		Assert.assertTrue(0L == _queuedMillis);
-		// While we usually initialize in local apply of changes, sometimes (especially initially), we should initialize in the motion path.
 		if (0L == _accumulationMillis)
 		{
-			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
+			_initializeForNextTick();
 		}
 		
-		// We only need to account for the existing velocity vector but otherwise just passing time.
-		float xVelocity = _newVelocity.x();
-		float yVelocity = _newVelocity.y();
-		// In this case, don't apply any viscosity and just coast.
-		return _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity, 1.0f);
+		// When we are just standing, this basically means just "drift" as we currently are.
+		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.STANDING);
 	}
 
 	/**
-	 * Walks in the direction described by the current yaw and given relativeDirection until currentTimeMillis.
+	 * Walks in the given relativeDirection up until the given time.
 	 * NOTE:  applyLocalAccumulation() MUST be called after applying the returned action to SpeculativeProjection (or
-	 * called directly, if null was returned).
+	 * called directly, if null was returned) in order for accumulated motion to be sent to the listener.
 	 * 
 	 * @param currentTimeMillis The current time.
 	 * @param relativeDirection Movement, relative to the current yaw direction.
@@ -159,12 +150,9 @@ public class MovementAccumulator
 	 */
 	public EntityChangeTopLevelMovement<IMutablePlayerEntity> walk(long currentTimeMillis, EntityChangeTopLevelMovement.Relative relativeDirection)
 	{
-		// applyLocalAccumulation() must be called to drain the queued information.
-		Assert.assertTrue(0L == _queuedMillis);
-		// While we usually initialize in local apply of changes, sometimes (especially initially), we should initialize in the motion path.
 		if (0L == _accumulationMillis)
 		{
-			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
+			_initializeForNextTick();
 		}
 		
 		// This is the same as standing, except that we override the X/Y velocity vectors based on the type of movement.
@@ -173,23 +161,17 @@ public class MovementAccumulator
 		float xComponent = OrientationHelpers.getEastYawComponent(yawRadians);
 		float yComponent = OrientationHelpers.getNorthYawComponent(yawRadians);
 		
-		// Determine the X/Y velocity based on these components and the walking type.
+		// Determine the X/Y velocity based on these components, fluid viscosity, and the walking type.
+		// TODO:  We probably want to apply a velocity change limit.
 		float maxSpeed = _env.creatures.PLAYER.blocksPerSecond();
 		float speed = maxSpeed * relativeDirection.speedMultiplier;
-		float xVelocity = speed * xComponent;
-		float yVelocity = speed * yComponent;
+		float xVelocity = _startInverseViscosity * speed * xComponent;
+		float yVelocity = _startInverseViscosity * speed * yComponent;
+		_newVelocity = new EntityLocation(xVelocity, yVelocity, _newVelocity.z());
 		
 		// Whatever has happened so far, we need to bill this as walking.
 		_intensity = EntityChangeTopLevelMovement.Intensity.WALKING;
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> toReturn = _commonAccumulateMotion(currentTimeMillis, xVelocity, yVelocity, _startInverseViscosity);
-		if (_queuedMillis > 0L)
-		{
-			// If there was any overflow from this accumulation, we need to re-assert that it is walking.
-			_intensity = EntityChangeTopLevelMovement.Intensity.WALKING;
-			_queuedXVector = xVelocity;
-			_queuedYVector = yVelocity;
-		}
-		return toReturn;
+		return _commonAccumulateMotion(currentTimeMillis, EntityChangeTopLevelMovement.Intensity.WALKING);
 	}
 
 	/**
@@ -201,12 +183,16 @@ public class MovementAccumulator
 	 */
 	public boolean enqueueSubAction(IMutationEntity<IMutablePlayerEntity> subAction)
 	{
-		// applyLocalAccumulation() must be called to drain the queued information.
-		Assert.assertTrue(0L == _queuedMillis);
-		
 		// This is applied directly to the current accumulation, unless there already is a sub-action.
 		boolean didApply = false;
-		if (null == _queuedSubAction)
+		if ((0 == _accumulationMillis) && (null == _subAction))
+		{
+			// We can apply this directly since we haven't moved yet (this is mostly just useful for tests).
+			_subAction = subAction;
+			didApply = true;
+		}
+		// If we couldn't apply it immediately, see if we can apply it to the next tick.
+		if (!didApply && (null == _queuedSubAction))
 		{
 			_queuedSubAction = subAction;
 			didApply = true;
@@ -218,41 +204,16 @@ public class MovementAccumulator
 	 * Called after any changes for this same time interval have been made and AFTER any returned action has been
 	 * applied to the SpeculativeProjection.
 	 * This method will apply any pending changes locally, updating the listener.
-	 * 
-	 * @param currentTimeMillis The current time.
 	 */
-	public void applyLocalAccumulation(long currentTimeMillis)
+	public void applyLocalAccumulation()
 	{
-		// This is called after any updates are made to the external SpeculativeProjection to apply local accumulation on top of that.
-		// Fist, we need to see if anything is queued up.
 		if (0L == _accumulationMillis)
 		{
-			// If there was an action queued, apply it and store it.
-			_subAction = null;
-			if (null != _queuedSubAction)
-			{
-				boolean isSuccess = _runSubActionToStart(currentTimeMillis, _queuedSubAction);
-				// We only want to hold onto the sub-action if it was a success.
-				_subAction = isSuccess ? _queuedSubAction : null;
-			}
-			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
-			_baselineZVector = _newVelocity.z();
-			
-			float newXVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.x());
-			float newYVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.y());
-			_newVelocity = new EntityLocation(newXVelocity, newYVelocity, _newVelocity.z());
-			
-			if (_queuedMillis > 0L)
-			{
-				_updateVelocityAndLocation(_queuedMillis, _startInverseViscosity * _queuedXVector, _startInverseViscosity * _queuedYVector);
-			}
-			_accumulationMillis = _queuedMillis;
-			
-			_queuedMillis = 0L;
-			_queuedXVector = 0.0f;
-			_queuedYVector = 0.0f;
-			_queuedSubAction = null;
+			_initializeForNextTick();
 		}
+		
+		// This is called after any updates are made to the external SpeculativeProjection to apply local accumulation on top of that.
+		// Note that we may have no accumulation if the last action perfectly filled the tick.
 		if (_accumulationMillis > 0L)
 		{
 			EntityChangeTopLevelMovement<IMutablePlayerEntity> toRun = new EntityChangeTopLevelMovement<>(_newLocation
@@ -263,19 +224,17 @@ public class MovementAccumulator
 				, _subAction
 				, _accumulationMillis
 			);
-			_runAccumulatedAction(currentTimeMillis, toRun);
+			_runAccumulatedAction(toRun);
 		}
 	}
 
 	/**
 	 * Clears all accumulated state, ready to begin building a new packed action with the next call.  This is useful if
 	 * the client determines any of its projections are invalid in order to reset to a known good state.
-	 * 
-	 * @param currentTimeMillis The current time.
 	 */
-	public void clearAccumulation(long currentTimeMillis)
+	public void clearAccumulation()
 	{
-		_clearAccumulation(currentTimeMillis);
+		_clearAccumulation();
 	}
 
 	/**
@@ -354,7 +313,7 @@ public class MovementAccumulator
 		{
 			_newVelocity = new EntityLocation(0.0f
 				, 0.0f
-				, _newVelocity.z()
+				, 0.0f
 			);
 		}
 		
@@ -385,11 +344,10 @@ public class MovementAccumulator
 		return result;
 	}
 
-	private void _clearAccumulation(long currentTimeMillis)
+	private void _clearAccumulation()
 	{
 		// This is called in the case where something went wrong and we should clear our accumulation back to its initial state.
 		_accumulationMillis = 0L;
-		_lastSampleMillis = currentTimeMillis;
 		_newLocation = _thisEntity.location();
 		_newVelocity = _thisEntity.velocity();
 		_subAction = _queuedSubAction;
@@ -397,31 +355,24 @@ public class MovementAccumulator
 		_baselineZVector = _newVelocity.z();
 		_intensity = EntityChangeTopLevelMovement.Intensity.STANDING;
 		
-		_queuedMillis = 0L;
-		_queuedXVector = 0.0f;
-		_queuedYVector = 0.0f;
 		_queuedSubAction = null;
 	}
 
-	private void _updateVelocityAndLocation(long millisToMove, float proposedVelocityX, float proposedVelocityY)
+	private void _updateVelocityAndLocation(long millisToMove)
 	{
 		Environment env = Environment.getShared();
 		float secondsToPass = (float)millisToMove / 1000.0f;
 		_updateVelocityWithAccumulatedGravity(millisToMove);
-		// For now, we will just use the proposed velocity for X/Y but we will later need some maximum acceleration for things like resisting knockback, etc.
-		// TODO: Apply maximum velocity change constraint.
-		// Z-velocity changes are only applied at the beginning of the tick so we will assume we can use whatever we were given.
-		EntityLocation velocity = new EntityLocation(proposedVelocityX, proposedVelocityY, _newVelocity.z());
-		EntityLocation effectiveMotion = new EntityLocation(secondsToPass * velocity.x(), secondsToPass * velocity.y(), secondsToPass * velocity.z());
+		EntityLocation effectiveMotion = new EntityLocation(secondsToPass * _newVelocity.x(), secondsToPass * _newVelocity.y(), secondsToPass * _newVelocity.z());
 		EntityMovementHelpers.interactiveEntityMove(_newLocation, _playerVolume, effectiveMotion, new EntityMovementHelpers.InteractiveHelper() {
 			@Override
 			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				_newLocation = finalLocation;
 				// We keep the velocity we proposed, except for any axes which were cancelled due to collision.
-				_newVelocity = new EntityLocation(cancelX ? 0.0f : velocity.x()
-					, cancelY ? 0.0f : velocity.y()
-					, cancelZ ? 0.0f : velocity.z()
+				_newVelocity = new EntityLocation(cancelX ? 0.0f : _newVelocity.x()
+					, cancelY ? 0.0f : _newVelocity.y()
+					, cancelZ ? 0.0f : _newVelocity.z()
 				);
 			}
 			@Override
@@ -444,7 +395,7 @@ public class MovementAccumulator
 		});
 	}
 
-	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis, float xVelocity, float yVelocity, float inverseViscosityMultiplier)
+	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _commonAccumulateMotion(long currentTimeMillis, EntityChangeTopLevelMovement.Intensity thisStepIntensity)
 	{
 		// First, see if we will need to split this time interval.
 		long millisToAdd = (currentTimeMillis - _lastSampleMillis);
@@ -456,28 +407,36 @@ public class MovementAccumulator
 		}
 		long accumulated = _accumulationMillis + millisToAdd;
 		long overflowMillis = accumulated - _millisPerTick;
-		float effectiveXVelocity = inverseViscosityMultiplier * xVelocity;
-		float effectiveYVelocity = inverseViscosityMultiplier * yVelocity;
 		
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> toReturn;
 		if (overflowMillis >= 0L)
 		{
 			// We need to carve off the existing accumulation.
 			long fillMillis = millisToAdd - overflowMillis;
-			_updateVelocityAndLocation(fillMillis, effectiveXVelocity, effectiveYVelocity);
+			_updateVelocityAndLocation(fillMillis);
 			toReturn = _buildFromAccumulation();
 			
-			// We now need to reset our counters.
+			// Re-initialize our internal accumulation for the next tick.
+			_subAction = _queuedSubAction;
+			_queuedSubAction = null;
 			_intensity = EntityChangeTopLevelMovement.Intensity.STANDING;
-			_queuedMillis = overflowMillis;
-			_queuedXVector = _newVelocity.x();
-			_queuedYVector = _newVelocity.y();
 			_accumulationMillis = 0L;
+			
+			if (overflowMillis > 0L)
+			{
+				// We need to save the overflow spilling from this action since it cannot be applied until after the
+				// returned "toReturn" has been applied toSpeculativeProjection.
+				_overflow = new _OverflowData(overflowMillis
+					, thisStepIntensity
+					, (EntityChangeTopLevelMovement.Intensity.WALKING == thisStepIntensity) ? _newVelocity.x() : 0.0f
+					, (EntityChangeTopLevelMovement.Intensity.WALKING == thisStepIntensity) ? _newVelocity.y() : 0.0f
+				);
+			}
 		}
 		else
 		{
 			// The accumulation is not yet finished so just accumulate.
-			_updateVelocityAndLocation(millisToAdd, effectiveXVelocity, effectiveYVelocity);
+			_updateVelocityAndLocation(millisToAdd);
 			_accumulationMillis = accumulated;
 			toReturn = null;
 		}
@@ -485,13 +444,8 @@ public class MovementAccumulator
 		return toReturn;
 	}
 
-	private boolean _runSubActionToStart(long currentTimeMillis, IMutationEntity<IMutablePlayerEntity> toRun)
+	private boolean _runSubActionToStart(IMutationEntity<IMutablePlayerEntity> toRun)
 	{
-		// This function is only called at the beginning of an accumulated action to run the sub-action.  This is mostly
-		// just to adjust for things like entity velocity change, etc, but it is also the only case where things like
-		// changes to the world can happen (since the rest of the accumulation is just entity movement).
-		Assert.assertTrue(0L == _accumulationMillis);
-		
 		OneOffRunner.StatePackage input = new OneOffRunner.StatePackage(_thisEntity
 			, _world
 			, _heights
@@ -501,6 +455,8 @@ public class MovementAccumulator
 		TickProcessingContext.IEventSink eventSink = (EventRecord event) -> {
 			// TODO:  Come up with a way to relay these events without duplication in SpeculativeProjection since we likely need them immediately.
 		};
+		// Use the last sample time as the current time.
+		long currentTimeMillis = _lastSampleMillis;
 		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
 		if (null != output)
 		{
@@ -561,7 +517,7 @@ public class MovementAccumulator
 		return (null != output);
 	}
 
-	private void _runAccumulatedAction(long currentTimeMillis, EntityChangeTopLevelMovement<IMutablePlayerEntity> toRun)
+	private void _runAccumulatedAction(EntityChangeTopLevelMovement<IMutablePlayerEntity> toRun)
 	{
 		// This function is called whenever there is some accumulation time.  Note that the sub-action is run at the
 		// beginning of the tick, before the accumulation begins, so any world-changing notifications have already been
@@ -580,6 +536,8 @@ public class MovementAccumulator
 			// action tick in the other path.
 		};
 		boolean shouldClearAccumulation;
+		// Use the last sample time as the current time.
+		long currentTimeMillis = _lastSampleMillis;
 		OneOffRunner.StatePackage output = OneOffRunner.runOneChange(input, eventSink, _millisPerTick, currentTimeMillis, toRun);
 		if (null != output)
 		{
@@ -608,7 +566,7 @@ public class MovementAccumulator
 		
 		if (shouldClearAccumulation)
 		{
-			_clearAccumulation(currentTimeMillis);
+			_clearAccumulation();
 		}
 	}
 
@@ -624,4 +582,40 @@ public class MovementAccumulator
 		}
 		_newVelocity = new EntityLocation(_newVelocity.x(), _newVelocity.y(), newZVelocity);
 	}
+
+	private void _initializeForNextTick()
+	{
+		_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
+		if (null != _subAction)
+		{
+			_runSubActionToStart(_subAction);
+		}
+		// Capture the Z after the sub-action, since cases like jumps change this.
+		_baselineZVector = _newVelocity.z();
+		
+		// We want to apply a sort of "drag" on the velocity when the tick starts so do that here to both X/Y (Z is handled differently since it isn't actively applied by the user).
+		float newXVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.x());
+		float newYVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.y());
+		_newVelocity = new EntityLocation(newXVelocity, newYVelocity, _newVelocity.z());
+		
+		// If there is any overflow, apply that.
+		if (null != _overflow)
+		{
+			_intensity = _overflow.intensity;
+			if (EntityChangeTopLevelMovement.Intensity.WALKING == _intensity)
+			{
+				_newVelocity = new EntityLocation(_overflow.velocityX, _overflow.velocityY, _newVelocity.z());
+			}
+			_updateVelocityAndLocation(_overflow.millis);
+			_accumulationMillis = _overflow.millis;
+			_overflow = null;
+		}
+	}
+
+
+	private static record _OverflowData(long millis
+			, EntityChangeTopLevelMovement.Intensity intensity
+			, float velocityX
+			, float velocityY
+	) {}
 }

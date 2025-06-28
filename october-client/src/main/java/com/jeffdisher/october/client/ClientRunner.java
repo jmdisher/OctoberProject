@@ -225,7 +225,7 @@ public class ClientRunner
 				});
 			}
 		}
-		_accumulator.applyLocalAccumulation(currentTimeMillis);
+		_accumulator.applyLocalAccumulation();
 	}
 
 
@@ -382,7 +382,7 @@ public class ClientRunner
 				);
 				if (!_didInitialize)
 				{
-					_accumulator.clearAccumulation(currentTimeMillis);
+					_accumulator.clearAccumulation();
 					_didInitialize = true;
 				}
 			});
