@@ -53,12 +53,6 @@ import com.jeffdisher.october.utils.Assert;
  */
 public class MovementAccumulator
 {
-	/**
-	 * When applying the "coasting" deceleration at the beginning of a tick, we assume that any speed below this is "0".
-	 */
-	public static final float MIN_COASTING_SPEED = 0.5f;
-
-
 	private final Environment _env;
 	private final IProjectionListener _listener;
 	private final long _millisPerTick;
@@ -244,17 +238,8 @@ public class MovementAccumulator
 			_startInverseViscosity = 1.0f - EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, _playerVolume, _proxyLookup);
 			_baselineZVector = _newVelocity.z();
 			
-			// We want to apply a sort of "drag" on the velocity when the tick starts so do that here to both X/Y (Z is handled differently since it isn't actively applied by the user).
-			float newXVelocity = _startInverseViscosity * _newVelocity.x();
-			if (Math.abs(newXVelocity) < MIN_COASTING_SPEED)
-			{
-				newXVelocity = 0.0f;
-			}
-			float newYVelocity = _startInverseViscosity * _newVelocity.y();
-			if (Math.abs(newYVelocity) < MIN_COASTING_SPEED)
-			{
-				newXVelocity = 0.0f;
-			}
+			float newXVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.x());
+			float newYVelocity = EntityChangeTopLevelMovement.velocityAfterViscosityAndCoast(_startInverseViscosity, _newVelocity.y());
 			_newVelocity = new EntityLocation(newXVelocity, newYVelocity, _newVelocity.z());
 			
 			if (_queuedMillis > 0L)

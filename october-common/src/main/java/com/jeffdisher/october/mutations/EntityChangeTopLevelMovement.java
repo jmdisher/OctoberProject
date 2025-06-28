@@ -34,6 +34,10 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	 * Due to rounding errors, a single horizontal movement may need a nudge to pass checks.
 	 */
 	public static final float HORIZONTAL_SINGLE_FUDGE = 0.01f;
+	/**
+	 * When applying the "coasting" deceleration at the beginning of a tick, we assume that any speed below this is "0".
+	 */
+	public static final float MIN_COASTING_SPEED = 0.5f;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -45,6 +49,19 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		IMutationEntity<T> subAction = CodecHelpers.readNullableNestedChange(buffer);
 		long millis = buffer.getLong();
 		return new EntityChangeTopLevelMovement<>(newLocation, newVelocity, intensity, yaw, pitch, subAction, millis);
+	}
+
+	/**
+	 * Computes the velocity in a given axis after accounting for coasting through viscosity and accounting for coasting
+	 * limits.
+	 * 
+	 * @param viscosity The viscosity of the blocks where the entity is.
+	 * @param axisVelocity The velocity, in blocks/s, in one axis from the previous tick.
+	 * @return The new coasting velocity for this axis.
+	 */
+	public static float velocityAfterViscosityAndCoast(float viscosity, float axisVelocity)
+	{
+		return _velocityAfterViscosityAndCoast(viscosity, axisVelocity);
 	}
 
 
@@ -204,8 +221,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		boolean isValidAcceleration = (xVDelta <= intensityVelocityPerSecond)
 			&& (yVDelta <= intensityVelocityPerSecond)
 		;
-		boolean isNaturalDeceleration = (xVDelta == (startInverseViscosity * startVelocity.x()))
-				&& (yVDelta == (startInverseViscosity * startVelocity.y()));
+		float deceleratedX = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.x());
+		float deceleratedY = _velocityAfterViscosityAndCoast(startInverseViscosity, startVelocity.y());
+		boolean isNaturalDeceleration = (deceleratedX == _newVelocity.x()) && (deceleratedY == _newVelocity.y());
 		if (!isValidAcceleration && !isNaturalDeceleration)
 		{
 			// We want to see if any of the cases related to immediate deceleration apply:  Touching the ground or hitting a wall.
@@ -321,6 +339,17 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	public String toString()
 	{
 		return "Top-level";
+	}
+
+
+	private static float _velocityAfterViscosityAndCoast(float viscosity, float axisVelocity)
+	{
+		float newVelocity = viscosity * axisVelocity;
+		if (Math.abs(newVelocity) < MIN_COASTING_SPEED)
+		{
+			newVelocity = 0.0f;
+		}
+		return newVelocity;
 	}
 
 

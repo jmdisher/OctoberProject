@@ -61,6 +61,7 @@ public class TestCommonChanges
 	private static Item PLANK_ITEM;
 	private static Item CHARCOAL_ITEM;
 	private static Block STONE;
+	private static Block WATER_SOURCE;
 	private static EntityType COW;
 	@BeforeClass
 	public static void setup()
@@ -71,6 +72,7 @@ public class TestCommonChanges
 		PLANK_ITEM = ENV.items.getItemById("op.plank");
 		CHARCOAL_ITEM = ENV.items.getItemById("op.charcoal");
 		STONE = ENV.blocks.fromItem(STONE_ITEM);
+		WATER_SOURCE = ENV.blocks.fromItem(ENV.items.getItemById("op.water_source"));
 		COW = ENV.creatures.getTypeById("op.cow");
 	}
 	@AfterClass
@@ -2495,6 +2497,37 @@ public class TestCommonChanges
 		Assert.assertEquals(EntityChangePeriodic.ENERGY_COST_MOVE_PER_BLOCK, newEntity.newEnergyDeficit);
 		Assert.assertEquals(5, newEntity.newYaw);
 		Assert.assertEquals(6, newEntity.newPitch);
+	}
+
+	@Test
+	public void coastToStopTopLevel()
+	{
+		// Show that when we coast to a stop, while falling, the check on the change passes.
+		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 5.0f);
+		EntityLocation oldVelocity = new EntityLocation(0.8f, 0.0f, -1.0f);
+		EntityLocation newLocation = new EntityLocation(0.04f, 0.0f, 4.0f);
+		EntityLocation newVelocity = new EntityLocation(0.0f, 0.0f, -2.0f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		newEntity.newVelocity = oldVelocity;
+		CuboidData water = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), WATER_SOURCE);
+		TickProcessingContext context = ContextBuilder.build()
+				.tick(MiscConstants.DAMAGE_TAKEN_TIMEOUT_MILLIS / ContextBuilder.DEFAULT_MILLIS_PER_TICK)
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), water), null)
+				.finish()
+		;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, null
+			, context.millisPerTick
+		);
+		boolean didApply = action.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(newLocation, newEntity.newLocation);
+		Assert.assertEquals(newVelocity, newEntity.newVelocity);
 	}
 
 
