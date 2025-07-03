@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.Aspect;
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
@@ -22,6 +21,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
@@ -378,19 +378,7 @@ public class MovementAccumulator
 			@Override
 			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 			{
-				BlockProxy proxy = _proxyLookup.apply(location);
-				float viscosity;
-				if (null != proxy)
-				{
-					// Find the viscosity based on block type.
-					viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
-				}
-				else
-				{
-					// This is missing so we will just treat it as a solid block.
-					viscosity = 1.0f;
-				}
-				return viscosity;
+				return new ViscosityReader(env, _proxyLookup).getViscosityFraction(location);
 			}
 		});
 	}

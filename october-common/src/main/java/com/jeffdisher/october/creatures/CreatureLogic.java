@@ -13,6 +13,7 @@ import com.jeffdisher.october.logic.CreatureMovementHelpers;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.logic.PathFinder;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.IMutationEntity;
@@ -312,10 +313,7 @@ public class CreatureLogic
 	{
 		Assert.assertTrue(!existingPlan.isEmpty());
 		
-		BlockProxy proxy = context.previousBlockLookUp.apply(mutable.newLocation.getBlockLocation());
-		Block currentBlock = proxy.getBlock();
-		boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
-		float viscosity = Environment.getShared().blocks.getViscosityFraction(currentBlock, isActive);
+		float viscosity = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp).getViscosityFraction(mutable.newLocation.getBlockLocation());
 		boolean isIdleMovement = (CreatureEntity.NO_TARGET_ENTITY_ID == mutable.newTargetEntityId);
 		
 		// We have a path so make sure that we start in a reasonable part of the block so we don't bump into something or fail to jump out of a hole.

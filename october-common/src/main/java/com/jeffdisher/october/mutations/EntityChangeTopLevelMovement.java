@@ -3,11 +3,10 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -255,19 +254,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				@Override
 				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 				{
-					BlockProxy proxy = context.previousBlockLookUp.apply(location);
-					float viscosity;
-					if (null != proxy)
-					{
-						// Find the viscosity based on block type.
-						viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
-					}
-					else
-					{
-						// This is missing so we will just treat it as a solid block.
-						viscosity = 1.0f;
-					}
-					return viscosity;
+					return new ViscosityReader(env, context.previousBlockLookUp).getViscosityFraction(location);
 				}
 			});
 			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])

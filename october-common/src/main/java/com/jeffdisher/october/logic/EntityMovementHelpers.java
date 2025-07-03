@@ -87,12 +87,8 @@ public class EntityMovementHelpers
 		// -cancel positive vector if we hit the ceiling
 		// -cancel negative vector if we hit the ground
 		// -apply gravity in any other case
-		BlockProxy currentLocationProxy = previousBlockLookUp.apply(oldLocation.getBlockLocation());
 		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
-		float viscosityFraction = (null != currentLocationProxy)
-				? env.blocks.getViscosityFraction(currentLocationProxy.getBlock(), FlagsAspect.isSet(currentLocationProxy.getFlags(), FlagsAspect.FLAG_ACTIVE))
-				: 1.0f
-		;
+		float viscosityFraction = new ViscosityReader(env, previousBlockLookUp).getViscosityFraction(oldLocation.getBlockLocation());
 		float initialZVector = oldVector.z();
 		EntityVolume volume = newEntity.getType().volume();
 		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
@@ -386,19 +382,7 @@ public class EntityMovementHelpers
 			@Override
 			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 			{
-				BlockProxy proxy = blockLookup.apply(location);
-				float viscosity;
-				if (null != proxy)
-				{
-					// Find the viscosity based on block type.
-					viscosity = env.blocks.getViscosityFraction(proxy.getBlock(), FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE));
-				}
-				else
-				{
-					// This is missing so we will just treat it as a solid block.
-					viscosity = 1.0f;
-				}
-				return viscosity;
+				return new ViscosityReader(env, blockLookup).getViscosityFraction(location);
 			}
 			@Override
 			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
