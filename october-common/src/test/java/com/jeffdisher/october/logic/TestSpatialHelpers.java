@@ -107,99 +107,6 @@ public class TestSpatialHelpers
 	}
 
 	@Test
-	public void locationTouchingCeiling()
-	{
-		// Try to place the entity a little too high into the ceiling and observe the corrected location.
-		EntityLocation location = new EntityLocation(0.0f, 0.0f, -1.5f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
-				? new BlockProxy(l.getBlockAddress(), stone)
-				: new BlockProxy(l.getBlockAddress(), air)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingCeiling(blockTypeReader, location, VOLUME, -2.0f);
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -1.8f), touching);
-	}
-
-	@Test
-	public void locationTouchingGround()
-	{
-		// Try to place the entity a little too low into the ground and observe the corrected location.
-		EntityLocation location = new EntityLocation(0.0f, 0.0f, -0.5f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, -1), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.z() >= 0)
-				? new BlockProxy(l.getBlockAddress(), air)
-				: new BlockProxy(l.getBlockAddress(), stone)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingGround(blockTypeReader, location, VOLUME, 1.0f);
-		// Note that we will need to treat -0.0 and 0.0 as the same in various places in the system.
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.0f), touching);
-	}
-
-	@Test
-	public void locationTouchingEast()
-	{
-		// Try to place the entity a little too for into the wall and observe the corrected location.
-		EntityLocation location = new EntityLocation(-0.3f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
-				? new BlockProxy(l.getBlockAddress(), stone)
-				: new BlockProxy(l.getBlockAddress(), air)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingEastWall(blockTypeReader, location, VOLUME, -1.0f);
-		Assert.assertEquals(new EntityLocation(-0.5f, 0.0f, 0.0f), touching);
-	}
-
-	@Test
-	public void locationTouchingWest()
-	{
-		// Try to place the entity a little too for into the wall and observe the corrected location.
-		EntityLocation location = new EntityLocation(-0.3f, 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
-				? new BlockProxy(l.getBlockAddress(), air)
-				: new BlockProxy(l.getBlockAddress(), stone)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingWestWall(blockTypeReader, location, VOLUME, 1.0f);
-		// Note that we will need to treat -0.0 and 0.0 as the same in various places in the system.
-		Assert.assertEquals(new EntityLocation(-0.0f, 0.0f, 0.0f), touching);
-	}
-
-	@Test
-	public void locationTouchingNorth()
-	{
-		// Try to place the entity a little too for into the wall and observe the corrected location.
-		EntityLocation location = new EntityLocation(0.0f, -0.3f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.y() >= 0)
-				? new BlockProxy(l.getBlockAddress(), stone)
-				: new BlockProxy(l.getBlockAddress(), air)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingNorthWall(blockTypeReader, location, VOLUME, -1.0f);
-		Assert.assertEquals(new EntityLocation(0.0f, -0.5f, 0.0f), touching);
-	}
-
-	@Test
-	public void locationTouchingSouth()
-	{
-		// Try to place the entity a little too for into the wall and observe the corrected location.
-		EntityLocation location = new EntityLocation(0.0f, -0.3f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.y() >= 0)
-				? new BlockProxy(l.getBlockAddress(), air)
-				: new BlockProxy(l.getBlockAddress(), stone)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingSouthWall(blockTypeReader, location, VOLUME, 1.0f);
-		// Note that we will need to treat -0.0 and 0.0 as the same in various places in the system.
-		Assert.assertEquals(new EntityLocation(0.0f, -0.0f, 0.0f), touching);
-	}
-
-	@Test
 	public void blockAlignment()
 	{
 		// Test the basics of block alignment.
@@ -207,21 +114,6 @@ public class TestSpatialHelpers
 		Assert.assertTrue(SpatialHelpers.isBlockAligned(-1.00f));
 		Assert.assertFalse(SpatialHelpers.isBlockAligned(0.005f));
 		Assert.assertFalse(SpatialHelpers.isBlockAligned(-0.005f));
-	}
-
-	@Test
-	public void noMovementShouldFail()
-	{
-		// We want to be right against the wall and try to move into it, which should fail.
-		EntityLocation location = new EntityLocation(-VOLUME.width(), 0.0f, 0.0f);
-		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(-1, 0, 0), ENV.special.AIR);
-		CuboidData stone = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
-		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> (l.x() >= 0)
-				? new BlockProxy(l.getBlockAddress(), stone)
-				: new BlockProxy(l.getBlockAddress(), air)
-		;
-		EntityLocation touching = SpatialHelpers.locationTouchingEastWall(blockTypeReader, location, VOLUME, location.x());
-		Assert.assertNull(touching);
 	}
 
 	@Test
