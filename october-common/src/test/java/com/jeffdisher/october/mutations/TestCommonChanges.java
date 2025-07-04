@@ -193,7 +193,7 @@ public class TestCommonChanges
 		
 		// Try a few falling steps to see how we sink back to the ground.
 		// (we will use 50ms updates to see the more detailed arc)
-		for (int i = 0; i < 22; ++i)
+		for (int i = 0; i < 18; ++i)
 		{
 			context = _createNextTick(context, 50L);
 			TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
@@ -206,7 +206,7 @@ public class TestCommonChanges
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
-		Assert.assertEquals(-5.88f, newEntity.newVelocity.z(), 0.01f);
+		Assert.assertEquals(-4.9f, newEntity.newVelocity.z(), 0.01f);
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);

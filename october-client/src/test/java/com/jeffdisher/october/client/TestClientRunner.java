@@ -326,7 +326,7 @@ public class TestClientRunner
 		EntityLocation location = projection.thisEntity.location();
 		Assert.assertEquals(0.0f, location.x(), 0.0001f);
 		Assert.assertEquals(0.0f, location.y(), 0.0001f);
-		Assert.assertEquals(0.88f, location.z(), 0.0001f);
+		Assert.assertEquals(0.68f, location.z(), 0.0001f);
 		Assert.assertTrue(projection.events.isEmpty());
 	}
 

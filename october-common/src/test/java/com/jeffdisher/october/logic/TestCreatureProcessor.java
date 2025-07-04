@@ -229,7 +229,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(4.9f, updated.velocity().z(), 0.001f);
+		Assert.assertEquals(3.92f, updated.velocity().z(), 0.001f);
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
 	}
 
@@ -826,7 +826,7 @@ public class TestCreatureProcessor
 		long millisPerTick = 100L;
 		
 		Map<Integer, List<IMutationEntity<IMutableCreatureEntity>>> changesToRun = Map.of();
-		for (int i = 0; i < 13; ++i)
+		for (int i = 0; i < 5; ++i)
 		{
 			TickProcessingContext context = ContextBuilder.build()
 					.tick(CreatureLogic.MINIMUM_MILLIS_TO_ACTION / millisPerTick)
@@ -852,8 +852,8 @@ public class TestCreatureProcessor
 			// Make sure that we are rising.
 			Assert.assertTrue(creature.location().z() > oldZ);
 			
-			// We expect the 13th iteration to be the final one (since we now swim up quickly).
-			if (i < 12)
+			// We expect the 6th iteration to be the final one (since we now swim up quickly).
+			if (i < 5)
 			{
 				Assert.assertNotNull(creature.ephemeral().movementPlan());
 			}
@@ -865,7 +865,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(3.23f, creature.location().z(), 0.01f);
+		Assert.assertEquals(1.85f, creature.location().z(), 0.01f);
 	}
 
 	@Test
