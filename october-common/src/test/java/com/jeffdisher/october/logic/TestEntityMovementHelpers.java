@@ -164,8 +164,8 @@ public class TestEntityMovementHelpers
 			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
-		Assert.assertEquals(-0.97f, entity.vector.z(), 0.01f);
-		Assert.assertEquals(-0.42f, entity.location.z() - startLocation.z(), 0.01f);
+		Assert.assertEquals(-4.9f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(-1.78f, entity.location.z() - startLocation.z(), 0.01f);
 	}
 
 	@Test
@@ -182,8 +182,8 @@ public class TestEntityMovementHelpers
 			Assert.assertTrue(_allowMovement(context, entity, millisInMotion));
 		}
 		// We know that the drag of the water will slow this down but these are experimentally derived.
-		Assert.assertEquals(1.96f, entity.vector.z(), 0.01f);
-		Assert.assertEquals(6.70f, entity.location.z(), 0.01f);
+		Assert.assertEquals(4.41f, entity.vector.z(), 0.01f);
+		Assert.assertEquals(8.60f, entity.location.z(), 0.01f);
 	}
 
 	@Test

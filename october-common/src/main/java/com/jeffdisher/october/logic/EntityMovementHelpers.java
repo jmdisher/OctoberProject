@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -81,152 +80,52 @@ public class EntityMovementHelpers
 		Environment env = Environment.getShared();
 		EntityLocation oldVector = newEntity.getVelocityVector();
 		EntityLocation oldLocation = newEntity.getLocation();
-		
-		// First of all, we need to figure out if we should be changing our z-vector:
-		// -apply viscosity to the previous vector (direct multiplier)
-		// -cancel positive vector if we hit the ceiling
-		// -cancel negative vector if we hit the ground
-		// -apply gravity in any other case
-		// We will apply viscosity as the material viscosity times the current velocity since that is simple and should appear reasonable.
-		float viscosityFraction = new ViscosityReader(env, previousBlockLookUp).getViscosityFraction(oldLocation.getBlockLocation());
-		float initialZVector = oldVector.z();
 		EntityVolume volume = newEntity.getType().volume();
-		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
-		float velocityFraction = (1.0f - viscosityFraction);
-		float newZVector;
-		if ((initialZVector > 0.0f) && SpatialHelpers.isTouchingCeiling(previousBlockLookUp, oldLocation, volume))
-		{
-			// We are up against the ceiling so cancel the velocity.
-			newZVector = 0.0f;
-		}
-		else if ((initialZVector <= 0.0f) && SpatialHelpers.isStandingOnGround(previousBlockLookUp, oldLocation, volume))
-		{
-			// We are on the ground so cancel the velocity.
-			newZVector = 0.0f;
-		}
-		else
-		{
-			float acceleratedZ = MotionHelpers.applyZAcceleration(initialZVector, secondsInMotion);
-			// Decelerate the velocity based on time and drag.
-			float drag = secondsInMotion * viscosityFraction * acceleratedZ * DRAG_FUDGE_FACTOR;
-			newZVector = acceleratedZ - drag;
-			// Make sure that this doesn't overflow (due to the drag fudge factor).
-			if (Math.signum(acceleratedZ) != Math.signum(newZVector))
-			{
-				newZVector = 0.0f;
-			}
-		}
+		float initialZVector = oldVector.z();
 		
-		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
-		float effectiveZVelocity = secondsInMotion * (initialZVector + newZVector) / 2.0f;
+		// We now just implement this in terms of interactive movement (it will eventually be removed, entirely).
+		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
+		float viscosityFraction = reader.getViscosityFraction(oldLocation.getBlockLocation());
+		float inverseViscosity = (1.0f - viscosityFraction);
+		
+		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
+		float zVelocityChange = secondsInMotion * inverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+		float newZVelocity = initialZVector + zVelocityChange;
+		float effectiveTerminalVelocity = inverseViscosity * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+		if (newZVelocity < effectiveTerminalVelocity)
+		{
+			newZVelocity = effectiveTerminalVelocity;
+		}
 		
 		// Note that we currently just set the x/y velocities to zero after applying the movement so just directly apply these through the viscosity.
 		// TODO:  This assumption of setting x/y velocity to zero will need to change to support icy surfaces or "flying through the air".
-		float velocityToApplyX = velocityFraction * oldVector.x();
-		float velocityToApplyY = velocityFraction * oldVector.y();
-		float velocityToApplyZ = velocityFraction * effectiveZVelocity;
+		float velocityToApplyX = inverseViscosity * oldVector.x();
+		float velocityToApplyY = inverseViscosity * oldVector.y();
+		float velocityToApplyZ = (initialZVector + inverseViscosity * newZVelocity) / 2.0f;
+		EntityLocation distanceToMove = new EntityLocation(secondsInMotion * velocityToApplyX
+			, secondsInMotion * velocityToApplyY
+			, secondsInMotion * velocityToApplyZ
+		);
+		final float finalZ = newZVelocity;
 		
-		// We will calculate the new z-vector based on gravity but only apply half to movement (since we assume acceleration is linear).
-		EntityLocation averageVelocity = new EntityLocation(secondsInMotion * velocityToApplyX, secondsInMotion * velocityToApplyY, velocityToApplyZ);
-		// We also want to apply the fudge factor here to deal with the positive edge being exclusive to collision (this is subtracted later).
-		float fudgeFactor = POSITIVE_EDGE_COLLISION_FUDGE_FACTOR;
-		if (velocityToApplyX > 0.0f)
-		{
-			averageVelocity = new EntityLocation(averageVelocity.x() + fudgeFactor, averageVelocity.y(), averageVelocity.z());
-		}
-		if (velocityToApplyY > 0.0f)
-		{
-			averageVelocity = new EntityLocation(averageVelocity.x(), averageVelocity.y() + fudgeFactor, averageVelocity.z());
-		}
-		if (velocityToApplyZ > 0.0f)
-		{
-			averageVelocity = new EntityLocation(averageVelocity.x(), averageVelocity.y(), averageVelocity.z() + fudgeFactor);
-		}
-		
-		// We will always cancel x/y velocity but only z if we cancelled.
-		float newXVector = 0.0f;
-		float newYVector = 0.0f;
-		
-		// We will try to move at most 3 times since we could collide in all 3 axes.
-		EntityLocation zero = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = oldLocation;
-		EntityLocation lastAdjustment = oldLocation;
-		while (!zero.equals(averageVelocity))
-		{
-			RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(newLocation, volume, averageVelocity, (AbsoluteLocation l) -> {
-				boolean stop;
-				BlockProxy proxy = previousBlockLookUp.apply(l);
-				// This can be null if the world isn't totally loaded on the client.
-				if (null != proxy)
-				{
-					boolean isActive = FlagsAspect.isSet(proxy.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					stop = env.blocks.isSolid(proxy.getBlock(), isActive);
-				}
-				else
-				{
-					stop = true;
-				}
-				return stop;
-			});
-			newLocation = result.location();
-			
-			// Adjust the location by removing the fudge factor (note that these are only on the positive edge).
-			if (newLocation.x() > lastAdjustment.x())
+		_interactiveEntityMove(oldLocation, volume, distanceToMove, new InteractiveHelper() {
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 			{
-				newLocation = new EntityLocation(newLocation.x() - fudgeFactor, newLocation.y(), newLocation.z());
+				return reader.getViscosityFraction(location);
 			}
-			if (newLocation.y() > lastAdjustment.y())
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
-				newLocation = new EntityLocation(newLocation.x(), newLocation.y() - fudgeFactor, newLocation.z());
+				// Set the location and velocity.
+				newEntity.setLocation(finalLocation);
+				// In this helper, we always cancel X/Y velocity but only Z if colliding.
+				newEntity.setVelocityVector(new EntityLocation(0.0f
+					, 0.0f
+					, cancelZ ? 0.0f : finalZ
+				));
 			}
-			if (newLocation.z() > lastAdjustment.z())
-			{
-				newLocation = new EntityLocation(newLocation.x(), newLocation.y(), newLocation.z() - fudgeFactor);
-			}
-			
-			// Account for how much of the velocity we have applied in this iteration, and store the last adjustment so we don't redundantly remove fudge factor.
-			float deltaX = newLocation.x() - lastAdjustment.x();
-			float deltaY = newLocation.y() - lastAdjustment.y();
-			float deltaZ = newLocation.z() - lastAdjustment.z();
-			lastAdjustment = newLocation;
-			
-			// We want to cancel this if we stopped due to collision.
-			if (null != result.collisionAxis())
-			{
-				// We hit something so figure out which direction to cancel.
-				// Also, recalculate position to make sure we don't get stuck in a wall.
-				switch (result.collisionAxis())
-				{
-				case X:
-					averageVelocity = new EntityLocation(0.0f, averageVelocity.y() - deltaY, averageVelocity.z() - deltaZ);
-					break;
-				case Y:
-					averageVelocity = new EntityLocation(averageVelocity.x() - deltaX, 0.0f, averageVelocity.z() - deltaZ);
-					break;
-				case Z:
-					averageVelocity = new EntityLocation(averageVelocity.x() - deltaX, averageVelocity.y() - deltaY, 0.0f);
-					newZVector = 0.0f;
-					break;
-				case INTERNAL:
-					// In this case, just stop.
-					// NOTE:  We shouldn't normally see this unless we are actually stuck in a block.
-					averageVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
-					newZVector = 0.0f;
-					break;
-				default:
-					throw Assert.unreachable();
-				}
-			}
-			else
-			{
-				// We didn't hit anything, or we are stuck in a block, so just fall out.
-				averageVelocity = zero;
-			}
-		}
-		
-		// Set the location and velocity.
-		newEntity.setLocation(newLocation);
-		newEntity.setVelocityVector(new EntityLocation(newXVector, newYVector, newZVector));
+		});
 	}
 
 	/**
@@ -240,18 +139,7 @@ public class EntityMovementHelpers
 	 */
 	public static void interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
 	{
-		// We want to handle the degenerate case of being stuck in a block first, because it avoids some setup and the 
-		// common code assumes it isn't happening so will only report a partial collision.
-		if (_canOccupyLocation(start, volume, helper))
-		{
-			// We aren't stuck so use the common case.
-			_interactiveEntityMoveNotStuck(start, volume, vectorToMove, helper);
-		}
-		else
-		{
-			// We are already stuck here so just fail out without moving, colliding on all axes.
-			helper.setLocationAndViscosity(start, true, true, true);
-		}
+		_interactiveEntityMove(start, volume, vectorToMove, helper);
 	}
 
 	/**
@@ -318,6 +206,7 @@ public class EntityMovementHelpers
 			, start.y() + volume.width()
 			, start.z() + volume.height()
 		);
+		Assert.assertTrue(volume.width() == EntityLocation.roundToHundredths(edgeLocation.y() - movingStart.y()));
 		
 		// We will create effective vector components which can be reduced as we manage collision/movement.
 		float effectiveX = vectorToMove.x();
@@ -345,9 +234,9 @@ public class EntityMovementHelpers
 			// Move us over by the collision distance, check the block viscosities, and loop.
 			float fullVectorLength = (float)Math.sqrt(effectiveX * effectiveX + effectiveY * effectiveY + effectiveZ * effectiveZ);
 			float portion = collision.rayDistance() / fullVectorLength;
-			float moveX = portion * effectiveX;
-			float moveY = portion * effectiveY;
-			float moveZ = portion * effectiveZ;
+			float moveX = EntityLocation.roundToHundredths(portion * effectiveX);
+			float moveY = EntityLocation.roundToHundredths(portion * effectiveY);
+			float moveZ = EntityLocation.roundToHundredths(portion * effectiveZ);
 			
 			// Adjust any positive movement to keep us within the existing block before we check if we can enter the others.
 			if (moveX > 0.0f)
@@ -431,6 +320,7 @@ public class EntityMovementHelpers
 			
 			movingStart = new EntityLocation(movingStart.x() + moveX, movingStart.y() + moveY, movingStart.z() + moveZ);
 			edgeLocation = new EntityLocation(edgeLocation.x() + moveX, edgeLocation.y() + moveY, edgeLocation.z() + moveZ);
+			Assert.assertTrue(volume.width() == EntityLocation.roundToHundredths(edgeLocation.y() - movingStart.y()));
 			
 			leadingPoint = new EntityLocation(leadingX, leadingY, leadingZ);
 			endOfVector = new EntityLocation(leadingX + effectiveX, leadingY + effectiveY, leadingZ + effectiveZ);
@@ -445,6 +335,22 @@ public class EntityMovementHelpers
 			, movingStart.z() + effectiveZ
 		);
 		helper.setLocationAndViscosity(movingStart, cancelX, cancelY, cancelZ);
+	}
+
+	private static void _interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	{
+		// We want to handle the degenerate case of being stuck in a block first, because it avoids some setup and the 
+		// common code assumes it isn't happening so will only report a partial collision.
+		if (_canOccupyLocation(start, volume, helper))
+		{
+			// We aren't stuck so use the common case.
+			_interactiveEntityMoveNotStuck(start, volume, vectorToMove, helper);
+		}
+		else
+		{
+			// We are already stuck here so just fail out without moving, colliding on all axes.
+			helper.setLocationAndViscosity(start, true, true, true);
+		}
 	}
 
 
