@@ -202,6 +202,22 @@ public class TestRayCastHelpers
 		_checkPathOneBlockStep(path);
 	}
 
+	@Test
+	public void stuckInBlock() throws Throwable
+	{
+		// Show that we can't move at all if stuck in a block.
+		EntityLocation start = new EntityLocation(-1.2f, -2.3f, -3.4f);
+		EntityLocation vector = new EntityLocation(7.8f, 6.7f, 5.6f);
+		EntityVolume volume = ENV.creatures.PLAYER.volume();
+		RayCastHelpers.RayMovement result = RayCastHelpers.applyMovement(start, volume, vector, (AbsoluteLocation l) -> {
+			return true;
+		});
+		Assert.assertNotNull(result);
+		Assert.assertEquals(start, result.location());
+		Assert.assertEquals(0.0f, result.rayDistance(), 0.01f);
+		Assert.assertEquals(RayCastHelpers.Axis.INTERNAL, result.collisionAxis());
+	}
+
 
 	private static void _checkPathOneBlockStep(List<AbsoluteLocation> path)
 	{

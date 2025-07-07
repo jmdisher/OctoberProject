@@ -185,6 +185,11 @@ public class RayCastHelpers
 		AbsoluteLocation lastFalse = null;
 		Axis axis = null;
 		boolean stop = stopPredicate.test(thisStep);
+		if (stop)
+		{
+			// This is the degenerate case where we collide at the source.
+			axis = Axis.INTERNAL;
+		}
 		while (!stop && !thisStep.equals(endBlock))
 		{
 			path.add(thisStep);
@@ -202,6 +207,10 @@ public class RayCastHelpers
 					case Z:
 						distanceZ += 1.0f;
 						break;
+					case INTERNAL:
+						throw Assert.unreachable();
+					default:
+						throw Assert.unreachable();
 				}
 			}
 			
@@ -287,6 +296,9 @@ public class RayCastHelpers
 			case Z:
 				rayDistance = distanceZ * rayLength / Math.abs(rayZ);
 				break;
+			case INTERNAL:
+				rayDistance = 0.0f;
+				break;
 			default:
 				throw Assert.unreachable();
 			}
@@ -311,7 +323,7 @@ public class RayCastHelpers
 			, float rayDistance
 	) {}
 
-	public static enum Axis { X, Y, Z,}
+	public static enum Axis { X, Y, Z, INTERNAL,}
 
 	private static interface _ResultBuilder<T>
 	{

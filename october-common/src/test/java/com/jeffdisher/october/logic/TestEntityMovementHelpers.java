@@ -374,6 +374,43 @@ public class TestEntityMovementHelpers
 		Assert.assertEquals(1.0f, EntityMovementHelpers.maxViscosityInEntityBlocks(airEdgeLocation, volume, lookup), 0.01f);
 	}
 
+	@Test
+	public void stuckInBlock_allow()
+	{
+		TickProcessingContext context = _createContextWithCuboidType(STONE);
+		_Entity entity = new _Entity();
+		entity.location = new EntityLocation(1.2f, -2.3f, 3.4f);
+		entity.vector = new EntityLocation(-4.5f, 5.6f, -6.7f);
+		long millisInMotion = 100L;
+		boolean didMove = _allowMovement(context, entity, millisInMotion);
+		Assert.assertFalse(didMove);
+		Assert.assertEquals(new EntityLocation(1.2f, -2.3f, 3.4f), entity.location);
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, 0.0f), entity.vector);
+	}
+
+	@Test
+	public void stuckInBlock_interactive()
+	{
+		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
+		EntityVolume volume = new EntityVolume(0.8f, 1.7f);
+		EntityLocation velocity = new EntityLocation(-1.0f, 2.0f, -3.0f);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, velocity, new EntityMovementHelpers.InteractiveHelper() {
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				Assert.assertEquals(location, finalLocation);
+				Assert.assertTrue(cancelX);
+				Assert.assertTrue(cancelY);
+				Assert.assertTrue(cancelZ);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				return 1.0f;
+			}
+		});
+	}
+
 
 	private static TickProcessingContext _createContext()
 	{

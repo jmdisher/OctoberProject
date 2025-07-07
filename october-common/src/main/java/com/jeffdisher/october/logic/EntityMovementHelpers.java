@@ -207,6 +207,14 @@ public class EntityMovementHelpers
 					averageVelocity = new EntityLocation(averageVelocity.x() - deltaX, averageVelocity.y() - deltaY, 0.0f);
 					newZVector = 0.0f;
 					break;
+				case INTERNAL:
+					// In this case, just stop.
+					// NOTE:  We shouldn't normally see this unless we are actually stuck in a block.
+					averageVelocity = new EntityLocation(0.0f, 0.0f, 0.0f);
+					newZVector = 0.0f;
+					break;
+				default:
+					throw Assert.unreachable();
 				}
 			}
 			else
@@ -231,6 +239,75 @@ public class EntityMovementHelpers
 	 * @param helper Used for looking up viscosities and setting final state.
 	 */
 	public static void interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
+	{
+		// We want to handle the degenerate case of being stuck in a block first, because it avoids some setup and the 
+		// common code assumes it isn't happening so will only report a partial collision.
+		if (_canOccupyLocation(start, volume, helper))
+		{
+			// We aren't stuck so use the common case.
+			_interactiveEntityMoveNotStuck(start, volume, vectorToMove, helper);
+		}
+		else
+		{
+			// We are already stuck here so just fail out without moving, colliding on all axes.
+			helper.setLocationAndViscosity(start, true, true, true);
+		}
+	}
+
+	/**
+	 * Looks up the maximum viscosity of any block occupied by the given volume rooted at entityBase.
+	 * 
+	 * @param entityBase The base south-west-down corner of the space to check.
+	 * @param volume The volume of the space to check.
+	 * @param blockLookup The lookup helper for blocks.
+	 * @return The maximum viscosity of any of the blocks in the requested space.
+	 */
+	public static float maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, Function<AbsoluteLocation, BlockProxy> blockLookup)
+	{
+		Environment env = Environment.getShared();
+		InteractiveHelper helper = new InteractiveHelper() {
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				return new ViscosityReader(env, blockLookup).getViscosityFraction(location);
+			}
+			@Override
+			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				// This isn't called in this path.
+				throw Assert.unreachable();
+			}
+		};
+		return _maxViscosityInEntityBlocks(entityBase, volume, helper);
+	}
+
+
+	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper)
+	{
+		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
+		boolean canOccupy = (maxViscosity < 1.0f);
+		return canOccupy;
+	}
+
+	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper)
+	{
+		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
+			, entityBase.y() + volume.width()
+			, entityBase.z() + volume.height()
+		);
+		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
+		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
+		
+		float maxViscosity = 0.0f;
+		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
+		{
+			float viscosity = helper.getViscosityForBlockAtLocation(loc);
+			maxViscosity = Math.max(maxViscosity, viscosity);
+		}
+		return maxViscosity;
+	}
+
+	private static void _interactiveEntityMoveNotStuck(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
 	{
 		// We will move in the direction of vectorToMove, biased by viscosity, one block at a time until the move is complete or blocked in all movement directions.
 		// Note that, for now at least, we will only compute the viscosity at the beginning of the move, as the move is rarely multiple blocks (falling at terminal velocity being an outlier example).
@@ -330,6 +407,9 @@ public class EntityMovementHelpers
 				}
 				break;
 			}
+			case INTERNAL:
+				// We don't expect to see this outside of the initial call due to how we cancel movement on collision per-block.
+				throw Assert.unreachable();
 			default:
 				throw Assert.unreachable();
 			}
@@ -365,59 +445,6 @@ public class EntityMovementHelpers
 			, movingStart.z() + effectiveZ
 		);
 		helper.setLocationAndViscosity(movingStart, cancelX, cancelY, cancelZ);
-	}
-
-	/**
-	 * Looks up the maximum viscosity of any block occupied by the given volume rooted at entityBase.
-	 * 
-	 * @param entityBase The base south-west-down corner of the space to check.
-	 * @param volume The volume of the space to check.
-	 * @param blockLookup The lookup helper for blocks.
-	 * @return The maximum viscosity of any of the blocks in the requested space.
-	 */
-	public static float maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, Function<AbsoluteLocation, BlockProxy> blockLookup)
-	{
-		Environment env = Environment.getShared();
-		InteractiveHelper helper = new InteractiveHelper() {
-			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
-			{
-				return new ViscosityReader(env, blockLookup).getViscosityFraction(location);
-			}
-			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-			{
-				// This isn't called in this path.
-				throw Assert.unreachable();
-			}
-		};
-		return _maxViscosityInEntityBlocks(entityBase, volume, helper);
-	}
-
-
-	private static boolean _canOccupyLocation(EntityLocation movingStart, EntityVolume volume, InteractiveHelper helper)
-	{
-		float maxViscosity = _maxViscosityInEntityBlocks(movingStart, volume, helper);
-		boolean canOccupy = (maxViscosity < 1.0f);
-		return canOccupy;
-	}
-
-	private static float _maxViscosityInEntityBlocks(EntityLocation entityBase, EntityVolume volume, InteractiveHelper helper)
-	{
-		EntityLocation entityEdge = new EntityLocation(entityBase.x() + volume.width()
-			, entityBase.y() + volume.width()
-			, entityBase.z() + volume.height()
-		);
-		AbsoluteLocation baseBlock = entityBase.getBlockLocation();
-		AbsoluteLocation edgeBlock = entityEdge.getBlockLocation();
-		
-		float maxViscosity = 0.0f;
-		for (AbsoluteLocation loc : new _VolumeIterator(baseBlock, edgeBlock))
-		{
-			float viscosity = helper.getViscosityForBlockAtLocation(loc);
-			maxViscosity = Math.max(maxViscosity, viscosity);
-		}
-		return maxViscosity;
 	}
 
 
