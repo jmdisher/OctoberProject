@@ -89,7 +89,7 @@ public class TestSpatialHelpers
 	{
 		// Ask if they are touching the ceiling when clearly not.
 		EntityLocation location = new EntityLocation(0.0f, 0.0f, 0.0f);
-		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
 		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
 		boolean isTouching = SpatialHelpers.isTouchingCeiling(blockTypeReader, location, VOLUME);
 		Assert.assertFalse(isTouching);
@@ -167,5 +167,88 @@ public class TestSpatialHelpers
 		float distance2 = SpatialHelpers.distanceFromLocationToVolume(location2, base1, volume1);
 		Assert.assertEquals(1.00f, distance1, 0.01f);
 		Assert.assertEquals(0.89f, distance2, 0.01f);
+	}
+
+	@Test
+	public void groundCollision()
+	{
+		CuboidData stoneCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), STONE);
+		CuboidData airCuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, 0, 0), ENV.special.AIR);
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> {
+			BlockProxy proxy;
+			if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
+			{
+				proxy = new BlockProxy(l.getBlockAddress(), airCuboid);
+			}
+			else
+			{
+				proxy = new BlockProxy(l.getBlockAddress(), stoneCuboid);
+			}
+			return proxy;
+		};
+		
+		EntityLocation onLedge = new EntityLocation(1.6f, 1.6f, 2.0f);
+		EntityLocation offLedge = new EntityLocation(1.59f, 1.59f, 2.0f);
+		EntityVolume volume = new EntityVolume(0.8f, 0.4f);
+		
+		// First, verify that the interactive helper gives the expected result.
+		EntityMovementHelpers.interactiveEntityMove(onLedge, volume, new EntityLocation(0.0f, 0.0f, -1.0f), new _EndpointHelper(onLedge, true));
+		EntityMovementHelpers.interactiveEntityMove(offLedge, volume, new EntityLocation(0.0f, 0.0f, -1.0f), new _EndpointHelper(new EntityLocation(1.59f, 1.59f, 1.0f), false));
+		
+		// Now, verify that the spatial helper is consistent.
+		Assert.assertTrue(SpatialHelpers.isStandingOnGround(blockTypeReader, onLedge, volume));
+		Assert.assertFalse(SpatialHelpers.isStandingOnGround(blockTypeReader, offLedge, volume));
+	}
+
+	@Test
+	public void stuckInBlocks()
+	{
+		// Show how these helpers respond when we are stuck in a block.
+		EntityLocation location = new EntityLocation(5.1f, -6.4f, 7.2f);
+		CuboidData cuboid = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(0, -1, 0), STONE);
+		Function<AbsoluteLocation, BlockProxy> blockTypeReader = (AbsoluteLocation l) -> new BlockProxy(l.getBlockAddress(), cuboid);
+		
+		// We are considered standing on ground, since we can't move down.
+		Assert.assertTrue(SpatialHelpers.isStandingOnGround(blockTypeReader, location, VOLUME));
+		
+		// We are considered touching a ceiling, since we can't move up.
+		Assert.assertTrue(SpatialHelpers.isTouchingCeiling(blockTypeReader, location, VOLUME));
+		
+		// We can't exist in this location since it intersects with solid blocks.
+		Assert.assertFalse(SpatialHelpers.canExistInLocation(blockTypeReader, location, VOLUME));
+	}
+
+
+	private static class _EndpointHelper implements EntityMovementHelpers.InteractiveHelper
+	{
+		private final EntityLocation _expected;
+		private final boolean _isOnGround;
+		public _EndpointHelper(EntityLocation expected, boolean isOnGround)
+		{
+			_expected = expected;
+			_isOnGround = isOnGround;
+		}
+		@Override
+		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+		{
+			Assert.assertEquals(_expected, finalLocation);
+			Assert.assertFalse(cancelX);
+			Assert.assertFalse(cancelY);
+			Assert.assertEquals(_isOnGround, cancelZ);
+		}
+		@Override
+		public float getViscosityForBlockAtLocation(AbsoluteLocation l)
+		{
+			float viscosity;
+			if (((1 == l.x()) && (1 == l.y())) || (l.z() >= 2))
+			{
+				viscosity = 0.0f;
+			}
+			else
+			{
+				viscosity = 1.0f;
+			}
+			return viscosity;
+		}
 	}
 }

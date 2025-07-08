@@ -1,7 +1,6 @@
 package com.jeffdisher.october.logic;
 
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
@@ -41,12 +40,13 @@ public class SpatialHelpers
 	}
 
 	/**
-	 * Returns true if the given location is standing directly on a non-air tile in at least one of the blocks within its volume.
+	 * Returns true if the given location is standing directly solid blocks somewhere within its volume or is stuck in a
+	 * block (since stuck in a block can't move, they are "unable to move down").
 	 * 
 	 * @param blockLookup Looks up blocks in the world.
 	 * @param location The location where the entity is.
 	 * @param volume The volume of the entity.
-	 * @return True if the entity is standing directly on at least one non-air tile.
+	 * @return True if the entity is standing directly on at least one solid block.
 	 */
 	public static boolean isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
 	{
@@ -54,49 +54,22 @@ public class SpatialHelpers
 	}
 
 	/**
-	 * Returns true if the given location is pressed directly up against and overhead non-air block in at least one of the blocks with its volume
+	 * Returns true if the given location is pressed directly against a solid block ceiling somewhere within its volume
+	 * or is stuck in a block (since stuck in a block can't move, they are "unable to move up").
 	 * 
 	 * @param blockLookup Looks up blocks in the world.
 	 * @param location The location where the entity is.
 	 * @param volume The volume of the entity.
-	 * @return True if the entity's head is pressed directly against at least one non-air tile.
+	 * @return True if the entity's head is pressed directly against at least one solid block.
 	 */
 	public static boolean isTouchingCeiling(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
 	{
-		// First, we need to figure out where our head is.
-		boolean isTouchingCeiling;
-		float headTop = location.z() + volume.height();
-		if (_isBlockAligned(headTop))
-		{
-			Environment env = Environment.getShared();
-			// Our head is right against the block layer above us so we will conclude we are touching the ceiling if any of them are non-air.
-			// In this case, we want to check that ALL of the blocks in the next layer are air and then revert the returned value to see if ANY were non-air (solid ceiling).
-			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
-				boolean isAir;
-				BlockProxy block = blockLookup.apply(target);
-				// This can be null if the world isn't totally loaded on the client.
-				if (null != block)
-				{
-					boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					isAir = !env.blocks.isSolid(block.getBlock(), isActive);
-				}
-				else
-				{
-					isAir = false;
-				}
-				return isAir;
-			};
-			// We just want to check the single block so provide a tiny height (cannot be zero due to ceiling rounding).
-			EntityLocation headLocation = new EntityLocation(location.x(), location.y(), headTop);
-			boolean allAir = _blocksInVolumeCheck(checkPredicate, headLocation, volume.width(), 0.1f);
-			isTouchingCeiling = !allAir;
-		}
-		else
-		{
-			// We are mid-block.
-			isTouchingCeiling = false;
-		}
-		return isTouchingCeiling;
+		// We will just use the EntityMovementHelpers for this, showing what happens when we move up.
+		Environment env = Environment.getShared();
+		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, 1.0f), helper);
+		// If we are still in the same place, we must be touching the ceiling.
+		return location.equals(helper.finalLocation);
 	}
 
 	/**
@@ -216,87 +189,21 @@ public class SpatialHelpers
 
 	private static boolean _canExistInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
 	{
+		// We will just use the EntityMovementHelpers for this, seeing if we collide with anything while not moving.
 		Environment env = Environment.getShared();
-		// We will just check that the blocks in the target location occupied by the volume are all air (this will need to be generalized to non-colliding, later).
-		Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
-			boolean canExist;
-			BlockProxy block = blockLookup.apply(target);
-			// This can be null if the world isn't totally loaded on the client.
-			if (null != block)
-			{
-				boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
-				canExist = !env.blocks.isSolid(block.getBlock(), isActive);
-			}
-			else
-			{
-				canExist = false;
-			}
-			return canExist;
-		};
-		return _blocksInVolumeCheck(checkPredicate, targetLocation, volume.width(), volume.height());
+		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		EntityMovementHelpers.interactiveEntityMove(targetLocation, volume, new EntityLocation(0.0f, 0.0f, 0.0f), helper);
+		return !helper.isStuckInBlock;
 	}
 
 	private static boolean _isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
 	{
-		// First, if we are floating mid-block, we assume that we are not on the ground (will need to change for stairs, later).
-		boolean isOnGround;
-		if (_isBlockAligned(location.z()))
-		{
-			Environment env = Environment.getShared();
-			// This is on a block so check it.
-			// In this case, we want to check that ALL of the blocks in the ground are air and then revert the returned value to see if ANY were non-air (ground).
-			Predicate<AbsoluteLocation> checkPredicate = (AbsoluteLocation target) -> {
-				boolean isAir;
-				BlockProxy block = blockLookup.apply(target);
-				// This can be null if the world isn't totally loaded on the client.
-				if (null != block)
-				{
-					boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
-					isAir = !env.blocks.isSolid(block.getBlock(), isActive);
-				}
-				else
-				{
-					isAir = false;
-				}
-				return isAir;
-			};
-			// We just want to check the single block so provide a tiny height (cannot be zero due to ceiling rounding).
-			EntityLocation groundLocation = new EntityLocation(location.x(), location.y(), location.z() - 1.0f);
-			boolean allAir = _blocksInVolumeCheck(checkPredicate, groundLocation, volume.width(), 0.1f);
-			isOnGround = !allAir;
-		}
-		else
-		{
-			// This is floating in a block, so not on the ground.
-			isOnGround = false;
-		}
-		return isOnGround;
-	}
-
-	private static boolean _blocksInVolumeCheck(Predicate<AbsoluteLocation> checkPredicate, EntityLocation targetLocation, float width, float height)
-	{
-		float x = targetLocation.x();
-		int minX = _floorInt(x);
-		int maxX = _ceilingInt(x + width - 1.0f);
-		float y = targetLocation.y();
-		int minY = _floorInt(y);
-		int maxY = _ceilingInt(y + width - 1.0f);
-		float z = targetLocation.z();
-		int minZ = _floorInt(z);
-		int maxZ = _ceilingInt(z + height - 1.0f);
-		
-		boolean check = true;
-		for (int i = minX; check && (i <= maxX); ++i)
-		{
-			for (int j = minY; check && (j <= maxY); ++j)
-			{
-				for (int k = minZ; check && (k <= maxZ); ++k)
-				{
-					check = checkPredicate.test(new AbsoluteLocation(i, j, k));
-				}
-			}
-		}
-		return check;
+		// We will just use the EntityMovementHelpers for this, showing what happens with a fall.
+		Environment env = Environment.getShared();
+		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, -1.0f), helper);
+		// If we are still in the same place, we must be on the ground.
+		return location.equals(helper.finalLocation);
 	}
 
 	private static EntityLocation _getCentreFeetLocation(IMutableMinimalEntity entity)
@@ -361,13 +268,41 @@ public class SpatialHelpers
 		return (float)Math.sqrt(squareDistance);
 	}
 
-	private static int _floorInt(float f)
-	{
-		return (int) Math.floor(f);
-	}
 
-	private static int _ceilingInt(float f)
+	private static class _CollisionHelper implements EntityMovementHelpers.InteractiveHelper
 	{
-		return (int) Math.ceil(f);
+		private final Environment _env;
+		private final Function<AbsoluteLocation, BlockProxy> _blockLookup;
+		public EntityLocation finalLocation;
+		public boolean isStuckInBlock;
+		public _CollisionHelper(Environment env, Function<AbsoluteLocation, BlockProxy> blockLookup)
+		{
+			_env = env;
+			_blockLookup = blockLookup;
+		}
+		@Override
+		public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+		{
+			float viscosity;
+			BlockProxy block = _blockLookup.apply(location);
+			// This can be null if the world isn't totally loaded on the client.
+			if (null != block)
+			{
+				boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
+				viscosity = _env.blocks.getViscosityFraction(block.getBlock(), isActive);
+			}
+			else
+			{
+				// If not loaded, we will just say it is solid so we don't fall through it.
+				viscosity = 1.0f;
+			}
+			return viscosity;
+		}
+		@Override
+		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+		{
+			this.finalLocation = finalLocation;
+			this.isStuckInBlock = cancelX && cancelY && cancelZ;
+		}
 	}
 }
