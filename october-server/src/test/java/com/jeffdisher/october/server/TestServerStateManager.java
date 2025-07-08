@@ -23,7 +23,6 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
@@ -895,7 +894,7 @@ public class TestServerStateManager
 			throw new AssertionError("network_sendChatMessage");
 		}
 		@Override
-		public boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
+		public boolean runner_enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
 		{
 			return this.didEnqueue;
 		}

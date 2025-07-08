@@ -20,8 +20,8 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.mutations.MutationEntitySetEntity;
@@ -952,7 +952,7 @@ public class ServerStateManager
 		void network_sendChatMessage(int clientId, int senderId, String message);
 		
 		// TickRunner.
-		boolean runner_enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
+		boolean runner_enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel);
 		
 		// Misc.
 		void handleClientUpdateOptions(int clientId, int clientViewDistance);

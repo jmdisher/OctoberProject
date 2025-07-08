@@ -38,6 +38,7 @@ import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.SyncPoint;
 import com.jeffdisher.october.logic.WorldProcessor;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.persistence.SuspendedCuboid;
@@ -274,7 +275,7 @@ public class TickRunner
 	 * @param commitLevel The client's commit level associated with this change.
 	 * @return True if this was enqueued, false if the client should be disconnected.
 	 */
-	public boolean enqueueEntityChange(int entityId, IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
+	public boolean enqueueEntityChange(int entityId, EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
 	{
 		// TODO:  We should validate these parameters closer to the decoding point.
 		Assert.assertTrue(entityId > 0);
@@ -1333,7 +1334,7 @@ public class TickRunner
 	/**
 	 * A wrapper over the IMutationEntity to store commit level data.
 	 */
-	private static record _EntityMutationWrapper(IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel) {}
+	private static record _EntityMutationWrapper(EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation, long commitLevel) {}
 
 	/**
 	 * A wrapper over the IMutationEntity with associated entity ID.

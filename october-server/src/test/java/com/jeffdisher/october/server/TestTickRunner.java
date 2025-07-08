@@ -25,6 +25,7 @@ import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.CrowdProcessor;
 import com.jeffdisher.october.logic.EntityChangeSendItem;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.logic.ShockwaveMutation;
 import com.jeffdisher.october.mutations.DropItemMutation;
@@ -38,6 +39,7 @@ import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.EntityChangeSetBlockLogicState;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationBlock;
+import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockFurnaceCraft;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteByEntity;
@@ -134,15 +136,16 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
 		runner.waitForPreviousTick();
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -159,15 +162,16 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ShockwaveMutation(new AbsoluteLocation(16, 16, 16), 2)), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -197,6 +201,7 @@ public class TestTickRunner
 				, new WorldConfig()
 		);
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(_buildStoneCuboid(CuboidAddress.fromInt(0, 0, 0))
 					, _buildStoneCuboid(CuboidAddress.fromInt(0, 0, -1))
 					, _buildStoneCuboid(CuboidAddress.fromInt(0, -1, 0))
@@ -207,13 +212,13 @@ public class TestTickRunner
 					, _buildStoneCuboid(CuboidAddress.fromInt(-1, -1, -1))
 				)
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
 		runner.waitForPreviousTick();
 		// We enqueue a single shockwave in the centre of the cuboid and allow it to replicate 2 times.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ShockwaveMutation(new AbsoluteLocation(0, 0, 0), 2)), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -238,9 +243,10 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, ENV.special.AIR);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
@@ -257,7 +263,7 @@ public class TestTickRunner
 		Assert.assertEquals(ENV.special.AIR, block.getBlock());
 		
 		// Note that the mutation will not be enqueued in the next tick, but the following one (they are queued and picked up when the threads finish).
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -281,9 +287,10 @@ public class TestTickRunner
 		// Create a tick runner with a single cuboid and get it running.
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
@@ -295,22 +302,22 @@ public class TestTickRunner
 		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
 		// Apply the first mutation to add data.
-		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 1));
+		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, 1));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Try to drop too much to fit and verify that nothing changes.
-		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, StationRegistry.CAPACITY_BLOCK_EMPTY / 4));
+		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, StationRegistry.CAPACITY_BLOCK_EMPTY / 4));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(1, block.getInventory().getCount(stoneItem));
 		
 		// Add a little more data and make sure that it updates.
-		snapshot = _runTickLockStep(runner, new DropItemMutation(testBlock, stoneItem, 2));
+		snapshot = _runTickLockStep(runner, entity.entity(), new DropItemMutation(testBlock, stoneItem, 2));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(3, block.getInventory().getCount(stoneItem));
 		
 		// Remove everything and make sure that we end up with an empty inventory.
-		snapshot = _runTickLockStep(runner, new PickUpItemMutation(testBlock, stoneItem, 3));
+		snapshot = _runTickLockStep(runner, entity.entity(), new PickUpItemMutation(testBlock, stoneItem, 3));
 		block = _getBlockProxy(snapshot, testBlock);
 		Assert.assertEquals(0, block.getInventory().currentEncumbrance);
 		
@@ -335,9 +342,10 @@ public class TestTickRunner
 		
 		// Have a new entity join and wait for them to be added.
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(null
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.startNextTick();
@@ -346,7 +354,7 @@ public class TestTickRunner
 		// Now, add a mutation from this entity to deliver the block replacement mutation.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(changeLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), commit1);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(changeLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), commit1);
 		
 		// This will take a few ticks to be observable:
 		// -after tick 1, the change will have been run and the mutation enqueued
@@ -376,9 +384,10 @@ public class TestTickRunner
 		int entityId2 = 2;
 		MutableEntity mutable = MutableEntity.createForTest(entityId1);
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
+		Entity entity1 = mutable.freeze();
 		runner.setupChangesForTick(null
 				, null
-				, List.of(new SuspendedEntity(mutable.freeze(), List.of())
+				, List.of(new SuspendedEntity(entity1, List.of())
 						, _createFreshEntity(entityId2)
 				)
 				, null
@@ -390,7 +399,7 @@ public class TestTickRunner
 		// Try to pass the items to the other entity.
 		EntityChangeSendItem send = new EntityChangeSendItem(entityId2, STONE_ITEM);
 		long commit1 = 1L;
-		runner.enqueueEntityChange(entityId1, send, commit1);
+		runner.enqueueEntityChange(entityId1, _wrapSubAction(entity1, send), commit1);
 		// (run a tick to run the change and enqueue the next)
 		runner.startNextTick();
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -429,9 +438,10 @@ public class TestTickRunner
 		int startDurability = ENV.durability.getDurability(pickaxe);
 		mutable.newInventory.addNonStackableBestEfforts(new NonStackableItem(pickaxe, startDurability));
 		mutable.setSelectedKey(1);
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		
@@ -444,7 +454,7 @@ public class TestTickRunner
 		// We will now show how to schedule the multi-phase change.
 		AbsoluteLocation changeLocation1 = new AbsoluteLocation(0, 0, 0);
 		long nextCommit = 1L;
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)100);
 		
 		// Wait for the tick and observe the results.
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
@@ -462,7 +472,7 @@ public class TestTickRunner
 		Assert.assertNull(proxy1.getInventory());
 		
 		// Now, enqueue the remaining hits to finish the break.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, changeLocation1, (short)100);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, changeLocation1, (short)100);
 		
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(nextCommit - 1L, snapshot.entities().get(entityId).commitLevel());
@@ -481,7 +491,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		Inventory blockInventory = proxy2.getInventory();
 		Assert.assertEquals(0, blockInventory.sortedKeys().size());
-		Entity entity = snapshot.entities().get(entityId).completed();
+		entity = snapshot.entities().get(entityId).completed();
 		Inventory entityInventory = entity.inventory();
 		Assert.assertEquals(1, entityInventory.getCount(STONE_ITEM));
 		
@@ -511,11 +521,12 @@ public class TestTickRunner
 		CuboidColumnAddress column = targetAddress.getColumn();
 		Assert.assertEquals(column, constantAddress.getColumn());
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(_buildAirCuboid(targetAddress)
 					, _buildAirCuboid(constantAddress)
 				)
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		
@@ -540,7 +551,7 @@ public class TestTickRunner
 		Assert.assertEquals(1, initialHeights.size());
 		
 		// Run a mutation and notice that only the changed cuboid isn't an instance match.
-		runner.enqueueEntityChange(1, new EntityChangeMutation(new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
+		runner.enqueueEntityChange(1, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(new AbsoluteLocation(0, 0, 0), ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		runner.startNextTick();
@@ -623,12 +634,13 @@ public class TestTickRunner
 		CuboidAddress airAddress = CuboidAddress.fromInt(0, 0, 0);
 		CuboidAddress stoneAddress = CuboidAddress.fromInt(0, 0, -1);
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(
 				_buildAirCuboid(airAddress),
 				_packageCuboid(CuboidGenerator.createFilledCuboid(stoneAddress, STONE))
 				)
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.startNextTick();
@@ -639,7 +651,7 @@ public class TestTickRunner
 		
 		// Tell them to start breaking a stone block.
 		short damage = 10;
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1), damage), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1), damage)), 1L);
 		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -679,9 +691,10 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
@@ -691,11 +704,11 @@ public class TestTickRunner
 		short damage = 50;
 		AbsoluteLocation location0 = new AbsoluteLocation(0, 0, 0);
 		IMutationBlock mutation0 = new SaturatingDamage(location0, damage);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 1L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 2L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), mutation0), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), mutation0), 2L);
 		AbsoluteLocation location1 = new AbsoluteLocation(1, 0, 0);
 		IMutationBlock mutation1 = new SaturatingDamage(location1, damage);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation1), 3L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), mutation1), 3L);
 		
 		// Run these and observe that the same damage was applied, no matter the number of mutations.
 		runner.startNextTick();
@@ -707,7 +720,7 @@ public class TestTickRunner
 		Assert.assertEquals(damage, proxy1.getDamage());
 		
 		// But this shouldn't prevent another attempt in a later tick.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(mutation0), 4L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), mutation0), 4L);
 		runner.startNextTick();
 		runner.startNextTick();
 		TickRunner.Snapshot snap2 = runner.waitForPreviousTick();
@@ -754,8 +767,8 @@ public class TestTickRunner
 		// Load the furnace with fuel and material.
 		AbsoluteLocation location = new AbsoluteLocation(0, 0, 0);
 		BlockAddress block = location.getBlockAddress();
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, logKey, 3, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
-		runner.enqueueEntityChange(entityId, new MutationEntityPushItems(location, plankKey, 2, Inventory.INVENTORY_ASPECT_FUEL), 2L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationEntityPushItems(location, logKey, 3, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationEntityPushItems(location, plankKey, 2, Inventory.INVENTORY_ASPECT_FUEL)), 2L);
 		runner.startNextTick();
 		snap = runner.waitForPreviousTick();
 		Assert.assertEquals(2, snap.stats().committedEntityMutationCount());
@@ -936,7 +949,7 @@ public class TestTickRunner
 		
 		// Now, apply a mutation to an adjacent block.
 		AbsoluteLocation targetLocation = startLocation.getRelative(1, 0, 0);
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(targetLocation, targetLocation), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(targetLocation, targetLocation)), 1L);
 		
 		// Run a tick and see MutationBlockOverwrite enqueued.
 		runner.startNextTick();
@@ -1160,9 +1173,10 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.isCreativeMode = true;
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cascade, HeightMapHelpers.buildHeightMap(cascade), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1171,7 +1185,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)10), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug, (short)10)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -1231,6 +1245,7 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(STONE_ITEM, 2);
 		mutable.isCreativeMode = true;
 		mutable.setSelectedKey(mutable.newInventory.getIdOfStackableType(STONE_ITEM));
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(_packageCuboid(topNorthEast)
 				, _packageCuboid(_buildCascade(startAddress.getRelative(0, 0, -1)))
 				, _packageCuboid(_buildCascade(startAddress.getRelative(0, -1, 0)))
@@ -1241,7 +1256,7 @@ public class TestTickRunner
 				, _packageCuboid(_buildCascade(startAddress.getRelative(-1, -1, -1)))
 		)
 				, null
-				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.startNextTick();
@@ -1250,7 +1265,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().stream().filter((TickRunner.SnapshotCuboid cuboid) -> !cuboid.scheduledBlockMutations().isEmpty()).count());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, new EntityChangeIncrementalBlockBreak(plug, (short)10), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug, (short)10)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -1320,7 +1335,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		
 		// Send an incremental update to break the stone, but only partially.
-		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, stoneLocation, (short)100);
+		long nextCommit = _applyIncrementalBreaks(runner, 1L, entityId, entity, stoneLocation, (short)100);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
@@ -1337,7 +1352,7 @@ public class TestTickRunner
 		Assert.assertEquals((short)100, snapshot.cuboids().get(address).completed().getData15(AspectRegistry.DAMAGE, stoneLocation.getBlockAddress()));
 		
 		// Apply the second break attempt, which should break it.
-		_applyIncrementalBreaks(runner, nextCommit, entityId, stoneLocation, (short)100);
+		_applyIncrementalBreaks(runner, nextCommit, entityId, entity, stoneLocation, (short)100);
 		snapshot = runner.waitForPreviousTick();
 		// (we should see the update scheduled and previous tick damage change (assuming this was multiple ticks to break)).
 		Assert.assertEquals(1, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
@@ -1397,20 +1412,21 @@ public class TestTickRunner
 		
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(_packageCuboid(cuboid)
 					, _packageCuboid(otherCuboid0)
 					, _packageCuboid(otherCuboid1)
 				)
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
 		runner.waitForPreviousTick();
 		// Enqueue the mutations to replace these 2 blocks (this mutation is just for testing and doesn't use the inventory or location).
 		// The mutation will be run in the next tick since there isn't one running.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(lanternLocation, ENV.special.AIR.item().number(), LANTERN_ITEM.number())), 1L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new ReplaceBlockMutation(stoneLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(lanternLocation, ENV.special.AIR.item().number(), LANTERN_ITEM.number())), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity.entity(), new ReplaceBlockMutation(stoneLocation, ENV.special.AIR.item().number(), STONE_ITEM.number())), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1474,7 +1490,7 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1549,7 +1565,7 @@ public class TestTickRunner
 		);
 		runner.start();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1592,7 +1608,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_MATURE_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Break the mature crop and check the inventory dropped.
-		_applyIncrementalBreaks(runner, 1L, entityId, location, (short)20);
+		_applyIncrementalBreaks(runner, 1L, entityId, entity, location, (short)20);
 		
 		// Finish the tick for the unwrap, another to break the block, then a third to save to the entity, before checking the inventories.
 		snapshot = runner.waitForPreviousTick();
@@ -1642,7 +1658,7 @@ public class TestTickRunner
 		runner.start();
 		runner.waitForPreviousTick();
 		long nextCommit = 1L;
-		runner.enqueueEntityChange(entityId, new MutationPlaceSelectedBlock(location, location), nextCommit);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new MutationPlaceSelectedBlock(location, location)), nextCommit);
 		nextCommit += 1L;
 		runner.startNextTick();
 		
@@ -1656,7 +1672,7 @@ public class TestTickRunner
 		Assert.assertEquals(WHEAT_SEEDLING_ITEM.number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, location.getBlockAddress()));
 		
 		// Now, creak the dirt block.
-		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, dirtLocation, (short)200);
+		nextCommit = _applyIncrementalBreaks(runner, nextCommit, entityId, entity, dirtLocation, (short)200);
 		snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(1, snapshot.stats().committedEntityMutationCount());
 		
@@ -1733,7 +1749,7 @@ public class TestTickRunner
 			runner.startNextTick();
 		}
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeAttackEntity(creatureId)), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1751,7 +1767,7 @@ public class TestTickRunner
 			runner.startNextTick();
 		}
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(entityId, new EntityChangeAttackEntity(creatureId), 2L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeAttackEntity(creatureId)), 2L);
 		runner.startNextTick();
 		
 		// (run an extra tick to unwrap the entity change)
@@ -1846,7 +1862,7 @@ public class TestTickRunner
 		
 		// Enqueue the mutation to change the state of the switch.
 		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
-		runner.enqueueEntityChange(entityId, setSwitch, 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to apply the change to the block)
@@ -1926,7 +1942,7 @@ public class TestTickRunner
 		
 		// Enqueue the mutation to change the state of the switch.
 		EntityChangeSetBlockLogicState setSwitch = new EntityChangeSetBlockLogicState(switchLocation, true);
-		runner.enqueueEntityChange(entityId, setSwitch, 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, setSwitch), 1L);
 		runner.startNextTick();
 		
 		// (run an extra tick to apply the change to the block)
@@ -1951,7 +1967,7 @@ public class TestTickRunner
 		// Break one of these wires.
 		runner.waitForPreviousTick();
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location, (short) 10);
-		runner.enqueueEntityChange(entityId, break1, 2L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), 2L);
 		runner.startNextTick();
 		
 		// (run an extra tick to apply the change to the block)
@@ -2050,9 +2066,10 @@ public class TestTickRunner
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		TickRunner runner = _createTestRunner();
 		int entityId = 1;
+		SuspendedEntity entity = _createFreshEntity(entityId);
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(_createFreshEntity(entityId))
+				, List.of(entity)
 				, null
 		);
 		runner.start();
@@ -2063,7 +2080,7 @@ public class TestTickRunner
 		short damage = 100;
 		long delayMillis = 2L * MILLIS_PER_TICK - 1L;
 		MutationBlockIncrementalBreak takeDamage = new MutationBlockIncrementalBreak(target, damage, MutationBlockIncrementalBreak.NO_STORAGE_ENTITY);
-		runner.enqueueEntityChange(entityId, new EntityChangeFutureBlock(takeDamage, delayMillis), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeFutureBlock(takeDamage, delayMillis)), 1L);
 		
 		// We enqueued this before the tick started so it will run immediately
 		// Run the tick to receive the change, then another to apply it.
@@ -2380,17 +2397,18 @@ public class TestTickRunner
 		mutable.newInventory.addAllItems(switc.item(), 1);
 		mutable.newInventory.addAllItems(lamp.item(), 2);
 		mutable.newInventory.addAllItems(wireBlock.item(), 1);
+		Entity entity = mutable.freeze();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(mutable.freeze(), List.of()))
+				, List.of(new SuspendedEntity(entity, List.of()))
 				, null
 		);
 		runner.start();
 		runner.waitForPreviousTick();
 		
 		// Place down a switch, turn it on, then place the other blocks around it to see how they act.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(switchLocation, switc, null, entityId)), 1L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, true)), 2L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockOverwriteByEntity(switchLocation, switc, null, entityId)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockSetLogicState(switchLocation, true)), 2L);
 		
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -2398,9 +2416,9 @@ public class TestTickRunner
 		TickRunner.Snapshot snapshot = runner.waitForPreviousTick();
 		Assert.assertEquals(switc.item().number(), snapshot.cuboids().get(address).completed().getData15(AspectRegistry.BLOCK, switchLocation.getBlockAddress()));
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, switchLocation.getBlockAddress()));
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(closeLampLocation, lamp, null, entityId)), 3L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(wireLocation, wireBlock, null, entityId)), 4L);
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockOverwriteByEntity(farLampLocation, lamp, null, entityId)), 5L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockOverwriteByEntity(closeLampLocation, lamp, null, entityId)), 3L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockOverwriteByEntity(wireLocation, wireBlock, null, entityId)), 4L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockOverwriteByEntity(farLampLocation, lamp, null, entityId)), 5L);
 		
 		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
 		runner.startNextTick();
@@ -2423,7 +2441,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 		
 		// Flip the switch off and back on, seeing how the other blocks react.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, false)), 6L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockSetLogicState(switchLocation, false)), 6L);
 		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -2445,7 +2463,7 @@ public class TestTickRunner
 		Assert.assertEquals(0x0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.FLAGS, farLampLocation.getBlockAddress()));
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 		
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockSetLogicState(switchLocation, true)), 7L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockSetLogicState(switchLocation, true)), 7L);
 		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -2469,7 +2487,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().get(address).completed().getData7(AspectRegistry.LOGIC, farLampLocation.getBlockAddress()));
 		
 		// Break the switch and see how the blocks around it act.
-		runner.enqueueEntityChange(entityId, new EntityChangeMutation(new MutationBlockIncrementalBreak(switchLocation, ENV.damage.getToughness(switc), entityId)), 8L);
+		runner.enqueueEntityChange(entityId, _wrapForEntity(entity, new MutationBlockIncrementalBreak(switchLocation, ENV.damage.getToughness(switc), entityId)), 8L);
 		// This takes several ticks:  Entity change, mutation change, logic propagate, logic update, block replace.
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -2529,31 +2547,35 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, wireSpace2_2.getRelative(0, 1, 0), itemDoor, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 4 entities.
-		MutableEntity entity1 = MutableEntity.createForTest(1);
-		entity1.newLocation = emitterSpace1.getRelative(1, 1, 0).toEntityLocation();
-		entity1.newInventory.addAllItems(itemEmitter, 1);
-		entity1.setSelectedKey(1);
-		MutableEntity entity2 = MutableEntity.createForTest(2);
-		entity2.newLocation = emitterSpace2.getRelative(1, 1, 0).toEntityLocation();
-		entity2.newInventory.addAllItems(itemEmitter, 1);
-		entity2.setSelectedKey(1);
-		MutableEntity entity3 = MutableEntity.createForTest(3);
-		entity3.newLocation = existingEmitter1.getRelative(1, 1, 0).toEntityLocation();
-		entity3.newInventory.addAllItems(itemDoor, 2);
-		entity3.setSelectedKey(1);
-		MutableEntity entity4 = MutableEntity.createForTest(4);
-		entity4.newLocation = existingEmitter2.getRelative(1, 1, 0).toEntityLocation();
-		entity4.newInventory.addAllItems(itemWire, 2);
-		entity4.setSelectedKey(1);
+		MutableEntity mutable1 = MutableEntity.createForTest(1);
+		mutable1.newLocation = emitterSpace1.getRelative(1, 1, 0).toEntityLocation();
+		mutable1.newInventory.addAllItems(itemEmitter, 1);
+		mutable1.setSelectedKey(1);
+		Entity entity1 = mutable1.freeze();
+		MutableEntity mutable2 = MutableEntity.createForTest(2);
+		mutable2.newLocation = emitterSpace2.getRelative(1, 1, 0).toEntityLocation();
+		mutable2.newInventory.addAllItems(itemEmitter, 1);
+		mutable2.setSelectedKey(1);
+		Entity entity2 = mutable2.freeze();
+		MutableEntity mutable3 = MutableEntity.createForTest(3);
+		mutable3.newLocation = existingEmitter1.getRelative(1, 1, 0).toEntityLocation();
+		mutable3.newInventory.addAllItems(itemDoor, 2);
+		mutable3.setSelectedKey(1);
+		Entity entity3 = mutable3.freeze();
+		MutableEntity mutable4 = MutableEntity.createForTest(4);
+		mutable4.newLocation = existingEmitter2.getRelative(1, 1, 0).toEntityLocation();
+		mutable4.newInventory.addAllItems(itemWire, 2);
+		mutable4.setSelectedKey(1);
+		Entity entity4 = mutable4.freeze();
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
-						, new SuspendedEntity(entity2.freeze(), List.of())
-						, new SuspendedEntity(entity3.freeze(), List.of())
-						, new SuspendedEntity(entity4.freeze(), List.of())
+				, List.of(new SuspendedEntity(entity1, List.of())
+						, new SuspendedEntity(entity2, List.of())
+						, new SuspendedEntity(entity3, List.of())
+						, new SuspendedEntity(entity4, List.of())
 				)
 				, null
 		);
@@ -2561,14 +2583,14 @@ public class TestTickRunner
 		runner.waitForPreviousTick();
 		
 		// We are only interested in seeing the final state so run all the operations concurrently and wait until all logic processing is completed.
-		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterSpace1, emitterSpace1.getRelative(1, 0, 0)), 1L);
-		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterSpace2, emitterSpace2.getRelative(1, 0, 0)), 1L);
-		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(doorSpace1_1, doorSpace1_1.getRelative(1, 0, 0)), 1L);
-		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(wireSpace2_1, wireSpace2_1.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterSpace1, emitterSpace1.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterSpace2, emitterSpace2.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(doorSpace1_1, doorSpace1_1.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(wireSpace2_1, wireSpace2_1.getRelative(1, 0, 0))), 1L);
 		runner.startNextTick();
 		runner.waitForPreviousTick();
-		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(doorSpace1_2, doorSpace1_2.getRelative(1, 0, 0)), 2L);
-		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(wireSpace2_2, wireSpace2_2.getRelative(1, 0, 0)), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(doorSpace1_2, doorSpace1_2.getRelative(1, 0, 0))), 2L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(wireSpace2_2, wireSpace2_2.getRelative(1, 0, 0))), 2L);
 		
 		runner.startNextTick();
 		runner.waitForPreviousTick();
@@ -2658,44 +2680,51 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, switchIndirect.getRelative(4, 0, 0), itemDoor, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 7 entities.
-		MutableEntity entity1 = MutableEntity.createForTest(1);
-		entity1.newLocation = emitterActiveDirect.getRelative(1, 1, 0).toEntityLocation();
-		entity1.newInventory.addAllItems(itemDiode, 2);
-		entity1.setSelectedKey(1);
-		MutableEntity entity2 = MutableEntity.createForTest(2);
-		entity2.newLocation = emitterActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
-		entity2.newInventory.addAllItems(itemDiode, 2);
-		entity2.setSelectedKey(1);
-		MutableEntity entity3 = MutableEntity.createForTest(3);
-		entity3.newLocation = diodeDirect.getRelative(1, 1, 0).toEntityLocation();
-		entity3.newInventory.addAllItems(itemEmitter, 2);
-		entity3.setSelectedKey(1);
-		MutableEntity entity4 = MutableEntity.createForTest(4);
-		entity4.newLocation = diodeIndirect.getRelative(1, 1, 0).toEntityLocation();
-		entity4.newInventory.addAllItems(itemEmitter, 2);
-		entity4.setSelectedKey(1);
-		MutableEntity entity5 = MutableEntity.createForTest(5);
-		entity5.newLocation = diodeActiveDirect.getRelative(1, 1, 0).toEntityLocation();
-		entity5.newInventory.addAllItems(itemDoor, 2);
-		entity5.setSelectedKey(1);
-		MutableEntity entity6 = MutableEntity.createForTest(6);
-		entity6.newLocation = diodeActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
-		entity6.newInventory.addAllItems(itemDoor, 2);
-		entity6.setSelectedKey(1);
-		MutableEntity entity7 = MutableEntity.createForTest(7);
-		entity7.newLocation = switchIndirect.getRelative(1, 1, 0).toEntityLocation();
+		MutableEntity mutable1 = MutableEntity.createForTest(1);
+		mutable1.newLocation = emitterActiveDirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable1.newInventory.addAllItems(itemDiode, 2);
+		mutable1.setSelectedKey(1);
+		Entity entity1 = mutable1.freeze();
+		MutableEntity mutable2 = MutableEntity.createForTest(2);
+		mutable2.newLocation = emitterActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable2.newInventory.addAllItems(itemDiode, 2);
+		mutable2.setSelectedKey(1);
+		Entity entity2 = mutable2.freeze();
+		MutableEntity mutable3 = MutableEntity.createForTest(3);
+		mutable3.newLocation = diodeDirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable3.newInventory.addAllItems(itemEmitter, 2);
+		mutable3.setSelectedKey(1);
+		Entity entity3 = mutable3.freeze();
+		MutableEntity mutable4 = MutableEntity.createForTest(4);
+		mutable4.newLocation = diodeIndirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable4.newInventory.addAllItems(itemEmitter, 2);
+		mutable4.setSelectedKey(1);
+		Entity entity4 = mutable4.freeze();
+		MutableEntity mutable5 = MutableEntity.createForTest(5);
+		mutable5.newLocation = diodeActiveDirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable5.newInventory.addAllItems(itemDoor, 2);
+		mutable5.setSelectedKey(1);
+		Entity entity5 = mutable5.freeze();
+		MutableEntity mutable6 = MutableEntity.createForTest(6);
+		mutable6.newLocation = diodeActiveIndirect.getRelative(1, 1, 0).toEntityLocation();
+		mutable6.newInventory.addAllItems(itemDoor, 2);
+		mutable6.setSelectedKey(1);
+		Entity entity6 = mutable6.freeze();
+		MutableEntity mutable7 = MutableEntity.createForTest(7);
+		mutable7.newLocation = switchIndirect.getRelative(1, 1, 0).toEntityLocation();
+		Entity entity7 = mutable7.freeze();
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
-						, new SuspendedEntity(entity2.freeze(), List.of())
-						, new SuspendedEntity(entity3.freeze(), List.of())
-						, new SuspendedEntity(entity4.freeze(), List.of())
-						, new SuspendedEntity(entity5.freeze(), List.of())
-						, new SuspendedEntity(entity6.freeze(), List.of())
-						, new SuspendedEntity(entity7.freeze(), List.of())
+				, List.of(new SuspendedEntity(entity1, List.of())
+						, new SuspendedEntity(entity2, List.of())
+						, new SuspendedEntity(entity3, List.of())
+						, new SuspendedEntity(entity4, List.of())
+						, new SuspendedEntity(entity5, List.of())
+						, new SuspendedEntity(entity6, List.of())
+						, new SuspendedEntity(entity7, List.of())
 				)
 				, null
 		);
@@ -2705,16 +2734,16 @@ public class TestTickRunner
 		// We will run these changes in 2 batches since we want to check some failures and successes, but failures first.
 		// Run phase1.
 		// These 2 should fail.
-		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(0, 1, 0), emitterActiveDirect.getRelative(1, 1, 0)), 1L);
-		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(0, 2, 0), emitterActiveIndirect.getRelative(1, 2, 0)), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(0, 1, 0), emitterActiveDirect.getRelative(1, 1, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(0, 2, 0), emitterActiveIndirect.getRelative(1, 2, 0))), 1L);
 		// These 2 should fail.
-		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(0, -1, 0), diodeDirect.getRelative(1, -1, 0)), 1L);
-		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(0, -2, 0), diodeIndirect.getRelative(1, -2, 0)), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(0, -1, 0), diodeDirect.getRelative(1, -1, 0))), 1L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(0, -2, 0), diodeIndirect.getRelative(1, -2, 0))), 1L);
 		// These 2 should fail.
-		runner.enqueueEntityChange(5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(0, 1, 0), diodeActiveDirect.getRelative(1, 1, 0)), 1L);
-		runner.enqueueEntityChange(6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(0, 2, 0), diodeActiveIndirect.getRelative(1, 2, 0)), 1L);
+		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(0, 1, 0), diodeActiveDirect.getRelative(1, 1, 0))), 1L);
+		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(0, 2, 0), diodeActiveIndirect.getRelative(1, 2, 0))), 1L);
 		// This will switch "on".
-		runner.enqueueEntityChange(7, new EntityChangeSetBlockLogicState(switchIndirect, true), 1L);
+		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntityChangeSetBlockLogicState(switchIndirect, true)), 1L);
 		
 		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the long arrangement to complete).
 		// 1) Run entity change (enqueue block mutation).
@@ -2760,16 +2789,16 @@ public class TestTickRunner
 		
 		// We can now run phase2.
 		// These 2 should pass.
-		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(1, 0, 0), emitterActiveDirect.getRelative(2, 0, 0)), 2L);
-		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(2, 0, 0), emitterActiveIndirect.getRelative(3, 0, 0)), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(emitterActiveDirect.getRelative(1, 0, 0), emitterActiveDirect.getRelative(2, 0, 0))), 2L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(emitterActiveIndirect.getRelative(2, 0, 0), emitterActiveIndirect.getRelative(3, 0, 0))), 2L);
 		// These 2 should pass.
-		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(-1, 0, 0), diodeDirect.getRelative(0, 0, 0)), 2L);
-		runner.enqueueEntityChange(4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(-2, 0, 0), diodeIndirect.getRelative(-1, 0, 0)), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(diodeDirect.getRelative(-1, 0, 0), diodeDirect.getRelative(0, 0, 0))), 2L);
+		runner.enqueueEntityChange(4, _wrapSubAction(entity4, new MutationPlaceSelectedBlock(diodeIndirect.getRelative(-2, 0, 0), diodeIndirect.getRelative(-1, 0, 0))), 2L);
 		// These 2 should pass.
-		runner.enqueueEntityChange(5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(1, 0, 0), diodeActiveDirect.getRelative(2, 0, 0)), 2L);
-		runner.enqueueEntityChange(6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(2, 0, 0), diodeActiveIndirect.getRelative(3, 0, 0)), 2L);
+		runner.enqueueEntityChange(5, _wrapSubAction(entity5, new MutationPlaceSelectedBlock(diodeActiveDirect.getRelative(1, 0, 0), diodeActiveDirect.getRelative(2, 0, 0))), 2L);
+		runner.enqueueEntityChange(6, _wrapSubAction(entity6, new MutationPlaceSelectedBlock(diodeActiveIndirect.getRelative(2, 0, 0), diodeActiveIndirect.getRelative(3, 0, 0))), 2L);
 		// This will switch "off".
-		runner.enqueueEntityChange(7, new EntityChangeSetBlockLogicState(switchIndirect, false), 2L);
+		runner.enqueueEntityChange(7, _wrapSubAction(entity7, new EntityChangeSetBlockLogicState(switchIndirect, false)), 2L);
 		
 		// Now, run enough ticks that this second batch to complete.
 		// 1) Run entity change (enqueue block mutation).
@@ -2846,26 +2875,29 @@ public class TestTickRunner
 		_placeItemAsBlock(cuboid, notGate.getRelative(-1, 0, 0), itemSwitch, null, false);
 		
 		// Since these are spaced out and we want this to happen in fewer ticks, we will use 3 entities.
-		MutableEntity entity1 = MutableEntity.createForTest(1);
-		entity1.newLocation = andGate.getRelative(1, 1, 0).toEntityLocation();
-		entity1.newInventory.addAllItems(itemAnd, 2);
-		entity1.setSelectedKey(1);
-		MutableEntity entity2 = MutableEntity.createForTest(2);
-		entity2.newLocation = orGate.getRelative(1, 1, 0).toEntityLocation();
-		entity2.newInventory.addAllItems(itemOr, 2);
-		entity2.setSelectedKey(1);
-		MutableEntity entity3 = MutableEntity.createForTest(3);
-		entity3.newLocation = notGate.getRelative(1, 1, 0).toEntityLocation();
-		entity3.newInventory.addAllItems(itemNot, 2);
-		entity3.setSelectedKey(1);
+		MutableEntity mutable1 = MutableEntity.createForTest(1);
+		mutable1.newLocation = andGate.getRelative(1, 1, 0).toEntityLocation();
+		mutable1.newInventory.addAllItems(itemAnd, 2);
+		mutable1.setSelectedKey(1);
+		Entity entity1 = mutable1.freeze();
+		MutableEntity mutable2 = MutableEntity.createForTest(2);
+		mutable2.newLocation = orGate.getRelative(1, 1, 0).toEntityLocation();
+		mutable2.newInventory.addAllItems(itemOr, 2);
+		mutable2.setSelectedKey(1);
+		Entity entity2 = mutable2.freeze();
+		MutableEntity mutable3 = MutableEntity.createForTest(3);
+		mutable3.newLocation = notGate.getRelative(1, 1, 0).toEntityLocation();
+		mutable3.newInventory.addAllItems(itemNot, 2);
+		mutable3.setSelectedKey(1);
+		Entity entity3 = mutable3.freeze();
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
-						, new SuspendedEntity(entity2.freeze(), List.of())
-						, new SuspendedEntity(entity3.freeze(), List.of())
+				, List.of(new SuspendedEntity(entity1, List.of())
+						, new SuspendedEntity(entity2, List.of())
+						, new SuspendedEntity(entity3, List.of())
 				)
 				, null
 		);
@@ -2874,9 +2906,9 @@ public class TestTickRunner
 		
 		// We will run these changes in 3 batches:  (1) place gates, (2) flip one switch, (3) flip second switch.
 		// Run phase1.
-		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0)), 1L);
-		runner.enqueueEntityChange(2, new MutationPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0)), 1L);
-		runner.enqueueEntityChange(3, new MutationPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(andGate, andGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new MutationPlaceSelectedBlock(orGate, orGate.getRelative(1, 0, 0))), 1L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new MutationPlaceSelectedBlock(notGate, notGate.getRelative(1, 0, 0))), 1L);
 		
 		// Now, run enough ticks that this first batch is complete (this is how many ticks it takes for the NOT to propagate).
 		// 1) Run MutationPlaceSelectedBlock.
@@ -2905,9 +2937,9 @@ public class TestTickRunner
 		_checkBlock(phase1, notGate.getRelative(1, 0, 0), itemDoor, null, true);
 		
 		// Run phase2 - we flip the switches and should see OR and NOT change.
-		runner.enqueueEntityChange(1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, -1, 0), true), 2L);
-		runner.enqueueEntityChange(2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, -1, 0), true), 2L);
-		runner.enqueueEntityChange(3, new EntityChangeSetBlockLogicState(notGate.getRelative(-1, 0, 0), true), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, -1, 0), true)), 2L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, -1, 0), true)), 2L);
+		runner.enqueueEntityChange(3, _wrapSubAction(entity3, new EntityChangeSetBlockLogicState(notGate.getRelative(-1, 0, 0), true)), 2L);
 		
 		// Run enough ticks to observe the output from the or gate.
 		// 1) EntityChangeSetBlockLogicState
@@ -2945,8 +2977,8 @@ public class TestTickRunner
 		_checkBlock(phase2, notGate.getRelative(1, 0, 0), itemDoor, null, false);
 		
 		// Run phase3 - we flip the switches and should see AND change.
-		runner.enqueueEntityChange(1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, 1, 0), true), 3L);
-		runner.enqueueEntityChange(2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, 1, 0), true), 3L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new EntityChangeSetBlockLogicState(andGate.getRelative(0, 1, 0), true)), 3L);
+		runner.enqueueEntityChange(2, _wrapSubAction(entity2, new EntityChangeSetBlockLogicState(orGate.getRelative(0, 1, 0), true)), 3L);
 		
 		// Run enough ticks to observe the output from the or gate.
 		// 1) EntityChangeSetBlockLogicState
@@ -3007,16 +3039,17 @@ public class TestTickRunner
 		cuboid.setDataSpecial(AspectRegistry.INVENTORY, chestSpace.getBlockAddress(), chestInventory);
 		
 		// We only need the sensor in our inventory.
-		MutableEntity entity1 = MutableEntity.createForTest(1);
-		entity1.newLocation = sensorSpace.getRelative(1, 1, 0).toEntityLocation();
-		entity1.newInventory.addAllItems(itemSensor, 1);
-		entity1.setSelectedKey(1);
+		MutableEntity mutable1 = MutableEntity.createForTest(1);
+		mutable1.newLocation = sensorSpace.getRelative(1, 1, 0).toEntityLocation();
+		mutable1.newInventory.addAllItems(itemSensor, 1);
+		mutable1.setSelectedKey(1);
+		Entity entity1 = mutable1.freeze();
 		
 		// Create the runner and load all test data.
 		TickRunner runner = _createTestRunner();
 		runner.setupChangesForTick(List.of(new SuspendedCuboid<IReadOnlyCuboidData>(cuboid, HeightMapHelpers.buildHeightMap(cuboid), List.of(), List.of(), Map.of()))
 				, null
-				, List.of(new SuspendedEntity(entity1.freeze(), List.of())
+				, List.of(new SuspendedEntity(entity1, List.of())
 				)
 				, null
 		);
@@ -3025,7 +3058,7 @@ public class TestTickRunner
 		
 		// We will run these changes in 3 batches:  (1) place sensor, (2) remove item, (3) add item.
 		// Run phase1 - place sensor.
-		runner.enqueueEntityChange(1, new MutationPlaceSelectedBlock(sensorSpace, sensorSpace.getRelative(1, 0, 0)), 1L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationPlaceSelectedBlock(sensorSpace, sensorSpace.getRelative(1, 0, 0))), 1L);
 		
 		// Run enough ticks to see the door open.
 		// 1) Run MutationPlaceSelectedBlock.
@@ -3050,7 +3083,7 @@ public class TestTickRunner
 		_checkBlock(phase1, doorSpace, itemDoor, null, true);
 		
 		// Run phase2 - empty chest inventory.
-		runner.enqueueEntityChange(1, new MutationEntityRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 2L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityRequestItemPickUp(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 2L);
 		
 		// Run enough ticks to observe the sensor and door deactivate.
 		// 1) MutationEntityRequestItemPickUp
@@ -3084,7 +3117,7 @@ public class TestTickRunner
 		_checkBlock(phase2, doorSpace, itemDoor, null, false);
 		
 		// Run phase3 - fill chest inventory.
-		runner.enqueueEntityChange(1, new MutationEntityPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 3L);
+		runner.enqueueEntityChange(1, _wrapSubAction(entity1, new MutationEntityPushItems(chestSpace, 1, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 3L);
 		
 		// Run enough ticks to observe the sensor and door reactivate.
 		// 1) MutationEntityPushItems
@@ -3163,13 +3196,13 @@ public class TestTickRunner
 	}
 
 
-	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, IMutationBlock mutation)
+	private TickRunner.Snapshot _runTickLockStep(TickRunner runner, Entity entity, IMutationBlock mutation)
 	{
 		// This helper is useful when a test wants to be certain that a mutation has completed before checking state.
 		// 1) Wait for any in-flight tick to complete.
 		runner.waitForPreviousTick();
 		// 2) Enqueue the mutation to be picked up by the next tick.
-		runner.enqueueEntityChange(1, new EntityChangeMutation(mutation), 1L);
+		runner.enqueueEntityChange(1, _wrapForEntity(entity, mutation), 1L);
 		// (run an extra tick to unwrap the entity change)
 		runner.startNextTick();
 		// 3) Run the tick which will execute the mutation.
@@ -3274,14 +3307,14 @@ public class TestTickRunner
 		return count;
 	}
 
-	private long _applyIncrementalBreaks(TickRunner runner, long nextCommit, int entityId, AbsoluteLocation changeLocation, short millisOfBreak)
+	private long _applyIncrementalBreaks(TickRunner runner, long nextCommit, int entityId, Entity entity, AbsoluteLocation changeLocation, short millisOfBreak)
 	{
 		short millisRemaining = millisOfBreak;
 		while (millisRemaining > 0)
 		{
 			short timeToApply = (short) Math.min(MILLIS_PER_TICK, millisRemaining);
 			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, timeToApply);
-			runner.enqueueEntityChange(entityId, break1, nextCommit);
+			runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), nextCommit);
 			nextCommit += 1L;
 			runner.startNextTick();
 			millisRemaining -= timeToApply;
@@ -3338,5 +3371,29 @@ public class TestTickRunner
 		{
 			Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, location.getBlockAddress()));
 		}
+	}
+
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapForEntity(Entity entity, IMutationBlock next)
+	{
+		EntityChangeMutation wrapper = new EntityChangeMutation(next);
+		return _wrapSubAction(entity, wrapper);
+	}
+
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IMutationEntity<IMutablePlayerEntity> subAction)
+	{
+		// We need these wrappers to be scheduled like the sub-action, but can't be 0 millis.
+		long millis = subAction.getTimeCostMillis();
+		if (0L == millis)
+		{
+			millis = 1L;
+		}
+		return new EntityChangeTopLevelMovement<>(entity.location()
+			, entity.velocity()
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, OrientationHelpers.YAW_NORTH
+			, OrientationHelpers.PITCH_FLAT
+			, subAction
+			, millis
+		);
 	}
 }
