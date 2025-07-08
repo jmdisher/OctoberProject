@@ -18,8 +18,8 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.CreatureIdAssigner;
 import com.jeffdisher.october.logic.EntityCollection;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
-import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -553,11 +553,11 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
-		Assert.assertTrue(action instanceof EntityChangeMove<IMutableCreatureEntity>);
+		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertNotNull(mutableOrc.newMovementPlan);
 	}
@@ -637,12 +637,12 @@ public class TestCreatureLogic
 				, mutableOrc
 		);
 		Assert.assertFalse(didTakeAction);
-		IMutationEntity<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> action = CreatureLogic.planNextAction(context
 				, mutableOrc
 				, 100L
 		);
 		// We will try to walk toward them still.
-		Assert.assertTrue(action instanceof EntityChangeMove<IMutableCreatureEntity>);
+		Assert.assertNotNull(action);
 		Assert.assertEquals(player.id(), mutableOrc.newTargetEntityId);
 		Assert.assertEquals(player.location().getBlockLocation(), mutableOrc.newTargetPreviousLocation);
 		

@@ -16,7 +16,7 @@ import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.mutations.IMutationEntity;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BodyPart;
@@ -111,12 +111,12 @@ public class CreatureLogic
 	 * @param timeLimitMillis The number of milliseconds left in the tick.
 	 * @return The next action to take (null if there is nothing to do).
 	 */
-	public static IMutationEntity<IMutableCreatureEntity> planNextAction(TickProcessingContext context
+	public static EntityChangeTopLevelMovement<IMutableCreatureEntity> planNextAction(TickProcessingContext context
 			, MutableCreature mutable
 			, long timeLimitMillis
 	)
 	{
-		IMutationEntity<IMutableCreatureEntity> action;
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> action;
 		if (null != mutable.newMovementPlan)
 		{
 			// If we have a movement plan, we want to try to advance it and then produce the next action.
@@ -304,7 +304,7 @@ public class CreatureLogic
 		mutable.newMovementPlan = movementPlan;
 	}
 
-	private static IMutationEntity<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
+	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _produceNextAction(TickProcessingContext context
 			, Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
 			, MutableCreature mutable
 			, List<AbsoluteLocation> existingPlan
@@ -323,11 +323,12 @@ public class CreatureLogic
 			// This means we are jumping so choose the next place where we want to go for direction hint.
 			directionHint = existingPlan.get(1);
 		}
-		IMutationEntity<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(mutable.getLocation(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> actionProduced = CreatureMovementHelpers.prepareForMove(reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.getType(), directionHint, timeLimitMillis, viscosity, isIdleMovement);
 		if (null == actionProduced)
 		{
 			// If we are already in a reasonable location, proceed to move.
-			actionProduced = _planNextStep(blockKindLookup, mutable.getLocation(), mutable.getType(), existingPlan, timeLimitMillis, viscosity, isIdleMovement);
+			actionProduced = _planNextStep(blockKindLookup, reader, mutable.getLocation(), mutable.getVelocityVector(), mutable.newYaw, mutable.newPitch, mutable.getType(), existingPlan, timeLimitMillis, viscosity, isIdleMovement);
 		}
 		
 		return actionProduced;
@@ -493,8 +494,12 @@ public class CreatureLogic
 		mutable.newMovementPlan = updatedPlan;
 	}
 
-	private static IMutationEntity<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _planNextStep(Function<AbsoluteLocation, PathFinder.BlockKind> blockKindLookup
+			, ViscosityReader reader
 			, EntityLocation entityLocation
+			, EntityLocation entityVelocity
+			, byte yaw
+			, byte pitch
 			, EntityType type
 			, List<AbsoluteLocation> existingPlan
 			, long timeLimitMillis
@@ -509,7 +514,7 @@ public class CreatureLogic
 		Assert.assertTrue(!currentLocation.equals(thisStep));
 		
 		boolean isSwimmable = (PathFinder.BlockKind.SWIMMABLE == blockKindLookup.apply(currentLocation));
-		return CreatureMovementHelpers.moveToNextLocation(entityLocation, type, thisStep, timeLimitMillis, viscosity, isIdleMovement, isSwimmable);
+		return CreatureMovementHelpers.moveToNextLocation(reader, entityLocation, entityVelocity, yaw, pitch, type, thisStep, timeLimitMillis, viscosity, isIdleMovement, isSwimmable);
 	}
 
 	private static Function<AbsoluteLocation, PathFinder.BlockKind> _createLookupHelper(TickProcessingContext context)

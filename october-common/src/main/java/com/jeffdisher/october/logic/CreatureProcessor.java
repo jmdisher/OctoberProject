@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
 import com.jeffdisher.october.types.EventRecord;
@@ -63,26 +65,24 @@ public class CreatureProcessor
 				
 				// Determine if we need to schedule movements.
 				List<IMutationEntity<IMutableCreatureEntity>> changes = changesToRun.get(id);
-				long millisAtEndOfTick = context.millisPerTick;
 				if (null != changes)
 				{
-					millisAtEndOfTick = _runExternalChanges(processor, context, mutable, changes, millisAtEndOfTick);
+					_runExternalChanges(processor, context, mutable, changes);
 				}
 				
 				// Now that we have handled any normally queued up changes acting ON this creature, see if they want to do anything special.
 				boolean didSpecial = CreatureLogic.didTakeSpecialActions(context, entityCollection, mutable);
-				
-				// If we have any time left, see what other actions we can take.
-				if (!didSpecial && (millisAtEndOfTick > 0L))
+				if (!didSpecial)
 				{
 					// If we didn't perform a special action, we can proceed with movement.
-					millisAtEndOfTick = _runInternalChanges(processor, context, mutable, millisAtEndOfTick);
+					_runInternalChanges(processor, context, mutable, context.millisPerTick);
 				}
-				
-				// Account for time passing.
-				if (millisAtEndOfTick > 0L)
+				else
 				{
-					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisAtEndOfTick);
+					EntityChangeTopLevelMovement<IMutableCreatureEntity> change = _createStandingChange(context, mutable);
+					boolean didApply = change.applyChange(context, mutable);
+					// We just asked to create this so failure doesn't make sense.
+					Assert.assertTrue(didApply);
 				}
 				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
 				if (fallDamage > 0)
@@ -112,78 +112,50 @@ public class CreatureProcessor
 	}
 
 
-	private static long _runExternalChanges(ProcessorElement processor
+	private static void _runExternalChanges(ProcessorElement processor
 			, TickProcessingContext context
 			, MutableCreature mutable
 			, List<IMutationEntity<IMutableCreatureEntity>> changes
-			, long millisAtEndOfTick
 	)
 	{
 		for (IMutationEntity<IMutableCreatureEntity> change : changes)
 		{
 			processor.creatureChangesProcessed += 1;
-			boolean didApply = change.applyChange(context, mutable);
-			if (didApply)
-			{
-				// If this applied, account for time passing.
-				long millisInChange = change.getTimeCostMillis();
-				if (millisInChange > 0L)
-				{
-					TickUtils.allowMovement(context.previousBlockLookUp, mutable, millisInChange);
-					millisAtEndOfTick -= millisInChange;
-				}
-			}
+			// These external changes should all take 0 millis.
+			long millisInChange = change.getTimeCostMillis();
+			Assert.assertTrue(0L == millisInChange);
+			
+			// Note that we ignore this response since it can fail.
+			change.applyChange(context, mutable);
 		}
-		return millisAtEndOfTick;
 	}
 
-	private static long _runInternalChanges(ProcessorElement processor
+	private static void _runInternalChanges(ProcessorElement processor
 			, TickProcessingContext context
 			, MutableCreature mutable
 			, long millisAtEndOfTick
 	)
 	{
-		boolean canSchedule = true;
-		while (canSchedule)
+		// Note that this may still return a null list of next steps if there is nothing to do.
+		EntityChangeTopLevelMovement<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
+		if (null == change)
 		{
-			// Note that this may still return a null list of next steps if there is nothing to do.
-			IMutationEntity<IMutableCreatureEntity> change = CreatureLogic.planNextAction(context, mutable, millisAtEndOfTick);
-			if (null != change)
-			{
-				long timeCostMillis = change.getTimeCostMillis();
-				// This must be able to fit into a single tick.
-				Assert.assertTrue(timeCostMillis <= context.millisPerTick);
-				if (timeCostMillis <= millisAtEndOfTick)
-				{
-					processor.creatureChangesProcessed += 1;
-					boolean didApply = change.applyChange(context, mutable);
-					if (didApply)
-					{
-						// If this applied, account for time passing.
-						if (timeCostMillis > 0L)
-						{
-							TickUtils.allowMovement(context.previousBlockLookUp, mutable, timeCostMillis);
-						}
-					}
-					millisAtEndOfTick -= timeCostMillis;
-					if ((0L == millisAtEndOfTick) || (0L == timeCostMillis))
-					{
-						canSchedule = false;
-					}
-				}
-				else
-				{
-					// We have done all we can.
-					canSchedule = false;
-				}
-			}
-			else
-			{
-				// We have done all we can.
-				canSchedule = false;
-			}
+			// In this case, we just want to synthesize a "do nothing" standing action so that we fall, etc.
+			change = _createStandingChange(context, mutable);
 		}
-		return millisAtEndOfTick;
+		processor.creatureChangesProcessed += 1;
+		boolean didApply = change.applyChange(context, mutable);
+		// We just asked to create this so failure doesn't make sense.
+		Assert.assertTrue(didApply);
+	}
+
+	private static EntityChangeTopLevelMovement<IMutableCreatureEntity> _createStandingChange(TickProcessingContext context
+			, MutableCreature mutable
+	)
+	{
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), context.previousBlockLookUp);
+		float viscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(mutable.newLocation, mutable.getType().volume(), context.previousBlockLookUp);
+		return CreatureMovementHelpers.buildStandingChange(reader, mutable.newLocation, mutable.newVelocity, mutable.newYaw, mutable.newPitch, mutable.getType(), context.millisPerTick, viscosity);
 	}
 
 

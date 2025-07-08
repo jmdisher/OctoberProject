@@ -229,7 +229,7 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		Assert.assertNotEquals(startLocation, updated.location());
-		Assert.assertEquals(3.92f, updated.velocity().z(), 0.001f);
+		Assert.assertEquals(4.9f, updated.velocity().z(), 0.001f);
 		Assert.assertEquals(1, updated.ephemeral().movementPlan().size());
 	}
 
@@ -689,8 +689,8 @@ public class TestCreatureProcessor
 		
 		CreatureEntity updated = group.updatedCreatures().get(creature.id());
 		// The cow should first position itself against the wall before making the jump.
-		// Note that it will take 4 steps, instead of 3, since this is an idle movement (half-speed but also ends in a jump).
-		for (int i = 0; i < 4; ++i)
+		// Note that it will take 5 steps, instead of 3, since this is an idle movement (half-speed but also ends in a jump).
+		for (int i = 0; i < 5; ++i)
 		{
 			Assert.assertEquals(0.0f, updated.velocity().z(), 0.001f);
 			creaturesById = group.updatedCreatures();
@@ -703,7 +703,7 @@ public class TestCreatureProcessor
 			updated = group.updatedCreatures().get(creature.id());
 		}
 		// We should now be against the wall.
-		Assert.assertEquals(8.01f, updated.location().x(), 0.01f);
+		Assert.assertEquals(8.0f, updated.location().x(), 0.01f);
 		
 		// The cow should have jumped, so verify the location, z-velocity, and no plan to the next step.
 		Assert.assertNotEquals(startLocation, updated.location());
@@ -733,8 +733,8 @@ public class TestCreatureProcessor
 		}
 		
 		// By this point we should be on the ground, in the right block, with no plan.
-		Assert.assertEquals(7.59f, updated.location().x(), 0.01f);
-		Assert.assertEquals(9.01f, updated.location().y(), 0.01f);
+		Assert.assertEquals(7.5f, updated.location().x(), 0.01f);
+		Assert.assertEquals(9.05f, updated.location().y(), 0.01f);
 		Assert.assertEquals(2.0f, updated.location().z(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().x(), 0.01f);
 		Assert.assertEquals(0.0f, updated.velocity().y(), 0.01f);
@@ -865,7 +865,7 @@ public class TestCreatureProcessor
 		// We should be in the same column but higher.
 		Assert.assertEquals(startLocation.x(), creature.location().x(), 0.01f);
 		Assert.assertEquals(startLocation.y(), creature.location().y(), 0.01f);
-		Assert.assertEquals(2.8f, creature.location().z(), 0.01f);
+		Assert.assertEquals(3.45f, creature.location().z(), 0.01f);
 	}
 
 	@Test

@@ -273,7 +273,6 @@ public class MutableCreature implements IMutableCreatureEntity
 		CreatureEntity newInstance;
 		if (this.newHealth > 0)
 		{
-			Assert.assertTrue(0.0f == this.newVelocity.x());
 			Assert.assertTrue((null == this.newMovementPlan) || !this.newMovementPlan.isEmpty());
 			CreatureEntity.Ephemeral ephemeral = new CreatureEntity.Ephemeral(
 					(null != this.newMovementPlan) ? Collections.unmodifiableList(this.newMovementPlan) : null
