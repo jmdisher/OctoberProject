@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.jeffdisher.october.mutations.TickUtils;
+import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.Entity;
+import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.MutableEntity;
 import com.jeffdisher.october.types.TickProcessingContext;
@@ -81,6 +83,7 @@ public class CrowdProcessor
 				processor.entitiesProcessed += 1;
 				
 				MutableEntity mutable = MutableEntity.existing(entity);
+				float startZVelocity = mutable.newVelocity.z();
 				List<ScheduledChange> changes = changesToRun.get(id);
 				if (null != changes)
 				{
@@ -114,6 +117,11 @@ public class CrowdProcessor
 					}
 				}
 				
+				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
+				if (fallDamage > 0)
+				{
+					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
+				}
 				// Account for time passing.
 				TickUtils.endOfTick(context, mutable);
 				
