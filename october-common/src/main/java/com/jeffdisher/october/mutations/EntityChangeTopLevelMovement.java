@@ -235,7 +235,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			Environment env = Environment.getShared();
 			EntityMovementHelpers.interactiveEntityMove(_newLocation, volume, ray, new EntityMovementHelpers.InteractiveHelper() {
 				@Override
-				public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 				{
 					if (cancelX)
 					{

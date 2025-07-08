@@ -115,7 +115,7 @@ public class EntityMovementHelpers
 				return reader.getViscosityFraction(location);
 			}
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				// Set the location and velocity.
 				newEntity.setLocation(finalLocation);
@@ -160,7 +160,7 @@ public class EntityMovementHelpers
 				return new ViscosityReader(env, blockLookup).getViscosityFraction(location);
 			}
 			@Override
-			public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
 			{
 				// This isn't called in this path.
 				throw Assert.unreachable();
@@ -334,7 +334,7 @@ public class EntityMovementHelpers
 			, movingStart.y() + effectiveY
 			, movingStart.z() + effectiveZ
 		);
-		helper.setLocationAndViscosity(movingStart, cancelX, cancelY, cancelZ);
+		helper.setLocationAndCancelVelocity(movingStart, cancelX, cancelY, cancelZ);
 	}
 
 	private static void _interactiveEntityMove(EntityLocation start, EntityVolume volume, EntityLocation vectorToMove, InteractiveHelper helper)
@@ -349,7 +349,7 @@ public class EntityMovementHelpers
 		else
 		{
 			// We are already stuck here so just fail out without moving, colliding on all axes.
-			helper.setLocationAndViscosity(start, true, true, true);
+			helper.setLocationAndCancelVelocity(start, true, true, true);
 		}
 	}
 
@@ -360,8 +360,23 @@ public class EntityMovementHelpers
 	 */
 	public static interface InteractiveHelper
 	{
+		/**
+		 * Gets the viscosity of the block in the given location as a fraction (0.0f is no resistance while 1.0f is
+		 * fully solid).
+		 * 
+		 * @param location The location to check.
+		 * @return The viscosity fraction (1.0f being solid).
+		 */
 		public float getViscosityForBlockAtLocation(AbsoluteLocation location);
-		public void setLocationAndViscosity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ);
+		/**
+		 * The call issued by the interactive call to return all results instead of returning some kind of tuple.
+		 * 
+		 * @param finalLocation The location where the move stopped.
+		 * @param cancelX True if there was a collision on the X axis (East/West).
+		 * @param cancelY True if there was a collision on the Y axis (North/South).
+		 * @param cancelZ True if there was a collision on the Z axis (Up/Down).
+		 */
+		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ);
 	}
 
 
