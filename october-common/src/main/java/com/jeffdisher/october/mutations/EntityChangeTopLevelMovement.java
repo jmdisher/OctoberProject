@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
@@ -143,7 +142,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		if (0.0f == zVDelta)
 		{
 			// We are either at terminal velocity or standing on solid ground.
-			boolean isTerminal = (newZVelocity == MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
+			boolean isTerminal = (newZVelocity == EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 			// Flat ground - make sure that they are on solid ground.
 			boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
 			// Alternatively, they may be swimming (creatures can swim up at a sustained velocity).
@@ -151,7 +150,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			if (!isTerminal && !isOnGround && !isSwimmable)
 			{
 				// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
-				float startEffectiveGravity = startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+				float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 				// We want to round the expected delta.
 				float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 				if (0.0f != expectedZDelta)
@@ -162,7 +161,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		}
 		else
 		{
-			float startEffectiveGravity = startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+			float startEffectiveGravity = startInverseViscosity * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 			// We want to round the expected delta.
 			float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 			boolean isValidFall = (zVDelta < (Z_VECTOR_ACCURACY_THRESHOLD * expectedZDelta));
@@ -177,8 +176,8 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				{
 					// This is the more expensive check so see if their new velocity is between the extremes of 2 different viscosities.
 					float endViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(_newLocation, volume, context.previousBlockLookUp);
-					float startTerminal = (1.0f - startViscosity) * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
-					float endTerminal = (1.0f - endViscosity) * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+					float startTerminal = (1.0f - startViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+					float endTerminal = (1.0f - endViscosity) * EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
 					boolean isTransitionVelocity = ((endTerminal <= newZVelocity) && (newZVelocity <= startTerminal))
 						|| ((startTerminal <= newZVelocity) && (newZVelocity <= endTerminal))
 					;

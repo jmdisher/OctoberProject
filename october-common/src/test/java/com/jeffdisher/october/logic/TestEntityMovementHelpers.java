@@ -194,7 +194,7 @@ public class TestEntityMovementHelpers
 		cuboid.setData15(AspectRegistry.BLOCK, BlockAddress.fromInt(16, 16, 15), STONE.item().number());
 		_Entity entity = new _Entity();
 		entity.location = new EntityLocation(16.8f, 16.8f, 16.1f);
-		entity.vector = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 2.0f);
+		entity.vector = new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND / 2.0f);
 		EntityMovementHelpers.allowMovement((AbsoluteLocation location) -> {
 			return new BlockProxy(location.getBlockAddress(), cuboid);
 		}, entity, 100L);

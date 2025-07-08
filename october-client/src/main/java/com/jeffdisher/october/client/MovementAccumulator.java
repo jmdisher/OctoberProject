@@ -18,7 +18,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.BlockChangeDescription;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.logic.ViscosityReader;
@@ -560,14 +559,8 @@ public class MovementAccumulator
 
 	private void _updateVelocityWithAccumulatedGravity(long additionalMillis)
 	{
-		float secondsToPass = (float)(_accumulationMillis + additionalMillis) / 1000.0f;
-		float zVelocityChange = secondsToPass * _startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
-		float newZVelocity = _baselineZVector + zVelocityChange;
-		float effectiveTerminalVelocity = _startInverseViscosity * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
-		if (newZVelocity < effectiveTerminalVelocity)
-		{
-			newZVelocity = effectiveTerminalVelocity;
-		}
+		long millisToApply = _accumulationMillis + additionalMillis;
+		float newZVelocity = EntityMovementHelpers.zVelocityAfterGravity(_baselineZVector, _startInverseViscosity, millisToApply);
 		_newVelocity = new EntityLocation(_newVelocity.x(), _newVelocity.y(), newZVelocity);
 	}
 

@@ -22,8 +22,8 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.CuboidHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.HeightMapHelpers;
-import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
@@ -287,7 +287,7 @@ public class TestMovementAccumulator
 		// Create the baseline data we need.
 		MutableEntity mutable = MutableEntity.createForTest(1);
 		mutable.newLocation = new EntityLocation(16.0f, 16.0f, 2.0f);
-		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
+		mutable.newVelocity = new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 		Entity entity = mutable.freeze();
 		accumulator.setThisEntity(entity);
 		accumulator.setCuboid(topCuboid, HeightMapHelpers.buildHeightMap(topCuboid));
@@ -301,10 +301,10 @@ public class TestMovementAccumulator
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, 2.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -0.4f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		
 		// Run the second move.
 		currentTimeMillis += millisPerMove;
@@ -315,7 +315,7 @@ public class TestMovementAccumulator
 		// We need to apply this to our state since it would be considered part of the underlying state.
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(topCuboid, bottomCuboid), entity, out, accumulator, listener);
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.0f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(16.0f, 16.0f, -2.4f), listener.thisEntity.location());
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -20.0f), listener.thisEntity.velocity());

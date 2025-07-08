@@ -7,7 +7,6 @@ import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
-import com.jeffdisher.october.logic.MotionHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.EntityLocation;
@@ -29,7 +28,7 @@ public class TickUtils
 	 * We want the damage threshold to be roughly free-fall for 4 metres (which is just over 8 m/s down).
 	 */
 	public static final float DECELERATION_DAMAGE_THRESHOLD = -8.0f;
-	public static final float DECELERATION_DAMAGE_RANGE = MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND - DECELERATION_DAMAGE_THRESHOLD;
+	public static final float DECELERATION_DAMAGE_RANGE = EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND - DECELERATION_DAMAGE_THRESHOLD;
 	/**
 	 * Fall damage should be the maximum possible amount of damage.
 	 */

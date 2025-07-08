@@ -30,6 +30,19 @@ public class EntityMovementHelpers
 	 * actually right up against.
 	 */
 	public static final float POSITIVE_EDGE_COLLISION_FUDGE_FACTOR = 0.01f;
+	/**
+	 * We will use standard Earth gravity -9.8 ms^2.
+	 */
+	public static final float GRAVITY_CHANGE_PER_SECOND = -9.8f;
+	/**
+	 * The terminal velocity when falling through air.
+	 * (40 m/s seems to be a common free-fall velocity for sky-divers)
+	 */
+	public static final float FALLING_TERMINAL_VELOCITY_PER_SECOND = -40.0f;
+	/**
+	 * Just a helpful constant.
+	 */
+	public static final float FLOAT_MILLIS_PER_SECOND = 1000.0f;
 
 	/**
 	 * Sets the velocity of the given newEntity based on the given x/y components and a target total speed of
@@ -88,10 +101,10 @@ public class EntityMovementHelpers
 		float viscosityFraction = reader.getViscosityFraction(oldLocation.getBlockLocation());
 		float inverseViscosity = (1.0f - viscosityFraction);
 		
-		float secondsInMotion = ((float)longMillisInMotion) / MotionHelpers.FLOAT_MILLIS_PER_SECOND;
-		float zVelocityChange = secondsInMotion * inverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+		float secondsInMotion = ((float)longMillisInMotion) / FLOAT_MILLIS_PER_SECOND;
+		float zVelocityChange = secondsInMotion * inverseViscosity * GRAVITY_CHANGE_PER_SECOND;
 		float newZVelocity = initialZVector + zVelocityChange;
-		float effectiveTerminalVelocity = inverseViscosity * MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND;
+		float effectiveTerminalVelocity = inverseViscosity * FALLING_TERMINAL_VELOCITY_PER_SECOND;
 		if (newZVelocity < effectiveTerminalVelocity)
 		{
 			newZVelocity = effectiveTerminalVelocity;
@@ -167,6 +180,29 @@ public class EntityMovementHelpers
 			}
 		};
 		return _maxViscosityInEntityBlocks(entityBase, volume, helper);
+	}
+
+	/**
+	 * A helper to compute the z-velocity after applying gravity to an initial z-velocity vector for millisToApply ms.
+	 * Internally accounts for the drag incurred by inverseViscosity (inverse means higher numbers have less resistance)
+	 * and will limit by terminal velocity.
+	 * 
+	 * @param startZVector The starting Z component of a velocity vector.
+	 * @param inverseViscosity The inverse viscosity of the environment (that is, 1-viscosity).
+	 * @param millisToApply The number milliseconds to pass.
+	 * @return The new Z component of a velocity vector.
+	 */
+	public static float zVelocityAfterGravity(float startZVector, float inverseViscosity, long millisToApply)
+	{
+		float secondsToPass = (float)millisToApply / FLOAT_MILLIS_PER_SECOND;
+		float zVelocityChange = secondsToPass * inverseViscosity * GRAVITY_CHANGE_PER_SECOND;
+		float newZVelocity = startZVector + zVelocityChange;
+		float effectiveTerminalVelocity = inverseViscosity * FALLING_TERMINAL_VELOCITY_PER_SECOND;
+		if (newZVelocity < effectiveTerminalVelocity)
+		{
+			newZVelocity = effectiveTerminalVelocity;
+		}
+		return newZVelocity;
 	}
 
 

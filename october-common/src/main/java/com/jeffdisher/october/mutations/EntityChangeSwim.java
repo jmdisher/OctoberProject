@@ -6,7 +6,7 @@ import java.util.function.Function;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -24,7 +24,7 @@ public class EntityChangeSwim<T extends IMutableMinimalEntity> implements IMutat
 	 * We will make the swim force 0.5x the force of gravity since that is the current jump force but this will change
 	 * with experimentation and "play feel" later on.
 	 */
-	public static final float SWIM_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+	public static final float SWIM_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.SWIM;
 
 	public static boolean canSwim(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp

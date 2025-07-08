@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.logic.MotionHelpers;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
@@ -23,7 +23,7 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 	 * We will make the jump force 0.5x the force of gravity (this was experimentally shown to jump just over 1 block
 	 * and has a relatively "quick" feel in play testing).
 	 */
-	public static final float JUMP_FORCE = -0.5f * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
+	public static final float JUMP_FORCE = -0.5f * EntityMovementHelpers.GRAVITY_CHANGE_PER_SECOND;
 	public static final MutationEntityType TYPE = MutationEntityType.JUMP;
 
 	public static boolean canJump(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
