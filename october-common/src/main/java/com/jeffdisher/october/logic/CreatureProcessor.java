@@ -8,7 +8,6 @@ import java.util.Map;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.creatures.CreatureLogic;
 import com.jeffdisher.october.mutations.TickUtils;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.CreatureEntity;
@@ -87,7 +86,7 @@ public class CreatureProcessor
 				byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
 				if (fallDamage > 0)
 				{
-					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
+					DamageHelpers.applyDamageDirectlyAndPostEvent(context, mutable, (byte)fallDamage, EventRecord.Cause.FALL);
 				}
 				TickUtils.endOfTick(context, mutable);
 				

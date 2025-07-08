@@ -6,6 +6,7 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
 import com.jeffdisher.october.data.BlockProxy;
+import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -119,7 +120,7 @@ public class TickUtils
 				else
 				{
 					// Apply the damage directly inline.
-					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EventRecord.Cause.SUFFOCATION);
+					DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.SUFFOCATION_DAMAGE_PER_SECOND, EventRecord.Cause.SUFFOCATION);
 				}
 			}
 			
@@ -127,7 +128,7 @@ public class TickUtils
 			int blockDamage = env.blocks.getBlockDamage(headBlock);
 			if (blockDamage > 0)
 			{
-				EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)blockDamage, EventRecord.Cause.BLOCK_DAMAGE);
+				DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)blockDamage, EventRecord.Cause.BLOCK_DAMAGE);
 			}
 			else
 			{
@@ -135,7 +136,7 @@ public class TickUtils
 				BlockProxy underFoot = context.previousBlockLookUp.apply(newEntity.getLocation().getBlockLocation().getRelative(0, 0, -1));
 				if ((null != underFoot) && FlagsAspect.isSet(underFoot.getFlags(), FlagsAspect.FLAG_BURNING))
 				{
-					EntityChangeTakeDamageFromOther.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.FIRE_DAMAGE_PER_SECOND, EventRecord.Cause.BLOCK_DAMAGE);
+					DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, MiscConstants.FIRE_DAMAGE_PER_SECOND, EventRecord.Cause.BLOCK_DAMAGE);
 				}
 			}
 		}

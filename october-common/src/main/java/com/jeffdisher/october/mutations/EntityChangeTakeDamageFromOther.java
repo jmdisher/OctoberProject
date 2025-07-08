@@ -2,8 +2,8 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.logic.DamageHelpers;
 import com.jeffdisher.october.net.CodecHelpers;
-import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BodyPart;
 import com.jeffdisher.october.types.EventRecord;
 import com.jeffdisher.october.types.IMutableMinimalEntity;
@@ -28,23 +28,6 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 		int damage = buffer.getInt();
 		byte cause = buffer.get();
 		return new EntityChangeTakeDamageFromOther<>(target, damage, cause);
-	}
-
-	/**
-	 * Applies damage directly to the given newEntity.  Internally, this will either reduce their health or kill them,
-	 * emitting the corresponding event.
-	 * This is intended to be applied at the end of tick when processing environment damage factors applied to the
-	 * entity.
-	 * 
-	 * @param context The current tick context.
-	 * @param newEntity The entity to modify.
-	 * @param damageToApply The damage to apply (must be > 0).
-	 * @param cause The cause of the damage when emiting the event for the damage.
-	 */
-	public static void applyDamageDirectlyAndPostEvent(TickProcessingContext context, IMutableMinimalEntity newEntity, byte damageToApply, EventRecord.Cause cause)
-	{
-		Assert.assertTrue(damageToApply > 0);
-		_applyDamageDirectlyAndPostEvent(context, newEntity, damageToApply, cause);
 	}
 
 
@@ -95,7 +78,7 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 				// This is an undefined type.
 				throw Assert.unreachable();
 			}
-			_applyDamageDirectlyAndPostEvent(context, newEntity, (byte)damageToApply, cause);
+			DamageHelpers.applyDamageDirectlyAndPostEvent(context, newEntity, (byte)damageToApply, cause);
 			
 			didApply = true;
 		}
@@ -127,36 +110,5 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 	public String toString()
 	{
 		return "Take " + _damage + " damage to " + _target + " because " + _cause;
-	}
-
-
-	private static void _applyDamageDirectlyAndPostEvent(TickProcessingContext context, IMutableMinimalEntity newEntity, byte damageToApply, EventRecord.Cause cause) throws AssertionError
-	{
-		int finalHealth = newEntity.getHealth() - damageToApply;
-		if (finalHealth < 0)
-		{
-			finalHealth = 0;
-		}
-		AbsoluteLocation entityLocation = newEntity.getLocation().getBlockLocation();
-		EventRecord.Type type;
-		if (finalHealth > 0)
-		{
-			// We can apply the damage.
-			newEntity.setHealth((byte)finalHealth);
-			type = EventRecord.Type.ENTITY_HURT;
-		}
-		else
-		{
-			// The entity is dead so use the type-specific death logic.
-			newEntity.handleEntityDeath(context);
-			type = EventRecord.Type.ENTITY_KILLED;
-		}
-		
-		context.eventSink.post(new EventRecord(type
-				, cause
-				, entityLocation
-				, newEntity.getId()
-				, 0
-		));
 	}
 }
