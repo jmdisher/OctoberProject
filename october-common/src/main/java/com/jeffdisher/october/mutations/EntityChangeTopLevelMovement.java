@@ -2,6 +2,7 @@ package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
 
+import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.MotionHelpers;
@@ -145,7 +146,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			boolean isTerminal = (newZVelocity == MotionHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 			// Flat ground - make sure that they are on solid ground.
 			boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
-			if (!isTerminal && !isOnGround)
+			// Alternatively, they may be swimming (creatures can swim up at a sustained velocity).
+			boolean isSwimmable = (int)(startViscosity * 100.0f) >= BlockAspect.SWIMMABLE_VISCOSITY;
+			if (!isTerminal && !isOnGround && !isSwimmable)
 			{
 				// Note that it is still possible that this is valid when running in the client where it may slice as narrowly as 1 ms.
 				float startEffectiveGravity = startInverseViscosity * MotionHelpers.GRAVITY_CHANGE_PER_SECOND;
@@ -233,6 +236,11 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			boolean[] stopX = {false};
 			boolean[] stopY = {false};
 			Environment env = Environment.getShared();
+			if (SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume))
+			{
+				stopX[0] = true;
+				stopY[0] = true;
+			}
 			EntityMovementHelpers.interactiveEntityMove(_newLocation, volume, ray, new EntityMovementHelpers.InteractiveHelper() {
 				@Override
 				public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
@@ -333,7 +341,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 
 	private static float _velocityAfterViscosityAndCoast(float viscosity, float axisVelocity)
 	{
-		float newVelocity = viscosity * axisVelocity;
+		float newVelocity = 0.5f * viscosity * axisVelocity;
 		if (Math.abs(newVelocity) < MIN_COASTING_SPEED)
 		{
 			newVelocity = 0.0f;

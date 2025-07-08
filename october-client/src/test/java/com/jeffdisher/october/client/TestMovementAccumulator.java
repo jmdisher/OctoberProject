@@ -412,7 +412,7 @@ public class TestMovementAccumulator
 		Assert.assertEquals(new EntityLocation(0.0f, 2.0f, 3.92f), listener.thisEntity.velocity());
 		accumulator.applyLocalAccumulation();
 		Assert.assertEquals(new EntityLocation(15.0f, 15.41f, 15.9f), listener.thisEntity.location());
-		Assert.assertEquals(new EntityLocation(0.0f, 1.0f, 3.87f), listener.thisEntity.velocity());
+		Assert.assertEquals(new EntityLocation(0.0f, 0.5f, 3.87f), listener.thisEntity.velocity());
 	}
 
 	@Test
@@ -689,7 +689,7 @@ public class TestMovementAccumulator
 		Assert.assertNull(out.test_getSubAction());
 		entity = _applyToEntity(millisPerTick, currentTimeMillis, List.of(airCuboid, stoneCuboid), entity, out, accumulator, listener);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(18.36f, 3.02f, 0.0f), listener.thisEntity.location());
 		// Motion too little to detect collision.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.14f), listener.thisEntity.velocity());
 		
@@ -697,7 +697,7 @@ public class TestMovementAccumulator
 		out = accumulator.stand(currentTimeMillis);
 		Assert.assertNull(out);
 		accumulator.applyLocalAccumulation();
-		Assert.assertEquals(new EntityLocation(18.39f, 2.92f, 0.0f), listener.thisEntity.location());
+		Assert.assertEquals(new EntityLocation(18.36f, 3.02f, 0.0f), listener.thisEntity.location());
 		// This is below the collision threshold so we still see the falling.
 		Assert.assertEquals(new EntityLocation(0.0f, 0.0f, -0.29f), listener.thisEntity.velocity());
 	}
