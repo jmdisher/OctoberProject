@@ -16,10 +16,12 @@ import com.jeffdisher.october.utils.Assert;
  * 
  * Note that this change interprets the direction relative to the entity's current orientation and applies different
  * speeds based on the facing direction.
+ * 
+ * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
  */
 public class EntityChangeAccelerate<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.ACCELERATE;
+	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_ACCELERATE;
 
 	/**
 	 * We limit the time cost of a single movement to 100 ms.  This is typically the setting for a single server-side

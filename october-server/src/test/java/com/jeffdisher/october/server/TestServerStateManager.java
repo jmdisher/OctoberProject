@@ -20,6 +20,8 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.HeightMapHelpers;
+import com.jeffdisher.october.logic.OrientationHelpers;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
@@ -210,7 +212,17 @@ public class TestServerStateManager
 		manager.setupNextTickAfterCompletion(snapshot);
 		
 		// We need to setup the callouts to not fully satisfy this.
-		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(new MutationEntitySelectItem(1), 1L);
+		Entity entity = MutableEntity.createForTest(clientId).freeze();
+		MutationEntitySelectItem subAction = new MutationEntitySelectItem(1);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> change = new EntityChangeTopLevelMovement<>(entity.location()
+			, entity.velocity()
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, OrientationHelpers.YAW_NORTH
+			, OrientationHelpers.PITCH_FLAT
+			, subAction
+			, 100L
+		);
+		Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, 1L);
 		callouts.peekHandler = (PacketFromClient toRemove) -> {
 			Assert.assertTrue(connectedRef[0]);
 			return packet;

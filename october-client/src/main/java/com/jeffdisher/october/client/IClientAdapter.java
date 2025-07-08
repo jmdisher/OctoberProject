@@ -1,8 +1,8 @@
 package com.jeffdisher.october.client;
 
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
+import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IEntityUpdate;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.IPartialEntityUpdate;
 import com.jeffdisher.october.mutations.MutationBlockSetBlock;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -39,7 +39,7 @@ public interface IClientAdapter
 	 * @param change The change to send.
 	 * @param commitLevel The client's local commit level represented by this change.
 	 */
-	void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel);
+	void sendChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel);
 	/**
 	 * Sends the message to the given client ID via the server.
 	 * 

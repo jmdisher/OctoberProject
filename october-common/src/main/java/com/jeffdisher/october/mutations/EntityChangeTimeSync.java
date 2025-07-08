@@ -10,10 +10,11 @@ import com.jeffdisher.october.utils.Assert;
 /**
  * Does nothing.  This only exists to take up scheduling time on the server and be given a commit number on the client
  * so things like falling are synchronized between them.
+ * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
  */
 public class EntityChangeTimeSync implements IMutationEntity<IMutablePlayerEntity>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.TIME_SYNC_NOOP;
+	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_TIME_SYNC_NOOP;
 
 	public static EntityChangeTimeSync deserializeFromBuffer(ByteBuffer buffer)
 	{

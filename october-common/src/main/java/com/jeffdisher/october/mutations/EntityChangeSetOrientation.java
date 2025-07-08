@@ -10,10 +10,11 @@ import com.jeffdisher.october.utils.Assert;
 
 /**
  * Sets the orientation (yaw and pitch) of the target entity.
+ * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
  */
 public class EntityChangeSetOrientation<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.SET_ORIENTATION;
+	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_SET_ORIENTATION;
 
 	public static <T extends IMutableMinimalEntity> EntityChangeSetOrientation<T> deserializeFromBuffer(ByteBuffer buffer)
 	{

@@ -1,6 +1,9 @@
 package com.jeffdisher.october.mutations;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.jeffdisher.october.aspects.BlockAspect;
 import com.jeffdisher.october.aspects.Environment;
@@ -37,6 +40,31 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	 * When applying the "coasting" deceleration at the beginning of a tick, we assume that any speed below this is "0".
 	 */
 	public static final float MIN_COASTING_SPEED = 0.5f;
+	/**
+	 * The white-list of sub-actions which can be sent by a client.
+	 */
+	public static final Set<MutationEntityType> ALLOWED_TYPES = Arrays.stream(new MutationEntityType[] {
+		MutationEntityType.MOVE,
+		MutationEntityType.JUMP,
+		MutationEntityType.SWIM,
+		MutationEntityType.BLOCK_PLACE,
+		MutationEntityType.CRAFT,
+		MutationEntityType.SELECT_ITEM,
+		MutationEntityType.ITEMS_REQUEST_PUSH,
+		MutationEntityType.ITEMS_REQUEST_PULL,
+		MutationEntityType.INCREMENTAL_BREAK_BLOCK,
+		MutationEntityType.CRAFT_IN_BLOCK,
+		MutationEntityType.ATTACK_ENTITY,
+		MutationEntityType.USE_SELECTED_ITEM_ON_SELF,
+		MutationEntityType.USE_SELECTED_ITEM_ON_BLOCK,
+		MutationEntityType.USE_SELECTED_ITEM_ON_ENTITY,
+		MutationEntityType.CHANGE_HOTBAR_SLOT,
+		MutationEntityType.SWAP_ARMOUR,
+		MutationEntityType.SET_BLOCK_LOGIC_STATE,
+		MutationEntityType.SET_DAY_AND_SPAWN,
+		MutationEntityType.INCREMENTAL_REPAIR_BLOCK,
+		MutationEntityType.MULTI_BLOCK_PLACE,
+	}).collect(Collectors.toSet());
 
 	public static <T extends IMutableMinimalEntity> EntityChangeTopLevelMovement<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
@@ -82,6 +110,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	)
 	{
 		Assert.assertTrue(millis > 0L);
+		Assert.assertTrue((null == subAction) || ALLOWED_TYPES.contains(subAction.getType()));
 		
 		_newLocation = newLocation;
 		_newVelocity = newVelocity;

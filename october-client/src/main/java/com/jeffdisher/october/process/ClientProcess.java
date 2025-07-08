@@ -590,7 +590,7 @@ public class ClientProcess
 			_client.stop();
 		}
 		@Override
-		public void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
+		public void sendChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(change, commitLevel);
 			_background_bufferPacket(packet);

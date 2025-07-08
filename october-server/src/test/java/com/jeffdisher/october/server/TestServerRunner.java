@@ -179,7 +179,7 @@ public class TestServerRunner
 		// Break a block in 2 steps, observing the changes coming out.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 1, -1);
 		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
-		network.receiveFromClient(clientId, break1, 1L);
+		network.receiveFromClient(clientId, _wrapSubAction(entity, break1), 1L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		Object mutation = network.waitForUpdate(clientId, 0);
 		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
@@ -187,7 +187,7 @@ public class TestServerRunner
 		Assert.assertTrue(mutation instanceof MutationBlockSetBlock);
 		
 		// Send it again and see the block break.
-		network.receiveFromClient(clientId, break1, 2L);
+		network.receiveFromClient(clientId, _wrapSubAction(entity, break1), 2L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		mutation = network.waitForUpdate(clientId, 2);
 		Assert.assertTrue(mutation instanceof MutationEntitySetEntity);
@@ -238,7 +238,7 @@ public class TestServerRunner
 		// Pick these from the inventory and observe that they appear 2 ticks later.
 		// We will assume the inventory key is 1.
 		int blockInventoryKey = 1;
-		network.receiveFromClient(clientId, new MutationEntityRequestItemPickUp(new AbsoluteLocation(0, 0, -1), blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY), 1L);
+		network.receiveFromClient(clientId, _wrapSubAction(entity, new MutationEntityRequestItemPickUp(new AbsoluteLocation(0, 0, -1), blockInventoryKey, 1, Inventory.INVENTORY_ASPECT_INVENTORY)), 1L);
 		
 		// The first tick won't change anything (as requesting inventory doesn't change the entity).
 		// The second will change the block (extracting from the inventory).
@@ -418,7 +418,7 @@ public class TestServerRunner
 		Assert.assertEquals(0, entity1.hotbarIndex());
 		
 		// Change something - just change the selected hotbar slot.
-		network.receiveFromClient(clientId1, new EntityChangeChangeHotbarSlot(1), 1L);
+		network.receiveFromClient(clientId1, _wrapSubAction(entity1, new EntityChangeChangeHotbarSlot(1)), 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
 		
@@ -673,7 +673,7 @@ public class TestServerRunner
 		
 		// Now, inject the action to reset the day and spawn for them.
 		Assert.assertEquals(0, config.dayStartTick);
-		network.receiveFromClient(clientId1, new EntityChangeSetDayAndSpawn(new AbsoluteLocation(1, 1, 1)), 2L);
+		network.receiveFromClient(clientId1, _wrapSubAction(entity1, new EntityChangeSetDayAndSpawn(new AbsoluteLocation(1, 1, 1))), 2L);
 		EntityLocation spawn = entity1.location();
 		// Wait for 4 ticks for the broadcast to happen (it since it won't come until "after" the tick where this was scheduled and we may already be waiting for the previous tick).
 		network.waitForServer(4L);
@@ -802,6 +802,18 @@ public class TestServerRunner
 		CuboidAddress address = CuboidAddress.fromInt(0, 0, 0);
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(address, STONE);
 		cuboidLoader.preload(cuboid);
+	}
+
+	private static EntityChangeTopLevelMovement<IMutablePlayerEntity> _wrapSubAction(Entity entity, IMutationEntity<IMutablePlayerEntity> subAction)
+	{
+		return new EntityChangeTopLevelMovement<>(entity.location()
+			, entity.velocity()
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, OrientationHelpers.YAW_NORTH
+			, OrientationHelpers.PITCH_FLAT
+			, subAction
+			, 100L
+		);
 	}
 
 
@@ -1065,7 +1077,7 @@ public class TestServerRunner
 				this.wait();
 			}
 		}
-		public void receiveFromClient(int clientId, IMutationEntity<IMutablePlayerEntity> mutation, long commitLevel)
+		public void receiveFromClient(int clientId, EntityChangeTopLevelMovement<IMutablePlayerEntity> mutation, long commitLevel)
 		{
 			Packet_MutationEntityFromClient packet = new Packet_MutationEntityFromClient(mutation, commitLevel);
 			boolean wasEmpty;

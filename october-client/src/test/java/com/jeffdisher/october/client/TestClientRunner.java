@@ -28,7 +28,6 @@ import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnSelf;
-import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalRepair;
 import com.jeffdisher.october.mutations.MutationEntityPushItems;
@@ -758,7 +757,7 @@ public class TestClientRunner
 	private static class TestAdapter implements IClientAdapter
 	{
 		public IClientAdapter.IListener client;
-		public IMutationEntity<IMutablePlayerEntity> toSend;
+		public EntityChangeTopLevelMovement<IMutablePlayerEntity> toSend;
 		public long commitLevel;
 		public int clientViewDistance = -1;
 		@Override
@@ -772,7 +771,7 @@ public class TestClientRunner
 		{
 		}
 		@Override
-		public void sendChange(IMutationEntity<IMutablePlayerEntity> change, long commitLevel)
+		public void sendChange(EntityChangeTopLevelMovement<IMutablePlayerEntity> change, long commitLevel)
 		{
 			this.toSend = change;
 			this.commitLevel = commitLevel;
