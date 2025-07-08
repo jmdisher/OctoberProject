@@ -319,6 +319,17 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		return "Top-level";
 	}
 
+	/**
+	 * Provided purely so that tests can verify the internal sub-action is what they expect, since this is otherwise
+	 * opaque and now contains the details of actions which were previously in smaller instances.
+	 * 
+	 * @return The sub-action.
+	 */
+	public IMutationEntity<T> test_getSubAction()
+	{
+		return _subAction;
+	}
+
 
 	private static float _velocityAfterViscosityAndCoast(float viscosity, float axisVelocity)
 	{

@@ -99,6 +99,7 @@ public class TestMutationEntityCodec
 		buffer.flip();
 		IMutationEntity<IMutablePlayerEntity> read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertNull(((EntityChangeTopLevelMovement<?>)read).test_getSubAction());
 		Assert.assertEquals(0, buffer.remaining());
 		
 		EntityChangeJump<IMutablePlayerEntity> jump = new EntityChangeJump<>();
@@ -116,6 +117,7 @@ public class TestMutationEntityCodec
 		buffer.flip();
 		read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
 		Assert.assertTrue(read instanceof EntityChangeTopLevelMovement);
+		Assert.assertTrue(((EntityChangeTopLevelMovement<?>)read).test_getSubAction() instanceof EntityChangeJump);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 }
