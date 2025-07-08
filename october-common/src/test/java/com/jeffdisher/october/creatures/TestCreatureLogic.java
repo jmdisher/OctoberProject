@@ -648,7 +648,7 @@ public class TestCreatureLogic
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
-		TickUtils.allowMovement(context.previousBlockLookUp, null, mutableOrc, action.getTimeCostMillis());
+		TickUtils.allowMovement(context.previousBlockLookUp, mutableOrc, action.getTimeCostMillis());
 		
 		// Now, allow it to perform the attack.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context

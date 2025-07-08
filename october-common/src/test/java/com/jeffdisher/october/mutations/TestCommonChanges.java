@@ -97,7 +97,7 @@ public class TestCommonChanges
 		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(newLocation, newEntity.newLocation);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
@@ -117,7 +117,7 @@ public class TestCommonChanges
 		newEntity.newLocation = oldLocation;
 		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		move.applyChange(context, newEntity);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
@@ -140,7 +140,7 @@ public class TestCommonChanges
 		newEntity.newLocation = oldLocation;
 		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		move.applyChange(context, newEntity);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
@@ -162,7 +162,7 @@ public class TestCommonChanges
 		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
 		boolean didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
 		float expectedZVector = -0.98f;
@@ -196,13 +196,13 @@ public class TestCommonChanges
 		for (int i = 0; i < 18; ++i)
 		{
 			context = _createNextTick(context, 50L);
-			TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+			TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 			TickUtils.endOfTick(context, newEntity);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
 		context = _createNextTick(context, 100L);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
@@ -210,7 +210,7 @@ public class TestCommonChanges
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
@@ -522,7 +522,7 @@ public class TestCommonChanges
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		context = _createNextTick(context, craft.getTimeCostMillis());
 		Assert.assertTrue(craft.applyChange(context, newEntity));
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
@@ -1726,7 +1726,7 @@ public class TestCommonChanges
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		
 		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates if viscosity or acceleration calculation changes).
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(5.36, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(4.41f, newEntity.newVelocity.z(), 0.01f);
@@ -1734,7 +1734,7 @@ public class TestCommonChanges
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
 		{
-			TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+			TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 			TickUtils.endOfTick(context, newEntity);
 			ticks += 1;
 		}
@@ -2082,7 +2082,7 @@ public class TestCommonChanges
 		Assert.assertTrue(didApply);
 		didApply = move.applyChange(context, newEntity);
 		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, null, newEntity, context.millisPerTick);
+		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(yaw, newEntity.newYaw);
 		Assert.assertEquals(new EntityLocation(0.24f, 0.22f, 0.0f), newEntity.newLocation);

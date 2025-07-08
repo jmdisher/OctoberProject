@@ -62,11 +62,6 @@ public class TestTickUtils
 		Function<AbsoluteLocation, BlockProxy> previousBlockLookUp = (AbsoluteLocation location) -> {
 			return new BlockProxy(location.getBlockAddress(), cuboid);
 		};
-		int[] outDamage = new int[1];
-		TickUtils.IFallDamage fallDamage = (int damage) -> {
-			Assert.assertEquals(0, outDamage[0]);
-			outDamage[0] = damage;
-		};
 		long millisPerMove = 100L;
 		byte health = 100;
 		int creatureCount = 20;
@@ -84,16 +79,26 @@ public class TestTickUtils
 			startLocation = new EntityLocation(startLocation.x(), startLocation.y(), startLocation.z() + spreadZ);
 			
 			MutableCreature mutable = MutableCreature.existing(creature);
-			TickUtils.allowMovement(previousBlockLookUp, fallDamage, mutable, millisPerMove);
+			float startZVelocity = mutable.newVelocity.z();
+			TickUtils.allowMovement(previousBlockLookUp, mutable, millisPerMove);
+			byte fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
+			if (fallDamage > 0)
+			{
+				damage[i] = fallDamage;
+			}
 			int applications = 1;
 			while (mutable.getVelocityVector().z() < 0.0f)
 			{
-				TickUtils.allowMovement(previousBlockLookUp, fallDamage, mutable, millisPerMove);
+				startZVelocity = mutable.newVelocity.z();
+				TickUtils.allowMovement(previousBlockLookUp, mutable, millisPerMove);
+				fallDamage = TickUtils.calculateFallDamage(startZVelocity - mutable.newVelocity.z());
+				if (fallDamage > 0)
+				{
+					damage[i] = fallDamage;
+				}
 				applications += 1;
 			}
 			iterationCount[i] = applications;
-			damage[i] = outDamage[0];
-			outDamage[0] = 0;
 		}
 		int[] expectedIterations = new int[] {1, 4, 5, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12, 12, 13, 13, 14, 14, 14};
 		int[] expectedDamage = new int[]     {0, 0, 0, 0, 0, 0, 0, 0,  3,  3,  7,  7, 11, 11, 11, 14, 14, 18, 18, 18};

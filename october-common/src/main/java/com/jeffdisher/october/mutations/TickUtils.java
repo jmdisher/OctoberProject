@@ -41,13 +41,11 @@ public class TickUtils
 	}
 
 	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, IFallDamage damageApplication
 			, IMutableMinimalEntity newEntity
 			, long millisToMove
 	)
 	{
 		EntityLocation oldLocation = newEntity.getLocation();
-		EntityLocation oldVelocity = newEntity.getVelocityVector();
 		EntityMovementHelpers.allowMovement(previousBlockLookUp, newEntity, millisToMove);
 		boolean didApply = !oldLocation.equals(newEntity.getLocation());
 		
@@ -55,17 +53,6 @@ public class TickUtils
 		{
 			// Do other state reset now that we are moving.
 			newEntity.resetLongRunningOperations();
-			
-			// If we lost our z-vector, see if this deceleration should cause damage.
-			if (0.0f == newEntity.getVelocityVector().z())
-			{
-				float loss = oldVelocity.z();
-				byte damage = _calculateFallDamage(loss);
-				if (damage > 0)
-				{
-					damageApplication.applyDamage(damage);
-				}
-			}
 		}
 	}
 
@@ -84,6 +71,18 @@ public class TickUtils
 				_applyEndOfTickBreathAndDamage(context, newEntity);
 			}
 		}
+	}
+
+	/**
+	 * Calculates the damage to apply based on the loss of falling velocity.
+	 * TODO:  This currently assumes the given value is negative but it should be a threshold in all directions.
+	 * 
+	 * @param deceleration The change in Z-velocity (specifically, the negative velocity erased).
+	 * @return The damage to apply (0 if no damage).
+	 */
+	public static byte calculateFallDamage(float deceleration)
+	{
+		return _calculateFallDamage(deceleration);
 	}
 
 
@@ -172,11 +171,5 @@ public class TickUtils
 				, (int)Math.floor(footLocation.z() + volume.height())
 		);
 		return context.previousBlockLookUp.apply(headLocation);
-	}
-
-
-	public static interface IFallDamage
-	{
-		public void applyDamage(int damage);
 	}
 }
