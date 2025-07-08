@@ -7,25 +7,21 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-/**
- * Does nothing.  This only exists to take up scheduling time on the server and be given a commit number on the client
- * so things like falling are synchronized between them.
- * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
- */
-public class EntityChangeTimeSync implements IMutationEntity<IMutablePlayerEntity>
+public class Deprecated_EntityChangeTimeSync implements IMutationEntity<IMutablePlayerEntity>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_TIME_SYNC_NOOP;
 
-	public static EntityChangeTimeSync deserializeFromBuffer(ByteBuffer buffer)
+	public static Deprecated_EntityChangeTimeSync deserializeFromBuffer(ByteBuffer buffer)
 	{
 		long millisInMotion = buffer.getLong();
-		return new EntityChangeTimeSync(millisInMotion);
+		return new Deprecated_EntityChangeTimeSync(millisInMotion);
 	}
 
 
 	private final long _millisInMotion;
 
-	public EntityChangeTimeSync(long millisInMotion)
+	@Deprecated
+	public Deprecated_EntityChangeTimeSync(long millisInMotion)
 	{
 		Assert.assertTrue(millisInMotion > 0L);
 		

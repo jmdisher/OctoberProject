@@ -8,26 +8,23 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-/**
- * Sets the orientation (yaw and pitch) of the target entity.
- * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
- */
-public class EntityChangeSetOrientation<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeSetOrientation<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_SET_ORIENTATION;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeSetOrientation<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeSetOrientation<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		byte yaw = buffer.get();
 		byte pitch = buffer.get();
-		return new EntityChangeSetOrientation<>(yaw, pitch);
+		return new Deprecated_EntityChangeSetOrientation<>(yaw, pitch);
 	}
 
 
 	private final byte _yaw;
 	private final byte _pitch;
 
-	public EntityChangeSetOrientation(byte yaw, byte pitch)
+	@Deprecated
+	public Deprecated_EntityChangeSetOrientation(byte yaw, byte pitch)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.

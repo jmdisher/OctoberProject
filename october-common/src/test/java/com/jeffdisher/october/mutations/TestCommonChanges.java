@@ -2045,50 +2045,6 @@ public class TestCommonChanges
 	}
 
 	@Test
-	public void setOrientation()
-	{
-		byte yaw = 10;
-		byte pitch = 20;
-		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
-		TickProcessingContext context = _createSimpleContext();
-		context = _createNextTick(context, set.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
-		Assert.assertEquals(OrientationHelpers.PITCH_FLAT, newEntity.newPitch);
-		boolean didApply = set.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		didApply = set.applyChange(context, newEntity);
-		Assert.assertFalse(didApply);
-		Assert.assertEquals(yaw, newEntity.newYaw);
-		Assert.assertEquals(pitch, newEntity.newPitch);
-	}
-
-	@Test
-	public void orientAndAccelerate()
-	{
-		byte yaw = 30;
-		byte pitch = 20;
-		EntityChangeSetOrientation<IMutablePlayerEntity> set = new EntityChangeSetOrientation<>(yaw, pitch);
-		
-		// Check that the move works if the blocks are air.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		long millisInStep = 100L;
-		EntityChangeAccelerate<IMutablePlayerEntity> move = new EntityChangeAccelerate<>(millisInStep, EntityChangeAccelerate.Relative.RIGHT);
-		TickProcessingContext context = _createSimpleContext();
-		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		boolean didApply = set.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		didApply = move.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
-		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(yaw, newEntity.newYaw);
-		Assert.assertEquals(new EntityLocation(0.24f, 0.22f, 0.0f), newEntity.newLocation);
-	}
-
-	@Test
 	public void repairCases() throws Throwable
 	{
 		// Try to repair a damaged block, an undamaged block, a block of the wrong type, and a block too far away.

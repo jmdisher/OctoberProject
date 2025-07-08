@@ -11,23 +11,19 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-/**
- * Applies damage to an entity, potentially reseting them to world spawn and dropping their inventory.
- * This variant is based on environmental causes, not specific to an entity.
- */
-public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
-	public static final MutationEntityType TYPE = MutationEntityType.OLD_TAKE_DAMAGE_FROM_OTHER_V4;
+	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_TAKE_DAMAGE_FROM_OTHER_V4;
 	public static final byte CAUSE_STARVATION = 1;
 	public static final byte CAUSE_SUFFOCATION = 2;
 	public static final byte CAUSE_FALL = 3;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeTakeDamageFromOther<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeTakeDamageFromOther<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		BodyPart target = CodecHelpers.readBodyPart(buffer);
 		int damage = buffer.getInt();
 		byte cause = buffer.get();
-		return new EntityChangeTakeDamageFromOther<>(target, damage, cause);
+		return new Deprecated_EntityChangeTakeDamageFromOther<>(target, damage, cause);
 	}
 
 
@@ -36,7 +32,7 @@ public class EntityChangeTakeDamageFromOther<T extends IMutableMinimalEntity> im
 	private final byte _cause;
 
 	@Deprecated
-	public EntityChangeTakeDamageFromOther(BodyPart target, int damage, byte cause)
+	public Deprecated_EntityChangeTakeDamageFromOther(BodyPart target, int damage, byte cause)
 	{
 		Assert.assertTrue(damage > 0);
 		

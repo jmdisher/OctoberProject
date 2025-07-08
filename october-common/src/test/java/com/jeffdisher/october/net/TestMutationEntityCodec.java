@@ -8,8 +8,7 @@ import org.junit.Test;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeJump;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
-import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromOther;
-import com.jeffdisher.october.mutations.EntityChangeTimeSync;
+import com.jeffdisher.october.mutations.Deprecated_EntityChangeTakeDamageFromOther;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
 import com.jeffdisher.october.types.AbsoluteLocation;
@@ -55,27 +54,13 @@ public class TestMutationEntityCodec
 	{
 		int damage = 50;
 		@SuppressWarnings("deprecation")
-		EntityChangeTakeDamageFromOther<IMutablePlayerEntity> change = new EntityChangeTakeDamageFromOther<>(BodyPart.HEAD, damage, EntityChangeTakeDamageFromOther.CAUSE_FALL);
+		Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity> change = new Deprecated_EntityChangeTakeDamageFromOther<>(BodyPart.HEAD, damage, Deprecated_EntityChangeTakeDamageFromOther.CAUSE_FALL);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		MutationEntityCodec.serializeToBuffer(buffer, change);
 		buffer.flip();
 		IMutationEntity<IMutablePlayerEntity> read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
-		Assert.assertTrue(read instanceof EntityChangeTakeDamageFromOther);
-		Assert.assertEquals(0, buffer.remaining());
-	}
-
-	@Test
-	public void timeSync() throws Throwable
-	{
-		long millisToPass = 67L;
-		EntityChangeTimeSync change = new EntityChangeTimeSync(millisToPass);
-		
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
-		MutationEntityCodec.serializeToBuffer(buffer, change);
-		buffer.flip();
-		IMutationEntity<IMutablePlayerEntity> read = MutationEntityCodec.parseAndSeekFlippedBuffer(buffer);
-		Assert.assertTrue(read instanceof EntityChangeTimeSync);
+		Assert.assertTrue(read instanceof Deprecated_EntityChangeTakeDamageFromOther);
 		Assert.assertEquals(0, buffer.remaining());
 	}
 

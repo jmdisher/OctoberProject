@@ -9,17 +9,7 @@ import com.jeffdisher.october.types.TickProcessingContext;
 import com.jeffdisher.october.utils.Assert;
 
 
-/**
- * This change moves an entity in the world.
- * Internally, it just sets the velocity vector so that the engine will apply that velocity for the amount of time
- * described by this.
- * 
- * Note that this change interprets the direction relative to the entity's current orientation and applies different
- * speeds based on the facing direction.
- * 
- * NOTE:  This was deprecated and removed in NETWORK_PROTOCOL_VERSION 9.
- */
-public class EntityChangeAccelerate<T extends IMutableMinimalEntity> implements IMutationEntity<T>
+public class Deprecated_EntityChangeAccelerate<T extends IMutableMinimalEntity> implements IMutationEntity<T>
 {
 	public static final MutationEntityType TYPE = MutationEntityType.DEPRECATED_ACCELERATE;
 
@@ -33,18 +23,19 @@ public class EntityChangeAccelerate<T extends IMutableMinimalEntity> implements 
 	public static final float MULTIPLIER_STRAFE = 0.8f;
 	public static final float MULTIPLIER_BACKWARD = 0.6f;
 
-	public static <T extends IMutableMinimalEntity> EntityChangeAccelerate<T> deserializeFromBuffer(ByteBuffer buffer)
+	public static <T extends IMutableMinimalEntity> Deprecated_EntityChangeAccelerate<T> deserializeFromBuffer(ByteBuffer buffer)
 	{
 		long millisInMotion = buffer.getLong();
 		Relative direction = Relative.values()[buffer.get()];
-		return new EntityChangeAccelerate<>(millisInMotion, direction);
+		return new Deprecated_EntityChangeAccelerate<>(millisInMotion, direction);
 	}
 
 
 	private final long _millisInMotion;
 	private final Relative _direction;
 
-	public EntityChangeAccelerate(long millisInMotion, Relative direction)
+	@Deprecated
+	public Deprecated_EntityChangeAccelerate(long millisInMotion, Relative direction)
 	{
 		// Make sure that this is valid within our limits.
 		// TODO:  Define a better failure mode when the server deserializes these from the network.

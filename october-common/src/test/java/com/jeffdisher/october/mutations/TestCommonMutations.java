@@ -685,7 +685,7 @@ public class TestCommonMutations
 		
 		// Now, do one at the end of the second to see the breath run out.
 		@SuppressWarnings("unchecked")
-		EntityChangeTakeDamageFromOther<IMutablePlayerEntity>[] holder = new EntityChangeTakeDamageFromOther[1];
+		Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>[] holder = new Deprecated_EntityChangeTakeDamageFromOther[1];
 		_Events events = new _Events();
 		context = ContextBuilder.build()
 				.tick(50L)
@@ -698,7 +698,7 @@ public class TestCommonMutations
 					public void next(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change)
 					{
 						Assert.assertNull(holder[0]);
-						holder[0] = (EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
+						holder[0] = (Deprecated_EntityChangeTakeDamageFromOther<IMutablePlayerEntity>) change;
 					}
 					@Override
 					public void future(int targetEntityId, IMutationEntity<IMutablePlayerEntity> change, long millisToDelay)
