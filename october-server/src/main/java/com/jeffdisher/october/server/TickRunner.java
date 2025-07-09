@@ -70,9 +70,10 @@ public class TickRunner
 {
 	/**
 	 * The maximum number of actions allowed waiting to be scheduled, per-client.  Attempting to go beyond this limit
-	 * will disconnect the client.
-	 * The rationale for this number is that we typically see 6 actions per tick (10 TPS with 60 FPS) which means that
-	 * the slack should be at least 2 ticks and this gives us around 3.
+	 * will disconnect the client due to flooding concerns.
+	 * Since the only injected changes can be EntityChangeTopLevelMovement, and those all occupy a full tick, this limit
+	 * maps to how many ticks out of the sync the client can be and then catch up in a burst.  We will set this number
+	 * to 20, as that would map to 1 second, based on default parameters.
 	 */
 	public static final int PENDING_ACTION_LIMIT = 20;
 
@@ -775,7 +776,7 @@ public class TickRunner
 				List<SuspendedEntity> newEntities;
 				List<Integer> removedEntityIds;
 				List<_OperatorMutationWrapper> operatorMutations;
-				Map<Integer, List<ScheduledChange>> newEntityChanges = new HashMap<>();
+				Map<Integer, EntityChangeTopLevelMovement<IMutablePlayerEntity>> newEntityChanges = new HashMap<>();
 				Map<Integer, Long> newCommitLevels = new HashMap<>();
 				
 				_sharedDataLock.lock();
@@ -797,20 +798,16 @@ public class TickRunner
 					{
 						int id = entry.getKey();
 						PerEntitySharedAccess access = entry.getValue();
-						
-						long schedulingBudget = _millisPerTick;
-						List<ScheduledChange> queue = new LinkedList<>();
-						
-						long commitLevel = _sharedLock_ScheduleForEntity(access, queue, schedulingBudget);
-						if (!queue.isEmpty())
+						if (!access.newChanges.isEmpty())
 						{
-							newEntityChanges.put(id, queue);
-							newCommitLevels.put(id, commitLevel);
+							_EntityMutationWrapper next = access.newChanges.remove();
+							newEntityChanges.put(id, next.mutation);
+							newCommitLevels.put(id, next.commitLevel);
 						}
 						else
 						{
 							// There may not be a previous commit level if this was just added.
-							commitLevel = combinedCommitLevels.containsKey(id)
+							long commitLevel = combinedCommitLevels.containsKey(id)
 									? combinedCommitLevels.get(id)
 									: 0L
 							;
@@ -970,10 +967,15 @@ public class TickRunner
 					_scheduleChangesForEntity(nextTickChanges, id, new LinkedList<>(entry.getValue()));
 				}
 				snapshotEntityMutations = null;
-				for (Map.Entry<Integer, List<ScheduledChange>> container : newEntityChanges.entrySet())
+				for (Map.Entry<Integer, EntityChangeTopLevelMovement<IMutablePlayerEntity>> container : newEntityChanges.entrySet())
 				{
-					_scheduleChangesForEntity(nextTickChanges, container.getKey(), container.getValue());
+					// These are coming in from outside, so they should be run immediately (no delay for future), after anything already scheduled from the previous tick.
+					ScheduledChange change = new ScheduledChange(container.getValue(), 0L);
+					List<ScheduledChange> mutableQueue = new LinkedList<>();
+					mutableQueue.add(change);
+					_scheduleChangesForEntity(nextTickChanges, container.getKey(), mutableQueue);
 				}
+				newEntityChanges = null;
 				
 				// TODO:  We should probably remove this once we are sure we know what is happening and/or find a cheaper way to check this.
 				for (CuboidAddress key : pendingMutations.keySet())
@@ -1153,58 +1155,6 @@ public class TickRunner
 		return _snapshot;
 	}
 
-	// Returns the commit level of the last mutation scheduled on the entity (0 if nothing scheduled).
-	private long _sharedLock_ScheduleForEntity(PerEntitySharedAccess access, List<ScheduledChange> scheduledQueue, long schedulingBudget)
-	{
-		long commitLevel = 0L;
-		
-		// First, check the in-progress to see if we can schedule it.
-		if (null != access.inProgress)
-		{
-			if (access.millisUntilInProgressExecution <= schedulingBudget)
-			{
-				// Schedule the waiting change.
-				schedulingBudget -= access.millisUntilInProgressExecution;
-				scheduledQueue.add(new ScheduledChange(access.inProgress.mutation, 0L));
-				commitLevel = access.inProgress.commitLevel;
-				access.inProgress = null;
-			}
-			else
-			{
-				// Decrement the time remaining and consume the budget.
-				access.millisUntilInProgressExecution -= schedulingBudget;
-				schedulingBudget = 0L;
-			}
-		}
-		
-		// Schedule anything else which fits in the budget.
-		_EntityMutationWrapper next = access.newChanges.peek();
-		while ((null != next) && (schedulingBudget > 0L))
-		{
-			long cost = next.mutation.getTimeCostMillis();
-			// The cost of these was validated when enqueuing.
-			Assert.assertTrue(cost >= 0L);
-			if (cost <= schedulingBudget)
-			{
-				// Just schedule this.
-				scheduledQueue.add(new ScheduledChange(next.mutation, 0L));
-				commitLevel = next.commitLevel;
-				schedulingBudget -= cost;
-			}
-			else
-			{
-				// Make this in-progress.
-				access.inProgress = next;
-				access.millisUntilInProgressExecution = cost - schedulingBudget;
-				schedulingBudget = 0L;
-			}
-			// We have consumed this.
-			access.newChanges.remove();
-			next = access.newChanges.peek();
-		}
-		return commitLevel;
-	}
-
 
 	/**
 	 * The snapshot of immutable state created whenever a tick is completed.
@@ -1319,16 +1269,13 @@ public class TickRunner
 	/**
 	 * The per-entity data shared between foreground and background threads for scheduling changes.
 	 * 
-	 * In-progress changes are those which are blocking progress through the queue of changes from a given client.
-	 * If the next change for the client is one with -1 cost (a cancellation), then this change is aborted as failed.
-	 * Otherwise, the millis remaining are counted down, with each tick, until 0, at which point the change is scheduled
-	 * to run.
+	 * This is now reduced to purely being a queue of pending changes, the type only remaining as a wrapper to make this
+	 * use-case clearer in the code.
+	 * Note that they queue is long-lived and mutated under the shared lock.
 	 */
 	private static class PerEntitySharedAccess
 	{
 		private final Queue<_EntityMutationWrapper> newChanges = new LinkedList<>();
-		private _EntityMutationWrapper inProgress;
-		private long millisUntilInProgressExecution;
 	}
 
 	/**
