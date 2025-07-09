@@ -184,6 +184,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				float expectedZDelta = EntityLocation.roundToHundredths(seconds * startEffectiveGravity);
 				if (0.0f != expectedZDelta)
 				{
+					_log("Fail1", newEntity);
 					forceFailure = true;
 				}
 			}
@@ -213,6 +214,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 					if (!isTransitionVelocity)
 					{
 						// We still have no valid explanation for this.
+						_log("Fail2", newEntity);
 						forceFailure = true;
 					}
 				}
@@ -235,6 +237,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		;
 		if (!isValidDistance)
 		{
+			_log("Fail3", newEntity);
 			forceFailure = true;
 		}
 		
@@ -242,6 +245,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		boolean isMoving = (0.0f != deltaX) || (0.0f != deltaY);
 		if (isMoving && !SpatialHelpers.canExistInLocation(context.previousBlockLookUp, _newLocation, volume))
 		{
+			_log("Fail4", newEntity);
 			forceFailure = true;
 		}
 		
@@ -298,6 +302,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			);
 			if (!touchingSurface)
 			{
+				_log("Fail5", newEntity);
 				forceFailure = true;
 			}
 		}
@@ -314,10 +319,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			{
 				newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
 			}
-		}
-		else
-		{
-			System.out.println("FAIL");
 		}
 		
 		// We will say that this succeeded if either the sub-action or the top-level movement was a success.
@@ -352,7 +353,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	@Override
 	public String toString()
 	{
-		return "Top-level";
+		return String.format("Top-Level(%s), L(%s), V(%s), Sub: %s", _intensity, _newLocation, _newVelocity, _subAction);
 	}
 
 	/**
@@ -375,6 +376,11 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			newVelocity = 0.0f;
 		}
 		return newVelocity;
+	}
+
+	private void _log(String title, T newEntity)
+	{
+		System.out.printf("%s - (%s) against L(%s), V(%s)\n", title, this, newEntity.getLocation(), newEntity.getVelocityVector());
 	}
 
 
