@@ -5,11 +5,9 @@ import java.util.function.Function;
 
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
-import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
-import com.jeffdisher.october.types.IMutableMinimalEntity;
 import com.jeffdisher.october.utils.Assert;
 
 
@@ -43,103 +41,6 @@ public class EntityMovementHelpers
 	 * Just a helpful constant.
 	 */
 	public static final float FLOAT_MILLIS_PER_SECOND = 1000.0f;
-
-	/**
-	 * Sets the velocity of the given newEntity based on the given x/y components and a target total speed of
-	 * blocksPerSecond.
-	 * Note:  No check is done on xComponent or yComponent but they should typically describe a combined vector of 1.0f
-	 * length.
-	 * This helper will also apply the movement energy cost to the entity.
-	 * 
-	 * @param newEntity The entity to update.
-	 * @param blocksPerSecond The speed of the entity for this time.
-	 * @param millisInMotion How many milliseconds of motion to consider.
-	 * @param xComponent The x-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
-	 * @param yComponent The y-component of the motion (note that sqrt(x^2 + y ^2) should probably be <= 1.0).
-	 */
-	public static void accelerate(IMutableMinimalEntity newEntity
-			, float blocksPerSecond
-			, long millisInMotion
-			, float xComponent
-			, float yComponent
-	)
-	{
-		// First set the velocity.
-		EntityLocation oldVector = newEntity.getVelocityVector();
-		float newX = xComponent * blocksPerSecond;
-		float newY = yComponent * blocksPerSecond;
-		newEntity.setVelocityVector(new EntityLocation(newX, newY, oldVector.z()));
-		
-		// TODO:  This is temporary until this helper can be removed.
-		newEntity.applyEnergyCost(EntityChangePeriodic.ENERGY_COST_PER_TICK_WALKING);
-	}
-
-	/**
-	 * Updates the given newEntity location to account for passive rising/falling motion, and updates the z-factor.
-	 * Updates newEntity's location, velocity, and energy usage.
-	 * Note that this will reduce the horizontal velocity of newEntity to 0.0 (since we currently only have maximum
-	 * friction on all blocks and also want to stop air drift immediately - not realistic but keeps this simple and
-	 * makes the user feedback be what they would expect in a video game).
-	 * 
-	 * @param previousBlockLookUp Lookup function to find the blocks from the previous tick.
-	 * @param newEntity The entity to update.
-	 * @param longMillisInMotion How many milliseconds of motion to consider.
-	 */
-	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, IMutableMinimalEntity newEntity
-			, long longMillisInMotion
-	)
-	{
-		Environment env = Environment.getShared();
-		EntityLocation oldVector = newEntity.getVelocityVector();
-		EntityLocation oldLocation = newEntity.getLocation();
-		EntityVolume volume = newEntity.getType().volume();
-		float initialZVector = oldVector.z();
-		
-		// We now just implement this in terms of interactive movement (it will eventually be removed, entirely).
-		ViscosityReader reader = new ViscosityReader(env, previousBlockLookUp);
-		float viscosityFraction = reader.getViscosityFraction(oldLocation.getBlockLocation());
-		float inverseViscosity = (1.0f - viscosityFraction);
-		
-		float secondsInMotion = ((float)longMillisInMotion) / FLOAT_MILLIS_PER_SECOND;
-		float zVelocityChange = secondsInMotion * inverseViscosity * GRAVITY_CHANGE_PER_SECOND;
-		float newZVelocity = initialZVector + zVelocityChange;
-		float effectiveTerminalVelocity = inverseViscosity * FALLING_TERMINAL_VELOCITY_PER_SECOND;
-		if (newZVelocity < effectiveTerminalVelocity)
-		{
-			newZVelocity = effectiveTerminalVelocity;
-		}
-		
-		// Note that we currently just set the x/y velocities to zero after applying the movement so just directly apply these through the viscosity.
-		// TODO:  This assumption of setting x/y velocity to zero will need to change to support icy surfaces or "flying through the air".
-		float velocityToApplyX = inverseViscosity * oldVector.x();
-		float velocityToApplyY = inverseViscosity * oldVector.y();
-		float velocityToApplyZ = (initialZVector + inverseViscosity * newZVelocity) / 2.0f;
-		EntityLocation distanceToMove = new EntityLocation(secondsInMotion * velocityToApplyX
-			, secondsInMotion * velocityToApplyY
-			, secondsInMotion * velocityToApplyZ
-		);
-		final float finalZ = newZVelocity;
-		
-		_interactiveEntityMove(oldLocation, volume, distanceToMove, new InteractiveHelper() {
-			@Override
-			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
-			{
-				return reader.getViscosityFraction(location);
-			}
-			@Override
-			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
-			{
-				// Set the location and velocity.
-				newEntity.setLocation(finalLocation);
-				// In this helper, we always cancel X/Y velocity but only Z if colliding.
-				newEntity.setVelocityVector(new EntityLocation(0.0f
-					, 0.0f
-					, cancelZ ? 0.0f : finalZ
-				));
-			}
-		});
-	}
 
 	/**
 	 * Finds a path from start, along vectorToMove, using the interactive helper.  This will handle collisions with

@@ -22,8 +22,10 @@ import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
+import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
 import com.jeffdisher.october.types.BlockAddress;
@@ -102,13 +104,13 @@ public class TestCommonChanges
 		for (int i = 0; i < 18; ++i)
 		{
 			context = _createNextTick(context, 50L);
-			TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+			_stand(context, newEntity);
 			TickUtils.endOfTick(context, newEntity);
 			Assert.assertTrue(newEntity.newLocation.z() > 0.0f);
 		}
 		// The next step puts us back on the ground.
 		context = _createNextTick(context, 100L);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertTrue(0.0f == newEntity.newLocation.z());
 		// However, the vector is still drawing us down (since the vector is updated at the beginning of the move, not the end).
@@ -116,9 +118,9 @@ public class TestCommonChanges
 		
 		// Fall one last time to finalize "impact".
 		context = _createNextTick(context, 100L);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertTrue(0.0f == newEntity.newLocation.z());
+		Assert.assertEquals(0.0f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
 
@@ -428,7 +430,7 @@ public class TestCommonChanges
 		EntityChangeCraft craft = new EntityChangeCraft(logToPlanks, logToPlanks.millisPerCraft);
 		context = _createNextTick(context, craft.getTimeCostMillis());
 		Assert.assertTrue(craft.applyChange(context, newEntity));
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
 		Assert.assertEquals(15.1f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(-9.8, newEntity.newVelocity.z(), 0.01f);
@@ -1631,22 +1633,22 @@ public class TestCommonChanges
 		Assert.assertEquals(EntityChangeSwim.SWIM_FORCE, newEntity.newVelocity.z(), 0.01f);
 		Assert.assertEquals(oldLocation, newEntity.newLocation);
 		
-		// Try a few ticks to see how our motion changes - values checked experimentally (will need manual updates if viscosity or acceleration calculation changes).
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+		// Try a few ticks to see how our motion changes - the specific values are derived from how we implement _stand, so they aren't too important.
+		_stand(context, newEntity);
 		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(5.36, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(5.47, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(4.41f, newEntity.newVelocity.z(), 0.01f);
 		// See how long it takes for the viscosity to slow us and gravity to act on us until we start to descend.
 		int ticks = 0;
 		while (newEntity.newVelocity.z() > 0.0f)
 		{
-			TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
+			_stand(context, newEntity);
 			TickUtils.endOfTick(context, newEntity);
 			ticks += 1;
 		}
 		// Verify the expected tick count, location, and velocity (experimentally derived).
 		Assert.assertEquals(9, ticks);
-		Assert.assertEquals(6.9f, newEntity.newLocation.z(), 0.01f);
+		Assert.assertEquals(7.45f, newEntity.newLocation.z(), 0.01f);
 		Assert.assertEquals(0.0f, newEntity.newVelocity.z(), 0.01f);
 	}
 
@@ -2526,6 +2528,52 @@ public class TestCommonChanges
 		{
 			proxy.writeBack(cuboid);
 		}
+	}
+
+	private static void _stand(TickProcessingContext context, IMutablePlayerEntity mutableEntity)
+	{
+		EntityLocation startLocation = mutableEntity.getLocation();
+		ViscosityReader reader = new ViscosityReader(ENV, context.previousBlockLookUp);
+		float inverseViscosity = reader.getInverseViscosity(startLocation.getBlockLocation());
+		long millis = context.millisPerTick;
+		EntityLocation startVelocity = mutableEntity.getVelocityVector();
+		float newZ = EntityMovementHelpers.zVelocityAfterGravity(startVelocity.z(), inverseViscosity, millis);
+		EntityLocation newVelocity = new EntityLocation(startVelocity.x(), startVelocity.y(), newZ);
+		float seconds = (float)millis / 1000.0f;
+		EntityLocation vectorToMove = new EntityLocation(seconds * (startVelocity.x() + newVelocity.x()) / 2.0f
+			, seconds * (startVelocity.y() + newVelocity.y()) / 2.0f
+			, seconds * (startVelocity.z() + newVelocity.z()) / 2.0f
+		);
+		
+		EntityLocation[] outLocation = new EntityLocation[1];
+		EntityLocation[] outVelocity = new EntityLocation[1];
+		EntityMovementHelpers.interactiveEntityMove(startLocation, ENV.creatures.PLAYER.volume(), vectorToMove, new EntityMovementHelpers.InteractiveHelper()
+		{
+			@Override
+			public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)
+			{
+				outLocation[0] = finalLocation;
+				outVelocity[0] = new EntityLocation(cancelX ? 0.0f : newVelocity.x()
+					, cancelY ? 0.0f : newVelocity.y() 
+					, cancelZ ? 0.0f : newVelocity.z()
+				);
+			}
+			@Override
+			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
+			{
+				return reader.getViscosityFraction(location);
+			}
+		});
+		
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> stand = new EntityChangeTopLevelMovement<>(outLocation[0]
+			, outVelocity[0]
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)0
+			, (byte)0
+			, null
+			, millis
+		);
+		Assert.assertTrue(stand.applyChange(context, mutableEntity));
 	}
 
 

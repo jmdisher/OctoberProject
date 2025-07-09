@@ -1,7 +1,5 @@
 package com.jeffdisher.october.mutations;
 
-import java.util.function.Function;
-
 import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.aspects.FlagsAspect;
 import com.jeffdisher.october.aspects.MiscConstants;
@@ -39,22 +37,6 @@ public class TickUtils
 	private TickUtils()
 	{
 		// There is no need to instantiate this.
-	}
-
-	public static void allowMovement(Function<AbsoluteLocation, BlockProxy> previousBlockLookUp
-			, IMutableMinimalEntity newEntity
-			, long millisToMove
-	)
-	{
-		EntityLocation oldLocation = newEntity.getLocation();
-		EntityMovementHelpers.allowMovement(previousBlockLookUp, newEntity, millisToMove);
-		boolean didApply = !oldLocation.equals(newEntity.getLocation());
-		
-		if (didApply)
-		{
-			// Do other state reset now that we are moving.
-			newEntity.resetLongRunningOperations();
-		}
 	}
 
 	public static void endOfTick(TickProcessingContext context, IMutableMinimalEntity newEntity)

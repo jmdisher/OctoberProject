@@ -21,7 +21,6 @@ import com.jeffdisher.october.mutations.EntityChangeImpregnateCreature;
 import com.jeffdisher.october.mutations.EntityChangeTakeDamageFromEntity;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.IMutationEntity;
-import com.jeffdisher.october.mutations.TickUtils;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.BlockAddress;
 import com.jeffdisher.october.types.ContextBuilder;
@@ -648,7 +647,6 @@ public class TestCreatureLogic
 		
 		// Update the player to be close enough.
 		Assert.assertTrue(action.applyChange(context, mutableOrc));
-		TickUtils.allowMovement(context.previousBlockLookUp, mutableOrc, action.getTimeCostMillis());
 		
 		// Now, allow it to perform the attack.
 		didTakeAction = CreatureLogic.didTakeSpecialActions(context
