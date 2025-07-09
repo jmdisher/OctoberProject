@@ -279,7 +279,7 @@ public class TickRunner
 	{
 		// TODO:  We should validate these parameters closer to the decoding point.
 		Assert.assertTrue(entityId > 0);
-		Assert.assertTrue(change.getTimeCostMillis() >= 0L);
+		Assert.assertTrue(_millisPerTick == change.getTimeCostMillis());
 		Assert.assertTrue(commitLevel > 0L);
 		
 		boolean didAdd;

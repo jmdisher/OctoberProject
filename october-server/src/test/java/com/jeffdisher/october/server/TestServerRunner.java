@@ -375,10 +375,9 @@ public class TestServerRunner
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = 100L;
-		EntityLocation firstStep = new EntityLocation(-0.4f, 0.0f, 0.0f);
+		EntityLocation firstStep = new EntityLocation(-0.2f, 0.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		network.receiveFromClient(clientId1, move, 1L);
 		
 		network.waitForCuboidRemovedCount(clientId1, 2);
@@ -656,11 +655,10 @@ public class TestServerRunner
 		Assert.assertNotNull(entity1);
 		
 		// Move them slightly so that they aren't on the world spawn.
-		EntityLocation firstStep = new EntityLocation(0.0f, 0.4f, 0.0f);
+		EntityLocation firstStep = new EntityLocation(0.0f, 0.2f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(0.0f, speed, 0.0f);
-		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null, millisInStep);
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null, ServerRunner.DEFAULT_MILLIS_PER_TICK);
 		network.receiveFromClient(clientId1, move, 1L);
 		Object change0 = network.waitForUpdate(clientId1, 0);
 		Assert.assertTrue(change0 instanceof MutationEntitySetEntity);
@@ -811,7 +809,7 @@ public class TestServerRunner
 			, OrientationHelpers.YAW_NORTH
 			, OrientationHelpers.PITCH_FLAT
 			, subAction
-			, 100L
+			, ServerRunner.DEFAULT_MILLIS_PER_TICK
 		);
 	}
 
