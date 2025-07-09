@@ -14,7 +14,7 @@ import com.jeffdisher.october.mutations.EntityChangeUseSelectedItemOnEntity;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockRepair;
 import com.jeffdisher.october.mutations.EntityChangeJump;
-import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.Deprecated_EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetCreative;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSpawnCreature;
@@ -49,7 +49,7 @@ public class MutationEntityCodec
 	// We specifically request that all the mutation types which can be serialized for the network are registered here.
 	static
 	{
-		_CODEC_TABLE[EntityChangeMove.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeMove.deserializeFromBuffer(buffer);
+		_CODEC_TABLE[Deprecated_EntityChangeMove.TYPE.ordinal()] = (ByteBuffer buffer) -> Deprecated_EntityChangeMove.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeJump.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeJump.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[EntityChangeSwim.TYPE.ordinal()] = (ByteBuffer buffer) -> EntityChangeSwim.deserializeFromBuffer(buffer);
 		_CODEC_TABLE[MutationPlaceSelectedBlock.TYPE.ordinal()] = (ByteBuffer buffer) -> MutationPlaceSelectedBlock.deserializeFromBuffer(buffer);

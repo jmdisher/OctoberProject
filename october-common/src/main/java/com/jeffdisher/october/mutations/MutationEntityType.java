@@ -5,7 +5,7 @@ public enum MutationEntityType
 {
 	ERROR,
 	
-	MOVE,
+	DEPRECATED_MOVE,
 	JUMP,
 	SWIM,
 	BLOCK_PLACE,

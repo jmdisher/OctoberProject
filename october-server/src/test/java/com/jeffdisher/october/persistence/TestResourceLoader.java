@@ -31,7 +31,7 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.ScheduledChange;
 import com.jeffdisher.october.logic.ScheduledMutation;
 import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
-import com.jeffdisher.october.mutations.EntityChangeMove;
+import com.jeffdisher.october.mutations.Deprecated_EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangePeriodic;
 import com.jeffdisher.october.mutations.MutationBlockIncrementalBreak;
 import com.jeffdisher.october.mutations.MutationBlockOverwriteInternal;
@@ -604,7 +604,8 @@ public class TestResourceLoader
 			, energyDeficit
 			, spawnLocation
 		);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(10L, 1.0f, EntityChangeMove.Direction.EAST);
+		@SuppressWarnings("deprecation")
+		Deprecated_EntityChangeMove<IMutablePlayerEntity> move = new Deprecated_EntityChangeMove<>(10L, 1.0f, Deprecated_EntityChangeMove.Direction.EAST);
 		
 		// Serialize to buffer.
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
@@ -648,7 +649,7 @@ public class TestResourceLoader
 		Assert.assertEquals((byte)0, entity.yaw());
 		List<ScheduledChange> changes = results.get(0).changes();
 		Assert.assertEquals(1, changes.size());
-		Assert.assertTrue(changes.get(0).change() instanceof EntityChangeMove);
+		Assert.assertTrue(changes.get(0).change() instanceof Deprecated_EntityChangeMove);
 		
 		loader.shutdown();
 	}

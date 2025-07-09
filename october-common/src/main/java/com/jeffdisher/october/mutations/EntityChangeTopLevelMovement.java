@@ -44,7 +44,6 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	 * The white-list of sub-actions which can be sent by a client.
 	 */
 	public static final Set<MutationEntityType> ALLOWED_TYPES = Arrays.stream(new MutationEntityType[] {
-		MutationEntityType.MOVE,
 		MutationEntityType.JUMP,
 		MutationEntityType.SWIM,
 		MutationEntityType.BLOCK_PLACE,
