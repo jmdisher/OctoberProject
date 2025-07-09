@@ -25,7 +25,6 @@ import com.jeffdisher.october.logic.HeightMapHelpers;
 import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.mutations.EntityChangeChangeHotbarSlot;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeOperatorSetLocation;
 import com.jeffdisher.october.mutations.EntityChangeSetDayAndSpawn;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
@@ -376,7 +375,7 @@ public class TestServerRunner
 		
 		// Now, we want to take a step to the West and see 2 new cuboids added and 2 removed.
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, -0.4f, 0.0f);
+		long millisInStep = 100L;
 		EntityLocation firstStep = new EntityLocation(-0.4f, 0.0f, 0.0f);
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_WEST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
@@ -659,7 +658,7 @@ public class TestServerRunner
 		// Move them slightly so that they aren't on the world spawn.
 		EntityLocation firstStep = new EntityLocation(0.0f, 0.4f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.0f, 0.4f);
+		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(0.0f, speed, 0.0f);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_NORTH, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		network.receiveFromClient(clientId1, move, 1L);

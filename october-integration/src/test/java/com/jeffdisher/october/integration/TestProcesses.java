@@ -20,7 +20,6 @@ import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.net.NetworkLayer;
 import com.jeffdisher.october.persistence.ResourceLoader;
@@ -143,8 +142,7 @@ public class TestProcesses
 		// Move the client, slightly, and verify that we see the update.
 		// (since we are using the real clock, wait for this move to be valid)
 		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		long millisInStep = 100L;
 		client.setOrientation(OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT);
 		long millisRemaining = millisInStep;
 		while (millisRemaining > 0L)

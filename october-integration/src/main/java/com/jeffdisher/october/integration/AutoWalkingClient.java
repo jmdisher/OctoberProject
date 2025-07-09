@@ -9,7 +9,6 @@ import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.ColumnHeightMap;
 import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.logic.OrientationHelpers;
-import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
 import com.jeffdisher.october.mutations.MutationEntitySelectItem;
 import com.jeffdisher.october.mutations.MutationPlaceSelectedBlock;
@@ -158,24 +157,7 @@ public class AutoWalkingClient
 			}
 			else
 			{
-				byte yaw;
-				switch (command.direction)
-				{
-				case EAST:
-					yaw = OrientationHelpers.YAW_EAST;
-					break;
-				case NORTH:
-					yaw = OrientationHelpers.YAW_NORTH;
-					break;
-				case SOUTH:
-					yaw = OrientationHelpers.YAW_SOUTH;
-					break;
-				case WEST:
-					yaw = OrientationHelpers.YAW_WEST;
-					break;
-				default:
-					throw Assert.unreachable();
-				}
+				byte yaw = command.direction.yaw;
 				client.setOrientation(yaw, OrientationHelpers.PITCH_FLAT);
 				client.walk(EntityChangeTopLevelMovement.Relative.FORWARD, currentTimeMillis);
 			}
@@ -190,7 +172,7 @@ public class AutoWalkingClient
 		Assert.assertTrue(2 == parts.length);
 		_Action action = _Action.valueOf(parts[0]);
 		Assert.assertTrue(null != action);
-		EntityChangeMove.Direction direction = EntityChangeMove.Direction.valueOf(parts[1]);
+		_Direction direction = _Direction.valueOf(parts[1]);
 		Assert.assertTrue(null != direction);
 		return new _Command(action, direction);
 	}
@@ -312,11 +294,25 @@ public class AutoWalkingClient
 	}
 
 	private static record _Command(_Action action
-			, EntityChangeMove.Direction direction
+			, _Direction direction
 	) {}
 
 	private static record _Packaged(_Listener listener
 			, ClientProcess client
 			, _Command command
 	) {}
+
+	private static enum _Direction
+	{
+		NORTH(OrientationHelpers.YAW_NORTH),
+		EAST(OrientationHelpers.YAW_EAST),
+		SOUTH(OrientationHelpers.YAW_SOUTH),
+		WEST(OrientationHelpers.YAW_WEST),
+		;
+		final byte yaw;
+		private _Direction(byte yaw)
+		{
+			this.yaw = yaw;
+		}
+	}
 }

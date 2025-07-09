@@ -23,7 +23,6 @@ import com.jeffdisher.october.data.IReadOnlyCuboidData;
 import com.jeffdisher.october.data.MutableBlockProxy;
 import com.jeffdisher.october.logic.CommonChangeSink;
 import com.jeffdisher.october.logic.LogicLayerHelpers;
-import com.jeffdisher.october.logic.OrientationHelpers;
 import com.jeffdisher.october.logic.PropagationHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -79,99 +78,6 @@ public class TestCommonChanges
 	public static void tearDown()
 	{
 		Environment.clearSharedInstance();
-	}
-
-	@Test
-	public void moveSuccess()
-	{
-		// Check that the move works if the blocks are air.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		EntityLocation newLocation = new EntityLocation(0.4f, 0.0f, 0.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		TickProcessingContext context = _createSimpleContext();
-		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
-		boolean didApply = move.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
-		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(newLocation, newEntity.newLocation);
-		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
-	}
-
-	@Test
-	public void moveBarrier()
-	{
-		// Check that the move fails if the blocks are stone.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, -16.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		TickProcessingContext context = _createSimpleContext();
-		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
-		move.applyChange(context, newEntity);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
-		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(oldLocation, newEntity.newLocation);
-		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
-	}
-
-	@Test
-	public void moveMissing()
-	{
-		// Check that the move fails if the target cuboid is missing.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 0.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		TickProcessingContext context = ContextBuilder.build()
-				.lookups((AbsoluteLocation location) -> null, null)
-				.finish()
-		;
-		context = _createNextTick(context, move.getTimeCostMillis());
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
-		move.applyChange(context, newEntity);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
-		TickUtils.endOfTick(context, newEntity);
-		Assert.assertEquals(oldLocation, newEntity.newLocation);
-		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
-	}
-
-	@Test
-	public void fallingThroughAir()
-	{
-		// Position us in an air block and make sure that we fall.
-		EntityLocation oldLocation = new EntityLocation(0.0f, 0.0f, 10.0f);
-		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
-		EntityChangeMove<IMutablePlayerEntity> move = new EntityChangeMove<>(millisInStep, 1.0f, EntityChangeMove.Direction.EAST);
-		TickProcessingContext context = _createSimpleContext();
-		context = _createNextTick(context, move.getTimeCostMillis());
-		// We start with a zero z-vector since we should start falling.
-		MutableEntity newEntity = MutableEntity.createForTest(1);
-		newEntity.newLocation = oldLocation;
-		Assert.assertEquals(OrientationHelpers.YAW_NORTH, newEntity.newYaw);
-		boolean didApply = move.applyChange(context, newEntity);
-		Assert.assertTrue(didApply);
-		TickUtils.allowMovement(context.previousBlockLookUp, newEntity, context.millisPerTick);
-		TickUtils.endOfTick(context, newEntity);
-		// We expect that we fell for 100 ms so we would have applied acceleration for 1/10 second.
-		float expectedZVector = -0.98f;
-		// This movement would then be applied for 1/10 second.
-		// (note that we cut this in half since we apply the average over time, not just the one value).
-		EntityLocation expectedLocation = new EntityLocation(oldLocation.x() + 0.4f, oldLocation.y(), oldLocation.z() + (0.5f * expectedZVector / 10.0f));
-		Assert.assertEquals(expectedZVector, newEntity.newVelocity.z(), 0.01f);
-		Assert.assertEquals(expectedLocation, newEntity.newLocation);
-		Assert.assertEquals(OrientationHelpers.YAW_EAST, newEntity.newYaw);
 	}
 
 	@Test

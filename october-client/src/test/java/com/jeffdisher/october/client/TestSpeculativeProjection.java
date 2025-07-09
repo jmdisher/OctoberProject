@@ -36,7 +36,6 @@ import com.jeffdisher.october.mutations.EntityChangeAttackEntity;
 import com.jeffdisher.october.mutations.EntityChangeCraft;
 import com.jeffdisher.october.mutations.EntityChangeCraftInBlock;
 import com.jeffdisher.october.mutations.EntityChangeIncrementalBlockBreak;
-import com.jeffdisher.october.mutations.EntityChangeMove;
 import com.jeffdisher.october.mutations.EntityChangeMutation;
 import com.jeffdisher.october.mutations.EntityChangePlaceMultiBlock;
 import com.jeffdisher.october.mutations.EntityChangeTopLevelMovement;
@@ -914,7 +913,7 @@ public class TestSpeculativeProjection
 		EntityLocation firstStep = new EntityLocation(0.4f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(lastStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
@@ -1576,7 +1575,7 @@ public class TestSpeculativeProjection
 		EntityLocation secondStep = new EntityLocation(0.8f, 0.0f, 0.0f);
 		EntityLocation lastStep = new EntityLocation(1.2f, 0.0f, 0.0f);
 		float speed = ENV.creatures.PLAYER.blocksPerSecond();
-		long millisInStep = EntityChangeMove.getTimeMostMillis(speed, 0.4f, 0.0f);
+		long millisInStep = 100L;
 		EntityLocation velocity = new EntityLocation(speed, 0.0f, 0.0f);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move1 = new EntityChangeTopLevelMovement<>(firstStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> move2 = new EntityChangeTopLevelMovement<>(secondStep, velocity, EntityChangeTopLevelMovement.Intensity.WALKING, OrientationHelpers.YAW_EAST, OrientationHelpers.PITCH_FLAT, null, millisInStep);
