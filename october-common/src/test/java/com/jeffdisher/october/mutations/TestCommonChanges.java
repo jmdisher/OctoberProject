@@ -2392,6 +2392,37 @@ public class TestCommonChanges
 		Assert.assertEquals(newVelocity, newEntity.newVelocity);
 	}
 
+	@Test
+	public void coastInAir()
+	{
+		// Show how we handle the case where the entity is coasting while hanging in the air on the client side (small time units).
+		EntityLocation oldLocation = new EntityLocation(41.87f, -93.59f, 8.38f);
+		EntityLocation oldVelocity = new EntityLocation(-1.95f, 0.0f, -3.92f);
+		EntityLocation newLocation = new EntityLocation(41.85f, -93.59f, 8.31f);
+		EntityLocation newVelocity = new EntityLocation(-0.97f, 0.0f, -4.09f);
+		MutableEntity newEntity = MutableEntity.createForTest(1);
+		newEntity.newLocation = oldLocation;
+		newEntity.newVelocity = oldVelocity;
+		CuboidData air = CuboidGenerator.createFilledCuboid(CuboidAddress.fromInt(1, -4, 0), ENV.special.AIR);
+		TickProcessingContext context = ContextBuilder.build()
+				.lookups((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), air), null)
+				.finish()
+		;
+		EntityChangeTopLevelMovement<IMutablePlayerEntity> action = new EntityChangeTopLevelMovement<>(newLocation
+			, newVelocity
+			, EntityChangeTopLevelMovement.Intensity.STANDING
+			, (byte)5
+			, (byte)6
+			, null
+			, 17L
+		);
+		
+		boolean didApply = action.applyChange(context, newEntity);
+		Assert.assertTrue(didApply);
+		Assert.assertEquals(newLocation, newEntity.newLocation);
+		Assert.assertEquals(newVelocity, newEntity.newVelocity);
+	}
+
 
 	private static Item _selectedItemType(MutableEntity entity)
 	{

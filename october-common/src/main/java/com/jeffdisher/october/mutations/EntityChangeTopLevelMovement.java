@@ -354,7 +354,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 	@Override
 	public String toString()
 	{
-		return String.format("Top-Level(%s), L(%s), V(%s), Sub: %s", _intensity, _newLocation, _newVelocity, _subAction);
+		return String.format("Top-Level(%s - %d ms), L(%s), V(%s), Sub: %s", _intensity, _millis, _newLocation, _newVelocity, _subAction);
 	}
 
 	/**
@@ -376,7 +376,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		{
 			newVelocity = 0.0f;
 		}
-		return newVelocity;
+		return EntityLocation.roundToHundredths(newVelocity);
 	}
 
 	private void _log(String title, T newEntity)
