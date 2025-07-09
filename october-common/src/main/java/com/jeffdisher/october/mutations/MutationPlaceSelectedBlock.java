@@ -9,6 +9,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -91,7 +92,8 @@ public class MutationPlaceSelectedBlock implements IMutationEntity<IMutablePlaye
 			CuboidData fakeCuboid = CuboidGenerator.createFilledCuboid(_targetBlock.getCuboidAddress(), env.special.AIR);
 			fakeCuboid.setData15(AspectRegistry.BLOCK, _targetBlock.getBlockAddress(), blockType.item().number());
 			EntityLocation entityLocation = newEntity.getLocation();
-			isLocationNotColliding = SpatialHelpers.canExistInLocation((AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid), entityLocation, newEntity.getType().volume());
+			ViscosityReader reader = new ViscosityReader(env, (AbsoluteLocation location) -> new BlockProxy(location.getBlockAddress(), fakeCuboid));
+			isLocationNotColliding = SpatialHelpers.canExistInLocation(reader, entityLocation, newEntity.getType().volume());
 		}
 		
 		// Make sure that this block can be supported by the one under it.

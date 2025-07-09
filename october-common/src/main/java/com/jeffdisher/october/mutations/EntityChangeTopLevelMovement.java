@@ -164,6 +164,9 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		float startViscosity = EntityMovementHelpers.maxViscosityInEntityBlocks(startLocation, volume, context.previousBlockLookUp);
 		float startInverseViscosity = 1.0f - startViscosity;
 		
+		Environment env = Environment.getShared();
+		ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
+		
 		// Check the change is z-velocity from start-end.
 		float newZVelocity = _newVelocity.z();
 		float zVDelta = newZVelocity - startVelocity.z();
@@ -172,7 +175,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			// We are either at terminal velocity or standing on solid ground.
 			boolean isTerminal = (newZVelocity == EntityMovementHelpers.FALLING_TERMINAL_VELOCITY_PER_SECOND);
 			// Flat ground - make sure that they are on solid ground.
-			boolean isOnGround = SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume);
+			boolean isOnGround = SpatialHelpers.isStandingOnGround(reader, startLocation, volume);
 			// Alternatively, they may be swimming (creatures can swim up at a sustained velocity).
 			boolean isSwimmable = (int)(startViscosity * 100.0f) >= BlockAspect.SWIMMABLE_VISCOSITY;
 			if (!isTerminal && !isOnGround && !isSwimmable)
@@ -199,7 +202,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				// This was not a normal fall but it might still be valid if we hit the ground or passed into a different viscosity.
 				// (note that we may have started on the ground in our previous change and that would also count).
 				boolean didHitGround = (0.0f == _newVelocity.z())
-					&& (SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, _newLocation, volume) || SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume))
+					&& (SpatialHelpers.isStandingOnGround(reader, _newLocation, volume) || SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
 				;
 				if (!didHitGround)
 				{
@@ -242,7 +245,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 		
 		// Check that the final location is not in solid blocks (unless we aren't moving - they are allowed to stand in a solid block).
 		boolean isMoving = (0.0f != deltaX) || (0.0f != deltaY);
-		if (isMoving && !SpatialHelpers.canExistInLocation(context.previousBlockLookUp, _newLocation, volume))
+		if (isMoving && !SpatialHelpers.canExistInLocation(reader, _newLocation, volume))
 		{
 			_log("Fail4", newEntity);
 			forceFailure = true;
@@ -266,8 +269,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 			);
 			boolean[] stopX = {false};
 			boolean[] stopY = {false};
-			Environment env = Environment.getShared();
-			if (SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, startLocation, volume))
+			if (SpatialHelpers.isStandingOnGround(reader, startLocation, volume))
 			{
 				stopX[0] = true;
 				stopY[0] = true;
@@ -284,7 +286,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 					{
 						stopY[0] = true;
 					}
-					if (cancelZ && SpatialHelpers.isStandingOnGround(context.previousBlockLookUp, _newLocation, volume))
+					if (cancelZ && SpatialHelpers.isStandingOnGround(reader, _newLocation, volume))
 					{
 						stopX[0] = true;
 						stopY[0] = true;
@@ -293,7 +295,7 @@ public class EntityChangeTopLevelMovement<T extends IMutableMinimalEntity> imple
 				@Override
 				public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 				{
-					return new ViscosityReader(env, context.previousBlockLookUp).getViscosityFraction(location);
+					return reader.getViscosityFraction(location);
 				}
 			});
 			boolean touchingSurface = (((0.0f == _newVelocity.x()) == stopX[0])

@@ -1,10 +1,5 @@
 package com.jeffdisher.october.logic;
 
-import java.util.function.Function;
-
-import com.jeffdisher.october.aspects.Environment;
-import com.jeffdisher.october.aspects.FlagsAspect;
-import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityType;
@@ -29,44 +24,43 @@ public class SpatialHelpers
 	/**
 	 * A common helper exposed to other changes since some changes need a "move" aspect, and this allows common logic.
 	 * 
-	 * @param blockLookup Looks up blocks in the world.
+	 * @param reader Used to check viscosity of blocks in the world.
 	 * @param targetLocation The target location of the entity.
 	 * @param volume The volume of the entity.
 	 * @return True if the entity can fit in the block space rooted in targetLocation.
 	 */
-	public static boolean canExistInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
+	public static boolean canExistInLocation(ViscosityReader reader, EntityLocation targetLocation, EntityVolume volume)
 	{
-		return _canExistInLocation(blockLookup, targetLocation, volume);
+		return _canExistInLocation(reader, targetLocation, volume);
 	}
 
 	/**
 	 * Returns true if the given location is standing directly solid blocks somewhere within its volume or is stuck in a
 	 * block (since stuck in a block can't move, they are "unable to move down").
 	 * 
-	 * @param blockLookup Looks up blocks in the world.
+	 * @param reader Used to check viscosity of blocks in the world.
 	 * @param location The location where the entity is.
 	 * @param volume The volume of the entity.
 	 * @return True if the entity is standing directly on at least one solid block.
 	 */
-	public static boolean isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	public static boolean isStandingOnGround(ViscosityReader reader, EntityLocation location, EntityVolume volume)
 	{
-		return _isStandingOnGround(blockLookup, location, volume);
+		return _isStandingOnGround(reader, location, volume);
 	}
 
 	/**
 	 * Returns true if the given location is pressed directly against a solid block ceiling somewhere within its volume
 	 * or is stuck in a block (since stuck in a block can't move, they are "unable to move up").
 	 * 
-	 * @param blockLookup Looks up blocks in the world.
+	 * @param reader Used to check viscosity of blocks in the world.
 	 * @param location The location where the entity is.
 	 * @param volume The volume of the entity.
 	 * @return True if the entity's head is pressed directly against at least one solid block.
 	 */
-	public static boolean isTouchingCeiling(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	public static boolean isTouchingCeiling(ViscosityReader reader, EntityLocation location, EntityVolume volume)
 	{
 		// We will just use the EntityMovementHelpers for this, showing what happens when we move up.
-		Environment env = Environment.getShared();
-		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		_CollisionHelper helper = new _CollisionHelper(reader);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, 1.0f), helper);
 		// If we are still in the same place, we must be touching the ceiling.
 		return location.equals(helper.finalLocation);
@@ -187,20 +181,18 @@ public class SpatialHelpers
 		return (coord == (float)Math.round(coord));
 	}
 
-	private static boolean _canExistInLocation(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation targetLocation, EntityVolume volume)
+	private static boolean _canExistInLocation(ViscosityReader reader, EntityLocation targetLocation, EntityVolume volume)
 	{
 		// We will just use the EntityMovementHelpers for this, seeing if we collide with anything while not moving.
-		Environment env = Environment.getShared();
-		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		_CollisionHelper helper = new _CollisionHelper(reader);
 		EntityMovementHelpers.interactiveEntityMove(targetLocation, volume, new EntityLocation(0.0f, 0.0f, 0.0f), helper);
 		return !helper.isStuckInBlock;
 	}
 
-	private static boolean _isStandingOnGround(Function<AbsoluteLocation, BlockProxy> blockLookup, EntityLocation location, EntityVolume volume)
+	private static boolean _isStandingOnGround(ViscosityReader reader, EntityLocation location, EntityVolume volume)
 	{
 		// We will just use the EntityMovementHelpers for this, showing what happens with a fall.
-		Environment env = Environment.getShared();
-		_CollisionHelper helper = new _CollisionHelper(env, blockLookup);
+		_CollisionHelper helper = new _CollisionHelper(reader);
 		EntityMovementHelpers.interactiveEntityMove(location, volume, new EntityLocation(0.0f, 0.0f, -1.0f), helper);
 		// If we are still in the same place, we must be on the ground.
 		return location.equals(helper.finalLocation);
@@ -271,32 +263,17 @@ public class SpatialHelpers
 
 	private static class _CollisionHelper implements EntityMovementHelpers.InteractiveHelper
 	{
-		private final Environment _env;
-		private final Function<AbsoluteLocation, BlockProxy> _blockLookup;
+		private final ViscosityReader _reader;
 		public EntityLocation finalLocation;
 		public boolean isStuckInBlock;
-		public _CollisionHelper(Environment env, Function<AbsoluteLocation, BlockProxy> blockLookup)
+		public _CollisionHelper(ViscosityReader reader)
 		{
-			_env = env;
-			_blockLookup = blockLookup;
+			_reader = reader;
 		}
 		@Override
 		public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 		{
-			float viscosity;
-			BlockProxy block = _blockLookup.apply(location);
-			// This can be null if the world isn't totally loaded on the client.
-			if (null != block)
-			{
-				boolean isActive = FlagsAspect.isSet(block.getFlags(), FlagsAspect.FLAG_ACTIVE);
-				viscosity = _env.blocks.getViscosityFraction(block.getBlock(), isActive);
-			}
-			else
-			{
-				// If not loaded, we will just say it is solid so we don't fall through it.
-				viscosity = 1.0f;
-			}
-			return viscosity;
+			return _reader.getViscosityFraction(location);
 		}
 		@Override
 		public void setLocationAndCancelVelocity(EntityLocation finalLocation, boolean cancelX, boolean cancelY, boolean cancelZ)

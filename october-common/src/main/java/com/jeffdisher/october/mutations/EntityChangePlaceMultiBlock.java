@@ -13,6 +13,7 @@ import com.jeffdisher.october.aspects.OrientationAspect;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.data.CuboidData;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.net.CodecHelpers;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.Block;
@@ -202,6 +203,7 @@ public class EntityChangePlaceMultiBlock implements IMutationEntity<IMutablePlay
 			}
 			return new BlockProxy(location.getBlockAddress(), cuboid);
 		};
-		return SpatialHelpers.canExistInLocation(blockLookup, newEntity.getLocation(), newEntity.getType().volume());
+		ViscosityReader reader = new ViscosityReader(env, blockLookup);
+		return SpatialHelpers.canExistInLocation(reader, newEntity.getLocation(), newEntity.getType().volume());
 	}
 }

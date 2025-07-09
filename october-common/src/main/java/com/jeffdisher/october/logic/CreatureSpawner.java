@@ -236,7 +236,8 @@ public class CreatureSpawner
 			int spawnIndex = context.randomInt.applyAsInt(env.creatures.HOSTILE_MOBS.length);
 			EntityType spawnType = env.creatures.HOSTILE_MOBS[spawnIndex];
 			EntityVolume creatureVolume = spawnType.volume();
-			if (SpatialHelpers.canExistInLocation(context.previousBlockLookUp, location, creatureVolume))
+			ViscosityReader reader = new ViscosityReader(env, context.previousBlockLookUp);
+			if (SpatialHelpers.canExistInLocation(reader, location, creatureVolume))
 			{
 				// We can spawn here.
 				context.creatureSpawner.spawnCreature(spawnType, location, spawnType.maxHealth());

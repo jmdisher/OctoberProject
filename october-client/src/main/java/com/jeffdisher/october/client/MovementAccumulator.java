@@ -62,6 +62,7 @@ public class MovementAccumulator
 	private final Map<CuboidAddress, CuboidHeightMap> _heights;
 	private final Map<Integer, PartialEntity> _otherEntities;
 	private final Function<AbsoluteLocation, BlockProxy> _proxyLookup;
+	private final ViscosityReader _reader;
 
 	private float _baselineZVector;
 	private long _accumulationMillis;
@@ -104,6 +105,7 @@ public class MovementAccumulator
 					: null
 			;
 		};
+		_reader = new ViscosityReader(_env, _proxyLookup);
 	}
 
 	/**
@@ -308,7 +310,7 @@ public class MovementAccumulator
 	private EntityChangeTopLevelMovement<IMutablePlayerEntity> _buildFromAccumulation()
 	{
 		// If we are standing on solid blocks, we want to cancel all velocity (we currently assume all solid blocks have 100% friction).
-		if (SpatialHelpers.isStandingOnGround(_proxyLookup, _newLocation, _playerVolume))
+		if (SpatialHelpers.isStandingOnGround(_reader, _newLocation, _playerVolume))
 		{
 			_newVelocity = new EntityLocation(0.0f
 				, 0.0f
@@ -359,7 +361,6 @@ public class MovementAccumulator
 
 	private void _updateVelocityAndLocation(long millisToMove)
 	{
-		Environment env = Environment.getShared();
 		float secondsToPass = (float)millisToMove / 1000.0f;
 		_updateVelocityWithAccumulatedGravity(millisToMove);
 		EntityLocation effectiveMotion = new EntityLocation(secondsToPass * _newVelocity.x(), secondsToPass * _newVelocity.y(), secondsToPass * _newVelocity.z());
@@ -377,7 +378,7 @@ public class MovementAccumulator
 			@Override
 			public float getViscosityForBlockAtLocation(AbsoluteLocation location)
 			{
-				return new ViscosityReader(env, _proxyLookup).getViscosityFraction(location);
+				return _reader.getViscosityFraction(location);
 			}
 		});
 	}

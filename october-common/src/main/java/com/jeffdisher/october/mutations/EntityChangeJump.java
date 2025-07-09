@@ -3,9 +3,11 @@ package com.jeffdisher.october.mutations;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import com.jeffdisher.october.aspects.Environment;
 import com.jeffdisher.october.data.BlockProxy;
 import com.jeffdisher.october.logic.EntityMovementHelpers;
 import com.jeffdisher.october.logic.SpatialHelpers;
+import com.jeffdisher.october.logic.ViscosityReader;
 import com.jeffdisher.october.types.AbsoluteLocation;
 import com.jeffdisher.october.types.EntityLocation;
 import com.jeffdisher.october.types.EntityVolume;
@@ -110,7 +112,8 @@ public class EntityChangeJump<T extends IMutableMinimalEntity> implements IMutat
 			, EntityLocation vector
 	)
 	{
-		boolean isOnGround = SpatialHelpers.isStandingOnGround(previousBlockLookUp, location, volume);
+		ViscosityReader reader = new ViscosityReader(Environment.getShared(), previousBlockLookUp);
+		boolean isOnGround = SpatialHelpers.isStandingOnGround(reader, location, volume);
 		// We will consider it valid to jump so long as you aren't already rising (since you can jump before the fall damage has been calculated).
 		boolean isStatic = (vector.z() <= 0.0f);
 		return isOnGround && isStatic;
