@@ -248,7 +248,7 @@ public class ClientProcess
 	 */
 	public void hitBlock(AbsoluteLocation blockLocation, long currentTimeMillis)
 	{
-		EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(blockLocation, (short)_clientRunner.millisPerTick);
+		EntityChangeIncrementalBlockBreak change = new EntityChangeIncrementalBlockBreak(blockLocation);
 		_clientRunner.commonApplyEntityAction(change, currentTimeMillis);
 		_runPendingCallbacks();
 	}

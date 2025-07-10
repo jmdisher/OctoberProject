@@ -650,8 +650,7 @@ public class TestTickRunner
 		Assert.assertEquals(2, snapshot.cuboids().size());
 		
 		// Tell them to start breaking a stone block.
-		short damage = 10;
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1), damage)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity.entity(), new EntityChangeIncrementalBlockBreak(new AbsoluteLocation(1, 1, -1))), 1L);
 		// Run a tick and verify that we see the cuboid mutation from this in the snapshot.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -678,7 +677,7 @@ public class TestTickRunner
 		snapshot = runner.waitForPreviousTick();
 		// Note that we no longer see block update events in the scheduled mutations and nothing else was scheduled.
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
-		Assert.assertEquals(damage, snapshot.cuboids().get(stoneAddress).completed().getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
+		Assert.assertEquals(MILLIS_PER_TICK, snapshot.cuboids().get(stoneAddress).completed().getData15(AspectRegistry.DAMAGE, BlockAddress.fromInt(1, 1, 31)));
 		
 		runner.shutdown();
 	}
@@ -1192,7 +1191,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().iterator().next().scheduledBlockMutations().size());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug, (short)10)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -1272,7 +1271,7 @@ public class TestTickRunner
 		Assert.assertEquals(0, snapshot.cuboids().values().stream().filter((TickRunner.SnapshotCuboid cuboid) -> !cuboid.scheduledBlockMutations().isEmpty()).count());
 		
 		// Now, break the plug.
-		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug, (short)10)), 1L);
+		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, new EntityChangeIncrementalBlockBreak(plug)), 1L);
 		// Apply a tick for the entity mutation.
 		runner.startNextTick();
 		snapshot = runner.waitForPreviousTick();
@@ -1977,7 +1976,7 @@ public class TestTickRunner
 		
 		// Break one of these wires.
 		runner.waitForPreviousTick();
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location, (short) 10);
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(wire1Location);
 		runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), 2L);
 		runner.startNextTick();
 		
@@ -3338,8 +3337,8 @@ public class TestTickRunner
 		short millisRemaining = millisOfBreak;
 		while (millisRemaining > 0)
 		{
-			short timeToApply = (short) Math.min(MILLIS_PER_TICK, millisRemaining);
-			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, timeToApply);
+			short timeToApply = (short) MILLIS_PER_TICK;
+			EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
 			runner.enqueueEntityChange(entityId, _wrapSubAction(entity, break1), nextCommit);
 			nextCommit += 1L;
 			runner.startNextTick();

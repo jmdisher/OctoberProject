@@ -405,12 +405,12 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
 		// Try too far.
-		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar, (short)100);
+		EntityChangeIncrementalBlockBreak breakTooFar = new EntityChangeIncrementalBlockBreak(tooFar);
 		Assert.assertFalse(breakTooFar.applyChange(holder.context, newEntity));
 		Assert.assertNull(holder.mutation);
 		
 		// Try reasonable location.
-		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(reasonable, (short)100);
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(reasonable);
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 	}
@@ -913,7 +913,7 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Do the break with enough time to break the block.
-		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target);
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		Assert.assertEquals(0, newEntity.getSelectedKey());
@@ -940,17 +940,21 @@ public class TestCommonChanges
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
 		// Do the break with enough time to break the block.
-		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)2000);
-		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
-		Assert.assertNotNull(holder.mutation);
-		Assert.assertNull(holder.change);
-		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
-		holder.mutation = null;
-		
-		MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, entityId));
-		Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
-		proxy.writeBack(cuboid);
+		for (long spent = 0L; spent < ENV.damage.getToughness(STONE); spent += holder.context.millisPerTick)
+		{
+			EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target);
+			Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
+			Assert.assertNotNull(holder.mutation);
+			Assert.assertNull(holder.change);
+			MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
+			holder.mutation = null;
+			
+			MutableBlockProxy proxy = new MutableBlockProxy(target, cuboid);
+			Assert.assertTrue(breaking.applyMutation(holder.context, proxy));
+			proxy.writeBack(cuboid);
+		}
+		Assert.assertTrue(holder.events.didPost());
 		Assert.assertNull(holder.mutation);
 		Assert.assertNotNull(holder.change);
 		MutationEntityStoreToInventory store = (MutationEntityStoreToInventory) holder.change;
@@ -972,7 +976,7 @@ public class TestCommonChanges
 	{
 		// Show what happens when we try to break different blocks with the same tool.
 		Item pickaxe = ENV.items.getItemById("op.iron_pickaxe");
-		int startDurability = 100;
+		int startDurability = 300;
 		
 		MutableEntity newEntity = MutableEntity.createForTest(1);
 		newEntity.newLocation = new EntityLocation(6.0f - ENV.creatures.PLAYER.volume().width(), 0.0f, 10.0f);
@@ -987,9 +991,9 @@ public class TestCommonChanges
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, false, true);
 		
-		// Apply 10ms to the stone and observe what happens.
-		short duration = 10;
-		EntityChangeIncrementalBlockBreak breakStone = new EntityChangeIncrementalBlockBreak(targetStone, duration);
+		// Apply a tick to the stone and observe what happens.
+		short duration = (short) holder.context.millisPerTick;
+		EntityChangeIncrementalBlockBreak breakStone = new EntityChangeIncrementalBlockBreak(targetStone);
 		Assert.assertTrue(breakStone.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		MutationBlockIncrementalBreak breaking = (MutationBlockIncrementalBreak) holder.mutation;
@@ -1001,7 +1005,7 @@ public class TestCommonChanges
 		Assert.assertEquals(10 * duration, cuboid.getData15(AspectRegistry.DAMAGE, targetStone.getBlockAddress()));
 		
 		// Now, do the same to the plank and observe the difference.
-		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog, duration);
+		EntityChangeIncrementalBlockBreak breakLog = new EntityChangeIncrementalBlockBreak(targetLog);
 		Assert.assertTrue(breakLog.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		breaking = (MutationBlockIncrementalBreak) holder.mutation;
@@ -1428,7 +1432,7 @@ public class TestCommonChanges
 		holder.mutation = null;
 		
 		// Break it and verify it is a closed door in the inventory.
-		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		proxy = new MutableBlockProxy(holder.mutation.getAbsoluteLocation(), cuboid);
@@ -1569,7 +1573,7 @@ public class TestCommonChanges
 		Assert.assertNull(holder.mutation);
 		
 		// Break it and watch the door close.
-		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(switchLocation, (short)100);
+		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(switchLocation);
 		Assert.assertTrue(breaker.applyChange(holder.context, newEntity));
 		holder.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, switchLocation, 0, entityId));
 		_runMutationWithLogicUpdate(holder, cuboid, switchLocation, doorLocation, ENV.special.AIR, (byte)0x0);
@@ -1956,8 +1960,8 @@ public class TestCommonChanges
 		
 		_ContextHolder holder = new _ContextHolder(cuboid, true, true);
 		
-		// Do the break with only 1 ms, as it should break instantly.
-		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target, (short)1);
+		// Do the break with only 1 tick, as it should break instantly.
+		EntityChangeIncrementalBlockBreak breakReasonable = new EntityChangeIncrementalBlockBreak(target);
 		Assert.assertTrue(breakReasonable.applyChange(holder.context, newEntity));
 		Assert.assertNotNull(holder.mutation);
 		// We should still see the item in the inventory.
@@ -2245,9 +2249,9 @@ public class TestCommonChanges
 		Assert.assertEquals(FlagsAspect.FLAG_ACTIVE, cuboid.getData7(AspectRegistry.FLAGS, target.getRelative(0, 0, 1).getBlockAddress()));
 		
 		// Break it in 2 steps across the surface and verify it is a closed door in the inventory.
-		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target, (short)100);
+		EntityChangeIncrementalBlockBreak breaker = new EntityChangeIncrementalBlockBreak(target);
 		Assert.assertTrue(breaker.applyChange(context, newEntity));
-		breaker = new EntityChangeIncrementalBlockBreak(target.getRelative(0, 0, 1), (short)100);
+		breaker = new EntityChangeIncrementalBlockBreak(target.getRelative(0, 0, 1));
 		Assert.assertTrue(breaker.applyChange(context, newEntity));
 		
 		// Each break will send an incremental break to each block in the multi-block (4 blocks).
@@ -2643,6 +2647,10 @@ public class TestCommonChanges
 		{
 			Assert.assertNull(_expected);
 			_expected = expected;
+		}
+		public boolean didPost()
+		{
+			return (null == _expected);
 		}
 		@Override
 		public void post(EventRecord event)

@@ -177,7 +177,7 @@ public class TestClientRunner
 		
 		// Start the multi-phase - we will assume that we need 2 hits to break this block.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;
@@ -205,7 +205,7 @@ public class TestClientRunner
 		
 		// Send the second hit and wait for the same operation.
 		currentTimeMillis += 100L;
-		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation, (short)runner.millisPerTick), currentTimeMillis);
+		runner.commonApplyEntityAction(new EntityChangeIncrementalBlockBreak(changeLocation), currentTimeMillis);
 		currentTimeMillis += 100L;
 		runner.standStill(currentTimeMillis);
 		currentTimeMillis += 100L;

@@ -177,7 +177,7 @@ public class TestServerRunner
 		
 		// Break a block in 2 steps, observing the changes coming out.
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 1, -1);
-		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation, (short) 100);
+		EntityChangeIncrementalBlockBreak break1 = new EntityChangeIncrementalBlockBreak(changeLocation);
 		network.receiveFromClient(clientId, _wrapSubAction(entity, break1), 1L);
 		// EntityChangeIncrementalBlockBreak consumes energy and then breaks the block so we should see 2 changes.
 		Object mutation = network.waitForUpdate(clientId, 0);

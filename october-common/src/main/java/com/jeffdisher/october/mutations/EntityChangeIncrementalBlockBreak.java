@@ -13,7 +13,6 @@ import com.jeffdisher.october.types.IMutablePlayerEntity;
 import com.jeffdisher.october.types.Item;
 import com.jeffdisher.october.types.NonStackableItem;
 import com.jeffdisher.october.types.TickProcessingContext;
-import com.jeffdisher.october.utils.Assert;
 
 
 /**
@@ -28,21 +27,16 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 	public static EntityChangeIncrementalBlockBreak deserializeFromBuffer(ByteBuffer buffer)
 	{
 		AbsoluteLocation target = CodecHelpers.readAbsoluteLocation(buffer);
-		short millisToApply = buffer.getShort();
-		return new EntityChangeIncrementalBlockBreak(target, millisToApply);
+		buffer.getShort();
+		return new EntityChangeIncrementalBlockBreak(target);
 	}
 
 
 	private final AbsoluteLocation _targetBlock;
-	private final short _millisToApply;
 
-	public EntityChangeIncrementalBlockBreak(AbsoluteLocation targetBlock, short millisToApply)
+	public EntityChangeIncrementalBlockBreak(AbsoluteLocation targetBlock)
 	{
-		// Make sure that this is positive.
-		Assert.assertTrue(millisToApply > 0);
-		
 		_targetBlock = targetBlock;
-		_millisToApply = millisToApply;
 	}
 
 	@Override
@@ -73,6 +67,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 					? selected.type()
 					: null
 			;
+			int breakingMillis = (int)context.millisPerTick;
 			// We will apply max damage if creative, otherwise we will consider the tool and material.
 			short damageToApply;
 			if (newEntity.isCreativeMode())
@@ -92,7 +87,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 					// This doesn't match so use the default of 1.
 					speedMultiplier = 1;
 				}
-				damageToApply = (short)(speedMultiplier * _millisToApply);
+				damageToApply = (short)(speedMultiplier * breakingMillis);
 			}
 			MultiBlockUtils.sendMutationToAll(context, (AbsoluteLocation location) -> {
 				MutationBlockIncrementalBreak mutation = new MutationBlockIncrementalBreak(location, damageToApply, newEntity.getId());
@@ -105,7 +100,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 				int totalDurability = env.durability.getDurability(selected.type());
 				if (totalDurability > 0)
 				{
-					int newDurability = selected.durability() - _millisToApply;
+					int newDurability = selected.durability() - breakingMillis;
 					if (newDurability > 0)
 					{
 						// Write this back.
@@ -126,7 +121,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 			newEntity.setCurrentCraftingOperation(null);
 			
 			// Breaking a block expends energy proportional to breaking time.
-			newEntity.applyEnergyCost(_millisToApply);
+			newEntity.applyEnergyCost(breakingMillis);
 			
 			// While this is an action which is considered primary, it should actually delay secondary actions, too.
 			newEntity.setLastSpecialActionMillis(context.currentTickTimeMillis);
@@ -144,7 +139,7 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 	public void serializeToBuffer(ByteBuffer buffer)
 	{
 		CodecHelpers.writeAbsoluteLocation(buffer, _targetBlock);
-		buffer.putShort(_millisToApply);
+		buffer.putShort((short)0); // millis no longer stored.
 	}
 
 	@Override
@@ -157,6 +152,6 @@ public class EntityChangeIncrementalBlockBreak implements IMutationEntity<IMutab
 	@Override
 	public String toString()
 	{
-		return "Incremental break " + _targetBlock + " for " + _millisToApply + " ms";
+		return "Incremental break " + _targetBlock;
 	}
 }

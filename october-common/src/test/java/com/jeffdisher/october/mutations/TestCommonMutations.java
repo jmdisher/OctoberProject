@@ -123,16 +123,16 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)200);
+		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;
 		Entity entity = MutableEntity.createForTest(clientId).freeze();
 		
-		// Without a tool, this will take 10 hits.
+		// Without a tool, this will take 20 hits (ticks).
 		MutableBlockProxy proxy = null;
 		sinks.events.expected(new EventRecord(EventRecord.Type.BLOCK_BROKEN, EventRecord.Cause.NONE, target, 0, clientId));
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 20; ++i)
 		{
 			// Check that once we run this change, it requests the appropriate mutation.
 			boolean didApply = longRunningChange.applyChange(context, MutableEntity.existing(entity));
@@ -150,7 +150,7 @@ public class TestCommonMutations
 			if (0 == i)
 			{
 				Assert.assertEquals(STONE, proxy.getBlock());
-				Assert.assertEquals((short)200, proxy.getDamage());
+				Assert.assertEquals((short)context.millisPerTick, proxy.getDamage());
 			}
 		}
 		
@@ -170,7 +170,7 @@ public class TestCommonMutations
 		CuboidData cuboid = CuboidGenerator.createFilledCuboid(target.getCuboidAddress(), STONE);
 		ProcessingSinks sinks = new ProcessingSinks();
 		TickProcessingContext context = sinks.createBoundContext(cuboid);
-		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target, (short)10);
+		EntityChangeIncrementalBlockBreak longRunningChange = new EntityChangeIncrementalBlockBreak(target);
 		
 		// We will need an entity so that phase1 can ask to schedule the follow-up against it.
 		int clientId = 1;
@@ -195,7 +195,7 @@ public class TestCommonMutations
 		
 		// We should see the applied damage at 10x the time since we were using the pickaxe (hard-coded since we are partially validating the env lookup).
 		Assert.assertEquals(STONE, proxy.getBlock());
-		Assert.assertEquals((short)100, proxy.getDamage());
+		Assert.assertEquals((short)1000, proxy.getDamage());
 	}
 
 	@Test

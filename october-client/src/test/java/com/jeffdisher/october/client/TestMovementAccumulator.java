@@ -639,7 +639,7 @@ public class TestMovementAccumulator
 		AbsoluteLocation targetBlock = entity.location().getBlockLocation();
 		long millisPerMove = millisPerTick;
 		currentTimeMillis += millisPerMove;
-		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock, (short)millisPerTick));
+		accumulator.enqueueSubAction(new EntityChangeIncrementalBlockBreak(targetBlock));
 		EntityChangeTopLevelMovement<IMutablePlayerEntity> out = accumulator.stand(currentTimeMillis);
 		Assert.assertNotNull(out);
 		Assert.assertTrue(out.test_getSubAction() instanceof EntityChangeIncrementalBlockBreak);

@@ -800,22 +800,31 @@ public class TestSpeculativeProjection
 		// Apply the first stage of the change and observe that only the damage changes (done by cuboid mutation).
 		AbsoluteLocation changeLocation = new AbsoluteLocation(0, 0, 0);
 		currentTimeMillis += 100L;
-		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(changeLocation, (short)1000);
+		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(changeLocation);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
 		Assert.assertEquals(1, commit1);
 		Assert.assertEquals(1, listener.changeCount);
 		Assert.assertEquals(STONE_ITEM.number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
-		Assert.assertEquals((short)1000, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
+		Assert.assertEquals((short)100, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
 		Assert.assertEquals(1, listener.lastChangedBlocks.size());
 		Assert.assertEquals(1, listener.lastChangedAspects.size());
 		Assert.assertEquals(31, listener.lastHeightMap.getHeight(0, 0));
 		
-		// Allow time to pass in the local environment apply the second stage of the change.
-		currentTimeMillis += 200L;
-		long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
-		Assert.assertEquals(2, commit2);
-		Assert.assertEquals(2, listener.changeCount);
+		// Apply the remaining hits to finish breaking.
+		int hitsToBreak = (int) (ENV.damage.getToughness(STONE) / MILLIS_PER_TICK);
+		long nextCommit = 2L;
+		int changes = 1;
+		for (int i = 1; i < hitsToBreak; ++i)
+		{
+			currentTimeMillis += 100L;
+			long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
+			changes += 1;
+			Assert.assertEquals(nextCommit, commit2);
+			nextCommit += 1L;
+			Assert.assertEquals(changes, listener.changeCount);
+		}
+		long commit2 = nextCommit - 1L;
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		// We should see no inventory in the block but the item should be in the entity's inventory.
@@ -839,7 +848,7 @@ public class TestSpeculativeProjection
 				, commit1
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, speculativeCount);
+		Assert.assertEquals(hitsToBreak - 1, speculativeCount);
 		currentTimeMillis += 100L;
 		gameTick += 1L;
 		speculativeCount = projector.applyChangesForServerTick(gameTick
@@ -854,8 +863,8 @@ public class TestSpeculativeProjection
 				, commit1
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(hitsToBreak - 1, speculativeCount);
+		Assert.assertEquals(changes, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
@@ -878,7 +887,7 @@ public class TestSpeculativeProjection
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
-		Assert.assertEquals(2, listener.changeCount);
+		Assert.assertEquals(changes, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, changeLocation.getBlockAddress()));
 		Assert.assertEquals((short) 0, listener.lastData.getData15(AspectRegistry.DAMAGE, changeLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, changeLocation.getBlockAddress()));
@@ -1234,7 +1243,7 @@ public class TestSpeculativeProjection
 		
 		// Now, break the table and verify that the final inventory state makes sense.
 		// We expect the table inventory to spill into the block but the table to end up in the entity's inventory.
-		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)100);
+		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location);
 		long commit5 = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
 		Assert.assertEquals(5L, commit5);
 		proxy = new BlockProxy(blockLocation, listener.lastData);
@@ -1479,7 +1488,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(3L, commit3);
 		
 		// Check the block and all of its aspects.
-		Block furnace = ENV.blocks.fromItem(ENV.items.getItemById("op.furnace"));
+		Block furnace = ENV.blocks.fromItem(FURNACE_ITEM);
 		BlockProxy proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(furnace, proxy.getBlock());
 		Assert.assertEquals(1, proxy.getInventory().getCount(STONE_ITEM));
@@ -1487,9 +1496,15 @@ public class TestSpeculativeProjection
 		
 		// Now, break the furnace and verify that the final inventory state makes sense.
 		// We expect the table inventory to spill into the block but the table to end up in the entity's inventory.
-		EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location, (short)2000);
-		long commit4 = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
-		Assert.assertEquals(4L, commit4);
+		int hitsToBreak = (int) (ENV.damage.getToughness(furnace) / MILLIS_PER_TICK);
+		long nextCommit = 4L;
+		for (int i = 0; i < hitsToBreak; ++i)
+		{
+			EntityChangeIncrementalBlockBreak breaking = new EntityChangeIncrementalBlockBreak(location);
+			long commit4 = _wrapAndApply(projector, entity, currentTimeMillis, breaking);
+			Assert.assertEquals(nextCommit, commit4);
+			nextCommit += 1L;
+		}
 		proxy = new BlockProxy(blockLocation, listener.lastData);
 		Assert.assertEquals(ENV.special.AIR, proxy.getBlock());
 		Assert.assertEquals(2, proxy.getInventory().sortedKeys().size());
@@ -1544,11 +1559,19 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(0, listener.changeCount);
 		
 		// Break the block and verify it drops at the feet of the entity, not where the block is.
-		currentTimeMillis += 100L;
-		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation, (short)200);
-		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
-		Assert.assertEquals(1, commit1);
-		Assert.assertEquals(1, listener.changeCount);
+		int hitsToBreak = (int) (ENV.damage.getToughness(dirt) / MILLIS_PER_TICK);
+		long nextCommit = 1L;
+		int changes = 0;
+		for (int i = 0; i < hitsToBreak; ++i)
+		{
+			currentTimeMillis += 100L;
+			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation);
+			long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
+			changes += 1;
+			Assert.assertEquals(nextCommit, commit1);
+			Assert.assertEquals(changes, listener.changeCount);
+			nextCommit += 1L;
+		}
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertNull(listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, targetLocation.getBlockAddress()));
 		Inventory feetInventory = listener.lastData.getDataSpecial(AspectRegistry.INVENTORY, mutable.newLocation.getBlockLocation().getBlockAddress());
@@ -2061,12 +2084,13 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		
-		// Now, break the block over 10 increments and make sure that we see the block end up in the inventory.
-		for (int i = 0; i < 10; ++i)
+		// Now, break the block over 2 increments and make sure that we see the block end up in the inventory.
+		int hitsToBreak = (int) (ENV.damage.getToughness(ENV.blocks.fromItem(dirt)) / MILLIS_PER_TICK);
+		for (int i = 0; i < hitsToBreak; ++i)
 		{
 			Assert.assertEquals(0, listener.events.size());
 			currentTimeMillis += 100L;
-			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(dirtLocation, (short)20);
+			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(dirtLocation);
 			long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
 			Assert.assertEquals(i + 1, commit1);
 		}
@@ -2077,7 +2101,7 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.thisEntityState.inventory().getCount(dirt));
 		MutationPlaceSelectedBlock placeBlock = new MutationPlaceSelectedBlock(dirtLocation, dirtLocation);
 		long commit1 = _wrapAndApply(projector, entity, currentTimeMillis, placeBlock);
-		Assert.assertEquals(11, commit1);
+		Assert.assertEquals(hitsToBreak + 1, commit1);
 		Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 		Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
@@ -2085,13 +2109,13 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(EventRecord.Type.BLOCK_PLACED, listener.events.get(1).type());
 		
 		// Now, feed in the updates, one at a time, and make sure the result is the same after each one.
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < hitsToBreak; ++i)
 		{
 			currentTimeMillis += 100L;
 			gameTick += 1L;
 			long commit = i + 1;
 			List<MutationBlockSetBlock> list = (i > 0)
-					? List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)20, entityId)))
+					? List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)MILLIS_PER_TICK, entityId)))
 					: List.of()
 			;
 			int speculativeCount = projector.applyChangesForServerTick(gameTick
@@ -2106,7 +2130,7 @@ public class TestSpeculativeProjection
 					, commit
 					, currentTimeMillis
 			);
-			Assert.assertEquals(10 - i, speculativeCount);
+			Assert.assertEquals(hitsToBreak - i, speculativeCount);
 			Assert.assertEquals(dirt.number(), listener.lastData.getData15(AspectRegistry.BLOCK, dirtLocation.getBlockAddress()));
 			Assert.assertEquals(0, listener.lastData.getData15(AspectRegistry.DAMAGE, dirtLocation.getBlockAddress()));
 			Assert.assertEquals(0, listener.thisEntityState.inventory().getCount(dirt));
@@ -2120,11 +2144,11 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, null
 				, Map.of()
-				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)20, entityId)))
+				, List.of(FakeUpdateFactories.blockUpdate(serverCuboid, new MutationBlockIncrementalBreak(dirtLocation, (short)MILLIS_PER_TICK, entityId)))
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, 10L
+				, hitsToBreak
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, speculativeCount);
@@ -2144,7 +2168,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, 10L
+				, hitsToBreak
 				, currentTimeMillis
 		);
 		Assert.assertEquals(1, speculativeCount);
@@ -2164,7 +2188,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, 11L
+				, hitsToBreak + 1L
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -2184,7 +2208,7 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, 11L
+				, hitsToBreak + 1L
 				, currentTimeMillis
 		);
 		Assert.assertEquals(0, speculativeCount);
@@ -2237,14 +2261,28 @@ public class TestSpeculativeProjection
 		Assert.assertEquals(1, listener.loadCount);
 		Assert.assertEquals(0, listener.changeCount);
 		
-		// We will break a block in a single hit, then commit the follow-up changes, observing that this update is seemless.
-		EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation, (short)200);
-		long commitNumber = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
-		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
-		// Note that there was also a lighting change, but those aren't reported.
-		Assert.assertEquals(1, listener.lastChangedBlocks.size());
-		Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+		// Break the block, observing a lighting update in the last change.
+		int hitsToBreak = (int) (ENV.damage.getToughness(dirt) / MILLIS_PER_TICK);
+		long nextCommit = 1L;
+		int changes = 0;
+		for (int i = 0; i < hitsToBreak; ++i)
+		{
+			EntityChangeIncrementalBlockBreak blockBreak = new EntityChangeIncrementalBlockBreak(targetLocation);
+			long commitNumber = _wrapAndApply(projector, entity, currentTimeMillis, blockBreak);
+			Assert.assertEquals(nextCommit, commitNumber);
+			changes += 1;
+			Assert.assertEquals(changes, listener.changeCount);
+			Assert.assertEquals(1, listener.lastChangedBlocks.size());
+			nextCommit += 1L;
+			if ((i + 1) == hitsToBreak)
+			{
+				Assert.assertTrue(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+			}
+			else
+			{
+				Assert.assertFalse(listener.lastChangedAspects.contains(AspectRegistry.LIGHT));
+			}
+		}
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
@@ -2261,10 +2299,10 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, commitNumber
+				, (nextCommit - 1L)
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(changes, listener.changeCount);
 		
 		gameTick += 1L;
 		projector.applyChangesForServerTick(gameTick
@@ -2276,10 +2314,10 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, commitNumber
+				, (nextCommit - 1L)
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(changes, listener.changeCount);
 		
 		// The lighting update requires a hard-coded update - note that a light-only change will NOT trigger another change callback since we already reported that.
 		MutationBlockSetBlock targetLighting = new MutationBlockSetBlock(targetLocation, new byte[] {(byte)AspectRegistry.LIGHT.index(), LightAspect.MAX_LIGHT - 1});
@@ -2294,11 +2332,10 @@ public class TestSpeculativeProjection
 				, Collections.emptyList()
 				, Collections.emptyList()
 				, List.of()
-				, commitNumber
+				, (nextCommit - 1L)
 				, currentTimeMillis
 		);
-		Assert.assertEquals(1, commitNumber);
-		Assert.assertEquals(1, listener.changeCount);
+		Assert.assertEquals(changes, listener.changeCount);
 		Assert.assertEquals(ENV.special.AIR.item().number(), listener.lastData.getData15(AspectRegistry.BLOCK, targetLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT, listener.lastData.getData7(AspectRegistry.LIGHT, torchLocation.getBlockAddress()));
 		Assert.assertEquals(LightAspect.MAX_LIGHT - 1, listener.lastData.getData7(AspectRegistry.LIGHT, targetLocation.getBlockAddress()));
@@ -2424,7 +2461,7 @@ public class TestSpeculativeProjection
 			nextCommit += 1;
 			
 			currentTimeMillis += 100L;
-			EntityChangeIncrementalBlockBreak breakBlock = new EntityChangeIncrementalBlockBreak(lanternLocation, (short)1000);
+			EntityChangeIncrementalBlockBreak breakBlock = new EntityChangeIncrementalBlockBreak(lanternLocation);
 			long commit2 = _wrapAndApply(projector, entity, currentTimeMillis, breakBlock);
 			Assert.assertEquals(nextCommit, commit2);
 			nextCommit += 1;
